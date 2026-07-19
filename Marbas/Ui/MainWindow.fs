@@ -11,4 +11,7 @@ let configureQuitKey () =
     Application.SetDefaultKeyBinding(Command.Quit, Bind.All quitKey)
 
 let create () =
-    new Window(Title = "Marbas", Width = Dim.Fill(), Height = Dim.Fill())
+    let window = new Window(Title = "Marbas", Width = Dim.Fill(), Height = Dim.Fill())
+    let left, right = FilePanel.createPair ()
+    window.Add(left, right) |> ignore
+    window
