@@ -47,3 +47,28 @@ let read (fs: IFileSystem) (path: string) : Result<Entry list, ListingError> =
             Ok(Seq.append directories files |> List.ofSeq)
     with ex ->
         Error(mapException path ex)
+
+let order (entries: Entry list) =
+    entries
+    |> List.sortWith (fun a b ->
+        match a.Kind, b.Kind with
+        | Directory, File -> -1
+        | File, Directory -> 1
+        | _ -> String.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase))
+
+let private parentEntry (fs: IFileSystem) path =
+    match fs.DirectoryInfo.New(path).Parent with
+    | null -> None
+    | parent ->
+        Some
+            { Name = ".."
+              Kind = Directory
+              Size = None
+              Modified = parent.LastWriteTime }
+
+let listForDisplay (fs: IFileSystem) (path: string) =
+    read fs path
+    |> Result.map (fun entries ->
+        match parentEntry fs path with
+        | Some parent -> parent :: order entries
+        | None -> order entries)

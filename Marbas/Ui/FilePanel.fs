@@ -31,7 +31,7 @@ let listView (panel: View) =
         | _ -> None)
 
 let load (fs: IFileSystem) (path: string) (panel: FrameView) =
-    DirectoryListing.read fs path
+    DirectoryListing.listForDisplay fs path
     |> Result.map (fun entries ->
         panel.Title <- path
         let names = entries |> List.map (fun e -> e.Name)

@@ -27,6 +27,12 @@ let ``both panels list the startup directory`` () =
         Assert.Contains("readme.txt", names)
 
 [<Fact>]
+let ``panel listing starts with the parent entry for non-root paths`` () =
+    use window = MainWindow.create (mockFs ()) @"C:\start" ignore
+
+    Assert.Equal("..", items (panel FilePanel.LeftId window) |> List.head)
+
+[<Fact>]
 let ``panel titles show the current path`` () =
     use window = MainWindow.create (mockFs ()) @"C:\start" ignore
 
