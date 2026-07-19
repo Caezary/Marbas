@@ -11,6 +11,7 @@
     <Compile Include="MainWindowTests.fs" />
     <Compile Include="PanelFocusTests.fs" />
     <Compile Include="FunctionKeyBarTests.fs" />
+    <Compile Include="FilePanelContentTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
