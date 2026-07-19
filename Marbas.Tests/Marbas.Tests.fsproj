@@ -6,7 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="TestHelpers.fs" />
     <Compile Include="MainWindowTests.fs" />
+    <Compile Include="PanelFocusTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

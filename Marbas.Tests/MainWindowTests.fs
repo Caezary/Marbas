@@ -6,9 +6,7 @@ open Terminal.Gui.App
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Marbas.Ui
-
-let private panel id (window: Terminal.Gui.Views.Window) =
-    window.SubViews |> Seq.find (fun v -> v.Id = id)
+open Marbas.Tests.TestHelpers
 
 [<Fact>]
 let ``main window has application title`` () =
