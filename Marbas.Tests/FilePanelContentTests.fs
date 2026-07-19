@@ -1,5 +1,6 @@
 module Marbas.Tests.FilePanelContentTests
 
+open System.Drawing
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
@@ -31,6 +32,21 @@ let ``panel listing starts with the parent entry for non-root paths`` () =
     use window = MainWindow.create (mockFs ()) @"C:\start" ignore
 
     Assert.Equal("..", items (panel FilePanel.LeftId window) |> List.head)
+
+[<Fact>]
+let ``after layout rows are formatted into aligned columns`` () =
+    use window = MainWindow.create (mockFs ()) @"C:\start" ignore
+    window.BeginInit()
+    window.EndInit()
+    window.Layout(Size(80, 24)) |> ignore
+
+    let panelView = panel FilePanel.LeftId window
+    let list = FilePanel.listView panelView
+    let rows = items panelView
+
+    Assert.NotEmpty rows
+    Assert.All(rows, fun row -> Assert.Equal(list.Viewport.Width, row.Length))
+    Assert.Contains(rows, fun (row: string) -> row.StartsWith "docs" && row.Contains "<DIR>")
 
 [<Fact>]
 let ``panel titles show the current path`` () =

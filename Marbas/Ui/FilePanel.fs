@@ -34,8 +34,21 @@ let load (fs: IFileSystem) (path: string) (panel: FrameView) =
     DirectoryListing.listForDisplay fs path
     |> Result.map (fun entries ->
         panel.Title <- path
-        let names = entries |> List.map (fun e -> e.Name)
-        (listView panel).SetSource(ObservableCollection names))
+        let list = listView panel
+
+        let refresh () =
+            let width = list.Viewport.Width
+
+            let rows =
+                if width > 0 then
+                    entries |> List.map (EntryFormat.format width)
+                else
+                    entries |> List.map (fun e -> e.Name)
+
+            list.SetSource(ObservableCollection rows)
+
+        refresh ()
+        list.FrameChanged.Add(fun _ -> refresh ()))
 
 let createPair () =
     let left =
