@@ -6,6 +6,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="Ui\FilePanel.fs" />
         <Compile Include="Ui\FunctionKeyBar.fs" />
         <Compile Include="Ui\MainWindow.fs" />
@@ -13,6 +14,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="System.IO.Abstractions" Version="22.2.0" />
       <PackageReference Include="Terminal.Gui" Version="2.4.17" />
     </ItemGroup>
 
