@@ -15,3 +15,7 @@ Planned core features:
 - Keyboard-driven navigation (arrows, Tab to switch panels, Enter to open)
 - Basic file operations: copy, move, rename, delete, create directory
 - Cross-platform: Windows, Linux, macOS (.NET)
+
+## Documentation
+
+- [Implementation plan](_documentation/PLAN.md)
