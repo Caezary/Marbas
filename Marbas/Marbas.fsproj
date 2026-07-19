@@ -7,6 +7,7 @@
 
     <ItemGroup>
         <Compile Include="FileSystem\DirectoryListing.fs" />
+        <Compile Include="State\AppState.fs" />
         <Compile Include="Ui\EntryFormat.fs" />
         <Compile Include="Ui\FilePanel.fs" />
         <Compile Include="Ui\FunctionKeyBar.fs" />

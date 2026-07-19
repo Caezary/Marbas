@@ -1,11 +1,10 @@
 module Marbas.Ui.FilePanel
 
 open System.Collections.ObjectModel
-open System.IO.Abstractions
 open Terminal.Gui.Drawing
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
-open Marbas.FileSystem
+open Marbas.State
 
 [<Literal>]
 let LeftId = "leftPanel"
@@ -30,25 +29,18 @@ let listView (panel: View) =
         | :? ListView as list -> Some list
         | _ -> None)
 
-let load (fs: IFileSystem) (path: string) (panel: FrameView) =
-    DirectoryListing.listForDisplay fs path
-    |> Result.map (fun entries ->
-        panel.Title <- path
-        let list = listView panel
+let render (state: AppState.PanelState) (panel: FrameView) =
+    panel.Title <- state.Path
+    let list = listView panel
+    let width = list.Viewport.Width
 
-        let refresh () =
-            let width = list.Viewport.Width
+    let rows =
+        if width > 0 then
+            state.Entries |> List.map (EntryFormat.format width)
+        else
+            state.Entries |> List.map (fun e -> e.Name)
 
-            let rows =
-                if width > 0 then
-                    entries |> List.map (EntryFormat.format width)
-                else
-                    entries |> List.map (fun e -> e.Name)
-
-            list.SetSource(ObservableCollection rows)
-
-        refresh ()
-        list.FrameChanged.Add(fun _ -> refresh ()))
+    list.SetSource(ObservableCollection rows)
 
 let createPair () =
     let left =
