@@ -10,18 +10,18 @@ open Marbas.Tests.TestHelpers
 
 [<Fact>]
 let ``main window has application title`` () =
-    use window = MainWindow.create ()
+    use window = MainWindow.create ignore
     Assert.Equal("Marbas", window.Title)
 
 [<Fact>]
 let ``main window fills the whole screen`` () =
-    use window = MainWindow.create ()
+    use window = MainWindow.create ignore
     Assert.Equal(Dim.Fill(), window.Width)
     Assert.Equal(Dim.Fill(), window.Height)
 
 [<Fact>]
 let ``main window contains left and right panels`` () =
-    use window = MainWindow.create ()
+    use window = MainWindow.create ignore
     Assert.NotNull(panel FilePanel.LeftId window)
     Assert.NotNull(panel FilePanel.RightId window)
 
@@ -29,15 +29,16 @@ let ``main window contains left and right panels`` () =
 [<InlineData(80, 24)>]
 [<InlineData(120, 30)>]
 let ``panels split the window in half at any size`` (width: int) (height: int) =
-    use window = MainWindow.create ()
+    use window = MainWindow.create ignore
     window.Layout(Size(width, height)) |> ignore
     let content = window.Viewport
     let left = (panel FilePanel.LeftId window).Frame
     let right = (panel FilePanel.RightId window).Frame
+    let panelHeight = content.Height - 1
     Assert.Equal(content.Width / 2, left.Width)
     Assert.Equal(content.Width - left.Width, right.Width)
-    Assert.Equal(content.Height, left.Height)
-    Assert.Equal(content.Height, right.Height)
+    Assert.Equal(panelHeight, left.Height)
+    Assert.Equal(panelHeight, right.Height)
     Assert.Equal(left.X + left.Width, right.X)
 
 [<Fact>]

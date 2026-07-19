@@ -9,6 +9,7 @@
     <Compile Include="TestHelpers.fs" />
     <Compile Include="MainWindowTests.fs" />
     <Compile Include="PanelFocusTests.fs" />
+    <Compile Include="FunctionKeyBarTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

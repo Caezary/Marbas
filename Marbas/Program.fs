@@ -7,6 +7,6 @@ open Marbas.Ui
 let main _ =
     MainWindow.configureQuitKey ()
     use app = Application.Create().Init()
-    use window = MainWindow.create ()
+    use window = MainWindow.create (fun () -> app.RequestStop())
     app.Run window |> ignore
     0

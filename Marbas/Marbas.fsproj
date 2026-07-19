@@ -7,6 +7,7 @@
 
     <ItemGroup>
         <Compile Include="Ui\FilePanel.fs" />
+        <Compile Include="Ui\FunctionKeyBar.fs" />
         <Compile Include="Ui\MainWindow.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>

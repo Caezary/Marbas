@@ -8,10 +8,11 @@ open Terminal.Gui.Views
 let quitKey = Key.Q.WithCtrl
 
 let configureQuitKey () =
-    Application.SetDefaultKeyBinding(Command.Quit, Bind.All quitKey)
+    Application.SetDefaultKeyBinding(Command.Quit, Bind.All(quitKey, Key.F10))
 
-let create () =
+let create onQuit =
     let window = new Window(Title = "Marbas", Width = Dim.Fill(), Height = Dim.Fill())
     let left, right = FilePanel.createPair ()
-    window.Add(left, right) |> ignore
+    let bar = FunctionKeyBar.create onQuit
+    window.Add(left, right, bar) |> ignore
     window

@@ -22,9 +22,9 @@ let private focusable (panel: FrameView) =
 
 let createPair () =
     let left =
-        new FrameView(Id = LeftId, Width = Dim.Percent 50, Height = Dim.Fill())
+        new FrameView(Id = LeftId, Width = Dim.Percent 50, Height = Dim.Fill 1)
 
     let right =
-        new FrameView(Id = RightId, X = Pos.Right left, Width = Dim.Fill(), Height = Dim.Fill())
+        new FrameView(Id = RightId, X = Pos.Right left, Width = Dim.Fill(), Height = Dim.Fill 1)
 
     focusable left, focusable right
