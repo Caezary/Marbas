@@ -13,6 +13,9 @@ be referenced in commits (e.g. `P2.3: sort directories first`).
   UI code only wires that logic to Terminal.Gui views.
 - **Keyboard first** — every feature must be reachable without a mouse,
   with Norton Commander key bindings as the reference.
+- **Test first** — wherever feasible, implementation starts with a failing
+  test (unit tests over the UI-free modules, in-memory file system via
+  `System.IO.Abstractions`). Tests are the standing proof the app works.
 
 ## Phase 1 — Application skeleton
 
