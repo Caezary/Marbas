@@ -11,7 +11,7 @@ let quitKey = Key.Q.WithCtrl
 let configureQuitKey () =
     Application.SetDefaultKeyBinding(Command.Quit, Bind.All(quitKey, Key.F10))
 
-let create fs startPath onQuit =
+let create fs startPath onQuit reportError =
     let window = new Window(Title = "Marbas", Width = Dim.Fill(), Height = Dim.Fill())
     let left, right = FilePanel.createPair ()
     let bar = FunctionKeyBar.create onQuit
@@ -25,10 +25,11 @@ let create fs startPath onQuit =
 
     let store = Store.Store(AppState.create startPath, render)
 
-    let ignoreError _ = ()
+    let report error =
+        reportError (ListingErrorMessage.describe error)
 
     for side, _ in views do
-        store.DispatchResult ignoreError (AppState.loadPanel fs side startPath)
+        store.DispatchResult report (AppState.loadPanel fs side startPath)
 
     for side, view in views do
         let list = FilePanel.listView view
@@ -42,7 +43,7 @@ let create fs startPath onQuit =
         list.Accepting.Add(fun args ->
             args.Handled <- true
 
-            store.DispatchResult ignoreError (fun state ->
+            store.DispatchResult report (fun state ->
                 state
                 |> AppState.activate side
                 |> AppState.setCursor side (list.SelectedItem.GetValueOrDefault 0)

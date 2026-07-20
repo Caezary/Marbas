@@ -11,7 +11,7 @@ let panel id (window: Window) =
 let createWindowWith onQuit =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\start"
-    MainWindow.create (fs :> IFileSystem) @"C:\start" onQuit
+    MainWindow.create (fs :> IFileSystem) @"C:\start" onQuit ignore
 
 let createWindow () = createWindowWith ignore
 

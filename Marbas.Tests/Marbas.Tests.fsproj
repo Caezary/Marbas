@@ -11,11 +11,13 @@
     <Compile Include="EntryFormatTests.fs" />
     <Compile Include="AppStateTests.fs" />
     <Compile Include="NavigationTests.fs" />
+    <Compile Include="ListingErrorMessageTests.fs" />
     <Compile Include="TestHelpers.fs" />
     <Compile Include="MainWindowTests.fs" />
     <Compile Include="PanelFocusTests.fs" />
     <Compile Include="FunctionKeyBarTests.fs" />
     <Compile Include="FilePanelContentTests.fs" />
+    <Compile Include="NavigationErrorTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
