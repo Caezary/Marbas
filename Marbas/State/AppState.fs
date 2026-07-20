@@ -105,6 +105,18 @@ let advanceCursor side state =
 let toggleSelectionAndAdvance side state =
     state |> toggleSelection side |> advanceCursor side
 
+let private matching pattern panel =
+    panel.Entries
+    |> List.filter (fun e -> selectable e && NamePattern.matches pattern e.Name)
+    |> List.map _.Name
+    |> Set.ofList
+
+let selectMatching side pattern state =
+    updatePanel side (fun p -> { p with Selected = Set.union p.Selected (matching pattern p) }) state
+
+let deselectMatching side pattern state =
+    updatePanel side (fun p -> { p with Selected = Set.difference p.Selected (matching pattern p) }) state
+
 let private surviving entries selected =
     entries |> List.map _.Name |> Set.ofList |> Set.intersect selected
 

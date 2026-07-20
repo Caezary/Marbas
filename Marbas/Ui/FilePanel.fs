@@ -20,7 +20,12 @@ let private focusable (panel: FrameView) =
     panel.HasFocusChanged.Add(fun _ ->
         panel.BorderStyle <- if panel.HasFocus then LineStyle.Double else LineStyle.Single)
 
-    panel.Add(new ListView(Width = Dim.Fill(), Height = Dim.Fill(), MarkMultiple = true))
+    let list =
+        new ListView(Width = Dim.Fill(), Height = Dim.Fill 1, MarkMultiple = true)
+
+    list.KeystrokeNavigator <- null
+
+    panel.Add(list, new Label(Y = Pos.AnchorEnd 1, Width = Dim.Fill(), Height = 1))
     |> ignore
 
     panel
@@ -29,6 +34,12 @@ let listView (panel: View) =
     panel.SubViews
     |> Seq.pick (function
         | :? ListView as list -> Some list
+        | _ -> None)
+
+let summary (panel: View) =
+    panel.SubViews
+    |> Seq.pick (function
+        | :? Label as label -> Some label
         | _ -> None)
 
 let render (state: AppState.PanelState) (panel: FrameView) =
@@ -49,6 +60,8 @@ let render (state: AppState.PanelState) (panel: FrameView) =
 
     if not rows.IsEmpty then
         list.SelectedItem <- min state.Cursor (rows.Length - 1)
+
+    (summary panel).Text <- SelectionSummary.describe (AppState.selectedEntries state)
 
 let createPair () =
     let left =

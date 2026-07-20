@@ -4,14 +4,14 @@ Status as of 2026-07-20. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–3 are complete and Phase 4 is under way** (15 of 29 tasks). Marbas
-runs as a full-screen two-panel file browser: both panels list a real
-directory, the keyboard moves between and inside them, entries can be marked
-for later operations, a status line describes the entry under the cursor, and
+**Phases 1–4 are complete** (16 of 29 tasks). Marbas runs as a full-screen
+two-panel file browser: both panels list a real directory, the keyboard moves
+between and inside them, entries can be marked one by one or by wildcard for
+later operations, a status line describes the entry under the cursor, and
 failures surface as dialogs instead of crashes. Nothing modifies the file
 system yet — that is Phase 5.
 
-**92 tests pass**, covering every logic module directly and the UI behaviour by
+**118 tests pass**, covering every logic module directly and the UI behaviour by
 driving real Terminal.Gui views over an in-memory file system.
 
 | Phase | Tasks | State |
@@ -19,8 +19,8 @@ driving real Terminal.Gui views over an in-memory file system.
 | 1 — Application skeleton | P1.1–P1.4 | done |
 | 2 — Directory listing | P2.1–P2.4 | done |
 | 3 — Navigation | P3.1–P3.5 | done |
-| 4 — Selection | P4.1–P4.2 done, P4.3 next | in progress |
-| 5 — File operations | P5.1–P5.6 | not started |
+| 4 — Selection | P4.1–P4.3 | done |
+| 5 — File operations | P5.1–P5.6 | next |
 | 6 — Viewing files | P6.1–P6.2 | not started |
 | 7 — Polish & configuration | P7.1–P7.4 | not started |
 | 8 — Quality & release | P8.1–P8.3 | not started |
@@ -43,6 +43,10 @@ driving real Terminal.Gui views over an in-memory file system.
   never be marked, and each panel keeps its own marks — they survive `Ctrl+R`
   (minus whatever disappeared) and are dropped when the panel changes
   directory.
+- `+` and `-` ask for a wildcard pattern and mark or unmark everything it
+  matches, so `*.fs` is one step. Matching ignores case and never touches `..`.
+- The bottom row of each panel summarises its marks — how many entries and how
+  many bytes they add up to — and stays empty while nothing is marked.
 - A status line above the function-key bar describes the entry under the cursor
   of the active panel — untruncated name, exact size in bytes (`<DIR>` for
   directories) and modification date. It follows both cursor movement and
@@ -58,17 +62,20 @@ Marbas/
   FileSystem/
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             mounted drives
+    NamePattern.fs        wildcard matching for `+` / `-`
   State/
     AppState.fs           immutable panel/app state and its transitions
     Store.fs              the single mutable cell + dispatch
   Ui/
     EntrySize.fs          size column text, byte format injected per view
     EntryFormat.fs        one entry -> one fixed-width row
+    SelectionSummary.fs   marked entries -> panel summary text
     CursorInfo.fs         cursor entry -> status line text
     StatusLine.fs         the status line view
     ListingErrorMessage.fs  ListingError -> user-facing text
     FilePanel.fs          panel views, render state -> view
     FunctionKeyBar.fs     bottom shortcut bar
+    PatternDialog.fs      the `+` / `-` pattern prompt
     MainWindow.fs         composition: views, store, key handling
   Program.fs              real file system and real dialogs
 ```
@@ -92,9 +99,13 @@ dispatch. Handlers send transitions, they never mutate. See PLAN.md,
 *State handling*.
 
 **The outside world is injected.** `MainWindow.create` takes a `Dependencies`
-record (file system, start path, quit callback, error reporter, drive chooser).
-`Program.fs` is the only place that knows about real dialogs, which keeps
-dialog-triggering behaviour testable.
+record (file system, start path, quit callback, error reporter, drive chooser,
+pattern prompt).
+`Program.fs` is the only place that opens real dialogs, which keeps
+dialog-triggering behaviour testable. The dialogs themselves are built in `Ui`
+modules (`PatternDialog`) so their layout can be tested too — a field placed
+outside the dialog's content area is invisible yet still typable, which no
+behaviour test would notice.
 
 **No code comments.** Intent lives in names, tests and these documents.
 
@@ -133,10 +144,13 @@ other.
 - Keys do not bubble from a nested view to its parent, so handlers live on the
   focused `ListView`.
 - `View.AddCommand` is `protected`; custom shortcuts use `KeyDown` handlers.
+- `ListView` type-ahead search swallowed `+` and `-` before any handler saw
+  them; the panel disables it with `KeystrokeNavigator <- null`, which also
+  matches Norton Commander, where letters never move the cursor.
 
 ## Next up
 
-**P4.3** — count and total size of the marked entries shown in the panel, plus
-`+`/`-` selecting and deselecting by wildcard pattern. `AppState.selectedEntries`
-already returns the marked entries in listing order, which is what the summary
-and the Phase 5 operations will consume.
+**P5.1** — the UI-free operations module (copy / move / rename / delete /
+mkdir) over `System.IO.Abstractions`, returning per-item results.
+`AppState.selectedEntries` is its input: the marked entries in listing order,
+or the cursor entry when nothing is marked.

@@ -9,7 +9,9 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="DirectoryListingTests.fs" />
     <Compile Include="DirectoryOrderingTests.fs" />
+    <Compile Include="NamePatternTests.fs" />
     <Compile Include="EntrySizeTests.fs" />
+    <Compile Include="SelectionSummaryTests.fs" />
     <Compile Include="EntryFormatTests.fs" />
     <Compile Include="CursorInfoTests.fs" />
     <Compile Include="AppStateTests.fs" />
@@ -26,6 +28,8 @@
     <Compile Include="DriveSelectionTests.fs" />
     <Compile Include="StatusLineTests.fs" />
     <Compile Include="SelectionTests.fs" />
+    <Compile Include="SelectionPatternTests.fs" />
+    <Compile Include="PatternDialogTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

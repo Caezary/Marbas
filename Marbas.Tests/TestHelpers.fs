@@ -18,7 +18,8 @@ let dependencies (fs: IFileSystem) startPath : MainWindow.Dependencies =
       StartPath = startPath
       OnQuit = ignore
       ReportError = ignore
-      ChooseDrive = fun _ -> None }
+      ChooseDrive = fun _ -> None
+      AskPattern = fun _ -> None }
 
 let createWindowWith onQuit =
     let fs = MockFileSystem()

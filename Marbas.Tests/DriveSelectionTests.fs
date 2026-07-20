@@ -15,11 +15,9 @@ let private twoDriveFs () =
 let private windowWith (fs: MockFileSystem) chooseDrive reportError =
     let window =
         MainWindow.create
-            { FileSystem = fs
-              StartPath = @"C:\start"
-              OnQuit = ignore
-              ReportError = reportError
-              ChooseDrive = chooseDrive }
+            { dependencies fs @"C:\start" with
+                ReportError = reportError
+                ChooseDrive = chooseDrive }
 
     window.BeginInit()
     window.EndInit()

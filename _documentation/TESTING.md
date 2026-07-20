@@ -31,6 +31,20 @@ Tab → `NextTabStop` and `Command.Quit` are not exercised by
 (`Application.GetDefaultKey`) and the resulting behaviour (`AdvanceFocus`)
 separately.
 
+**A `Dialog` is much smaller inside than out.** Border, button row and padding
+eat six rows, so `Height = 7` leaves a one-row content area and anything placed
+below it is clipped — while still taking focus and keys, which looks like an
+invisible but typable field. Dialogs are built in `Ui` modules, not inline in
+`Program.fs`, so a test can lay one out and assert its views fit inside
+`dialog.Viewport`.
+
+**`ListView` type-ahead swallows printable keys.** `ListView.OnKeyDown` runs
+before the `KeyDown` event and hands printable characters to its
+`KeystrokeNavigator`, which reports a match even when nothing matches — so
+`+` and `-` never reached Marbas until the panel set
+`KeystrokeNavigator <- null`. The symptom is `NewKeyDownEvent` returning `true`
+with `key.Handled` still `false`.
+
 **StatusBar shortcuts swallow their keys.** A `Shortcut` marks its key handled
 even with a `null` action, which is why every shortcut that should do
 something gets a real callback.

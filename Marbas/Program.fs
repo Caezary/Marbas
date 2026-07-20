@@ -2,6 +2,7 @@ module Marbas.Program
 
 open System.IO.Abstractions
 open Terminal.Gui.App
+open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Ui
 
@@ -24,13 +25,19 @@ let main _ =
             | index when index.HasValue && index.Value < drives.Length -> Some drives[index.Value]
             | _ -> None
 
+    let askPattern title =
+        use dialog = PatternDialog.create title
+        app.Run dialog |> ignore
+        PatternDialog.pattern dialog
+
     use window =
         MainWindow.create
             { FileSystem = fs
               StartPath = fs.Directory.GetCurrentDirectory()
               OnQuit = fun () -> app.RequestStop()
               ReportError = reportError
-              ChooseDrive = chooseDrive }
+              ChooseDrive = chooseDrive
+              AskPattern = askPattern }
 
     app.Run window |> ignore
     0

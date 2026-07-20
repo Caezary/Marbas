@@ -13,13 +13,24 @@ type Dependencies =
       StartPath: string
       OnQuit: unit -> unit
       ReportError: string -> unit
-      ChooseDrive: string list -> string option }
+      ChooseDrive: string list -> string option
+      AskPattern: string -> string option }
 
 let quitKey = Key.Q.WithCtrl
 
 let refreshKey = Key.R.WithCtrl
 
 let selectionKeys = [ Key.InsertChar; Key.Space ]
+
+let selectPatternKey = Key '+'
+
+let deselectPatternKey = Key '-'
+
+[<Literal>]
+let SelectPrompt = "Select"
+
+[<Literal>]
+let DeselectPrompt = "Deselect"
 
 let leftDriveKey = Key.F1.WithAlt
 
@@ -100,6 +111,20 @@ let create (deps: Dependencies) =
             elif selectionKeys |> List.contains key then
                 key.Handled <- true
                 store.Dispatch(atCursor (AppState.toggleSelectionAndAdvance side))
+            elif key = selectPatternKey || key = deselectPatternKey then
+                key.Handled <- true
+                let selecting = key = selectPatternKey
+
+                match deps.AskPattern(if selecting then SelectPrompt else DeselectPrompt) with
+                | Some pattern ->
+                    let transition =
+                        if selecting then
+                            AppState.selectMatching side pattern
+                        else
+                            AppState.deselectMatching side pattern
+
+                    store.Dispatch(atCursor transition)
+                | None -> ()
             else
                 match driveKeySide key with
                 | Some target ->
