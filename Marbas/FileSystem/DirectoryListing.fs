@@ -13,6 +13,9 @@ type Entry =
       Size: int64 option
       Modified: DateTime }
 
+[<Literal>]
+let ParentName = ".."
+
 type ListingError =
     | DirectoryNotFound of path: string
     | AccessDenied of path: string
@@ -61,7 +64,7 @@ let private parentEntry (fs: IFileSystem) path =
     | null -> None
     | parent ->
         Some
-            { Name = ".."
+            { Name = ParentName
               Kind = Directory
               Size = None
               Modified = parent.LastWriteTime }

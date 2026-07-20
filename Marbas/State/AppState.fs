@@ -52,7 +52,6 @@ let toggleActive state =
 let setCursor side index state =
     updatePanel side (fun p -> { p with Cursor = index }) state
 
-/// Loads `path` into `side`, placing the cursor on `cursorOn` when that entry is present.
 let loadPanelFocusing (fs: IFileSystem) side path cursorOn state =
     DirectoryListing.listForDisplay fs path
     |> Result.map (fun entries ->
@@ -72,20 +71,23 @@ let loadPanelFocusing (fs: IFileSystem) side path cursorOn state =
 let loadPanel fs side path state =
     loadPanelFocusing fs side path None state
 
-/// Navigates the active panel into the directory under its cursor.
-/// Entering ".." moves up and puts the cursor on the directory just left.
+let private navigateUp (fs: IFileSystem) side (from: string) state =
+    let current = fs.DirectoryInfo.New from
+
+    match current.Parent with
+    | null -> Ok state
+    | parent -> loadPanelFocusing fs side parent.FullName (Some current.Name) state
+
+let private navigateInto (fs: IFileSystem) side parentPath name state =
+    loadPanelFocusing fs side (fs.Path.Combine(parentPath, name)) None state
+
 let enter (fs: IFileSystem) state =
     let panel = activePanel state
 
     match panel.Entries |> List.tryItem panel.Cursor with
     | Some entry when entry.Kind = Directory ->
-        let current = fs.DirectoryInfo.New panel.Path
-
-        if entry.Name = ".." then
-            match current.Parent with
-            | null -> Ok state
-            | parent -> loadPanelFocusing fs state.Active parent.FullName (Some current.Name) state
+        if entry.Name = DirectoryListing.ParentName then
+            navigateUp fs state.Active panel.Path state
         else
-            let target = fs.Path.Combine(panel.Path, entry.Name)
-            loadPanelFocusing fs state.Active target None state
+            navigateInto fs state.Active panel.Path entry.Name state
     | _ -> Ok state

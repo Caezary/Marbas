@@ -25,7 +25,6 @@ let create fs startPath onQuit =
 
     let store = Store.Store(AppState.create startPath, render)
 
-    // Listing errors are ignored for now; P3.3 turns them into a message box.
     let ignoreError _ = ()
 
     for side, _ in views do
