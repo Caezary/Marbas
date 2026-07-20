@@ -47,9 +47,9 @@ let render (state: AppState.PanelState) (panel: FrameView) =
 
 let createPair () =
     let left =
-        new FrameView(Id = LeftId, Width = Dim.Percent 50, Height = Dim.Fill 1)
+        new FrameView(Id = LeftId, Width = Dim.Percent 50, Height = Dim.Fill 2)
 
     let right =
-        new FrameView(Id = RightId, X = Pos.Right left, Width = Dim.Fill(), Height = Dim.Fill 1)
+        new FrameView(Id = RightId, X = Pos.Right left, Width = Dim.Fill(), Height = Dim.Fill 2)
 
     focusable left, focusable right

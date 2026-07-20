@@ -4,12 +4,13 @@ Status as of 2026-07-20. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–3 are complete** (13 of 29 tasks). Marbas runs as a full-screen
-two-panel file browser: both panels list a real directory, the keyboard moves
-between and inside them, and failures surface as dialogs instead of crashes.
+**Phases 1–3 are complete and Phase 4 has started** (14 of 29 tasks). Marbas
+runs as a full-screen two-panel file browser: both panels list a real
+directory, the keyboard moves between and inside them, a status line describes
+the entry under the cursor, and failures surface as dialogs instead of crashes.
 Nothing modifies the file system yet — that is Phase 5.
 
-**66 tests pass**, covering every logic module directly and the UI behaviour by
+**79 tests pass**, covering every logic module directly and the UI behaviour by
 driving real Terminal.Gui views over an in-memory file system.
 
 | Phase | Tasks | State |
@@ -17,7 +18,7 @@ driving real Terminal.Gui views over an in-memory file system.
 | 1 — Application skeleton | P1.1–P1.4 | done |
 | 2 — Directory listing | P2.1–P2.4 | done |
 | 3 — Navigation | P3.1–P3.5 | done |
-| 4 — Selection | P4.1–P4.3 | next |
+| 4 — Selection | P4.1 done, P4.2–P4.3 next | in progress |
 | 5 — File operations | P5.1–P5.6 | not started |
 | 6 — Viewing files | P6.1–P6.2 | not started |
 | 7 — Polish & configuration | P7.1–P7.4 | not started |
@@ -36,6 +37,10 @@ driving real Terminal.Gui views over an in-memory file system.
 - `Ctrl+R` reloads the active panel, keeping the cursor on the same entry even
   when its position changed.
 - `Alt+F1` / `Alt+F2` open a drive chooser for the left / right panel.
+- A status line above the function-key bar describes the entry under the cursor
+  of the active panel — untruncated name, exact size in bytes (`<DIR>` for
+  directories) and modification date. It follows both cursor movement and
+  panel switching.
 - `Ctrl+Q` or `F10` quits. The bottom bar lists the Norton-style function keys
   (`F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`); only `F10` is
   wired up so far.
@@ -51,7 +56,10 @@ Marbas/
     AppState.fs           immutable panel/app state and its transitions
     Store.fs              the single mutable cell + dispatch
   Ui/
+    EntrySize.fs          size column text, byte format injected per view
     EntryFormat.fs        one entry -> one fixed-width row
+    CursorInfo.fs         cursor entry -> status line text
+    StatusLine.fs         the status line view
     ListingErrorMessage.fs  ListingError -> user-facing text
     FilePanel.fs          panel views, render state -> view
     FunctionKeyBar.fs     bottom shortcut bar
@@ -84,6 +92,21 @@ dialog-triggering behaviour testable.
 
 **No code comments.** Intent lives in names, tests and these documents.
 
+**One rule for the size column, formatting per view.** `EntrySize.describe`
+holds the shared decision — directories get `<DIR>`, files get their size, an
+unknown size gets nothing — and takes the byte-to-text function as an argument.
+The panel row passes `EntrySize.plain` (bare digits, to keep columns narrow),
+the status line passes a grouped format with a `bytes` suffix. A new view, or a
+future switch to `KB`/`MB`, only supplies another function.
+
+**The cursor lives in the state, and rendering is guarded.** The panel's
+`ListView.ValueChanged` dispatches `AppState.setCursor`, so state always knows
+where the cursor is (P4.2 will build the selection on top of it). Rendering
+also writes `ListView.SelectedItem`, which raises the same event, so
+`MainWindow` sets a `rendering` flag while it renders and the handler ignores
+events raised inside it. Without the flag, render and handler bounce off each
+other.
+
 ## Traps already hit (details in [TESTING.md](TESTING.md))
 
 - `StatusBar` shortcuts swallow their key even with a `null` action — `F10`
@@ -97,5 +120,8 @@ dialog-triggering behaviour testable.
 
 ## Next up
 
-**P4.1** — a status line showing the entry under the cursor, followed by
-multi-selection (`Insert`/`Space`) and wildcard selection in P4.2–P4.3.
+**P4.2** — multi-selection with `Insert`/`Space`, highlighted marks and a
+never-selectable `..`, then wildcard selection with `+`/`-` in P4.3.
+Terminal.Gui's `ListView` already offers marking (`MarkMultiple`, `ShowMarks`,
+`GetAllMarkedItems`), which is worth evaluating against keeping the selection
+in `AppState`.

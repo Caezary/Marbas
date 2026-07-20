@@ -34,7 +34,7 @@ let ``panels split the window in half at any size`` (width: int) (height: int) =
     let content = window.Viewport
     let left = (panel FilePanel.LeftId window).Frame
     let right = (panel FilePanel.RightId window).Frame
-    let panelHeight = content.Height - 1
+    let panelHeight = content.Height - 2
     Assert.Equal(content.Width / 2, left.Width)
     Assert.Equal(content.Width - left.Width, right.Width)
     Assert.Equal(panelHeight, left.Height)

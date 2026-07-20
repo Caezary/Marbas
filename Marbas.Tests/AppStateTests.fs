@@ -47,6 +47,25 @@ let ``loading a panel fills its entries and leaves the other side untouched`` ()
     | Error err -> failwith $"unexpected error %A{err}"
 
 [<Fact>]
+let ``the cursor entry is the one at the cursor index`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory @"C:\start\docs"
+    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+
+    match create @"C:\start" |> loadPanel fs Left @"C:\start" with
+    | Ok state ->
+        Assert.Equal("..", (cursorEntry state.Left |> Option.get).Name)
+
+        Assert.Equal(
+            "readme.txt",
+            (state |> setCursor Left 2 |> activePanel |> cursorEntry |> Option.get).Name)
+    | Error err -> failwith $"unexpected error %A{err}"
+
+[<Fact>]
+let ``an empty panel has no cursor entry`` () =
+    Assert.Equal(None, cursorEntry (create @"C:\start").Left)
+
+[<Fact>]
 let ``loading a missing directory returns the error and keeps state intact`` () =
     let fs = MockFileSystem()
 

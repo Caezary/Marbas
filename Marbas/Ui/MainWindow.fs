@@ -30,14 +30,22 @@ let create (deps: Dependencies) =
     let fs = deps.FileSystem
     let window = new Window(Title = "Marbas", Width = Dim.Fill(), Height = Dim.Fill())
     let left, right = FilePanel.createPair ()
+    let statusLine = StatusLine.create ()
     let bar = FunctionKeyBar.create deps.OnQuit
-    window.Add(left, right, bar) |> ignore
+    window.Add(left, right, statusLine, bar) |> ignore
 
     let views = [ AppState.Left, left; AppState.Right, right ]
 
+    let mutable rendering = false
+
     let render (state: AppState.AppState) =
+        rendering <- true
+
         for side, view in views do
             FilePanel.render (AppState.panel side state) view
+
+        statusLine |> StatusLine.render (AppState.cursorEntry (AppState.activePanel state))
+        rendering <- false
 
     let store = Store.Store(AppState.create deps.StartPath, render)
 
@@ -61,6 +69,10 @@ let create (deps: Dependencies) =
         let list = FilePanel.listView view
 
         list.FrameChanged.Add(fun _ -> store.Refresh())
+
+        list.ValueChanged.Add(fun args ->
+            if not rendering then
+                store.Dispatch(AppState.setCursor side (args.NewValue.GetValueOrDefault 0)))
 
         view.HasFocusChanged.Add(fun _ ->
             if view.HasFocus then

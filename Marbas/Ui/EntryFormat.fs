@@ -18,10 +18,10 @@ let private fitName width (name: string) =
     else
         name.Substring(0, width - 1) + "…"
 
-let private sizeText entry =
-    match entry.Kind with
-    | Directory -> "<DIR>"
-    | File -> entry.Size |> Option.map string |> Option.defaultValue ""
+let private sizeText = EntrySize.describe EntrySize.plain
+
+let dateText entry =
+    entry.Modified.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
 
 let format (width: int) (entry: Entry) =
     let nameWidth = width - SizeWidth - DateWidth - 2
@@ -29,7 +29,4 @@ let format (width: int) (entry: Entry) =
     if nameWidth < MinNameWidth then
         fitName (max width 2) entry.Name
     else
-        let date =
-            entry.Modified.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
-
-        $"{fitName nameWidth entry.Name} {(sizeText entry).PadLeft SizeWidth} {date}"
+        $"{fitName nameWidth entry.Name} {(sizeText entry).PadLeft SizeWidth} {dateText entry}"
