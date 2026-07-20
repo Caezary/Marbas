@@ -93,7 +93,7 @@ let ``Ctrl+R reloads the focused panel`` () =
     let fs = mockFs ()
 
     use window =
-        MainWindow.create (fs :> IFileSystem) @"C:\start" ignore ignore
+        MainWindow.create (dependencies fs @"C:\start")
 
     window.BeginInit()
     window.EndInit()
@@ -109,7 +109,7 @@ let ``Ctrl+R reloads the focused panel`` () =
 
     Assert.DoesNotContain(rowsBefore, fun (row: string) -> row.StartsWith "added.txt")
 
-    list.NewKeyDownEvent MainWindow.refreshKey |> ignore
+    press list MainWindow.refreshKey
 
     let rowsAfter =
         let source = list.Source.ToList()

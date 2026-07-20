@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="AssemblyInfo.fs" />
     <Compile Include="DirectoryListingTests.fs" />
     <Compile Include="DirectoryOrderingTests.fs" />
     <Compile Include="EntryFormatTests.fs" />
@@ -19,6 +20,8 @@
     <Compile Include="FilePanelContentTests.fs" />
     <Compile Include="NavigationErrorTests.fs" />
     <Compile Include="RefreshTests.fs" />
+    <Compile Include="DrivesTests.fs" />
+    <Compile Include="DriveSelectionTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

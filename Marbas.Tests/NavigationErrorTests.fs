@@ -45,7 +45,9 @@ let ``UI reports listing failures and stays in the current directory`` () =
     let reported = ResizeArray<string>()
 
     use window =
-        MainWindow.create fs @"C:\start" ignore (fun message -> reported.Add message)
+        MainWindow.create
+            { dependencies fs @"C:\start" with
+                ReportError = reported.Add }
 
     window.BeginInit()
     window.EndInit()
@@ -55,7 +57,7 @@ let ``UI reports listing failures and stays in the current directory`` () =
     let list = FilePanel.listView panelView
     list.SelectedItem <- 1
     fs.Directory.Delete @"C:\start\docs"
-    list.NewKeyDownEvent Key.Enter |> ignore
+    press list Key.Enter
 
     Assert.Single reported |> ignore
     Assert.Contains(@"C:\start\docs", reported[0])

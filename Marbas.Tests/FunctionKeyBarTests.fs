@@ -51,7 +51,7 @@ let ``bar sticks to the bottom edge`` (width: int) (height: int) =
 let ``F10 key triggers the quit action`` () =
     let mutable quitRequested = false
     use window = createInitializedWith (fun () -> quitRequested <- true)
-    window.NewKeyDownEvent Key.F10 |> ignore
+    press window Key.F10
     Assert.True quitRequested
 
 [<Fact>]

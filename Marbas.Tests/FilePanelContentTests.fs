@@ -20,7 +20,7 @@ let private items panelView =
 
 [<Fact>]
 let ``both panels list the startup directory`` () =
-    use window = MainWindow.create (mockFs ()) @"C:\start" ignore ignore
+    use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
 
     for id in [ FilePanel.LeftId; FilePanel.RightId ] do
         let names = items (panel id window)
@@ -29,13 +29,13 @@ let ``both panels list the startup directory`` () =
 
 [<Fact>]
 let ``panel listing starts with the parent entry for non-root paths`` () =
-    use window = MainWindow.create (mockFs ()) @"C:\start" ignore ignore
+    use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
 
     Assert.Equal("..", items (panel FilePanel.LeftId window) |> List.head)
 
 [<Fact>]
 let ``after layout rows are formatted into aligned columns`` () =
-    use window = MainWindow.create (mockFs ()) @"C:\start" ignore ignore
+    use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
     window.BeginInit()
     window.EndInit()
     window.Layout(Size(80, 24)) |> ignore
@@ -50,7 +50,7 @@ let ``after layout rows are formatted into aligned columns`` () =
 
 [<Fact>]
 let ``enter key on a directory navigates the focused panel`` () =
-    use window = MainWindow.create (mockFs ()) @"C:\start" ignore ignore
+    use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
     window.BeginInit()
     window.EndInit()
     window.SetFocus() |> ignore
@@ -58,14 +58,14 @@ let ``enter key on a directory navigates the focused panel`` () =
     let panelView = panel FilePanel.LeftId window
     let list = FilePanel.listView panelView
     list.SelectedItem <- 1
-    list.NewKeyDownEvent Terminal.Gui.Input.Key.Enter |> ignore
+    press list Terminal.Gui.Input.Key.Enter
 
     Assert.Equal(@"C:\start\docs", panelView.Title)
     Assert.StartsWith("..", items panelView |> List.head)
 
 [<Fact>]
 let ``panel titles show the current path`` () =
-    use window = MainWindow.create (mockFs ()) @"C:\start" ignore ignore
+    use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
 
     Assert.Equal(@"C:\start", (panel FilePanel.LeftId window).Title)
     Assert.Equal(@"C:\start", (panel FilePanel.RightId window).Title)

@@ -7,6 +7,7 @@
 
     <ItemGroup>
         <Compile Include="FileSystem\DirectoryListing.fs" />
+        <Compile Include="FileSystem\Drives.fs" />
         <Compile Include="State\AppState.fs" />
         <Compile Include="State\Store.fs" />
         <Compile Include="Ui\EntryFormat.fs" />

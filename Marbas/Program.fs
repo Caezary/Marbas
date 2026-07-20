@@ -14,8 +14,23 @@ let main _ =
     let reportError message =
         MessageBox.ErrorQuery(app, ListingErrorMessage.Title, message, "Ok") |> ignore
 
+    let chooseDrive drives =
+        match drives with
+        | [] -> None
+        | _ ->
+            let buttons = drives @ [ "Cancel" ] |> Array.ofList
+
+            match MessageBox.Query(app, "Select drive", "", buttons) with
+            | index when index.HasValue && index.Value < drives.Length -> Some drives[index.Value]
+            | _ -> None
+
     use window =
-        MainWindow.create fs (fs.Directory.GetCurrentDirectory()) (fun () -> app.RequestStop()) reportError
+        MainWindow.create
+            { FileSystem = fs
+              StartPath = fs.Directory.GetCurrentDirectory()
+              OnQuit = fun () -> app.RequestStop()
+              ReportError = reportError
+              ChooseDrive = chooseDrive }
 
     app.Run window |> ignore
     0

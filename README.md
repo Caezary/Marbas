@@ -19,3 +19,4 @@ Planned core features:
 ## Documentation
 
 - [Implementation plan](_documentation/PLAN.md)
+- [Testing notes](_documentation/TESTING.md)
