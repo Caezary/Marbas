@@ -8,6 +8,8 @@ open Marbas.State
 
 let quitKey = Key.Q.WithCtrl
 
+let refreshKey = Key.R.WithCtrl
+
 let configureQuitKey () =
     Application.SetDefaultKeyBinding(Command.Quit, Bind.All(quitKey, Key.F10))
 
@@ -40,13 +42,20 @@ let create fs startPath onQuit reportError =
             if view.HasFocus then
                 store.Dispatch(AppState.activate side))
 
-        list.Accepting.Add(fun args ->
-            args.Handled <- true
-
+        let dispatchOnCursor transition =
             store.DispatchResult report (fun state ->
                 state
                 |> AppState.activate side
                 |> AppState.setCursor side (list.SelectedItem.GetValueOrDefault 0)
-                |> AppState.enter fs))
+                |> transition)
+
+        list.Accepting.Add(fun args ->
+            args.Handled <- true
+            dispatchOnCursor (AppState.enter fs))
+
+        list.KeyDown.Add(fun key ->
+            if key = refreshKey then
+                key.Handled <- true
+                dispatchOnCursor (AppState.refresh fs))
 
     window

@@ -18,6 +18,7 @@
     <Compile Include="FunctionKeyBarTests.fs" />
     <Compile Include="FilePanelContentTests.fs" />
     <Compile Include="NavigationErrorTests.fs" />
+    <Compile Include="RefreshTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -71,6 +71,13 @@ let loadPanelFocusing (fs: IFileSystem) side path cursorOn state =
 let loadPanel fs side path state =
     loadPanelFocusing fs side path None state
 
+let private cursorEntryName panel =
+    panel.Entries |> List.tryItem panel.Cursor |> Option.map _.Name
+
+let refresh (fs: IFileSystem) state =
+    let panel = activePanel state
+    loadPanelFocusing fs state.Active panel.Path (cursorEntryName panel) state
+
 let private navigateUp (fs: IFileSystem) side (from: string) state =
     let current = fs.DirectoryInfo.New from
 
