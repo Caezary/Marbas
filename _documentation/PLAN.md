@@ -150,9 +150,21 @@ Goal: comfort features that make it feel like a finished tool.
 ```
 Marbas/
   FileSystem/        P2, P5 — listing, operations (no UI dependencies)
-  State/             P3, P4 — panel & app state, selection
+  State/             P3, P4 — panel & app state, selection, Store
   Ui/                P1+    — panels, dialogs, key bindings, theming
   Program.fs         composition root
 ```
 
 Dependencies flow downward only: `Ui` → `State` → `FileSystem`.
+
+### State handling
+
+`AppState` is immutable: every transition is a pure function returning a new
+state, which is what the unit tests exercise. The single mutable cell lives in
+`State/Store.fs` — a small store that Terminal.Gui event handlers use to
+`Dispatch` those pure transitions and re-render afterwards. Handlers never
+mutate state directly.
+
+Terminal.Gui runs a single-threaded event loop, so the store needs no
+synchronisation; background work (P5.6) must marshal its dispatch back onto
+the UI thread via `Application.Invoke`.

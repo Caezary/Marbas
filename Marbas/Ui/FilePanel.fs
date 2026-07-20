@@ -42,6 +42,9 @@ let render (state: AppState.PanelState) (panel: FrameView) =
 
     list.SetSource(ObservableCollection rows)
 
+    if not rows.IsEmpty then
+        list.SelectedItem <- min state.Cursor (rows.Length - 1)
+
 let createPair () =
     let left =
         new FrameView(Id = LeftId, Width = Dim.Percent 50, Height = Dim.Fill 1)

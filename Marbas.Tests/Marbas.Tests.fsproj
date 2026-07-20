@@ -10,6 +10,7 @@
     <Compile Include="DirectoryOrderingTests.fs" />
     <Compile Include="EntryFormatTests.fs" />
     <Compile Include="AppStateTests.fs" />
+    <Compile Include="NavigationTests.fs" />
     <Compile Include="TestHelpers.fs" />
     <Compile Include="MainWindowTests.fs" />
     <Compile Include="PanelFocusTests.fs" />

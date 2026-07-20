@@ -49,6 +49,21 @@ let ``after layout rows are formatted into aligned columns`` () =
     Assert.Contains(rows, fun (row: string) -> row.StartsWith "docs" && row.Contains "<DIR>")
 
 [<Fact>]
+let ``enter key on a directory navigates the focused panel`` () =
+    use window = MainWindow.create (mockFs ()) @"C:\start" ignore
+    window.BeginInit()
+    window.EndInit()
+    window.SetFocus() |> ignore
+
+    let panelView = panel FilePanel.LeftId window
+    let list = FilePanel.listView panelView
+    list.SelectedItem <- 1
+    list.NewKeyDownEvent Terminal.Gui.Input.Key.Enter |> ignore
+
+    Assert.Equal(@"C:\start\docs", panelView.Title)
+    Assert.StartsWith("..", items panelView |> List.head)
+
+[<Fact>]
 let ``panel titles show the current path`` () =
     use window = MainWindow.create (mockFs ()) @"C:\start" ignore
 

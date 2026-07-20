@@ -17,26 +17,36 @@ let create fs startPath onQuit =
     let bar = FunctionKeyBar.create onQuit
     window.Add(left, right, bar) |> ignore
 
-    let mutable state = AppState.create startPath
+    let views = [ AppState.Left, left; AppState.Right, right ]
 
-    let render () =
-        FilePanel.render state.Left left
-        FilePanel.render state.Right right
+    let render (state: AppState.AppState) =
+        for side, view in views do
+            FilePanel.render (AppState.panel side state) view
 
-    let apply result =
-        match result with
-        | Ok updated -> state <- updated
-        | Error _ -> ()
+    let store = Store.Store(AppState.create startPath, render)
 
-    apply (AppState.loadPanel fs AppState.Left startPath state)
-    apply (AppState.loadPanel fs AppState.Right startPath state)
-    render ()
+    // Listing errors are ignored for now; P3.3 turns them into a message box.
+    let ignoreError _ = ()
 
-    for view, side in [ left, AppState.Left; right, AppState.Right ] do
-        (FilePanel.listView view).FrameChanged.Add(fun _ -> render ())
+    for side, _ in views do
+        store.DispatchResult ignoreError (AppState.loadPanel fs side startPath)
+
+    for side, view in views do
+        let list = FilePanel.listView view
+
+        list.FrameChanged.Add(fun _ -> store.Refresh())
 
         view.HasFocusChanged.Add(fun _ ->
             if view.HasFocus then
-                state <- AppState.activate side state)
+                store.Dispatch(AppState.activate side))
+
+        list.Accepting.Add(fun args ->
+            args.Handled <- true
+
+            store.DispatchResult ignoreError (fun state ->
+                state
+                |> AppState.activate side
+                |> AppState.setCursor side (list.SelectedItem.GetValueOrDefault 0)
+                |> AppState.enter fs))
 
     window
