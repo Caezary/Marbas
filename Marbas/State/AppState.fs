@@ -11,7 +11,8 @@ type PanelSide =
 type PanelState =
     { Path: string
       Entries: Entry list
-      Cursor: int }
+      Cursor: int
+      Selected: Set<string> }
 
 type AppState =
     { Left: PanelState
@@ -22,7 +23,8 @@ let create path =
     let panel =
         { Path = path
           Entries = []
-          Cursor = 0 }
+          Cursor = 0
+          Selected = Set.empty }
 
     { Left = panel
       Right = panel
@@ -65,7 +67,8 @@ let loadPanelFocusing (fs: IFileSystem) side path cursorOn state =
             (fun _ ->
                 { Path = path
                   Entries = entries
-                  Cursor = cursor })
+                  Cursor = cursor
+                  Selected = Set.empty })
             state)
 
 let loadPanel fs side path state =
@@ -75,9 +78,43 @@ let cursorEntry panel = panel.Entries |> List.tryItem panel.Cursor
 
 let private cursorEntryName panel = cursorEntry panel |> Option.map _.Name
 
+let private selectable entry = entry.Name <> DirectoryListing.ParentName
+
+let selectedEntries panel =
+    panel.Entries |> List.filter (fun e -> panel.Selected.Contains e.Name)
+
+let private toggle name selected =
+    if Set.contains name selected then
+        Set.remove name selected
+    else
+        Set.add name selected
+
+let toggleSelection side state =
+    updatePanel
+        side
+        (fun p ->
+            match cursorEntry p with
+            | Some entry when selectable entry ->
+                { p with Selected = toggle entry.Name p.Selected }
+            | _ -> p)
+        state
+
+let advanceCursor side state =
+    updatePanel side (fun p -> { p with Cursor = max 0 (min (p.Cursor + 1) (p.Entries.Length - 1)) }) state
+
+let toggleSelectionAndAdvance side state =
+    state |> toggleSelection side |> advanceCursor side
+
+let private surviving entries selected =
+    entries |> List.map _.Name |> Set.ofList |> Set.intersect selected
+
 let refresh (fs: IFileSystem) state =
     let panel = activePanel state
+
     loadPanelFocusing fs state.Active panel.Path (cursorEntryName panel) state
+    |> Result.map (
+        updatePanel state.Active (fun p ->
+            { p with Selected = surviving p.Entries panel.Selected }))
 
 let private navigateUp (fs: IFileSystem) side (from: string) state =
     let current = fs.DirectoryInfo.New from

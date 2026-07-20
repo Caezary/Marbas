@@ -25,6 +25,7 @@
     <Compile Include="DrivesTests.fs" />
     <Compile Include="DriveSelectionTests.fs" />
     <Compile Include="StatusLineTests.fs" />
+    <Compile Include="SelectionTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

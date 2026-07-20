@@ -19,6 +19,8 @@ let quitKey = Key.Q.WithCtrl
 
 let refreshKey = Key.R.WithCtrl
 
+let selectionKeys = [ Key.InsertChar; Key.Space ]
+
 let leftDriveKey = Key.F1.WithAlt
 
 let rightDriveKey = Key.F2.WithAlt
@@ -78,12 +80,14 @@ let create (deps: Dependencies) =
             if view.HasFocus then
                 store.Dispatch(AppState.activate side))
 
+        let atCursor transition state =
+            state
+            |> AppState.activate side
+            |> AppState.setCursor side (list.SelectedItem.GetValueOrDefault 0)
+            |> transition
+
         let dispatchOnCursor transition =
-            store.DispatchResult report (fun state ->
-                state
-                |> AppState.activate side
-                |> AppState.setCursor side (list.SelectedItem.GetValueOrDefault 0)
-                |> transition)
+            store.DispatchResult report (atCursor transition)
 
         list.Accepting.Add(fun args ->
             args.Handled <- true
@@ -93,6 +97,9 @@ let create (deps: Dependencies) =
             if key = refreshKey then
                 key.Handled <- true
                 dispatchOnCursor (AppState.refresh fs)
+            elif selectionKeys |> List.contains key then
+                key.Handled <- true
+                store.Dispatch(atCursor (AppState.toggleSelectionAndAdvance side))
             else
                 match driveKeySide key with
                 | Some target ->

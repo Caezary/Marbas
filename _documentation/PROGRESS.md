@@ -4,13 +4,14 @@ Status as of 2026-07-20. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–3 are complete and Phase 4 has started** (14 of 29 tasks). Marbas
+**Phases 1–3 are complete and Phase 4 is under way** (15 of 29 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real
-directory, the keyboard moves between and inside them, a status line describes
-the entry under the cursor, and failures surface as dialogs instead of crashes.
-Nothing modifies the file system yet — that is Phase 5.
+directory, the keyboard moves between and inside them, entries can be marked
+for later operations, a status line describes the entry under the cursor, and
+failures surface as dialogs instead of crashes. Nothing modifies the file
+system yet — that is Phase 5.
 
-**79 tests pass**, covering every logic module directly and the UI behaviour by
+**92 tests pass**, covering every logic module directly and the UI behaviour by
 driving real Terminal.Gui views over an in-memory file system.
 
 | Phase | Tasks | State |
@@ -18,7 +19,7 @@ driving real Terminal.Gui views over an in-memory file system.
 | 1 — Application skeleton | P1.1–P1.4 | done |
 | 2 — Directory listing | P2.1–P2.4 | done |
 | 3 — Navigation | P3.1–P3.5 | done |
-| 4 — Selection | P4.1 done, P4.2–P4.3 next | in progress |
+| 4 — Selection | P4.1–P4.2 done, P4.3 next | in progress |
 | 5 — File operations | P5.1–P5.6 | not started |
 | 6 — Viewing files | P6.1–P6.2 | not started |
 | 7 — Polish & configuration | P7.1–P7.4 | not started |
@@ -37,6 +38,11 @@ driving real Terminal.Gui views over an in-memory file system.
 - `Ctrl+R` reloads the active panel, keeping the cursor on the same entry even
   when its position changed.
 - `Alt+F1` / `Alt+F2` open a drive chooser for the left / right panel.
+- `Insert` or `Space` marks the entry under the cursor and moves one entry
+  down; pressing it again unmarks. Marked entries are highlighted, `..` can
+  never be marked, and each panel keeps its own marks — they survive `Ctrl+R`
+  (minus whatever disappeared) and are dropped when the panel changes
+  directory.
 - A status line above the function-key bar describes the entry under the cursor
   of the active panel — untruncated name, exact size in bytes (`<DIR>` for
   directories) and modification date. It follows both cursor movement and
@@ -99,6 +105,16 @@ The panel row passes `EntrySize.plain` (bare digits, to keep columns narrow),
 the status line passes a grouped format with a `bytes` suffix. A new view, or a
 future switch to `KB`/`MB`, only supplies another function.
 
+**Selection is a set of names in the state; the ListView only displays it.**
+`PanelState.Selected` holds entry names, not indices, so marks stay on the
+right files when a refresh reorders the listing. Terminal.Gui's own marking is
+used purely for rendering: the panel runs with `MarkMultiple = true` and
+`ShowMarks = false`, which draws marked rows with `VisualRole.Highlight` and no
+checkbox glyphs, and `FilePanel.render` re-applies `Source.SetMark` from the
+state after every render. `Insert`/`Space` are handled by Marbas and marked
+handled, so the built-in SPACE marking never runs and cannot disagree with the
+state.
+
 **The cursor lives in the state, and rendering is guarded.** The panel's
 `ListView.ValueChanged` dispatches `AppState.setCursor`, so state always knows
 where the cursor is (P4.2 will build the selection on top of it). Rendering
@@ -120,8 +136,7 @@ other.
 
 ## Next up
 
-**P4.2** — multi-selection with `Insert`/`Space`, highlighted marks and a
-never-selectable `..`, then wildcard selection with `+`/`-` in P4.3.
-Terminal.Gui's `ListView` already offers marking (`MarkMultiple`, `ShowMarks`,
-`GetAllMarkedItems`), which is worth evaluating against keeping the selection
-in `AppState`.
+**P4.3** — count and total size of the marked entries shown in the panel, plus
+`+`/`-` selecting and deselecting by wildcard pattern. `AppState.selectedEntries`
+already returns the marked entries in listing order, which is what the summary
+and the Phase 5 operations will consume.

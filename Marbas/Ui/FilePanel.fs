@@ -20,7 +20,9 @@ let private focusable (panel: FrameView) =
     panel.HasFocusChanged.Add(fun _ ->
         panel.BorderStyle <- if panel.HasFocus then LineStyle.Double else LineStyle.Single)
 
-    panel.Add(new ListView(Width = Dim.Fill(), Height = Dim.Fill())) |> ignore
+    panel.Add(new ListView(Width = Dim.Fill(), Height = Dim.Fill(), MarkMultiple = true))
+    |> ignore
+
     panel
 
 let listView (panel: View) =
@@ -41,6 +43,9 @@ let render (state: AppState.PanelState) (panel: FrameView) =
             state.Entries |> List.map (fun e -> e.Name)
 
     list.SetSource(ObservableCollection rows)
+
+    state.Entries
+    |> List.iteri (fun index entry -> list.Source.SetMark(index, state.Selected.Contains entry.Name))
 
     if not rows.IsEmpty then
         list.SelectedItem <- min state.Cursor (rows.Length - 1)
