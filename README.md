@@ -18,5 +18,6 @@ Planned core features:
 
 ## Documentation
 
+- [Progress](_documentation/PROGRESS.md)
 - [Implementation plan](_documentation/PLAN.md)
 - [Testing notes](_documentation/TESTING.md)
