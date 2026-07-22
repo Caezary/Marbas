@@ -1,17 +1,18 @@
 # Progress
 
-Status as of 2026-07-20. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-07-21. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–4 are complete** (16 of 29 tasks). Marbas runs as a full-screen
-two-panel file browser: both panels list a real directory, the keyboard moves
-between and inside them, entries can be marked one by one or by wildcard for
-later operations, a status line describes the entry under the cursor, and
-failures surface as dialogs instead of crashes. Nothing modifies the file
-system yet — that is Phase 5.
+**Phases 1–4 are complete and P5.1 is done** (17 of 29 tasks). Marbas runs as a
+full-screen two-panel file browser: both panels list a real directory, the
+keyboard moves between and inside them, entries can be marked one by one or by
+wildcard for later operations, a status line describes the entry under the
+cursor, and failures surface as dialogs instead of crashes. The operations
+module can copy, move, rename, delete and create directories, but no key is
+wired to it yet — that starts with P5.2.
 
-**118 tests pass**, covering every logic module directly and the UI behaviour by
+**138 tests pass**, covering every logic module directly and the UI behaviour by
 driving real Terminal.Gui views over an in-memory file system.
 
 | Phase | Tasks | State |
@@ -20,7 +21,7 @@ driving real Terminal.Gui views over an in-memory file system.
 | 2 — Directory listing | P2.1–P2.4 | done |
 | 3 — Navigation | P3.1–P3.5 | done |
 | 4 — Selection | P4.1–P4.3 | done |
-| 5 — File operations | P5.1–P5.6 | next |
+| 5 — File operations | P5.1–P5.6 | P5.1 done, P5.2 next |
 | 6 — Viewing files | P6.1–P6.2 | not started |
 | 7 — Polish & configuration | P7.1–P7.4 | not started |
 | 8 — Quality & release | P8.1–P8.3 | not started |
@@ -63,6 +64,7 @@ Marbas/
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             mounted drives
     NamePattern.fs        wildcard matching for `+` / `-`
+    Operations.fs         copy / move / rename / delete / mkdir, errors as values
   State/
     AppState.fs           immutable panel/app state and its transitions
     Store.fs              the single mutable cell + dispatch
@@ -109,6 +111,23 @@ behaviour test would notice.
 
 **No code comments.** Intent lives in names, tests and these documents.
 
+**Operations answer per item, and one bad item never stops the batch.**
+`Operations` mirrors `DirectoryListing`: every function returns
+`Result<unit, OperationError>` instead of throwing, and the `*All` functions map
+a list of source paths to `ItemResult` values (entry name plus outcome) in the
+input order, so the UI can report exactly which entries failed and why. A
+single-item failure inside one *tree* does abort that tree — a half-copied
+directory stops at the first error rather than pressing on blindly.
+
+**Overwriting is a flag, not a policy.** `copy`/`move` take a bool and refuse
+with `TargetExists` when it is false. The Yes / No / All / Cancel decision of
+P5.4 belongs to the UI, which calls the operation per item with the answer it
+already has.
+
+**Moving a directory is copy-then-delete.** `IDirectory.Move` fails across
+volumes, which is the normal case for a two-panel manager, so directories are
+copied and then removed; files still use `IFile.Move`.
+
 **One rule for the size column, formatting per view.** `EntrySize.describe`
 holds the shared decision — directories get `<DIR>`, files get their size, an
 unknown size gets nothing — and takes the byte-to-text function as an argument.
@@ -150,7 +169,10 @@ other.
 
 ## Next up
 
-**P5.1** — the UI-free operations module (copy / move / rename / delete /
-mkdir) over `System.IO.Abstractions`, returning per-item results.
-`AppState.selectedEntries` is its input: the marked entries in listing order,
-or the cursor entry when nothing is marked.
+**P5.2** — `F7` prompts for a name and creates the directory in the active
+panel, which then refreshes with the cursor on the new entry.
+
+Still missing before the operation keys can act on a selection: a state
+function giving the operation targets — the marked entries in listing order,
+or the cursor entry when nothing is marked. `AppState.selectedEntries` covers
+only the first half today.
