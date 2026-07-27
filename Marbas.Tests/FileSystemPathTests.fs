@@ -48,3 +48,23 @@ let ``parent of a root is None`` () =
     let fs = MockFileSystem()
 
     Assert.Equal(None, FileSystemPath.parent fs (FileSystemPath.create @"C:\"))
+
+[<Fact>]
+let ``kind is NoEntry for a missing path`` () =
+    let fs = MockFileSystem()
+
+    Assert.Equal(NoEntry, FileSystemPath.kind fs (FileSystemPath.create @"C:\data\missing.txt"))
+
+[<Fact>]
+let ``kind is FileEntry for a file`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(@"C:\data\notes.txt", MockFileData("hello"))
+
+    Assert.Equal(FileEntry, FileSystemPath.kind fs (FileSystemPath.create @"C:\data\notes.txt"))
+
+[<Fact>]
+let ``kind is DirectoryEntry for a directory`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory @"C:\data\docs"
+
+    Assert.Equal(DirectoryEntry, FileSystemPath.kind fs (FileSystemPath.create @"C:\data\docs"))

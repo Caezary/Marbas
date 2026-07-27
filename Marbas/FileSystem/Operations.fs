@@ -25,33 +25,27 @@ let private attempt path action =
     with ex ->
         Error(mapException path ex)
 
-let private exists (fs: IFileSystem) (path: FileSystemPath) =
-    let raw = FileSystemPath.value path
-    fs.File.Exists raw || fs.Directory.Exists raw
-
 let makeDirectory (fs: IFileSystem) (parent: FileSystemPath) (name: string) =
     let path = FileSystemPath.combine fs parent name
 
-    if exists fs path then
-        Error(TargetExists path)
-    else
-        attempt path (fun () -> fs.Directory.CreateDirectory(FileSystemPath.value path) |> ignore)
+    match FileSystemPath.kind fs path with
+    | NoEntry -> attempt path (fun () -> fs.Directory.CreateDirectory(FileSystemPath.value path) |> ignore)
+    | _ -> Error(TargetExists path)
 
 let delete (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
 
-    if fs.Directory.Exists raw then
-        attempt path (fun () -> fs.Directory.Delete(raw, true))
-    elif fs.File.Exists raw then
-        attempt path (fun () -> fs.File.Delete raw)
-    else
-        Error(SourceNotFound path)
+    match FileSystemPath.kind fs path with
+    | DirectoryEntry -> attempt path (fun () -> fs.Directory.Delete(raw, true))
+    | FileEntry -> attempt path (fun () -> fs.File.Delete raw)
+    | NoEntry -> Error(SourceNotFound path)
 
 let rec private copyTo (fs: IFileSystem) overwrite (source: FileSystemPath) (target: FileSystemPath) =
     let rawSource = FileSystemPath.value source
     let rawTarget = FileSystemPath.value target
 
-    if fs.Directory.Exists rawSource then
+    match FileSystemPath.kind fs source with
+    | DirectoryEntry ->
         attempt target (fun () -> fs.Directory.CreateDirectory rawTarget |> ignore)
         |> Result.bind (fun () ->
             fs.Directory.EnumerateFileSystemEntries rawSource
@@ -62,29 +56,23 @@ let rec private copyTo (fs: IFileSystem) overwrite (source: FileSystemPath) (tar
                         let child = FileSystemPath.create entry
                         copyTo fs overwrite child (FileSystemPath.combine fs target (FileSystemPath.name fs child))))
                 (Ok()))
-    elif not overwrite && exists fs target then
-        Error(TargetExists target)
-    else
-        attempt source (fun () -> fs.File.Copy(rawSource, rawTarget, overwrite))
+    | _ when not overwrite && FileSystemPath.kind fs target <> NoEntry -> Error(TargetExists target)
+    | _ -> attempt source (fun () -> fs.File.Copy(rawSource, rawTarget, overwrite))
 
 let private inDirectory (fs: IFileSystem) (targetDirectory: FileSystemPath) (source: FileSystemPath) =
     FileSystemPath.combine fs targetDirectory (FileSystemPath.name fs source)
 
 let copy (fs: IFileSystem) overwrite (source: FileSystemPath) (targetDirectory: FileSystemPath) =
-    if not (exists fs source) then
-        Error(SourceNotFound source)
-    else
-        copyTo fs overwrite source (inDirectory fs targetDirectory source)
+    match FileSystemPath.kind fs source with
+    | NoEntry -> Error(SourceNotFound source)
+    | _ -> copyTo fs overwrite source (inDirectory fs targetDirectory source)
 
 let private moveTo (fs: IFileSystem) overwrite (source: FileSystemPath) (target: FileSystemPath) =
-    if not (exists fs source) then
-        Error(SourceNotFound source)
-    elif not overwrite && exists fs target then
-        Error(TargetExists target)
-    elif fs.Directory.Exists(FileSystemPath.value source) then
-        copyTo fs overwrite source target |> Result.bind (fun () -> delete fs source)
-    else
-        attempt source (fun () -> fs.File.Move(FileSystemPath.value source, FileSystemPath.value target, overwrite))
+    match FileSystemPath.kind fs source with
+    | NoEntry -> Error(SourceNotFound source)
+    | _ when not overwrite && FileSystemPath.kind fs target <> NoEntry -> Error(TargetExists target)
+    | DirectoryEntry -> copyTo fs overwrite source target |> Result.bind (fun () -> delete fs source)
+    | FileEntry -> attempt source (fun () -> fs.File.Move(FileSystemPath.value source, FileSystemPath.value target, overwrite))
 
 let move (fs: IFileSystem) overwrite (source: FileSystemPath) (targetDirectory: FileSystemPath) =
     moveTo fs overwrite source (inDirectory fs targetDirectory source)
