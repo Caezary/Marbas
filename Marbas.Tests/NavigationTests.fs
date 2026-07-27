@@ -3,8 +3,11 @@ module Marbas.Tests.NavigationTests
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.FileSystem
 open Marbas.State
 open Marbas.State.AppState
+
+let private fp = FileSystemPath.create
 
 let private mockFs () =
     let fs = MockFileSystem()
@@ -24,10 +27,10 @@ let ``cursor is reset to zero after loading a panel`` () =
     let fs = mockFs ()
 
     let state =
-        create @"C:\start"
-        |> loaded Left @"C:\start" fs
+        create (fp @"C:\start")
+        |> loaded Left (fp @"C:\start") fs
         |> setCursor Left 2
-        |> loaded Left @"C:\start\docs" fs
+        |> loaded Left (fp @"C:\start\docs") fs
 
     Assert.Equal(0, state.Left.Cursor)
 
@@ -36,11 +39,11 @@ let ``enter descends into the directory under the cursor`` () =
     let fs = mockFs ()
 
     let state =
-        create @"C:\start" |> loaded Left @"C:\start" fs |> setCursor Left 1
+        create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> setCursor Left 1
 
     match enter fs state with
     | Ok updated ->
-        Assert.Equal(@"C:\start\docs", updated.Left.Path)
+        Assert.Equal(fp @"C:\start\docs", updated.Left.Path)
         Assert.Equal<string list>([ ".."; "inner" ], names updated.Left.Entries)
         Assert.Equal(0, updated.Left.Cursor)
     | Error err -> failwith $"unexpected error %A{err}"
@@ -50,11 +53,11 @@ let ``enter on the parent entry goes up with cursor on the directory left behind
     let fs = mockFs ()
 
     let state =
-        create @"C:\start\docs" |> loaded Left @"C:\start\docs" fs |> setCursor Left 0
+        create (fp @"C:\start\docs") |> loaded Left (fp @"C:\start\docs") fs |> setCursor Left 0
 
     match enter fs state with
     | Ok updated ->
-        Assert.Equal(@"C:\start", updated.Left.Path)
+        Assert.Equal(fp @"C:\start", updated.Left.Path)
         Assert.Equal<string list>([ ".."; "docs"; "readme.txt" ], names updated.Left.Entries)
         Assert.Equal(1, updated.Left.Cursor)
     | Error err -> failwith $"unexpected error %A{err}"
@@ -64,7 +67,7 @@ let ``enter on a file leaves the state unchanged`` () =
     let fs = mockFs ()
 
     let state =
-        create @"C:\start" |> loaded Left @"C:\start" fs |> setCursor Left 2
+        create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> setCursor Left 2
 
     Assert.Equal(Ok state, enter fs state)
 
@@ -73,14 +76,14 @@ let ``enter acts on the active panel only`` () =
     let fs = mockFs ()
 
     let state =
-        create @"C:\start"
-        |> loaded Left @"C:\start" fs
-        |> loaded Right @"C:\start" fs
+        create (fp @"C:\start")
+        |> loaded Left (fp @"C:\start") fs
+        |> loaded Right (fp @"C:\start") fs
         |> activate Right
         |> setCursor Right 1
 
     match enter fs state with
     | Ok updated ->
-        Assert.Equal(@"C:\start\docs", updated.Right.Path)
-        Assert.Equal(@"C:\start", updated.Left.Path)
+        Assert.Equal(fp @"C:\start\docs", updated.Right.Path)
+        Assert.Equal(fp @"C:\start", updated.Left.Path)
     | Error err -> failwith $"unexpected error %A{err}"

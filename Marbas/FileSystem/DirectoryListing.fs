@@ -17,9 +17,9 @@ type Entry =
 let ParentName = ".."
 
 type ListingError =
-    | DirectoryNotFound of path: string
-    | AccessDenied of path: string
-    | ListingFailed of path: string * message: string
+    | DirectoryNotFound of path: FileSystemPath
+    | AccessDenied of path: FileSystemPath
+    | ListingFailed of path: FileSystemPath * message: string
 
 let mapException path (ex: exn) =
     match ex with
@@ -38,9 +38,9 @@ let private fileEntry (info: IFileInfo) =
       Size = Some info.Length
       Modified = info.LastWriteTime }
 
-let read (fs: IFileSystem) (path: string) : Result<Entry list, ListingError> =
+let read (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingError> =
     try
-        let dir = fs.DirectoryInfo.New path
+        let dir = fs.DirectoryInfo.New(FileSystemPath.value path)
 
         if not dir.Exists then
             Error(DirectoryNotFound path)
@@ -59,8 +59,8 @@ let order (entries: Entry list) =
         | File, Directory -> 1
         | _ -> String.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase))
 
-let private parentEntry (fs: IFileSystem) path =
-    match fs.DirectoryInfo.New(path).Parent with
+let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
+    match fs.DirectoryInfo.New(FileSystemPath.value path).Parent with
     | null -> None
     | parent ->
         Some
@@ -69,7 +69,7 @@ let private parentEntry (fs: IFileSystem) path =
               Size = None
               Modified = parent.LastWriteTime }
 
-let listForDisplay (fs: IFileSystem) (path: string) =
+let listForDisplay (fs: IFileSystem) (path: FileSystemPath) =
     read fs path
     |> Result.map (fun entries ->
         match parentEntry fs path with

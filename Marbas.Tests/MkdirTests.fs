@@ -4,10 +4,13 @@ open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
+open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.State.AppState
 open Marbas.Ui
 open Marbas.Tests.TestHelpers
+
+let private fp = FileSystemPath.create
 
 let private mockFs () =
     let fs = MockFileSystem()
@@ -16,7 +19,7 @@ let private mockFs () =
     fs
 
 let private loaded (fs: IFileSystem) =
-    match create @"C:\start" |> loadPanel fs Left @"C:\start" with
+    match create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") with
     | Ok state -> state
     | Error err -> failwith $"setup failed: %A{err}"
 
@@ -50,7 +53,7 @@ let ``making a directory keeps the existing selection`` () =
 let ``an existing name is refused and leaves the panel unchanged`` () =
     let fs = mockFs ()
 
-    Assert.Equal(Error(TargetExists @"C:\start\docs"), loaded fs |> makeDirectory fs Left "docs")
+    Assert.Equal(Error(TargetExists(fp @"C:\start\docs")), loaded fs |> makeDirectory fs Left "docs")
 
 let private windowWith askName =
     let window =

@@ -45,6 +45,7 @@ let configureQuitKey () =
 
 let create (deps: Dependencies) =
     let fs = deps.FileSystem
+    let startPath = FileSystemPath.create deps.StartPath
     let window = new Window(Title = "Marbas", Width = Dim.Fill(), Height = Dim.Fill())
     let left, right = FilePanel.createPair ()
     let statusLine = StatusLine.create ()
@@ -62,7 +63,7 @@ let create (deps: Dependencies) =
         statusLine |> StatusLine.render (AppState.cursorEntry (AppState.activePanel state))
         rendering <- false
 
-    let store = Store.Store(AppState.create deps.StartPath, render)
+    let store = Store.Store(AppState.create startPath, render)
 
     let report =
         ListingErrorMessage.describe >> (deps.ReportError ListingErrorMessage.Title)
@@ -87,11 +88,11 @@ let create (deps: Dependencies) =
     window.Add(left, right, statusLine, bar) |> ignore
 
     for side, _ in views do
-        store.DispatchResult report (AppState.loadPanel fs side deps.StartPath)
+        store.DispatchResult report (AppState.loadPanel fs side startPath)
 
     let openDrive side =
         match deps.ChooseDrive(Drives.list fs) with
-        | Some drive -> store.DispatchResult report (AppState.loadPanel fs side drive)
+        | Some drive -> store.DispatchResult report (AppState.loadPanel fs side (FileSystemPath.create drive))
         | None -> ()
 
     let driveKeySide (key: Key) =

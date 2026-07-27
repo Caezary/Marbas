@@ -4,6 +4,7 @@ open System.Collections.ObjectModel
 open Terminal.Gui.Drawing
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
+open Marbas.FileSystem
 open Marbas.State
 
 [<Literal>]
@@ -43,7 +44,7 @@ let summary (panel: View) =
         | _ -> None)
 
 let render (state: AppState.PanelState) (panel: FrameView) =
-    panel.Title <- state.Path
+    panel.Title <- FileSystemPath.value state.Path
     let list = listView panel
     let width = list.Viewport.Width
 

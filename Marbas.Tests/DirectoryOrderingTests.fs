@@ -6,6 +6,8 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 
+let private fp = FileSystemPath.create
+
 let private entry name kind =
     { Name = name
       Kind = kind
@@ -38,7 +40,7 @@ let ``non-root listing starts with the parent entry`` () =
     fs.AddDirectory @"C:\start\sub"
     fs.AddFile(@"C:\start\sub\a.txt", MockFileData "x")
 
-    match listForDisplay fs @"C:\start\sub" with
+    match listForDisplay fs (fp @"C:\start\sub") with
     | Ok(first :: _) ->
         Assert.Equal("..", first.Name)
         Assert.Equal(Directory, first.Kind)
@@ -49,7 +51,7 @@ let ``root listing has no parent entry`` () =
     let fs = MockFileSystem()
     fs.AddFile(@"C:\a.txt", MockFileData "x")
 
-    match listForDisplay fs @"C:\" with
+    match listForDisplay fs (fp @"C:\") with
     | Ok entries -> Assert.DoesNotContain(entries, fun e -> e.Name = "..")
     | Error err -> failwith $"unexpected error %A{err}"
 
@@ -59,7 +61,7 @@ let ``parent entry is followed by ordered content`` () =
     fs.AddDirectory @"C:\start\sub\inner"
     fs.AddFile(@"C:\start\sub\a.txt", MockFileData "x")
 
-    match listForDisplay fs @"C:\start\sub" with
+    match listForDisplay fs (fp @"C:\start\sub") with
     | Ok entries ->
         Assert.Equal<string list>([ ".."; "inner"; "a.txt" ], entries |> List.map (fun e -> e.Name))
     | Error err -> failwith $"unexpected error %A{err}"

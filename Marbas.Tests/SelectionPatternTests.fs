@@ -3,9 +3,12 @@ module Marbas.Tests.SelectionPatternTests
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.FileSystem
 open Marbas.Ui
 open Marbas.State.AppState
 open Marbas.Tests.TestHelpers
+
+let private fp = FileSystemPath.create
 
 let private mockFs () =
     let fs = MockFileSystem()
@@ -16,7 +19,7 @@ let private mockFs () =
     fs
 
 let private loaded (fs: IFileSystem) =
-    match create @"C:\start" |> loadPanel fs Left @"C:\start" with
+    match create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") with
     | Ok state -> state
     | Error err -> failwith $"setup failed: %A{err}"
 

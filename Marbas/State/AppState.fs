@@ -9,7 +9,7 @@ type PanelSide =
     | Right
 
 type PanelState =
-    { Path: string
+    { Path: FileSystemPath
       Entries: Entry list
       Cursor: int
       Selected: Set<string> }
@@ -19,7 +19,7 @@ type AppState =
       Right: PanelState
       Active: PanelSide }
 
-let create path =
+let create (path: FileSystemPath) =
     let panel =
         { Path = path
           Entries = []
@@ -54,7 +54,7 @@ let toggleActive state =
 let setCursor side index state =
     updatePanel side (fun p -> { p with Cursor = index }) state
 
-let loadPanelFocusing (fs: IFileSystem) side path cursorOn state =
+let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) cursorOn state =
     DirectoryListing.listForDisplay fs path
     |> Result.map (fun entries ->
         let cursor =
@@ -71,7 +71,7 @@ let loadPanelFocusing (fs: IFileSystem) side path cursorOn state =
                   Selected = Set.empty })
             state)
 
-let loadPanel fs side path state =
+let loadPanel fs side (path: FileSystemPath) state =
     loadPanelFocusing fs side path None state
 
 let cursorEntry panel = panel.Entries |> List.tryItem panel.Cursor
@@ -143,15 +143,13 @@ let refresh (fs: IFileSystem) state =
         updatePanel state.Active (fun p ->
             { p with Selected = surviving p.Entries panel.Selected }))
 
-let private navigateUp (fs: IFileSystem) side (from: string) state =
-    let current = fs.DirectoryInfo.New from
+let private navigateUp (fs: IFileSystem) side (from: FileSystemPath) state =
+    match FileSystemPath.parent fs from with
+    | None -> Ok state
+    | Some parent -> loadPanelFocusing fs side parent (Some(FileSystemPath.name fs from)) state
 
-    match current.Parent with
-    | null -> Ok state
-    | parent -> loadPanelFocusing fs side parent.FullName (Some current.Name) state
-
-let private navigateInto (fs: IFileSystem) side parentPath name state =
-    loadPanelFocusing fs side (fs.Path.Combine(parentPath, name)) None state
+let private navigateInto (fs: IFileSystem) side (parentPath: FileSystemPath) name state =
+    loadPanelFocusing fs side (FileSystemPath.combine fs parentPath name) None state
 
 let enter (fs: IFileSystem) state =
     let panel = activePanel state

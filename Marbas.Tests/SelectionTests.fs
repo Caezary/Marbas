@@ -3,9 +3,12 @@ module Marbas.Tests.SelectionTests
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.FileSystem
 open Marbas.Ui
 open Marbas.State.AppState
 open Marbas.Tests.TestHelpers
+
+let private fp = FileSystemPath.create
 
 let private mockFs () =
     let fs = MockFileSystem()
@@ -21,7 +24,7 @@ let private loaded side path (fs: IFileSystem) state =
 
 let private started () =
     let fs = mockFs ()
-    fs, create @"C:\start" |> loaded Left @"C:\start" fs
+    fs, create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs
 
 let private selectedNames panel =
     selectedEntries panel |> List.map (fun e -> e.Name)
@@ -90,9 +93,9 @@ let ``selection belongs to one panel only`` () =
     let fs = mockFs ()
 
     let state =
-        create @"C:\start"
-        |> loaded Left @"C:\start" fs
-        |> loaded Right @"C:\start" fs
+        create (fp @"C:\start")
+        |> loaded Left (fp @"C:\start") fs
+        |> loaded Right (fp @"C:\start") fs
         |> setCursor Left 1
         |> toggleSelectionAndAdvance Left
 
@@ -108,7 +111,7 @@ let ``entering a directory clears the selection`` () =
 
     match selected |> setCursor Left 1 |> enter fs with
     | Ok updated ->
-        Assert.Equal(@"C:\start\docs", updated.Left.Path)
+        Assert.Equal(fp @"C:\start\docs", updated.Left.Path)
         Assert.Empty(selectedEntries updated.Left)
     | Error err -> failwith $"unexpected error %A{err}"
 

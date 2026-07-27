@@ -66,6 +66,7 @@ driving real Terminal.Gui views over an in-memory file system.
 ```
 Marbas/
   FileSystem/
+    FileSystemPath.fs     single-case path type wrapping a raw string
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             mounted drives
     NamePattern.fs        wildcard matching for `+` / `-`
@@ -101,6 +102,14 @@ community and an MIT licence. Its v2 API is instance-based
 **Test first.** Every task started with failing tests. Logic modules are pure
 and take `IFileSystem`, so tests run against `MockFileSystem` and never touch
 the disk.
+
+**Paths are a type, not a string**. `FileSystemPath` is a
+single-case union with a private constructor and a companion module; the
+fs-dependent helpers (`combine`/`name`/`directory`/`parent`) take `IFileSystem`
+so path handling stays consistent with `MockFileSystem`. It flows through the
+listing, operations, and panel/navigation layers and the error path fields.
+Raw OS strings are wrapped once at the outside edge (`Program.fs`, `MainWindow`
+start path and drive roots).
 
 **Immutable state, one mutable cell.** `AppState` transitions are pure
 functions; `Store` holds the only mutable reference and re-renders after each

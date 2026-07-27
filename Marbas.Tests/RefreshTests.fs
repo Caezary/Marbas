@@ -4,11 +4,14 @@ open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
+open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.Ui
 open Marbas.Tests.TestHelpers
+
+let private fp = FileSystemPath.create
 
 let private mockFs () =
     let fs = MockFileSystem()
@@ -26,7 +29,7 @@ let private names entries = entries |> List.map (fun (e: Entry) -> e.Name)
 [<Fact>]
 let ``refresh picks up entries created after the panel was loaded`` () =
     let fs = mockFs ()
-    let state = create @"C:\start" |> loaded Left @"C:\start" fs
+    let state = create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs
     fs.AddFile(@"C:\start\added.txt", MockFileData "new")
 
     match refresh fs state with
@@ -38,7 +41,7 @@ let ``refresh keeps the cursor on the same entry when its index shifts`` () =
     let fs = mockFs ()
 
     let state =
-        create @"C:\start" |> loaded Left @"C:\start" fs |> setCursor Left 2
+        create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> setCursor Left 2
 
     Assert.Equal("readme.txt", state.Left.Entries[2].Name)
     fs.AddDirectory @"C:\start\aaa"
@@ -54,7 +57,7 @@ let ``refresh falls back to the first entry when the cursor entry is gone`` () =
     let fs = mockFs ()
 
     let state =
-        create @"C:\start" |> loaded Left @"C:\start" fs |> setCursor Left 2
+        create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> setCursor Left 2
 
     fs.File.Delete @"C:\start\readme.txt"
 
@@ -67,9 +70,9 @@ let ``refresh only reloads the active panel`` () =
     let fs = mockFs ()
 
     let state =
-        create @"C:\start"
-        |> loaded Left @"C:\start" fs
-        |> loaded Right @"C:\start" fs
+        create (fp @"C:\start")
+        |> loaded Left (fp @"C:\start") fs
+        |> loaded Right (fp @"C:\start") fs
         |> activate Right
 
     fs.AddFile(@"C:\start\added.txt", MockFileData "new")
@@ -83,10 +86,10 @@ let ``refresh only reloads the active panel`` () =
 [<Fact>]
 let ``refreshing a directory that vanished reports an error`` () =
     let fs = mockFs ()
-    let state = create @"C:\start\docs" |> loaded Left @"C:\start\docs" fs
+    let state = create (fp @"C:\start\docs") |> loaded Left (fp @"C:\start\docs") fs
     fs.Directory.Delete @"C:\start\docs"
 
-    Assert.Equal(Error(DirectoryNotFound @"C:\start\docs"), refresh fs state)
+    Assert.Equal(Error(DirectoryNotFound(fp @"C:\start\docs")), refresh fs state)
 
 [<Fact>]
 let ``Ctrl+R reloads the focused panel`` () =

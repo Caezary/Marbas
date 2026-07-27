@@ -4,11 +4,14 @@ open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
+open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.Ui
 open Marbas.Tests.TestHelpers
+
+let private fp = FileSystemPath.create
 
 let private fsWithVanishingDirectory () =
     let fs = MockFileSystem()
@@ -24,19 +27,19 @@ let private loaded side path (fs: IFileSystem) state =
 [<Fact>]
 let ``entering a directory that vanished reports an error and keeps the panel`` () =
     let fs = fsWithVanishingDirectory ()
-    let state = create @"C:\start" |> loaded Left @"C:\start" fs |> setCursor Left 1
+    let state = create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> setCursor Left 1
     fs.Directory.Delete @"C:\start\docs"
 
-    Assert.Equal(Error(DirectoryNotFound @"C:\start\docs"), enter fs state)
+    Assert.Equal(Error(DirectoryNotFound(fp @"C:\start\docs")), enter fs state)
 
 [<Fact>]
 let ``failed navigation leaves the panel where it was`` () =
     let fs = fsWithVanishingDirectory ()
-    let state = create @"C:\start" |> loaded Left @"C:\start" fs |> setCursor Left 1
+    let state = create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> setCursor Left 1
     fs.Directory.Delete @"C:\start\docs"
 
     match enter fs state with
-    | Error _ -> Assert.Equal(@"C:\start", state.Left.Path)
+    | Error _ -> Assert.Equal(fp @"C:\start", state.Left.Path)
     | Ok _ -> failwith "expected an error"
 
 [<Fact>]
