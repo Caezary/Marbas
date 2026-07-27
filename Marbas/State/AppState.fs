@@ -120,6 +120,21 @@ let deselectMatching side pattern state =
 let private surviving entries selected =
     entries |> List.map _.Name |> Set.ofList |> Set.intersect selected
 
+let private asOperationError error =
+    match error with
+    | DirectoryNotFound path -> Operations.SourceNotFound path
+    | DirectoryListing.AccessDenied path -> Operations.AccessDenied path
+    | ListingFailed(path, message) -> Operations.OperationFailed(path, message)
+
+let makeDirectory (fs: IFileSystem) side name state : Result<AppState, Operations.OperationError> =
+    let previous = panel side state
+
+    Operations.makeDirectory fs previous.Path name
+    |> Result.bind (fun () ->
+        loadPanelFocusing fs side previous.Path (Some name) state
+        |> Result.mapError asOperationError
+        |> Result.map (updatePanel side (fun p -> { p with Selected = surviving p.Entries previous.Selected })))
+
 let refresh (fs: IFileSystem) state =
     let panel = activePanel state
 

@@ -12,8 +12,8 @@ let main _ =
     let fs = FileSystem()
     use app = Application.Create().Init()
 
-    let reportError message =
-        MessageBox.ErrorQuery(app, ListingErrorMessage.Title, message, "Ok") |> ignore
+    let reportError title message =
+        MessageBox.ErrorQuery(app, title, message, "Ok") |> ignore
 
     let chooseDrive drives =
         match drives with
@@ -30,6 +30,11 @@ let main _ =
         app.Run dialog |> ignore
         PatternDialog.pattern dialog
 
+    let askName title =
+        use dialog = PromptDialog.create title "Name:" ""
+        app.Run dialog |> ignore
+        PromptDialog.text dialog
+
     use window =
         MainWindow.create
             { FileSystem = fs
@@ -37,7 +42,8 @@ let main _ =
               OnQuit = fun () -> app.RequestStop()
               ReportError = reportError
               ChooseDrive = chooseDrive
-              AskPattern = askPattern }
+              AskPattern = askPattern
+              AskName = askName }
 
     app.Run window |> ignore
     0

@@ -12,9 +12,10 @@ type Dependencies =
     { FileSystem: IFileSystem
       StartPath: string
       OnQuit: unit -> unit
-      ReportError: string -> unit
+      ReportError: string -> string -> unit
       ChooseDrive: string list -> string option
-      AskPattern: string -> string option }
+      AskPattern: string -> string option
+      AskName: string -> string option }
 
 let quitKey = Key.Q.WithCtrl
 
@@ -32,6 +33,9 @@ let SelectPrompt = "Select"
 [<Literal>]
 let DeselectPrompt = "Deselect"
 
+[<Literal>]
+let MkdirPrompt = "Create directory"
+
 let leftDriveKey = Key.F1.WithAlt
 
 let rightDriveKey = Key.F2.WithAlt
@@ -44,8 +48,6 @@ let create (deps: Dependencies) =
     let window = new Window(Title = "Marbas", Width = Dim.Fill(), Height = Dim.Fill())
     let left, right = FilePanel.createPair ()
     let statusLine = StatusLine.create ()
-    let bar = FunctionKeyBar.create deps.OnQuit
-    window.Add(left, right, statusLine, bar) |> ignore
 
     let views = [ AppState.Left, left; AppState.Right, right ]
 
@@ -62,8 +64,27 @@ let create (deps: Dependencies) =
 
     let store = Store.Store(AppState.create deps.StartPath, render)
 
-    let report error =
-        deps.ReportError(ListingErrorMessage.describe error)
+    let report =
+        ListingErrorMessage.describe >> (deps.ReportError ListingErrorMessage.Title)
+
+    let reportOperation =
+        OperationErrorMessage.describe >> (deps.ReportError OperationErrorMessage.Title)
+
+    let makeDirectory () =
+        match deps.AskName MkdirPrompt with
+        | Some name when name.Trim() <> "" ->
+            store.DispatchResult reportOperation (AppState.makeDirectory fs store.State.Active (name.Trim()))
+        | _ -> ()
+
+    let bar =
+        FunctionKeyBar.create
+            { OnCopy = ignore
+              OnRenameMove = ignore
+              OnMakeDirectory = makeDirectory
+              OnDelete = ignore
+              OnQuit = deps.OnQuit }
+
+    window.Add(left, right, statusLine, bar) |> ignore
 
     for side, _ in views do
         store.DispatchResult report (AppState.loadPanel fs side deps.StartPath)

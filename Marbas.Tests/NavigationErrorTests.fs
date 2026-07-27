@@ -47,7 +47,7 @@ let ``UI reports listing failures and stays in the current directory`` () =
     use window =
         MainWindow.create
             { dependencies fs @"C:\start" with
-                ReportError = reported.Add }
+                ReportError = fun _ -> reported.Add }
 
     window.BeginInit()
     window.EndInit()

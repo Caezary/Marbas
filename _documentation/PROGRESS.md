@@ -4,15 +4,16 @@ Status as of 2026-07-21. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–4 are complete and P5.1 is done** (17 of 29 tasks). Marbas runs as a
-full-screen two-panel file browser: both panels list a real directory, the
+**Phases 1–4 are complete and P5.1–P5.2 are done** (18 of 29 tasks). Marbas runs
+as a full-screen two-panel file browser: both panels list a real directory, the
 keyboard moves between and inside them, entries can be marked one by one or by
 wildcard for later operations, a status line describes the entry under the
 cursor, and failures surface as dialogs instead of crashes. The operations
-module can copy, move, rename, delete and create directories, but no key is
-wired to it yet — that starts with P5.2.
+module can copy, move, rename, delete and create directories; `F7` is the first
+key wired to it — it makes a directory in the active panel. The remaining
+operation keys arrive in P5.3–P5.6.
 
-**138 tests pass**, covering every logic module directly and the UI behaviour by
+**149 tests pass**, covering every logic module directly and the UI behaviour by
 driving real Terminal.Gui views over an in-memory file system.
 
 | Phase | Tasks | State |
@@ -21,7 +22,7 @@ driving real Terminal.Gui views over an in-memory file system.
 | 2 — Directory listing | P2.1–P2.4 | done |
 | 3 — Navigation | P3.1–P3.5 | done |
 | 4 — Selection | P4.1–P4.3 | done |
-| 5 — File operations | P5.1–P5.6 | P5.1 done, P5.2 next |
+| 5 — File operations | P5.1–P5.6 | P5.1–P5.2 done, P5.3 next |
 | 6 — Viewing files | P6.1–P6.2 | not started |
 | 7 — Polish & configuration | P7.1–P7.4 | not started |
 | 8 — Quality & release | P8.1–P8.3 | not started |
@@ -52,9 +53,13 @@ driving real Terminal.Gui views over an in-memory file system.
   of the active panel — untruncated name, exact size in bytes (`<DIR>` for
   directories) and modification date. It follows both cursor movement and
   panel switching.
+- `F7` prompts for a name and creates that directory in the active panel; the
+  panel refreshes with the cursor on the new entry and existing marks intact. A
+  blank name or a cancelled prompt does nothing; a clash (or any failure) is
+  reported in a dialog.
 - `Ctrl+Q` or `F10` quits. The bottom bar lists the Norton-style function keys
-  (`F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`); only `F10` is
-  wired up so far.
+  (`F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`); `F7` and `F10`
+  are wired up so far.
 
 ## Code map
 
@@ -75,9 +80,11 @@ Marbas/
     CursorInfo.fs         cursor entry -> status line text
     StatusLine.fs         the status line view
     ListingErrorMessage.fs  ListingError -> user-facing text
+    OperationErrorMessage.fs  OperationError -> user-facing text
     FilePanel.fs          panel views, render state -> view
-    FunctionKeyBar.fs     bottom shortcut bar
-    PatternDialog.fs      the `+` / `-` pattern prompt
+    FunctionKeyBar.fs     bottom shortcut bar, one action per function key
+    PromptDialog.fs       single-field text prompt (label + default)
+    PatternDialog.fs      the `+` / `-` pattern prompt, over PromptDialog
     MainWindow.fs         composition: views, store, key handling
   Program.fs              real file system and real dialogs
 ```
@@ -128,6 +135,25 @@ already has.
 volumes, which is the normal case for a two-panel manager, so directories are
 copied and then removed; files still use `IFile.Move`.
 
+**Function keys live on the `StatusBar`, not the panel.** A `StatusBar`
+shortcut swallows its key globally (see the `F10` trap), so a panel-level
+`KeyDown` handler for `F7` would never fire. `FunctionKeyBar.create` therefore
+takes an `Actions` record — one callback per function key — and `MainWindow`
+supplies real handlers (`ignore` for the not-yet-built ones). The mkdir action
+reads `store.State.Active` to target whichever panel is current, since a
+`StatusBar` shortcut has no notion of focus.
+
+**`ReportError` carries a title.** Listing failures and operation failures want
+different dialog captions, so the dependency is `title -> message -> unit`;
+`ListingErrorMessage`/`OperationErrorMessage` each own their `Title`, and
+`Program.fs` just forwards both to the message box.
+
+**Operation errors are mapped, not re-thrown, inside a transition.**
+`AppState.makeDirectory` creates the directory and then reloads the panel; the
+reload returns a `ListingError`, which a private pure mapping folds into an
+`OperationError` so the whole transition answers with one error type. State
+still never depends on Ui — the mapping is over the raw error values.
+
 **One rule for the size column, formatting per view.** `EntrySize.describe`
 holds the shared decision — directories get `<DIR>`, files get their size, an
 unknown size gets nothing — and takes the byte-to-text function as an argument.
@@ -169,10 +195,12 @@ other.
 
 ## Next up
 
-**P5.2** — `F7` prompts for a name and creates the directory in the active
-panel, which then refreshes with the cursor on the new entry.
+**P5.3** — `F8` delete: a confirmation dialog (with an extra warning for a
+non-empty directory), then a recursive delete of the operation targets, errors
+reported per item.
 
 Still missing before the operation keys can act on a selection: a state
 function giving the operation targets — the marked entries in listing order,
 or the cursor entry when nothing is marked. `AppState.selectedEntries` covers
-only the first half today.
+only the first half today. `Operations.deleteAll` already takes a list of
+paths, so P5.3 needs that target list plus a confirm dialog dependency.
