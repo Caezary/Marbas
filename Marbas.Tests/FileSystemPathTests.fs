@@ -21,10 +21,22 @@ let ``combine appends a child name`` () =
     Assert.Equal(@"C:\data\child", FileSystemPath.value combined)
 
 [<Fact>]
-let ``name returns the last segment`` () =
+let ``name returns the last segment in a file path - its name`` () =
     let fs = MockFileSystem()
+    let notesPath = FileSystemPath.create @"C:\data\notes.txt"
 
-    Assert.Equal("notes.txt", FileSystemPath.name fs (FileSystemPath.create @"C:\data\notes.txt"))
+    let result = FileSystemPath.name fs notesPath
+    
+    Assert.Equal("notes.txt", result)
+
+[<Fact>]
+let ``name returns the last segment in a directory path - its name`` () =
+    let fs = MockFileSystem()
+    let notesPath = FileSystemPath.create @"C:\data\child"
+
+    let result = FileSystemPath.name fs notesPath
+    
+    Assert.Equal("child", result)
 
 [<Fact>]
 let ``directory returns the containing path`` () =
