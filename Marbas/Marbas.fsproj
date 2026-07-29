@@ -29,6 +29,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <PackageReference Include="FsToolkit.ErrorHandling" Version="5.2.0" />
       <PackageReference Include="System.IO.Abstractions" Version="22.2.0" />
       <PackageReference Include="Terminal.Gui" Version="2.4.17" />
     </ItemGroup>

@@ -2,6 +2,7 @@ module Marbas.FileSystem.Operations
 
 open System
 open System.IO.Abstractions
+open FsToolkit.ErrorHandling
 
 type OperationError =
     | SourceNotFound of path: FileSystemPath
@@ -70,18 +71,19 @@ let delete (fs: IFileSystem) (path: FileSystemPath) =
 let rec private copyTo (fs: IFileSystem) overwrite (source: FileSystemPath) (target: FileSystemPath) =
     match FileSystemPath.kind fs source with
     | DirectoryEntry ->
-        attempt fs target createDirectory
-        |> Result.bind (fun () ->
-            getFileSystemEntries fs source
-            |> Seq.fold
-                (fun acc entry ->
-                    acc
-                    |> Result.bind (fun () ->
-                        entry
-                        |> FileSystemPath.name fs
-                        |> FileSystemPath.combine fs target
-                        |> copyTo fs overwrite entry))
-                (Ok()))
+        result {
+            do! attempt fs target createDirectory
+
+            do!
+                getFileSystemEntries fs source
+                |> List.ofSeq
+                |> List.traverseResultM (fun entry ->
+                    entry
+                    |> FileSystemPath.name fs
+                    |> FileSystemPath.combine fs target
+                    |> copyTo fs overwrite entry)
+                |> Result.ignore
+        }
     | _ when not overwrite && FileSystemPath.kind fs target <> NoEntry -> Error(TargetExists target)
     | _ ->
         let copyToTarget fs' source' = copyFile fs' overwrite source' target
@@ -104,7 +106,11 @@ let private moveTo (fs: IFileSystem) overwrite (source: FileSystemPath) (target:
     match FileSystemPath.kind fs source with
     | NoEntry -> Error(SourceNotFound source)
     | _ when not overwrite && FileSystemPath.kind fs target <> NoEntry -> Error(TargetExists target)
-    | DirectoryEntry -> copyTo fs overwrite source target |> Result.bind (fun () -> delete fs source)
+    | DirectoryEntry ->
+        result {
+            do! copyTo fs overwrite source target
+            do! delete fs source
+        }
     | FileEntry ->
         let moveToTarget fs' source' = moveFile fs' overwrite source' target
         attempt fs source moveToTarget
