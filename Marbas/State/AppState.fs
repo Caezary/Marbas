@@ -146,10 +146,13 @@ let refresh (fs: IFileSystem) state =
 let private navigateUp (fs: IFileSystem) side (from: FileSystemPath) state =
     match FileSystemPath.parent fs from with
     | None -> Ok state
-    | Some parent -> loadPanelFocusing fs side parent (Some(FileSystemPath.name fs from)) state
+    | Some parent ->
+        let cursorOn = from |> FileSystemPath.name fs |> Some
+        loadPanelFocusing fs side parent cursorOn state
 
 let private navigateInto (fs: IFileSystem) side (parentPath: FileSystemPath) name state =
-    loadPanelFocusing fs side (FileSystemPath.combine fs parentPath name) None state
+    let targetPath = FileSystemPath.combine fs parentPath name
+    loadPanelFocusing fs side targetPath None state
 
 let enter (fs: IFileSystem) state =
     let panel = activePanel state

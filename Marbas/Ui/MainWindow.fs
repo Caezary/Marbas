@@ -60,7 +60,8 @@ let create (deps: Dependencies) =
         for side, view in views do
             FilePanel.render (AppState.panel side state) view
 
-        statusLine |> StatusLine.render (AppState.cursorEntry (AppState.activePanel state))
+        let entry = state |> AppState.activePanel |> AppState.cursorEntry
+        statusLine |> StatusLine.render entry
         rendering <- false
 
     let store = Store.Store(AppState.create startPath, render)

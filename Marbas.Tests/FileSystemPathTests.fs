@@ -15,8 +15,9 @@ let ``equal paths compare equal`` () =
 [<Fact>]
 let ``combine appends a child name`` () =
     let fs = MockFileSystem()
+    let parentFolder = FileSystemPath.create @"C:\data"
 
-    let combined = FileSystemPath.combine fs (FileSystemPath.create @"C:\data") "child"
+    let combined = FileSystemPath.combine fs parentFolder "child"
 
     Assert.Equal(@"C:\data\child", FileSystemPath.value combined)
 

@@ -62,8 +62,6 @@ let makeDirectory (fs: IFileSystem) (parent: FileSystemPath) (name: string) =
     | _ -> Error(TargetExists path)
 
 let delete (fs: IFileSystem) (path: FileSystemPath) =
-    let raw = FileSystemPath.value path
-
     match FileSystemPath.kind fs path with
     | DirectoryEntry -> attempt fs path deleteDirectory
     | FileEntry -> attempt fs path deleteFile
@@ -90,12 +88,17 @@ let rec private copyTo (fs: IFileSystem) overwrite (source: FileSystemPath) (tar
         attempt fs source copyToTarget
 
 let private inDirectory (fs: IFileSystem) (targetDirectory: FileSystemPath) (source: FileSystemPath) =
-    FileSystemPath.combine fs targetDirectory (FileSystemPath.name fs source)
+    source
+    |> FileSystemPath.name fs
+    |> FileSystemPath.combine fs targetDirectory
 
 let copy (fs: IFileSystem) overwrite (source: FileSystemPath) (targetDirectory: FileSystemPath) =
     match FileSystemPath.kind fs source with
     | NoEntry -> Error(SourceNotFound source)
-    | _ -> copyTo fs overwrite source (inDirectory fs targetDirectory source)
+    | _ ->
+        source
+        |> inDirectory fs targetDirectory
+        |> copyTo fs overwrite source
 
 let private moveTo (fs: IFileSystem) overwrite (source: FileSystemPath) (target: FileSystemPath) =
     match FileSystemPath.kind fs source with
@@ -107,10 +110,15 @@ let private moveTo (fs: IFileSystem) overwrite (source: FileSystemPath) (target:
         attempt fs source moveToTarget
 
 let move (fs: IFileSystem) overwrite (source: FileSystemPath) (targetDirectory: FileSystemPath) =
-    moveTo fs overwrite source (inDirectory fs targetDirectory source)
+    source
+    |> inDirectory fs targetDirectory
+    |> moveTo fs overwrite source
 
 let rename (fs: IFileSystem) (source: FileSystemPath) (newName: string) =
-    moveTo fs false source (FileSystemPath.combine fs (FileSystemPath.directory fs source) newName)
+    let directory = FileSystemPath.directory fs source
+    newName
+    |> FileSystemPath.combine fs directory
+    |> moveTo fs false source
 
 let private itemResults (fs: IFileSystem) sources outcome =
     sources
