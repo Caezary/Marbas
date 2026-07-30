@@ -19,6 +19,10 @@ type AppState =
       Right: PanelState
       Active: PanelSide }
 
+type FocusTarget =
+    | Top
+    | ByName of string
+
 let create (path: FileSystemPath) =
     let panel =
         { Path = path
@@ -54,13 +58,13 @@ let toggleActive state =
 let setCursor side index state =
     updatePanel side (fun p -> { p with Cursor = index }) state
 
-let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) cursorOn state =
+let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state =
     DirectoryListing.listForDisplay fs path
     |> Result.map (fun entries ->
         let cursor =
-            cursorOn
-            |> Option.bind (fun name -> entries |> List.tryFindIndex (fun e -> e.Name = name))
-            |> Option.defaultValue 0
+            match focus with
+            | ByName name -> entries |> List.tryFindIndex (fun e -> e.Name = name) |> Option.defaultValue 0
+            | Top -> 0
 
         updatePanel
             side
@@ -72,11 +76,14 @@ let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) cursorOn sta
             state)
 
 let loadPanel fs side (path: FileSystemPath) state =
-    loadPanelFocusing fs side path None state
+    loadPanelFocusing fs side path Top state
 
 let cursorEntry panel = panel.Entries |> List.tryItem panel.Cursor
 
-let private cursorEntryName panel = cursorEntry panel |> Option.map _.Name
+let private cursorFocus panel =
+    match cursorEntry panel with
+    | Some entry -> ByName entry.Name
+    | None -> Top
 
 let private selectable entry = entry.Name <> DirectoryListing.ParentName
 
@@ -131,14 +138,14 @@ let makeDirectory (fs: IFileSystem) side name state : Result<AppState, Operation
 
     Operations.makeDirectory fs previous.Path name
     |> Result.bind (fun () ->
-        loadPanelFocusing fs side previous.Path (Some name) state
+        loadPanelFocusing fs side previous.Path (ByName name) state
         |> Result.mapError asOperationError
         |> Result.map (updatePanel side (fun p -> { p with Selected = surviving p.Entries previous.Selected })))
 
 let refresh (fs: IFileSystem) state =
     let panel = activePanel state
 
-    loadPanelFocusing fs state.Active panel.Path (cursorEntryName panel) state
+    loadPanelFocusing fs state.Active panel.Path (cursorFocus panel) state
     |> Result.map (
         updatePanel state.Active (fun p ->
             { p with Selected = surviving p.Entries panel.Selected }))
@@ -147,12 +154,12 @@ let private navigateUp (fs: IFileSystem) side (from: FileSystemPath) state =
     match FileSystemPath.parent fs from with
     | None -> Ok state
     | Some parent ->
-        let cursorOn = from |> FileSystemPath.name fs |> Some
-        loadPanelFocusing fs side parent cursorOn state
+        let focus = from |> FileSystemPath.name fs |> ByName
+        loadPanelFocusing fs side parent focus state
 
 let private navigateInto (fs: IFileSystem) side (parentPath: FileSystemPath) name state =
     let targetPath = FileSystemPath.combine fs parentPath name
-    loadPanelFocusing fs side targetPath None state
+    loadPanelFocusing fs side targetPath Top state
 
 let enter (fs: IFileSystem) state =
     let panel = activePanel state
