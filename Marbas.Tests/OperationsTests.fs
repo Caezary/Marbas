@@ -68,7 +68,7 @@ let ``copy places a file in the target directory`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
     fs.AddDirectory @"C:\backup"
 
-    copy fs false (fp @"C:\data\notes.txt") (fp @"C:\backup") |> expectOk
+    copy fs false (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
 
     Assert.Equal("hello", fs.File.ReadAllText @"C:\backup\notes.txt")
     Assert.True(fs.File.Exists @"C:\data\notes.txt")
@@ -79,7 +79,7 @@ let ``copy refuses to overwrite unless allowed`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "new")
     fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
 
-    let errorResult = copy fs false (fp @"C:\data\notes.txt") (fp @"C:\backup") |> expectError
+    let errorResult = copy fs false (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectError
 
     Assert.Equal(
         TargetExists(fp @"C:\backup\notes.txt"),
@@ -93,7 +93,7 @@ let ``copy overwrites when allowed`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "new")
     fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
 
-    copy fs true (fp @"C:\data\notes.txt") (fp @"C:\backup") |> expectOk
+    copy fs true (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
 
     Assert.Equal("new", fs.File.ReadAllText @"C:\backup\notes.txt")
 
@@ -104,7 +104,7 @@ let ``copy duplicates a whole directory tree`` () =
     fs.AddFile(@"C:\data\docs\top.txt", MockFileData "y")
     fs.AddDirectory @"C:\backup"
 
-    copy fs false (fp @"C:\data\docs") (fp @"C:\backup") |> expectOk
+    copy fs false (fp @"C:\backup") (fp @"C:\data\docs") |> expectOk
 
     Assert.Equal("x", fs.File.ReadAllText @"C:\backup\docs\deep\inner.txt")
     Assert.Equal("y", fs.File.ReadAllText @"C:\backup\docs\top.txt")
@@ -114,7 +114,7 @@ let ``copy reports a missing source`` () =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\backup"
 
-    let errorResult = copy fs false (fp @"C:\data\gone.txt") (fp @"C:\backup") |> expectError
+    let errorResult = copy fs false (fp @"C:\backup") (fp @"C:\data\gone.txt") |> expectError
 
     Assert.Equal(
         SourceNotFound(fp @"C:\data\gone.txt"),
@@ -126,7 +126,7 @@ let ``move takes a file to the target directory`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
     fs.AddDirectory @"C:\backup"
 
-    move fs false (fp @"C:\data\notes.txt") (fp @"C:\backup") |> expectOk
+    move fs false (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
 
     Assert.Equal("hello", fs.File.ReadAllText @"C:\backup\notes.txt")
     Assert.False(fs.File.Exists @"C:\data\notes.txt")
@@ -137,7 +137,7 @@ let ``move takes a directory tree to the target directory`` () =
     fs.AddFile(@"C:\data\docs\inner.txt", MockFileData "x")
     fs.AddDirectory @"C:\backup"
 
-    move fs false (fp @"C:\data\docs") (fp @"C:\backup") |> expectOk
+    move fs false (fp @"C:\backup") (fp @"C:\data\docs") |> expectOk
 
     Assert.Equal("x", fs.File.ReadAllText @"C:\backup\docs\inner.txt")
     Assert.False(fs.Directory.Exists @"C:\data\docs")
@@ -148,7 +148,7 @@ let ``move refuses to overwrite unless allowed`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "new")
     fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
 
-    let errorResult = move fs false (fp @"C:\data\notes.txt") (fp @"C:\backup") |> expectError
+    let errorResult = move fs false (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectError
 
     Assert.Equal(
         TargetExists(fp @"C:\backup\notes.txt"),

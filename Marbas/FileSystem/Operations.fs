@@ -94,7 +94,7 @@ let private inDirectory (fs: IFileSystem) (targetDirectory: FileSystemPath) (sou
     |> FileSystemPath.name fs
     |> FileSystemPath.combine fs targetDirectory
 
-let copy (fs: IFileSystem) overwrite (source: FileSystemPath) (targetDirectory: FileSystemPath) =
+let copy (fs: IFileSystem) overwrite (targetDirectory: FileSystemPath) (source: FileSystemPath) =
     match FileSystemPath.kind fs source with
     | NoEntry -> Error(SourceNotFound source)
     | _ ->
@@ -115,7 +115,7 @@ let private moveTo (fs: IFileSystem) overwrite (source: FileSystemPath) (target:
         let moveToTarget fs' source' = moveFile fs' overwrite source' target
         attempt fs source moveToTarget
 
-let move (fs: IFileSystem) overwrite (source: FileSystemPath) (targetDirectory: FileSystemPath) =
+let move (fs: IFileSystem) overwrite (targetDirectory: FileSystemPath) (source: FileSystemPath) =
     source
     |> inDirectory fs targetDirectory
     |> moveTo fs overwrite source
@@ -135,7 +135,7 @@ let private itemResults (fs: IFileSystem) sources outcome =
 let deleteAll (fs: IFileSystem) sources = itemResults fs sources (delete fs)
 
 let copyAll (fs: IFileSystem) overwrite sources targetDirectory =
-    itemResults fs sources (fun source -> copy fs overwrite source targetDirectory)
+    itemResults fs sources (copy fs overwrite targetDirectory)
 
 let moveAll (fs: IFileSystem) overwrite sources targetDirectory =
-    itemResults fs sources (fun source -> move fs overwrite source targetDirectory)
+    itemResults fs sources (move fs overwrite targetDirectory)
