@@ -55,8 +55,13 @@ let toggleActive state =
             | Left -> Right
             | Right -> Left }
 
+let private withCursor index (p: PanelState) = { p with Cursor = index }
+
+let private moveCursorBy delta (p: PanelState) =
+    { p with Cursor = max 0 (min (p.Cursor + delta) (p.Entries.Length - 1)) }
+
 let setCursor side index state =
-    updatePanel side (fun p -> { p with Cursor = index }) state
+    updatePanel side (withCursor index) state
 
 let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state =
     DirectoryListing.listForDisplay fs path
@@ -96,18 +101,16 @@ let private toggle name selected =
     else
         Set.add name selected
 
+let private toggleSelectedAtCursor (p: PanelState) =
+    match cursorEntry p with
+    | Some entry when selectable entry -> { p with Selected = toggle entry.Name p.Selected }
+    | _ -> p
+
 let toggleSelection side state =
-    updatePanel
-        side
-        (fun p ->
-            match cursorEntry p with
-            | Some entry when selectable entry ->
-                { p with Selected = toggle entry.Name p.Selected }
-            | _ -> p)
-        state
+    updatePanel side toggleSelectedAtCursor state
 
 let advanceCursor side state =
-    updatePanel side (fun p -> { p with Cursor = max 0 (min (p.Cursor + 1) (p.Entries.Length - 1)) }) state
+    updatePanel side (moveCursorBy 1) state
 
 let toggleSelectionAndAdvance side state =
     state |> toggleSelection side |> advanceCursor side
@@ -118,14 +121,23 @@ let private matching pattern panel =
     |> List.map _.Name
     |> Set.ofList
 
+let private selectMatchingIn pattern (p: PanelState) =
+    { p with Selected = Set.union p.Selected (matching pattern p) }
+
+let private deselectMatchingIn pattern (p: PanelState) =
+    { p with Selected = Set.difference p.Selected (matching pattern p) }
+
 let selectMatching side pattern state =
-    updatePanel side (fun p -> { p with Selected = Set.union p.Selected (matching pattern p) }) state
+    updatePanel side (selectMatchingIn pattern) state
 
 let deselectMatching side pattern state =
-    updatePanel side (fun p -> { p with Selected = Set.difference p.Selected (matching pattern p) }) state
+    updatePanel side (deselectMatchingIn pattern) state
 
 let private surviving entries selected =
     entries |> List.map _.Name |> Set.ofList |> Set.intersect selected
+
+let private keepSurviving selected (p: PanelState) =
+    { p with Selected = surviving p.Entries selected }
 
 let private asOperationError error =
     match error with
@@ -140,15 +152,13 @@ let makeDirectory (fs: IFileSystem) side name state : Result<AppState, Operation
     |> Result.bind (fun () ->
         loadPanelFocusing fs side previous.Path (ByName name) state
         |> Result.mapError asOperationError
-        |> Result.map (updatePanel side (fun p -> { p with Selected = surviving p.Entries previous.Selected })))
+        |> Result.map (updatePanel side (keepSurviving previous.Selected)))
 
 let refresh (fs: IFileSystem) state =
     let panel = activePanel state
 
     loadPanelFocusing fs state.Active panel.Path (cursorFocus panel) state
-    |> Result.map (
-        updatePanel state.Active (fun p ->
-            { p with Selected = surviving p.Entries panel.Selected }))
+    |> Result.map (updatePanel state.Active (keepSurviving panel.Selected))
 
 let private navigateUp (fs: IFileSystem) side (from: FileSystemPath) state =
     match FileSystemPath.parent fs from with
