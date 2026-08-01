@@ -12,12 +12,12 @@ let private twoDriveFs () =
     fs.AddDirectory @"D:\data"
     fs
 
-let private windowWith (fs: MockFileSystem) chooseDrive reportError =
+let private windowWith (fs: MockFileSystem) chooseOption reportError =
     let window =
         MainWindow.create
             { dependencies fs @"C:\start" with
                 ReportError = reportError
-                ChooseDrive = chooseDrive }
+                ChooseOption = chooseOption }
 
     window.BeginInit()
     window.EndInit()
@@ -27,7 +27,7 @@ let private windowWith (fs: MockFileSystem) chooseDrive reportError =
 [<Fact>]
 let ``alt+F1 opens the chosen drive in the left panel`` () =
     let fs = twoDriveFs ()
-    use window = windowWith fs (fun _ -> Some @"D:\") (fun _ _ -> ())
+    use window = windowWith fs (fun _ _ -> Some @"D:\") (fun _ _ -> ())
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
     press list MainWindow.leftDriveKey
@@ -38,7 +38,7 @@ let ``alt+F1 opens the chosen drive in the left panel`` () =
 [<Fact>]
 let ``alt+F2 opens the chosen drive in the right panel`` () =
     let fs = twoDriveFs ()
-    use window = windowWith fs (fun _ -> Some @"D:\") (fun _ _ -> ())
+    use window = windowWith fs (fun _ _ -> Some @"D:\") (fun _ _ -> ())
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
     press list MainWindow.rightDriveKey
@@ -54,7 +54,7 @@ let ``the chooser is offered every mounted drive`` () =
     use window =
         windowWith
             fs
-            (fun drives ->
+            (fun _ drives ->
                 offered.Add drives
                 None)
             (fun _ _ -> ())
@@ -67,7 +67,7 @@ let ``the chooser is offered every mounted drive`` () =
 [<Fact>]
 let ``cancelling the chooser leaves both panels untouched`` () =
     let fs = twoDriveFs ()
-    use window = windowWith fs (fun _ -> None) (fun _ _ -> ())
+    use window = windowWith fs (fun _ _ -> None) (fun _ _ -> ())
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
     press list MainWindow.leftDriveKey
@@ -78,7 +78,7 @@ let ``cancelling the chooser leaves both panels untouched`` () =
 let ``an unreadable drive is reported and the panel stays put`` () =
     let fs = twoDriveFs ()
     let reported = ResizeArray<string>()
-    use window = windowWith fs (fun _ -> Some @"Z:\") (fun _ message -> reported.Add message)
+    use window = windowWith fs (fun _ _ -> Some @"Z:\") (fun _ message -> reported.Add message)
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
     press list MainWindow.leftDriveKey

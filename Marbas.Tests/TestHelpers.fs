@@ -18,7 +18,7 @@ let dependencies (fs: IFileSystem) startPath : MainWindow.Dependencies =
       StartPath = startPath
       OnQuit = ignore
       ReportError = fun _ _ -> ()
-      ChooseDrive = fun _ -> None
+      ChooseOption = fun _ _ -> None
       AskPattern = fun _ -> None
       AskName = fun _ -> None }
 

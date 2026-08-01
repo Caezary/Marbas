@@ -15,14 +15,14 @@ let main _ =
     let reportError title message =
         MessageBox.ErrorQuery(app, title, message, "Ok") |> ignore
 
-    let chooseDrive drives =
-        match drives with
+    let chooseOption title options =
+        match options with
         | [] -> None
         | _ ->
-            let buttons = drives @ [ "Cancel" ] |> Array.ofList
+            let buttons = options @ [ "Cancel" ] |> Array.ofList
 
-            match MessageBox.Query(app, "Select drive", "", buttons) with
-            | index when index.HasValue && index.Value < drives.Length -> Some drives[index.Value]
+            match MessageBox.Query(app, title, "", buttons) with
+            | index when index.HasValue && index.Value < options.Length -> Some options[index.Value]
             | _ -> None
 
     let askPattern title =
@@ -41,7 +41,7 @@ let main _ =
               StartPath = fs.Directory.GetCurrentDirectory()
               OnQuit = fun () -> app.RequestStop()
               ReportError = reportError
-              ChooseDrive = chooseDrive
+              ChooseOption = chooseOption
               AskPattern = askPattern
               AskName = askName }
 

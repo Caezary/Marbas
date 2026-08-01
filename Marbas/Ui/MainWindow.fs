@@ -13,7 +13,7 @@ type Dependencies =
       StartPath: string
       OnQuit: unit -> unit
       ReportError: string -> string -> unit
-      ChooseDrive: string list -> string option
+      ChooseOption: string -> string list -> string option
       AskPattern: string -> string option
       AskName: string -> string option }
 
@@ -92,7 +92,7 @@ let create (deps: Dependencies) =
         store.DispatchResult report (AppState.loadPanel fs side startPath)
 
     let openDrive side =
-        match deps.ChooseDrive(Drives.list fs) with
+        match deps.ChooseOption "Select drive" (Drives.list fs) with
         | Some drive -> store.DispatchResult report (AppState.loadPanel fs side (FileSystemPath.create drive))
         | None -> ()
 
