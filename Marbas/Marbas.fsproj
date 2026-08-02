@@ -13,7 +13,7 @@
         <Compile Include="FileSystem\Operations.fs" />
         <Compile Include="State\AppState.fs" />
         <Compile Include="State\Update.fs" />
-        <Compile Include="State\Store.fs" />
+        <Compile Include="State\Runtime.fs" />
         <Compile Include="Ui\EntrySize.fs" />
         <Compile Include="Ui\EntryFormat.fs" />
         <Compile Include="Ui\SelectionSummary.fs" />

@@ -6,6 +6,7 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.FileSystem
 open Marbas.State
+open Marbas.State.Runtime
 
 let quitKey = Key.Q.WithCtrl
 
@@ -32,12 +33,14 @@ let create (deps: Shell.Dependencies) =
         statusLine |> StatusLine.render entry
         rendering <- false
 
-    let store = Store.Store(AppState.create (FileSystemPath.create deps.StartPath), render)
+    let step msg state =
+        let result = Update.update fs msg state
+        result.State, result.Effects
 
-    let rec dispatch msg =
-        let result = Update.update fs msg store.State
-        store.Put result.State
-        result.Effects |> List.iter (Shell.interpret deps dispatch)
+    let appState = deps.StartPath |> FileSystemPath.create |> AppState.create
+    let runtime = Runtime(appState, step, Shell.interpret deps, render)
+
+    let dispatch = runtime.Dispatch
 
     let bar =
         FunctionKeyBar.create
@@ -56,7 +59,7 @@ let create (deps: Shell.Dependencies) =
         let list = FilePanel.listView view
         let cursor () = list.SelectedItem.GetValueOrDefault 0
 
-        list.FrameChanged.Add(fun _ -> store.Refresh())
+        list.FrameChanged.Add(fun _ -> runtime.Refresh())
 
         list.ValueChanged.Add(fun args ->
             if not rendering then
