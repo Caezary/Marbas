@@ -12,6 +12,7 @@
         <Compile Include="FileSystem\NamePattern.fs" />
         <Compile Include="FileSystem\Operations.fs" />
         <Compile Include="State\AppState.fs" />
+        <Compile Include="State\Update.fs" />
         <Compile Include="State\Store.fs" />
         <Compile Include="Ui\EntrySize.fs" />
         <Compile Include="Ui\EntryFormat.fs" />

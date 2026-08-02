@@ -36,6 +36,9 @@ let DeselectPrompt = "Deselect"
 [<Literal>]
 let MkdirPrompt = "Create directory"
 
+[<Literal>]
+let DrivePrompt = "Select drive"
+
 let leftDriveKey = Key.F1.WithAlt
 
 let rightDriveKey = Key.F2.WithAlt
@@ -45,7 +48,6 @@ let configureQuitKey () =
 
 let create (deps: Dependencies) =
     let fs = deps.FileSystem
-    let startPath = FileSystemPath.create deps.StartPath
     let window = new Window(Title = "Marbas", Width = Dim.Fill(), Height = Dim.Fill())
     let left, right = FilePanel.createPair ()
     let statusLine = StatusLine.create ()
@@ -64,37 +66,45 @@ let create (deps: Dependencies) =
         statusLine |> StatusLine.render entry
         rendering <- false
 
-    let store = Store.Store(AppState.create startPath, render)
+    let store = Store.Store(AppState.create (FileSystemPath.create deps.StartPath), render)
 
-    let report =
-        ListingErrorMessage.describe >> (deps.ReportError ListingErrorMessage.Title)
+    let rec dispatch msg =
+        let result = Update.update fs msg store.State
+        store.Put result.State
+        result.Effects |> List.iter runEffect
 
-    let reportOperation =
-        OperationErrorMessage.describe >> (deps.ReportError OperationErrorMessage.Title)
-
-    let makeDirectory () =
-        match deps.AskName MkdirPrompt with
-        | Some name when name.Trim() <> "" ->
-            store.DispatchResult reportOperation (AppState.makeDirectory fs store.State.Active (name.Trim()))
-        | _ -> ()
+    and runEffect effect =
+        match effect with
+        | Update.ReportListingError error ->
+            deps.ReportError ListingErrorMessage.Title (ListingErrorMessage.describe error)
+        | Update.ReportOperationError error ->
+            deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describe error)
+        | Update.PromptForName ->
+            match deps.AskName MkdirPrompt with
+            | Some name -> dispatch (Update.NameEntered name)
+            | None -> ()
+        | Update.PromptForPattern(side, index, selecting) ->
+            match deps.AskPattern (if selecting then SelectPrompt else DeselectPrompt) with
+            | Some pattern -> dispatch (Update.PatternEntered(side, index, selecting, pattern))
+            | None -> ()
+        | Update.PromptForDrive side ->
+            match deps.ChooseOption DrivePrompt (Drives.list fs) with
+            | Some drive -> dispatch (Update.PathOpened(side, drive))
+            | None -> ()
+        | Update.Quit -> deps.OnQuit()
 
     let bar =
         FunctionKeyBar.create
             { OnCopy = ignore
               OnRenameMove = ignore
-              OnMakeDirectory = makeDirectory
+              OnMakeDirectory = fun () -> dispatch Update.MakeDirectoryRequested
               OnDelete = ignore
-              OnQuit = deps.OnQuit }
+              OnQuit = fun () -> dispatch Update.QuitRequested }
 
     window.Add(left, right, statusLine, bar) |> ignore
 
     for side, _ in views do
-        store.DispatchResult report (AppState.loadPanel fs side startPath)
-
-    let openDrive side =
-        match deps.ChooseOption "Select drive" (Drives.list fs) with
-        | Some drive -> store.DispatchResult report (AppState.loadPanel fs side (FileSystemPath.create drive))
-        | None -> ()
+        dispatch (Update.PathOpened(side, deps.StartPath))
 
     let driveKeySide (key: Key) =
         if key = leftDriveKey then Some AppState.Left
@@ -103,56 +113,37 @@ let create (deps: Dependencies) =
 
     for side, view in views do
         let list = FilePanel.listView view
+        let cursor () = list.SelectedItem.GetValueOrDefault 0
 
         list.FrameChanged.Add(fun _ -> store.Refresh())
 
         list.ValueChanged.Add(fun args ->
             if not rendering then
-                store.Dispatch(AppState.setCursor side (args.NewValue.GetValueOrDefault 0)))
+                dispatch (Update.CursorMoved(side, args.NewValue.GetValueOrDefault 0)))
 
         view.HasFocusChanged.Add(fun _ ->
             if view.HasFocus then
-                store.Dispatch(AppState.activate side))
-
-        let atCursor transition state =
-            state
-            |> AppState.activate side
-            |> AppState.setCursor side (list.SelectedItem.GetValueOrDefault 0)
-            |> transition
-
-        let dispatchOnCursor transition =
-            store.DispatchResult report (atCursor transition)
+                dispatch (Update.PanelFocused side))
 
         list.Accepting.Add(fun args ->
             args.Handled <- true
-            dispatchOnCursor (AppState.enter fs))
+            dispatch (Update.EntryOpened(side, cursor ())))
 
         list.KeyDown.Add(fun key ->
             if key = refreshKey then
                 key.Handled <- true
-                dispatchOnCursor (AppState.refresh fs)
+                dispatch (Update.RefreshRequested(side, cursor ()))
             elif selectionKeys |> List.contains key then
                 key.Handled <- true
-                store.Dispatch(atCursor (AppState.toggleSelectionAndAdvance side))
+                dispatch (Update.SelectionToggled(side, cursor ()))
             elif key = selectPatternKey || key = deselectPatternKey then
                 key.Handled <- true
-                let selecting = key = selectPatternKey
-
-                match deps.AskPattern(if selecting then SelectPrompt else DeselectPrompt) with
-                | Some pattern ->
-                    let transition =
-                        if selecting then
-                            AppState.selectMatching side pattern
-                        else
-                            AppState.deselectMatching side pattern
-
-                    store.Dispatch(atCursor transition)
-                | None -> ()
+                dispatch (Update.PatternRequested(side, cursor (), key = selectPatternKey))
             else
                 match driveKeySide key with
                 | Some target ->
                     key.Handled <- true
-                    openDrive target
+                    dispatch (Update.DriveRequested target)
                 | None -> ())
 
     window

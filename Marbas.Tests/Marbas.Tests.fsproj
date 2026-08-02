@@ -18,6 +18,7 @@
     <Compile Include="EntryFormatTests.fs" />
     <Compile Include="CursorInfoTests.fs" />
     <Compile Include="AppStateTests.fs" />
+    <Compile Include="UpdateTests.fs" />
     <Compile Include="NavigationTests.fs" />
     <Compile Include="ListingErrorMessageTests.fs" />
     <Compile Include="TestHelpers.fs" />
