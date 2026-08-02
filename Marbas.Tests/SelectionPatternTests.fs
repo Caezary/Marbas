@@ -92,7 +92,7 @@ let ``the select key asks for a pattern and marks the matches`` () =
     use window = windowWith (fun title -> asked <- title :: asked; Some "*.fs")
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
-    press list MainWindow.selectPatternKey
+    press list PanelInput.selectPatternKey
 
     Assert.Equal<string list>([ MainWindow.SelectPrompt ], asked)
     Assert.Collection(marked list, fun row -> Assert.StartsWith("setup.fs", row))
@@ -107,10 +107,10 @@ let ``the deselect key asks for a pattern and unmarks the matches`` () =
             Some "*.txt")
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
-    press list MainWindow.selectPatternKey
+    press list PanelInput.selectPatternKey
     Assert.Equal(2, (marked list).Length)
 
-    press list MainWindow.deselectPatternKey
+    press list PanelInput.deselectPatternKey
 
     Assert.Equal<string list>([ MainWindow.SelectPrompt; MainWindow.DeselectPrompt ], asked)
     Assert.Empty(marked list)
@@ -121,8 +121,8 @@ let ``cancelling the pattern prompt changes nothing`` () =
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
     list.SelectedItem <- 1
-    press list MainWindow.selectionKeys.Head
-    press list MainWindow.selectPatternKey
+    press list PanelInput.selectionKeys.Head
+    press list PanelInput.selectPatternKey
 
     Assert.Collection(marked list, fun row -> Assert.StartsWith("docs", row))
 
@@ -133,7 +133,7 @@ let ``the panel shows a summary of what is selected`` () =
 
     Assert.Equal("", (FilePanel.summary panelView).Text)
 
-    press (FilePanel.listView panelView) MainWindow.selectPatternKey
+    press (FilePanel.listView panelView) PanelInput.selectPatternKey
 
     Assert.Contains("2 selected", (FilePanel.summary panelView).Text)
     Assert.Contains("4 bytes", (FilePanel.summary panelView).Text)

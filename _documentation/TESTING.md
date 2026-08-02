@@ -15,7 +15,7 @@ on what was requested. `Program.fs` is the only place that supplies the real
 ## Terminal.Gui pitfalls
 
 **`Key` is mutable and `Handled` sticks.** Sending a shared `Key` instance
-(such as `MainWindow.refreshKey`) through `NewKeyDownEvent` sets `Handled` on
+(such as `PanelInput.refreshKey`) through `NewKeyDownEvent` sets `Handled` on
 that object permanently; every later send of the same instance is ignored and
 handlers stop firing. Use `TestHelpers.press`, which sends a fresh copy.
 The symptom of getting this wrong is a test that passes alone but fails as

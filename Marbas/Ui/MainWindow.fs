@@ -19,14 +19,6 @@ type Dependencies =
 
 let quitKey = Key.Q.WithCtrl
 
-let refreshKey = Key.R.WithCtrl
-
-let selectionKeys = [ Key.InsertChar; Key.Space ]
-
-let selectPatternKey = Key '+'
-
-let deselectPatternKey = Key '-'
-
 [<Literal>]
 let SelectPrompt = "Select"
 
@@ -38,10 +30,6 @@ let MkdirPrompt = "Create directory"
 
 [<Literal>]
 let DrivePrompt = "Select drive"
-
-let leftDriveKey = Key.F1.WithAlt
-
-let rightDriveKey = Key.F2.WithAlt
 
 let configureQuitKey () =
     Application.SetDefaultKeyBinding(Command.Quit, Bind.All(quitKey, Key.F10))
@@ -106,11 +94,6 @@ let create (deps: Dependencies) =
     for side, _ in views do
         dispatch (Update.PathOpened(side, deps.StartPath))
 
-    let driveKeySide (key: Key) =
-        if key = leftDriveKey then Some AppState.Left
-        elif key = rightDriveKey then Some AppState.Right
-        else None
-
     for side, view in views do
         let list = FilePanel.listView view
         let cursor () = list.SelectedItem.GetValueOrDefault 0
@@ -130,20 +113,10 @@ let create (deps: Dependencies) =
             dispatch (Update.EntryOpened(side, cursor ())))
 
         list.KeyDown.Add(fun key ->
-            if key = refreshKey then
+            match PanelInput.messageFor side (cursor ()) key with
+            | Some msg ->
                 key.Handled <- true
-                dispatch (Update.RefreshRequested(side, cursor ()))
-            elif selectionKeys |> List.contains key then
-                key.Handled <- true
-                dispatch (Update.SelectionToggled(side, cursor ()))
-            elif key = selectPatternKey || key = deselectPatternKey then
-                key.Handled <- true
-                dispatch (Update.PatternRequested(side, cursor (), key = selectPatternKey))
-            else
-                match driveKeySide key with
-                | Some target ->
-                    key.Handled <- true
-                    dispatch (Update.DriveRequested target)
-                | None -> ())
+                dispatch msg
+            | None -> ())
 
     window

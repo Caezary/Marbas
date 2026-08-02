@@ -135,7 +135,7 @@ let ``refresh keeps the selection and drops entries that disappeared`` () =
 
 [<Fact>]
 let ``selection keys mark the cursor entry and move the cursor down`` () =
-    for key in MainWindow.selectionKeys do
+    for key in PanelInput.selectionKeys do
         use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
         window.BeginInit()
         window.EndInit()
@@ -150,7 +150,7 @@ let ``selection keys mark the cursor entry and move the cursor down`` () =
 
 [<Fact>]
 let ``a selection key pressed twice leaves the entry unmarked`` () =
-    for key in MainWindow.selectionKeys do
+    for key in PanelInput.selectionKeys do
         use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
         window.BeginInit()
         window.EndInit()
@@ -172,7 +172,7 @@ let ``the parent entry cannot be marked from the keyboard`` () =
     window.SetFocus() |> ignore
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
-    press list MainWindow.selectionKeys.Head
+    press list PanelInput.selectionKeys.Head
 
     Assert.False(list.Source.IsMarked 0)
     Assert.Equal(1, list.SelectedItem.GetValueOrDefault 0)
@@ -187,7 +187,7 @@ let ``marks follow the panel they were made in`` () =
     let left = FilePanel.listView (panel FilePanel.LeftId window)
     let right = FilePanel.listView (panel FilePanel.RightId window)
     left.SelectedItem <- 1
-    press left MainWindow.selectionKeys.Head
+    press left PanelInput.selectionKeys.Head
 
     Assert.True(left.Source.IsMarked 1)
     Assert.False(right.Source.IsMarked 1)

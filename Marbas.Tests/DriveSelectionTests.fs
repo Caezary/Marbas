@@ -30,7 +30,7 @@ let ``alt+F1 opens the chosen drive in the left panel`` () =
     use window = windowWith fs (fun _ _ -> Some @"D:\") (fun _ _ -> ())
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
-    press list MainWindow.leftDriveKey
+    press list PanelInput.leftDriveKey
 
     Assert.Equal(@"D:\", (panel FilePanel.LeftId window).Title)
     Assert.Equal(@"C:\start", (panel FilePanel.RightId window).Title)
@@ -41,7 +41,7 @@ let ``alt+F2 opens the chosen drive in the right panel`` () =
     use window = windowWith fs (fun _ _ -> Some @"D:\") (fun _ _ -> ())
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
-    press list MainWindow.rightDriveKey
+    press list PanelInput.rightDriveKey
 
     Assert.Equal(@"D:\", (panel FilePanel.RightId window).Title)
     Assert.Equal(@"C:\start", (panel FilePanel.LeftId window).Title)
@@ -60,7 +60,7 @@ let ``the chooser is offered every mounted drive`` () =
             (fun _ _ -> ())
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
-    press list MainWindow.leftDriveKey
+    press list PanelInput.leftDriveKey
 
     Assert.Equal<string list>([ @"C:\"; @"D:\" ], offered |> Seq.exactlyOne)
 
@@ -70,7 +70,7 @@ let ``cancelling the chooser leaves both panels untouched`` () =
     use window = windowWith fs (fun _ _ -> None) (fun _ _ -> ())
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
-    press list MainWindow.leftDriveKey
+    press list PanelInput.leftDriveKey
 
     Assert.Equal(@"C:\start", (panel FilePanel.LeftId window).Title)
 
@@ -81,7 +81,7 @@ let ``an unreadable drive is reported and the panel stays put`` () =
     use window = windowWith fs (fun _ _ -> Some @"Z:\") (fun _ message -> reported.Add message)
 
     let list = FilePanel.listView (panel FilePanel.LeftId window)
-    press list MainWindow.leftDriveKey
+    press list PanelInput.leftDriveKey
 
     Assert.Contains(@"Z:\", reported |> Seq.exactlyOne)
     Assert.Equal(@"C:\start", (panel FilePanel.LeftId window).Title)

@@ -112,7 +112,7 @@ let ``Ctrl+R reloads the focused panel`` () =
 
     Assert.DoesNotContain(rowsBefore, fun (row: string) -> row.StartsWith "added.txt")
 
-    press list MainWindow.refreshKey
+    press list PanelInput.refreshKey
 
     let rowsAfter =
         let source = list.Source.ToList()
