@@ -23,6 +23,7 @@
     <Compile Include="NavigationTests.fs" />
     <Compile Include="ListingErrorMessageTests.fs" />
     <Compile Include="TestHelpers.fs" />
+    <Compile Include="ShellTests.fs" />
     <Compile Include="MainWindowTests.fs" />
     <Compile Include="PanelFocusTests.fs" />
     <Compile Include="FunctionKeyBarTests.fs" />

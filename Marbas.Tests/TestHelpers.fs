@@ -13,7 +13,7 @@ let panel id (window: Window) =
 let press (view: View) (key: Key) =
     view.NewKeyDownEvent(Key key.KeyCode) |> ignore
 
-let dependencies (fs: IFileSystem) startPath : MainWindow.Dependencies =
+let dependencies (fs: IFileSystem) startPath : Shell.Dependencies =
     { FileSystem = fs
       StartPath = startPath
       OnQuit = ignore

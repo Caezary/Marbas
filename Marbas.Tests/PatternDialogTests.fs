@@ -13,7 +13,7 @@ let private laidOut title =
 
 [<Fact>]
 let ``the input field fits inside the dialog content area`` () =
-    use dialog = laidOut MainWindow.SelectPrompt
+    use dialog = laidOut Shell.SelectPrompt
     let input = (PatternDialog.field dialog).Frame
 
     Assert.True(input.Width > 0, "the field must be wide enough to show what is typed")
@@ -21,19 +21,19 @@ let ``the input field fits inside the dialog content area`` () =
 
 [<Fact>]
 let ``the dialog opens with a pattern matching everything`` () =
-    use dialog = laidOut MainWindow.SelectPrompt
+    use dialog = laidOut Shell.SelectPrompt
 
     Assert.Equal(PatternDialog.DefaultPattern, (PatternDialog.field dialog).Text)
 
 [<Fact>]
 let ``a dismissed dialog yields no pattern`` () =
-    use dialog = laidOut MainWindow.DeselectPrompt
+    use dialog = laidOut Shell.DeselectPrompt
 
     Assert.Equal(None, PatternDialog.pattern dialog)
 
 [<Fact>]
 let ``confirming yields the text that was typed`` () =
-    use dialog = laidOut MainWindow.SelectPrompt
+    use dialog = laidOut Shell.SelectPrompt
     (PatternDialog.field dialog).Text <- "*.fs"
     dialog.Result <- 1
 

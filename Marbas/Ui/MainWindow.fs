@@ -1,6 +1,5 @@
 module Marbas.Ui.MainWindow
 
-open System.IO.Abstractions
 open Terminal.Gui.App
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
@@ -8,33 +7,12 @@ open Terminal.Gui.Views
 open Marbas.FileSystem
 open Marbas.State
 
-type Dependencies =
-    { FileSystem: IFileSystem
-      StartPath: string
-      OnQuit: unit -> unit
-      ReportError: string -> string -> unit
-      ChooseOption: string -> string list -> string option
-      AskPattern: string -> string option
-      AskName: string -> string option }
-
 let quitKey = Key.Q.WithCtrl
-
-[<Literal>]
-let SelectPrompt = "Select"
-
-[<Literal>]
-let DeselectPrompt = "Deselect"
-
-[<Literal>]
-let MkdirPrompt = "Create directory"
-
-[<Literal>]
-let DrivePrompt = "Select drive"
 
 let configureQuitKey () =
     Application.SetDefaultKeyBinding(Command.Quit, Bind.All(quitKey, Key.F10))
 
-let create (deps: Dependencies) =
+let create (deps: Shell.Dependencies) =
     let fs = deps.FileSystem
     let window = new Window(Title = "Marbas", Width = Dim.Fill(), Height = Dim.Fill())
     let left, right = FilePanel.createPair ()
@@ -59,27 +37,7 @@ let create (deps: Dependencies) =
     let rec dispatch msg =
         let result = Update.update fs msg store.State
         store.Put result.State
-        result.Effects |> List.iter runEffect
-
-    and runEffect effect =
-        match effect with
-        | Update.ReportListingError error ->
-            deps.ReportError ListingErrorMessage.Title (ListingErrorMessage.describe error)
-        | Update.ReportOperationError error ->
-            deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describe error)
-        | Update.PromptForName ->
-            match deps.AskName MkdirPrompt with
-            | Some name -> dispatch (Update.NameEntered name)
-            | None -> ()
-        | Update.PromptForPattern(side, index, selecting) ->
-            match deps.AskPattern (if selecting then SelectPrompt else DeselectPrompt) with
-            | Some pattern -> dispatch (Update.PatternEntered(side, index, selecting, pattern))
-            | None -> ()
-        | Update.PromptForDrive side ->
-            match deps.ChooseOption DrivePrompt (Drives.list fs) with
-            | Some drive -> dispatch (Update.PathOpened(side, drive))
-            | None -> ()
-        | Update.Quit -> deps.OnQuit()
+        result.Effects |> List.iter (Shell.interpret deps dispatch)
 
     let bar =
         FunctionKeyBar.create

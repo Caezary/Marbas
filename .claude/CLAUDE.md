@@ -28,7 +28,7 @@ dotnet test Marbas.slnx
 - **Dependencies flow downward only:** `Ui` → `State` → `FileSystem`.
   `AppState` transitions are pure; `State/Store.fs` holds the only mutable
   cell. The outside world (file system, dialogs, quit) is injected through
-  `MainWindow.Dependencies`, and `Program.fs` is the only place wiring the
-  real ones.
+  `Shell.Dependencies` and run by `Shell.interpret`; `Program.fs` is the only
+  place wiring the real ones.
 - Work task by task, in plan order, keeping the application runnable after
   each one.

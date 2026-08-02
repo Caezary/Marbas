@@ -94,7 +94,7 @@ let ``the select key asks for a pattern and marks the matches`` () =
     let list = FilePanel.listView (panel FilePanel.LeftId window)
     press list PanelInput.selectPatternKey
 
-    Assert.Equal<string list>([ MainWindow.SelectPrompt ], asked)
+    Assert.Equal<string list>([ Shell.SelectPrompt ], asked)
     Assert.Collection(marked list, fun row -> Assert.StartsWith("setup.fs", row))
 
 [<Fact>]
@@ -112,7 +112,7 @@ let ``the deselect key asks for a pattern and unmarks the matches`` () =
 
     press list PanelInput.deselectPatternKey
 
-    Assert.Equal<string list>([ MainWindow.SelectPrompt; MainWindow.DeselectPrompt ], asked)
+    Assert.Equal<string list>([ Shell.SelectPrompt; Shell.DeselectPrompt ], asked)
     Assert.Empty(marked list)
 
 [<Fact>]

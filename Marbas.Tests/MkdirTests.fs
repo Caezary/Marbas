@@ -73,7 +73,7 @@ let ``F7 asks for a name and the new directory shows up under the cursor`` () =
 
     press window Key.F7
 
-    Assert.Equal<string list>([ MainWindow.MkdirPrompt ], asked)
+    Assert.Equal<string list>([ Shell.MkdirPrompt ], asked)
     let list = FilePanel.listView (panel FilePanel.LeftId window)
     let selected = string (list.Source.ToList()[list.SelectedItem.GetValueOrDefault 0])
     Assert.StartsWith("work", selected)
