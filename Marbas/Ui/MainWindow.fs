@@ -21,17 +21,12 @@ let create (deps: Shell.Dependencies) =
 
     let views = [ AppState.Left, left; AppState.Right, right ]
 
-    let mutable rendering = false
-
     let render (state: AppState.AppState) =
-        rendering <- true
-
         for side, view in views do
             FilePanel.render (AppState.panel side state) view
 
         let entry = state |> AppState.activePanel |> AppState.cursorEntry
         statusLine |> StatusLine.render entry
-        rendering <- false
 
     let step msg state =
         let result = Update.update fs msg state
@@ -62,7 +57,7 @@ let create (deps: Shell.Dependencies) =
         list.FrameChanged.Add(fun _ -> runtime.Refresh())
 
         list.ValueChanged.Add(fun args ->
-            if not rendering then
+            if not runtime.IsRendering then
                 dispatch (Update.CursorMoved(side, args.NewValue.GetValueOrDefault 0)))
 
         view.HasFocusChanged.Add(fun _ ->

@@ -8,13 +8,21 @@ type Runtime<'state, 'msg, 'effect>
         render: 'state -> unit
     ) =
     let mutable state = initial
+    let mutable rendering = false
+
+    let paint () =
+        rendering <- true
+        render state
+        rendering <- false
 
     member _.State = state
+
+    member _.IsRendering = rendering
 
     member this.Dispatch(msg: 'msg) =
         let next, effects = update msg state
         state <- next
-        render state
+        paint ()
         effects |> List.iter (interpret this.Dispatch)
 
-    member _.Refresh() = render state
+    member _.Refresh() = paint ()
