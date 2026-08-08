@@ -23,7 +23,8 @@ type Dependencies =
       ReportError: string -> string -> unit
       ChooseOption: string -> string list -> string option
       AskPattern: string -> string option
-      AskName: string -> string option }
+      AskName: string -> string option
+      Confirm: string -> string -> bool }
 
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
@@ -31,6 +32,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         deps.ReportError ListingErrorMessage.Title (ListingErrorMessage.describe error)
     | ReportOperationError error ->
         deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describe error)
+    | ReportItemFailures failures ->
+        deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describeFailures failures)
+    | ConfirmDelete(names, nonEmptyDirectory) ->
+        if deps.Confirm DeleteConfirmation.Title (DeleteConfirmation.describe names nonEmptyDirectory) then
+            dispatch DeleteConfirmed
     | PromptForName ->
         match deps.AskName MkdirPrompt with
         | Some name -> dispatch (NameEntered name)

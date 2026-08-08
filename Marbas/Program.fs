@@ -25,6 +25,10 @@ let main _ =
             | index when index.HasValue && index.Value < options.Length -> Some options[index.Value]
             | _ -> None
 
+    let confirm (title: string) (message: string) =
+        let answer = MessageBox.Query(app, title, message, "_Yes", "_No")
+        answer.HasValue && answer.Value = 0
+
     let askPattern title =
         use dialog = PatternDialog.create title
         app.Run dialog |> ignore
@@ -43,7 +47,8 @@ let main _ =
               ReportError = reportError
               ChooseOption = chooseOption
               AskPattern = askPattern
-              AskName = askName }
+              AskName = askName
+              Confirm = confirm }
 
     app.Run window |> ignore
     0

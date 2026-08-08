@@ -130,6 +130,58 @@ let ``toggling selection marks the entry under the cursor and advances`` () =
     Assert.Equal(3, result.State.Left.Cursor)
 
 [<Fact>]
+let ``delete requested asks to confirm the cursor entry`` () =
+    let fs = mockFs ()
+
+    let result = update fs DeleteRequested (loaded fs |> setCursor Left 2)
+
+    Assert.Equal<Effect list>([ ConfirmDelete([ "notes.txt" ], false) ], result.Effects)
+
+[<Fact>]
+let ``delete requested warns when a target directory is not empty`` () =
+    let fs = mockFs ()
+    fs.AddFile(@"C:\start\docs\inner.txt", MockFileData "x")
+
+    let result = update fs DeleteRequested (loaded fs |> setCursor Left 1)
+
+    Assert.Equal<Effect list>([ ConfirmDelete([ "docs" ], true) ], result.Effects)
+
+[<Fact>]
+let ``delete requested on the parent entry asks nothing`` () =
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let result = update fs DeleteRequested state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a confirmed delete removes the target and raises no effect`` () =
+    let fs = mockFs ()
+
+    let result = update fs DeleteConfirmed (loaded fs |> setCursor Left 2)
+
+    Assert.False(fs.File.Exists @"C:\start\notes.txt")
+    Assert.DoesNotContain("notes.txt", result.State.Left.Entries |> List.map _.Name)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a delete that fails is reported item by item`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+    fs.File.Delete @"C:\start\notes.txt"
+
+    let result = update fs DeleteConfirmed state
+
+    Assert.Equal<Effect list>(
+        [ ReportItemFailures
+              [ { Name = "notes.txt"
+                  Outcome = Error(SourceNotFound(fp @"C:\start\notes.txt")) } ] ],
+        result.Effects
+    )
+
+[<Fact>]
 let ``quit requested raises the quit effect`` () =
     let result = update (mockFs ()) QuitRequested (loaded (mockFs ()))
 

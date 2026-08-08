@@ -55,6 +55,15 @@ let private getFileSystemEntries (fs: IFileSystem) (path: FileSystemPath) =
     fs.Directory.EnumerateFileSystemEntries raw
     |> Seq.map FileSystemPath.create
 
+let isNonEmptyDirectory (fs: IFileSystem) (path: FileSystemPath) =
+    match FileSystemPath.kind fs path with
+    | DirectoryEntry ->
+        try
+            getFileSystemEntries fs path |> Seq.isEmpty |> not
+        with _ ->
+            true
+    | _ -> false
+
 let makeDirectory (fs: IFileSystem) (parent: FileSystemPath) (name: string) =
     let path = FileSystemPath.combine fs parent name
 
@@ -131,6 +140,9 @@ let private itemResults (fs: IFileSystem) sources outcome =
     |> List.map (fun source ->
         { Name = FileSystemPath.name fs source
           Outcome = outcome source })
+
+let failures (results: ItemResult list) =
+    results |> List.filter (_.Outcome >> Result.isError)
 
 let deleteAll (fs: IFileSystem) sources = itemResults fs sources (delete fs)
 

@@ -34,3 +34,30 @@ let ``an unexpected failure includes the underlying reason`` () =
 
     Assert.Contains(@"C:\bad", message)
     Assert.Contains("disk full", message)
+
+[<Fact>]
+let ``every failed item is named with its own reason`` () =
+    let items =
+        [ { Name = "gone.txt"
+            Outcome = Error(SourceNotFound(fp @"C:\data\gone.txt")) }
+          { Name = "locked"
+            Outcome = Error(AccessDenied(fp @"C:\data\locked")) } ]
+
+    let message = OperationErrorMessage.describeFailures items
+
+    Assert.Contains("gone.txt", message)
+    Assert.Contains("no longer exists", message)
+    Assert.Contains("locked", message)
+    Assert.Contains("Access denied", message)
+
+[<Fact>]
+let ``items that succeeded are left out`` () =
+    let items =
+        [ { Name = "a.txt"; Outcome = Ok() }
+          { Name = "gone.txt"
+            Outcome = Error(SourceNotFound(fp @"C:\data\gone.txt")) } ]
+
+    let message = OperationErrorMessage.describeFailures items
+
+    Assert.DoesNotContain("a.txt", message)
+    Assert.Contains("gone.txt", message)

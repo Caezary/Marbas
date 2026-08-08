@@ -42,7 +42,7 @@ let create (deps: Shell.Dependencies) =
             { OnCopy = ignore
               OnRenameMove = ignore
               OnMakeDirectory = fun () -> dispatch Update.MakeDirectoryRequested
-              OnDelete = ignore
+              OnDelete = fun () -> dispatch Update.DeleteRequested
               OnQuit = fun () -> dispatch Update.QuitRequested }
 
     window.Add(left, right, statusLine, bar) |> ignore

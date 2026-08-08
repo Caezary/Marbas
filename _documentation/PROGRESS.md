@@ -1,19 +1,19 @@
 # Progress
 
-Status as of 2026-07-21. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-05. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–4 are complete and P5.1–P5.2 are done** (18 of 29 tasks). Marbas runs
+**Phases 1–4 are complete and P5.1–P5.3 are done** (19 of 29 tasks). Marbas runs
 as a full-screen two-panel file browser: both panels list a real directory, the
 keyboard moves between and inside them, entries can be marked one by one or by
 wildcard for later operations, a status line describes the entry under the
 cursor, and failures surface as dialogs instead of crashes. The operations
-module can copy, move, rename, delete and create directories; `F7` is the first
-key wired to it — it makes a directory in the active panel. The remaining
-operation keys arrive in P5.3–P5.6.
+module can copy, move, rename, delete and create directories; `F7` makes a
+directory in the active panel and `F8` deletes the operation targets after a
+confirmation. The remaining operation keys arrive in P5.4–P5.6.
 
-**149 tests pass**, covering every logic module directly and the UI behaviour by
+**225 tests pass**, covering every logic module directly and the UI behaviour by
 driving real Terminal.Gui views over an in-memory file system.
 
 | Phase | Tasks | State |
@@ -22,7 +22,7 @@ driving real Terminal.Gui views over an in-memory file system.
 | 2 — Directory listing | P2.1–P2.4 | done |
 | 3 — Navigation | P3.1–P3.5 | done |
 | 4 — Selection | P4.1–P4.3 | done |
-| 5 — File operations | P5.1–P5.6 | P5.1–P5.2 done, P5.3 next |
+| 5 — File operations | P5.1–P5.6 | P5.1–P5.3 done, P5.4 next |
 | 6 — Viewing files | P6.1–P6.2 | not started |
 | 7 — Polish & configuration | P7.1–P7.4 | not started |
 | 8 — Quality & release | P8.1–P8.3 | not started |
@@ -57,9 +57,16 @@ driving real Terminal.Gui views over an in-memory file system.
   panel refreshes with the cursor on the new entry and existing marks intact. A
   blank name or a cancelled prompt does nothing; a clash (or any failure) is
   reported in a dialog.
+- `F8` deletes the operation targets of the active panel — the marked entries,
+  or the entry under the cursor when nothing is marked, never `..`. It first
+  asks for confirmation, naming a single target or counting several, with an
+  extra warning when a target directory is not empty; saying no changes
+  nothing. Directories go with everything inside them, the panel refreshes with
+  the marks of the deleted entries dropped, and whatever failed is listed
+  entry by entry in one dialog while the rest of the batch still goes through.
 - `Ctrl+Q` or `F10` quits. The bottom bar lists the Norton-style function keys
-  (`F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`); `F7` and `F10`
-  are wired up so far.
+  (`F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`); `F7`, `F8` and
+  `F10` are wired up so far.
 
 ## Code map
 
@@ -73,7 +80,8 @@ Marbas/
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
   State/
     AppState.fs           immutable panel/app state and its transitions
-    Store.fs              the single mutable cell + dispatch
+    Update.fs             messages and effects: message + state -> state + effects
+    Runtime.fs            generic host: the single mutable cell, dispatch, render
   Ui/
     EntrySize.fs          size column text, byte format injected per view
     EntryFormat.fs        one entry -> one fixed-width row
@@ -81,12 +89,15 @@ Marbas/
     CursorInfo.fs         cursor entry -> status line text
     StatusLine.fs         the status line view
     ListingErrorMessage.fs  ListingError -> user-facing text
-    OperationErrorMessage.fs  OperationError -> user-facing text
+    OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
+    DeleteConfirmation.fs delete targets -> confirmation question
     FilePanel.fs          panel views, render state -> view
     FunctionKeyBar.fs     bottom shortcut bar, one action per function key
+    PanelInput.fs         panel key -> message
+    Shell.fs              Dependencies and the effect interpreter
     PromptDialog.fs       single-field text prompt (label + default)
     PatternDialog.fs      the `+` / `-` pattern prompt, over PromptDialog
-    MainWindow.fs         composition: views, store, key handling
+    MainWindow.fs         composition: views, runtime, event wiring
   Program.fs              real file system and real dialogs
 ```
 
@@ -112,13 +123,15 @@ Raw OS strings are wrapped once at the outside edge (`Program.fs`, `MainWindow`
 start path and drive roots).
 
 **Immutable state, one mutable cell.** `AppState` transitions are pure
-functions; `Store` holds the only mutable reference and re-renders after each
-dispatch. Handlers send transitions, they never mutate. See PLAN.md,
-*State handling*.
+functions; `Update.update` folds a `Message` into a new state plus a list of
+`Effect` values, and the generic `Runtime` holds the only mutable reference,
+re-renders after each dispatch and hands the effects to the interpreter.
+Handlers send messages, they never mutate. See PLAN.md, *State handling*.
 
-**The outside world is injected.** `MainWindow.create` takes a `Dependencies`
-record (file system, start path, quit callback, error reporter, drive chooser,
-pattern prompt).
+**The outside world is injected.** `Shell.Dependencies` names every port (file
+system, start path, quit callback, error reporter, drive chooser, pattern
+prompt, name prompt, confirmation) and `Shell.interpret` is the only place that
+turns an `Effect` into a call on one of them.
 `Program.fs` is the only place that opens real dialogs, which keeps
 dialog-triggering behaviour testable. The dialogs themselves are built in `Ui`
 modules (`PatternDialog`) so their layout can be tested too — a field placed
@@ -148,9 +161,10 @@ copied and then removed; files still use `IFile.Move`.
 shortcut swallows its key globally (see the `F10` trap), so a panel-level
 `KeyDown` handler for `F7` would never fire. `FunctionKeyBar.create` therefore
 takes an `Actions` record — one callback per function key — and `MainWindow`
-supplies real handlers (`ignore` for the not-yet-built ones). The mkdir action
-reads `store.State.Active` to target whichever panel is current, since a
-`StatusBar` shortcut has no notion of focus.
+supplies real handlers (`ignore` for the not-yet-built ones). Their messages
+carry no side or index — a `StatusBar` shortcut has no notion of focus, so
+`MakeDirectoryRequested` and `DeleteRequested` read the active panel and its
+cursor from the state, which the panel events keep up to date.
 
 **`ReportError` carries a title.** Listing failures and operation failures want
 different dialog captions, so the dependency is `title -> message -> unit`;
@@ -162,6 +176,26 @@ different dialog captions, so the dependency is `title -> message -> unit`;
 reload returns a `ListingError`, which a private pure mapping folds into an
 `OperationError` so the whole transition answers with one error type. State
 still never depends on Ui — the mapping is over the raw error values.
+
+**Operation targets are one rule, shared by every operation key.**
+`AppState.operationTargets` answers with the marked entries in listing order,
+or with the cursor entry when nothing is marked, and never with `..` — so
+`F8` on the parent entry has nothing to do and asks nothing. P5.4–P5.6 take
+their sources from the same function.
+
+**A confirmation is an effect; its wording belongs to Ui.** `ConfirmDelete`
+carries the target names and a single flag saying whether any target directory
+has contents, and `DeleteConfirmation.describe` turns that into the question.
+The emptiness check runs in the state layer, where the file system already is
+(`Operations.isNonEmptyDirectory`); a directory that cannot be enumerated
+counts as non-empty, so the warning errs towards showing up.
+
+**Per-item failures share one dialog.** `Operations.deleteAll` answers for every
+target, `Operations.failures` keeps the ones that went wrong, and the
+`ReportItemFailures` effect renders them through
+`OperationErrorMessage.describeFailures` as one `name: reason` line each. The
+panel is refreshed first, so what survived a partial failure is on screen
+before the dialog appears.
 
 **One rule for the size column, formatting per view.** `EntrySize.describe`
 holds the shared decision — directories get `<DIR>`, files get their size, an
@@ -183,10 +217,9 @@ state.
 **The cursor lives in the state, and rendering is guarded.** The panel's
 `ListView.ValueChanged` dispatches `AppState.setCursor`, so state always knows
 where the cursor is (P4.2 will build the selection on top of it). Rendering
-also writes `ListView.SelectedItem`, which raises the same event, so
-`MainWindow` sets a `rendering` flag while it renders and the handler ignores
-events raised inside it. Without the flag, render and handler bounce off each
-other.
+also writes `ListView.SelectedItem`, which raises the same event, so `Runtime`
+raises its `IsRendering` flag while it renders and the handler ignores events
+raised inside it. Without the flag, render and handler bounce off each other.
 
 ## Traps already hit (details in [TESTING.md](TESTING.md))
 
@@ -204,12 +237,8 @@ other.
 
 ## Next up
 
-**P5.3** — `F8` delete: a confirmation dialog (with an extra warning for a
-non-empty directory), then a recursive delete of the operation targets, errors
-reported per item.
-
-Still missing before the operation keys can act on a selection: a state
-function giving the operation targets — the marked entries in listing order,
-or the cursor entry when nothing is marked. `AppState.selectedEntries` covers
-only the first half today. `Operations.deleteAll` already takes a list of
-paths, so P5.3 needs that target list plus a confirm dialog dependency.
+**P5.4** — `F5` copy: `AppState.operationTargets` of the active panel copied
+into the other panel's directory, with an overwrite question offering
+Yes / No / All / Cancel. `Operations.copyAll` already takes the overwrite flag
+per call, so the answer — and the "All" that stops asking — is a UI decision
+built on top of it, unlike the single `Confirm` port P5.3 needed.

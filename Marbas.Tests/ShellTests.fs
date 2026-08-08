@@ -107,6 +107,48 @@ let ``an operation error is reported under the operation title`` () =
     Assert.Contains("docs", snd reported)
 
 [<Fact>]
+let ``a confirmed delete is dispatched back`` () =
+    let sent, dispatch = capture ()
+    let deps = { noDeps () with Confirm = fun _ _ -> true }
+
+    Shell.interpret deps dispatch (ConfirmDelete([ "notes.txt" ], false))
+
+    Assert.Equal<Message list>([ DeleteConfirmed ], List.ofSeq sent)
+
+[<Fact>]
+let ``a refused delete dispatches nothing`` () =
+    let sent, dispatch = capture ()
+
+    Shell.interpret (noDeps ()) dispatch (ConfirmDelete([ "notes.txt" ], false))
+
+    Assert.Empty sent
+
+[<Fact>]
+let ``the delete question carries its own title and the warning`` () =
+    let _, dispatch = capture ()
+    let mutable asked = ("", "")
+    let deps = { noDeps () with Confirm = fun title message -> asked <- (title, message); false }
+
+    Shell.interpret deps dispatch (ConfirmDelete([ "docs" ], true))
+
+    Assert.Equal(DeleteConfirmation.Title, fst asked)
+    Assert.Contains(DeleteConfirmation.NonEmptyWarning, snd asked)
+
+[<Fact>]
+let ``item failures are reported under the operation title`` () =
+    let mutable reported = ("", "")
+    let deps = { noDeps () with ReportError = fun title message -> reported <- (title, message) }
+
+    let failed =
+        [ { Name = "gone.txt"
+            Outcome = Error(SourceNotFound(fp @"C:\start\gone.txt")) } ]
+
+    Shell.interpret deps ignore (ReportItemFailures failed)
+
+    Assert.Equal(OperationErrorMessage.Title, fst reported)
+    Assert.Contains("gone.txt", snd reported)
+
+[<Fact>]
 let ``quit runs the quit port`` () =
     let mutable quit = false
     let deps = { noDeps () with OnQuit = fun () -> quit <- true }

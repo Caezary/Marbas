@@ -15,6 +15,8 @@ type Message =
     | PatternEntered of PanelSide * index: int * selecting: bool * pattern: string
     | MakeDirectoryRequested
     | NameEntered of name: string
+    | DeleteRequested
+    | DeleteConfirmed
     | DriveRequested of PanelSide
     | PathOpened of PanelSide * path: string
     | QuitRequested
@@ -22,6 +24,8 @@ type Message =
 type Effect =
     | ReportListingError of ListingError
     | ReportOperationError of Operations.OperationError
+    | ReportItemFailures of Operations.ItemResult list
+    | ConfirmDelete of names: string list * nonEmptyDirectory: bool
     | PromptForName
     | PromptForPattern of PanelSide * index: int * selecting: bool
     | PromptForDrive of PanelSide
@@ -63,6 +67,19 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         match name.Trim() with
         | "" -> stay state
         | trimmed -> makeDirectory fs state.Active trimmed state |> applyOperation state
+    | DeleteRequested ->
+        let target = activePanel state
+
+        match operationTargets target with
+        | [] -> stay state
+        | targets -> request state (ConfirmDelete(targets |> List.map _.Name, hasNonEmptyDirectory fs target))
+    | DeleteConfirmed ->
+        match deleteTargets fs state.Active state with
+        | Error error -> request state (ReportOperationError error)
+        | Ok(updated, results) ->
+            match Operations.failures results with
+            | [] -> stay updated
+            | failed -> request updated (ReportItemFailures failed)
     | DriveRequested side -> request state (PromptForDrive side)
     | PathOpened(side, path) -> loadPanel fs side (FileSystemPath.create path) state |> applyListing state
     | QuitRequested -> request state Quit

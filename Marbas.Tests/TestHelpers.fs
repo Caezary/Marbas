@@ -20,7 +20,8 @@ let dependencies (fs: IFileSystem) startPath : Shell.Dependencies =
       ReportError = fun _ _ -> ()
       ChooseOption = fun _ _ -> None
       AskPattern = fun _ -> None
-      AskName = fun _ -> None }
+      AskName = fun _ -> None
+      Confirm = fun _ _ -> false }
 
 let createWindowWith onQuit =
     let fs = MockFileSystem()

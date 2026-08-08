@@ -6,11 +6,14 @@ with an in-memory file system (`MockFileSystem`), so no test touches the disk.
 
 ## Injecting the outside world
 
-`MainWindow.create` takes a `Dependencies` record — file system, start path,
-quit callback, error reporter and drive chooser. Everything that would open a
-modal dialog or end the process is a function, so tests pass fakes and assert
-on what was requested. `Program.fs` is the only place that supplies the real
-`MessageBox` dialogs.
+`MainWindow.create` takes a `Shell.Dependencies` record — file system, start
+path, quit callback, error reporter, drive chooser, pattern prompt, name prompt
+and confirmation. Everything that would open a modal dialog or end the process
+is a function, so tests pass fakes and assert on what was requested.
+`Program.fs` is the only place that supplies the real `MessageBox` dialogs.
+`TestHelpers.dependencies` gives every port a do-nothing default — a
+confirmation that answers no, prompts that cancel — so a test only overrides
+the one it cares about.
 
 ## Terminal.Gui pitfalls
 

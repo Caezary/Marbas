@@ -145,6 +145,31 @@ let private asOperationError error =
     | DirectoryListing.AccessDenied path -> Operations.AccessDenied path
     | ListingFailed(path, message) -> Operations.OperationFailed(path, message)
 
+let operationTargets panel =
+    match selectedEntries panel with
+    | [] -> cursorEntry panel |> Option.filter selectable |> Option.toList
+    | marked -> marked
+
+let private entryPath (fs: IFileSystem) panel (entry: Entry) =
+    FileSystemPath.combine fs panel.Path entry.Name
+
+let hasNonEmptyDirectory (fs: IFileSystem) panel =
+    operationTargets panel
+    |> List.exists (entryPath fs panel >> Operations.isNonEmptyDirectory fs)
+
+let deleteTargets (fs: IFileSystem) side state =
+    let previous = panel side state
+
+    let results =
+        operationTargets previous
+        |> List.map (entryPath fs previous)
+        |> Operations.deleteAll fs
+
+    loadPanelFocusing fs side previous.Path (cursorFocus previous) state
+    |> Result.mapError asOperationError
+    |> Result.map (updatePanel side (keepSurviving previous.Selected))
+    |> Result.map (fun updated -> updated, results)
+
 let makeDirectory (fs: IFileSystem) side name state : Result<AppState, Operations.OperationError> =
     let previous = panel side state
 

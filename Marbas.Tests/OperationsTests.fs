@@ -215,6 +215,31 @@ let ``copyAll and moveAll report every item`` () =
     Assert.Equal(Error(TargetExists(fp @"C:\backup\a.txt")), (List.exactlyOne moved).Outcome)
 
 [<Fact>]
+let ``a directory holding entries is non-empty`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(@"C:\data\docs\inner.txt", MockFileData "x")
+
+    Assert.True(isNonEmptyDirectory fs (fp @"C:\data\docs"))
+
+[<Fact>]
+let ``an empty directory and a file are not non-empty directories`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory @"C:\data\empty"
+    fs.AddFile(@"C:\data\notes.txt", MockFileData "x")
+
+    Assert.False(isNonEmptyDirectory fs (fp @"C:\data\empty"))
+    Assert.False(isNonEmptyDirectory fs (fp @"C:\data\notes.txt"))
+
+[<Fact>]
+let ``failures keeps only the items that went wrong`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(@"C:\data\b.txt", MockFileData "b")
+
+    let failed = deleteAll fs [ fp @"C:\data\gone.txt"; fp @"C:\data\b.txt" ] |> failures
+
+    Assert.Equal<string list>([ "gone.txt" ], failed |> List.map _.Name)
+
+[<Fact>]
 let ``access denied maps to an error value`` () =
     Assert.Equal(AccessDenied(fp @"C:\locked"), mapException (fp @"C:\locked") (UnauthorizedAccessException()))
 
