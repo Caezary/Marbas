@@ -21,7 +21,8 @@ let dependencies (fs: IFileSystem) startPath : Shell.Dependencies =
       ChooseOption = fun _ _ -> None
       AskPattern = fun _ -> None
       AskName = fun _ -> None
-      Confirm = fun _ _ -> false }
+      Confirm = fun _ _ -> false
+      AskOverwrite = fun _ _ -> Marbas.FileSystem.Operations.No }
 
 let createWindowWith onQuit =
     let fs = MockFileSystem()

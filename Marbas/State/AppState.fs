@@ -48,12 +48,13 @@ let private updatePanel side f state =
 
 let activate side state = { state with Active = side }
 
+let opposite side =
+    match side with
+    | Left -> Right
+    | Right -> Left
+
 let toggleActive state =
-    { state with
-        Active =
-            match state.Active with
-            | Left -> Right
-            | Right -> Left }
+    { state with Active = opposite state.Active }
 
 let private withCursor index (p: PanelState) = { p with Cursor = index }
 
@@ -139,6 +140,12 @@ let private surviving entries selected =
 let private keepSurviving selected (p: PanelState) =
     { p with Selected = surviving p.Entries selected }
 
+let private finishedNames (results: Operations.ItemResult list) =
+    results |> List.filter (_.Outcome >> Result.isOk) |> List.map _.Name |> Set.ofList
+
+let private keepUnfinished results selected (p: PanelState) =
+    keepSurviving (Set.difference selected (finishedNames results)) p
+
 let private asOperationError error =
     match error with
     | DirectoryNotFound path -> Operations.SourceNotFound path
@@ -153,21 +160,29 @@ let operationTargets panel =
 let private entryPath (fs: IFileSystem) panel (entry: Entry) =
     FileSystemPath.combine fs panel.Path entry.Name
 
+let operationPaths (fs: IFileSystem) panel =
+    operationTargets panel |> List.map (entryPath fs panel)
+
 let hasNonEmptyDirectory (fs: IFileSystem) panel =
     operationTargets panel
     |> List.exists (entryPath fs panel >> Operations.isNonEmptyDirectory fs)
 
-let deleteTargets (fs: IFileSystem) side state =
+let private reload (fs: IFileSystem) side keep state =
     let previous = panel side state
-
-    let results =
-        operationTargets previous
-        |> List.map (entryPath fs previous)
-        |> Operations.deleteAll fs
 
     loadPanelFocusing fs side previous.Path (cursorFocus previous) state
     |> Result.mapError asOperationError
-    |> Result.map (updatePanel side (keepSurviving previous.Selected))
+    |> Result.map (updatePanel side (keep previous))
+
+let deleteTargets (fs: IFileSystem) side state =
+    let results = operationPaths fs (panel side state) |> Operations.deleteAll fs
+
+    reload fs side (fun previous -> keepUnfinished results previous.Selected) state
+    |> Result.map (fun updated -> updated, results)
+
+let finishCopy (fs: IFileSystem) results state =
+    reload fs state.Active (fun previous -> keepUnfinished results previous.Selected) state
+    |> Result.bind (reload fs (opposite state.Active) (fun previous -> keepSurviving previous.Selected))
     |> Result.map (fun updated -> updated, results)
 
 let makeDirectory (fs: IFileSystem) side name state : Result<AppState, Operations.OperationError> =

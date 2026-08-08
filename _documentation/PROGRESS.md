@@ -1,19 +1,20 @@
 # Progress
 
-Status as of 2026-08-05. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-08. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–4 are complete and P5.1–P5.3 are done** (19 of 29 tasks). Marbas runs
+**Phases 1–4 are complete and P5.1–P5.4 are done** (20 of 29 tasks). Marbas runs
 as a full-screen two-panel file browser: both panels list a real directory, the
 keyboard moves between and inside them, entries can be marked one by one or by
 wildcard for later operations, a status line describes the entry under the
 cursor, and failures surface as dialogs instead of crashes. The operations
 module can copy, move, rename, delete and create directories; `F7` makes a
-directory in the active panel and `F8` deletes the operation targets after a
-confirmation. The remaining operation keys arrive in P5.4–P5.6.
+directory in the active panel, `F8` deletes the operation targets after a
+confirmation, and `F5` copies them into the other panel. The remaining
+operation keys arrive in P5.5–P5.6.
 
-**225 tests pass**, covering every logic module directly and the UI behaviour by
+**250 tests pass**, covering every logic module directly and the UI behaviour by
 driving real Terminal.Gui views over an in-memory file system.
 
 | Phase | Tasks | State |
@@ -22,7 +23,7 @@ driving real Terminal.Gui views over an in-memory file system.
 | 2 — Directory listing | P2.1–P2.4 | done |
 | 3 — Navigation | P3.1–P3.5 | done |
 | 4 — Selection | P4.1–P4.3 | done |
-| 5 — File operations | P5.1–P5.6 | P5.1–P5.3 done, P5.4 next |
+| 5 — File operations | P5.1–P5.6 | P5.1–P5.4 done, P5.5 next |
 | 6 — Viewing files | P6.1–P6.2 | not started |
 | 7 — Polish & configuration | P7.1–P7.4 | not started |
 | 8 — Quality & release | P8.1–P8.3 | not started |
@@ -64,9 +65,16 @@ driving real Terminal.Gui views over an in-memory file system.
   nothing. Directories go with everything inside them, the panel refreshes with
   the marks of the deleted entries dropped, and whatever failed is listed
   entry by entry in one dialog while the rest of the batch still goes through.
+- `F5` copies the same operation targets into the directory shown by the other
+  panel. Nothing is asked while nothing collides; a target that already exists
+  raises a Yes / No / All / Cancel question naming it, where `No` skips that
+  one entry, `All` stops asking for the rest of the batch and `Cancel` drops
+  whatever is left. Directory trees go over whole. Afterwards both panels are
+  re-read, the marks of the copied entries are dropped while the marks of the
+  ones that failed stay, and failures are listed entry by entry.
 - `Ctrl+Q` or `F10` quits. The bottom bar lists the Norton-style function keys
-  (`F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`); `F7`, `F8` and
-  `F10` are wired up so far.
+  (`F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`); `F5`, `F7`,
+  `F8` and `F10` are wired up so far.
 
 ## Code map
 
@@ -91,6 +99,7 @@ Marbas/
     ListingErrorMessage.fs  ListingError -> user-facing text
     OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
     DeleteConfirmation.fs delete targets -> confirmation question
+    OverwriteQuestion.fs  collision -> question text, answer buttons and mapping
     FilePanel.fs          panel views, render state -> view
     FunctionKeyBar.fs     bottom shortcut bar, one action per function key
     PanelInput.fs         panel key -> message
@@ -148,10 +157,29 @@ input order, so the UI can report exactly which entries failed and why. A
 single-item failure inside one *tree* does abort that tree — a half-copied
 directory stops at the first error rather than pressing on blindly.
 
-**Overwriting is a flag, not a policy.** `copy`/`move` take a bool and refuse
-with `TargetExists` when it is false. The Yes / No / All / Cancel decision of
-P5.4 belongs to the UI, which calls the operation per item with the answer it
-already has.
+**Overwriting is a flag on one item, a question on a batch.** `copy`/`move`
+take a bool and refuse with `TargetExists` when it is false. `copyAll` no
+longer takes that bool: it takes an `ask: FileSystemPath -> OverwriteAnswer`
+and drives the Yes / No / All / Cancel loop itself, because that loop is
+application logic and belongs next to the file system, not in a view.
+`Shell.interpret` only supplies the callback that opens the dialog — the same
+shape as `IFileSystem` being injected. (P5.1 had assumed the UI would run the
+loop item by item; asking `ask` for the decision turned out to keep both sides
+simpler.)
+
+**One question per item covers the whole tree.** `copyAll` asks only when the
+*top-level* target already exists — and if it does not, nothing inside it can
+exist either, so no conflict can appear deeper in the recursion. The answer
+therefore decides the item as a whole: `No` skips it before anything is
+written, so a refusal can never leave a half-copied tree behind, and `Yes`
+copies the tree with overwriting on, without asking again for every file
+inside. Skipped and cancelled items are simply absent from the results, which
+is what keeps their marks in place.
+
+**Marks survive exactly what did not finish.** After a batch, the panel keeps
+the marks of the entries whose `ItemResult` is not `Ok` (and that still exist);
+everything that succeeded loses its mark. Delete and copy share the rule, so a
+failed batch can be retried by pressing the key again.
 
 **Moving a directory is copy-then-delete.** `IDirectory.Move` fails across
 volumes, which is the normal case for a two-panel manager, so directories are
@@ -237,8 +265,14 @@ raised inside it. Without the flag, render and handler bounce off each other.
 
 ## Next up
 
-**P5.4** — `F5` copy: `AppState.operationTargets` of the active panel copied
-into the other panel's directory, with an overwrite question offering
-Yes / No / All / Cancel. `Operations.copyAll` already takes the overwrite flag
-per call, so the answer — and the "All" that stops asking — is a UI decision
-built on top of it, unlike the single `Confirm` port P5.3 needed.
+**P5.5** — `F6` move / rename: the same operation targets moved into the other
+panel's directory. `Operations.moveAll` still takes the plain overwrite bool,
+so it wants the `ask` treatment `copyAll` already got. The new part is the
+target edit-box: `F6` offers the other panel's path, and a bare name typed in
+its place means rename instead of move — the first dialog that returns a value
+Marbas has to interpret rather than just obey.
+
+Known rough edge, for whoever picks it up: both panels start on the same
+directory, and `F5` there ends up copying a file onto itself, which the OS
+refuses with an error dialog. The target edit-box of P5.5 is the natural place
+to make that case say something better.

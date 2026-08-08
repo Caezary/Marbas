@@ -39,7 +39,7 @@ let create (deps: Shell.Dependencies) =
 
     let bar =
         FunctionKeyBar.create
-            { OnCopy = ignore
+            { OnCopy = fun () -> dispatch Update.CopyRequested
               OnRenameMove = ignore
               OnMakeDirectory = fun () -> dispatch Update.MakeDirectoryRequested
               OnDelete = fun () -> dispatch Update.DeleteRequested

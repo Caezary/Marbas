@@ -24,7 +24,8 @@ type Dependencies =
       ChooseOption: string -> string list -> string option
       AskPattern: string -> string option
       AskName: string -> string option
-      Confirm: string -> string -> bool }
+      Confirm: string -> string -> bool
+      AskOverwrite: string -> string -> Operations.OverwriteAnswer }
 
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
@@ -37,6 +38,13 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
     | ConfirmDelete(names, nonEmptyDirectory) ->
         if deps.Confirm DeleteConfirmation.Title (DeleteConfirmation.describe names nonEmptyDirectory) then
             dispatch DeleteConfirmed
+    | CopyTargets(sources, targetDirectory) ->
+        let ask target =
+            deps.AskOverwrite OverwriteQuestion.Title (OverwriteQuestion.describe target)
+
+        Operations.copyAll deps.FileSystem ask sources targetDirectory
+        |> CopyFinished
+        |> dispatch
     | PromptForName ->
         match deps.AskName MkdirPrompt with
         | Some name -> dispatch (NameEntered name)

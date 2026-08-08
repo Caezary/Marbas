@@ -14,6 +14,7 @@
     <Compile Include="OperationsTests.fs" />
     <Compile Include="OperationErrorMessageTests.fs" />
     <Compile Include="DeleteConfirmationTests.fs" />
+    <Compile Include="OverwriteQuestionTests.fs" />
     <Compile Include="EntrySizeTests.fs" />
     <Compile Include="SelectionSummaryTests.fs" />
     <Compile Include="EntryFormatTests.fs" />
@@ -40,6 +41,7 @@
     <Compile Include="PatternDialogTests.fs" />
     <Compile Include="MkdirTests.fs" />
     <Compile Include="DeleteTests.fs" />
+    <Compile Include="CopyTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

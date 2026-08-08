@@ -22,6 +22,7 @@
         <Compile Include="Ui\ListingErrorMessage.fs" />
         <Compile Include="Ui\OperationErrorMessage.fs" />
         <Compile Include="Ui\DeleteConfirmation.fs" />
+        <Compile Include="Ui\OverwriteQuestion.fs" />
         <Compile Include="Ui\FilePanel.fs" />
         <Compile Include="Ui\FunctionKeyBar.fs" />
         <Compile Include="Ui\PanelInput.fs" />

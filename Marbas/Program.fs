@@ -29,6 +29,10 @@ let main _ =
         let answer = MessageBox.Query(app, title, message, "_Yes", "_No")
         answer.HasValue && answer.Value = 0
 
+    let askOverwrite (title: string) (message: string) =
+        let answer = MessageBox.Query(app, title, message, Array.ofList OverwriteQuestion.Answers)
+        OverwriteQuestion.answerAt (if answer.HasValue then answer.Value else -1)
+
     let askPattern title =
         use dialog = PatternDialog.create title
         app.Run dialog |> ignore
@@ -48,7 +52,8 @@ let main _ =
               ChooseOption = chooseOption
               AskPattern = askPattern
               AskName = askName
-              Confirm = confirm }
+              Confirm = confirm
+              AskOverwrite = askOverwrite }
 
     app.Run window |> ignore
     0

@@ -17,6 +17,8 @@ type Message =
     | NameEntered of name: string
     | DeleteRequested
     | DeleteConfirmed
+    | CopyRequested
+    | CopyFinished of Operations.ItemResult list
     | DriveRequested of PanelSide
     | PathOpened of PanelSide * path: string
     | QuitRequested
@@ -26,6 +28,7 @@ type Effect =
     | ReportOperationError of Operations.OperationError
     | ReportItemFailures of Operations.ItemResult list
     | ConfirmDelete of names: string list * nonEmptyDirectory: bool
+    | CopyTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | PromptForName
     | PromptForPattern of PanelSide * index: int * selecting: bool
     | PromptForDrive of PanelSide
@@ -51,6 +54,14 @@ let private applyOperation state result =
     | Ok updated -> stay updated
     | Error error -> request state (ReportOperationError error)
 
+let private applyBatch state result =
+    match result with
+    | Error error -> request state (ReportOperationError error)
+    | Ok(updated, results) ->
+        match Operations.failures results with
+        | [] -> stay updated
+        | failed -> request updated (ReportItemFailures failed)
+
 let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     match msg with
     | CursorMoved(side, index) -> stay (setCursor side index state)
@@ -73,13 +84,14 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         match operationTargets target with
         | [] -> stay state
         | targets -> request state (ConfirmDelete(targets |> List.map _.Name, hasNonEmptyDirectory fs target))
-    | DeleteConfirmed ->
-        match deleteTargets fs state.Active state with
-        | Error error -> request state (ReportOperationError error)
-        | Ok(updated, results) ->
-            match Operations.failures results with
-            | [] -> stay updated
-            | failed -> request updated (ReportItemFailures failed)
+    | DeleteConfirmed -> deleteTargets fs state.Active state |> applyBatch state
+    | CopyRequested ->
+        let source = activePanel state
+
+        match operationPaths fs source with
+        | [] -> stay state
+        | paths -> request state (CopyTargets(paths, (panel (opposite state.Active) state).Path))
+    | CopyFinished results -> finishCopy fs results state |> applyBatch state
     | DriveRequested side -> request state (PromptForDrive side)
     | PathOpened(side, path) -> loadPanel fs side (FileSystemPath.create path) state |> applyListing state
     | QuitRequested -> request state Quit

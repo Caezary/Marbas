@@ -148,6 +148,41 @@ let ``item failures are reported under the operation title`` () =
     Assert.Equal(OperationErrorMessage.Title, fst reported)
     Assert.Contains("gone.txt", snd reported)
 
+let private copyReadyFs () =
+    let fs = MockFileSystem()
+    fs.AddFile(@"C:\start\notes.txt", MockFileData "new")
+    fs.AddDirectory @"C:\backup"
+    fs
+
+[<Fact>]
+let ``copy targets are copied and the outcome dispatched back`` () =
+    let sent, dispatch = capture ()
+    let fs = copyReadyFs ()
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret deps dispatch (CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
+
+    Assert.Equal("new", fs.File.ReadAllText @"C:\backup\notes.txt")
+    Assert.Equal<Message list>([ CopyFinished [ { Name = "notes.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+
+[<Fact>]
+let ``a collision asks the overwrite question under its own title`` () =
+    let _, dispatch = capture ()
+    let fs = copyReadyFs ()
+    fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
+    let mutable asked = ("", "")
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            AskOverwrite = fun title message -> asked <- (title, message); Operations.No }
+
+    Shell.interpret deps dispatch (CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
+
+    Assert.Equal(OverwriteQuestion.Title, fst asked)
+    Assert.Contains(@"C:\backup\notes.txt", snd asked)
+    Assert.Equal("old", fs.File.ReadAllText @"C:\backup\notes.txt")
+
 [<Fact>]
 let ``quit runs the quit port`` () =
     let mutable quit = false

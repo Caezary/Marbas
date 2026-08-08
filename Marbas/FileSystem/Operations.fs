@@ -14,6 +14,12 @@ type ItemResult =
     { Name: string
       Outcome: Result<unit, OperationError> }
 
+type OverwriteAnswer =
+    | Yes
+    | No
+    | All
+    | Cancel
+
 type FileSystemAction = IFileSystem -> FileSystemPath -> unit
 
 let mapException (path: FileSystemPath) (ex: exn) =
@@ -135,19 +141,41 @@ let rename (fs: IFileSystem) (source: FileSystemPath) (newName: string) =
     |> FileSystemPath.combine fs directory
     |> moveTo fs false source
 
+let private itemResult (fs: IFileSystem) source outcome =
+    { Name = FileSystemPath.name fs source
+      Outcome = outcome }
+
 let private itemResults (fs: IFileSystem) sources outcome =
-    sources
-    |> List.map (fun source ->
-        { Name = FileSystemPath.name fs source
-          Outcome = outcome source })
+    sources |> List.map (fun source -> itemResult fs source (outcome source))
 
 let failures (results: ItemResult list) =
     results |> List.filter (_.Outcome >> Result.isError)
 
 let deleteAll (fs: IFileSystem) sources = itemResults fs sources (delete fs)
 
-let copyAll (fs: IFileSystem) overwrite sources targetDirectory =
-    itemResults fs sources (copy fs overwrite targetDirectory)
+let copyAll (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources targetDirectory =
+    let rec run overwriteAll copied remaining =
+        match remaining with
+        | [] -> List.rev copied
+        | source :: rest ->
+            let target = inDirectory fs targetDirectory source
+            let targetAlreadyExists = FileSystemPath.kind fs target <> NoEntry
+
+            let answer =
+                if overwriteAll || not targetAlreadyExists then
+                    Yes
+                else
+                    ask target
+
+            match answer with
+            | Cancel -> List.rev copied
+            | No -> run overwriteAll copied rest
+            | Yes
+            | All ->
+                let item = itemResult fs source (copy fs true targetDirectory source)
+                run (overwriteAll || answer = All) (item :: copied) rest
+
+    run false [] sources
 
 let moveAll (fs: IFileSystem) overwrite sources targetDirectory =
     itemResults fs sources (move fs overwrite targetDirectory)

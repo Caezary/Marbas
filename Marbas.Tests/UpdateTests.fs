@@ -15,10 +15,16 @@ let private mockFs () =
     fs.AddDirectory @"C:\start\docs"
     fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
     fs.AddFile(@"C:\start\setup.fs", MockFileData "hi")
+    fs.AddDirectory @"C:\backup"
     fs
 
 let private loaded (fs: IFileSystem) =
     match create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") with
+    | Ok state -> state
+    | Error err -> failwith $"setup failed: %A{err}"
+
+let private loadedBoth (fs: IFileSystem) =
+    match loaded fs |> loadPanel fs Right (fp @"C:\backup") with
     | Ok state -> state
     | Error err -> failwith $"setup failed: %A{err}"
 
@@ -180,6 +186,47 @@ let ``a delete that fails is reported item by item`` () =
                   Outcome = Error(SourceNotFound(fp @"C:\start\notes.txt")) } ] ],
         result.Effects
     )
+
+[<Fact>]
+let ``copy requested aims at the other panel's directory`` () =
+    let fs = mockFs ()
+
+    let result = update fs CopyRequested (loadedBoth fs |> setCursor Left 2)
+
+    Assert.Equal<Effect list>([ CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup") ], result.Effects)
+
+[<Fact>]
+let ``copy requested on the parent entry raises no effect`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs
+
+    let result = update fs CopyRequested state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a finished copy shows the new entry in the other panel`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
+    let results = copyAll fs (fun _ -> Yes) [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
+
+    let result = update fs (CopyFinished results) state
+
+    Assert.Contains("notes.txt", result.State.Right.Entries |> List.map _.Name)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a finished copy reports the items that failed`` () =
+    let fs = mockFs ()
+
+    let failed =
+        [ { Name = "notes.txt"
+            Outcome = Error(AccessDenied(fp @"C:\backup\notes.txt")) } ]
+
+    let result = update fs (CopyFinished failed) (loadedBoth fs)
+
+    Assert.Equal<Effect list>([ ReportItemFailures failed ], result.Effects)
 
 [<Fact>]
 let ``quit requested raises the quit effect`` () =

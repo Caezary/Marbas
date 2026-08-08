@@ -12,8 +12,12 @@ and confirmation. Everything that would open a modal dialog or end the process
 is a function, so tests pass fakes and assert on what was requested.
 `Program.fs` is the only place that supplies the real `MessageBox` dialogs.
 `TestHelpers.dependencies` gives every port a do-nothing default — a
-confirmation that answers no, prompts that cancel — so a test only overrides
-the one it cares about.
+confirmation that answers no, an overwrite question that skips, prompts that
+cancel — so a test only overrides the one it cares about.
+
+A UI test that needs the two panels on *different* directories gets there the
+way a user would: `press list PanelInput.rightDriveKey` with a `ChooseOption`
+that answers with the wanted path. No test reaches into the state to set it.
 
 ## Terminal.Gui pitfalls
 
