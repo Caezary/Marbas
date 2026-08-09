@@ -1,6 +1,7 @@
 module Marbas.Ui.MainWindow
 
 open Terminal.Gui.App
+open Terminal.Gui.Drawing
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
@@ -16,6 +17,7 @@ let configureQuitKey () =
 let create (deps: Shell.Dependencies) =
     let fs = deps.FileSystem
     let window = new Window(Title = "Marbas", Width = Dim.Fill(), Height = Dim.Fill())
+    window.BorderStyle <- LineStyle.None
     let left, right = FilePanel.createPair ()
     let statusLine = StatusLine.create ()
 
