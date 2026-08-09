@@ -209,7 +209,7 @@ let ``copy requested on the parent entry raises no effect`` () =
 let ``a finished copy shows the new entry in the other panel`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
-    let results = copyAll fs (fun _ -> Yes) [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
+    let results = copyAll fs unattended [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
 
     let result = update fs (CopyFinished results) state
 
@@ -293,7 +293,7 @@ let ``a blank target changes nothing`` () =
 let ``a finished move shows the entry in the other panel`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
-    let results = moveAll fs (fun _ -> Yes) [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
+    let results = moveAll fs unattended [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
 
     let result = update fs (MoveFinished results) state
 

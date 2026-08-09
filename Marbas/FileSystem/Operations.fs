@@ -8,6 +8,7 @@ type OperationError =
     | SourceNotFound of path: FileSystemPath
     | TargetExists of path: FileSystemPath
     | AccessDenied of path: FileSystemPath
+    | Cancelled of path: FileSystemPath
     | OperationFailed of path: FileSystemPath * message: string
 
 type ItemResult =
@@ -19,6 +20,14 @@ type OverwriteAnswer =
     | No
     | All
     | Cancel
+
+type BatchControl =
+    { Report: FileSystemPath -> unit
+      IsCancelled: unit -> bool }
+
+let unattended =
+    { Report = ignore
+      IsCancelled = fun () -> false }
 
 type FileSystemAction = IFileSystem -> FileSystemPath -> unit
 
@@ -83,63 +92,69 @@ let delete (fs: IFileSystem) (path: FileSystemPath) =
     | FileEntry -> attempt fs path deleteFile
     | NoEntry -> Error(SourceNotFound path)
 
-let rec private copyTo (fs: IFileSystem) overwrite (source: FileSystemPath) (target: FileSystemPath) =
-    match FileSystemPath.kind fs source with
-    | DirectoryEntry ->
-        result {
-            do! attempt fs target createDirectory
+let rec private copyTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
+    if control.IsCancelled() then
+        Error(Cancelled source)
+    else
+        match FileSystemPath.kind fs source with
+        | DirectoryEntry ->
+            result {
+                do! attempt fs target createDirectory
 
-            do!
-                getFileSystemEntries fs source
-                |> List.ofSeq
-                |> List.traverseResultM (fun entry ->
-                    entry
-                    |> FileSystemPath.name fs
-                    |> FileSystemPath.combine fs target
-                    |> copyTo fs overwrite entry)
-                |> Result.ignore
-        }
-    | _ when not overwrite && FileSystemPath.kind fs target <> NoEntry -> Error(TargetExists target)
-    | _ ->
-        let copyToTarget fs' source' = copyFile fs' overwrite source' target
-        attempt fs source copyToTarget
+                do!
+                    getFileSystemEntries fs source
+                    |> List.ofSeq
+                    |> List.traverseResultM (fun entry ->
+                        entry
+                        |> FileSystemPath.name fs
+                        |> FileSystemPath.combine fs target
+                        |> copyTo fs control entry)
+                    |> Result.ignore
+            }
+        | _ ->
+            control.Report source
+            let copyToTarget fs' source' = copyFile fs' true source' target
+            attempt fs source copyToTarget
 
 let private inDirectory (fs: IFileSystem) (targetDirectory: FileSystemPath) (source: FileSystemPath) =
     source
     |> FileSystemPath.name fs
     |> FileSystemPath.combine fs targetDirectory
 
-let copy (fs: IFileSystem) overwrite (targetDirectory: FileSystemPath) (source: FileSystemPath) =
+let copy (fs: IFileSystem) control (targetDirectory: FileSystemPath) (source: FileSystemPath) =
     match FileSystemPath.kind fs source with
     | NoEntry -> Error(SourceNotFound source)
     | _ ->
         source
         |> inDirectory fs targetDirectory
-        |> copyTo fs overwrite source
+        |> copyTo fs control source
 
-let private moveTo (fs: IFileSystem) overwrite (source: FileSystemPath) (target: FileSystemPath) =
+let private moveTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
     match FileSystemPath.kind fs source with
     | NoEntry -> Error(SourceNotFound source)
-    | _ when not overwrite && FileSystemPath.kind fs target <> NoEntry -> Error(TargetExists target)
     | DirectoryEntry ->
         result {
-            do! copyTo fs overwrite source target
+            do! copyTo fs control source target
             do! delete fs source
         }
+    | FileEntry when control.IsCancelled() -> Error(Cancelled source)
     | FileEntry ->
-        let moveToTarget fs' source' = moveFile fs' overwrite source' target
+        control.Report source
+        let moveToTarget fs' source' = moveFile fs' true source' target
         attempt fs source moveToTarget
 
-let move (fs: IFileSystem) overwrite (targetDirectory: FileSystemPath) (source: FileSystemPath) =
+let move (fs: IFileSystem) control (targetDirectory: FileSystemPath) (source: FileSystemPath) =
     source
     |> inDirectory fs targetDirectory
-    |> moveTo fs overwrite source
+    |> moveTo fs control source
 
 let rename (fs: IFileSystem) (source: FileSystemPath) (newName: string) =
-    let directory = FileSystemPath.directory fs source
-    newName
-    |> FileSystemPath.combine fs directory
-    |> moveTo fs false source
+    let target =
+        newName |> FileSystemPath.combine fs (FileSystemPath.directory fs source)
+
+    match FileSystemPath.kind fs target with
+    | NoEntry -> moveTo fs unattended source target
+    | _ -> Error(TargetExists target)
 
 let private itemResult (fs: IFileSystem) source outcome =
     { Name = FileSystemPath.name fs source
@@ -153,16 +168,10 @@ let failures (results: ItemResult list) =
 
 let deleteAll (fs: IFileSystem) sources = itemResults fs sources (delete fs)
 
-let private allAsking
-    (fs: IFileSystem)
-    (ask: FileSystemPath -> OverwriteAnswer)
-    (apply: FileSystemPath -> Result<unit, OperationError>)
-    sources
-    targetDirectory
-    =
-    let rec run overwriteAll finished remaining =
+let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources targetDirectory =
+    let rec run overwriteAll approved remaining =
         match remaining with
-        | [] -> List.rev finished
+        | [] -> List.rev approved
         | source :: rest ->
             let target = inDirectory fs targetDirectory source
             let targetAlreadyExists = FileSystemPath.kind fs target <> NoEntry
@@ -174,17 +183,29 @@ let private allAsking
                     ask target
 
             match answer with
-            | Cancel -> List.rev finished
-            | No -> run overwriteAll finished rest
+            | Cancel -> []
+            | No -> run overwriteAll approved rest
             | Yes
-            | All ->
-                let item = itemResult fs source (apply source)
-                run (overwriteAll || answer = All) (item :: finished) rest
+            | All -> run (overwriteAll || answer = All) (source :: approved) rest
 
     run false [] sources
 
-let copyAll (fs: IFileSystem) ask sources targetDirectory =
-    allAsking fs ask (copy fs true targetDirectory) sources targetDirectory
+let private allWatched (fs: IFileSystem) (control: BatchControl) apply sources =
+    let rec run finished remaining =
+        match remaining with
+        | [] -> List.rev finished
+        | source :: rest ->
+            let item = itemResult fs source (apply source)
 
-let moveAll (fs: IFileSystem) ask sources targetDirectory =
-    allAsking fs ask (move fs true targetDirectory) sources targetDirectory
+            if control.IsCancelled() then
+                List.rev (item :: finished)
+            else
+                run (item :: finished) rest
+
+    run [] sources
+
+let copyAll (fs: IFileSystem) control sources targetDirectory =
+    allWatched fs control (copy fs control targetDirectory) sources
+
+let moveAll (fs: IFileSystem) control sources targetDirectory =
+    allWatched fs control (move fs control targetDirectory) sources

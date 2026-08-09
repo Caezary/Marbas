@@ -166,6 +166,40 @@ let ``copy targets are copied and the outcome dispatched back`` () =
     Assert.Equal<Message list>([ CopyFinished [ { Name = "notes.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
 
 [<Fact>]
+let ``a batch is handed to the runner under its own title`` () =
+    let _, dispatch = capture ()
+    let titles = ResizeArray<string>()
+
+    let deps () =
+        { noDeps () with
+            FileSystem = copyReadyFs ()
+            RunBatch = fun title work finish -> titles.Add title; work Operations.unattended |> finish }
+
+    Shell.interpret (deps ()) dispatch (CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
+    Shell.interpret (deps ()) dispatch (MoveTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
+
+    Assert.Equal<string list>([ Shell.CopyTitle; Shell.MoveTitle ], List.ofSeq titles)
+
+[<Fact>]
+let ``nothing is run when every collision is refused`` () =
+    let sent, dispatch = capture ()
+    let fs = copyReadyFs ()
+    fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
+    let mutable started = false
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            AskOverwrite = (fun _ _ -> Operations.No)
+            RunBatch = fun _ work finish -> started <- true; work Operations.unattended |> finish }
+
+    Shell.interpret deps dispatch (CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
+
+    Assert.False started
+    Assert.Empty sent
+    Assert.Equal("old", fs.File.ReadAllText @"C:\backup\notes.txt")
+
+[<Fact>]
 let ``a collision asks the overwrite question under its own title`` () =
     let _, dispatch = capture ()
     let fs = copyReadyFs ()

@@ -39,6 +39,7 @@
     <Compile Include="SelectionTests.fs" />
     <Compile Include="SelectionPatternTests.fs" />
     <Compile Include="PatternDialogTests.fs" />
+    <Compile Include="ProgressDialogTests.fs" />
     <Compile Include="MkdirTests.fs" />
     <Compile Include="DeleteTests.fs" />
     <Compile Include="CopyTests.fs" />

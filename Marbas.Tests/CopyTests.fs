@@ -20,8 +20,6 @@ let private mockFs () =
     fs.AddDirectory @"C:\backup"
     fs
 
-let private never (path: FileSystemPath) = failwith $"unexpected question about %A{path}"
-
 let private load (fs: IFileSystem) side path state =
     match loadPanel fs side path state with
     | Ok updated -> updated
@@ -48,7 +46,7 @@ let private finished fs results state =
 [<Fact>]
 let ``a finished copy lists the new entries in the other panel`` () =
     let fs, state = started ()
-    let results = copyAll fs never [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
+    let results = copyAll fs unattended [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
 
     let updated = finished fs results (markedNotes state)
 
@@ -57,7 +55,7 @@ let ``a finished copy lists the new entries in the other panel`` () =
 [<Fact>]
 let ``marks are dropped from the entries that were copied`` () =
     let fs, state = started ()
-    let results = copyAll fs never [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
+    let results = copyAll fs unattended [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
 
     let updated = finished fs results (markedNotes state)
 

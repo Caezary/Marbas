@@ -17,6 +17,14 @@ cancel — so a test only overrides the one it cares about. A prompt that carrie
 a suggestion (`AskTarget`) is easiest to fake as `fun _ suggestion -> Some
 suggestion`, which is exactly "the user pressed Ok".
 
+**Background work is a port, so tests stay synchronous.** `RunBatch` is the
+dependency that copies and moves go through; `TestHelpers` supplies one that
+runs the work inline with `Operations.unattended`, so a test presses `F5` and
+finds the files already copied when the call returns. Nothing in the suite
+waits on a thread. What that does *not* cover is `Program.fs` — the real
+runner, its progress dialog and the `Application.Invoke` marshalling are only
+ever exercised by running the app.
+
 A UI test that needs the two panels on *different* directories gets there the
 way a user would: `press list PanelInput.rightDriveKey` with a `ChooseOption`
 that answers with the wanted path. No test reaches into the state to set it.

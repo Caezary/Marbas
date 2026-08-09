@@ -11,6 +11,7 @@ let describe error =
     | SourceNotFound path -> $"'{FileSystemPath.value path}' no longer exists."
     | TargetExists path -> $"'{FileSystemPath.value path}' already exists."
     | AccessDenied path -> $"Access denied to '{FileSystemPath.value path}'."
+    | Cancelled path -> $"Stopped before '{FileSystemPath.value path}' was finished."
     | OperationFailed(path, reason) -> $"Could not complete '{FileSystemPath.value path}': {reason}"
 
 let describeFailures (results: ItemResult list) =

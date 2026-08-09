@@ -4,18 +4,18 @@ Status as of 2026-08-09. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–4 are complete and P5.1–P5.5 are done** (21 of 29 tasks). Marbas runs
-as a full-screen two-panel file browser: both panels list a real directory, the
-keyboard moves between and inside them, entries can be marked one by one or by
-wildcard for later operations, a status line describes the entry under the
-cursor, and failures surface as dialogs instead of crashes. The operations
-module can copy, move, rename, delete and create directories, and every
-function key of Phase 5 except the progress dialog is wired: `F5` copies and
-`F6` moves or renames into the other panel, `F7` makes a directory and `F8`
-deletes, all of them acting on the same operation targets. What is left of the
-phase is P5.6 — running long operations off the UI thread.
+**Phases 1–5 are complete** (22 of 29 tasks). Marbas runs as a full-screen
+two-panel file browser: both panels list a real directory, the keyboard moves
+between and inside them, entries can be marked one by one or by wildcard for
+later operations, a status line describes the entry under the cursor, and
+failures surface as dialogs instead of crashes. Every Norton function key of
+Phase 5 does its job — `F5` copies and `F6` moves or renames into the other
+panel, `F7` makes a directory, `F8` deletes — all of them acting on the same
+operation targets, and copying or moving now runs off the UI thread behind a
+progress window that `Esc` stops. Next comes Phase 6: viewing and editing
+files.
 
-**278 tests pass**, covering every logic module directly and the UI behaviour by
+**285 tests pass**, covering every logic module directly and the UI behaviour by
 driving real Terminal.Gui views over an in-memory file system.
 
 | Phase | Tasks | State |
@@ -24,8 +24,8 @@ driving real Terminal.Gui views over an in-memory file system.
 | 2 — Directory listing | P2.1–P2.4 | done |
 | 3 — Navigation | P3.1–P3.5 | done |
 | 4 — Selection | P4.1–P4.3 | done |
-| 5 — File operations | P5.1–P5.6 | P5.1–P5.5 done, P5.6 next |
-| 6 — Viewing files | P6.1–P6.2 | not started |
+| 5 — File operations | P5.1–P5.6 | done |
+| 6 — Viewing files | P6.1–P6.2 | not started, P6.1 next |
 | 7 — Polish & configuration | P7.1–P7.4 | not started |
 | 8 — Quality & release | P8.1–P8.3 | not started |
 
@@ -80,6 +80,13 @@ driving real Terminal.Gui views over an in-memory file system.
   cursor following it to its new place in the listing; a name typed while
   several entries are marked is read as a directory beside them. An empty
   answer or a cancelled prompt does nothing.
+- While `F5` or `F6` works, a progress window names the file being handled and
+  the rest of the app keeps drawing, because the batch runs on a background
+  thread. `Esc` (or the Cancel button) closes that window and the batch stops
+  at the next file: whatever was already copied stays, an entry caught in the
+  middle is listed afterwards as stopped before it finished, and a move that
+  was interrupted never deletes its source. Every overwrite question is
+  answered before the work starts, so nothing can block waiting for the user.
 - `Ctrl+Q` or `F10` quits. The bottom bar lists the Norton-style function keys
   (`F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`) and every one
   of them now does its job.
@@ -114,6 +121,7 @@ Marbas/
     Shell.fs              Dependencies and the effect interpreter
     PromptDialog.fs       single-field text prompt (label + default)
     PatternDialog.fs      the `+` / `-` pattern prompt, over PromptDialog
+    ProgressDialog.fs     the window shown while a batch runs
     MainWindow.fs         composition: views, runtime, event wiring
   Program.fs              real file system and real dialogs
 ```
@@ -165,21 +173,21 @@ input order, so the UI can report exactly which entries failed and why. A
 single-item failure inside one *tree* does abort that tree — a half-copied
 directory stops at the first error rather than pressing on blindly.
 
-**Overwriting is a flag on one item, a question on a batch.** `copy`/`move`
-take a bool and refuse with `TargetExists` when it is false. `copyAll` no
-longer takes that bool: it takes an `ask: FileSystemPath -> OverwriteAnswer`
-and drives the Yes / No / All / Cancel loop itself, because that loop is
-application logic and belongs next to the file system, not in a view.
-`Shell.interpret` only supplies the callback that opens the dialog — the same
-shape as `IFileSystem` being injected. (P5.1 had assumed the UI would run the
-loop item by item; asking `ask` for the decision turned out to keep both sides
-simpler.)
+**Every question is answered before the batch starts.** `Operations.approve`
+walks the sources, asks Yes / No / All / Cancel about each one whose target
+already exists, and answers with the sources to actually work on — `No` drops
+one, `Cancel` drops the lot, since nothing has happened yet. What runs
+afterwards is decision-free: `copy` and `move` carry no overwrite flag any more
+and always replace, because whoever called them has already decided. The only
+refusal left lives in `rename`, which checks its own target. (P5.1 had the
+flag, P5.4 had the batch asking as it went; P5.6 made both untenable, because a
+background thread cannot open a dialog and wait on it.)
 
 **Copy and move are the same batch with a different verb.** `copyAll` and
-`moveAll` are two lines over a shared private `allAsking`, which owns the
-Yes / No / All / Cancel walk; only the operation applied to each source
-differs. A rename is not part of it: it touches one entry, so it stays a plain
-`Result` carried by `RenameFinished` instead of a one-element batch.
+`moveAll` are two lines over a shared private `allWatched`, which owns the walk
+and the cancellation check; only the operation applied to each source differs.
+A rename is not part of it: it touches one entry, so it stays a plain `Result`
+carried by `RenameFinished` instead of a one-element batch.
 
 **A bare name means rename, anything else means a directory.** `F6` suggests
 the other panel's path, and what comes back decides the operation:
@@ -193,14 +201,36 @@ without a mode switch, the way Norton Commander does it.
 `ByName newName`, so the renamed entry keeps the cursor even though the listing
 reorders around it. Every other reload focuses whatever the cursor was on.
 
-**One question per item covers the whole tree.** `copyAll` asks only when the
+**One question per item covers the whole tree.** `approve` asks only when the
 *top-level* target already exists — and if it does not, nothing inside it can
-exist either, so no conflict can appear deeper in the recursion. The answer
-therefore decides the item as a whole: `No` skips it before anything is
-written, so a refusal can never leave a half-copied tree behind, and `Yes`
-copies the tree with overwriting on, without asking again for every file
-inside. Skipped and cancelled items are simply absent from the results, which
-is what keeps their marks in place.
+exist either, so no conflict can appear deeper in the recursion. That is what
+makes asking up front complete rather than merely convenient: one answer
+settles the item as a whole, every file inside it included, and a refusal stops
+it before anything is written. Sources that were dropped never appear in the
+results, which is what keeps their marks in place.
+
+**The background thread is a port, not a thread.** `Dependencies.RunBatch`
+takes the progress title, the work to do (handed a `BatchControl` to report
+through and to ask whether it should stop) and what to do with the results.
+`Program.fs` is the only place that knows about `Task.Run`, `app.Invoke` and
+running the progress dialog modally; the tests pass a runner that does the work
+inline, which is why every `F5`/`F6` test stayed synchronous and none of them
+had to change when the operations moved off the UI thread.
+
+**Cancelling means "the progress window is gone".** The token is cancelled the
+moment `app.Run dialog` returns, whatever the reason. `Esc` closes the dialog,
+so the batch stops at its next file; if instead the batch finished first, its
+`Invoke` callback closes the dialog and the cancel that follows changes
+nothing. The same flag guards the stop request, so a batch that finishes after
+the window is already gone cannot stop the main window by mistake — which
+would quit the application.
+
+**A stopped entry is reported, not passed over in silence.** Cancelling inside
+a tree leaves it half-copied, so the item answers `Cancelled path`, counts as a
+failure and is listed with the others; its mark stays, because it never
+finished. Entries the batch never reached are simply absent. A move that was
+interrupted never deletes its source: the delete is sequenced after the copy in
+the same `result` block, so a failed copy skips it.
 
 **Marks survive exactly what did not finish.** After a batch, the panel keeps
 the marks of the entries whose `ItemResult` is not `Ok` (and that still exist);
@@ -291,13 +321,11 @@ raised inside it. Without the flag, render and handler bounce off each other.
 
 ## Next up
 
-**P5.6** — progress and cancellation: `Shell.interpret` currently runs
-`copyAll` / `moveAll` straight through on the UI thread, so a large tree
-freezes the window. The batch has to move to a background thread with a
-progress dialog and `Esc` cancellation, marshalling its dispatch back through
-`Application.Invoke` (see PLAN.md, *State handling*). The `ask` callback the
-batch already takes is the model for the progress callback; the harder part is
-that the overwrite question must then be asked from the background thread.
+**P6.1** — `F3` view: a read-only, scrollable viewer for the file under the
+cursor, falling back to a raw view for binary content, closing on `F3`/`Esc`.
+It is the first feature that reads file *contents*, so the reading belongs in a
+UI-free module over `IFileSystem` (errors as values, like every other one), and
+the viewer itself in `Ui` where its layout can be tested.
 
 ## Known rough edges
 
@@ -305,3 +333,10 @@ that the overwrite question must then be asked from the background thread.
   a file onto itself and the OS refuses it with an error dialog. `F6` can be
   pointed elsewhere by hand, `F5` cannot — a target prompt for `F5`, or a check
   that the two directories differ, would be the fix.
+- Progress is posted per file through `app.Invoke`. A tree of thousands of tiny
+  files therefore queues thousands of callbacks; if that ever stutters, the fix
+  is to coalesce (keep the latest path in a field and refresh on a timer)
+  rather than to report less.
+- Delete still runs on the UI thread inside an `AppState` transition, so
+  removing a huge tree blocks. It was never routed through an effect the way
+  copy and move are, and `Directory.Delete` cannot report progress anyway.

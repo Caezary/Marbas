@@ -68,32 +68,18 @@ let ``copy places a file in the target directory`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
     fs.AddDirectory @"C:\backup"
 
-    copy fs false (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
+    copy fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
 
     Assert.Equal("hello", fs.File.ReadAllText @"C:\backup\notes.txt")
     Assert.True(fs.File.Exists @"C:\data\notes.txt")
 
 [<Fact>]
-let ``copy refuses to overwrite unless allowed`` () =
+let ``copy replaces whatever is already there`` () =
     let fs = MockFileSystem()
     fs.AddFile(@"C:\data\notes.txt", MockFileData "new")
     fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
 
-    let errorResult = copy fs false (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectError
-
-    Assert.Equal(
-        TargetExists(fp @"C:\backup\notes.txt"),
-        errorResult)
-
-    Assert.Equal("old", fs.File.ReadAllText @"C:\backup\notes.txt")
-
-[<Fact>]
-let ``copy overwrites when allowed`` () =
-    let fs = MockFileSystem()
-    fs.AddFile(@"C:\data\notes.txt", MockFileData "new")
-    fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
-
-    copy fs true (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
+    copy fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
 
     Assert.Equal("new", fs.File.ReadAllText @"C:\backup\notes.txt")
 
@@ -104,7 +90,7 @@ let ``copy duplicates a whole directory tree`` () =
     fs.AddFile(@"C:\data\docs\top.txt", MockFileData "y")
     fs.AddDirectory @"C:\backup"
 
-    copy fs false (fp @"C:\backup") (fp @"C:\data\docs") |> expectOk
+    copy fs unattended (fp @"C:\backup") (fp @"C:\data\docs") |> expectOk
 
     Assert.Equal("x", fs.File.ReadAllText @"C:\backup\docs\deep\inner.txt")
     Assert.Equal("y", fs.File.ReadAllText @"C:\backup\docs\top.txt")
@@ -114,7 +100,7 @@ let ``copy reports a missing source`` () =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\backup"
 
-    let errorResult = copy fs false (fp @"C:\backup") (fp @"C:\data\gone.txt") |> expectError
+    let errorResult = copy fs unattended (fp @"C:\backup") (fp @"C:\data\gone.txt") |> expectError
 
     Assert.Equal(
         SourceNotFound(fp @"C:\data\gone.txt"),
@@ -126,7 +112,7 @@ let ``move takes a file to the target directory`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
     fs.AddDirectory @"C:\backup"
 
-    move fs false (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
+    move fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
 
     Assert.Equal("hello", fs.File.ReadAllText @"C:\backup\notes.txt")
     Assert.False(fs.File.Exists @"C:\data\notes.txt")
@@ -137,25 +123,21 @@ let ``move takes a directory tree to the target directory`` () =
     fs.AddFile(@"C:\data\docs\inner.txt", MockFileData "x")
     fs.AddDirectory @"C:\backup"
 
-    move fs false (fp @"C:\backup") (fp @"C:\data\docs") |> expectOk
+    move fs unattended (fp @"C:\backup") (fp @"C:\data\docs") |> expectOk
 
     Assert.Equal("x", fs.File.ReadAllText @"C:\backup\docs\inner.txt")
     Assert.False(fs.Directory.Exists @"C:\data\docs")
 
 [<Fact>]
-let ``move refuses to overwrite unless allowed`` () =
+let ``move replaces whatever is already there`` () =
     let fs = MockFileSystem()
     fs.AddFile(@"C:\data\notes.txt", MockFileData "new")
     fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
 
-    let errorResult = move fs false (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectError
+    move fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
 
-    Assert.Equal(
-        TargetExists(fp @"C:\backup\notes.txt"),
-        errorResult)
-
-    Assert.Equal("old", fs.File.ReadAllText @"C:\backup\notes.txt")
-    Assert.True(fs.File.Exists @"C:\data\notes.txt")
+    Assert.Equal("new", fs.File.ReadAllText @"C:\backup\notes.txt")
+    Assert.False(fs.File.Exists @"C:\data\notes.txt")
 
 [<Fact>]
 let ``rename keeps the entry in its own directory`` () =
@@ -224,75 +206,46 @@ let private twoSources () =
     fs.AddFile(@"C:\data\b.txt", MockFileData "new b")
     fs
 
+let private bothSources = [ fp @"C:\data\a.txt"; fp @"C:\data\b.txt" ]
+
+let private watching cancelAfter =
+    let reported = ResizeArray<FileSystemPath>()
+
+    let control =
+        { Report = reported.Add
+          IsCancelled = fun () -> reported.Count >= cancelAfter }
+
+    reported, control
+
 [<Fact>]
-let ``copyAll reports every item and asks nothing when nothing collides`` () =
+let ``approve keeps every source and asks nothing when nothing collides`` () =
     let fs = twoSources ()
     fs.AddDirectory @"C:\backup"
 
-    let copied = copyAll fs never [ fp @"C:\data\a.txt"; fp @"C:\data\b.txt" ] (fp @"C:\backup")
+    let approved = approve fs never bothSources (fp @"C:\backup")
 
-    Assert.Equal<string list>([ "a.txt"; "b.txt" ], copied |> List.map _.Name)
-    Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\a.txt")
-
-[<Fact>]
-let ``moveAll reports every item and empties the source`` () =
-    let fs = twoSources ()
-    fs.AddDirectory @"C:\backup"
-
-    let moved = moveAll fs never [ fp @"C:\data\a.txt"; fp @"C:\data\b.txt" ] (fp @"C:\backup")
-
-    Assert.Equal<string list>([ "a.txt"; "b.txt" ], moved |> List.map _.Name)
-    Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\a.txt")
-    Assert.False(fs.File.Exists @"C:\data\a.txt")
+    Assert.Equal<FileSystemPath list>(bothSources, approved)
 
 [<Fact>]
-let ``moveAll asks about a collision and no keeps both sides`` () =
-    let fs = twoSources ()
-    fs.AddFile(@"C:\backup\a.txt", MockFileData "old a")
-    let asked, ask = answering [ No ]
-
-    let moved = moveAll fs ask [ fp @"C:\data\a.txt" ] (fp @"C:\backup")
-
-    Assert.Equal<FileSystemPath list>([ fp @"C:\backup\a.txt" ], List.ofSeq asked)
-    Assert.Empty moved
-    Assert.Equal("old a", fs.File.ReadAllText @"C:\backup\a.txt")
-    Assert.Equal("new a", fs.File.ReadAllText @"C:\data\a.txt")
-
-[<Fact>]
-let ``moveAll replaces the target when told to`` () =
-    let fs = twoSources ()
-    fs.AddFile(@"C:\backup\a.txt", MockFileData "old a")
-    let _, ask = answering [ Yes ]
-
-    let moved = moveAll fs ask [ fp @"C:\data\a.txt" ] (fp @"C:\backup")
-
-    Assert.Equal(Ok(), (List.exactlyOne moved).Outcome)
-    Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\a.txt")
-    Assert.False(fs.File.Exists @"C:\data\a.txt")
-
-[<Fact>]
-let ``a collision is asked about and yes overwrites that item`` () =
+let ``a collision is asked about and yes keeps that source`` () =
     let fs = twoSources ()
     fs.AddFile(@"C:\backup\a.txt", MockFileData "old a")
     let asked, ask = answering [ Yes ]
 
-    let copied = copyAll fs ask [ fp @"C:\data\a.txt"; fp @"C:\data\b.txt" ] (fp @"C:\backup")
+    let approved = approve fs ask bothSources (fp @"C:\backup")
 
     Assert.Equal<FileSystemPath list>([ fp @"C:\backup\a.txt" ], List.ofSeq asked)
-    Assert.Equal<string list>([ "a.txt"; "b.txt" ], copied |> List.map _.Name)
-    Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\a.txt")
+    Assert.Equal<FileSystemPath list>(bothSources, approved)
 
 [<Fact>]
-let ``no keeps the target and leaves the item out of the results`` () =
+let ``no drops the colliding source and keeps the rest`` () =
     let fs = twoSources ()
     fs.AddFile(@"C:\backup\a.txt", MockFileData "old a")
     let _, ask = answering [ No ]
 
-    let copied = copyAll fs ask [ fp @"C:\data\a.txt"; fp @"C:\data\b.txt" ] (fp @"C:\backup")
+    let approved = approve fs ask bothSources (fp @"C:\backup")
 
-    Assert.Equal<string list>([ "b.txt" ], copied |> List.map _.Name)
-    Assert.Equal("old a", fs.File.ReadAllText @"C:\backup\a.txt")
-    Assert.Equal("new b", fs.File.ReadAllText @"C:\backup\b.txt")
+    Assert.Equal<FileSystemPath list>([ fp @"C:\data\b.txt" ], approved)
 
 [<Fact>]
 let ``all answers the remaining collisions too`` () =
@@ -301,48 +254,117 @@ let ``all answers the remaining collisions too`` () =
     fs.AddFile(@"C:\backup\b.txt", MockFileData "old b")
     let asked, ask = answering [ All ]
 
-    let copied = copyAll fs ask [ fp @"C:\data\a.txt"; fp @"C:\data\b.txt" ] (fp @"C:\backup")
+    let approved = approve fs ask bothSources (fp @"C:\backup")
+
+    Assert.Single asked |> ignore
+    Assert.Equal<FileSystemPath list>(bothSources, approved)
+
+[<Fact>]
+let ``cancel abandons the whole batch`` () =
+    let fs = twoSources ()
+    fs.AddFile(@"C:\backup\b.txt", MockFileData "old b")
+    let _, ask = answering [ Cancel ]
+
+    let approved = approve fs ask bothSources (fp @"C:\backup")
+
+    Assert.Empty approved
+
+[<Fact>]
+let ``a colliding directory is asked about once, by its own name`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(@"C:\data\docs\a.txt", MockFileData "new a")
+    fs.AddFile(@"C:\backup\docs\a.txt", MockFileData "old a")
+    let asked, ask = answering [ Yes ]
+
+    let approved = approve fs ask [ fp @"C:\data\docs" ] (fp @"C:\backup")
+
+    Assert.Equal<FileSystemPath list>([ fp @"C:\backup\docs" ], List.ofSeq asked)
+    Assert.Equal<FileSystemPath list>([ fp @"C:\data\docs" ], approved)
+
+[<Fact>]
+let ``copyAll copies every source it is given`` () =
+    let fs = twoSources ()
+    fs.AddFile(@"C:\backup\a.txt", MockFileData "old a")
+
+    let copied = copyAll fs unattended bothSources (fp @"C:\backup")
 
     Assert.Equal<string list>([ "a.txt"; "b.txt" ], copied |> List.map _.Name)
-    Assert.Single asked |> ignore
     Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\a.txt")
     Assert.Equal("new b", fs.File.ReadAllText @"C:\backup\b.txt")
 
 [<Fact>]
-let ``cancel abandons the items that were left`` () =
-    let fs = twoSources ()
-    fs.AddFile(@"C:\backup\a.txt", MockFileData "old a")
-    let _, ask = answering [ Cancel ]
-
-    let copied = copyAll fs ask [ fp @"C:\data\a.txt"; fp @"C:\data\b.txt" ] (fp @"C:\backup")
-
-    Assert.Empty copied
-    Assert.Equal("old a", fs.File.ReadAllText @"C:\backup\a.txt")
-    Assert.False(fs.File.Exists @"C:\backup\b.txt")
-
-[<Fact>]
-let ``a colliding directory is asked about once and replaced as a whole`` () =
-    let fs = MockFileSystem()
-    fs.AddFile(@"C:\data\docs\a.txt", MockFileData "new a")
-    fs.AddFile(@"C:\data\docs\b.txt", MockFileData "new b")
-    fs.AddFile(@"C:\backup\docs\a.txt", MockFileData "old a")
-    let asked, ask = answering [ Yes ]
-
-    let copied = copyAll fs ask [ fp @"C:\data\docs" ] (fp @"C:\backup")
-
-    Assert.Equal<FileSystemPath list>([ fp @"C:\backup\docs" ], List.ofSeq asked)
-    Assert.Equal(Ok(), (List.exactlyOne copied).Outcome)
-    Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\docs\a.txt")
-    Assert.Equal("new b", fs.File.ReadAllText @"C:\backup\docs\b.txt")
-
-[<Fact>]
-let ``a missing source is reported without a question`` () =
+let ``moveAll moves every source it is given`` () =
     let fs = twoSources ()
     fs.AddDirectory @"C:\backup"
 
-    let copied = copyAll fs never [ fp @"C:\data\gone.txt" ] (fp @"C:\backup")
+    let moved = moveAll fs unattended bothSources (fp @"C:\backup")
+
+    Assert.Equal<string list>([ "a.txt"; "b.txt" ], moved |> List.map _.Name)
+    Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\a.txt")
+    Assert.False(fs.File.Exists @"C:\data\a.txt")
+
+[<Fact>]
+let ``a missing source is reported`` () =
+    let fs = twoSources ()
+    fs.AddDirectory @"C:\backup"
+
+    let copied = copyAll fs unattended [ fp @"C:\data\gone.txt" ] (fp @"C:\backup")
 
     Assert.Equal(Error(SourceNotFound(fp @"C:\data\gone.txt")), (List.exactlyOne copied).Outcome)
+
+[<Fact>]
+let ``every file of a tree is reported as it is worked on`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(@"C:\data\docs\a.txt", MockFileData "a")
+    fs.AddFile(@"C:\data\docs\deep\b.txt", MockFileData "b")
+    fs.AddDirectory @"C:\backup"
+    let reported, control = watching 99
+
+    copyAll fs control [ fp @"C:\data\docs" ] (fp @"C:\backup") |> ignore
+
+    Assert.Equal<FileSystemPath list>(
+        [ fp @"C:\data\docs\a.txt"; fp @"C:\data\docs\deep\b.txt" ],
+        reported |> Seq.sort |> List.ofSeq
+    )
+
+[<Fact>]
+let ``a cancelled batch leaves the sources it never reached alone`` () =
+    let fs = twoSources ()
+    fs.AddDirectory @"C:\backup"
+    let _, control = watching 1
+
+    let copied = copyAll fs control bothSources (fp @"C:\backup")
+
+    Assert.Equal<string list>([ "a.txt" ], copied |> List.map _.Name)
+    Assert.False(fs.File.Exists @"C:\backup\b.txt")
+
+[<Fact>]
+let ``a tree cancelled halfway is reported as stopped`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(@"C:\data\docs\a.txt", MockFileData "a")
+    fs.AddFile(@"C:\data\docs\b.txt", MockFileData "b")
+    fs.AddDirectory @"C:\backup"
+    let _, control = watching 1
+
+    let copied = copyAll fs control [ fp @"C:\data\docs" ] (fp @"C:\backup")
+
+    match (List.exactlyOne copied).Outcome with
+    | Error(Cancelled _) -> ()
+    | other -> failwith $"expected a cancelled item, got %A{other}"
+
+[<Fact>]
+let ``a move cancelled halfway keeps the source where it is`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(@"C:\data\docs\a.txt", MockFileData "a")
+    fs.AddFile(@"C:\data\docs\b.txt", MockFileData "b")
+    fs.AddDirectory @"C:\backup"
+    let _, control = watching 1
+
+    moveAll fs control [ fp @"C:\data\docs" ] (fp @"C:\backup") |> ignore
+
+    Assert.True(fs.Directory.Exists @"C:\data\docs")
+    Assert.Equal("a", fs.File.ReadAllText @"C:\data\docs\a.txt")
+    Assert.Equal("b", fs.File.ReadAllText @"C:\data\docs\b.txt")
 
 [<Fact>]
 let ``a directory holding entries is non-empty`` () =

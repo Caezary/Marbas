@@ -19,6 +19,12 @@ let DrivePrompt = "Select drive"
 [<Literal>]
 let MovePrompt = "Move or rename"
 
+[<Literal>]
+let CopyTitle = "Copying"
+
+[<Literal>]
+let MoveTitle = "Moving"
+
 type Dependencies =
     { FileSystem: IFileSystem
       StartPath: string
@@ -29,10 +35,17 @@ type Dependencies =
       AskName: string -> string option
       AskTarget: string -> string -> string option
       Confirm: string -> string -> bool
-      AskOverwrite: string -> string -> Operations.OverwriteAnswer }
+      AskOverwrite: string -> string -> Operations.OverwriteAnswer
+      RunBatch:
+          string -> (Operations.BatchControl -> Operations.ItemResult list) -> (Operations.ItemResult list -> unit) -> unit }
 
 let private askOverwrite (deps: Dependencies) target =
     deps.AskOverwrite OverwriteQuestion.Title (OverwriteQuestion.describe target)
+
+let private startBatch (deps: Dependencies) title operation finished sources targetDirectory =
+    match Operations.approve deps.FileSystem (askOverwrite deps) sources targetDirectory with
+    | [] -> ()
+    | approved -> deps.RunBatch title (fun control -> operation deps.FileSystem control approved targetDirectory) finished
 
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
@@ -46,13 +59,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         if deps.Confirm DeleteConfirmation.Title (DeleteConfirmation.describe names nonEmptyDirectory) then
             dispatch DeleteConfirmed
     | CopyTargets(sources, targetDirectory) ->
-        Operations.copyAll deps.FileSystem (askOverwrite deps) sources targetDirectory
-        |> CopyFinished
-        |> dispatch
+        startBatch deps CopyTitle Operations.copyAll (CopyFinished >> dispatch) sources targetDirectory
     | MoveTargets(sources, targetDirectory) ->
-        Operations.moveAll deps.FileSystem (askOverwrite deps) sources targetDirectory
-        |> MoveFinished
-        |> dispatch
+        startBatch deps MoveTitle Operations.moveAll (MoveFinished >> dispatch) sources targetDirectory
     | RenameTarget(source, newName) ->
         Operations.rename deps.FileSystem source newName
         |> fun outcome -> RenameFinished(newName, outcome)

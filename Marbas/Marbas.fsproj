@@ -29,6 +29,7 @@
         <Compile Include="Ui\Shell.fs" />
         <Compile Include="Ui\PromptDialog.fs" />
         <Compile Include="Ui\PatternDialog.fs" />
+        <Compile Include="Ui\ProgressDialog.fs" />
         <Compile Include="Ui\MainWindow.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>
