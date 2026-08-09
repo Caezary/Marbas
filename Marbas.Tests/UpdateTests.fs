@@ -229,6 +229,101 @@ let ``a finished copy reports the items that failed`` () =
     Assert.Equal<Effect list>([ ReportItemFailures failed ], result.Effects)
 
 [<Fact>]
+let ``move requested offers the other panel's path`` () =
+    let fs = mockFs ()
+
+    let result = update fs MoveRequested (loadedBoth fs |> setCursor Left 2)
+
+    Assert.Equal<Effect list>([ PromptForTarget @"C:\backup" ], result.Effects)
+
+[<Fact>]
+let ``move requested on the parent entry raises no effect`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs
+
+    let result = update fs MoveRequested state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``an entered path moves the targets into it`` () =
+    let fs = mockFs ()
+
+    let result = update fs (TargetEntered @"C:\backup") (loadedBoth fs |> setCursor Left 2)
+
+    Assert.Equal<Effect list>([ MoveTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup") ], result.Effects)
+
+[<Fact>]
+let ``a bare name renames the only target`` () =
+    let fs = mockFs ()
+
+    let result = update fs (TargetEntered "readme.txt") (loadedBoth fs |> setCursor Left 2)
+
+    Assert.Equal<Effect list>([ RenameTarget(fp @"C:\start\notes.txt", "readme.txt") ], result.Effects)
+
+[<Fact>]
+let ``a bare name with several targets names a directory beside them`` () =
+    let fs = mockFs ()
+
+    let marked =
+        loadedBoth fs
+        |> setCursor Left 2
+        |> toggleSelectionAndAdvance Left
+        |> toggleSelectionAndAdvance Left
+
+    let result = update fs (TargetEntered "archive") marked
+
+    Assert.Equal<Effect list>(
+        [ MoveTargets([ fp @"C:\start\notes.txt"; fp @"C:\start\setup.fs" ], fp @"C:\start\archive") ],
+        result.Effects
+    )
+
+[<Fact>]
+let ``a blank target changes nothing`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
+
+    let result = update fs (TargetEntered "   ") state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a finished move shows the entry in the other panel`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
+    let results = moveAll fs (fun _ -> Yes) [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
+
+    let result = update fs (MoveFinished results) state
+
+    Assert.Contains("notes.txt", result.State.Right.Entries |> List.map _.Name)
+    Assert.DoesNotContain("notes.txt", result.State.Left.Entries |> List.map _.Name)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a finished rename puts the cursor on the new name`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
+    rename fs (fp @"C:\start\notes.txt") "zzz.txt" |> ignore
+
+    let result = update fs (RenameFinished("zzz.txt", Ok())) state
+
+    Assert.Equal(Some "zzz.txt", cursorEntry result.State.Left |> Option.map _.Name)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a failed rename is reported and leaves the panel alone`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
+    let taken = TargetExists(fp @"C:\start\docs")
+
+    let result = update fs (RenameFinished("docs", Error taken)) state
+
+    Assert.Equal(state, result.State)
+    Assert.Equal<Effect list>([ ReportOperationError taken ], result.Effects)
+
+[<Fact>]
 let ``quit requested raises the quit effect`` () =
     let result = update (mockFs ()) QuitRequested (loaded (mockFs ()))
 

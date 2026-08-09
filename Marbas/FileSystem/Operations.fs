@@ -153,10 +153,16 @@ let failures (results: ItemResult list) =
 
 let deleteAll (fs: IFileSystem) sources = itemResults fs sources (delete fs)
 
-let copyAll (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources targetDirectory =
-    let rec run overwriteAll copied remaining =
+let private allAsking
+    (fs: IFileSystem)
+    (ask: FileSystemPath -> OverwriteAnswer)
+    (apply: FileSystemPath -> Result<unit, OperationError>)
+    sources
+    targetDirectory
+    =
+    let rec run overwriteAll finished remaining =
         match remaining with
-        | [] -> List.rev copied
+        | [] -> List.rev finished
         | source :: rest ->
             let target = inDirectory fs targetDirectory source
             let targetAlreadyExists = FileSystemPath.kind fs target <> NoEntry
@@ -168,14 +174,17 @@ let copyAll (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources t
                     ask target
 
             match answer with
-            | Cancel -> List.rev copied
-            | No -> run overwriteAll copied rest
+            | Cancel -> List.rev finished
+            | No -> run overwriteAll finished rest
             | Yes
             | All ->
-                let item = itemResult fs source (copy fs true targetDirectory source)
-                run (overwriteAll || answer = All) (item :: copied) rest
+                let item = itemResult fs source (apply source)
+                run (overwriteAll || answer = All) (item :: finished) rest
 
     run false [] sources
 
-let moveAll (fs: IFileSystem) overwrite sources targetDirectory =
-    itemResults fs sources (move fs overwrite targetDirectory)
+let copyAll (fs: IFileSystem) ask sources targetDirectory =
+    allAsking fs ask (copy fs true targetDirectory) sources targetDirectory
+
+let moveAll (fs: IFileSystem) ask sources targetDirectory =
+    allAsking fs ask (move fs true targetDirectory) sources targetDirectory

@@ -235,13 +235,40 @@ let ``copyAll reports every item and asks nothing when nothing collides`` () =
     Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\a.txt")
 
 [<Fact>]
-let ``moveAll reports every item`` () =
+let ``moveAll reports every item and empties the source`` () =
+    let fs = twoSources ()
+    fs.AddDirectory @"C:\backup"
+
+    let moved = moveAll fs never [ fp @"C:\data\a.txt"; fp @"C:\data\b.txt" ] (fp @"C:\backup")
+
+    Assert.Equal<string list>([ "a.txt"; "b.txt" ], moved |> List.map _.Name)
+    Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\a.txt")
+    Assert.False(fs.File.Exists @"C:\data\a.txt")
+
+[<Fact>]
+let ``moveAll asks about a collision and no keeps both sides`` () =
     let fs = twoSources ()
     fs.AddFile(@"C:\backup\a.txt", MockFileData "old a")
+    let asked, ask = answering [ No ]
 
-    let moved = moveAll fs false [ fp @"C:\data\a.txt" ] (fp @"C:\backup")
+    let moved = moveAll fs ask [ fp @"C:\data\a.txt" ] (fp @"C:\backup")
 
-    Assert.Equal(Error(TargetExists(fp @"C:\backup\a.txt")), (List.exactlyOne moved).Outcome)
+    Assert.Equal<FileSystemPath list>([ fp @"C:\backup\a.txt" ], List.ofSeq asked)
+    Assert.Empty moved
+    Assert.Equal("old a", fs.File.ReadAllText @"C:\backup\a.txt")
+    Assert.Equal("new a", fs.File.ReadAllText @"C:\data\a.txt")
+
+[<Fact>]
+let ``moveAll replaces the target when told to`` () =
+    let fs = twoSources ()
+    fs.AddFile(@"C:\backup\a.txt", MockFileData "old a")
+    let _, ask = answering [ Yes ]
+
+    let moved = moveAll fs ask [ fp @"C:\data\a.txt" ] (fp @"C:\backup")
+
+    Assert.Equal(Ok(), (List.exactlyOne moved).Outcome)
+    Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\a.txt")
+    Assert.False(fs.File.Exists @"C:\data\a.txt")
 
 [<Fact>]
 let ``a collision is asked about and yes overwrites that item`` () =

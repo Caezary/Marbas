@@ -184,6 +184,52 @@ let ``a collision asks the overwrite question under its own title`` () =
     Assert.Equal("old", fs.File.ReadAllText @"C:\backup\notes.txt")
 
 [<Fact>]
+let ``the target prompt suggests a path and carries back what was typed`` () =
+    let sent, dispatch = capture ()
+    let mutable offered = ("", "")
+
+    let deps =
+        { noDeps () with
+            AskTarget = fun title suggestion -> offered <- (title, suggestion); Some "readme.txt" }
+
+    Shell.interpret deps dispatch (PromptForTarget @"C:\backup")
+
+    Assert.Equal(Shell.MovePrompt, fst offered)
+    Assert.Equal(@"C:\backup", snd offered)
+    Assert.Equal<Message list>([ TargetEntered "readme.txt" ], List.ofSeq sent)
+
+[<Fact>]
+let ``a cancelled target prompt dispatches nothing`` () =
+    let sent, dispatch = capture ()
+
+    Shell.interpret (noDeps ()) dispatch (PromptForTarget @"C:\backup")
+
+    Assert.Empty sent
+
+[<Fact>]
+let ``move targets are moved and the outcome dispatched back`` () =
+    let sent, dispatch = capture ()
+    let fs = copyReadyFs ()
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret deps dispatch (MoveTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
+
+    Assert.Equal("new", fs.File.ReadAllText @"C:\backup\notes.txt")
+    Assert.False(fs.File.Exists @"C:\start\notes.txt")
+    Assert.Equal<Message list>([ MoveFinished [ { Name = "notes.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+
+[<Fact>]
+let ``a rename is carried out and its outcome dispatched back`` () =
+    let sent, dispatch = capture ()
+    let fs = copyReadyFs ()
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret deps dispatch (RenameTarget(fp @"C:\start\notes.txt", "readme.txt"))
+
+    Assert.Equal("new", fs.File.ReadAllText @"C:\start\readme.txt")
+    Assert.Equal<Message list>([ RenameFinished("readme.txt", Ok()) ], List.ofSeq sent)
+
+[<Fact>]
 let ``quit runs the quit port`` () =
     let mutable quit = false
     let deps = { noDeps () with OnQuit = fun () -> quit <- true }

@@ -42,6 +42,7 @@
     <Compile Include="MkdirTests.fs" />
     <Compile Include="DeleteTests.fs" />
     <Compile Include="CopyTests.fs" />
+    <Compile Include="MoveTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

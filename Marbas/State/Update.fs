@@ -19,6 +19,10 @@ type Message =
     | DeleteConfirmed
     | CopyRequested
     | CopyFinished of Operations.ItemResult list
+    | MoveRequested
+    | TargetEntered of text: string
+    | MoveFinished of Operations.ItemResult list
+    | RenameFinished of newName: string * outcome: Result<unit, Operations.OperationError>
     | DriveRequested of PanelSide
     | PathOpened of PanelSide * path: string
     | QuitRequested
@@ -29,6 +33,9 @@ type Effect =
     | ReportItemFailures of Operations.ItemResult list
     | ConfirmDelete of names: string list * nonEmptyDirectory: bool
     | CopyTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
+    | MoveTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
+    | RenameTarget of source: FileSystemPath * newName: string
+    | PromptForTarget of suggestion: string
     | PromptForName
     | PromptForPattern of PanelSide * index: int * selecting: bool
     | PromptForDrive of PanelSide
@@ -43,6 +50,9 @@ let private stay state = { State = state; Effects = [] }
 let private request state effect = { State = state; Effects = [ effect ] }
 
 let private atCursor side index = activate side >> setCursor side index
+
+let private otherPath state =
+    (panel (opposite state.Active) state).Path
 
 let private applyListing state result =
     match result with
@@ -86,12 +96,28 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | targets -> request state (ConfirmDelete(targets |> List.map _.Name, hasNonEmptyDirectory fs target))
     | DeleteConfirmed -> deleteTargets fs state.Active state |> applyBatch state
     | CopyRequested ->
+        match operationPaths fs (activePanel state) with
+        | [] -> stay state
+        | paths -> request state (CopyTargets(paths, otherPath state))
+    | CopyFinished results -> finishTransfer fs results state |> applyBatch state
+    | MoveRequested ->
+        match operationPaths fs (activePanel state) with
+        | [] -> stay state
+        | _ -> request state (PromptForTarget(FileSystemPath.value (otherPath state)))
+    | TargetEntered text ->
         let source = activePanel state
 
-        match operationPaths fs source with
-        | [] -> stay state
-        | paths -> request state (CopyTargets(paths, (panel (opposite state.Active) state).Path))
-    | CopyFinished results -> finishCopy fs results state |> applyBatch state
+        match text.Trim(), operationPaths fs source with
+        | "", _
+        | _, [] -> stay state
+        | trimmed, [ single ] when FileSystemPath.isBareName fs trimmed ->
+            request state (RenameTarget(single, trimmed))
+        | trimmed, paths -> request state (MoveTargets(paths, FileSystemPath.combine fs source.Path trimmed))
+    | MoveFinished results -> finishTransfer fs results state |> applyBatch state
+    | RenameFinished(newName, outcome) ->
+        match outcome with
+        | Error error -> request state (ReportOperationError error)
+        | Ok() -> finishRename fs newName state |> applyOperation state
     | DriveRequested side -> request state (PromptForDrive side)
     | PathOpened(side, path) -> loadPanel fs side (FileSystemPath.create path) state |> applyListing state
     | QuitRequested -> request state Quit

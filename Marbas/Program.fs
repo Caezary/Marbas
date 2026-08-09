@@ -43,6 +43,11 @@ let main _ =
         app.Run dialog |> ignore
         PromptDialog.text dialog
 
+    let askTarget title suggestion =
+        use dialog = PromptDialog.create title "To:" suggestion
+        app.Run dialog |> ignore
+        PromptDialog.text dialog
+
     use window =
         MainWindow.create
             { FileSystem = fs
@@ -52,6 +57,7 @@ let main _ =
               ChooseOption = chooseOption
               AskPattern = askPattern
               AskName = askName
+              AskTarget = askTarget
               Confirm = confirm
               AskOverwrite = askOverwrite }
 

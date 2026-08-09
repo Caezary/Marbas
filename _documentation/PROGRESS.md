@@ -1,20 +1,21 @@
 # Progress
 
-Status as of 2026-08-08. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-09. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–4 are complete and P5.1–P5.4 are done** (20 of 29 tasks). Marbas runs
+**Phases 1–4 are complete and P5.1–P5.5 are done** (21 of 29 tasks). Marbas runs
 as a full-screen two-panel file browser: both panels list a real directory, the
 keyboard moves between and inside them, entries can be marked one by one or by
 wildcard for later operations, a status line describes the entry under the
 cursor, and failures surface as dialogs instead of crashes. The operations
-module can copy, move, rename, delete and create directories; `F7` makes a
-directory in the active panel, `F8` deletes the operation targets after a
-confirmation, and `F5` copies them into the other panel. The remaining
-operation keys arrive in P5.5–P5.6.
+module can copy, move, rename, delete and create directories, and every
+function key of Phase 5 except the progress dialog is wired: `F5` copies and
+`F6` moves or renames into the other panel, `F7` makes a directory and `F8`
+deletes, all of them acting on the same operation targets. What is left of the
+phase is P5.6 — running long operations off the UI thread.
 
-**250 tests pass**, covering every logic module directly and the UI behaviour by
+**278 tests pass**, covering every logic module directly and the UI behaviour by
 driving real Terminal.Gui views over an in-memory file system.
 
 | Phase | Tasks | State |
@@ -23,7 +24,7 @@ driving real Terminal.Gui views over an in-memory file system.
 | 2 — Directory listing | P2.1–P2.4 | done |
 | 3 — Navigation | P3.1–P3.5 | done |
 | 4 — Selection | P4.1–P4.3 | done |
-| 5 — File operations | P5.1–P5.6 | P5.1–P5.4 done, P5.5 next |
+| 5 — File operations | P5.1–P5.6 | P5.1–P5.5 done, P5.6 next |
 | 6 — Viewing files | P6.1–P6.2 | not started |
 | 7 — Polish & configuration | P7.1–P7.4 | not started |
 | 8 — Quality & release | P8.1–P8.3 | not started |
@@ -72,9 +73,16 @@ driving real Terminal.Gui views over an in-memory file system.
   whatever is left. Directory trees go over whole. Afterwards both panels are
   re-read, the marks of the copied entries are dropped while the marks of the
   ones that failed stay, and failures are listed entry by entry.
+- `F6` opens a prompt filled with the other panel's path. Accept it and the
+  operation targets move there — same collision question as `F5`, same refresh
+  and per-item reporting afterwards. Type a bare name instead and, when a
+  single entry is being acted on, it is renamed where it stands, with the
+  cursor following it to its new place in the listing; a name typed while
+  several entries are marked is read as a directory beside them. An empty
+  answer or a cancelled prompt does nothing.
 - `Ctrl+Q` or `F10` quits. The bottom bar lists the Norton-style function keys
-  (`F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`); `F5`, `F7`,
-  `F8` and `F10` are wired up so far.
+  (`F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`) and every one
+  of them now does its job.
 
 ## Code map
 
@@ -167,6 +175,24 @@ shape as `IFileSystem` being injected. (P5.1 had assumed the UI would run the
 loop item by item; asking `ask` for the decision turned out to keep both sides
 simpler.)
 
+**Copy and move are the same batch with a different verb.** `copyAll` and
+`moveAll` are two lines over a shared private `allAsking`, which owns the
+Yes / No / All / Cancel walk; only the operation applied to each source
+differs. A rename is not part of it: it touches one entry, so it stays a plain
+`Result` carried by `RenameFinished` instead of a one-element batch.
+
+**A bare name means rename, anything else means a directory.** `F6` suggests
+the other panel's path, and what comes back decides the operation:
+`FileSystemPath.isBareName` (no directory part and not rooted) plus exactly one
+target means rename in place; otherwise the text is a directory — combined with
+the source panel's path, so a relative name lands beside the entries and an
+absolute one is taken as it stands. That keeps one edit box doing both jobs
+without a mode switch, the way Norton Commander does it.
+
+**A rename moves the cursor with the entry.** `finishRename` reloads focusing
+`ByName newName`, so the renamed entry keeps the cursor even though the listing
+reorders around it. Every other reload focuses whatever the cursor was on.
+
 **One question per item covers the whole tree.** `copyAll` asks only when the
 *top-level* target already exists — and if it does not, nothing inside it can
 exist either, so no conflict can appear deeper in the recursion. The answer
@@ -178,8 +204,8 @@ is what keeps their marks in place.
 
 **Marks survive exactly what did not finish.** After a batch, the panel keeps
 the marks of the entries whose `ItemResult` is not `Ok` (and that still exist);
-everything that succeeded loses its mark. Delete and copy share the rule, so a
-failed batch can be retried by pressing the key again.
+everything that succeeded loses its mark. Delete, copy and move share the rule,
+so a failed batch can be retried by pressing the key again.
 
 **Moving a directory is copy-then-delete.** `IDirectory.Move` fails across
 volumes, which is the normal case for a two-panel manager, so directories are
@@ -189,10 +215,10 @@ copied and then removed; files still use `IFile.Move`.
 shortcut swallows its key globally (see the `F10` trap), so a panel-level
 `KeyDown` handler for `F7` would never fire. `FunctionKeyBar.create` therefore
 takes an `Actions` record — one callback per function key — and `MainWindow`
-supplies real handlers (`ignore` for the not-yet-built ones). Their messages
-carry no side or index — a `StatusBar` shortcut has no notion of focus, so
-`MakeDirectoryRequested` and `DeleteRequested` read the active panel and its
-cursor from the state, which the panel events keep up to date.
+supplies the handlers. Their messages carry no side or index — a `StatusBar`
+shortcut has no notion of focus, so `CopyRequested` and its siblings read the
+active panel and its cursor from the state, which the panel events keep up to
+date.
 
 **`ReportError` carries a title.** Listing failures and operation failures want
 different dialog captions, so the dependency is `title -> message -> unit`;
@@ -207,9 +233,9 @@ still never depends on Ui — the mapping is over the raw error values.
 
 **Operation targets are one rule, shared by every operation key.**
 `AppState.operationTargets` answers with the marked entries in listing order,
-or with the cursor entry when nothing is marked, and never with `..` — so
-`F8` on the parent entry has nothing to do and asks nothing. P5.4–P5.6 take
-their sources from the same function.
+or with the cursor entry when nothing is marked, and never with `..` — so a
+function key pressed on the parent entry has nothing to do and asks nothing.
+`F5`, `F6` and `F8` all take their sources from it.
 
 **A confirmation is an effect; its wording belongs to Ui.** `ConfirmDelete`
 carries the target names and a single flag saying whether any target directory
@@ -265,14 +291,17 @@ raised inside it. Without the flag, render and handler bounce off each other.
 
 ## Next up
 
-**P5.5** — `F6` move / rename: the same operation targets moved into the other
-panel's directory. `Operations.moveAll` still takes the plain overwrite bool,
-so it wants the `ask` treatment `copyAll` already got. The new part is the
-target edit-box: `F6` offers the other panel's path, and a bare name typed in
-its place means rename instead of move — the first dialog that returns a value
-Marbas has to interpret rather than just obey.
+**P5.6** — progress and cancellation: `Shell.interpret` currently runs
+`copyAll` / `moveAll` straight through on the UI thread, so a large tree
+freezes the window. The batch has to move to a background thread with a
+progress dialog and `Esc` cancellation, marshalling its dispatch back through
+`Application.Invoke` (see PLAN.md, *State handling*). The `ask` callback the
+batch already takes is the model for the progress callback; the harder part is
+that the overwrite question must then be asked from the background thread.
 
-Known rough edge, for whoever picks it up: both panels start on the same
-directory, and `F5` there ends up copying a file onto itself, which the OS
-refuses with an error dialog. The target edit-box of P5.5 is the natural place
-to make that case say something better.
+## Known rough edges
+
+- Both panels start on the same directory, so `F5` straight after launch copies
+  a file onto itself and the OS refuses it with an error dialog. `F6` can be
+  pointed elsewhere by hand, `F5` cannot — a target prompt for `F5`, or a check
+  that the two directories differ, would be the fix.

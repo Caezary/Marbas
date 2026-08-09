@@ -63,6 +63,25 @@ let ``parent of a root is None`` () =
     Assert.Equal(None, FileSystemPath.parent fs (FileSystemPath.create @"C:\"))
 
 [<Fact>]
+let ``a name without a directory part is a bare name`` () =
+    let fs = MockFileSystem()
+
+    Assert.True(FileSystemPath.isBareName fs "notes.txt")
+
+[<Fact>]
+let ``a name carrying a directory is not a bare name`` () =
+    let fs = MockFileSystem()
+
+    Assert.False(FileSystemPath.isBareName fs @"docs\notes.txt")
+
+[<Fact>]
+let ``a rooted path is not a bare name`` () =
+    let fs = MockFileSystem()
+
+    Assert.False(FileSystemPath.isBareName fs @"C:\backup")
+    Assert.False(FileSystemPath.isBareName fs @"C:\")
+
+[<Fact>]
 let ``kind is NoEntry for a missing path`` () =
     let fs = MockFileSystem()
 

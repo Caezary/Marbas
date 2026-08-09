@@ -21,6 +21,7 @@ let dependencies (fs: IFileSystem) startPath : Shell.Dependencies =
       ChooseOption = fun _ _ -> None
       AskPattern = fun _ -> None
       AskName = fun _ -> None
+      AskTarget = fun _ _ -> None
       Confirm = fun _ _ -> false
       AskOverwrite = fun _ _ -> Marbas.FileSystem.Operations.No }
 

@@ -41,7 +41,7 @@ let private markedNotes state =
     state |> setCursor Left 2 |> toggleSelectionAndAdvance Left
 
 let private finished fs results state =
-    match finishCopy fs results state with
+    match finishTransfer fs results state with
     | Ok(updated, _) -> updated
     | Error err -> failwith $"unexpected error %A{err}"
 
@@ -174,7 +174,7 @@ let ``a failed copy is reported`` () =
     let reported = ResizeArray<string>()
 
     let window, left =
-        windowWith fs (fun _ _ -> Yes) (fun _ message -> reported.Add message)
+        windowWith fs (fun _ _ -> Yes) (fun _ -> reported.Add)
 
     use window = window
 

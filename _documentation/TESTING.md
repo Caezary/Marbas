@@ -13,7 +13,9 @@ is a function, so tests pass fakes and assert on what was requested.
 `Program.fs` is the only place that supplies the real `MessageBox` dialogs.
 `TestHelpers.dependencies` gives every port a do-nothing default — a
 confirmation that answers no, an overwrite question that skips, prompts that
-cancel — so a test only overrides the one it cares about.
+cancel — so a test only overrides the one it cares about. A prompt that carries
+a suggestion (`AskTarget`) is easiest to fake as `fun _ suggestion -> Some
+suggestion`, which is exactly "the user pressed Ok".
 
 A UI test that needs the two panels on *different* directories gets there the
 way a user would: `press list PanelInput.rightDriveKey` with a `ChooseOption`

@@ -1,5 +1,6 @@
 namespace Marbas.FileSystem
 
+open System
 open System.IO.Abstractions
 
 type FileSystemPath = private FileSystemPath of string
@@ -24,6 +25,9 @@ module FileSystemPath =
         FileSystemPath(fs.Path.Combine(path, name))
 
     let name (fs: IFileSystem) (FileSystemPath path) = fs.Path.GetFileName path
+
+    let isBareName (fs: IFileSystem) (name: string) =
+        not (fs.Path.IsPathRooted name) && String.IsNullOrEmpty(fs.Path.GetDirectoryName name)
 
     let directory (fs: IFileSystem) (FileSystemPath path) =
         FileSystemPath(fs.Path.GetDirectoryName path)

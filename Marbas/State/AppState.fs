@@ -167,12 +167,15 @@ let hasNonEmptyDirectory (fs: IFileSystem) panel =
     operationTargets panel
     |> List.exists (entryPath fs panel >> Operations.isNonEmptyDirectory fs)
 
-let private reload (fs: IFileSystem) side keep state =
+let private reloadFocusing (fs: IFileSystem) side focus keep state =
     let previous = panel side state
 
-    loadPanelFocusing fs side previous.Path (cursorFocus previous) state
+    loadPanelFocusing fs side previous.Path focus state
     |> Result.mapError asOperationError
     |> Result.map (updatePanel side (keep previous))
+
+let private reload (fs: IFileSystem) side keep state =
+    reloadFocusing fs side (cursorFocus (panel side state)) keep state
 
 let deleteTargets (fs: IFileSystem) side state =
     let results = operationPaths fs (panel side state) |> Operations.deleteAll fs
@@ -180,10 +183,13 @@ let deleteTargets (fs: IFileSystem) side state =
     reload fs side (fun previous -> keepUnfinished results previous.Selected) state
     |> Result.map (fun updated -> updated, results)
 
-let finishCopy (fs: IFileSystem) results state =
+let finishTransfer (fs: IFileSystem) results state =
     reload fs state.Active (fun previous -> keepUnfinished results previous.Selected) state
     |> Result.bind (reload fs (opposite state.Active) (fun previous -> keepSurviving previous.Selected))
     |> Result.map (fun updated -> updated, results)
+
+let finishRename (fs: IFileSystem) newName state =
+    reloadFocusing fs state.Active (ByName newName) (fun previous -> keepSurviving previous.Selected) state
 
 let makeDirectory (fs: IFileSystem) side name state : Result<AppState, Operations.OperationError> =
     let previous = panel side state
