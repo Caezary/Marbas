@@ -305,6 +305,19 @@ also writes `ListView.SelectedItem`, which raises the same event, so `Runtime`
 raises its `IsRendering` flag while it renders and the handler ignores events
 raised inside it. Without the flag, render and handler bounce off each other.
 
+**Panel event wiring is its own module, attached after the panels are seeded.**
+`PanelWiring.attach` subscribes one panel's `ListView` and frame to a
+`PanelWiring.Host` — dispatch, repaint, and the "am I rendering?" question —
+so `MainWindow` only builds views and hands over that host, and the wiring can
+be tested against a bare `FilePanel` with a recording host instead of a whole
+window. `MainWindow` keeps two loops over the panels on purpose: the first
+dispatches the startup `PathOpened`, the second attaches the wiring. While the
+initial state is being seeded no handler exists yet, so nothing can re-enter
+the runtime — the `IsRendering` guard covers `ValueChanged`, but the
+`FrameChanged` handler calls `Runtime.Refresh` directly, and a nested `paint`
+lowers the flag for the render that is still running. Merging the loops would
+put that hazard into startup.
+
 ## Traps already hit (details in [TESTING.md](TESTING.md))
 
 - `StatusBar` shortcuts swallow their key even with a `null` action — `F10`

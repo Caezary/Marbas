@@ -52,29 +52,12 @@ let create (deps: Shell.Dependencies) =
     for side, _ in views do
         dispatch (Update.PathOpened(side, deps.StartPath))
 
+    let host: PanelWiring.Host =
+        { Dispatch = dispatch
+          Refresh = fun () -> runtime.Refresh()
+          IsRendering = fun () -> runtime.IsRendering }
+
     for side, view in views do
-        let list = FilePanel.listView view
-        let cursor () = list.SelectedItem.GetValueOrDefault 0
-
-        list.FrameChanged.Add(fun _ -> runtime.Refresh())
-
-        list.ValueChanged.Add(fun args ->
-            if not runtime.IsRendering then
-                dispatch (Update.CursorMoved(side, args.NewValue.GetValueOrDefault 0)))
-
-        view.HasFocusChanged.Add(fun _ ->
-            if view.HasFocus then
-                dispatch (Update.PanelFocused side))
-
-        list.Accepting.Add(fun args ->
-            args.Handled <- true
-            dispatch (Update.EntryOpened(side, cursor ())))
-
-        list.KeyDown.Add(fun key ->
-            match PanelInput.messageFor side (cursor ()) key with
-            | Some msg ->
-                key.Handled <- true
-                dispatch msg
-            | None -> ())
+        PanelWiring.attach host side view
 
     window

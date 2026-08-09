@@ -26,6 +26,7 @@
         <Compile Include="Ui\FilePanel.fs" />
         <Compile Include="Ui\FunctionKeyBar.fs" />
         <Compile Include="Ui\PanelInput.fs" />
+        <Compile Include="Ui\PanelWiring.fs" />
         <Compile Include="Ui\Shell.fs" />
         <Compile Include="Ui\PromptDialog.fs" />
         <Compile Include="Ui\PatternDialog.fs" />
