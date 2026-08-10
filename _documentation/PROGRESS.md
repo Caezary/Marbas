@@ -305,6 +305,17 @@ also writes `ListView.SelectedItem`, which raises the same event, so `Runtime`
 raises its `IsRendering` flag while it renders and the handler ignores events
 raised inside it. Without the flag, render and handler bounce off each other.
 
+**`MainWindow` is a composition root, `AppView` is the screen.** `AppView.create`
+builds the window, the two panels and the status line and hands back a record;
+`AppView.render` is the whole screen as a function of `AppState`, so it can be
+tested by rendering a state into a view and reading the panels back, with no
+`Runtime` involved. The side-to-view pairing lives in `FilePanel.Panels` and
+`FilePanel.pairs`, which is what render, seeding and wiring all iterate.
+`MainWindow.create` is left with four steps: build the view, build the runtime,
+seed both panels, attach the wiring. The function key bar is added after the
+runtime exists, because it needs `dispatch` — which needs the runtime, which
+needs the render function, which needs the views.
+
 **Keys map to messages in tables, not in callbacks.** `PanelInput.messageFor`
 does it for the panel, `FunctionKeyBar.bindings` for the bottom bar — one list
 of key, title and `Message`, turned into `Shortcut`s by `FunctionKeyBar.create

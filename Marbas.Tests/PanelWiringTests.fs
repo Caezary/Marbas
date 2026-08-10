@@ -31,8 +31,8 @@ let private probe () =
 
 let private wiredTo side =
     let probe = probe ()
-    let left, right = FilePanel.createPair ()
-    let view = if side = Left then left else right
+    let panels = FilePanel.createPair ()
+    let view = if side = Left then panels.Left else panels.Right
     PanelWiring.attach probe.Host side view
     let list = FilePanel.listView view
     list.SetSource(ObservableCollection [ ".."; "docs"; "readme.txt" ])

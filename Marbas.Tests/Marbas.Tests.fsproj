@@ -30,6 +30,7 @@
     <Compile Include="MainWindowTests.fs" />
     <Compile Include="PanelFocusTests.fs" />
     <Compile Include="PanelWiringTests.fs" />
+    <Compile Include="AppViewTests.fs" />
     <Compile Include="FunctionKeyBarTests.fs" />
     <Compile Include="FilePanelContentTests.fs" />
     <Compile Include="NavigationErrorTests.fs" />
