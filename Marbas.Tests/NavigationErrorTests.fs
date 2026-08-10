@@ -20,9 +20,7 @@ let private fsWithVanishingDirectory () =
     fs
 
 let private loaded side path (fs: IFileSystem) state =
-    match loadPanel fs side path state with
-    | Ok s -> s
-    | Error err -> failwith $"setup failed: %A{err}"
+    loadPanel fs side path state |> Expect.ok
 
 [<Fact>]
 let ``entering a directory that vanished reports an error and keeps the panel`` () =
@@ -30,7 +28,9 @@ let ``entering a directory that vanished reports an error and keeps the panel`` 
     let state = create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> setCursor Left 1
     fs.Directory.Delete @"C:\start\docs"
 
-    Assert.Equal(Error(DirectoryNotFound(fp @"C:\start\docs")), enter fs state)
+    let result = enter fs state
+
+    Assert.Equal(Error(DirectoryNotFound(fp @"C:\start\docs")), result)
 
 [<Fact>]
 let ``failed navigation leaves the panel where it was`` () =
@@ -38,9 +38,10 @@ let ``failed navigation leaves the panel where it was`` () =
     let state = create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> setCursor Left 1
     fs.Directory.Delete @"C:\start\docs"
 
-    match enter fs state with
-    | Error _ -> Assert.Equal(fp @"C:\start", state.Left.Path)
-    | Ok _ -> failwith "expected an error"
+    let failure = enter fs state |> Expect.error
+
+    Assert.Equal(DirectoryNotFound(fp @"C:\start\docs"), failure)
+    Assert.Equal(fp @"C:\start", state.Left.Path)
 
 [<Fact>]
 let ``UI reports listing failures and stays in the current directory`` () =
@@ -48,18 +49,15 @@ let ``UI reports listing failures and stays in the current directory`` () =
     let reported = ResizeArray<string>()
 
     use window =
-        MainWindow.create
+        focusedWindow
             { dependencies fs @"C:\start" with
                 ReportError = fun _ -> reported.Add }
-
-    window.BeginInit()
-    window.EndInit()
-    window.SetFocus() |> ignore
 
     let panelView = panel FilePanel.LeftId window
     let list = FilePanel.listView panelView
     list.SelectedItem <- 1
     fs.Directory.Delete @"C:\start\docs"
+
     press list Key.Enter
 
     Assert.Single reported |> ignore

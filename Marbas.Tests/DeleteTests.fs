@@ -21,9 +21,7 @@ let private mockFs () =
     fs
 
 let private loaded (fs: IFileSystem) =
-    match create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") with
-    | Ok state -> state
-    | Error err -> failwith $"setup failed: %A{err}"
+    create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
 
 let private started () =
     let fs = mockFs ()
@@ -31,22 +29,31 @@ let private started () =
 
 let private targetNames state = operationTargets state.Left |> List.map _.Name
 
-let private deleted fs state =
-    match deleteTargets fs Left state with
-    | Ok result -> result
-    | Error err -> failwith $"unexpected error %A{err}"
+let private deleted fs state = deleteTargets fs Left state |> Expect.ok
+
+let private windowWith (fs: MockFileSystem) confirm reportError =
+    focusedWindow
+        { dependencies fs @"C:\start" with
+            Confirm = confirm
+            ReportError = reportError }
+
+let private silent = fun (_: string) (_: string) -> ()
 
 [<Fact>]
 let ``with nothing marked the cursor entry is the only target`` () =
     let _, state = started ()
 
-    Assert.Equal<string list>([ "notes.txt" ], state |> setCursor Left 3 |> targetNames)
+    let targets = state |> setCursor Left 3 |> targetNames
+
+    Assert.Equal<string list>([ "notes.txt" ], targets)
 
 [<Fact>]
 let ``the parent entry is never a target`` () =
     let _, state = started ()
 
-    Assert.Empty(state |> setCursor Left 0 |> targetNames)
+    let targets = state |> setCursor Left 0 |> targetNames
+
+    Assert.Empty targets
 
 [<Fact>]
 let ``marked entries are the targets in listing order`` () =
@@ -82,7 +89,6 @@ let ``deleting a directory takes its contents with it`` () =
 [<Fact>]
 let ``every marked entry is deleted and reported`` () =
     let fs, state = started ()
-
     let marked =
         state
         |> setCursor Left 3
@@ -99,14 +105,13 @@ let ``every marked entry is deleted and reported`` () =
 [<Fact>]
 let ``a vanished entry is reported while the rest still go`` () =
     let fs, state = started ()
-
     let marked =
         state
         |> setCursor Left 3
         |> toggleSelectionAndAdvance Left
         |> toggleSelectionAndAdvance Left
-
     fs.File.Delete @"C:\start\notes.txt"
+
     let _, results = deleted fs marked
 
     Assert.Equal(Error(SourceNotFound(fp @"C:\start\notes.txt")), results[0].Outcome)
@@ -116,7 +121,6 @@ let ``a vanished entry is reported while the rest still go`` () =
 [<Fact>]
 let ``marks are dropped along with the entries they pointed at`` () =
     let fs, state = started ()
-
     let marked =
         state
         |> setCursor Left 3
@@ -134,47 +138,41 @@ let ``marks are dropped along with the entries they pointed at`` () =
 let ``a non-empty directory among the targets is recognised`` () =
     let fs, state = started ()
 
-    Assert.True(hasNonEmptyDirectory fs (state |> setCursor Left 1).Left)
+    let warns = hasNonEmptyDirectory fs (state |> setCursor Left 1).Left
+
+    Assert.True warns
 
 [<Fact>]
 let ``an empty directory needs no extra warning`` () =
     let fs, state = started ()
 
-    Assert.False(hasNonEmptyDirectory fs (state |> setCursor Left 2).Left)
+    let warns = hasNonEmptyDirectory fs (state |> setCursor Left 2).Left
 
-let private windowWith fs confirm =
-    let window =
-        MainWindow.create
-            { dependencies fs @"C:\start" with
-                Confirm = confirm }
-
-    window.BeginInit()
-    window.EndInit()
-    window.SetFocus() |> ignore
-    window
+    Assert.False warns
 
 [<Fact>]
 let ``F8 asks for confirmation and deletes the entry under the cursor`` () =
     let fs = mockFs ()
-    let mutable asked = []
-    use window = windowWith fs (fun title message -> asked <- (title, message) :: asked; true)
-
-    let list = FilePanel.listView (panel FilePanel.LeftId window)
+    let asked = ResizeArray<string * string>()
+    use window = windowWith fs (fun title message -> asked.Add(title, message); true) silent
+    let list = leftList window
     list.SelectedItem <- 3
+
     press window Key.F8
 
-    Assert.Equal(DeleteConfirmation.Title, fst (List.exactlyOne asked))
-    Assert.Contains("notes.txt", snd (List.exactlyOne asked))
+    let title, message = Assert.Single asked
+    Assert.Equal(DeleteConfirmation.Title, title)
+    Assert.Contains("notes.txt", message)
     Assert.False(fs.File.Exists @"C:\start\notes.txt")
     Assert.Equal(4, list.Source.Count)
 
 [<Fact>]
 let ``a refused confirmation deletes nothing`` () =
     let fs = mockFs ()
-    use window = windowWith fs (fun _ _ -> false)
-
-    let list = FilePanel.listView (panel FilePanel.LeftId window)
+    use window = windowWith fs (fun _ _ -> false) silent
+    let list = leftList window
     list.SelectedItem <- 3
+
     press window Key.F8
 
     Assert.True(fs.File.Exists @"C:\start\notes.txt")
@@ -183,33 +181,21 @@ let ``a refused confirmation deletes nothing`` () =
 [<Fact>]
 let ``F8 on the parent entry asks nothing`` () =
     let fs = mockFs ()
-    let mutable asked = 0
-    use window = windowWith fs (fun _ _ -> asked <- asked + 1; true)
+    let asked = ResizeArray<string>()
+    use window = windowWith fs (fun title _ -> asked.Add title; true) silent
 
     press window Key.F8
 
-    Assert.Equal(0, asked)
+    Assert.Empty asked
 
 [<Fact>]
 let ``a failed delete is reported`` () =
     let fs = mockFs ()
     let reported = ResizeArray<string>()
-
-    let window =
-        MainWindow.create
-            { dependencies fs @"C:\start" with
-                Confirm = (fun _ _ -> true)
-                ReportError = fun _ message -> reported.Add message }
-
-    window.BeginInit()
-    window.EndInit()
-    window.SetFocus() |> ignore
-    use window = window
-
-    let list = FilePanel.listView (panel FilePanel.LeftId window)
-    list.SelectedItem <- 3
+    use window = windowWith fs (fun _ _ -> true) (fun _ message -> reported.Add message)
+    (leftList window).SelectedItem <- 3
     fs.File.Delete @"C:\start\notes.txt"
+
     press window Key.F8
 
-    Assert.Single reported |> ignore
-    Assert.Contains("notes.txt", reported[0])
+    Assert.Contains("notes.txt", Assert.Single reported)

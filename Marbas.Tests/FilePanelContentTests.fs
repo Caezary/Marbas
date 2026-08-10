@@ -14,8 +14,7 @@ let private mockFs () =
     fs :> IFileSystem
 
 let private items panelView =
-    let list = FilePanel.listView panelView
-    let source = list.Source.ToList()
+    let source = (FilePanel.listView panelView).Source.ToList()
     [ for i in 0 .. source.Count - 1 -> string source[i] ]
 
 [<Fact>]
@@ -24,6 +23,7 @@ let ``both panels list the startup directory`` () =
 
     for id in [ FilePanel.LeftId; FilePanel.RightId ] do
         let names = items (panel id window)
+
         Assert.Contains("docs", names)
         Assert.Contains("readme.txt", names)
 
@@ -31,17 +31,19 @@ let ``both panels list the startup directory`` () =
 let ``panel listing starts with the parent entry for non-root paths`` () =
     use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
 
-    Assert.Equal("..", items (panel FilePanel.LeftId window) |> List.head)
+    let names = items (panel FilePanel.LeftId window)
+
+    Assert.Equal("..", names.Head)
 
 [<Fact>]
 let ``after layout rows are formatted into aligned columns`` () =
     use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
     window.BeginInit()
     window.EndInit()
-    window.Layout(Size(80, 24)) |> ignore
-
     let panelView = panel FilePanel.LeftId window
     let list = FilePanel.listView panelView
+
+    window.Layout(Size(80, 24)) |> ignore
     let rows = items panelView
 
     Assert.NotEmpty rows
@@ -50,18 +52,15 @@ let ``after layout rows are formatted into aligned columns`` () =
 
 [<Fact>]
 let ``enter key on a directory navigates the focused panel`` () =
-    use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
-    window.BeginInit()
-    window.EndInit()
-    window.SetFocus() |> ignore
-
+    use window = focusedWindow (dependencies (mockFs ()) @"C:\start")
     let panelView = panel FilePanel.LeftId window
     let list = FilePanel.listView panelView
     list.SelectedItem <- 1
+
     press list Terminal.Gui.Input.Key.Enter
 
     Assert.Equal(@"C:\start\docs", panelView.Title)
-    Assert.StartsWith("..", items panelView |> List.head)
+    Assert.StartsWith("..", (items panelView).Head)
 
 [<Fact>]
 let ``panel titles show the current path`` () =

@@ -15,8 +15,9 @@ operation targets, and copying or moving now runs off the UI thread behind a
 progress window that `Esc` stops. Next comes Phase 6: viewing and editing
 files.
 
-**285 tests pass**, covering every logic module directly and the UI behaviour by
-driving real Terminal.Gui views over an in-memory file system.
+**301 tests pass**, covering every logic module directly and the UI behaviour by
+driving real Terminal.Gui views over an in-memory file system. They all follow
+the arrange/act/assert shape described in [TESTING.md](TESTING.md).
 
 | Phase | Tasks | State |
 |-------|-------|-------|

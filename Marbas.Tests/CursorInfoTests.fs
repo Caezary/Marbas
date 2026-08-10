@@ -38,8 +38,12 @@ let ``a directory is described with DIR instead of a size`` () =
 let ``long names are not truncated`` () =
     let name = String('a', 120)
 
-    Assert.Contains(name, CursorInfo.describe (Some(file name 1L)))
+    let text = CursorInfo.describe (Some(file name 1L))
+
+    Assert.Contains(name, text)
 
 [<Fact>]
 let ``no entry under the cursor is described as empty text`` () =
-    Assert.Equal("", CursorInfo.describe None)
+    let text = CursorInfo.describe None
+
+    Assert.Equal("", text)

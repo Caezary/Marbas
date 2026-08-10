@@ -22,4 +22,6 @@ let ``every offered answer maps to its own outcome`` () =
 
 [<Fact>]
 let ``a dismissed question counts as cancel`` () =
-    Assert.Equal(Cancel, OverwriteQuestion.answerAt -1)
+    let answer = OverwriteQuestion.answerAt -1
+
+    Assert.Equal(Cancel, answer)

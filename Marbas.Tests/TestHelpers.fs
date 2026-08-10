@@ -10,6 +10,10 @@ open Marbas.Ui
 let panel id (window: Window) =
     window.SubViews |> Seq.find (fun v -> v.Id = id)
 
+let leftList window = FilePanel.listView (panel FilePanel.LeftId window)
+
+let rightList window = FilePanel.listView (panel FilePanel.RightId window)
+
 let press (view: View) (key: Key) =
     view.NewKeyDownEvent(Key key.KeyCode) |> ignore
 
@@ -43,3 +47,10 @@ let createInitializedWith onQuit =
     window
 
 let createInitialized () = createInitializedWith ignore
+
+let focusedWindow deps =
+    let window = MainWindow.create deps
+    window.BeginInit()
+    window.EndInit()
+    window.SetFocus() |> ignore
+    window

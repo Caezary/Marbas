@@ -19,41 +19,45 @@ let private mockFs () =
     fs
 
 let private loaded (fs: IFileSystem) =
-    match create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") with
-    | Ok state -> state
-    | Error err -> failwith $"setup failed: %A{err}"
+    create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
 
 let private loadedBoth (fs: IFileSystem) =
-    match loaded fs |> loadPanel fs Right (fp @"C:\backup") with
-    | Ok state -> state
-    | Error err -> failwith $"setup failed: %A{err}"
+    loaded fs |> loadPanel fs Right (fp @"C:\backup") |> Expect.ok
 
 [<Fact>]
 let ``cursor moved updates the cursor without effects`` () =
-    let state = loaded (mockFs ())
+    let fs = mockFs ()
+    let state = loaded fs
 
-    let result = update (mockFs ()) (CursorMoved(Left, 2)) state
+    let result = update fs (CursorMoved(Left, 2)) state
 
     Assert.Equal(2, result.State.Left.Cursor)
     Assert.Empty result.Effects
 
 [<Fact>]
 let ``panel focused activates the side`` () =
-    let result = update (mockFs ()) (PanelFocused Right) (loaded (mockFs ()))
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let result = update fs (PanelFocused Right) state
 
     Assert.Equal(Right, result.State.Active)
 
 [<Fact>]
 let ``make directory requested asks for a name`` () =
-    let result = update (mockFs ()) MakeDirectoryRequested (loaded (mockFs ()))
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let result = update fs MakeDirectoryRequested state
 
     Assert.Equal<Effect list>([ PromptForName ], result.Effects)
 
 [<Fact>]
 let ``a valid name creates the directory on the active side`` () =
     let fs = mockFs ()
+    let state = loaded fs
 
-    let result = update fs (NameEntered "work") (loaded fs)
+    let result = update fs (NameEntered "work") state
 
     Assert.True(fs.Directory.Exists @"C:\start\work")
     Assert.Equal(Some "work", cursorEntry result.State.Left |> Option.map _.Name)
@@ -81,27 +85,37 @@ let ``a duplicate name reports an operation error and keeps state`` () =
 
 [<Fact>]
 let ``pattern requested defers to a pattern prompt`` () =
-    let result = update (mockFs ()) (PatternRequested(Left, 0, true)) (loaded (mockFs ()))
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let result = update fs (PatternRequested(Left, 0, true)) state
 
     Assert.Equal<Effect list>([ PromptForPattern(Left, 0, true) ], result.Effects)
 
 [<Fact>]
 let ``an entered pattern marks the matching entries`` () =
-    let result = update (mockFs ()) (PatternEntered(Left, 0, true, "*.fs")) (loaded (mockFs ()))
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let result = update fs (PatternEntered(Left, 0, true, "*.fs")) state
 
     Assert.Equal<string list>([ "setup.fs" ], selectedEntries result.State.Left |> List.map _.Name)
 
 [<Fact>]
 let ``drive requested defers to a drive prompt`` () =
-    let result = update (mockFs ()) (DriveRequested Right) (loaded (mockFs ()))
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let result = update fs (DriveRequested Right) state
 
     Assert.Equal<Effect list>([ PromptForDrive Right ], result.Effects)
 
 [<Fact>]
 let ``opening a path loads it into the given side`` () =
     let fs = mockFs ()
+    let state = loaded fs
 
-    let result = update fs (PathOpened(Right, @"C:\start")) (loaded fs)
+    let result = update fs (PathOpened(Right, @"C:\start")) state
 
     Assert.Equal(fp @"C:\start", result.State.Right.Path)
     Assert.Empty result.Effects
@@ -138,8 +152,9 @@ let ``toggling selection marks the entry under the cursor and advances`` () =
 [<Fact>]
 let ``delete requested asks to confirm the cursor entry`` () =
     let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
 
-    let result = update fs DeleteRequested (loaded fs |> setCursor Left 2)
+    let result = update fs DeleteRequested state
 
     Assert.Equal<Effect list>([ ConfirmDelete([ "notes.txt" ], false) ], result.Effects)
 
@@ -147,8 +162,9 @@ let ``delete requested asks to confirm the cursor entry`` () =
 let ``delete requested warns when a target directory is not empty`` () =
     let fs = mockFs ()
     fs.AddFile(@"C:\start\docs\inner.txt", MockFileData "x")
+    let state = loaded fs |> setCursor Left 1
 
-    let result = update fs DeleteRequested (loaded fs |> setCursor Left 1)
+    let result = update fs DeleteRequested state
 
     Assert.Equal<Effect list>([ ConfirmDelete([ "docs" ], true) ], result.Effects)
 
@@ -165,8 +181,9 @@ let ``delete requested on the parent entry asks nothing`` () =
 [<Fact>]
 let ``a confirmed delete removes the target and raises no effect`` () =
     let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
 
-    let result = update fs DeleteConfirmed (loaded fs |> setCursor Left 2)
+    let result = update fs DeleteConfirmed state
 
     Assert.False(fs.File.Exists @"C:\start\notes.txt")
     Assert.DoesNotContain("notes.txt", result.State.Left.Entries |> List.map _.Name)
@@ -190,8 +207,9 @@ let ``a delete that fails is reported item by item`` () =
 [<Fact>]
 let ``copy requested aims at the other panel's directory`` () =
     let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
 
-    let result = update fs CopyRequested (loadedBoth fs |> setCursor Left 2)
+    let result = update fs CopyRequested state
 
     Assert.Equal<Effect list>([ CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup") ], result.Effects)
 
@@ -219,20 +237,22 @@ let ``a finished copy shows the new entry in the other panel`` () =
 [<Fact>]
 let ``a finished copy reports the items that failed`` () =
     let fs = mockFs ()
+    let state = loadedBoth fs
 
     let failed =
         [ { Name = "notes.txt"
             Outcome = Error(AccessDenied(fp @"C:\backup\notes.txt")) } ]
 
-    let result = update fs (CopyFinished failed) (loadedBoth fs)
+    let result = update fs (CopyFinished failed) state
 
     Assert.Equal<Effect list>([ ReportItemFailures failed ], result.Effects)
 
 [<Fact>]
 let ``move requested offers the other panel's path`` () =
     let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
 
-    let result = update fs MoveRequested (loadedBoth fs |> setCursor Left 2)
+    let result = update fs MoveRequested state
 
     Assert.Equal<Effect list>([ PromptForTarget @"C:\backup" ], result.Effects)
 
@@ -249,16 +269,18 @@ let ``move requested on the parent entry raises no effect`` () =
 [<Fact>]
 let ``an entered path moves the targets into it`` () =
     let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
 
-    let result = update fs (TargetEntered @"C:\backup") (loadedBoth fs |> setCursor Left 2)
+    let result = update fs (TargetEntered @"C:\backup") state
 
     Assert.Equal<Effect list>([ MoveTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup") ], result.Effects)
 
 [<Fact>]
 let ``a bare name renames the only target`` () =
     let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
 
-    let result = update fs (TargetEntered "readme.txt") (loadedBoth fs |> setCursor Left 2)
+    let result = update fs (TargetEntered "readme.txt") state
 
     Assert.Equal<Effect list>([ RenameTarget(fp @"C:\start\notes.txt", "readme.txt") ], result.Effects)
 
@@ -266,13 +288,13 @@ let ``a bare name renames the only target`` () =
 let ``a bare name with several targets names a directory beside them`` () =
     let fs = mockFs ()
 
-    let marked =
+    let state =
         loadedBoth fs
         |> setCursor Left 2
         |> toggleSelectionAndAdvance Left
         |> toggleSelectionAndAdvance Left
 
-    let result = update fs (TargetEntered "archive") marked
+    let result = update fs (TargetEntered "archive") state
 
     Assert.Equal<Effect list>(
         [ MoveTargets([ fp @"C:\start\notes.txt"; fp @"C:\start\setup.fs" ], fp @"C:\start\archive") ],
@@ -325,7 +347,10 @@ let ``a failed rename is reported and leaves the panel alone`` () =
 
 [<Fact>]
 let ``quit requested raises the quit effect`` () =
-    let result = update (mockFs ()) QuitRequested (loaded (mockFs ()))
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let result = update fs QuitRequested state
 
     Assert.Equal<Effect list>([ Quit ], result.Effects)
 

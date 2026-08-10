@@ -21,19 +21,24 @@ let private directory name =
 
 [<Fact>]
 let ``nothing selected is summarised as empty text`` () =
-    Assert.Equal("", SelectionSummary.describe [])
+    let text = SelectionSummary.describe []
+
+    Assert.Equal("", text)
 
 [<Fact>]
 let ``the summary counts the entries and sums their sizes`` () =
-    let text =
-        SelectionSummary.describe [ file "a.txt" 1000L; file "b.txt" 234L ]
+    let selected = [ file "a.txt" 1000L; file "b.txt" 234L ]
+
+    let text = SelectionSummary.describe selected
 
     Assert.Contains("2 selected", text)
     Assert.Contains("1,234 bytes", text)
 
 [<Fact>]
 let ``selected directories are counted but add no size`` () =
-    let text = SelectionSummary.describe [ directory "docs"; file "a.txt" 5L ]
+    let selected = [ directory "docs"; file "a.txt" 5L ]
+
+    let text = SelectionSummary.describe selected
 
     Assert.Contains("2 selected", text)
     Assert.Contains("5 bytes", text)

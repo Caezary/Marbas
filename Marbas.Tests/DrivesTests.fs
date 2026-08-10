@@ -10,4 +10,6 @@ let ``lists every mounted drive in alphabetical order`` () =
     fs.AddDirectory @"D:\data"
     fs.AddDirectory @"C:\start"
 
-    Assert.Equal<string list>([ @"C:\"; @"D:\" ], Drives.list fs)
+    let drives = Drives.list fs
+
+    Assert.Equal<string list>([ @"C:\"; @"D:\" ], drives)

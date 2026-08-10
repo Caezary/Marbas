@@ -15,12 +15,7 @@ let private mockFs () =
 
 let private statusText (window: Window) = (panel StatusLine.Id window).Text
 
-let private focusedWindow () =
-    let window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
-    window.BeginInit()
-    window.EndInit()
-    window.SetFocus() |> ignore
-    window
+let private startedWindow () = focusedWindow (dependencies (mockFs ()) @"C:\start")
 
 [<Fact>]
 let ``the window has a status line above the function key bar`` () =
@@ -30,27 +25,27 @@ let ``the window has a status line above the function key bar`` () =
 
 [<Fact>]
 let ``the status line describes the entry under the cursor on start`` () =
-    use window = focusedWindow ()
+    use window = startedWindow ()
 
     Assert.Contains("..", statusText window)
 
 [<Fact>]
 let ``moving the cursor updates the status line`` () =
-    use window = focusedWindow ()
-    let list = FilePanel.listView (panel FilePanel.LeftId window)
+    use window = startedWindow ()
 
-    list.SelectedItem <- 2
+    (leftList window).SelectedItem <- 2
 
     Assert.Contains("readme.txt", statusText window)
     Assert.Contains("2 bytes", statusText window)
 
 [<Fact>]
 let ``the status line follows the active panel`` () =
-    use window = focusedWindow ()
-    (FilePanel.listView (panel FilePanel.LeftId window)).SelectedItem <- 1
-    Assert.Contains("docs", statusText window)
+    use window = startedWindow ()
+    (leftList window).SelectedItem <- 1
+    let onLeftPanel = statusText window
 
     (panel FilePanel.RightId window).SetFocus() |> ignore
 
+    Assert.Contains("docs", onLeftPanel)
     Assert.Contains("..", statusText window)
     Assert.DoesNotContain("docs", statusText window)

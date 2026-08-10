@@ -18,13 +18,20 @@ let private entry kind size =
 let ``a file size is rendered by the given format`` () =
     let grouped (size: int64) = size.ToString("N0", CultureInfo.InvariantCulture)
 
-    Assert.Equal("12345", EntrySize.describe string (entry File (Some 12345L)))
-    Assert.Equal("12,345", EntrySize.describe grouped (entry File (Some 12345L)))
+    let plain = EntrySize.describe string (entry File (Some 12345L))
+    let separated = EntrySize.describe grouped (entry File (Some 12345L))
+
+    Assert.Equal("12345", plain)
+    Assert.Equal("12,345", separated)
 
 [<Fact>]
 let ``a directory shows the DIR marker whatever the format`` () =
-    Assert.Equal(EntrySize.DirectoryMark, EntrySize.describe string (entry Directory None))
+    let text = EntrySize.describe string (entry Directory None)
+
+    Assert.Equal(EntrySize.DirectoryMark, text)
 
 [<Fact>]
 let ``a file of unknown size shows nothing`` () =
-    Assert.Equal("", EntrySize.describe string (entry File None))
+    let text = EntrySize.describe string (entry File None)
+
+    Assert.Equal("", text)

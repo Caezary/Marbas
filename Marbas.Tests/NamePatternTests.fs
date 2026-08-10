@@ -13,8 +13,12 @@ open Marbas.FileSystem
 [<InlineData("a?c.txt", "ac.txt", false)>]
 [<InlineData("readme.txt", "readme.txt", true)>]
 let ``wildcard patterns match names case-insensitively`` pattern name expected =
-    Assert.Equal(expected, NamePattern.matches pattern name)
+    let matched = NamePattern.matches pattern name
+
+    Assert.Equal(expected, matched)
 
 [<Fact>]
 let ``an empty pattern matches nothing`` () =
-    Assert.False(NamePattern.matches "" "readme.txt")
+    let matched = NamePattern.matches "" "readme.txt"
+
+    Assert.False matched

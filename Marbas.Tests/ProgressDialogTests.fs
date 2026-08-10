@@ -14,6 +14,7 @@ let private laidOut title =
 [<Fact>]
 let ``the reported entry fits inside the dialog content area`` () =
     use dialog = laidOut Shell.CopyTitle
+
     ProgressDialog.report dialog @"C:\start\notes.txt"
     let line = (ProgressDialog.line dialog).Frame
 
@@ -32,4 +33,6 @@ let ``the dialog shows what is being worked on`` () =
 let ``the dialog opens empty`` () =
     use dialog = laidOut Shell.CopyTitle
 
-    Assert.Equal("", (ProgressDialog.line dialog).Text)
+    let line = (ProgressDialog.line dialog).Text
+
+    Assert.Equal("", line)

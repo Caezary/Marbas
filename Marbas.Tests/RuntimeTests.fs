@@ -36,6 +36,14 @@ let ``effects are interpreted after the render and can dispatch a follow-up`` ()
     Assert.Equal<int list>([ 10; 11 ], List.ofSeq renders)
 
 [<Fact>]
+let ``a runtime is not rendering before anything is dispatched`` () =
+    let runtime = Runtime(0, step, (fun _ _ -> ()), ignore)
+
+    let rendering = runtime.IsRendering
+
+    Assert.False rendering
+
+[<Fact>]
 let ``rendering is observable only while the render callback runs`` () =
     let observed = ResizeArray<bool>()
     let runtimeRef = ref Unchecked.defaultof<Runtime<int, Msg, Effect>>
@@ -43,11 +51,10 @@ let ``rendering is observable only while the render callback runs`` () =
     let runtime = Runtime(0, step, (fun _ _ -> ()), render)
     runtimeRef.Value <- runtime
 
-    Assert.False runtime.IsRendering
     runtime.Dispatch Bump
 
-    Assert.False runtime.IsRendering
     Assert.Equal<bool list>([ true ], List.ofSeq observed)
+    Assert.False runtime.IsRendering
 
 [<Fact>]
 let ``refresh re-renders the current state without changing it`` () =

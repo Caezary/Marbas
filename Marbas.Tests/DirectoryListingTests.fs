@@ -8,21 +8,15 @@ open Marbas.FileSystem.DirectoryListing
 
 let private fp = FileSystemPath.create
 
-let private ok result =
-    match result with
-    | Ok entries -> entries
-    | Error err -> failwith $"expected Ok, got Error %A{err}"
-
 [<Fact>]
 let ``lists files and directories of the given path`` () =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\data\docs"
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
 
-    let entries = read fs (fp @"C:\data") |> ok
+    let entries = read fs (fp @"C:\data") |> Expect.ok
 
-    let names = entries |> List.map (fun e -> e.Name) |> List.sort
-    Assert.Equal<string list>([ "docs"; "notes.txt" ], names)
+    Assert.Equal<string list>([ "docs"; "notes.txt" ], entries |> List.map _.Name |> List.sort)
 
 [<Fact>]
 let ``directories have no size and files report theirs`` () =
@@ -30,7 +24,7 @@ let ``directories have no size and files report theirs`` () =
     fs.AddDirectory @"C:\data\docs"
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
 
-    let entries = read fs (fp @"C:\data") |> ok
+    let entries = read fs (fp @"C:\data") |> Expect.ok
     let byName name = entries |> List.find (fun e -> e.Name = name)
 
     Assert.Equal(Directory, (byName "docs").Kind)
@@ -43,9 +37,9 @@ let ``does not descend into nested directories`` () =
     let fs = MockFileSystem()
     fs.AddFile(@"C:\data\docs\inner.txt", MockFileData "x")
 
-    let entries = read fs (fp @"C:\data") |> ok
+    let entries = read fs (fp @"C:\data") |> Expect.ok
 
-    Assert.Equal<string list>([ "docs" ], entries |> List.map (fun e -> e.Name))
+    Assert.Equal<string list>([ "docs" ], entries |> List.map _.Name)
 
 [<Fact>]
 let ``reports last modification time`` () =
@@ -55,24 +49,30 @@ let ``reports last modification time`` () =
     file.LastWriteTime <- DateTimeOffset modified
     fs.AddFile(@"C:\data\notes.txt", file)
 
-    let entries = read fs (fp @"C:\data") |> ok
+    let entries = read fs (fp @"C:\data") |> Expect.ok
 
-    Assert.Equal(modified, (entries |> List.exactlyOne).Modified)
+    Assert.Equal(modified, (List.exactlyOne entries).Modified)
 
 [<Fact>]
 let ``missing directory is an error value, not an exception`` () =
     let fs = MockFileSystem()
 
-    Assert.Equal(Error(DirectoryNotFound(fp @"C:\nope")), read fs (fp @"C:\nope"))
+    let result = read fs (fp @"C:\nope")
+
+    Assert.Equal(Error(DirectoryNotFound(fp @"C:\nope")), result)
 
 [<Fact>]
 let ``access denied maps to an error value`` () =
-    Assert.Equal(
-        AccessDenied(fp @"C:\locked"),
-        mapException (fp @"C:\locked") (UnauthorizedAccessException()))
+    let denied = UnauthorizedAccessException()
+
+    let listingError = mapException (fp @"C:\locked") denied
+
+    Assert.Equal(AccessDenied(fp @"C:\locked"), listingError)
 
 [<Fact>]
 let ``unexpected failures map to an error value`` () =
-    Assert.Equal(
-        ListingFailed(fp @"C:\bad", "boom"),
-        mapException (fp @"C:\bad") (IO.IOException "boom"))
+    let failure = IO.IOException "boom"
+
+    let listingError = mapException (fp @"C:\bad") failure
+
+    Assert.Equal(ListingFailed(fp @"C:\bad", "boom"), listingError)

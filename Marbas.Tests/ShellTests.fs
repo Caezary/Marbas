@@ -169,7 +169,6 @@ let ``copy targets are copied and the outcome dispatched back`` () =
 let ``a batch is handed to the runner under its own title`` () =
     let _, dispatch = capture ()
     let titles = ResizeArray<string>()
-
     let deps () =
         { noDeps () with
             FileSystem = copyReadyFs ()
@@ -186,7 +185,6 @@ let ``nothing is run when every collision is refused`` () =
     let fs = copyReadyFs ()
     fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
     let mutable started = false
-
     let deps =
         { noDeps () with
             FileSystem = fs
@@ -205,7 +203,6 @@ let ``a collision asks the overwrite question under its own title`` () =
     let fs = copyReadyFs ()
     fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
     let mutable asked = ("", "")
-
     let deps =
         { noDeps () with
             FileSystem = fs
@@ -221,7 +218,6 @@ let ``a collision asks the overwrite question under its own title`` () =
 let ``the target prompt suggests a path and carries back what was typed`` () =
     let sent, dispatch = capture ()
     let mutable offered = ("", "")
-
     let deps =
         { noDeps () with
             AskTarget = fun title suggestion -> offered <- (title, suggestion); Some "readme.txt" }

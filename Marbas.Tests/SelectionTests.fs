@@ -18,16 +18,13 @@ let private mockFs () =
     fs
 
 let private loaded side path (fs: IFileSystem) state =
-    match loadPanel fs side path state with
-    | Ok s -> s
-    | Error err -> failwith $"setup failed: %A{err}"
+    loadPanel fs side path state |> Expect.ok
 
 let private started () =
     let fs = mockFs ()
     fs, create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs
 
-let private selectedNames panel =
-    selectedEntries panel |> List.map (fun e -> e.Name)
+let private selectedNames panel = selectedEntries panel |> List.map _.Name
 
 [<Fact>]
 let ``a fresh panel has nothing selected`` () =
@@ -74,7 +71,7 @@ let ``selecting several entries keeps them in listing order`` () =
 let ``the parent entry is never selectable but the cursor still advances`` () =
     let _, state = started ()
 
-    let updated = state |> toggleSelectionAndAdvance Left
+    let updated = toggleSelectionAndAdvance Left state
 
     Assert.Empty(selectedEntries updated.Left)
     Assert.Equal(1, updated.Left.Cursor)
@@ -91,34 +88,26 @@ let ``the cursor stops at the last entry`` () =
 [<Fact>]
 let ``selection belongs to one panel only`` () =
     let fs = mockFs ()
+    let state = create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> loaded Right (fp @"C:\start") fs
 
-    let state =
-        create (fp @"C:\start")
-        |> loaded Left (fp @"C:\start") fs
-        |> loaded Right (fp @"C:\start") fs
-        |> setCursor Left 1
-        |> toggleSelectionAndAdvance Left
+    let updated = state |> setCursor Left 1 |> toggleSelectionAndAdvance Left
 
-    Assert.Equal<string list>([ "docs" ], selectedNames state.Left)
-    Assert.Empty(selectedEntries state.Right)
+    Assert.Equal<string list>([ "docs" ], selectedNames updated.Left)
+    Assert.Empty(selectedEntries updated.Right)
 
 [<Fact>]
 let ``entering a directory clears the selection`` () =
-    let fs = mockFs ()
-    let _, state = started ()
+    let fs, state = started ()
 
     let selected = state |> setCursor Left 2 |> toggleSelectionAndAdvance Left
+    let updated = selected |> setCursor Left 1 |> enter fs |> Expect.ok
 
-    match selected |> setCursor Left 1 |> enter fs with
-    | Ok updated ->
-        Assert.Equal(fp @"C:\start\docs", updated.Left.Path)
-        Assert.Empty(selectedEntries updated.Left)
-    | Error err -> failwith $"unexpected error %A{err}"
+    Assert.Equal(fp @"C:\start\docs", updated.Left.Path)
+    Assert.Empty(selectedEntries updated.Left)
 
 [<Fact>]
 let ``refresh keeps the selection and drops entries that disappeared`` () =
-    let fs = mockFs ()
-    let _, state = started ()
+    let fs, state = started ()
 
     let selected =
         state
@@ -126,23 +115,20 @@ let ``refresh keeps the selection and drops entries that disappeared`` () =
         |> toggleSelectionAndAdvance Left
         |> toggleSelectionAndAdvance Left
 
-    Assert.Equal<string list>([ "notes.txt"; "readme.txt" ], selectedNames selected.Left)
     fs.File.Delete @"C:\start\notes.txt"
 
-    match refresh fs selected with
-    | Ok updated -> Assert.Equal<string list>([ "readme.txt" ], selectedNames updated.Left)
-    | Error err -> failwith $"unexpected error %A{err}"
+    let updated = refresh fs selected |> Expect.ok
+
+    Assert.Equal<string list>([ "notes.txt"; "readme.txt" ], selectedNames selected.Left)
+    Assert.Equal<string list>([ "readme.txt" ], selectedNames updated.Left)
 
 [<Fact>]
 let ``selection keys mark the cursor entry and move the cursor down`` () =
     for key in PanelInput.selectionKeys do
-        use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
-        window.BeginInit()
-        window.EndInit()
-        window.SetFocus() |> ignore
-
-        let list = FilePanel.listView (panel FilePanel.LeftId window)
+        use window = focusedWindow (dependencies (mockFs ()) @"C:\start")
+        let list = leftList window
         list.SelectedItem <- 1
+
         press list key
 
         Assert.True(list.Source.IsMarked 1, $"%A{key} should mark the cursor entry")
@@ -151,13 +137,10 @@ let ``selection keys mark the cursor entry and move the cursor down`` () =
 [<Fact>]
 let ``a selection key pressed twice leaves the entry unmarked`` () =
     for key in PanelInput.selectionKeys do
-        use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
-        window.BeginInit()
-        window.EndInit()
-        window.SetFocus() |> ignore
-
-        let list = FilePanel.listView (panel FilePanel.LeftId window)
+        use window = focusedWindow (dependencies (mockFs ()) @"C:\start")
+        let list = leftList window
         list.SelectedItem <- 1
+
         press list key
         list.SelectedItem <- 1
         press list key
@@ -166,12 +149,9 @@ let ``a selection key pressed twice leaves the entry unmarked`` () =
 
 [<Fact>]
 let ``the parent entry cannot be marked from the keyboard`` () =
-    use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
-    window.BeginInit()
-    window.EndInit()
-    window.SetFocus() |> ignore
+    use window = focusedWindow (dependencies (mockFs ()) @"C:\start")
+    let list = leftList window
 
-    let list = FilePanel.listView (panel FilePanel.LeftId window)
     press list PanelInput.selectionKeys.Head
 
     Assert.False(list.Source.IsMarked 0)
@@ -179,14 +159,11 @@ let ``the parent entry cannot be marked from the keyboard`` () =
 
 [<Fact>]
 let ``marks follow the panel they were made in`` () =
-    use window = MainWindow.create (dependencies (mockFs ()) @"C:\start")
-    window.BeginInit()
-    window.EndInit()
-    window.SetFocus() |> ignore
-
-    let left = FilePanel.listView (panel FilePanel.LeftId window)
-    let right = FilePanel.listView (panel FilePanel.RightId window)
+    use window = focusedWindow (dependencies (mockFs ()) @"C:\start")
+    let left = leftList window
+    let right = rightList window
     left.SelectedItem <- 1
+
     press left PanelInput.selectionKeys.Head
 
     Assert.True(left.Source.IsMarked 1)

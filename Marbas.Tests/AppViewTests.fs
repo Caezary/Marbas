@@ -17,9 +17,7 @@ let private mockFs () =
     fs :> IFileSystem
 
 let private loaded (fs: IFileSystem) =
-    match create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") with
-    | Ok state -> state
-    | Error err -> failwith $"setup failed: %A{err}"
+    create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
 
 let private rows panelView =
     let list = FilePanel.listView panelView

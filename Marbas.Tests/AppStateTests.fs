@@ -9,6 +9,12 @@ open Marbas.State.AppState
 
 let private fp = FileSystemPath.create
 
+let private mockFs () =
+    let fs = MockFileSystem()
+    fs.AddDirectory @"C:\start\docs"
+    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    fs
+
 [<Fact>]
 let ``initial state points both panels at the start path with left active`` () =
     let state = create (fp @"C:\start")
@@ -23,56 +29,55 @@ let ``initial state points both panels at the start path with left active`` () =
 let ``toggling the active panel flips between sides`` () =
     let state = create (fp @"C:\start")
 
-    Assert.Equal(Right, (toggleActive state).Active)
-    Assert.Equal(Left, (toggleActive (toggleActive state)).Active)
+    let once = toggleActive state
+    let twice = toggleActive once
+
+    Assert.Equal(Right, once.Active)
+    Assert.Equal(Left, twice.Active)
 
 [<Fact>]
 let ``activate selects the given side`` () =
-    let state = create (fp @"C:\start") |> activate Right
+    let state = create (fp @"C:\start")
 
-    Assert.Equal(Right, state.Active)
-    Assert.Equal(state.Right, activePanel state)
+    let activated = activate Right state
+
+    Assert.Equal(Right, activated.Active)
+    Assert.Equal(activated.Right, activePanel activated)
 
 [<Fact>]
 let ``loading a panel fills its entries and leaves the other side untouched`` () =
-    let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    let fs = mockFs ()
+    let state = create (fp @"C:\start")
 
-    match create (fp @"C:\start") |> loadPanel fs Right (fp @"C:\start") with
-    | Ok state ->
-        Assert.Equal<string list>(
-            [ ".."; "docs"; "readme.txt" ],
-            state.Right.Entries |> List.map (fun e -> e.Name)
-        )
+    let loaded = loadPanel fs Right (fp @"C:\start") state |> Expect.ok
 
-        Assert.Empty state.Left.Entries
-    | Error err -> failwith $"unexpected error %A{err}"
+    Assert.Equal<string list>([ ".."; "docs"; "readme.txt" ], loaded.Right.Entries |> List.map _.Name)
+    Assert.Empty loaded.Left.Entries
 
 [<Fact>]
 let ``the cursor entry is the one at the cursor index`` () =
-    let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    let fs = mockFs ()
+    let state = create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
 
-    match create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") with
-    | Ok state ->
-        Assert.Equal("..", (cursorEntry state.Left |> Option.get).Name)
+    let atStart = cursorEntry state.Left
+    let atThirdRow = state |> setCursor Left 2 |> activePanel |> cursorEntry
 
-        Assert.Equal(
-            "readme.txt",
-            (state |> setCursor Left 2 |> activePanel |> cursorEntry |> Option.get).Name)
-    | Error err -> failwith $"unexpected error %A{err}"
+    Assert.Equal(Some "..", atStart |> Option.map _.Name)
+    Assert.Equal(Some "readme.txt", atThirdRow |> Option.map _.Name)
 
 [<Fact>]
 let ``an empty panel has no cursor entry`` () =
-    Assert.Equal(None, cursorEntry (create (fp @"C:\start")).Left)
+    let state = create (fp @"C:\start")
+
+    let entry = cursorEntry state.Left
+
+    Assert.Equal(None, entry)
 
 [<Fact>]
 let ``loading a missing directory returns the error and keeps state intact`` () =
     let fs = MockFileSystem()
+    let state = create (fp @"C:\start")
 
-    Assert.Equal(
-        Error(DirectoryNotFound(fp @"C:\nope")),
-        create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\nope")
-    )
+    let result = loadPanel fs Left (fp @"C:\nope") state
+
+    Assert.Equal(Error(DirectoryNotFound(fp @"C:\nope")), result)

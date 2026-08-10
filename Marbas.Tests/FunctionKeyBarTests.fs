@@ -14,6 +14,7 @@ let private bar window = panel FunctionKeyBar.Id window
 [<Fact>]
 let ``main window contains the function key bar`` () =
     use window = createInitialized ()
+
     Assert.NotNull(bar window)
 
 [<Fact>]
@@ -40,9 +41,11 @@ let ``bar lists norton style function keys`` () =
 [<InlineData(120, 30)>]
 let ``bar sticks to the bottom edge`` (width: int) (height: int) =
     use window = createInitialized ()
+
     window.Layout(Size(width, height)) |> ignore
     let content = window.Viewport
     let frame = (bar window).Frame
+
     Assert.Equal(content.Height - 1, frame.Y)
     Assert.Equal(0, frame.X)
     Assert.Equal(content.Width, frame.Width)
@@ -50,13 +53,15 @@ let ``bar sticks to the bottom edge`` (width: int) (height: int) =
 
 [<Fact>]
 let ``every function key carries the message it stands for`` () =
+    let bindings = FunctionKeyBar.bindings
+
     Assert.Equal<(Key * string * Message) list>(
         [ Key.F5, "Copy", CopyRequested
           Key.F6, "RenMov", MoveRequested
           Key.F7, "Mkdir", MakeDirectoryRequested
           Key.F8, "Delete", DeleteRequested
           Key.F10, "Quit", QuitRequested ],
-        FunctionKeyBar.bindings
+        bindings
     )
 
 [<Fact>]
@@ -72,12 +77,16 @@ let ``pressing a function key dispatches its message`` () =
 let ``F10 key triggers the quit action`` () =
     let mutable quitRequested = false
     use window = createInitializedWith (fun () -> quitRequested <- true)
+
     press window Key.F10
+
     Assert.True quitRequested
 
 [<Fact>]
 let ``F10 is also bound to quit`` () =
     MainWindow.configureQuitKey ()
+
     let keys = Application.GetDefaultKeys Command.Quit
+
     Assert.Contains(Key.F10, keys)
     Assert.Contains(Key.Q.WithCtrl, keys)

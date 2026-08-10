@@ -3,6 +3,7 @@ module Marbas.Tests.SelectionPatternTests
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Terminal.Gui.Views
 open Marbas.FileSystem
 open Marbas.Ui
 open Marbas.State.AppState
@@ -19,109 +20,104 @@ let private mockFs () =
     fs
 
 let private loaded (fs: IFileSystem) =
-    match create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") with
-    | Ok state -> state
-    | Error err -> failwith $"setup failed: %A{err}"
+    create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
 
-let private selectedNames panel =
-    selectedEntries panel |> List.map (fun e -> e.Name)
+let private selectedNames panel = selectedEntries panel |> List.map _.Name
 
 [<Fact>]
 let ``a pattern selects every matching entry in one step`` () =
-    let state = loaded (mockFs ()) |> selectMatching Left "*.fs"
+    let state = loaded (mockFs ())
 
-    Assert.Equal<string list>([ "setup.fs" ], selectedNames state.Left)
+    let selected = selectMatching Left "*.fs" state
+
+    Assert.Equal<string list>([ "setup.fs" ], selectedNames selected.Left)
 
 [<Fact>]
 let ``pattern matching ignores case`` () =
-    let state = loaded (mockFs ()) |> selectMatching Left "*.txt"
+    let state = loaded (mockFs ())
 
-    Assert.Equal<string list>([ "notes.txt"; "readme.TXT" ], selectedNames state.Left)
+    let selected = selectMatching Left "*.txt" state
+
+    Assert.Equal<string list>([ "notes.txt"; "readme.TXT" ], selectedNames selected.Left)
 
 [<Fact>]
 let ``a pattern never selects the parent entry`` () =
-    let state = loaded (mockFs ()) |> selectMatching Left "*"
+    let state = loaded (mockFs ())
 
-    Assert.Equal<string list>([ "docs"; "notes.txt"; "readme.TXT"; "setup.fs" ], selectedNames state.Left)
+    let selected = selectMatching Left "*" state
+
+    Assert.Equal<string list>([ "docs"; "notes.txt"; "readme.TXT"; "setup.fs" ], selectedNames selected.Left)
 
 [<Fact>]
 let ``a pattern adds to what is already selected`` () =
-    let state =
-        loaded (mockFs ()) |> selectMatching Left "*.fs" |> selectMatching Left "*.txt"
+    let state = loaded (mockFs ())
 
-    Assert.Equal<string list>([ "notes.txt"; "readme.TXT"; "setup.fs" ], selectedNames state.Left)
+    let selected = state |> selectMatching Left "*.fs" |> selectMatching Left "*.txt"
+
+    Assert.Equal<string list>([ "notes.txt"; "readme.TXT"; "setup.fs" ], selectedNames selected.Left)
 
 [<Fact>]
 let ``a pattern deselects only the entries it matches`` () =
-    let state =
-        loaded (mockFs ())
-        |> selectMatching Left "*"
-        |> deselectMatching Left "*.txt"
+    let state = loaded (mockFs ())
 
-    Assert.Equal<string list>([ "docs"; "setup.fs" ], selectedNames state.Left)
+    let selected = state |> selectMatching Left "*" |> deselectMatching Left "*.txt"
+
+    Assert.Equal<string list>([ "docs"; "setup.fs" ], selectedNames selected.Left)
 
 [<Fact>]
 let ``a pattern that matches nothing leaves the selection alone`` () =
-    let state =
-        loaded (mockFs ())
+    let state = loaded (mockFs ())
+
+    let selected =
+        state
         |> selectMatching Left "*.fs"
         |> selectMatching Left "*.md"
         |> deselectMatching Left "*.md"
 
-    Assert.Equal<string list>([ "setup.fs" ], selectedNames state.Left)
+    Assert.Equal<string list>([ "setup.fs" ], selectedNames selected.Left)
 
 let private windowWith askPattern =
-    let window =
-        MainWindow.create
-            { dependencies (mockFs ()) @"C:\start" with
-                AskPattern = askPattern }
+    focusedWindow
+        { dependencies (mockFs ()) @"C:\start" with
+            AskPattern = askPattern }
 
-    window.BeginInit()
-    window.EndInit()
-    window.SetFocus() |> ignore
-    window
-
-let private marked (list: Terminal.Gui.Views.ListView) =
+let private marked (list: ListView) =
     [ for i in 0 .. list.Source.Count - 1 do
           if list.Source.IsMarked i then
               string (list.Source.ToList()[i]) ]
 
 [<Fact>]
 let ``the select key asks for a pattern and marks the matches`` () =
-    let mutable asked = []
-    use window = windowWith (fun title -> asked <- title :: asked; Some "*.fs")
+    let asked = ResizeArray<string>()
+    use window = windowWith (fun title -> asked.Add title; Some "*.fs")
+    let list = leftList window
 
-    let list = FilePanel.listView (panel FilePanel.LeftId window)
     press list PanelInput.selectPatternKey
 
-    Assert.Equal<string list>([ Shell.SelectPrompt ], asked)
+    Assert.Equal<string list>([ Shell.SelectPrompt ], List.ofSeq asked)
     Assert.Collection(marked list, fun row -> Assert.StartsWith("setup.fs", row))
 
 [<Fact>]
 let ``the deselect key asks for a pattern and unmarks the matches`` () =
-    let mutable asked = []
-
-    use window =
-        windowWith (fun title ->
-            asked <- asked @ [ title ]
-            Some "*.txt")
-
-    let list = FilePanel.listView (panel FilePanel.LeftId window)
+    let asked = ResizeArray<string>()
+    use window = windowWith (fun title -> asked.Add title; Some "*.txt")
+    let list = leftList window
     press list PanelInput.selectPatternKey
-    Assert.Equal(2, (marked list).Length)
+    let markedBefore = marked list
 
     press list PanelInput.deselectPatternKey
 
-    Assert.Equal<string list>([ Shell.SelectPrompt; Shell.DeselectPrompt ], asked)
+    Assert.Equal<string list>([ Shell.SelectPrompt; Shell.DeselectPrompt ], List.ofSeq asked)
+    Assert.Equal(2, markedBefore.Length)
     Assert.Empty(marked list)
 
 [<Fact>]
 let ``cancelling the pattern prompt changes nothing`` () =
     use window = windowWith (fun _ -> None)
-
-    let list = FilePanel.listView (panel FilePanel.LeftId window)
+    let list = leftList window
     list.SelectedItem <- 1
     press list PanelInput.selectionKeys.Head
+
     press list PanelInput.selectPatternKey
 
     Assert.Collection(marked list, fun row -> Assert.StartsWith("docs", row))
@@ -130,10 +126,10 @@ let ``cancelling the pattern prompt changes nothing`` () =
 let ``the panel shows a summary of what is selected`` () =
     use window = windowWith (fun _ -> Some "*.txt")
     let panelView = panel FilePanel.LeftId window
-
-    Assert.Equal("", (FilePanel.summary panelView).Text)
+    let summaryBefore = (FilePanel.summary panelView).Text
 
     press (FilePanel.listView panelView) PanelInput.selectPatternKey
 
+    Assert.Equal("", summaryBefore)
     Assert.Contains("2 selected", (FilePanel.summary panelView).Text)
     Assert.Contains("4 bytes", (FilePanel.summary panelView).Text)

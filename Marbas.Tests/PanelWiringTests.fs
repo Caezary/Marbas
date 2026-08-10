@@ -4,7 +4,6 @@ open System.Collections.ObjectModel
 open System.Drawing
 open Xunit
 open Terminal.Gui.Input
-open Terminal.Gui.ViewBase
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Ui

@@ -16,21 +16,29 @@ let private advanceFocus (window: Terminal.Gui.Views.Window) =
 [<Fact>]
 let ``left panel is focused on start`` () =
     use window = createInitialized ()
+
     window.SetFocus() |> ignore
+
     Assert.True((panel FilePanel.LeftId window).HasFocus)
 
 [<Fact>]
 let ``tab is the application key for moving focus`` () =
-    Assert.Equal(Key.Tab, Application.GetDefaultKey Command.NextTabStop)
+    let focusKey = Application.GetDefaultKey Command.NextTabStop
+
+    Assert.Equal(Key.Tab, focusKey)
 
 [<Fact>]
 let ``advancing focus toggles between panels`` () =
     use window = createInitialized ()
     window.SetFocus() |> ignore
+
     advanceFocus window
-    Assert.True((panel FilePanel.RightId window).HasFocus)
+    let rightHasFocus = (panel FilePanel.RightId window).HasFocus
     advanceFocus window
-    Assert.True((panel FilePanel.LeftId window).HasFocus)
+    let leftHasFocus = (panel FilePanel.LeftId window).HasFocus
+
+    Assert.True rightHasFocus
+    Assert.True leftHasFocus
 
 [<Fact>]
 let ``focused panel is marked with a double border`` () =
@@ -38,8 +46,12 @@ let ``focused panel is marked with a double border`` () =
     window.SetFocus() |> ignore
     let left = panel FilePanel.LeftId window
     let right = panel FilePanel.RightId window
-    Assert.Equal(Nullable LineStyle.Double, left.BorderStyle)
-    Assert.Equal(Nullable LineStyle.Single, right.BorderStyle)
+
+    let leftOnStart, rightOnStart = left.BorderStyle, right.BorderStyle
     advanceFocus window
-    Assert.Equal(Nullable LineStyle.Single, left.BorderStyle)
-    Assert.Equal(Nullable LineStyle.Double, right.BorderStyle)
+    let leftAdvanced, rightAdvanced = left.BorderStyle, right.BorderStyle
+
+    Assert.Equal(Nullable LineStyle.Double, leftOnStart)
+    Assert.Equal(Nullable LineStyle.Single, rightOnStart)
+    Assert.Equal(Nullable LineStyle.Single, leftAdvanced)
+    Assert.Equal(Nullable LineStyle.Double, rightAdvanced)

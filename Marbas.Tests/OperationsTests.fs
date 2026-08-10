@@ -8,22 +8,12 @@ open Marbas.FileSystem.Operations
 
 let private fp = FileSystemPath.create
 
-let private expectOk result =
-    match result with
-    | Ok() -> ()
-    | Error err -> failwith $"expected Ok, got Error %A{err}"
-
-let private expectError result =
-    match result with
-    | Ok() -> failwith "expected Error, got Ok"
-    | Error err -> err
-
 [<Fact>]
 let ``makeDirectory creates a directory in the given parent`` () =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\data"
 
-    makeDirectory fs (fp @"C:\data") "new" |> expectOk
+    makeDirectory fs (fp @"C:\data") "new" |> Expect.ok
 
     Assert.True(fs.Directory.Exists @"C:\data\new")
 
@@ -32,16 +22,16 @@ let ``makeDirectory refuses an existing name`` () =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\data\new"
 
-    let errorResult = makeDirectory fs (fp @"C:\data") "new" |> expectError
+    let failure = makeDirectory fs (fp @"C:\data") "new" |> Expect.error
 
-    Assert.Equal(TargetExists(fp @"C:\data\new"), errorResult)
+    Assert.Equal(TargetExists(fp @"C:\data\new"), failure)
 
 [<Fact>]
 let ``delete removes a file`` () =
     let fs = MockFileSystem()
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
 
-    delete fs (fp @"C:\data\notes.txt") |> expectOk
+    delete fs (fp @"C:\data\notes.txt") |> Expect.ok
 
     Assert.False(fs.File.Exists @"C:\data\notes.txt")
 
@@ -50,7 +40,7 @@ let ``delete removes a directory with its contents`` () =
     let fs = MockFileSystem()
     fs.AddFile(@"C:\data\docs\deep\inner.txt", MockFileData "x")
 
-    delete fs (fp @"C:\data\docs") |> expectOk
+    delete fs (fp @"C:\data\docs") |> Expect.ok
 
     Assert.False(fs.Directory.Exists @"C:\data\docs")
 
@@ -58,9 +48,9 @@ let ``delete removes a directory with its contents`` () =
 let ``delete reports a missing source`` () =
     let fs = MockFileSystem()
 
-    let errorResult = delete fs (fp @"C:\data\gone.txt") |> expectError
+    let failure = delete fs (fp @"C:\data\gone.txt") |> Expect.error
 
-    Assert.Equal(SourceNotFound(fp @"C:\data\gone.txt"), errorResult)
+    Assert.Equal(SourceNotFound(fp @"C:\data\gone.txt"), failure)
 
 [<Fact>]
 let ``copy places a file in the target directory`` () =
@@ -68,7 +58,7 @@ let ``copy places a file in the target directory`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
     fs.AddDirectory @"C:\backup"
 
-    copy fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
+    copy fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> Expect.ok
 
     Assert.Equal("hello", fs.File.ReadAllText @"C:\backup\notes.txt")
     Assert.True(fs.File.Exists @"C:\data\notes.txt")
@@ -79,7 +69,7 @@ let ``copy replaces whatever is already there`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "new")
     fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
 
-    copy fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
+    copy fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> Expect.ok
 
     Assert.Equal("new", fs.File.ReadAllText @"C:\backup\notes.txt")
 
@@ -90,7 +80,7 @@ let ``copy duplicates a whole directory tree`` () =
     fs.AddFile(@"C:\data\docs\top.txt", MockFileData "y")
     fs.AddDirectory @"C:\backup"
 
-    copy fs unattended (fp @"C:\backup") (fp @"C:\data\docs") |> expectOk
+    copy fs unattended (fp @"C:\backup") (fp @"C:\data\docs") |> Expect.ok
 
     Assert.Equal("x", fs.File.ReadAllText @"C:\backup\docs\deep\inner.txt")
     Assert.Equal("y", fs.File.ReadAllText @"C:\backup\docs\top.txt")
@@ -100,11 +90,9 @@ let ``copy reports a missing source`` () =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\backup"
 
-    let errorResult = copy fs unattended (fp @"C:\backup") (fp @"C:\data\gone.txt") |> expectError
+    let failure = copy fs unattended (fp @"C:\backup") (fp @"C:\data\gone.txt") |> Expect.error
 
-    Assert.Equal(
-        SourceNotFound(fp @"C:\data\gone.txt"),
-        errorResult)
+    Assert.Equal(SourceNotFound(fp @"C:\data\gone.txt"), failure)
 
 [<Fact>]
 let ``move takes a file to the target directory`` () =
@@ -112,7 +100,7 @@ let ``move takes a file to the target directory`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
     fs.AddDirectory @"C:\backup"
 
-    move fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
+    move fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> Expect.ok
 
     Assert.Equal("hello", fs.File.ReadAllText @"C:\backup\notes.txt")
     Assert.False(fs.File.Exists @"C:\data\notes.txt")
@@ -123,7 +111,7 @@ let ``move takes a directory tree to the target directory`` () =
     fs.AddFile(@"C:\data\docs\inner.txt", MockFileData "x")
     fs.AddDirectory @"C:\backup"
 
-    move fs unattended (fp @"C:\backup") (fp @"C:\data\docs") |> expectOk
+    move fs unattended (fp @"C:\backup") (fp @"C:\data\docs") |> Expect.ok
 
     Assert.Equal("x", fs.File.ReadAllText @"C:\backup\docs\inner.txt")
     Assert.False(fs.Directory.Exists @"C:\data\docs")
@@ -134,7 +122,7 @@ let ``move replaces whatever is already there`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "new")
     fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
 
-    move fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> expectOk
+    move fs unattended (fp @"C:\backup") (fp @"C:\data\notes.txt") |> Expect.ok
 
     Assert.Equal("new", fs.File.ReadAllText @"C:\backup\notes.txt")
     Assert.False(fs.File.Exists @"C:\data\notes.txt")
@@ -144,7 +132,7 @@ let ``rename keeps the entry in its own directory`` () =
     let fs = MockFileSystem()
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
 
-    rename fs (fp @"C:\data\notes.txt") "readme.txt" |> expectOk
+    rename fs (fp @"C:\data\notes.txt") "readme.txt" |> Expect.ok
 
     Assert.Equal("hello", fs.File.ReadAllText @"C:\data\readme.txt")
     Assert.False(fs.File.Exists @"C:\data\notes.txt")
@@ -155,11 +143,9 @@ let ``rename refuses an existing name`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
     fs.AddFile(@"C:\data\readme.txt", MockFileData "other")
 
-    let errorResult = rename fs (fp @"C:\data\notes.txt") "readme.txt" |> expectError
+    let failure = rename fs (fp @"C:\data\notes.txt") "readme.txt" |> Expect.error
 
-    Assert.Equal(
-        TargetExists(fp @"C:\data\readme.txt"),
-        errorResult)
+    Assert.Equal(TargetExists(fp @"C:\data\readme.txt"), failure)
 
 [<Fact>]
 let ``batch results carry the entry name and keep the input order`` () =
@@ -371,7 +357,9 @@ let ``a directory holding entries is non-empty`` () =
     let fs = MockFileSystem()
     fs.AddFile(@"C:\data\docs\inner.txt", MockFileData "x")
 
-    Assert.True(isNonEmptyDirectory fs (fp @"C:\data\docs"))
+    let nonEmpty = isNonEmptyDirectory fs (fp @"C:\data\docs")
+
+    Assert.True nonEmpty
 
 [<Fact>]
 let ``an empty directory and a file are not non-empty directories`` () =
@@ -379,8 +367,11 @@ let ``an empty directory and a file are not non-empty directories`` () =
     fs.AddDirectory @"C:\data\empty"
     fs.AddFile(@"C:\data\notes.txt", MockFileData "x")
 
-    Assert.False(isNonEmptyDirectory fs (fp @"C:\data\empty"))
-    Assert.False(isNonEmptyDirectory fs (fp @"C:\data\notes.txt"))
+    let emptyDirectory = isNonEmptyDirectory fs (fp @"C:\data\empty")
+    let file = isNonEmptyDirectory fs (fp @"C:\data\notes.txt")
+
+    Assert.False emptyDirectory
+    Assert.False file
 
 [<Fact>]
 let ``failures keeps only the items that went wrong`` () =
@@ -393,8 +384,16 @@ let ``failures keeps only the items that went wrong`` () =
 
 [<Fact>]
 let ``access denied maps to an error value`` () =
-    Assert.Equal(AccessDenied(fp @"C:\locked"), mapException (fp @"C:\locked") (UnauthorizedAccessException()))
+    let denied = UnauthorizedAccessException()
+
+    let operationError = mapException (fp @"C:\locked") denied
+
+    Assert.Equal(AccessDenied(fp @"C:\locked"), operationError)
 
 [<Fact>]
 let ``unexpected failures map to an error value`` () =
-    Assert.Equal(OperationFailed(fp @"C:\bad", "boom"), mapException (fp @"C:\bad") (IO.IOException "boom"))
+    let failure = IO.IOException "boom"
+
+    let operationError = mapException (fp @"C:\bad") failure
+
+    Assert.Equal(OperationFailed(fp @"C:\bad", "boom"), operationError)
