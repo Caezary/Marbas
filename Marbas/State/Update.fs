@@ -121,3 +121,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | DriveRequested side -> request state (PromptForDrive side)
     | PathOpened(side, path) -> loadPanel fs side (FileSystemPath.create path) state |> applyListing state
     | QuitRequested -> request state Quit
+
+let step (fs: IFileSystem) (msg: Message) (state: AppState) =
+    let result = update fs msg state
+    result.State, result.Effects

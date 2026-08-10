@@ -3,25 +3,20 @@ module Marbas.Ui.FunctionKeyBar
 open System
 open Terminal.Gui.Input
 open Terminal.Gui.Views
+open Marbas.State.Update
 
 [<Literal>]
 let Id = "functionKeyBar"
 
-type Actions =
-    { OnCopy: unit -> unit
-      OnRenameMove: unit -> unit
-      OnMakeDirectory: unit -> unit
-      OnDelete: unit -> unit
-      OnQuit: unit -> unit }
+let bindings =
+    [ Key.F5, "Copy", CopyRequested
+      Key.F6, "RenMov", MoveRequested
+      Key.F7, "Mkdir", MakeDirectoryRequested
+      Key.F8, "Delete", DeleteRequested
+      Key.F10, "Quit", QuitRequested ]
 
-let create (actions: Actions) =
-    let shortcut (key: Key) title (action: unit -> unit) = new Shortcut(key, title, Action action, null)
+let create (dispatch: Message -> unit) =
+    let shortcut (key: Key, title: string, message) =
+        new Shortcut(key, title, Action(fun () -> dispatch message), null)
 
-    let shortcuts =
-        [ shortcut Key.F5 "Copy" actions.OnCopy
-          shortcut Key.F6 "RenMov" actions.OnRenameMove
-          shortcut Key.F7 "Mkdir" actions.OnMakeDirectory
-          shortcut Key.F8 "Delete" actions.OnDelete
-          shortcut Key.F10 "Quit" actions.OnQuit ]
-
-    new StatusBar(shortcuts, Id = Id)
+    new StatusBar(bindings |> List.map shortcut, Id = Id)

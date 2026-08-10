@@ -305,6 +305,12 @@ also writes `ListView.SelectedItem`, which raises the same event, so `Runtime`
 raises its `IsRendering` flag while it renders and the handler ignores events
 raised inside it. Without the flag, render and handler bounce off each other.
 
+**Keys map to messages in tables, not in callbacks.** `PanelInput.messageFor`
+does it for the panel, `FunctionKeyBar.bindings` for the bottom bar — one list
+of key, title and `Message`, turned into `Shortcut`s by `FunctionKeyBar.create
+dispatch`. Both tables are asserted directly in tests, and `MainWindow` no
+longer knows which key stands for which message.
+
 **Panel event wiring is its own module, attached after the panels are seeded.**
 `PanelWiring.attach` subscribes one panel's `ListView` and frame to a
 `PanelWiring.Host` — dispatch, repaint, and the "am I rendering?" question —

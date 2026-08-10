@@ -30,24 +30,12 @@ let create (deps: Shell.Dependencies) =
         let entry = state |> AppState.activePanel |> AppState.cursorEntry
         statusLine |> StatusLine.render entry
 
-    let step msg state =
-        let result = Update.update fs msg state
-        result.State, result.Effects
-
     let appState = deps.StartPath |> FileSystemPath.create |> AppState.create
-    let runtime = Runtime(appState, step, Shell.interpret deps, render)
+    let runtime = Runtime(appState, Update.step fs, Shell.interpret deps, render)
 
     let dispatch = runtime.Dispatch
 
-    let bar =
-        FunctionKeyBar.create
-            { OnCopy = fun () -> dispatch Update.CopyRequested
-              OnRenameMove = fun () -> dispatch Update.MoveRequested
-              OnMakeDirectory = fun () -> dispatch Update.MakeDirectoryRequested
-              OnDelete = fun () -> dispatch Update.DeleteRequested
-              OnQuit = fun () -> dispatch Update.QuitRequested }
-
-    window.Add(left, right, statusLine, bar) |> ignore
+    window.Add(left, right, statusLine, FunctionKeyBar.create dispatch) |> ignore
 
     for side, _ in views do
         dispatch (Update.PathOpened(side, deps.StartPath))

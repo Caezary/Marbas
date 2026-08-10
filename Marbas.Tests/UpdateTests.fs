@@ -328,3 +328,13 @@ let ``quit requested raises the quit effect`` () =
     let result = update (mockFs ()) QuitRequested (loaded (mockFs ()))
 
     Assert.Equal<Effect list>([ Quit ], result.Effects)
+
+[<Fact>]
+let ``step pairs the new state with its effects`` () =
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let nextState, effects = step fs QuitRequested state
+
+    Assert.Equal(state, nextState)
+    Assert.Equal<Effect list>([ Quit ], effects)

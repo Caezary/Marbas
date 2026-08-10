@@ -5,6 +5,7 @@ open Xunit
 open Terminal.Gui.App
 open Terminal.Gui.Input
 open Terminal.Gui.Views
+open Marbas.State.Update
 open Marbas.Ui
 open Marbas.Tests.TestHelpers
 
@@ -46,6 +47,26 @@ let ``bar sticks to the bottom edge`` (width: int) (height: int) =
     Assert.Equal(0, frame.X)
     Assert.Equal(content.Width, frame.Width)
     Assert.Equal(1, frame.Height)
+
+[<Fact>]
+let ``every function key carries the message it stands for`` () =
+    Assert.Equal<(Key * string * Message) list>(
+        [ Key.F5, "Copy", CopyRequested
+          Key.F6, "RenMov", MoveRequested
+          Key.F7, "Mkdir", MakeDirectoryRequested
+          Key.F8, "Delete", DeleteRequested
+          Key.F10, "Quit", QuitRequested ],
+        FunctionKeyBar.bindings
+    )
+
+[<Fact>]
+let ``pressing a function key dispatches its message`` () =
+    let messages = ResizeArray<Message>()
+    use bar = FunctionKeyBar.create messages.Add
+
+    press bar Key.F5
+
+    Assert.Contains(CopyRequested, messages)
 
 [<Fact>]
 let ``F10 key triggers the quit action`` () =
