@@ -12,7 +12,7 @@ type OperationError =
     | OperationFailed of path: FileSystemPath * message: string
 
 type ItemResult =
-    { Name: string
+    { Name: EntryName
       Outcome: Result<unit, OperationError> }
 
 type OverwriteAnswer =
@@ -107,6 +107,7 @@ let rec private copyTo (fs: IFileSystem) (control: BatchControl) (source: FileSy
                     |> List.traverseResultM (fun entry ->
                         entry
                         |> FileSystemPath.name fs
+                        |> EntryName.value
                         |> FileSystemPath.combine fs target
                         |> copyTo fs control entry)
                     |> Result.ignore
@@ -119,6 +120,7 @@ let rec private copyTo (fs: IFileSystem) (control: BatchControl) (source: FileSy
 let private inDirectory (fs: IFileSystem) (targetDirectory: FileSystemPath) (source: FileSystemPath) =
     source
     |> FileSystemPath.name fs
+    |> EntryName.value
     |> FileSystemPath.combine fs targetDirectory
 
 let copy (fs: IFileSystem) control (targetDirectory: FileSystemPath) (source: FileSystemPath) =

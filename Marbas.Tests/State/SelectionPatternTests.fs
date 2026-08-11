@@ -22,7 +22,8 @@ let private mockFs () =
 let private loaded (fs: IFileSystem) =
     create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
 
-let private selectedNames panel = selectedEntries panel |> List.map _.Name
+let private selectedNames panel =
+    selectedEntries panel |> List.map (_.Name >> EntryName.value)
 
 [<Fact>]
 let ``a pattern selects every matching entry in one step`` () =

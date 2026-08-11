@@ -36,7 +36,7 @@ let ``name returns the last segment in a file path - its name`` () =
 
     let name = FileSystemPath.name fs notesPath
 
-    Assert.Equal("notes.txt", name)
+    Assert.Equal(EntryName.create "notes.txt", name)
 
 [<Fact>]
 let ``name returns the last segment in a directory path - its name`` () =
@@ -45,7 +45,7 @@ let ``name returns the last segment in a directory path - its name`` () =
 
     let name = FileSystemPath.name fs childPath
 
-    Assert.Equal("child", name)
+    Assert.Equal(EntryName.create "child", name)
 
 [<Fact>]
 let ``directory returns the containing path`` () =

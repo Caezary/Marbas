@@ -25,7 +25,7 @@ let private started () =
     let fs = mockFs ()
     fs, loaded fs
 
-let private targetNames state = operationTargets state.Left |> List.map _.Name
+let private targetNames state = operationTargets state.Left |> List.map (_.Name >> EntryName.value)
 
 let private deleted fs state = deleteTargets fs Left state |> Expect.ok
 
@@ -65,7 +65,7 @@ let ``deleting removes the cursor entry and refreshes the panel`` () =
     let updated, _ = state |> setCursor Left 3 |> deleted fs
 
     Assert.False(fs.File.Exists @"C:\start\notes.txt")
-    Assert.DoesNotContain("notes.txt", updated.Left.Entries |> List.map _.Name)
+    Assert.DoesNotContain("notes.txt", updated.Left.Entries |> List.map (_.Name >> EntryName.value))
 
 [<Fact>]
 let ``deleting a directory takes its contents with it`` () =
@@ -74,7 +74,7 @@ let ``deleting a directory takes its contents with it`` () =
     let updated, _ = state |> setCursor Left 1 |> deleted fs
 
     Assert.False(fs.Directory.Exists @"C:\start\docs")
-    Assert.DoesNotContain("docs", updated.Left.Entries |> List.map _.Name)
+    Assert.DoesNotContain("docs", updated.Left.Entries |> List.map (_.Name >> EntryName.value))
 
 [<Fact>]
 let ``every marked entry is deleted and reported`` () =
@@ -88,7 +88,7 @@ let ``every marked entry is deleted and reported`` () =
 
     let _, results = deleted fs marked
 
-    Assert.Equal<string list>([ "notes.txt"; "readme.txt" ], results |> List.map _.Name)
+    Assert.Equal<string list>([ "notes.txt"; "readme.txt" ], results |> List.map (_.Name >> EntryName.value))
     Assert.All(results, fun item -> Assert.Equal(Ok(), item.Outcome))
     Assert.False(fs.File.Exists @"C:\start\notes.txt")
     Assert.False(fs.File.Exists @"C:\start\readme.txt")

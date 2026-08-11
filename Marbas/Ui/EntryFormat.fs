@@ -1,6 +1,7 @@
 module Marbas.Ui.EntryFormat
 
 open System.Globalization
+open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 
 [<Literal>]
@@ -25,8 +26,9 @@ let dateText entry =
 
 let format (width: int) (entry: Entry) =
     let nameWidth = width - SizeWidth - DateWidth - 2
+    let name = EntryName.value entry.Name
 
     if nameWidth < MinNameWidth then
-        fitName (max width 2) entry.Name
+        fitName (max width 2) name
     else
-        $"{fitName nameWidth entry.Name} {(sizeText entry).PadLeft SizeWidth} {dateText entry}"
+        $"{fitName nameWidth name} {(sizeText entry).PadLeft SizeWidth} {dateText entry}"

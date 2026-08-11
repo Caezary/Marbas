@@ -2,19 +2,20 @@ module Marbas.Tests.Ui.CursorInfoTests
 
 open System
 open Xunit
+open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Ui
 
 let private modified = DateTime(2026, 7, 20, 14, 5, 0)
 
 let private file name size =
-    { Name = name
+    { Name = EntryName.create name
       Kind = File
       Size = Some size
       Modified = modified }
 
 let private directory name =
-    { Name = name
+    { Name = EntryName.create name
       Kind = Directory
       Size = None
       Modified = modified }

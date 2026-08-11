@@ -92,7 +92,9 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
 
         match operationTargets target with
         | [] -> stay state
-        | targets -> request state (ConfirmDelete(targets |> List.map _.Name, hasNonEmptyDirectory fs target))
+        | targets ->
+            let names = targets |> List.map (_.Name >> EntryName.value)
+            request state (ConfirmDelete(names, hasNonEmptyDirectory fs target))
     | DeleteConfirmed -> deleteTargets fs state.Active state |> applyBatch state
     | CopyRequested ->
         match operationPaths fs (activePanel state) with

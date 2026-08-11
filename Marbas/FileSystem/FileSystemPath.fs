@@ -24,7 +24,8 @@ module FileSystemPath =
     let combine (fs: IFileSystem) (FileSystemPath path) (name: string) =
         FileSystemPath(fs.Path.Combine(path, name))
 
-    let name (fs: IFileSystem) (FileSystemPath path) = fs.Path.GetFileName path
+    let name (fs: IFileSystem) (FileSystemPath path) =
+        fs.Path.GetFileName path |> EntryName.create
 
     let isBareName (fs: IFileSystem) (name: string) =
         not (fs.Path.IsPathRooted name) && String.IsNullOrEmpty(fs.Path.GetDirectoryName name)

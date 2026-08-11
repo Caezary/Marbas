@@ -52,7 +52,7 @@ let render (state: AppState.PanelState) (panel: FrameView) =
         if width > 0 then
             state.Entries |> List.map (EntryFormat.format width)
         else
-            state.Entries |> List.map (fun e -> e.Name)
+            state.Entries |> List.map (fun e -> EntryName.value e.Name)
 
     list.SetSource(ObservableCollection rows)
 

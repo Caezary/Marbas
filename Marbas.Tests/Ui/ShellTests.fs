@@ -154,7 +154,7 @@ let ``item failures are reported under the operation title`` () =
     let deps = { noDeps () with ReportError = fun title message -> reported <- (title, message) }
 
     let failed =
-        [ { Name = "gone.txt"
+        [ { Name = EntryName.create "gone.txt"
             Outcome = Error(SourceNotFound(fp @"C:\start\gone.txt")) } ]
 
     Shell.interpret deps ignore (ReportItemFailures failed)
@@ -177,7 +177,10 @@ let ``copy targets are copied and the outcome dispatched back`` () =
     Shell.interpret deps dispatch (CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
 
     Assert.Equal("new", fs.File.ReadAllText @"C:\backup\notes.txt")
-    Assert.Equal<Message list>([ CopyFinished [ { Name = "notes.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+    Assert.Equal<Message list>(
+        [ CopyFinished [ { Name = EntryName.create "notes.txt"; Outcome = Ok() } ] ],
+        List.ofSeq sent
+    )
 
 [<Fact>]
 let ``a batch is handed to the runner under its own title`` () =
@@ -260,7 +263,10 @@ let ``move targets are moved and the outcome dispatched back`` () =
 
     Assert.Equal("new", fs.File.ReadAllText @"C:\backup\notes.txt")
     Assert.False(fs.File.Exists @"C:\start\notes.txt")
-    Assert.Equal<Message list>([ MoveFinished [ { Name = "notes.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+    Assert.Equal<Message list>(
+        [ MoveFinished [ { Name = EntryName.create "notes.txt"; Outcome = Ok() } ] ],
+        List.ofSeq sent
+    )
 
 [<Fact>]
 let ``a rename is carried out and its outcome dispatched back`` () =

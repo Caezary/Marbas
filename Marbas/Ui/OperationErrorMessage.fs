@@ -18,6 +18,6 @@ let describeFailures (results: ItemResult list) =
     results
     |> List.choose (fun item ->
         match item.Outcome with
-        | Error error -> Some $"{item.Name}: {describe error}"
+        | Error error -> Some $"{EntryName.value item.Name}: {describe error}"
         | Ok() -> None)
     |> String.concat "\n"

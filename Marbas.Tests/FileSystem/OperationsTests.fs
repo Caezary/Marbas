@@ -9,6 +9,9 @@ open Marbas.Tests
 
 let private fp = FileSystemPath.create
 
+let private names (results: ItemResult list) =
+    results |> List.map (_.Name >> EntryName.value)
+
 [<Fact>]
 let ``makeDirectory creates a directory in the given parent`` () =
     let fs = MockFileSystem()
@@ -156,7 +159,7 @@ let ``batch results carry the entry name and keep the input order`` () =
 
     let results = deleteAll fs [ fp @"C:\data\a.txt"; fp @"C:\data\b.txt" ]
 
-    Assert.Equal<string list>([ "a.txt"; "b.txt" ], results |> List.map _.Name)
+    Assert.Equal<string list>([ "a.txt"; "b.txt" ], names results)
     Assert.All(results, fun r -> Assert.Equal(Ok(), r.Outcome))
 
 [<Fact>]
@@ -275,7 +278,7 @@ let ``copyAll copies every source it is given`` () =
 
     let copied = copyAll fs unattended bothSources (fp @"C:\backup")
 
-    Assert.Equal<string list>([ "a.txt"; "b.txt" ], copied |> List.map _.Name)
+    Assert.Equal<string list>([ "a.txt"; "b.txt" ], names copied)
     Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\a.txt")
     Assert.Equal("new b", fs.File.ReadAllText @"C:\backup\b.txt")
 
@@ -286,7 +289,7 @@ let ``moveAll moves every source it is given`` () =
 
     let moved = moveAll fs unattended bothSources (fp @"C:\backup")
 
-    Assert.Equal<string list>([ "a.txt"; "b.txt" ], moved |> List.map _.Name)
+    Assert.Equal<string list>([ "a.txt"; "b.txt" ], names moved)
     Assert.Equal("new a", fs.File.ReadAllText @"C:\backup\a.txt")
     Assert.False(fs.File.Exists @"C:\data\a.txt")
 
@@ -322,7 +325,7 @@ let ``a cancelled batch leaves the sources it never reached alone`` () =
 
     let copied = copyAll fs control bothSources (fp @"C:\backup")
 
-    Assert.Equal<string list>([ "a.txt" ], copied |> List.map _.Name)
+    Assert.Equal<string list>([ "a.txt" ], names copied)
     Assert.False(fs.File.Exists @"C:\backup\b.txt")
 
 [<Fact>]
@@ -381,7 +384,7 @@ let ``failures keeps only the items that went wrong`` () =
 
     let failed = deleteAll fs [ fp @"C:\data\gone.txt"; fp @"C:\data\b.txt" ] |> failures
 
-    Assert.Equal<string list>([ "gone.txt" ], failed |> List.map _.Name)
+    Assert.Equal<string list>([ "gone.txt" ], names failed)
 
 [<Fact>]
 let ``access denied maps to an error value`` () =

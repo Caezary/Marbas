@@ -19,7 +19,8 @@ let private mockFs () =
 let private loaded side path fs state =
     loadPanel fs side path state |> Expect.ok
 
-let private names entries = entries |> List.map (fun (e: Entry) -> e.Name)
+let private names entries =
+    entries |> List.map (fun (e: Entry) -> EntryName.value e.Name)
 
 [<Fact>]
 let ``cursor is reset to zero after loading a panel`` () =

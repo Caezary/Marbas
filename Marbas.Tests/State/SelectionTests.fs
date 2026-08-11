@@ -23,7 +23,8 @@ let private started () =
     let fs = mockFs ()
     fs, create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs
 
-let private selectedNames panel = selectedEntries panel |> List.map _.Name
+let private selectedNames panel =
+    selectedEntries panel |> List.map (_.Name >> EntryName.value)
 
 [<Fact>]
 let ``a fresh panel has nothing selected`` () =

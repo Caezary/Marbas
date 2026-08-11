@@ -1,5 +1,6 @@
 module Marbas.Ui.CursorInfo
 
+open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 
 let private sizeText =
@@ -8,4 +9,4 @@ let private sizeText =
 let describe (entry: Entry option) =
     match entry with
     | None -> ""
-    | Some entry -> $"{entry.Name}   {sizeText entry}   {EntryFormat.dateText entry}"
+    | Some entry -> $"{EntryName.value entry.Name}   {sizeText entry}   {EntryFormat.dateText entry}"

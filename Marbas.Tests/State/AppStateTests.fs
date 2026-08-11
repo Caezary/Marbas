@@ -51,7 +51,7 @@ let ``loading a panel fills its entries and leaves the other side untouched`` ()
 
     let loaded = loadPanel fs Right (fp @"C:\start") state |> Expect.ok
 
-    Assert.Equal<string list>([ ".."; "docs"; "readme.txt" ], loaded.Right.Entries |> List.map _.Name)
+    Assert.Equal<string list>([ ".."; "docs"; "readme.txt" ], loaded.Right.Entries |> List.map (_.Name >> EntryName.value))
     Assert.Empty loaded.Left.Entries
 
 [<Fact>]
@@ -62,8 +62,8 @@ let ``the cursor entry is the one at the cursor index`` () =
     let atStart = cursorEntry state.Left
     let atThirdRow = state |> setCursor Left 2 |> activePanel |> cursorEntry
 
-    Assert.Equal(Some "..", atStart |> Option.map _.Name)
-    Assert.Equal(Some "readme.txt", atThirdRow |> Option.map _.Name)
+    Assert.Equal(Some "..", atStart |> Option.map (_.Name >> EntryName.value))
+    Assert.Equal(Some "readme.txt", atThirdRow |> Option.map (_.Name >> EntryName.value))
 
 [<Fact>]
 let ``an empty panel has no cursor entry`` () =

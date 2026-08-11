@@ -19,9 +19,9 @@ let private mockFs () =
 let private loaded (fs: IFileSystem) =
     create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
 
-let private names panel = panel.Entries |> List.map _.Name
+let private names panel = panel.Entries |> List.map (_.Name >> EntryName.value)
 
-let private selectedNames panel = selectedEntries panel |> List.map _.Name
+let private selectedNames panel = selectedEntries panel |> List.map (_.Name >> EntryName.value)
 
 [<Fact>]
 let ``making a directory adds it and lands the cursor on it`` () =
@@ -32,7 +32,7 @@ let ``making a directory adds it and lands the cursor on it`` () =
 
     Assert.True(fs.Directory.Exists @"C:\start\work")
     Assert.Contains("work", names updated.Left)
-    Assert.Equal(Some "work", cursorEntry updated.Left |> Option.map _.Name)
+    Assert.Equal(Some "work", cursorEntry updated.Left |> Option.map (_.Name >> EntryName.value))
 
 [<Fact>]
 let ``making a directory keeps the existing selection`` () =

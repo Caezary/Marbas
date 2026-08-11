@@ -3,13 +3,14 @@ module Marbas.Tests.Ui.EntrySizeTests
 open System
 open System.Globalization
 open Xunit
+open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Ui
 
 let private modified = DateTime(2026, 7, 1, 12, 30, 0)
 
 let private entry kind size =
-    { Name = "entry"
+    { Name = EntryName.create "entry"
       Kind = kind
       Size = size
       Modified = modified }

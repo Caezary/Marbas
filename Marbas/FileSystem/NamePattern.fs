@@ -10,5 +10,5 @@ module NamePattern =
     let create (raw: string) =
         if String.IsNullOrEmpty raw then None else Some(NamePattern raw)
 
-    let matches (NamePattern pattern) (name: string) =
-        FileSystemName.MatchesSimpleExpression(pattern, name, ignoreCase = true)
+    let matches (NamePattern pattern) name =
+        FileSystemName.MatchesSimpleExpression(pattern, EntryName.value name, ignoreCase = true)

@@ -16,7 +16,7 @@ type PanelState =
     { Path: FileSystemPath
       Entries: Entry list
       Cursor: int
-      Selected: Set<string> }
+      Selected: Set<EntryName> }
 
 type AppState =
     { Left: PanelState
@@ -25,7 +25,7 @@ type AppState =
 
 type FocusTarget =
     | Top
-    | ByName of string
+    | ByName of EntryName
 
 let create (path: FileSystemPath) =
     let panel =
@@ -164,7 +164,7 @@ let operationTargets panel =
     | marked -> marked
 
 let private entryPath (fs: IFileSystem) panel (entry: Entry) =
-    FileSystemPath.combine fs panel.Path entry.Name
+    FileSystemPath.combine fs panel.Path (EntryName.value entry.Name)
 
 let operationPaths (fs: IFileSystem) panel =
     operationTargets panel |> List.map (entryPath fs panel)
@@ -195,14 +195,15 @@ let finishTransfer (fs: IFileSystem) results state =
     |> Result.map (fun updated -> updated, results)
 
 let finishRename (fs: IFileSystem) newName state =
-    reloadFocusing fs state.Active (ByName newName) (fun previous -> keepSurviving previous.Selected) state
+    let focus = ByName(EntryName.create newName)
+    reloadFocusing fs state.Active focus (fun previous -> keepSurviving previous.Selected) state
 
 let makeDirectory (fs: IFileSystem) side name state : Result<AppState, Operations.OperationError> =
     let previous = panel side state
 
     Operations.makeDirectory fs previous.Path name
     |> Result.bind (fun () ->
-        loadPanelFocusing fs side previous.Path (ByName name) state
+        loadPanelFocusing fs side previous.Path (ByName(EntryName.create name)) state
         |> Result.mapError asOperationError
         |> Result.map (updatePanel side (keepSurviving previous.Selected)))
 
@@ -220,7 +221,7 @@ let private navigateUp (fs: IFileSystem) side (from: FileSystemPath) state =
         loadPanelFocusing fs side parent focus state
 
 let private navigateInto (fs: IFileSystem) side (parentPath: FileSystemPath) name state =
-    let targetPath = FileSystemPath.combine fs parentPath name
+    let targetPath = FileSystemPath.combine fs parentPath (EntryName.value name)
     loadPanelFocusing fs side targetPath Top state
 
 let enter (fs: IFileSystem) state =

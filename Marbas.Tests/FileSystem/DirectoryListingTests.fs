@@ -17,7 +17,7 @@ let ``lists files and directories of the given path`` () =
 
     let entries = read fs (fp @"C:\data") |> Expect.ok
 
-    Assert.Equal<string list>([ "docs"; "notes.txt" ], entries |> List.map _.Name |> List.sort)
+    Assert.Equal<string list>([ "docs"; "notes.txt" ], entries |> List.map (_.Name >> EntryName.value) |> List.sort)
 
 [<Fact>]
 let ``directories have no size and files report theirs`` () =
@@ -26,7 +26,7 @@ let ``directories have no size and files report theirs`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
 
     let entries = read fs (fp @"C:\data") |> Expect.ok
-    let byName name = entries |> List.find (fun e -> e.Name = name)
+    let byName name = entries |> List.find (fun e -> e.Name = EntryName.create name)
 
     Assert.Equal(Directory, (byName "docs").Kind)
     Assert.Equal(None, (byName "docs").Size)
@@ -40,7 +40,7 @@ let ``does not descend into nested directories`` () =
 
     let entries = read fs (fp @"C:\data") |> Expect.ok
 
-    Assert.Equal<string list>([ "docs" ], entries |> List.map _.Name)
+    Assert.Equal<string list>([ "docs" ], entries |> List.map (_.Name >> EntryName.value))
 
 [<Fact>]
 let ``reports last modification time`` () =

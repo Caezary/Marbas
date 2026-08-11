@@ -44,7 +44,7 @@ let ``a finished copy lists the new entries in the other panel`` () =
 
     let updated = finished fs results (markedNotes state)
 
-    Assert.Contains("notes.txt", updated.Right.Entries |> List.map _.Name)
+    Assert.Contains("notes.txt", updated.Right.Entries |> List.map (_.Name >> EntryName.value))
 
 [<Fact>]
 let ``marks are dropped from the entries that were copied`` () =
@@ -60,9 +60,9 @@ let ``a mark stays on an entry whose copy failed`` () =
     let fs, state = started ()
 
     let results =
-        [ { Name = "notes.txt"
+        [ { Name = EntryName.create "notes.txt"
             Outcome = Error(AccessDenied(fp @"C:\backup\notes.txt")) } ]
 
     let updated = finished fs results (markedNotes state)
 
-    Assert.Equal<string list>([ "notes.txt" ], selectedEntries updated.Left |> List.map _.Name)
+    Assert.Equal<string list>([ "notes.txt" ], selectedEntries updated.Left |> List.map (_.Name >> EntryName.value))

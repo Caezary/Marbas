@@ -16,7 +16,7 @@ let private pattern raw = NamePattern.create raw |> Expect.some
 [<InlineData("a?c.txt", "ac.txt", false)>]
 [<InlineData("readme.txt", "readme.txt", true)>]
 let ``wildcard patterns match names case-insensitively`` raw name expected =
-    let matched = NamePattern.matches (pattern raw) name
+    let matched = NamePattern.matches (pattern raw) (EntryName.create name)
 
     Assert.Equal(expected, matched)
 

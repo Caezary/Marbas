@@ -10,10 +10,12 @@ open Marbas.Tests
 let private fp = FileSystemPath.create
 
 let private entry name kind =
-    { Name = name
+    { Name = EntryName.create name
       Kind = kind
       Size = (match kind with File -> Some 1L | Directory -> None)
       Modified = DateTime(2026, 1, 1) }
+
+let private names entries = entries |> List.map (_.Name >> EntryName.value)
 
 [<Fact>]
 let ``directories come before files`` () =
@@ -21,7 +23,7 @@ let ``directories come before files`` () =
 
     let ordered = order unordered
 
-    Assert.Equal<string list>([ "zeta"; "a.txt" ], ordered |> List.map _.Name)
+    Assert.Equal<string list>([ "zeta"; "a.txt" ], names ordered)
 
 [<Fact>]
 let ``names are sorted alphabetically ignoring case`` () =
@@ -33,7 +35,7 @@ let ``names are sorted alphabetically ignoring case`` () =
 
     let ordered = order unordered
 
-    Assert.Equal<string list>([ "Bravo"; "zulu"; "Alpha.txt"; "delta.txt" ], ordered |> List.map _.Name)
+    Assert.Equal<string list>([ "Bravo"; "zulu"; "Alpha.txt"; "delta.txt" ], names ordered)
 
 [<Fact>]
 let ``non-root listing starts with the parent entry`` () =
@@ -43,7 +45,7 @@ let ``non-root listing starts with the parent entry`` () =
 
     let entries = listForDisplay fs (fp @"C:\start\sub") |> Expect.ok
 
-    Assert.Equal("..", entries.Head.Name)
+    Assert.Equal("..", EntryName.value entries.Head.Name)
     Assert.Equal(Directory, entries.Head.Kind)
 
 [<Fact>]
@@ -53,7 +55,7 @@ let ``root listing has no parent entry`` () =
 
     let entries = listForDisplay fs (fp @"C:\") |> Expect.ok
 
-    Assert.DoesNotContain(entries, fun e -> e.Name = "..")
+    Assert.DoesNotContain(entries, fun e -> EntryName.value e.Name = "..")
 
 [<Fact>]
 let ``parent entry is followed by ordered content`` () =
@@ -63,4 +65,4 @@ let ``parent entry is followed by ordered content`` () =
 
     let entries = listForDisplay fs (fp @"C:\start\sub") |> Expect.ok
 
-    Assert.Equal<string list>([ ".."; "inner"; "a.txt" ], entries |> List.map _.Name)
+    Assert.Equal<string list>([ ".."; "inner"; "a.txt" ], names entries)

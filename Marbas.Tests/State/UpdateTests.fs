@@ -11,6 +11,9 @@ open Marbas.Tests
 
 let private fp = FileSystemPath.create
 
+let private names (entries: DirectoryListing.Entry list) =
+    entries |> List.map (_.Name >> EntryName.value)
+
 let private mockFs () =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\start\docs"
@@ -61,7 +64,7 @@ let ``a valid name creates the directory on the active side`` () =
     let result = update fs (NameEntered "work") state
 
     Assert.True(fs.Directory.Exists @"C:\start\work")
-    Assert.Equal(Some "work", cursorEntry result.State.Left |> Option.map _.Name)
+    Assert.Equal(Some "work", cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -101,7 +104,7 @@ let ``an entered pattern marks the matching entries`` () =
 
     let result = update fs (PatternEntered(Left, 0, Select, pattern)) state
 
-    Assert.Equal<string list>([ "setup.fs" ], selectedEntries result.State.Left |> List.map _.Name)
+    Assert.Equal<string list>([ "setup.fs" ], selectedEntries result.State.Left |> names)
 
 [<Fact>]
 let ``drive requested defers to a drive prompt`` () =
@@ -148,7 +151,7 @@ let ``toggling selection marks the entry under the cursor and advances`` () =
 
     let result = update fs (SelectionToggled(Left, 2)) state
 
-    Assert.Equal<string list>([ "notes.txt" ], selectedEntries result.State.Left |> List.map _.Name)
+    Assert.Equal<string list>([ "notes.txt" ], selectedEntries result.State.Left |> names)
     Assert.Equal(3, result.State.Left.Cursor)
 
 [<Fact>]
@@ -188,7 +191,7 @@ let ``a confirmed delete removes the target and raises no effect`` () =
     let result = update fs DeleteConfirmed state
 
     Assert.False(fs.File.Exists @"C:\start\notes.txt")
-    Assert.DoesNotContain("notes.txt", result.State.Left.Entries |> List.map _.Name)
+    Assert.DoesNotContain("notes.txt", names result.State.Left.Entries)
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -201,7 +204,7 @@ let ``a delete that fails is reported item by item`` () =
 
     Assert.Equal<Effect list>(
         [ ReportItemFailures
-              [ { Name = "notes.txt"
+              [ { Name = EntryName.create "notes.txt"
                   Outcome = Error(SourceNotFound(fp @"C:\start\notes.txt")) } ] ],
         result.Effects
     )
@@ -233,7 +236,7 @@ let ``a finished copy shows the new entry in the other panel`` () =
 
     let result = update fs (CopyFinished results) state
 
-    Assert.Contains("notes.txt", result.State.Right.Entries |> List.map _.Name)
+    Assert.Contains("notes.txt", names result.State.Right.Entries)
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -242,7 +245,7 @@ let ``a finished copy reports the items that failed`` () =
     let state = loadedBoth fs
 
     let failed =
-        [ { Name = "notes.txt"
+        [ { Name = EntryName.create "notes.txt"
             Outcome = Error(AccessDenied(fp @"C:\backup\notes.txt")) } ]
 
     let result = update fs (CopyFinished failed) state
@@ -321,8 +324,8 @@ let ``a finished move shows the entry in the other panel`` () =
 
     let result = update fs (MoveFinished results) state
 
-    Assert.Contains("notes.txt", result.State.Right.Entries |> List.map _.Name)
-    Assert.DoesNotContain("notes.txt", result.State.Left.Entries |> List.map _.Name)
+    Assert.Contains("notes.txt", names result.State.Right.Entries)
+    Assert.DoesNotContain("notes.txt", names result.State.Left.Entries)
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -333,7 +336,7 @@ let ``a finished rename puts the cursor on the new name`` () =
 
     let result = update fs (RenameFinished("zzz.txt", Ok())) state
 
-    Assert.Equal(Some "zzz.txt", cursorEntry result.State.Left |> Option.map _.Name)
+    Assert.Equal(Some "zzz.txt", cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
     Assert.Empty result.Effects
 
 [<Fact>]

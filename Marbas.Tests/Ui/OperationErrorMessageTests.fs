@@ -38,9 +38,9 @@ let ``an unexpected failure includes the underlying reason`` () =
 [<Fact>]
 let ``every failed item is named with its own reason`` () =
     let items =
-        [ { Name = "gone.txt"
+        [ { Name = EntryName.create "gone.txt"
             Outcome = Error(SourceNotFound(fp @"C:\data\gone.txt")) }
-          { Name = "locked"
+          { Name = EntryName.create "locked"
             Outcome = Error(AccessDenied(fp @"C:\data\locked")) } ]
 
     let message = OperationErrorMessage.describeFailures items
@@ -53,8 +53,8 @@ let ``every failed item is named with its own reason`` () =
 [<Fact>]
 let ``items that succeeded are left out`` () =
     let items =
-        [ { Name = "a.txt"; Outcome = Ok() }
-          { Name = "gone.txt"
+        [ { Name = EntryName.create "a.txt"; Outcome = Ok() }
+          { Name = EntryName.create "gone.txt"
             Outcome = Error(SourceNotFound(fp @"C:\data\gone.txt")) } ]
 
     let message = OperationErrorMessage.describeFailures items

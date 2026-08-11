@@ -8,13 +8,12 @@ type EntryKind =
     | Directory
 
 type Entry =
-    { Name: string
+    { Name: EntryName
       Kind: EntryKind
       Size: int64 option
       Modified: DateTime }
 
-[<Literal>]
-let ParentName = ".."
+let ParentName = EntryName.create ".."
 
 type ListingError =
     | DirectoryNotFound of path: FileSystemPath
@@ -27,13 +26,13 @@ let mapException path (ex: exn) =
     | _ -> ListingFailed(path, ex.Message)
 
 let private directoryEntry (info: IDirectoryInfo) =
-    { Name = info.Name
+    { Name = EntryName.create info.Name
       Kind = Directory
       Size = None
       Modified = info.LastWriteTime }
 
 let private fileEntry (info: IFileInfo) =
-    { Name = info.Name
+    { Name = EntryName.create info.Name
       Kind = File
       Size = Some info.Length
       Modified = info.LastWriteTime }
@@ -57,7 +56,7 @@ let order (entries: Entry list) =
         match a.Kind, b.Kind with
         | Directory, File -> -1
         | File, Directory -> 1
-        | _ -> String.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase))
+        | _ -> String.Compare(EntryName.value a.Name, EntryName.value b.Name, StringComparison.OrdinalIgnoreCase))
 
 let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
     match fs.DirectoryInfo.New(FileSystemPath.value path).Parent with
