@@ -1,7 +1,14 @@
-module Marbas.FileSystem.NamePattern
+namespace Marbas.FileSystem
 
+open System
 open System.IO.Enumeration
 
-let matches (pattern: string) (name: string) =
-    not (System.String.IsNullOrEmpty pattern)
-    && FileSystemName.MatchesSimpleExpression(pattern, name, ignoreCase = true)
+type NamePattern = private NamePattern of string
+
+module NamePattern =
+
+    let create (raw: string) =
+        if String.IsNullOrEmpty raw then None else Some(NamePattern raw)
+
+    let matches (NamePattern pattern) (name: string) =
+        FileSystemName.MatchesSimpleExpression(pattern, name, ignoreCase = true)

@@ -81,7 +81,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Some name -> dispatch (NameEntered name)
         | None -> ()
     | PromptForPattern(side, index, mode) ->
-        match deps.AskPattern (patternPrompt mode) with
+        match deps.AskPattern (patternPrompt mode) |> Option.bind NamePattern.create with
         | Some pattern -> dispatch (PatternEntered(side, index, mode, pattern))
         | None -> ()
     | PromptForDrive side ->

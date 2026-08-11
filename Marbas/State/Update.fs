@@ -12,7 +12,7 @@ type Message =
     | RefreshRequested of PanelSide * index: int
     | SelectionToggled of PanelSide * index: int
     | PatternRequested of PanelSide * index: int * SelectionMode
-    | PatternEntered of PanelSide * index: int * SelectionMode * pattern: string
+    | PatternEntered of PanelSide * index: int * SelectionMode * NamePattern
     | MakeDirectoryRequested
     | NameEntered of name: string
     | DeleteRequested

@@ -9,6 +9,8 @@ open Marbas.Tests
 
 let private fp = FileSystemPath.create
 
+let private pattern raw = NamePattern.create raw |> Expect.some
+
 let private mockFs () =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\start\docs"
@@ -26,7 +28,7 @@ let private selectedNames panel = selectedEntries panel |> List.map _.Name
 let ``a pattern selects every matching entry in one step`` () =
     let state = loaded (mockFs ())
 
-    let selected = applyPattern Select Left "*.fs" state
+    let selected = applyPattern Select Left (pattern "*.fs") state
 
     Assert.Equal<string list>([ "setup.fs" ], selectedNames selected.Left)
 
@@ -34,7 +36,7 @@ let ``a pattern selects every matching entry in one step`` () =
 let ``pattern matching ignores case`` () =
     let state = loaded (mockFs ())
 
-    let selected = applyPattern Select Left "*.txt" state
+    let selected = applyPattern Select Left (pattern "*.txt") state
 
     Assert.Equal<string list>([ "notes.txt"; "readme.TXT" ], selectedNames selected.Left)
 
@@ -42,7 +44,7 @@ let ``pattern matching ignores case`` () =
 let ``a pattern never selects the parent entry`` () =
     let state = loaded (mockFs ())
 
-    let selected = applyPattern Select Left "*" state
+    let selected = applyPattern Select Left (pattern "*") state
 
     Assert.Equal<string list>([ "docs"; "notes.txt"; "readme.TXT"; "setup.fs" ], selectedNames selected.Left)
 
@@ -51,7 +53,9 @@ let ``a pattern adds to what is already selected`` () =
     let state = loaded (mockFs ())
 
     let selected =
-        state |> applyPattern Select Left "*.fs" |> applyPattern Select Left "*.txt"
+        state
+        |> applyPattern Select Left (pattern "*.fs")
+        |> applyPattern Select Left (pattern "*.txt")
 
     Assert.Equal<string list>([ "notes.txt"; "readme.TXT"; "setup.fs" ], selectedNames selected.Left)
 
@@ -60,7 +64,9 @@ let ``a pattern deselects only the entries it matches`` () =
     let state = loaded (mockFs ())
 
     let selected =
-        state |> applyPattern Select Left "*" |> applyPattern Deselect Left "*.txt"
+        state
+        |> applyPattern Select Left (pattern "*")
+        |> applyPattern Deselect Left (pattern "*.txt")
 
     Assert.Equal<string list>([ "docs"; "setup.fs" ], selectedNames selected.Left)
 
@@ -70,8 +76,8 @@ let ``a pattern that matches nothing leaves the selection alone`` () =
 
     let selected =
         state
-        |> applyPattern Select Left "*.fs"
-        |> applyPattern Select Left "*.md"
-        |> applyPattern Deselect Left "*.md"
+        |> applyPattern Select Left (pattern "*.fs")
+        |> applyPattern Select Left (pattern "*.md")
+        |> applyPattern Deselect Left (pattern "*.md")
 
     Assert.Equal<string list>([ "setup.fs" ], selectedNames selected.Left)

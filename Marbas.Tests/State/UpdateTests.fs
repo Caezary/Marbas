@@ -97,8 +97,9 @@ let ``pattern requested defers to a pattern prompt`` () =
 let ``an entered pattern marks the matching entries`` () =
     let fs = mockFs ()
     let state = loaded fs
+    let pattern = NamePattern.create "*.fs" |> Expect.some
 
-    let result = update fs (PatternEntered(Left, 0, Select, "*.fs")) state
+    let result = update fs (PatternEntered(Left, 0, Select, pattern)) state
 
     Assert.Equal<string list>([ "setup.fs" ], selectedEntries result.State.Left |> List.map _.Name)
 

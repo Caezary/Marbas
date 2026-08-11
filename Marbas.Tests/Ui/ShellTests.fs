@@ -53,7 +53,11 @@ let ``a selecting pattern uses the select label and carries the context back`` (
     Shell.interpret deps dispatch (PromptForPattern(Right, 4, Select))
 
     Assert.Equal(Shell.SelectPrompt, asked)
-    Assert.Equal<Message list>([ PatternEntered(Right, 4, Select, "*.fs") ], List.ofSeq sent)
+
+    Assert.Equal<Message list>(
+        [ PatternEntered(Right, 4, Select, NamePattern.create "*.fs" |> Expect.some) ],
+        List.ofSeq sent
+    )
 
 [<Fact>]
 let ``a deselecting pattern uses the deselect label`` () =
@@ -64,6 +68,15 @@ let ``a deselecting pattern uses the deselect label`` () =
     Shell.interpret deps dispatch (PromptForPattern(Left, 0, Deselect))
 
     Assert.Equal(Shell.DeselectPrompt, asked)
+
+[<Fact>]
+let ``an empty pattern never becomes a message`` () =
+    let sent, dispatch = capture ()
+    let deps = { noDeps () with AskPattern = fun _ -> Some "" }
+
+    Shell.interpret deps dispatch (PromptForPattern(Left, 0, Select))
+
+    Assert.Empty sent
 
 [<Fact>]
 let ``a chosen drive is dispatched as an opened path`` () =
