@@ -4,6 +4,35 @@ Tests live in `Marbas.Tests` (xUnit). Logic modules (`FileSystem`, `State`) are
 covered directly; UI behaviour is covered by driving real Terminal.Gui views
 with an in-memory file system (`MockFileSystem`), so no test touches the disk.
 
+## Layout
+
+`FileSystem/`, `State/` and `Ui/` mirror the source folders they cover, one test
+module per module under test, and namespaces follow: `Marbas.Tests.State.
+UpdateTests` covers `Marbas.State.Update`. Everything in them is a unit test —
+pure, fast, no Terminal.Gui.
+
+`Integration/` holds every test that constructs a Terminal.Gui view, from a lone
+dialog up to a whole `MainWindow` driven by keystrokes. That is the line: a test
+that touches Terminal.Gui needs `BeginInit`/`EndInit`, a layout pass and the
+process-wide statics that force parallelisation off, so it belongs on the other
+side of the fence from the pure ones.
+
+The split is what makes a file like `State/DeleteTests.fs` (does `deleteTargets`
+delete the right entries?) readable next to `Integration/DeleteKeyTests.fs`
+(does `F8` confirm and then delete?) — they used to be one file. Either half
+runs on its own:
+
+```
+dotnet test --filter "FullyQualifiedName~Marbas.Tests.Integration"
+```
+
+Three modules sit outside the folders because everything uses them:
+`Expect` (result unwrapping), `Fakes` (the do-nothing `Shell.Dependencies`) and
+`AssemblyInfo`. `Integration/Gui.fs` adds the view helpers — `focusedWindow`,
+`leftList`, `rightList`, `press`, `panel`. F# does not open an enclosing
+namespace for you, so a file under `State/` that uses `Expect.ok` needs an
+explicit `open Marbas.Tests`.
+
 ## Arrange, act, assert
 
 Every test is three blocks separated by a blank line — set the world up, do the
@@ -21,9 +50,9 @@ line; without them the `match` that unwraps the result also holds the
 assertions, which fuses act and assert. A `Result` that *is* the thing under
 test stays whole and is compared with `Assert.Equal(Error(...), result)`.
 
-`TestHelpers` carries the arrange boilerplate: `focusedWindow deps` builds,
-initialises and focuses a `MainWindow`, and `leftList` / `rightList` reach the
-panel `ListView` a test drives.
+`Integration/Gui.fs` carries the arrange boilerplate: `focusedWindow deps`
+builds, initialises and focuses a `MainWindow`, and `leftList` / `rightList`
+reach the panel `ListView` a test drives.
 
 ## Injecting the outside world
 
@@ -32,14 +61,14 @@ path, quit callback, error reporter, drive chooser, pattern prompt, name prompt
 and confirmation. Everything that would open a modal dialog or end the process
 is a function, so tests pass fakes and assert on what was requested.
 `Program.fs` is the only place that supplies the real `MessageBox` dialogs.
-`TestHelpers.dependencies` gives every port a do-nothing default — a
+`Fakes.dependencies` gives every port a do-nothing default — a
 confirmation that answers no, an overwrite question that skips, prompts that
 cancel — so a test only overrides the one it cares about. A prompt that carries
 a suggestion (`AskTarget`) is easiest to fake as `fun _ suggestion -> Some
 suggestion`, which is exactly "the user pressed Ok".
 
 **Background work is a port, so tests stay synchronous.** `RunBatch` is the
-dependency that copies and moves go through; `TestHelpers` supplies one that
+dependency that copies and moves go through; `Fakes` supplies one that
 runs the work inline with `Operations.unattended`, so a test presses `F5` and
 finds the files already copied when the call returns. Nothing in the suite
 waits on a thread. What that does *not* cover is `Program.fs` — the real
@@ -55,7 +84,7 @@ that answers with the wanted path. No test reaches into the state to set it.
 **`Key` is mutable and `Handled` sticks.** Sending a shared `Key` instance
 (such as `PanelInput.refreshKey`) through `NewKeyDownEvent` sets `Handled` on
 that object permanently; every later send of the same instance is ignored and
-handlers stop firing. Use `TestHelpers.press`, which sends a fresh copy.
+handlers stop firing. Use `Gui.press`, which sends a fresh copy.
 The symptom of getting this wrong is a test that passes alone but fails as
 part of the suite.
 

@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-08-09. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-11. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
@@ -15,9 +15,10 @@ operation targets, and copying or moving now runs off the UI thread behind a
 progress window that `Esc` stops. Next comes Phase 6: viewing and editing
 files.
 
-**301 tests pass**, covering every logic module directly and the UI behaviour by
-driving real Terminal.Gui views over an in-memory file system. They all follow
-the arrange/act/assert shape described in [TESTING.md](TESTING.md).
+**301 tests pass** — 216 unit tests over the logic modules and the pure `Ui`
+ones, plus 85 integration tests driving real Terminal.Gui views over an
+in-memory file system. All of them follow the arrange/act/assert shape and the
+folder layout described in [TESTING.md](TESTING.md).
 
 | Phase | Tasks | State |
 |-------|-------|-------|
@@ -125,6 +126,15 @@ Marbas/
     ProgressDialog.fs     the window shown while a batch runs
     MainWindow.fs         composition: views, runtime, event wiring
   Program.fs              real file system and real dialogs
+
+Marbas.Tests/
+  Expect.fs               Result unwrapping, so act and assert stay apart
+  Fakes.fs                the do-nothing Shell.Dependencies every test starts from
+  FileSystem/             unit tests, one module per FileSystem module
+  State/                  unit tests, one module per State module
+  Ui/                     unit tests of the pure Ui modules and the Shell interpreter
+  Integration/            every test that constructs a Terminal.Gui view
+    Gui.fs                focusedWindow, leftList, rightList, press, panel
 ```
 
 Dependencies flow downward only: `Ui` → `State` → `FileSystem`.
@@ -342,7 +352,7 @@ put that hazard into startup.
   looked bound but did nothing until it got a real callback.
 - `Key` is mutable: sending a shared instance sets `Handled` on it forever, so
   later sends are silently ignored. Tests send fresh copies via
-  `TestHelpers.press`.
+  `Gui.press`.
 - Keys do not bubble from a nested view to its parent, so handlers live on the
   focused `ListView`.
 - `View.AddCommand` is `protected`; custom shortcuts use `KeyDown` handlers.

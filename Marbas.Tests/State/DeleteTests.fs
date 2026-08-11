@@ -1,0 +1,145 @@
+module Marbas.Tests.State.DeleteTests
+
+open System.IO.Abstractions
+open System.IO.Abstractions.TestingHelpers
+open Xunit
+open Marbas.FileSystem
+open Marbas.FileSystem.Operations
+open Marbas.State.AppState
+open Marbas.Tests
+
+let private fp = FileSystemPath.create
+
+let private mockFs () =
+    let fs = MockFileSystem()
+    fs.AddFile(@"C:\start\docs\inner.txt", MockFileData "x")
+    fs.AddDirectory @"C:\start\empty"
+    fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
+    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    fs
+
+let private loaded (fs: IFileSystem) =
+    create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
+
+let private started () =
+    let fs = mockFs ()
+    fs, loaded fs
+
+let private targetNames state = operationTargets state.Left |> List.map _.Name
+
+let private deleted fs state = deleteTargets fs Left state |> Expect.ok
+
+[<Fact>]
+let ``with nothing marked the cursor entry is the only target`` () =
+    let _, state = started ()
+
+    let targets = state |> setCursor Left 3 |> targetNames
+
+    Assert.Equal<string list>([ "notes.txt" ], targets)
+
+[<Fact>]
+let ``the parent entry is never a target`` () =
+    let _, state = started ()
+
+    let targets = state |> setCursor Left 0 |> targetNames
+
+    Assert.Empty targets
+
+[<Fact>]
+let ``marked entries are the targets in listing order`` () =
+    let _, state = started ()
+
+    let marked =
+        state
+        |> setCursor Left 4
+        |> toggleSelectionAndAdvance Left
+        |> setCursor Left 1
+        |> toggleSelectionAndAdvance Left
+
+    Assert.Equal<string list>([ "docs"; "readme.txt" ], targetNames marked)
+
+[<Fact>]
+let ``deleting removes the cursor entry and refreshes the panel`` () =
+    let fs, state = started ()
+
+    let updated, _ = state |> setCursor Left 3 |> deleted fs
+
+    Assert.False(fs.File.Exists @"C:\start\notes.txt")
+    Assert.DoesNotContain("notes.txt", updated.Left.Entries |> List.map _.Name)
+
+[<Fact>]
+let ``deleting a directory takes its contents with it`` () =
+    let fs, state = started ()
+
+    let updated, _ = state |> setCursor Left 1 |> deleted fs
+
+    Assert.False(fs.Directory.Exists @"C:\start\docs")
+    Assert.DoesNotContain("docs", updated.Left.Entries |> List.map _.Name)
+
+[<Fact>]
+let ``every marked entry is deleted and reported`` () =
+    let fs, state = started ()
+
+    let marked =
+        state
+        |> setCursor Left 3
+        |> toggleSelectionAndAdvance Left
+        |> toggleSelectionAndAdvance Left
+
+    let _, results = deleted fs marked
+
+    Assert.Equal<string list>([ "notes.txt"; "readme.txt" ], results |> List.map _.Name)
+    Assert.All(results, fun item -> Assert.Equal(Ok(), item.Outcome))
+    Assert.False(fs.File.Exists @"C:\start\notes.txt")
+    Assert.False(fs.File.Exists @"C:\start\readme.txt")
+
+[<Fact>]
+let ``a vanished entry is reported while the rest still go`` () =
+    let fs, state = started ()
+
+    let marked =
+        state
+        |> setCursor Left 3
+        |> toggleSelectionAndAdvance Left
+        |> toggleSelectionAndAdvance Left
+
+    fs.File.Delete @"C:\start\notes.txt"
+
+    let _, results = deleted fs marked
+
+    Assert.Equal(Error(SourceNotFound(fp @"C:\start\notes.txt")), results[0].Outcome)
+    Assert.Equal(Ok(), results[1].Outcome)
+    Assert.False(fs.File.Exists @"C:\start\readme.txt")
+
+[<Fact>]
+let ``marks are dropped along with the entries they pointed at`` () =
+    let fs, state = started ()
+
+    let marked =
+        state
+        |> setCursor Left 3
+        |> toggleSelectionAndAdvance Left
+        |> setCursor Left 1
+        |> toggleSelectionAndAdvance Left
+
+    let updated, _ = deleted fs marked
+
+    Assert.Empty(selectedEntries updated.Left)
+    Assert.False(fs.Directory.Exists @"C:\start\docs")
+    Assert.False(fs.File.Exists @"C:\start\notes.txt")
+
+[<Fact>]
+let ``a non-empty directory among the targets is recognised`` () =
+    let fs, state = started ()
+
+    let warns = hasNonEmptyDirectory fs (state |> setCursor Left 1).Left
+
+    Assert.True warns
+
+[<Fact>]
+let ``an empty directory needs no extra warning`` () =
+    let fs, state = started ()
+
+    let warns = hasNonEmptyDirectory fs (state |> setCursor Left 2).Left
+
+    Assert.False warns
