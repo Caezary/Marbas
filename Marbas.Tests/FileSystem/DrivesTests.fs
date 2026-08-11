@@ -4,6 +4,8 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
 
+let private fp = FileSystemPath.create
+
 [<Fact>]
 let ``lists every mounted drive in alphabetical order`` () =
     let fs = MockFileSystem()
@@ -12,4 +14,4 @@ let ``lists every mounted drive in alphabetical order`` () =
 
     let drives = Drives.list fs
 
-    Assert.Equal<string list>([ @"C:\"; @"D:\" ], drives)
+    Assert.Equal<FileSystemPath list>([ fp @"C:\"; fp @"D:\" ], drives)

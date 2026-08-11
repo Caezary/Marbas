@@ -8,4 +8,5 @@ let list (fs: IFileSystem) =
     |> Seq.filter _.IsReady
     |> Seq.map _.Name
     |> Seq.sortWith (fun a b -> String.Compare(a, b, StringComparison.OrdinalIgnoreCase))
+    |> Seq.map FileSystemPath.create
     |> List.ofSeq

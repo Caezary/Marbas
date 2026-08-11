@@ -24,7 +24,7 @@ type Message =
     | MoveFinished of Operations.ItemResult list
     | RenameFinished of newName: string * outcome: Result<unit, Operations.OperationError>
     | DriveRequested of PanelSide
-    | PathOpened of PanelSide * path: string
+    | PathOpened of PanelSide * FileSystemPath
     | QuitRequested
 
 type Effect =
@@ -35,7 +35,7 @@ type Effect =
     | CopyTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | MoveTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | RenameTarget of source: FileSystemPath * newName: string
-    | PromptForTarget of suggestion: string
+    | PromptForTarget of suggestion: FileSystemPath
     | PromptForName
     | PromptForPattern of PanelSide * index: int * SelectionMode
     | PromptForDrive of PanelSide
@@ -102,7 +102,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | MoveRequested ->
         match operationPaths fs (activePanel state) with
         | [] -> stay state
-        | _ -> request state (PromptForTarget(FileSystemPath.value (otherPath state)))
+        | _ -> request state (PromptForTarget(otherPath state))
     | TargetEntered text ->
         let source = activePanel state
 
@@ -118,7 +118,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | Error error -> request state (ReportOperationError error)
         | Ok() -> finishRename fs newName state |> applyOperation state
     | DriveRequested side -> request state (PromptForDrive side)
-    | PathOpened(side, path) -> loadPanel fs side (FileSystemPath.create path) state |> applyListing state
+    | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
     | QuitRequested -> request state Quit
 
 let step (fs: IFileSystem) (msg: Message) (state: AppState) =

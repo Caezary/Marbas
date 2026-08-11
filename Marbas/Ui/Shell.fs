@@ -28,7 +28,7 @@ let MoveTitle = "Moving"
 
 type Dependencies =
     { FileSystem: IFileSystem
-      StartPath: string
+      StartPath: FileSystemPath
       OnQuit: unit -> unit
       ReportError: string -> string -> unit
       ChooseOption: string -> string list -> string option
@@ -73,7 +73,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         |> fun outcome -> RenameFinished(newName, outcome)
         |> dispatch
     | PromptForTarget suggestion ->
-        match deps.AskTarget MovePrompt suggestion with
+        match deps.AskTarget MovePrompt (FileSystemPath.value suggestion) with
         | Some text -> dispatch (TargetEntered text)
         | None -> ()
     | PromptForName ->
@@ -85,7 +85,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Some pattern -> dispatch (PatternEntered(side, index, mode, pattern))
         | None -> ()
     | PromptForDrive side ->
-        match deps.ChooseOption DrivePrompt (Drives.list deps.FileSystem) with
-        | Some drive -> dispatch (PathOpened(side, drive))
+        let drives = Drives.list deps.FileSystem |> List.map FileSystemPath.value
+
+        match deps.ChooseOption DrivePrompt drives with
+        | Some drive -> dispatch (PathOpened(side, FileSystemPath.create drive))
         | None -> ()
     | Quit -> deps.OnQuit()

@@ -117,7 +117,7 @@ let ``opening a path loads it into the given side`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (PathOpened(Right, @"C:\start")) state
+    let result = update fs (PathOpened(Right, fp @"C:\start")) state
 
     Assert.Equal(fp @"C:\start", result.State.Right.Path)
     Assert.Empty result.Effects
@@ -127,7 +127,7 @@ let ``opening a missing path reports a listing error`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (PathOpened(Right, @"C:\gone")) state
+    let result = update fs (PathOpened(Right, fp @"C:\gone")) state
 
     Assert.Equal(state, result.State)
     Assert.Equal<Effect list>([ ReportListingError(DirectoryListing.DirectoryNotFound(fp @"C:\gone")) ], result.Effects)
@@ -256,7 +256,7 @@ let ``move requested offers the other panel's path`` () =
 
     let result = update fs MoveRequested state
 
-    Assert.Equal<Effect list>([ PromptForTarget @"C:\backup" ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForTarget(fp @"C:\backup") ], result.Effects)
 
 [<Fact>]
 let ``move requested on the parent entry raises no effect`` () =

@@ -40,8 +40,9 @@ one thing under test, then assert. There are no `// Arrange` comments; the blank
 lines carry the structure.
 
 The act is a named binding, even when the call would fit inside the assertion:
-`let drives = Drives.list fs` followed by `Assert.Equal<string list>([...],
-drives)`, never `Assert.Equal<string list>([...], Drives.list fs)`. Where a test
+`let drives = Drives.list fs` followed by `Assert.Equal<FileSystemPath
+list>([...], drives)`, never `Assert.Equal<FileSystemPath list>([...],
+Drives.list fs)`. Where a test
 needs to compare before and after, the "before" value is captured in the arrange
 block and asserted at the end, so no assertion sits between two acts.
 
@@ -49,6 +50,9 @@ block and asserted at the end, so no assertion sits between two acts.
 line; without them the `match` that unwraps the result also holds the
 assertions, which fuses act and assert. A `Result` that *is* the thing under
 test stays whole and is compared with `Assert.Equal(Error(...), result)`.
+`Expect.some` does the same for the `Option` that a smart constructor answers
+with, so `NamePattern.create "*.fs" |> Expect.some` builds a value in the
+arrange block instead of branching there.
 
 `Integration/Gui.fs` carries the arrange boilerplate: `focusedWindow deps`
 builds, initialises and focuses a `MainWindow`, and `leftList` / `rightList`

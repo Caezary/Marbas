@@ -13,7 +13,7 @@ let configureQuitKey () =
 
 let create (deps: Shell.Dependencies) =
     let view = AppView.create ()
-    let appState = deps.StartPath |> FileSystemPath.create |> AppState.create
+    let appState = AppState.create deps.StartPath
 
     let runtime =
         Runtime(appState, Update.step deps.FileSystem, Shell.interpret deps, AppView.render view)

@@ -85,7 +85,7 @@ let ``a chosen drive is dispatched as an opened path`` () =
 
     Shell.interpret deps dispatch (PromptForDrive Right)
 
-    Assert.Equal<Message list>([ PathOpened(Right, @"D:\") ], List.ofSeq sent)
+    Assert.Equal<Message list>([ PathOpened(Right, fp @"D:\") ], List.ofSeq sent)
 
 [<Fact>]
 let ``the drive chooser is offered every mounted drive`` () =
@@ -236,7 +236,7 @@ let ``the target prompt suggests a path and carries back what was typed`` () =
         { noDeps () with
             AskTarget = fun title suggestion -> offered <- (title, suggestion); Some "readme.txt" }
 
-    Shell.interpret deps dispatch (PromptForTarget @"C:\backup")
+    Shell.interpret deps dispatch (PromptForTarget(fp @"C:\backup"))
 
     Assert.Equal(Shell.MovePrompt, fst offered)
     Assert.Equal(@"C:\backup", snd offered)
@@ -246,7 +246,7 @@ let ``the target prompt suggests a path and carries back what was typed`` () =
 let ``a cancelled target prompt dispatches nothing`` () =
     let sent, dispatch = capture ()
 
-    Shell.interpret (noDeps ()) dispatch (PromptForTarget @"C:\backup")
+    Shell.interpret (noDeps ()) dispatch (PromptForTarget(fp @"C:\backup"))
 
     Assert.Empty sent
 

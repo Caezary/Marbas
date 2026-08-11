@@ -4,9 +4,9 @@ open System.IO.Abstractions
 open Marbas.FileSystem
 open Marbas.Ui
 
-let dependencies (fs: IFileSystem) startPath : Shell.Dependencies =
+let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
     { FileSystem = fs
-      StartPath = startPath
+      StartPath = FileSystemPath.create startPath
       OnQuit = ignore
       ReportError = fun _ _ -> ()
       ChooseOption = fun _ _ -> None

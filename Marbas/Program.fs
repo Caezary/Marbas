@@ -78,7 +78,7 @@ let main _ =
     use window =
         MainWindow.create
             { FileSystem = fs
-              StartPath = fs.Directory.GetCurrentDirectory()
+              StartPath = fs.Directory.GetCurrentDirectory() |> FileSystemPath.create
               OnQuit = fun () -> app.RequestStop()
               ReportError = reportError
               ChooseOption = chooseOption
