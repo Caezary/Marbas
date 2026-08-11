@@ -50,10 +50,10 @@ let ``a selecting pattern uses the select label and carries the context back`` (
     let mutable asked = ""
     let deps = { noDeps () with AskPattern = fun title -> asked <- title; Some "*.fs" }
 
-    Shell.interpret deps dispatch (PromptForPattern(Right, 4, true))
+    Shell.interpret deps dispatch (PromptForPattern(Right, 4, Select))
 
     Assert.Equal(Shell.SelectPrompt, asked)
-    Assert.Equal<Message list>([ PatternEntered(Right, 4, true, "*.fs") ], List.ofSeq sent)
+    Assert.Equal<Message list>([ PatternEntered(Right, 4, Select, "*.fs") ], List.ofSeq sent)
 
 [<Fact>]
 let ``a deselecting pattern uses the deselect label`` () =
@@ -61,7 +61,7 @@ let ``a deselecting pattern uses the deselect label`` () =
     let mutable asked = ""
     let deps = { noDeps () with AskPattern = fun title -> asked <- title; None }
 
-    Shell.interpret deps dispatch (PromptForPattern(Left, 0, false))
+    Shell.interpret deps dispatch (PromptForPattern(Left, 0, Deselect))
 
     Assert.Equal(Shell.DeselectPrompt, asked)
 

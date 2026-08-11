@@ -23,13 +23,13 @@ let ``every selection key toggles the selection at the cursor`` () =
 let ``the select key requests a selecting pattern`` () =
     let message = PanelInput.messageFor Left 2 PanelInput.selectPatternKey
 
-    Assert.Equal(Some(PatternRequested(Left, 2, true)), message)
+    Assert.Equal(Some(PatternRequested(Left, 2, Select)), message)
 
 [<Fact>]
 let ``the deselect key requests a deselecting pattern`` () =
     let message = PanelInput.messageFor Left 2 PanelInput.deselectPatternKey
 
-    Assert.Equal(Some(PatternRequested(Left, 2, false)), message)
+    Assert.Equal(Some(PatternRequested(Left, 2, Deselect)), message)
 
 [<Fact>]
 let ``a drive key targets its own side regardless of the focused panel`` () =

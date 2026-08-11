@@ -89,16 +89,16 @@ let ``pattern requested defers to a pattern prompt`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (PatternRequested(Left, 0, true)) state
+    let result = update fs (PatternRequested(Left, 0, Select)) state
 
-    Assert.Equal<Effect list>([ PromptForPattern(Left, 0, true) ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForPattern(Left, 0, Select) ], result.Effects)
 
 [<Fact>]
 let ``an entered pattern marks the matching entries`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (PatternEntered(Left, 0, true, "*.fs")) state
+    let result = update fs (PatternEntered(Left, 0, Select, "*.fs")) state
 
     Assert.Equal<string list>([ "setup.fs" ], selectedEntries result.State.Left |> List.map _.Name)
 

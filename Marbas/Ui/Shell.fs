@@ -2,6 +2,7 @@ module Marbas.Ui.Shell
 
 open System.IO.Abstractions
 open Marbas.FileSystem
+open Marbas.State.AppState
 open Marbas.State.Update
 
 [<Literal>]
@@ -39,6 +40,11 @@ type Dependencies =
       RunBatch:
           string -> (Operations.BatchControl -> Operations.ItemResult list) -> (Operations.ItemResult list -> unit) -> unit }
 
+let private patternPrompt mode =
+    match mode with
+    | Select -> SelectPrompt
+    | Deselect -> DeselectPrompt
+
 let private askOverwrite (deps: Dependencies) target =
     deps.AskOverwrite OverwriteQuestion.Title (OverwriteQuestion.describe target)
 
@@ -74,9 +80,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.AskName MkdirPrompt with
         | Some name -> dispatch (NameEntered name)
         | None -> ()
-    | PromptForPattern(side, index, selecting) ->
-        match deps.AskPattern (if selecting then SelectPrompt else DeselectPrompt) with
-        | Some pattern -> dispatch (PatternEntered(side, index, selecting, pattern))
+    | PromptForPattern(side, index, mode) ->
+        match deps.AskPattern (patternPrompt mode) with
+        | Some pattern -> dispatch (PatternEntered(side, index, mode, pattern))
         | None -> ()
     | PromptForDrive side ->
         match deps.ChooseOption DrivePrompt (Drives.list deps.FileSystem) with

@@ -8,6 +8,10 @@ type PanelSide =
     | Left
     | Right
 
+type SelectionMode =
+    | Select
+    | Deselect
+
 type PanelState =
     { Path: FileSystemPath
       Entries: Entry list
@@ -128,11 +132,13 @@ let private selectMatchingIn pattern (p: PanelState) =
 let private deselectMatchingIn pattern (p: PanelState) =
     { p with Selected = Set.difference p.Selected (matching pattern p) }
 
-let selectMatching side pattern state =
-    updatePanel side (selectMatchingIn pattern) state
+let applyPattern mode side pattern state =
+    let apply =
+        match mode with
+        | Select -> selectMatchingIn
+        | Deselect -> deselectMatchingIn
 
-let deselectMatching side pattern state =
-    updatePanel side (deselectMatchingIn pattern) state
+    updatePanel side (apply pattern) state
 
 let private surviving entries selected =
     entries |> List.map _.Name |> Set.ofList |> Set.intersect selected

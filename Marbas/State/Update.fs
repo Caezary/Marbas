@@ -11,8 +11,8 @@ type Message =
     | EntryOpened of PanelSide * index: int
     | RefreshRequested of PanelSide * index: int
     | SelectionToggled of PanelSide * index: int
-    | PatternRequested of PanelSide * index: int * selecting: bool
-    | PatternEntered of PanelSide * index: int * selecting: bool * pattern: string
+    | PatternRequested of PanelSide * index: int * SelectionMode
+    | PatternEntered of PanelSide * index: int * SelectionMode * pattern: string
     | MakeDirectoryRequested
     | NameEntered of name: string
     | DeleteRequested
@@ -37,7 +37,7 @@ type Effect =
     | RenameTarget of source: FileSystemPath * newName: string
     | PromptForTarget of suggestion: string
     | PromptForName
-    | PromptForPattern of PanelSide * index: int * selecting: bool
+    | PromptForPattern of PanelSide * index: int * SelectionMode
     | PromptForDrive of PanelSide
     | Quit
 
@@ -79,10 +79,9 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | EntryOpened(side, index) -> state |> atCursor side index |> enter fs |> applyListing state
     | RefreshRequested(side, index) -> state |> atCursor side index |> refresh fs |> applyListing state
     | SelectionToggled(side, index) -> stay (state |> atCursor side index |> toggleSelectionAndAdvance side)
-    | PatternRequested(side, index, selecting) -> request state (PromptForPattern(side, index, selecting))
-    | PatternEntered(side, index, selecting, pattern) ->
-        let select = if selecting then selectMatching else deselectMatching
-        stay (state |> atCursor side index |> select side pattern)
+    | PatternRequested(side, index, mode) -> request state (PromptForPattern(side, index, mode))
+    | PatternEntered(side, index, mode, pattern) ->
+        stay (state |> atCursor side index |> applyPattern mode side pattern)
     | MakeDirectoryRequested -> request state PromptForName
     | NameEntered name ->
         match name.Trim() with

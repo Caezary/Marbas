@@ -24,6 +24,6 @@ let private driveSide (key: Key) =
 let messageFor (side: PanelSide) (cursor: int) (key: Key) : Message option =
     if key = refreshKey then Some(RefreshRequested(side, cursor))
     elif selectionKeys |> List.contains key then Some(SelectionToggled(side, cursor))
-    elif key = selectPatternKey then Some(PatternRequested(side, cursor, true))
-    elif key = deselectPatternKey then Some(PatternRequested(side, cursor, false))
+    elif key = selectPatternKey then Some(PatternRequested(side, cursor, Select))
+    elif key = deselectPatternKey then Some(PatternRequested(side, cursor, Deselect))
     else driveSide key |> Option.map DriveRequested
