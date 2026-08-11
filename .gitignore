@@ -427,3 +427,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Tech Debt is temporary for the time being
+_documentation/TECH-DEBT.md
