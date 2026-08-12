@@ -15,8 +15,8 @@ operation targets, and copying or moving now runs off the UI thread behind a
 progress window that `Esc` stops. Next comes Phase 6: viewing and editing
 files.
 
-**301 tests pass** — 216 unit tests over the logic modules and the pure `Ui`
-ones, plus 85 integration tests driving real Terminal.Gui views over an
+**307 tests pass** — 221 unit tests over the logic modules and the pure `Ui`
+ones, plus 86 integration tests driving real Terminal.Gui views over an
 in-memory file system. All of them follow the arrange/act/assert shape and the
 folder layout described in [TESTING.md](TESTING.md).
 
@@ -70,9 +70,10 @@ folder layout described in [TESTING.md](TESTING.md).
   entry by entry in one dialog while the rest of the batch still goes through.
 - `F5` copies the same operation targets into the directory shown by the other
   panel. Nothing is asked while nothing collides; a target that already exists
-  raises a Yes / No / All / Cancel question naming it, where `No` skips that
-  one entry, `All` stops asking for the rest of the batch and `Cancel` drops
-  whatever is left. Directory trees go over whole. Afterwards both panels are
+  raises a Yes / No / Yes to all / No to all / Cancel question naming it, where
+  `No` skips that one entry, `Yes to all` and `No to all` settle every later
+  collision the same way without asking again, and `Cancel` drops whatever is
+  left. Directory trees go over whole. Afterwards both panels are
   re-read, the marks of the copied entries are dropped while the marks of the
   ones that failed stay, and failures are listed entry by entry.
 - `F6` opens a prompt filled with the other panel's path. Accept it and the
@@ -98,6 +99,7 @@ folder layout described in [TESTING.md](TESTING.md).
 ```
 Marbas/
   FileSystem/
+    EntryName.fs          single-case type for the name of one entry
     FileSystemPath.fs     single-case path type wrapping a raw string
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             mounted drives
@@ -200,9 +202,12 @@ single-item failure inside one *tree* does abort that tree — a half-copied
 directory stops at the first error rather than pressing on blindly.
 
 **Every question is answered before the batch starts.** `Operations.approve`
-walks the sources, asks Yes / No / All / Cancel about each one whose target
-already exists, and answers with the sources to actually work on — `No` drops
-one, `Cancel` drops the lot, since nothing has happened yet. What runs
+walks the sources, asks Yes / No / Yes to all / No to all / Cancel about each
+one whose target already exists, and answers with the sources to actually work
+on — `No` drops one, `Cancel` drops the lot, since nothing has happened yet.
+The two *to all* answers become a `StandingAnswer` that stands in for the
+question from then on, so a later collision is settled without asking while a
+source that collides with nothing is still taken. What runs
 afterwards is decision-free: `copy` and `move` carry no overwrite flag any more
 and always replace, because whoever called them has already decided. The only
 refusal left lives in `rename`, which checks its own target. (P5.1 had the

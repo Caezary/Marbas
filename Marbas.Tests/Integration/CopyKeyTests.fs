@@ -85,6 +85,25 @@ let ``a refused overwrite leaves the target alone`` () =
     Assert.Equal("old", fs.File.ReadAllText @"C:\backup\notes.txt")
 
 [<Fact>]
+let ``no to all leaves every colliding target alone after one question`` () =
+    let fs = mockFs ()
+    fs.AddFile(@"C:\backup\notes.txt", MockFileData "old notes")
+    fs.AddFile(@"C:\backup\readme.txt", MockFileData "old readme")
+    let asked = ResizeArray<string * string>()
+    use window = windowWith fs (fun title message -> asked.Add(title, message); NoToAll) silent
+    let left = leftList window
+
+    left.SelectedItem <- 2
+    press left PanelInput.selectionKeys.Head
+    left.SelectedItem <- 3
+    press left PanelInput.selectionKeys.Head
+    press window Key.F5
+
+    Assert.Single asked |> ignore
+    Assert.Equal("old notes", fs.File.ReadAllText @"C:\backup\notes.txt")
+    Assert.Equal("old readme", fs.File.ReadAllText @"C:\backup\readme.txt")
+
+[<Fact>]
 let ``F5 on the parent entry copies nothing and asks nothing`` () =
     let fs = mockFs ()
     let asked = ResizeArray<string>()

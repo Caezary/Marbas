@@ -18,7 +18,8 @@ type ItemResult =
 type OverwriteAnswer =
     | Yes
     | No
-    | All
+    | YesToAll
+    | NoToAll
     | Cancel
 
 type BatchControl =
@@ -172,8 +173,19 @@ let failures (results: ItemResult list) =
 
 let deleteAll (fs: IFileSystem) sources = itemResults fs sources (delete fs)
 
+type private StandingAnswer =
+    | AskEachTime
+    | OverwriteEverything
+    | SkipEverything
+
 let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources targetDirectory =
-    let rec run overwriteAll approved remaining =
+    let answerFor standing target =
+        match standing with
+        | OverwriteEverything -> Yes
+        | SkipEverything -> No
+        | AskEachTime -> ask target
+
+    let rec run standing approved remaining =
         match remaining with
         | [] -> List.rev approved
         | source :: rest ->
@@ -181,18 +193,19 @@ let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources t
             let targetAlreadyExists = FileSystemPath.kind fs target <> NoEntry
 
             let answer =
-                if overwriteAll || not targetAlreadyExists then
-                    Yes
+                if targetAlreadyExists then
+                    answerFor standing target
                 else
-                    ask target
+                    Yes
 
             match answer with
             | Cancel -> []
-            | No -> run overwriteAll approved rest
-            | Yes
-            | All -> run (overwriteAll || answer = All) (source :: approved) rest
+            | No -> run standing approved rest
+            | NoToAll -> run SkipEverything approved rest
+            | Yes -> run standing (source :: approved) rest
+            | YesToAll -> run OverwriteEverything (source :: approved) rest
 
-    run false [] sources
+    run AskEachTime [] sources
 
 let private allWatched (fs: IFileSystem) (control: BatchControl) apply sources =
     let rec run finished remaining =

@@ -18,7 +18,7 @@ let ``the question names the entry that would be replaced`` () =
 let ``every offered answer maps to its own outcome`` () =
     let answers = OverwriteQuestion.Answers |> List.mapi (fun index _ -> OverwriteQuestion.answerAt index)
 
-    Assert.Equal<OverwriteAnswer list>([ Yes; No; All; Cancel ], answers)
+    Assert.Equal<OverwriteAnswer list>([ Yes; No; YesToAll; NoToAll; Cancel ], answers)
 
 [<Fact>]
 let ``a dismissed question counts as cancel`` () =

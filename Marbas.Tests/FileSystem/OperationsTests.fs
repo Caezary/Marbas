@@ -240,16 +240,40 @@ let ``no drops the colliding source and keeps the rest`` () =
     Assert.Equal<FileSystemPath list>([ fp @"C:\data\b.txt" ], approved)
 
 [<Fact>]
-let ``all answers the remaining collisions too`` () =
+let ``yes to all answers the remaining collisions too`` () =
     let fs = twoSources ()
     fs.AddFile(@"C:\backup\a.txt", MockFileData "old a")
     fs.AddFile(@"C:\backup\b.txt", MockFileData "old b")
-    let asked, ask = answering [ All ]
+    let asked, ask = answering [ YesToAll ]
 
     let approved = approve fs ask bothSources (fp @"C:\backup")
 
     Assert.Single asked |> ignore
     Assert.Equal<FileSystemPath list>(bothSources, approved)
+
+[<Fact>]
+let ``no to all drops the remaining collisions without asking again`` () =
+    let fs = twoSources ()
+    fs.AddFile(@"C:\backup\a.txt", MockFileData "old a")
+    fs.AddFile(@"C:\backup\b.txt", MockFileData "old b")
+    let asked, ask = answering [ NoToAll ]
+
+    let approved = approve fs ask bothSources (fp @"C:\backup")
+
+    Assert.Single asked |> ignore
+    Assert.Empty approved
+
+[<Fact>]
+let ``no to all keeps the sources that do not collide`` () =
+    let fs = twoSources ()
+    fs.AddFile(@"C:\data\c.txt", MockFileData "new c")
+    fs.AddFile(@"C:\backup\a.txt", MockFileData "old a")
+    let asked, ask = answering [ NoToAll ]
+
+    let approved = approve fs ask (bothSources @ [ fp @"C:\data\c.txt" ]) (fp @"C:\backup")
+
+    Assert.Single asked |> ignore
+    Assert.Equal<FileSystemPath list>([ fp @"C:\data\b.txt"; fp @"C:\data\c.txt" ], approved)
 
 [<Fact>]
 let ``cancel abandons the whole batch`` () =
