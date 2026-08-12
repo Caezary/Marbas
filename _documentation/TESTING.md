@@ -50,9 +50,11 @@ block and asserted at the end, so no assertion sits between two acts.
 line; without them the `match` that unwraps the result also holds the
 assertions, which fuses act and assert. A `Result` that *is* the thing under
 test stays whole and is compared with `Assert.Equal(Error(...), result)`.
-`Expect.some` does the same for the `Option` that a smart constructor answers
-with, so `NamePattern.create "*.fs" |> Expect.some` builds a value in the
-arrange block instead of branching there.
+`Expect.some` does the same for the `Option` that a validating constructor
+answers with, so `NamePattern.tryCreate "*.fs" |> Expect.some` builds a value
+in the arrange block instead of branching there. Total constructors need no
+such help: modules that have one expose it as `create`, and tests alias it at
+the top the way they already alias `fp` — `let private en = EntryName.create`.
 
 `Integration/Gui.fs` carries the arrange boilerplate: `focusedWindow deps`
 builds, initialises and focuses a `MainWindow`, and `leftList` / `rightList`

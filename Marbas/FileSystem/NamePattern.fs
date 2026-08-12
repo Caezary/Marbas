@@ -7,7 +7,7 @@ type NamePattern = private NamePattern of string
 
 module NamePattern =
 
-    let create (raw: string) =
+    let tryCreate (raw: string) =
         if String.IsNullOrEmpty raw then None else Some(NamePattern raw)
 
     let matches (NamePattern pattern) name =

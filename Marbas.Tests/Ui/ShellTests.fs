@@ -11,6 +11,8 @@ open Marbas.Tests
 
 let private fp = FileSystemPath.create
 
+let private en = EntryName.create
+
 let private noDeps () = Fakes.dependencies (MockFileSystem()) @"C:\start"
 
 let private capture () =
@@ -24,7 +26,25 @@ let ``a supplied name is dispatched as NameEntered`` () =
 
     Shell.interpret deps dispatch PromptForName
 
-    Assert.Equal<Message list>([ NameEntered "work" ], List.ofSeq sent)
+    Assert.Equal<Message list>([ NameEntered(en "work") ], List.ofSeq sent)
+
+[<Fact>]
+let ``a name is trimmed before it becomes a message`` () =
+    let sent, dispatch = capture ()
+    let deps = { noDeps () with AskName = fun _ -> Some "  work  " }
+
+    Shell.interpret deps dispatch PromptForName
+
+    Assert.Equal<Message list>([ NameEntered(en "work") ], List.ofSeq sent)
+
+[<Fact>]
+let ``a blank name never becomes a message`` () =
+    let sent, dispatch = capture ()
+    let deps = { noDeps () with AskName = fun _ -> Some "   " }
+
+    Shell.interpret deps dispatch PromptForName
+
+    Assert.Empty sent
 
 [<Fact>]
 let ``a cancelled name prompt dispatches nothing`` () =
@@ -55,7 +75,7 @@ let ``a selecting pattern uses the select label and carries the context back`` (
     Assert.Equal(Shell.SelectPrompt, asked)
 
     Assert.Equal<Message list>(
-        [ PatternEntered(Right, 4, Select, NamePattern.create "*.fs" |> Expect.some) ],
+        [ PatternEntered(Right, 4, Select, NamePattern.tryCreate "*.fs" |> Expect.some) ],
         List.ofSeq sent
     )
 
@@ -125,7 +145,7 @@ let ``a confirmed delete is dispatched back`` () =
     let sent, dispatch = capture ()
     let deps = { noDeps () with Confirm = fun _ _ -> true }
 
-    Shell.interpret deps dispatch (ConfirmDelete([ "notes.txt" ], false))
+    Shell.interpret deps dispatch (ConfirmDelete([ en "notes.txt" ], false))
 
     Assert.Equal<Message list>([ DeleteConfirmed ], List.ofSeq sent)
 
@@ -133,7 +153,7 @@ let ``a confirmed delete is dispatched back`` () =
 let ``a refused delete dispatches nothing`` () =
     let sent, dispatch = capture ()
 
-    Shell.interpret (noDeps ()) dispatch (ConfirmDelete([ "notes.txt" ], false))
+    Shell.interpret (noDeps ()) dispatch (ConfirmDelete([ en "notes.txt" ], false))
 
     Assert.Empty sent
 
@@ -143,7 +163,7 @@ let ``the delete question carries its own title and the warning`` () =
     let mutable asked = ("", "")
     let deps = { noDeps () with Confirm = fun title message -> asked <- (title, message); false }
 
-    Shell.interpret deps dispatch (ConfirmDelete([ "docs" ], true))
+    Shell.interpret deps dispatch (ConfirmDelete([ en "docs" ], true))
 
     Assert.Equal(DeleteConfirmation.Title, fst asked)
     Assert.Contains(DeleteConfirmation.NonEmptyWarning, snd asked)
@@ -274,10 +294,10 @@ let ``a rename is carried out and its outcome dispatched back`` () =
     let fs = copyReadyFs ()
     let deps = { noDeps () with FileSystem = fs }
 
-    Shell.interpret deps dispatch (RenameTarget(fp @"C:\start\notes.txt", "readme.txt"))
+    Shell.interpret deps dispatch (RenameTarget(fp @"C:\start\notes.txt", en "readme.txt"))
 
     Assert.Equal("new", fs.File.ReadAllText @"C:\start\readme.txt")
-    Assert.Equal<Message list>([ RenameFinished("readme.txt", Ok()) ], List.ofSeq sent)
+    Assert.Equal<Message list>([ RenameFinished(en "readme.txt", Ok()) ], List.ofSeq sent)
 
 [<Fact>]
 let ``quit runs the quit port`` () =

@@ -79,8 +79,8 @@ let isNonEmptyDirectory (fs: IFileSystem) (path: FileSystemPath) =
             true
     | _ -> false
 
-let makeDirectory (fs: IFileSystem) (parent: FileSystemPath) (name: string) =
-    let path = FileSystemPath.combine fs parent name
+let makeDirectory (fs: IFileSystem) (parent: FileSystemPath) (name: EntryName) =
+    let path = FileSystemPath.combine fs parent (EntryName.value name)
 
     match FileSystemPath.kind fs path with
     | NoEntry -> attempt fs path createDirectory
@@ -150,9 +150,11 @@ let move (fs: IFileSystem) control (targetDirectory: FileSystemPath) (source: Fi
     |> inDirectory fs targetDirectory
     |> moveTo fs control source
 
-let rename (fs: IFileSystem) (source: FileSystemPath) (newName: string) =
+let rename (fs: IFileSystem) (source: FileSystemPath) (newName: EntryName) =
     let target =
-        newName |> FileSystemPath.combine fs (FileSystemPath.directory fs source)
+        newName
+        |> EntryName.value
+        |> FileSystemPath.combine fs (FileSystemPath.directory fs source)
 
     match FileSystemPath.kind fs target with
     | NoEntry -> moveTo fs unattended source target

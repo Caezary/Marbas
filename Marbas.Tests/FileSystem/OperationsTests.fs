@@ -9,6 +9,8 @@ open Marbas.Tests
 
 let private fp = FileSystemPath.create
 
+let private en = EntryName.create
+
 let private names (results: ItemResult list) =
     results |> List.map (_.Name >> EntryName.value)
 
@@ -17,7 +19,7 @@ let ``makeDirectory creates a directory in the given parent`` () =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\data"
 
-    makeDirectory fs (fp @"C:\data") "new" |> Expect.ok
+    makeDirectory fs (fp @"C:\data") (en "new") |> Expect.ok
 
     Assert.True(fs.Directory.Exists @"C:\data\new")
 
@@ -26,7 +28,7 @@ let ``makeDirectory refuses an existing name`` () =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\data\new"
 
-    let failure = makeDirectory fs (fp @"C:\data") "new" |> Expect.error
+    let failure = makeDirectory fs (fp @"C:\data") (en "new") |> Expect.error
 
     Assert.Equal(TargetExists(fp @"C:\data\new"), failure)
 
@@ -136,7 +138,7 @@ let ``rename keeps the entry in its own directory`` () =
     let fs = MockFileSystem()
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
 
-    rename fs (fp @"C:\data\notes.txt") "readme.txt" |> Expect.ok
+    rename fs (fp @"C:\data\notes.txt") (en "readme.txt") |> Expect.ok
 
     Assert.Equal("hello", fs.File.ReadAllText @"C:\data\readme.txt")
     Assert.False(fs.File.Exists @"C:\data\notes.txt")
@@ -147,7 +149,7 @@ let ``rename refuses an existing name`` () =
     fs.AddFile(@"C:\data\notes.txt", MockFileData "hello")
     fs.AddFile(@"C:\data\readme.txt", MockFileData "other")
 
-    let failure = rename fs (fp @"C:\data\notes.txt") "readme.txt" |> Expect.error
+    let failure = rename fs (fp @"C:\data\notes.txt") (en "readme.txt") |> Expect.error
 
     Assert.Equal(TargetExists(fp @"C:\data\readme.txt"), failure)
 

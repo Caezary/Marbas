@@ -11,6 +11,8 @@ open Marbas.Tests
 
 let private fp = FileSystemPath.create
 
+let private en = EntryName.create
+
 let private names (entries: DirectoryListing.Entry list) =
     entries |> List.map (_.Name >> EntryName.value)
 
@@ -61,20 +63,10 @@ let ``a valid name creates the directory on the active side`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (NameEntered "work") state
+    let result = update fs (NameEntered(en "work")) state
 
     Assert.True(fs.Directory.Exists @"C:\start\work")
     Assert.Equal(Some "work", cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
-    Assert.Empty result.Effects
-
-[<Fact>]
-let ``a blank name changes nothing and raises no effect`` () =
-    let fs = mockFs ()
-    let state = loaded fs
-
-    let result = update fs (NameEntered "   ") state
-
-    Assert.Equal(state, result.State)
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -82,7 +74,7 @@ let ``a duplicate name reports an operation error and keeps state`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (NameEntered "docs") state
+    let result = update fs (NameEntered(en "docs")) state
 
     Assert.Equal(state, result.State)
     Assert.Equal<Effect list>([ ReportOperationError(TargetExists(fp @"C:\start\docs")) ], result.Effects)
@@ -100,7 +92,7 @@ let ``pattern requested defers to a pattern prompt`` () =
 let ``an entered pattern marks the matching entries`` () =
     let fs = mockFs ()
     let state = loaded fs
-    let pattern = NamePattern.create "*.fs" |> Expect.some
+    let pattern = NamePattern.tryCreate "*.fs" |> Expect.some
 
     let result = update fs (PatternEntered(Left, 0, Select, pattern)) state
 
@@ -161,7 +153,7 @@ let ``delete requested asks to confirm the cursor entry`` () =
 
     let result = update fs DeleteRequested state
 
-    Assert.Equal<Effect list>([ ConfirmDelete([ "notes.txt" ], false) ], result.Effects)
+    Assert.Equal<Effect list>([ ConfirmDelete([ en "notes.txt" ], false) ], result.Effects)
 
 [<Fact>]
 let ``delete requested warns when a target directory is not empty`` () =
@@ -171,7 +163,7 @@ let ``delete requested warns when a target directory is not empty`` () =
 
     let result = update fs DeleteRequested state
 
-    Assert.Equal<Effect list>([ ConfirmDelete([ "docs" ], true) ], result.Effects)
+    Assert.Equal<Effect list>([ ConfirmDelete([ en "docs" ], true) ], result.Effects)
 
 [<Fact>]
 let ``delete requested on the parent entry asks nothing`` () =
@@ -287,7 +279,7 @@ let ``a bare name renames the only target`` () =
 
     let result = update fs (TargetEntered "readme.txt") state
 
-    Assert.Equal<Effect list>([ RenameTarget(fp @"C:\start\notes.txt", "readme.txt") ], result.Effects)
+    Assert.Equal<Effect list>([ RenameTarget(fp @"C:\start\notes.txt", en "readme.txt") ], result.Effects)
 
 [<Fact>]
 let ``a bare name with several targets names a directory beside them`` () =
@@ -332,9 +324,9 @@ let ``a finished move shows the entry in the other panel`` () =
 let ``a finished rename puts the cursor on the new name`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
-    rename fs (fp @"C:\start\notes.txt") "zzz.txt" |> ignore
+    rename fs (fp @"C:\start\notes.txt") (en "zzz.txt") |> ignore
 
-    let result = update fs (RenameFinished("zzz.txt", Ok())) state
+    let result = update fs (RenameFinished(en "zzz.txt", Ok())) state
 
     Assert.Equal(Some "zzz.txt", cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
     Assert.Empty result.Effects
@@ -345,7 +337,7 @@ let ``a failed rename is reported and leaves the panel alone`` () =
     let state = loadedBoth fs |> setCursor Left 2
     let taken = TargetExists(fp @"C:\start\docs")
 
-    let result = update fs (RenameFinished("docs", Error taken)) state
+    let result = update fs (RenameFinished(en "docs", Error taken)) state
 
     Assert.Equal(state, result.State)
     Assert.Equal<Effect list>([ ReportOperationError taken ], result.Effects)

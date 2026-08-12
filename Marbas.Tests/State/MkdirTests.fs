@@ -10,6 +10,8 @@ open Marbas.Tests
 
 let private fp = FileSystemPath.create
 
+let private en = EntryName.create
+
 let private mockFs () =
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\start\docs"
@@ -28,7 +30,7 @@ let ``making a directory adds it and lands the cursor on it`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let updated = makeDirectory fs Left "work" state |> Expect.ok
+    let updated = makeDirectory fs Left (en "work") state |> Expect.ok
 
     Assert.True(fs.Directory.Exists @"C:\start\work")
     Assert.Contains("work", names updated.Left)
@@ -39,7 +41,7 @@ let ``making a directory keeps the existing selection`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2 |> toggleSelectionAndAdvance Left
 
-    let updated = makeDirectory fs Left "work" state |> Expect.ok
+    let updated = makeDirectory fs Left (en "work") state |> Expect.ok
 
     Assert.Equal<string list>([ "notes.txt" ], selectedNames state.Left)
     Assert.Equal<string list>([ "notes.txt" ], selectedNames updated.Left)
@@ -49,6 +51,6 @@ let ``an existing name is refused and leaves the panel unchanged`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = makeDirectory fs Left "docs" state
+    let result = makeDirectory fs Left (en "docs") state
 
     Assert.Equal(Error(TargetExists(fp @"C:\start\docs")), result)

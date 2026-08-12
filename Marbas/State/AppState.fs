@@ -195,15 +195,14 @@ let finishTransfer (fs: IFileSystem) results state =
     |> Result.map (fun updated -> updated, results)
 
 let finishRename (fs: IFileSystem) newName state =
-    let focus = ByName(EntryName.create newName)
-    reloadFocusing fs state.Active focus (fun previous -> keepSurviving previous.Selected) state
+    reloadFocusing fs state.Active (ByName newName) (fun previous -> keepSurviving previous.Selected) state
 
 let makeDirectory (fs: IFileSystem) side name state : Result<AppState, Operations.OperationError> =
     let previous = panel side state
 
     Operations.makeDirectory fs previous.Path name
     |> Result.bind (fun () ->
-        loadPanelFocusing fs side previous.Path (ByName(EntryName.create name)) state
+        loadPanelFocusing fs side previous.Path (ByName name) state
         |> Result.mapError asOperationError
         |> Result.map (updatePanel side (keepSurviving previous.Selected)))
 

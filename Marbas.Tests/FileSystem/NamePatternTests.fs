@@ -4,7 +4,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.Tests
 
-let private pattern raw = NamePattern.create raw |> Expect.some
+let private pattern raw = NamePattern.tryCreate raw |> Expect.some
 
 [<Theory>]
 [<InlineData("*.fs", "AppState.fs", true)>]
@@ -22,12 +22,12 @@ let ``wildcard patterns match names case-insensitively`` raw name expected =
 
 [<Fact>]
 let ``an empty answer is no pattern at all`` () =
-    let created = NamePattern.create ""
+    let created = NamePattern.tryCreate ""
 
     Assert.Equal<NamePattern option>(None, created)
 
 [<Fact>]
 let ``a pattern of blanks is a pattern`` () =
-    let created = NamePattern.create " "
+    let created = NamePattern.tryCreate " "
 
     Assert.True created.IsSome

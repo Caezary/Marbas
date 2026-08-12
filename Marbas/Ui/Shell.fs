@@ -77,11 +77,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Some text -> dispatch (TargetEntered text)
         | None -> ()
     | PromptForName ->
-        match deps.AskName MkdirPrompt with
+        match deps.AskName MkdirPrompt |> Option.bind EntryName.tryCreate with
         | Some name -> dispatch (NameEntered name)
         | None -> ()
     | PromptForPattern(side, index, mode) ->
-        match deps.AskPattern (patternPrompt mode) |> Option.bind NamePattern.create with
+        match deps.AskPattern (patternPrompt mode) |> Option.bind NamePattern.tryCreate with
         | Some pattern -> dispatch (PatternEntered(side, index, mode, pattern))
         | None -> ()
     | PromptForDrive side ->

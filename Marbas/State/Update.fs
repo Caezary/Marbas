@@ -14,7 +14,7 @@ type Message =
     | PatternRequested of PanelSide * index: int * SelectionMode
     | PatternEntered of PanelSide * index: int * SelectionMode * NamePattern
     | MakeDirectoryRequested
-    | NameEntered of name: string
+    | NameEntered of name: EntryName
     | DeleteRequested
     | DeleteConfirmed
     | CopyRequested
@@ -22,7 +22,7 @@ type Message =
     | MoveRequested
     | TargetEntered of text: string
     | MoveFinished of Operations.ItemResult list
-    | RenameFinished of newName: string * outcome: Result<unit, Operations.OperationError>
+    | RenameFinished of newName: EntryName * outcome: Result<unit, Operations.OperationError>
     | DriveRequested of PanelSide
     | PathOpened of PanelSide * FileSystemPath
     | QuitRequested
@@ -31,10 +31,10 @@ type Effect =
     | ReportListingError of ListingError
     | ReportOperationError of Operations.OperationError
     | ReportItemFailures of Operations.ItemResult list
-    | ConfirmDelete of names: string list * nonEmptyDirectory: bool
+    | ConfirmDelete of names: EntryName list * nonEmptyDirectory: bool
     | CopyTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | MoveTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
-    | RenameTarget of source: FileSystemPath * newName: string
+    | RenameTarget of source: FileSystemPath * newName: EntryName
     | PromptForTarget of suggestion: FileSystemPath
     | PromptForName
     | PromptForPattern of PanelSide * index: int * SelectionMode
@@ -83,18 +83,13 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | PatternEntered(side, index, mode, pattern) ->
         stay (state |> atCursor side index |> applyPattern mode side pattern)
     | MakeDirectoryRequested -> request state PromptForName
-    | NameEntered name ->
-        match name.Trim() with
-        | "" -> stay state
-        | trimmed -> makeDirectory fs state.Active trimmed state |> applyOperation state
+    | NameEntered name -> makeDirectory fs state.Active name state |> applyOperation state
     | DeleteRequested ->
         let target = activePanel state
 
         match operationTargets target with
         | [] -> stay state
-        | targets ->
-            let names = targets |> List.map (_.Name >> EntryName.value)
-            request state (ConfirmDelete(names, hasNonEmptyDirectory fs target))
+        | targets -> request state (ConfirmDelete(targets |> List.map _.Name, hasNonEmptyDirectory fs target))
     | DeleteConfirmed -> deleteTargets fs state.Active state |> applyBatch state
     | CopyRequested ->
         match operationPaths fs (activePanel state) with
@@ -112,7 +107,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | "", _
         | _, [] -> stay state
         | trimmed, [ single ] when FileSystemPath.isBareName fs trimmed ->
-            request state (RenameTarget(single, trimmed))
+            request state (RenameTarget(single, EntryName.create trimmed))
         | trimmed, paths -> request state (MoveTargets(paths, FileSystemPath.combine fs source.Path trimmed))
     | MoveFinished results -> finishTransfer fs results state |> applyBatch state
     | RenameFinished(newName, outcome) ->
