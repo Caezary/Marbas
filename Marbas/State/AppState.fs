@@ -8,6 +8,10 @@ type PanelSide =
     | Left
     | Right
 
+type PanelCursor =
+    { Side: PanelSide
+      Index: int }
+
 type SelectionMode =
     | Select
     | Deselect

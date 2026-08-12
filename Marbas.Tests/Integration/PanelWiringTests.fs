@@ -10,6 +10,8 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private cursor side index = { Side = side; Index = index }
+
 type private Probe =
     { Host: PanelWiring.Host
       Messages: ResizeArray<Message>
@@ -47,7 +49,7 @@ let ``moving the cursor is dispatched`` () =
 
     list.SelectedItem <- 2
 
-    Assert.Contains(CursorMoved(Left, 2), probe.Messages)
+    Assert.Contains(CursorMoved(cursor Left 2), probe.Messages)
 
 [<Fact>]
 let ``a cursor change raised while rendering is ignored`` () =
@@ -66,7 +68,7 @@ let ``accepting an entry opens it at the cursor`` () =
 
     press list Key.Enter
 
-    Assert.Contains(EntryOpened(Left, 1), probe.Messages)
+    Assert.Contains(EntryOpened(cursor Left 1), probe.Messages)
 
 [<Fact>]
 let ``panel keys are translated by PanelInput`` () =
@@ -76,7 +78,7 @@ let ``panel keys are translated by PanelInput`` () =
 
     press list PanelInput.refreshKey
 
-    Assert.Contains(RefreshRequested(Left, 1), probe.Messages)
+    Assert.Contains(RefreshRequested(cursor Left 1), probe.Messages)
 
 [<Fact>]
 let ``an unknown key is left to the view`` () =
@@ -108,4 +110,4 @@ let ``messages carry the side the panel was wired to`` () =
 
     list.SelectedItem <- 2
 
-    Assert.Contains(CursorMoved(Right, 2), probe.Messages)
+    Assert.Contains(CursorMoved(cursor Right 2), probe.Messages)

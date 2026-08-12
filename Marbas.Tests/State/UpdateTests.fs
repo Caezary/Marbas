@@ -13,6 +13,8 @@ let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
+let private cursor side index = { Side = side; Index = index }
+
 let private names (entries: DirectoryListing.Entry list) =
     entries |> List.map (_.Name >> EntryName.value)
 
@@ -35,7 +37,7 @@ let ``cursor moved updates the cursor without effects`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (CursorMoved(Left, 2)) state
+    let result = update fs (CursorMoved(cursor Left 2)) state
 
     Assert.Equal(2, result.State.Left.Cursor)
     Assert.Empty result.Effects
@@ -84,9 +86,9 @@ let ``pattern requested defers to a pattern prompt`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (PatternRequested(Left, 0, Select)) state
+    let result = update fs (PatternRequested(cursor Left 0, Select)) state
 
-    Assert.Equal<Effect list>([ PromptForPattern(Left, 0, Select) ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForPattern(cursor Left 0, Select) ], result.Effects)
 
 [<Fact>]
 let ``an entered pattern marks the matching entries`` () =
@@ -94,7 +96,7 @@ let ``an entered pattern marks the matching entries`` () =
     let state = loaded fs
     let pattern = NamePattern.tryCreate "*.fs" |> Expect.some
 
-    let result = update fs (PatternEntered(Left, 0, Select, pattern)) state
+    let result = update fs (PatternEntered(cursor Left 0, Select, pattern)) state
 
     Assert.Equal<string list>([ "setup.fs" ], selectedEntries result.State.Left |> names)
 
@@ -132,7 +134,7 @@ let ``entering a directory navigates into it`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (EntryOpened(Left, 1)) state
+    let result = update fs (EntryOpened(cursor Left 1)) state
 
     Assert.Equal(fp @"C:\start\docs", result.State.Left.Path)
 
@@ -141,7 +143,7 @@ let ``toggling selection marks the entry under the cursor and advances`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (SelectionToggled(Left, 2)) state
+    let result = update fs (SelectionToggled(cursor Left 2)) state
 
     Assert.Equal<string list>([ "notes.txt" ], selectedEntries result.State.Left |> names)
     Assert.Equal(3, result.State.Left.Cursor)

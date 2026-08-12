@@ -17,6 +17,8 @@ let private noDeps () = Fakes.dependencies (MockFileSystem()) @"C:\start"
 
 let private deleteRequest names scope = { Targets = names; Scope = scope }
 
+let private cursor side index = { Side = side; Index = index }
+
 let private capture () =
     let sent = ResizeArray<Message>()
     sent, fun (msg: Message) -> sent.Add msg
@@ -72,12 +74,12 @@ let ``a selecting pattern uses the select label and carries the context back`` (
     let mutable asked = ""
     let deps = { noDeps () with AskPattern = fun title -> asked <- title; Some "*.fs" }
 
-    Shell.interpret deps dispatch (PromptForPattern(Right, 4, Select))
+    Shell.interpret deps dispatch (PromptForPattern(cursor Right 4, Select))
 
     Assert.Equal(Shell.SelectPrompt, asked)
 
     Assert.Equal<Message list>(
-        [ PatternEntered(Right, 4, Select, NamePattern.tryCreate "*.fs" |> Expect.some) ],
+        [ PatternEntered(cursor Right 4, Select, NamePattern.tryCreate "*.fs" |> Expect.some) ],
         List.ofSeq sent
     )
 
@@ -87,7 +89,7 @@ let ``a deselecting pattern uses the deselect label`` () =
     let mutable asked = ""
     let deps = { noDeps () with AskPattern = fun title -> asked <- title; None }
 
-    Shell.interpret deps dispatch (PromptForPattern(Left, 0, Deselect))
+    Shell.interpret deps dispatch (PromptForPattern(cursor Left 0, Deselect))
 
     Assert.Equal(Shell.DeselectPrompt, asked)
 
@@ -96,7 +98,7 @@ let ``an empty pattern never becomes a message`` () =
     let sent, dispatch = capture ()
     let deps = { noDeps () with AskPattern = fun _ -> Some "" }
 
-    Shell.interpret deps dispatch (PromptForPattern(Left, 0, Select))
+    Shell.interpret deps dispatch (PromptForPattern(cursor Left 0, Select))
 
     Assert.Empty sent
 

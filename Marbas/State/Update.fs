@@ -6,13 +6,13 @@ open Marbas.FileSystem.DirectoryListing
 open Marbas.State.AppState
 
 type Message =
-    | CursorMoved of PanelSide * index: int
+    | CursorMoved of PanelCursor
     | PanelFocused of PanelSide
-    | EntryOpened of PanelSide * index: int
-    | RefreshRequested of PanelSide * index: int
-    | SelectionToggled of PanelSide * index: int
-    | PatternRequested of PanelSide * index: int * SelectionMode
-    | PatternEntered of PanelSide * index: int * SelectionMode * NamePattern
+    | EntryOpened of PanelCursor
+    | RefreshRequested of PanelCursor
+    | SelectionToggled of PanelCursor
+    | PatternRequested of PanelCursor * SelectionMode
+    | PatternEntered of PanelCursor * SelectionMode * NamePattern
     | MakeDirectoryRequested
     | NameEntered of name: EntryName
     | DeleteRequested
@@ -41,7 +41,7 @@ type Effect =
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | PromptForTarget of suggestion: FileSystemPath
     | PromptForName
-    | PromptForPattern of PanelSide * index: int * SelectionMode
+    | PromptForPattern of PanelCursor * SelectionMode
     | PromptForDrive of PanelSide
     | Quit
 
@@ -53,7 +53,8 @@ let private stay state = { State = state; Effects = [] }
 
 let private request state effect = { State = state; Effects = [ effect ] }
 
-let private atCursor side index = activate side >> setCursor side index
+let private atCursor (cursor: PanelCursor) =
+    activate cursor.Side >> setCursor cursor.Side cursor.Index
 
 let private otherPath state =
     (panel (opposite state.Active) state).Path
@@ -78,14 +79,14 @@ let private applyBatch state result =
 
 let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     match msg with
-    | CursorMoved(side, index) -> stay (setCursor side index state)
+    | CursorMoved cursor -> stay (setCursor cursor.Side cursor.Index state)
     | PanelFocused side -> stay (activate side state)
-    | EntryOpened(side, index) -> state |> atCursor side index |> enter fs |> applyListing state
-    | RefreshRequested(side, index) -> state |> atCursor side index |> refresh fs |> applyListing state
-    | SelectionToggled(side, index) -> stay (state |> atCursor side index |> toggleSelectionAndAdvance side)
-    | PatternRequested(side, index, mode) -> request state (PromptForPattern(side, index, mode))
-    | PatternEntered(side, index, mode, pattern) ->
-        stay (state |> atCursor side index |> applyPattern mode side pattern)
+    | EntryOpened cursor -> state |> atCursor cursor |> enter fs |> applyListing state
+    | RefreshRequested cursor -> state |> atCursor cursor |> refresh fs |> applyListing state
+    | SelectionToggled cursor -> stay (state |> atCursor cursor |> toggleSelectionAndAdvance cursor.Side)
+    | PatternRequested(cursor, mode) -> request state (PromptForPattern(cursor, mode))
+    | PatternEntered(cursor, mode, pattern) ->
+        stay (state |> atCursor cursor |> applyPattern mode cursor.Side pattern)
     | MakeDirectoryRequested -> request state PromptForName
     | NameEntered name -> makeDirectory fs state.Active name state |> applyOperation state
     | DeleteRequested ->

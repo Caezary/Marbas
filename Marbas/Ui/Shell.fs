@@ -80,9 +80,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.AskName MkdirPrompt |> Option.bind EntryName.tryCreate with
         | Some name -> dispatch (NameEntered name)
         | None -> ()
-    | PromptForPattern(side, index, mode) ->
+    | PromptForPattern(cursor, mode) ->
         match deps.AskPattern (patternPrompt mode) |> Option.bind NamePattern.tryCreate with
-        | Some pattern -> dispatch (PatternEntered(side, index, mode, pattern))
+        | Some pattern -> dispatch (PatternEntered(cursor, mode, pattern))
         | None -> ()
     | PromptForDrive side ->
         let drives = Drives.list deps.FileSystem |> List.map FileSystemPath.value

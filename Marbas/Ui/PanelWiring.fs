@@ -11,13 +11,14 @@ type Host =
 
 let attach (host: Host) (side: PanelSide) (view: View) =
     let list = FilePanel.listView view
-    let cursor () = list.SelectedItem.GetValueOrDefault 0
+    let cursorAt index = { Side = side; Index = index }
+    let cursor () = cursorAt (list.SelectedItem.GetValueOrDefault 0)
 
     list.FrameChanged.Add(fun _ -> host.Refresh())
 
     list.ValueChanged.Add(fun args ->
         if not (host.IsRendering()) then
-            host.Dispatch(CursorMoved(side, args.NewValue.GetValueOrDefault 0)))
+            host.Dispatch(CursorMoved(cursorAt (args.NewValue.GetValueOrDefault 0))))
 
     view.HasFocusChanged.Add(fun _ ->
         if view.HasFocus then
@@ -25,10 +26,10 @@ let attach (host: Host) (side: PanelSide) (view: View) =
 
     list.Accepting.Add(fun args ->
         args.Handled <- true
-        host.Dispatch(EntryOpened(side, cursor ())))
+        host.Dispatch(EntryOpened(cursor ())))
 
     list.KeyDown.Add(fun key ->
-        match PanelInput.messageFor side (cursor ()) key with
+        match PanelInput.messageFor (cursor ()) key with
         | Some msg ->
             key.Handled <- true
             host.Dispatch msg
