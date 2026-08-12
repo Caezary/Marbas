@@ -18,6 +18,7 @@
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
+    <Compile Include="FileSystem\FileContentTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -39,7 +40,10 @@
     <Compile Include="Ui\EntryFormatTests.fs" />
     <Compile Include="Ui\CursorInfoTests.fs" />
     <Compile Include="Ui\SelectionSummaryTests.fs" />
+    <Compile Include="Ui\HexDumpTests.fs" />
+    <Compile Include="Ui\FileViewTests.fs" />
     <Compile Include="Ui\ListingErrorMessageTests.fs" />
+    <Compile Include="Ui\ContentErrorMessageTests.fs" />
     <Compile Include="Ui\OperationErrorMessageTests.fs" />
     <Compile Include="Ui\DeleteConfirmationTests.fs" />
     <Compile Include="Ui\OverwriteQuestionTests.fs" />
@@ -58,6 +62,7 @@
     <Compile Include="Integration\StatusLineTests.fs" />
     <Compile Include="Integration\PatternDialogTests.fs" />
     <Compile Include="Integration\ProgressDialogTests.fs" />
+    <Compile Include="Integration\FileViewerTests.fs" />
     <Compile Include="Integration\ListingErrorTests.fs" />
     <Compile Include="Integration\DriveSelectionTests.fs" />
     <Compile Include="Integration\RefreshKeyTests.fs" />
@@ -67,6 +72,7 @@
     <Compile Include="Integration\DeleteKeyTests.fs" />
     <Compile Include="Integration\CopyKeyTests.fs" />
     <Compile Include="Integration\MoveKeyTests.fs" />
+    <Compile Include="Integration\ViewKeyTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

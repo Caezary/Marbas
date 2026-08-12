@@ -177,6 +177,11 @@ let private entryPath (fs: IFileSystem) panel (entry: Entry) =
 let operationPaths (fs: IFileSystem) panel =
     operationTargets panel |> List.map (entryPath fs panel)
 
+let cursorFilePath (fs: IFileSystem) panel =
+    cursorEntry panel
+    |> Option.filter (fun entry -> entry.Kind = File)
+    |> Option.map (entryPath fs panel)
+
 let deleteScope (fs: IFileSystem) panel =
     let reachesContents =
         operationTargets panel

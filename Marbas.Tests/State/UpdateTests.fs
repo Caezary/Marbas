@@ -355,6 +355,44 @@ let ``a failed rename is reported and leaves the panel alone`` () =
     Assert.Equal<Effect list>([ ReportOperationError taken ], result.Effects)
 
 [<Fact>]
+let ``view requested aims at the file under the cursor`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+
+    let result = update fs ViewRequested state
+
+    Assert.Equal<Effect list>([ ViewFile(fp @"C:\start\notes.txt") ], result.Effects)
+
+[<Fact>]
+let ``view requested on a directory raises no effect`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 1
+
+    let result = update fs ViewRequested state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``view requested on the parent entry raises no effect`` () =
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let result = update fs ViewRequested state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``view requested ignores what is marked and takes the cursor entry`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 3 |> toggleSelection Left |> setCursor Left 2
+
+    let result = update fs ViewRequested state
+
+    Assert.Equal<Effect list>([ ViewFile(fp @"C:\start\notes.txt") ], result.Effects)
+
+[<Fact>]
 let ``quit requested raises the quit effect`` () =
     let fs = mockFs ()
     let state = loaded fs

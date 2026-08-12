@@ -1,22 +1,22 @@
 # Progress
 
-Status as of 2026-08-11. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-13. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–5 are complete** (22 of 29 tasks). Marbas runs as a full-screen
-two-panel file browser: both panels list a real directory, the keyboard moves
-between and inside them, entries can be marked one by one or by wildcard for
-later operations, a status line describes the entry under the cursor, and
-failures surface as dialogs instead of crashes. Every Norton function key of
-Phase 5 does its job — `F5` copies and `F6` moves or renames into the other
-panel, `F7` makes a directory, `F8` deletes — all of them acting on the same
-operation targets, and copying or moving now runs off the UI thread behind a
-progress window that `Esc` stops. Next comes Phase 6: viewing and editing
-files.
+**Phases 1–5 are complete and Phase 6 has started** (23 of 29 tasks). Marbas
+runs as a full-screen two-panel file browser: both panels list a real
+directory, the keyboard moves between and inside them, entries can be marked
+one by one or by wildcard for later operations, a status line describes the
+entry under the cursor, and failures surface as dialogs instead of crashes.
+Every Norton function key of Phase 5 does its job — `F5` copies and `F6` moves
+or renames into the other panel, `F7` makes a directory, `F8` deletes — all of
+them acting on the same operation targets, and copying or moving runs off the
+UI thread behind a progress window that `Esc` stops. `F3` (P6.1) now opens the
+file under the cursor in a read-only viewer. Next comes P6.2: `F4` edit.
 
-**307 tests pass** — 221 unit tests over the logic modules and the pure `Ui`
-ones, plus 86 integration tests driving real Terminal.Gui views over an
+**344 tests pass** — 248 unit tests over the logic modules and the pure `Ui`
+ones, plus 96 integration tests driving real Terminal.Gui views over an
 in-memory file system. All of them follow the arrange/act/assert shape and the
 folder layout described in [TESTING.md](TESTING.md).
 
@@ -27,7 +27,7 @@ folder layout described in [TESTING.md](TESTING.md).
 | 3 — Navigation | P3.1–P3.5 | done |
 | 4 — Selection | P4.1–P4.3 | done |
 | 5 — File operations | P5.1–P5.6 | done |
-| 6 — Viewing files | P6.1–P6.2 | not started, P6.1 next |
+| 6 — Viewing files | P6.1–P6.2 | P6.1 done, P6.2 next |
 | 7 — Polish & configuration | P7.1–P7.4 | not started |
 | 8 — Quality & release | P8.1–P8.3 | not started |
 
@@ -90,9 +90,16 @@ folder layout described in [TESTING.md](TESTING.md).
   middle is listed afterwards as stopped before it finished, and a move that
   was interrupted never deletes its source. Every overwrite question is
   answered before the work starts, so nothing can block waiting for the user.
+- `F3` opens the file under the cursor — only that one, never the marked
+  entries — in a read-only, scrollable viewer titled with its path, which `F3`
+  or `Esc` closes. A directory or `..` under the cursor opens nothing. Text is
+  shown line by line whatever its line endings; a file holding a zero byte is
+  shown as a hex dump instead; only the first megabyte is read, and a file
+  longer than that says so on its last line. A file that cannot be read (it
+  vanished, or the OS refused) is reported in a dialog.
 - `Ctrl+Q` or `F10` quits. The bottom bar lists the Norton-style function keys
-  (`F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`) and every one
-  of them now does its job.
+  (`F3 View`, `F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`) and
+  every one of them now does its job.
 
 ## Code map
 
@@ -105,6 +112,7 @@ Marbas/
     Drives.fs             mounted drives
     NamePattern.fs        wildcard matching for `+` / `-`
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
+    FileContent.fs        one file's content: text lines or bytes, errors as values
   State/
     AppState.fs           immutable panel/app state and its transitions
     Update.fs             messages and effects: message + state -> state + effects
@@ -115,7 +123,10 @@ Marbas/
     SelectionSummary.fs   marked entries -> panel summary text
     CursorInfo.fs         cursor entry -> status line text
     StatusLine.fs         the status line view
+    HexDump.fs            bytes -> offset / hex / text rows
+    FileView.fs           file content -> the lines the viewer shows
     ListingErrorMessage.fs  ListingError -> user-facing text
+    ContentErrorMessage.fs  ContentError -> user-facing text
     OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
     DeleteConfirmation.fs delete targets -> confirmation question
     OverwriteQuestion.fs  collision -> question text, answer buttons and mapping
@@ -126,6 +137,7 @@ Marbas/
     PromptDialog.fs       single-field text prompt (label + default)
     PatternDialog.fs      the `+` / `-` pattern prompt, over PromptDialog
     ProgressDialog.fs     the window shown while a batch runs
+    FileViewer.fs         the full-screen read-only viewer behind `F3`
     MainWindow.fs         composition: views, runtime, event wiring
   Program.fs              real file system and real dialogs
 
@@ -349,6 +361,38 @@ seed both panels, attach the wiring. The function key bar is added after the
 runtime exists, because it needs `dispatch` — which needs the runtime, which
 needs the render function, which needs the views.
 
+**Reading a file answers what it is, not what it looks like.**
+`FileContent.read` hands back a `Content` — a `ContentBody` that is either
+`Text` lines or the raw `Binary` bytes, plus a `ContentExtent` saying whether
+the file fits in what was read. Which of the two it is comes from one rule: a
+zero byte anywhere in what was read means binary, because text encodings do not
+carry one. Turning that into rows on a screen is Ui's job — `HexDump.describe`
+formats bytes as offset / hex / text, `FileView.lines` picks between the two
+bodies and appends the truncation notice. `FileSystem` therefore stays free of
+formatting and the hex layout can be tested without a terminal.
+
+**The viewer reads at most a megabyte.** A file manager is pointed at whatever
+is under the cursor, disk images included, so `read` opens a stream, takes
+`FileContent.MaxBytes` at most and answers `Truncated` when there was more.
+That keeps `F3` from pulling gigabytes into memory on the UI thread. The
+notice on the last line is what tells the user they are not seeing everything.
+
+**`F3` takes the cursor entry, not the operation targets.** Copy, move and
+delete work on `operationTargets` — the marks, or the cursor when nothing is
+marked. Viewing is a different act: it shows one file, so it reads
+`AppState.cursorFilePath`, which also filters out directories and `..`. There
+is nothing to view for a directory, so nothing happens.
+
+**Closing the viewer is injected, because `RequestStop` needs a running app.**
+`Runnable.RequestStop` does nothing unless the dialog is being run by an
+application, so a test cannot observe it. `FileViewer.create` therefore takes
+the closing action as its first argument — `Program.fs` passes
+`_.RequestStop()`, the tests pass a recorder — which leaves "F3 and Esc close
+the viewer, other keys do not" as an ordinary assertion. The key handler sits
+on the `TextView` because that is the view holding focus, and it marks the key
+handled so the `F3` shortcut on the main window's status bar cannot reopen a
+viewer on top of the one being closed.
+
 **Keys map to messages in tables, not in callbacks.** `PanelInput.messageFor`
 does it for the panel, `FunctionKeyBar.bindings` for the bottom bar — one list
 of key, title and `Message`, turned into `Shortcut`s by `FunctionKeyBar.create
@@ -384,11 +428,12 @@ put that hazard into startup.
 
 ## Next up
 
-**P6.1** — `F3` view: a read-only, scrollable viewer for the file under the
-cursor, falling back to a raw view for binary content, closing on `F3`/`Esc`.
-It is the first feature that reads file *contents*, so the reading belongs in a
-UI-free module over `IFileSystem` (errors as values, like every other one), and
-the viewer itself in `Ui` where its layout can be tested.
+**P6.2** — `F4` edit: launch the system editor (`$EDITOR`, `notepad` on
+Windows) for the file under the cursor, suspend the TUI while it runs and
+refresh the panel on return. The editor is the outside world, so it belongs in
+`Shell.Dependencies` as a port next to `ShowFile`, with `Program.fs` the only
+place that starts a process; the target comes from `AppState.cursorFilePath`,
+the same rule `F3` uses.
 
 ## Known rough edges
 
@@ -400,6 +445,11 @@ the viewer itself in `Ui` where its layout can be tested.
   files therefore queues thousands of callbacks; if that ever stutters, the fix
   is to coalesce (keep the latest path in a field and refresh on a timer)
   rather than to report less.
+- The viewer is opened by `Shell` through the `ShowFile` port, so the modal
+  run itself (`app.Run dialog` in `Program.fs`) is only exercised by running
+  the app — the same blind spot the progress dialog has. What the tests do
+  cover is that the viewer takes `F3`/`Esc` for itself before anything else
+  sees them.
 - Delete still runs on the UI thread inside an `AppState` transition, so
   removing a huge tree blocks. It was never routed through an effect the way
   copy and move are, and `Directory.Delete` cannot report progress anyway.

@@ -30,7 +30,8 @@ let ``bar lists norton style function keys`` () =
         |> List.ofSeq
 
     for expected in
-        [ Key.F5, "Copy"
+        [ Key.F3, "View"
+          Key.F5, "Copy"
           Key.F6, "RenMov"
           Key.F7, "Mkdir"
           Key.F8, "Delete"
@@ -57,7 +58,8 @@ let ``every function key carries the message it stands for`` () =
     let bindings = FunctionKeyBar.bindings
 
     Assert.Equal<(Key * string * Message) list>(
-        [ Key.F5, "Copy", CopyRequested
+        [ Key.F3, "View", ViewRequested
+          Key.F5, "Copy", CopyRequested
           Key.F6, "RenMov", MoveRequested
           Key.F7, "Mkdir", MakeDirectoryRequested
           Key.F8, "Delete", DeleteRequested

@@ -12,6 +12,7 @@
         <Compile Include="FileSystem\Drives.fs" />
         <Compile Include="FileSystem\NamePattern.fs" />
         <Compile Include="FileSystem\Operations.fs" />
+        <Compile Include="FileSystem\FileContent.fs" />
         <Compile Include="State\AppState.fs" />
         <Compile Include="State\Update.fs" />
         <Compile Include="State\Runtime.fs" />
@@ -20,7 +21,10 @@
         <Compile Include="Ui\SelectionSummary.fs" />
         <Compile Include="Ui\CursorInfo.fs" />
         <Compile Include="Ui\StatusLine.fs" />
+        <Compile Include="Ui\HexDump.fs" />
+        <Compile Include="Ui\FileView.fs" />
         <Compile Include="Ui\ListingErrorMessage.fs" />
+        <Compile Include="Ui\ContentErrorMessage.fs" />
         <Compile Include="Ui\OperationErrorMessage.fs" />
         <Compile Include="Ui\DeleteConfirmation.fs" />
         <Compile Include="Ui\OverwriteQuestion.fs" />
@@ -33,6 +37,7 @@
         <Compile Include="Ui\PromptDialog.fs" />
         <Compile Include="Ui\PatternDialog.fs" />
         <Compile Include="Ui\ProgressDialog.fs" />
+        <Compile Include="Ui\FileViewer.fs" />
         <Compile Include="Ui\MainWindow.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>

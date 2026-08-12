@@ -122,6 +122,18 @@ with `key.Handled` still `false`.
 even with a `null` action, which is why every shortcut that should do
 something gets a real callback.
 
+**`RequestStop` does nothing outside a run.** `Runnable.RequestStop` goes
+through the application that is running the dialog, so a dialog built in a test
+never sets `StopRequested` — not even after `SetIsRunning true`. A view that
+has to close itself therefore takes the closing action as an argument
+(`FileViewer.create close …`), which a test can record and `Program.fs` fills
+in with `_.RequestStop()`.
+
+**A `TextView` lets its `KeyDown` handlers see `Esc` and function keys**, and
+normalises the text it is given: lines joined with `\n` come back joined with
+`Environment.NewLine`, so an assertion on `TextView.Text` has to use the
+platform separator.
+
 **Parallelisation is disabled** (`AssemblyInfo.fs`) because Terminal.Gui keeps
 process-wide static state, including default key bindings.
 

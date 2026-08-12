@@ -51,6 +51,10 @@ let main _ =
         app.Run dialog |> ignore
         PromptDialog.text dialog
 
+    let showFile title lines =
+        use dialog = FileViewer.create (_.RequestStop()) title lines
+        app.Run dialog |> ignore
+
     let runBatch title work finish =
         let cancellation = new CancellationTokenSource()
         let dialog = ProgressDialog.create title
@@ -86,6 +90,7 @@ let main _ =
               AskName = askName
               AskTarget = askTarget
               Confirm = confirm
+              ShowFile = showFile
               AskOverwrite = askOverwrite
               RunBatch = runBatch }
 

@@ -304,6 +304,34 @@ let ``a rename is carried out and its outcome dispatched back`` () =
     Assert.Equal<Message list>([ RenameFinished(en "readme.txt", Ok()) ], List.ofSeq sent)
 
 [<Fact>]
+let ``a viewed file is handed over under its own path with its lines`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(@"C:\start\notes.txt", MockFileData "first\r\nsecond")
+    let mutable shown = ("", [])
+    let deps = { noDeps () with FileSystem = fs; ShowFile = fun title lines -> shown <- (title, lines) }
+
+    Shell.interpret deps ignore (ViewFile(fp @"C:\start\notes.txt"))
+
+    Assert.Equal(@"C:\start\notes.txt", fst shown)
+    Assert.Equal<string list>([ "first"; "second" ], snd shown)
+
+[<Fact>]
+let ``a file that cannot be read is reported instead of shown`` () =
+    let mutable shown = false
+    let mutable reported = ("", "")
+
+    let deps =
+        { noDeps () with
+            ShowFile = fun _ _ -> shown <- true
+            ReportError = fun title message -> reported <- (title, message) }
+
+    Shell.interpret deps ignore (ViewFile(fp @"C:\start\gone.txt"))
+
+    Assert.False shown
+    Assert.Equal(ContentErrorMessage.Title, fst reported)
+    Assert.Contains("gone.txt", snd reported)
+
+[<Fact>]
 let ``quit runs the quit port`` () =
     let mutable quit = false
     let deps = { noDeps () with OnQuit = fun () -> quit <- true }

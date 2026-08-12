@@ -9,7 +9,8 @@ open Marbas.State.Update
 let Id = "functionKeyBar"
 
 let bindings =
-    [ Key.F5, "Copy", CopyRequested
+    [ Key.F3, "View", ViewRequested
+      Key.F5, "Copy", CopyRequested
       Key.F6, "RenMov", MoveRequested
       Key.F7, "Mkdir", MakeDirectoryRequested
       Key.F8, "Delete", DeleteRequested
