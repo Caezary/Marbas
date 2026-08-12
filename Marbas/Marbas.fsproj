@@ -38,6 +38,7 @@
         <Compile Include="Ui\PatternDialog.fs" />
         <Compile Include="Ui\ProgressDialog.fs" />
         <Compile Include="Ui\FileViewer.fs" />
+        <Compile Include="Ui\EditorCommand.fs" />
         <Compile Include="Ui\MainWindow.fs" />
         <Compile Include="Program.fs" />
     </ItemGroup>

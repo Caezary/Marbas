@@ -31,6 +31,7 @@ let ``bar lists norton style function keys`` () =
 
     for expected in
         [ Key.F3, "View"
+          Key.F4, "Edit"
           Key.F5, "Copy"
           Key.F6, "RenMov"
           Key.F7, "Mkdir"
@@ -59,6 +60,7 @@ let ``every function key carries the message it stands for`` () =
 
     Assert.Equal<(Key * string * Message) list>(
         [ Key.F3, "View", ViewRequested
+          Key.F4, "Edit", EditRequested
           Key.F5, "Copy", CopyRequested
           Key.F6, "RenMov", MoveRequested
           Key.F7, "Mkdir", MakeDirectoryRequested

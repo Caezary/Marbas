@@ -393,6 +393,48 @@ let ``view requested ignores what is marked and takes the cursor entry`` () =
     Assert.Equal<Effect list>([ ViewFile(fp @"C:\start\notes.txt") ], result.Effects)
 
 [<Fact>]
+let ``edit requested aims at the file under the cursor`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+
+    let result = update fs EditRequested state
+
+    Assert.Equal<Effect list>([ EditFile(fp @"C:\start\notes.txt") ], result.Effects)
+
+[<Fact>]
+let ``edit requested on a directory raises no effect`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 1
+
+    let result = update fs EditRequested state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a finished edit re-reads the panel it was started from`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+    fs.AddFile(@"C:\start\notes.txt.bak", MockFileData "hi")
+
+    let result = update fs (EditFinished(Ok())) state
+
+    Assert.Contains("notes.txt.bak", names result.State.Left.Entries)
+    Assert.Equal(Some "notes.txt", cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``an editor that could not be started is reported`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+    let failure = OperationFailed(fp @"C:\start\notes.txt", "no editor")
+
+    let result = update fs (EditFinished(Error failure)) state
+
+    Assert.Equal(state, result.State)
+    Assert.Equal<Effect list>([ ReportOperationError failure ], result.Effects)
+
+[<Fact>]
 let ``quit requested raises the quit effect`` () =
     let fs = mockFs ()
     let state = loaded fs

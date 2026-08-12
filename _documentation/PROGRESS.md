@@ -4,19 +4,20 @@ Status as of 2026-08-13. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–5 are complete and Phase 6 has started** (23 of 29 tasks). Marbas
-runs as a full-screen two-panel file browser: both panels list a real
-directory, the keyboard moves between and inside them, entries can be marked
-one by one or by wildcard for later operations, a status line describes the
-entry under the cursor, and failures surface as dialogs instead of crashes.
-Every Norton function key of Phase 5 does its job — `F5` copies and `F6` moves
-or renames into the other panel, `F7` makes a directory, `F8` deletes — all of
-them acting on the same operation targets, and copying or moving runs off the
-UI thread behind a progress window that `Esc` stops. `F3` (P6.1) now opens the
-file under the cursor in a read-only viewer. Next comes P6.2: `F4` edit.
+**Phases 1–6 are complete** (24 of 29 tasks). Marbas runs as a full-screen
+two-panel file browser: both panels list a real directory, the keyboard moves
+between and inside them, entries can be marked one by one or by wildcard for
+later operations, a status line describes the entry under the cursor, and
+failures surface as dialogs instead of crashes. Every Norton function key does
+its job — `F3` views the file under the cursor and `F4` opens it in the system
+editor, `F5` copies and `F6` moves or renames into the other panel, `F7` makes
+a directory, `F8` deletes — the operations all acting on the same operation
+targets, with copying and moving running off the UI thread behind a progress
+window that `Esc` stops. Next comes Phase 7: colours, sorting, hidden files and
+persisted settings.
 
-**344 tests pass** — 248 unit tests over the logic modules and the pure `Ui`
-ones, plus 96 integration tests driving real Terminal.Gui views over an
+**359 tests pass** — 259 unit tests over the logic modules and the pure `Ui`
+ones, plus 100 integration tests driving real Terminal.Gui views over an
 in-memory file system. All of them follow the arrange/act/assert shape and the
 folder layout described in [TESTING.md](TESTING.md).
 
@@ -27,8 +28,8 @@ folder layout described in [TESTING.md](TESTING.md).
 | 3 — Navigation | P3.1–P3.5 | done |
 | 4 — Selection | P4.1–P4.3 | done |
 | 5 — File operations | P5.1–P5.6 | done |
-| 6 — Viewing files | P6.1–P6.2 | P6.1 done, P6.2 next |
-| 7 — Polish & configuration | P7.1–P7.4 | not started |
+| 6 — Viewing files | P6.1–P6.2 | done |
+| 7 — Polish & configuration | P7.1–P7.4 | not started, P7.1 next |
 | 8 — Quality & release | P8.1–P8.3 | not started |
 
 ## What works today
@@ -97,9 +98,15 @@ folder layout described in [TESTING.md](TESTING.md).
   shown as a hex dump instead; only the first megabyte is read, and a file
   longer than that says so on its last line. A file that cannot be read (it
   vanished, or the OS refused) is reported in a dialog.
+- `F4` opens the same file — the one under the cursor — in the system editor:
+  whatever `$EDITOR` names, otherwise `notepad` on Windows and `vi` elsewhere.
+  Marbas waits for the editor to close, then re-reads the panel with the cursor
+  and the marks where they were, so a file saved (or created) meanwhile is on
+  screen straight away. An editor that cannot be started is reported in a
+  dialog; a directory or `..` under the cursor starts nothing.
 - `Ctrl+Q` or `F10` quits. The bottom bar lists the Norton-style function keys
-  (`F3 View`, `F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`, `F10 Quit`) and
-  every one of them now does its job.
+  (`F3 View`, `F4 Edit`, `F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`,
+  `F10 Quit`) and every one of them now does its job.
 
 ## Code map
 
@@ -138,6 +145,7 @@ Marbas/
     PatternDialog.fs      the `+` / `-` pattern prompt, over PromptDialog
     ProgressDialog.fs     the window shown while a batch runs
     FileViewer.fs         the full-screen read-only viewer behind `F3`
+    EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
     MainWindow.fs         composition: views, runtime, event wiring
   Program.fs              real file system and real dialogs
 
@@ -377,11 +385,33 @@ is under the cursor, disk images included, so `read` opens a stream, takes
 That keeps `F3` from pulling gigabytes into memory on the UI thread. The
 notice on the last line is what tells the user they are not seeing everything.
 
-**`F3` takes the cursor entry, not the operation targets.** Copy, move and
-delete work on `operationTargets` — the marks, or the cursor when nothing is
-marked. Viewing is a different act: it shows one file, so it reads
-`AppState.cursorFilePath`, which also filters out directories and `..`. There
-is nothing to view for a directory, so nothing happens.
+**`F3` and `F4` take the cursor entry, not the operation targets.** Copy, move
+and delete work on `operationTargets` — the marks, or the cursor when nothing
+is marked. Viewing and editing are a different act: each opens one file, so
+both read `AppState.cursorFilePath`, which also filters out directories and
+`..`. There is nothing to view or edit for a directory, so nothing happens.
+
+**The editor is a port, and its failure is an operation failure.**
+`Dependencies.RunEditor` takes the path and answers
+`Result<unit, Operations.OperationError>`; `Program.fs` is the only place that
+knows about `Process.Start`, `WaitForExit` and repainting the screen
+afterwards, and it maps whatever the start threw through
+`Operations.mapException`. That reuses the error type, the
+`ReportOperationError` effect and `OperationErrorMessage` rather than inventing
+a second failure vocabulary for one case — an editor that will not start failed
+on a path, like every other operation error. The tests pass a `RunEditor` that
+records the path and can write to the mock file system, which is what makes
+"the panel shows what the editor left behind" an ordinary test.
+
+**Which editor to start is a pure choice.** `EditorCommand.choose` takes
+`$EDITOR` as an option and a `Platform` (`Windows`/`Unix`) and answers with the
+command: what was configured, trimmed, or `notepad`/`vi`. `Program.fs` only
+reads the environment and asks. A blank `$EDITOR` counts as unset.
+
+**A finished edit re-reads the panel it started from.** `EditFinished Ok` runs
+the same `AppState.refresh` that `Ctrl+R` does, so the cursor stays on the file
+and the marks survive; only the active panel is re-read, because that is the
+directory the editor was pointed into.
 
 **Closing the viewer is injected, because `RequestStop` needs a running app.**
 `Runnable.RequestStop` does nothing unless the dialog is being run by an
@@ -428,12 +458,12 @@ put that hazard into startup.
 
 ## Next up
 
-**P6.2** — `F4` edit: launch the system editor (`$EDITOR`, `notepad` on
-Windows) for the file under the cursor, suspend the TUI while it runs and
-refresh the panel on return. The editor is the outside world, so it belongs in
-`Shell.Dependencies` as a port next to `ShowFile`, with `Program.fs` the only
-place that starts a process; the target comes from `AppState.cursorFilePath`,
-the same rule `F3` uses.
+**P7.1** — the Norton colour scheme: blue panels, cyan marks, a distinct
+colour for the active panel's cursor, degrading on terminals with few colours.
+Terminal.Gui 2 draws through `Scheme`s and `VisualRole`s, so the work is one Ui
+module holding the scheme and the views asking for it, rather than colours
+sprinkled over `FilePanel`. Marked rows already draw with
+`VisualRole.Highlight`, which is the hook the scheme has to fill in.
 
 ## Known rough edges
 
@@ -450,6 +480,14 @@ the same rule `F3` uses.
   the app — the same blind spot the progress dialog has. What the tests do
   cover is that the viewer takes `F3`/`Esc` for itself before anything else
   sees them.
+- `F4` starts the editor as a child process sharing this terminal and only
+  forces a redraw (`ClearScreenNextIteration`) when it returns. A windowed
+  editor — `notepad`, VS Code — round-trips cleanly. A full-screen console
+  editor on Unix shares the terminal with a Terminal.Gui driver that is still
+  reading input, and there is no suspend/resume in the v2 API for a child
+  process (`IDriver.Suspend` is `SIGTSTP`, a different thing). If that turns
+  out to matter, the fix is to shut the driver down around the process and
+  re-initialise afterwards, and it touches `Program.fs` only.
 - Delete still runs on the UI thread inside an `AppState` transition, so
   removing a huge tree blocks. It was never routed through an effect the way
   copy and move are, and `Directory.Delete` cannot report progress anyway.

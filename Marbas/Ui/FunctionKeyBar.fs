@@ -10,6 +10,7 @@ let Id = "functionKeyBar"
 
 let bindings =
     [ Key.F3, "View", ViewRequested
+      Key.F4, "Edit", EditRequested
       Key.F5, "Copy", CopyRequested
       Key.F6, "RenMov", MoveRequested
       Key.F7, "Mkdir", MakeDirectoryRequested

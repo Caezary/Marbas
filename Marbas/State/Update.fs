@@ -24,6 +24,8 @@ type Message =
     | MoveFinished of Operations.ItemResult list
     | RenameFinished of newName: EntryName * outcome: Result<unit, Operations.OperationError>
     | ViewRequested
+    | EditRequested
+    | EditFinished of outcome: Result<unit, Operations.OperationError>
     | DriveRequested of PanelSide
     | PathOpened of PanelSide * FileSystemPath
     | QuitRequested
@@ -41,6 +43,7 @@ type Effect =
     | MoveTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
+    | EditFile of path: FileSystemPath
     | PromptForTarget of suggestion: FileSystemPath
     | PromptForName
     | PromptForPattern of PanelCursor * SelectionMode
@@ -130,6 +133,14 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         match cursorFilePath fs (activePanel state) with
         | None -> stay state
         | Some path -> request state (ViewFile path)
+    | EditRequested ->
+        match cursorFilePath fs (activePanel state) with
+        | None -> stay state
+        | Some path -> request state (EditFile path)
+    | EditFinished outcome ->
+        match outcome with
+        | Error error -> request state (ReportOperationError error)
+        | Ok() -> refresh fs state |> applyListing state
     | DriveRequested side -> request state (PromptForDrive side)
     | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
     | QuitRequested -> request state Quit

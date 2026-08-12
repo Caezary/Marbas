@@ -1,5 +1,7 @@
 module Marbas.Program
 
+open System
+open System.Diagnostics
 open System.IO.Abstractions
 open System.Threading
 open System.Threading.Tasks
@@ -55,6 +57,31 @@ let main _ =
         use dialog = FileViewer.create (_.RequestStop()) title lines
         app.Run dialog |> ignore
 
+    let editorCommand =
+        let platform =
+            if OperatingSystem.IsWindows() then
+                EditorCommand.Windows
+            else
+                EditorCommand.Unix
+
+        EditorCommand.choose (Environment.GetEnvironmentVariable "EDITOR" |> Option.ofObj) platform
+
+    let runEditor path =
+        try
+            let start = ProcessStartInfo(editorCommand, UseShellExecute = false)
+            start.ArgumentList.Add(FileSystemPath.value path)
+
+            match Process.Start start with
+            | null -> ()
+            | editor ->
+                use editor = editor
+                editor.WaitForExit()
+
+            app.ClearScreenNextIteration <- true
+            Ok()
+        with ex ->
+            Error(Operations.mapException path ex)
+
     let runBatch title work finish =
         let cancellation = new CancellationTokenSource()
         let dialog = ProgressDialog.create title
@@ -91,6 +118,7 @@ let main _ =
               AskTarget = askTarget
               Confirm = confirm
               ShowFile = showFile
+              RunEditor = runEditor
               AskOverwrite = askOverwrite
               RunBatch = runBatch }
 

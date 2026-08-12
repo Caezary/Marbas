@@ -63,8 +63,9 @@ reach the panel `ListView` a test drives.
 ## Injecting the outside world
 
 `MainWindow.create` takes a `Shell.Dependencies` record — file system, start
-path, quit callback, error reporter, drive chooser, pattern prompt, name prompt
-and confirmation. Everything that would open a modal dialog or end the process
+path, quit callback, error reporter, drive chooser, pattern prompt, name
+prompt, confirmation, overwrite question, batch runner, file viewer and editor.
+Everything that would open a modal dialog, start a process or end the process
 is a function, so tests pass fakes and assert on what was requested.
 `Program.fs` is the only place that supplies the real `MessageBox` dialogs.
 `Fakes.dependencies` gives every port a do-nothing default — a
@@ -80,6 +81,11 @@ finds the files already copied when the call returns. Nothing in the suite
 waits on a thread. What that does *not* cover is `Program.fs` — the real
 runner, its progress dialog and the `Application.Invoke` marshalling are only
 ever exercised by running the app.
+
+**An external program is a port too.** `RunEditor` is what `F4` goes through,
+so a test hands it a function that records the path — and, where the point is
+the refresh that follows, one that writes into the `MockFileSystem` before
+answering `Ok`. Nothing in the suite starts a process.
 
 A UI test that needs the two panels on *different* directories gets there the
 way a user would: `press list PanelInput.rightDriveKey` with a `ChooseOption`

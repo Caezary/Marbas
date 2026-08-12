@@ -37,6 +37,7 @@ type Dependencies =
       AskTarget: string -> string -> string option
       Confirm: string -> string -> bool
       ShowFile: string -> string list -> unit
+      RunEditor: FileSystemPath -> Result<unit, Operations.OperationError>
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
       RunBatch:
           string -> (Operations.BatchControl -> Operations.ItemResult list) -> (Operations.ItemResult list -> unit) -> unit }
@@ -77,6 +78,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match FileContent.read deps.FileSystem path with
         | Ok content -> deps.ShowFile (FileSystemPath.value path) (FileView.lines content)
         | Error error -> deps.ReportError ContentErrorMessage.Title (ContentErrorMessage.describe error)
+    | EditFile path -> deps.RunEditor path |> EditFinished |> dispatch
     | PromptForTarget suggestion ->
         match deps.AskTarget MovePrompt (FileSystemPath.value suggestion) with
         | Some text -> dispatch (TargetEntered text)

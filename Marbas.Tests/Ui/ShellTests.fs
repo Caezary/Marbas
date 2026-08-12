@@ -332,6 +332,27 @@ let ``a file that cannot be read is reported instead of shown`` () =
     Assert.Contains("gone.txt", snd reported)
 
 [<Fact>]
+let ``an edited file is handed to the editor and its outcome dispatched back`` () =
+    let sent, dispatch = capture ()
+    let edited = ResizeArray<FileSystemPath>()
+    let deps = { noDeps () with RunEditor = fun path -> edited.Add path; Ok() }
+
+    Shell.interpret deps dispatch (EditFile(fp @"C:\start\notes.txt"))
+
+    Assert.Equal(fp @"C:\start\notes.txt", Assert.Single edited)
+    Assert.Equal<Message list>([ EditFinished(Ok()) ], List.ofSeq sent)
+
+[<Fact>]
+let ``an editor that fails dispatches its failure back`` () =
+    let sent, dispatch = capture ()
+    let failure = OperationFailed(fp @"C:\start\notes.txt", "no editor")
+    let deps = { noDeps () with RunEditor = fun _ -> Error failure }
+
+    Shell.interpret deps dispatch (EditFile(fp @"C:\start\notes.txt"))
+
+    Assert.Equal<Message list>([ EditFinished(Error failure) ], List.ofSeq sent)
+
+[<Fact>]
 let ``quit runs the quit port`` () =
     let mutable quit = false
     let deps = { noDeps () with OnQuit = fun () -> quit <- true }

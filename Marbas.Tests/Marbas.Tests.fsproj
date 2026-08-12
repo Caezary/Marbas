@@ -48,6 +48,7 @@
     <Compile Include="Ui\DeleteConfirmationTests.fs" />
     <Compile Include="Ui\OverwriteQuestionTests.fs" />
     <Compile Include="Ui\PanelInputTests.fs" />
+    <Compile Include="Ui\EditorCommandTests.fs" />
     <Compile Include="Ui\ShellTests.fs" />
   </ItemGroup>
 
@@ -73,6 +74,7 @@
     <Compile Include="Integration\CopyKeyTests.fs" />
     <Compile Include="Integration\MoveKeyTests.fs" />
     <Compile Include="Integration\ViewKeyTests.fs" />
+    <Compile Include="Integration\EditKeyTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

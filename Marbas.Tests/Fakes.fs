@@ -15,5 +15,6 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       AskTarget = fun _ _ -> None
       Confirm = fun _ _ -> false
       ShowFile = fun _ _ -> ()
+      RunEditor = fun _ -> Ok()
       AskOverwrite = (fun _ _ -> Operations.No)
       RunBatch = fun _ work finish -> work Operations.unattended |> finish }
