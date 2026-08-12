@@ -12,6 +12,10 @@ type SelectionMode =
     | Select
     | Deselect
 
+type DeleteScope =
+    | NamedEntriesOnly
+    | WithDirectoryContents
+
 type PanelState =
     { Path: FileSystemPath
       Entries: Entry list
@@ -169,9 +173,15 @@ let private entryPath (fs: IFileSystem) panel (entry: Entry) =
 let operationPaths (fs: IFileSystem) panel =
     operationTargets panel |> List.map (entryPath fs panel)
 
-let hasNonEmptyDirectory (fs: IFileSystem) panel =
-    operationTargets panel
-    |> List.exists (entryPath fs panel >> Operations.isNonEmptyDirectory fs)
+let deleteScope (fs: IFileSystem) panel =
+    let reachesContents =
+        operationTargets panel
+        |> List.exists (entryPath fs panel >> Operations.isNonEmptyDirectory fs)
+
+    if reachesContents then
+        WithDirectoryContents
+    else
+        NamedEntriesOnly
 
 let private reloadFocusing (fs: IFileSystem) side focus keep state =
     let previous = panel side state

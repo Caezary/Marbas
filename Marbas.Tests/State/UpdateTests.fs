@@ -153,7 +153,12 @@ let ``delete requested asks to confirm the cursor entry`` () =
 
     let result = update fs DeleteRequested state
 
-    Assert.Equal<Effect list>([ ConfirmDelete([ en "notes.txt" ], false) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ ConfirmDelete
+              { Targets = [ en "notes.txt" ]
+                Scope = NamedEntriesOnly } ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``delete requested warns when a target directory is not empty`` () =
@@ -163,7 +168,12 @@ let ``delete requested warns when a target directory is not empty`` () =
 
     let result = update fs DeleteRequested state
 
-    Assert.Equal<Effect list>([ ConfirmDelete([ en "docs" ], true) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ ConfirmDelete
+              { Targets = [ en "docs" ]
+                Scope = WithDirectoryContents } ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``delete requested on the parent entry asks nothing`` () =

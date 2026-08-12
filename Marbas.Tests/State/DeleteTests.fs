@@ -129,17 +129,17 @@ let ``marks are dropped along with the entries they pointed at`` () =
     Assert.False(fs.File.Exists @"C:\start\notes.txt")
 
 [<Fact>]
-let ``a non-empty directory among the targets is recognised`` () =
+let ``a non-empty directory among the targets widens the scope`` () =
     let fs, state = started ()
 
-    let warns = hasNonEmptyDirectory fs (state |> setCursor Left 1).Left
+    let scope = deleteScope fs (state |> setCursor Left 1).Left
 
-    Assert.True warns
+    Assert.Equal(WithDirectoryContents, scope)
 
 [<Fact>]
-let ``an empty directory needs no extra warning`` () =
+let ``an empty directory keeps the scope to the named entries`` () =
     let fs, state = started ()
 
-    let warns = hasNonEmptyDirectory fs (state |> setCursor Left 2).Left
+    let scope = deleteScope fs (state |> setCursor Left 2).Left
 
-    Assert.False warns
+    Assert.Equal(NamedEntriesOnly, scope)

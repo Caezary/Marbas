@@ -61,8 +61,8 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describe error)
     | ReportItemFailures failures ->
         deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describeFailures failures)
-    | ConfirmDelete(names, nonEmptyDirectory) ->
-        if deps.Confirm DeleteConfirmation.Title (DeleteConfirmation.describe names nonEmptyDirectory) then
+    | ConfirmDelete request ->
+        if deps.Confirm DeleteConfirmation.Title (DeleteConfirmation.describe request) then
             dispatch DeleteConfirmed
     | CopyTargets(sources, targetDirectory) ->
         startBatch deps CopyTitle Operations.copyAll (CopyFinished >> dispatch) sources targetDirectory

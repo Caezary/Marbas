@@ -15,6 +15,8 @@ let private en = EntryName.create
 
 let private noDeps () = Fakes.dependencies (MockFileSystem()) @"C:\start"
 
+let private deleteRequest names scope = { Targets = names; Scope = scope }
+
 let private capture () =
     let sent = ResizeArray<Message>()
     sent, fun (msg: Message) -> sent.Add msg
@@ -145,7 +147,7 @@ let ``a confirmed delete is dispatched back`` () =
     let sent, dispatch = capture ()
     let deps = { noDeps () with Confirm = fun _ _ -> true }
 
-    Shell.interpret deps dispatch (ConfirmDelete([ en "notes.txt" ], false))
+    Shell.interpret deps dispatch (ConfirmDelete(deleteRequest [ en "notes.txt" ] NamedEntriesOnly))
 
     Assert.Equal<Message list>([ DeleteConfirmed ], List.ofSeq sent)
 
@@ -153,7 +155,7 @@ let ``a confirmed delete is dispatched back`` () =
 let ``a refused delete dispatches nothing`` () =
     let sent, dispatch = capture ()
 
-    Shell.interpret (noDeps ()) dispatch (ConfirmDelete([ en "notes.txt" ], false))
+    Shell.interpret (noDeps ()) dispatch (ConfirmDelete(deleteRequest [ en "notes.txt" ] NamedEntriesOnly))
 
     Assert.Empty sent
 
@@ -163,7 +165,7 @@ let ``the delete question carries its own title and the warning`` () =
     let mutable asked = ("", "")
     let deps = { noDeps () with Confirm = fun title message -> asked <- (title, message); false }
 
-    Shell.interpret deps dispatch (ConfirmDelete([ en "docs" ], true))
+    Shell.interpret deps dispatch (ConfirmDelete(deleteRequest [ en "docs" ] WithDirectoryContents))
 
     Assert.Equal(DeleteConfirmation.Title, fst asked)
     Assert.Contains(DeleteConfirmation.NonEmptyWarning, snd asked)

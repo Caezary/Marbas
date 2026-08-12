@@ -27,11 +27,15 @@ type Message =
     | PathOpened of PanelSide * FileSystemPath
     | QuitRequested
 
+type DeleteRequest =
+    { Targets: EntryName list
+      Scope: DeleteScope }
+
 type Effect =
     | ReportListingError of ListingError
     | ReportOperationError of Operations.OperationError
     | ReportItemFailures of Operations.ItemResult list
-    | ConfirmDelete of names: EntryName list * nonEmptyDirectory: bool
+    | ConfirmDelete of DeleteRequest
     | CopyTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | MoveTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | RenameTarget of source: FileSystemPath * newName: EntryName
@@ -89,7 +93,12 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
 
         match operationTargets target with
         | [] -> stay state
-        | targets -> request state (ConfirmDelete(targets |> List.map _.Name, hasNonEmptyDirectory fs target))
+        | targets ->
+            request
+                state
+                (ConfirmDelete
+                    { Targets = targets |> List.map _.Name
+                      Scope = deleteScope fs target })
     | DeleteConfirmed -> deleteTargets fs state.Active state |> applyBatch state
     | CopyRequested ->
         match operationPaths fs (activePanel state) with

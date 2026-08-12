@@ -279,9 +279,11 @@ function key pressed on the parent entry has nothing to do and asks nothing.
 `F5`, `F6` and `F8` all take their sources from it.
 
 **A confirmation is an effect; its wording belongs to Ui.** `ConfirmDelete`
-carries the target names and a single flag saying whether any target directory
-has contents, and `DeleteConfirmation.describe` turns that into the question.
-The emptiness check runs in the state layer, where the file system already is
+carries a `DeleteRequest` — the target names plus a `DeleteScope` saying
+whether the delete stops at those entries (`NamedEntriesOnly`) or reaches
+inside a directory as well (`WithDirectoryContents`) — and
+`DeleteConfirmation.describe` turns that into the question. `AppState.deleteScope`
+decides it in the state layer, where the file system already is
 (`Operations.isNonEmptyDirectory`); a directory that cannot be enumerated
 counts as non-empty, so the warning errs towards showing up.
 
