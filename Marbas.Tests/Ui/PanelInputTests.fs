@@ -2,6 +2,7 @@ module Marbas.Tests.Ui.PanelInputTests
 
 open Xunit
 open Terminal.Gui.Input
+open Marbas.FileSystem
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Ui
@@ -40,6 +41,24 @@ let ``a drive key targets its own side regardless of the focused panel`` () =
 
     Assert.Equal(Some(DriveRequested Left), fromRight)
     Assert.Equal(Some(DriveRequested Right), fromLeft)
+
+[<Fact>]
+let ``the sort keys are the classic Ctrl+F3 to Ctrl+F6`` () =
+    let bindings = PanelInput.sortKeys
+
+    Assert.Equal<(Key * SortKey) list>(
+        [ Key.F3.WithCtrl, SortKey.ByName
+          Key.F4.WithCtrl, SortKey.ByExtension
+          Key.F5.WithCtrl, SortKey.ByDate
+          Key.F6.WithCtrl, SortKey.BySize ],
+        bindings
+    )
+
+[<Fact>]
+let ``a sort key requests its own sort at the cursor`` () =
+    let message = PanelInput.messageFor (cursor Right 4) PanelInput.dateSortKey
+
+    Assert.Equal(Some(SortRequested(cursor Right 4, SortKey.ByDate)), message)
 
 [<Fact>]
 let ``an unmapped key produces no message`` () =

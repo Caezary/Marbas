@@ -52,7 +52,7 @@ let ``rendering fills the panel of the side it belongs to`` () =
     AppView.render view state
 
     let left = panel FilePanel.LeftId view.Window
-    Assert.Equal(@"C:\start", left.Title)
+    Assert.Equal(@"C:\start", shownPath FilePanel.LeftId view.Window)
     Assert.Contains("readme.txt", rows left)
     Assert.Empty(rows (panel FilePanel.RightId view.Window))
 

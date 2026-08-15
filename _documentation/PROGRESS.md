@@ -1,10 +1,10 @@
 # Progress
 
-Status as of 2026-08-13. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-15. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–6 are complete, and Phase 7 has started** (25 of 29 tasks). Marbas
+**Phases 1–6 are complete, and Phase 7 has started** (26 of 29 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -15,10 +15,12 @@ panel, `F7` makes a directory, `F8` deletes — the operations all acting on the
 same operation targets, with copying and moving running off the UI thread behind
 a progress window that `Esc` stops. Since P7.1 the screen wears the classic
 colours: blue panels with cyan entries, a cyan cursor bar, yellow marks and a
-cyan function-key bar. Next comes sorting, hidden files and persisted settings.
+cyan function-key bar, and since P7.2 each panel sorts by name, extension, date
+or size in either direction, saying so in its title. Next come hidden files and
+persisted settings.
 
-**372 tests pass** — 266 unit tests over the logic modules and the pure `Ui`
-ones, plus 106 integration tests driving real Terminal.Gui views over an
+**407 tests pass** — 297 unit tests over the logic modules and the pure `Ui`
+ones, plus 110 integration tests driving real Terminal.Gui views over an
 in-memory file system. All of them follow the arrange/act/assert shape and the
 folder layout described in [TESTING.md](TESTING.md).
 
@@ -30,12 +32,19 @@ folder layout described in [TESTING.md](TESTING.md).
 | 4 — Selection | P4.1–P4.3 | done |
 | 5 — File operations | P5.1–P5.6 | done |
 | 6 — Viewing files | P6.1–P6.2 | done |
-| 7 — Polish & configuration | P7.1–P7.4 | P7.1 done, P7.2 next |
+| 7 — Polish & configuration | P7.1–P7.4 | P7.1–P7.2 done, P7.3 next |
 | 8 — Quality & release | P8.1–P8.3 | not started |
 
 ## What works today
 
 - Full-screen window split into two panels, resizing with the terminal.
+- `Ctrl+F3`, `Ctrl+F4`, `Ctrl+F5` and `Ctrl+F6` sort the panel they are pressed
+  in by name, extension, date or size; pressing the key of the sort already in
+  use reverses it. `..` stays first and directories stay above files whatever
+  the order, entries the key cannot tell apart fall back to their names, the
+  cursor keeps the entry it was on, marks are untouched, and the panel title
+  says which sort is on (`C:\start [size ↑]`). Each panel sorts on its own and
+  keeps its order through every reload and every directory it is pointed at.
 - `Tab` switches panels; the focused one is marked with a double border.
 - Both panels list a real directory: `..` first, then directories, then files,
   each group alphabetically, in aligned name / size / date columns that
@@ -122,6 +131,7 @@ Marbas/
   FileSystem/
     EntryName.fs          single-case type for the name of one entry
     FileSystemPath.fs     single-case path type wrapping a raw string
+    SortOrder.fs          which key a panel sorts by, in which direction
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             mounted drives
     NamePattern.fs        wildcard matching for `+` / `-`
@@ -145,6 +155,7 @@ Marbas/
     OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
     DeleteConfirmation.fs delete targets -> confirmation question
     OverwriteQuestion.fs  collision -> question text, answer buttons and mapping
+    PanelTitle.fs         path and sort order -> the panel frame's title
     FilePanel.fs          panel views, render state -> view
     FunctionKeyBar.fs     bottom shortcut bar, one action per function key
     PanelInput.fs         panel key -> message
@@ -164,7 +175,8 @@ Marbas.Tests/
   State/                  unit tests, one module per State module
   Ui/                     unit tests of the pure Ui modules and the Shell interpreter
   Integration/            every test that constructs a Terminal.Gui view
-    Gui.fs                focusedWindow, leftList, rightList, press, panel
+    Gui.fs                focusedWindow, leftList, rightList, press, panel,
+                          panelTitle, shownPath
 ```
 
 Dependencies flow downward only: `Ui` → `State` → `FileSystem`.
@@ -466,6 +478,33 @@ terminals with limited colours" comes down to. A test walks every colour the
 schemes set and asserts it is exactly one of the sixteen, so a hand-picked RGB
 value cannot slip in unnoticed.
 
+**One comparison, three layers.** `DirectoryListing.order` compares a group
+rank first — `..`, then directories, then files — and only inside a group does
+the sort key decide; entries the key cannot tell apart fall back to their names.
+The direction reverses the key and that fallback together, but never the group
+rank, which is why a descending sort still keeps `..` on top and directories
+above files, the way the classic managers do it. Sorting by name is the same
+rule with an empty key comparison, so it needs no case of its own.
+
+**Re-sorting never touches the disk.** `AppState.sortBy` is a pure transition:
+it switches the panel's `SortOrder`, re-orders the entries already in the panel
+and moves the cursor to wherever the entry it was on landed, leaving the marks
+alone. Nothing is re-read, so a sort cannot fail and cannot be refused by a
+directory that vanished meanwhile. What keeps the order afterwards is the
+`SortOrder` the panel carries: `loadPanelFocusing` hands it to `listForDisplay`,
+so a refresh, a navigation, a drive switch and every reload after an operation
+all come back sorted the way the panel is set.
+
+**The same key again reverses.** `SortOrder.switchTo` starts ascending on a key
+the panel is not sorted by and flips the direction on the key it is, so
+`Ctrl+F3..F6` are the whole vocabulary and no separate direction key exists.
+
+**The title says which sort is on.** `PanelTitle.describe` puts the sort order
+after the path (`C:\start [size ↑]`), and `FilePanel.render` is the only caller.
+The tests that care about the directory a panel shows read it back through
+`Gui.shownPath`, so the wording of the indicator is asserted in one place
+instead of in every navigation test.
+
 **Which `VisualRole` a view draws with was measured, not guessed.** A view asks
 its scheme for an attribute through the `GettingAttributeForRole` event, so
 subscribing to it and drawing the view answers the question directly:
@@ -492,12 +531,14 @@ the managers Marbas follows do anyway.
 
 ## Next up
 
-**P7.2** — sorting: name / extension / date / size, ascending and descending,
-per panel, switched by `Ctrl+F3..F6` and shown in the panel. The ordering rule
-lives in `DirectoryListing`, which already puts `..` first and directories
-before files, so the work is a sort mode carried by `PanelState`, handed to the
-listing on every load and reload, plus the keys and the panel label that says
-which mode is on.
+**P7.3** — hidden files: a toggle that shows or hides dotfiles and entries the
+OS marks hidden or system. The filtering belongs next to the ordering in
+`DirectoryListing` — `read` already builds every `Entry`, so it is one more
+question asked before `order` — and the switch is a flag on `PanelState`
+travelling the same way `SortOrder` does: set by a key, handed to
+`listForDisplay` on every load, and visible in the panel. Windows and Unix
+disagree on what "hidden" means, so the rule has to answer to both: a leading
+dot, and `FileAttributes.Hidden`/`System`.
 
 ## Known rough edges
 

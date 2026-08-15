@@ -31,4 +31,4 @@ let ``the UI reports listing failures and stays in the current directory`` () =
     press list Key.Enter
 
     Assert.Contains(@"C:\start\docs", Assert.Single reported)
-    Assert.Equal(@"C:\start", panelView.Title)
+    Assert.Equal(@"C:\start", shownPath FilePanel.LeftId window)

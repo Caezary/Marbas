@@ -29,7 +29,9 @@ dotnet test --filter "FullyQualifiedName~Marbas.Tests.Integration"
 Three modules sit outside the folders because everything uses them:
 `Expect` (result unwrapping), `Fakes` (the do-nothing `Shell.Dependencies`) and
 `AssemblyInfo`. `Integration/Gui.fs` adds the view helpers — `focusedWindow`,
-`leftList`, `rightList`, `press`, `panel`. F# does not open an enclosing
+`leftList`, `rightList`, `press`, `panel`, `panelTitle` and `shownPath`, which
+is the path part of a panel title, so a navigation test says which directory a
+panel shows without repeating the sort indicator that follows it. F# does not open an enclosing
 namespace for you, so a file under `State/` that uses `Expect.ok` needs an
 explicit `open Marbas.Tests`.
 

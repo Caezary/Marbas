@@ -43,6 +43,17 @@ let ``cursor moved updates the cursor without effects`` () =
     Assert.Empty result.Effects
 
 [<Fact>]
+let ``a sort request reorders the panel it names and keeps the cursor entry`` () =
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let result = update fs (SortRequested(cursor Left 2, SortKey.ByExtension)) state
+
+    Assert.Equal<string list>([ ".."; "docs"; "setup.fs"; "notes.txt" ], names result.State.Left.Entries)
+    Assert.Equal(3, result.State.Left.Cursor)
+    Assert.Empty result.Effects
+
+[<Fact>]
 let ``panel focused activates the side`` () =
     let fs = mockFs ()
     let state = loaded fs

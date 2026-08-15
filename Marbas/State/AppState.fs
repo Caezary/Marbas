@@ -24,7 +24,8 @@ type PanelState =
     { Path: FileSystemPath
       Entries: Entry list
       Cursor: int
-      Selected: Set<EntryName> }
+      Selected: Set<EntryName>
+      Sort: SortOrder }
 
 type AppState =
     { Left: PanelState
@@ -40,7 +41,8 @@ let create (path: FileSystemPath) =
         { Path = path
           Entries = []
           Cursor = 0
-          Selected = Set.empty }
+          Selected = Set.empty
+          Sort = SortOrder.byName }
 
     { Left = panel
       Right = panel
@@ -77,7 +79,9 @@ let setCursor side index state =
     updatePanel side (withCursor index) state
 
 let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state =
-    DirectoryListing.listForDisplay fs path
+    let sort = (panel side state).Sort
+
+    DirectoryListing.listForDisplay fs sort path
     |> Result.map (fun entries ->
         let cursor =
             match focus with
@@ -90,7 +94,8 @@ let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state 
                 { Path = path
                   Entries = entries
                   Cursor = cursor
-                  Selected = Set.empty })
+                  Selected = Set.empty
+                  Sort = sort })
             state)
 
 let loadPanel fs side (path: FileSystemPath) state =
@@ -102,6 +107,21 @@ let private cursorFocus panel =
     match cursorEntry panel with
     | Some entry -> ByName entry.Name
     | None -> Top
+
+let private reorder (p: PanelState) =
+    let entries = DirectoryListing.order p.Sort p.Entries
+
+    let cursor =
+        cursorEntry p
+        |> Option.bind (fun entry -> entries |> List.tryFindIndex (fun e -> e.Name = entry.Name))
+        |> Option.defaultValue 0
+
+    { p with
+        Entries = entries
+        Cursor = cursor }
+
+let sortBy (key: SortKey) side state =
+    updatePanel side (fun p -> reorder { p with Sort = SortOrder.switchTo key p.Sort }) state
 
 let private selectable entry = entry.Name <> DirectoryListing.ParentName
 

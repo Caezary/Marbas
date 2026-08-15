@@ -10,6 +10,11 @@ open Marbas.Tests
 let panel id (window: Window) =
     window.SubViews |> Seq.find (fun v -> v.Id = id)
 
+let panelTitle id window = (panel id window).Title
+
+let shownPath id window =
+    (panelTitle id window).Split " [" |> Array.head
+
 let leftList window = FilePanel.listView (panel FilePanel.LeftId window)
 
 let rightList window = FilePanel.listView (panel FilePanel.RightId window)

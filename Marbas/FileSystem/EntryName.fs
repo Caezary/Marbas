@@ -12,3 +12,8 @@ module EntryName =
         | trimmed -> Some(EntryName trimmed)
 
     let value (EntryName raw) = raw
+
+    let extension (EntryName raw) =
+        match raw.LastIndexOf '.' with
+        | dot when dot <= 0 || dot = raw.Length - 1 -> ""
+        | dot -> raw.Substring(dot + 1)

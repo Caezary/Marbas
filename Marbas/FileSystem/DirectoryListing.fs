@@ -50,13 +50,40 @@ let read (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingEr
     with ex ->
         Error(mapException path ex)
 
-let order (entries: Entry list) =
+let private groupRank entry =
+    if entry.Name = ParentName then 0
+    else
+        match entry.Kind with
+        | Directory -> 1
+        | File -> 2
+
+let private compareNames a b =
+    String.Compare(EntryName.value a.Name, EntryName.value b.Name, StringComparison.OrdinalIgnoreCase)
+
+let private compareExtensions a b =
+    String.Compare(EntryName.extension a.Name, EntryName.extension b.Name, StringComparison.OrdinalIgnoreCase)
+
+let private compareByKey key a b =
+    let primary =
+        match key with
+        | ByName -> 0
+        | ByExtension -> compareExtensions a b
+        | ByDate -> compare a.Modified b.Modified
+        | BySize -> compare a.Size b.Size
+
+    if primary = 0 then compareNames a b else primary
+
+let private direction sort =
+    match sort.Direction with
+    | Ascending -> 1
+    | Descending -> -1
+
+let order (sort: SortOrder) (entries: Entry list) =
     entries
     |> List.sortWith (fun a b ->
-        match a.Kind, b.Kind with
-        | Directory, File -> -1
-        | File, Directory -> 1
-        | _ -> String.Compare(EntryName.value a.Name, EntryName.value b.Name, StringComparison.OrdinalIgnoreCase))
+        match compare (groupRank a) (groupRank b) with
+        | 0 -> direction sort * compareByKey sort.Key a b
+        | grouped -> grouped)
 
 let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
     match fs.DirectoryInfo.New(FileSystemPath.value path).Parent with
@@ -68,9 +95,9 @@ let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
               Size = None
               Modified = parent.LastWriteTime }
 
-let listForDisplay (fs: IFileSystem) (path: FileSystemPath) =
+let listForDisplay (fs: IFileSystem) (sort: SortOrder) (path: FileSystemPath) =
     read fs path
     |> Result.map (fun entries ->
         match parentEntry fs path with
-        | Some parent -> parent :: order entries
-        | None -> order entries)
+        | Some parent -> order sort (parent :: entries)
+        | None -> order sort entries)

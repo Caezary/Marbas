@@ -60,12 +60,12 @@ let ``enter key on a directory navigates the focused panel`` () =
 
     press list Terminal.Gui.Input.Key.Enter
 
-    Assert.Equal(@"C:\start\docs", panelView.Title)
+    Assert.Equal(@"C:\start\docs", shownPath FilePanel.LeftId window)
     Assert.StartsWith("..", (items panelView).Head)
 
 [<Fact>]
 let ``panel titles show the current path`` () =
     use window = MainWindow.create (Fakes.dependencies (mockFs ()) @"C:\start")
 
-    Assert.Equal(@"C:\start", (panel FilePanel.LeftId window).Title)
-    Assert.Equal(@"C:\start", (panel FilePanel.RightId window).Title)
+    Assert.Equal(@"C:\start", shownPath FilePanel.LeftId window)
+    Assert.Equal(@"C:\start", shownPath FilePanel.RightId window)

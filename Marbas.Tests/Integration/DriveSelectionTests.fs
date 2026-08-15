@@ -26,8 +26,8 @@ let ``alt+F1 opens the chosen drive in the left panel`` () =
 
     press (leftList window) PanelInput.leftDriveKey
 
-    Assert.Equal(@"D:\", (panel FilePanel.LeftId window).Title)
-    Assert.Equal(@"C:\start", (panel FilePanel.RightId window).Title)
+    Assert.Equal(@"D:\", shownPath FilePanel.LeftId window)
+    Assert.Equal(@"C:\start", shownPath FilePanel.RightId window)
 
 [<Fact>]
 let ``alt+F2 opens the chosen drive in the right panel`` () =
@@ -35,8 +35,8 @@ let ``alt+F2 opens the chosen drive in the right panel`` () =
 
     press (leftList window) PanelInput.rightDriveKey
 
-    Assert.Equal(@"D:\", (panel FilePanel.RightId window).Title)
-    Assert.Equal(@"C:\start", (panel FilePanel.LeftId window).Title)
+    Assert.Equal(@"D:\", shownPath FilePanel.RightId window)
+    Assert.Equal(@"C:\start", shownPath FilePanel.LeftId window)
 
 [<Fact>]
 let ``the chooser is offered every mounted drive`` () =
@@ -53,7 +53,7 @@ let ``cancelling the chooser leaves both panels untouched`` () =
 
     press (leftList window) PanelInput.leftDriveKey
 
-    Assert.Equal(@"C:\start", (panel FilePanel.LeftId window).Title)
+    Assert.Equal(@"C:\start", shownPath FilePanel.LeftId window)
 
 [<Fact>]
 let ``an unreadable drive is reported and the panel stays put`` () =
@@ -63,4 +63,4 @@ let ``an unreadable drive is reported and the panel stays put`` () =
     press (leftList window) PanelInput.leftDriveKey
 
     Assert.Contains(@"Z:\", Assert.Single reported)
-    Assert.Equal(@"C:\start", (panel FilePanel.LeftId window).Title)
+    Assert.Equal(@"C:\start", shownPath FilePanel.LeftId window)

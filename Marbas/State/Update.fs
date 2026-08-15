@@ -11,6 +11,7 @@ type Message =
     | EntryOpened of PanelCursor
     | RefreshRequested of PanelCursor
     | SelectionToggled of PanelCursor
+    | SortRequested of PanelCursor * SortKey
     | PatternRequested of PanelCursor * SelectionMode
     | PatternEntered of PanelCursor * SelectionMode * NamePattern
     | MakeDirectoryRequested
@@ -89,6 +90,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | EntryOpened cursor -> state |> atCursor cursor |> enter fs |> applyListing state
     | RefreshRequested cursor -> state |> atCursor cursor |> refresh fs |> applyListing state
     | SelectionToggled cursor -> stay (state |> atCursor cursor |> toggleSelectionAndAdvance cursor.Side)
+    | SortRequested(cursor, key) -> stay (state |> atCursor cursor |> sortBy key cursor.Side)
     | PatternRequested(cursor, mode) -> request state (PromptForPattern(cursor, mode))
     | PatternEntered(cursor, mode, pattern) ->
         stay (state |> atCursor cursor |> applyPattern mode cursor.Side pattern)
