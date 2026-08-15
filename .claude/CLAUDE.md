@@ -1,6 +1,6 @@
 # Marbas
 
-A Norton Commander style console file manager in F# on Terminal.Gui 2.
+An orthodox (two-panel) console file manager in F# on Terminal.Gui 2.
 
 ## Documentation
 

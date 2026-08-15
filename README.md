@@ -1,13 +1,14 @@
 # Marbas
 
-A console file manager written in F#, inspired by the classic Norton Commander.
+A console file manager written in F#, inspired by the classic two-panel
+managers of the DOS era.
 
 ## Goal
 
 Marbas presents a full-screen terminal UI split into two side-by-side panels.
 Each panel shows the file listing of its current directory, and the user can
-browse, navigate and manage files using the keyboard — in the spirit of
-orthodox file managers (Norton Commander, Midnight Commander, Total Commander).
+browse, navigate and manage files using the keyboard — in the spirit of the
+orthodox file managers.
 
 Planned core features:
 

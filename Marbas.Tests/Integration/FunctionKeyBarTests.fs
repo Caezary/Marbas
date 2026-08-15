@@ -19,7 +19,7 @@ let ``main window contains the function key bar`` () =
     Assert.NotNull(bar window)
 
 [<Fact>]
-let ``bar lists norton style function keys`` () =
+let ``bar lists the classic function keys`` () =
     use window = createInitialized ()
 
     let shortcuts =

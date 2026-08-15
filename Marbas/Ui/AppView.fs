@@ -13,6 +13,7 @@ type AppView =
 let create () =
     let window = new Window(Title = "Marbas", Width = Dim.Fill(), Height = Dim.Fill())
     window.BorderStyle <- LineStyle.None
+    window.SetScheme ClassicScheme.screen |> ignore
     let panels = FilePanel.createPair ()
     let statusLine = StatusLine.create ()
     window.Add(panels.Left, panels.Right, statusLine) |> ignore

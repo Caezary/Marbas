@@ -16,6 +16,7 @@
         <Compile Include="State\AppState.fs" />
         <Compile Include="State\Update.fs" />
         <Compile Include="State\Runtime.fs" />
+        <Compile Include="Ui\ClassicScheme.fs" />
         <Compile Include="Ui\EntrySize.fs" />
         <Compile Include="Ui\EntryFormat.fs" />
         <Compile Include="Ui\SelectionSummary.fs" />

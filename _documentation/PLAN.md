@@ -12,7 +12,7 @@ be referenced in commits (e.g. `P2.3: sort directories first`).
   (pure functions where possible) so it can be unit-tested without a terminal.
   UI code only wires that logic to Terminal.Gui views.
 - **Keyboard first** — every feature must be reachable without a mouse,
-  with Norton Commander key bindings as the reference.
+  with the classic orthodox key bindings as the reference.
 - **Test first** — wherever feasible, implementation starts with a failing
   test (unit tests over the UI-free modules, in-memory file system via
   `System.IO.Abstractions`). Tests are the standing proof the app works.
@@ -44,7 +44,7 @@ Goal: panels show real directory contents.
   list the startup directory.
 - **P2.3 Ordering and the ".." entry** — directories first, then files,
   alphabetically; ".." at the top for non-root directories. *Done when:*
-  ordering matches Norton Commander conventions.
+  ordering matches the orthodox conventions.
 - **P2.4 Entry formatting** — columns for name, size (dirs show `<DIR>`),
   and modification date. *Done when:* columns align and truncate gracefully.
 
@@ -70,7 +70,7 @@ Goal: independent browsing in each panel.
 
 ## Phase 4 — Selection
 
-Goal: mark files the way NC does, as input for file operations.
+Goal: mark files the orthodox way, as input for file operations.
 
 - **P4.1 Single selection cursor info** — status line shows the entry under
   the cursor (full name, size, date). *Done when:* info updates as the cursor
@@ -122,9 +122,9 @@ Goal: quick inspection without leaving the manager.
 
 Goal: comfort features that make it feel like a finished tool.
 
-- **P7.1 NC-style color scheme** — classic blue panels, cyan selection;
-  respects terminals with limited colors. *Done when:* the app is
-  recognizably Norton-ish.
+- **P7.1 Classic color scheme** — classic blue panels, cyan selection;
+  respects terminals with limited colors. *Done when:* the app looks like the
+  DOS-era two-panel managers it follows.
 - **P7.2 Sorting options** — `Ctrl+F3..F6`-style toggles: name / extension /
   date / size, ascending & descending, per panel. *Done when:* sort mode is
   switchable and shown in the panel.

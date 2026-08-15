@@ -140,6 +140,20 @@ normalises the text it is given: lines joined with `\n` come back joined with
 `Environment.NewLine`, so an assertion on `TextView.Text` has to use the
 platform separator.
 
+**Colours are asserted as schemes, never as pixels.** There is no driver in a
+test, so nothing can read back what was painted. What a test can assert is the
+`Scheme` a view resolves to — `view.GetScheme()` — and the attributes the scheme
+holds, which is what `Integration/SchemeTests.fs` and `Ui/ClassicSchemeTests.fs`
+do. A view without a scheme of its own inherits its super-view's, so the panel
+list and the status line are covered by the schemes set on the panel frame and
+on the window.
+
+**Which `VisualRole` a view draws with is observable.** Subscribing to
+`view.GettingAttributeForRole`, laying the view out and calling `Draw()` records
+every role it asks for, in order, which is how the palette was matched to
+`ListView`, `FrameView` and `StatusBar`. Useful when picking colours; too
+coupled to Terminal.Gui's internals to keep as a test.
+
 **Parallelisation is disabled** (`AssemblyInfo.fs`) because Terminal.Gui keeps
 process-wide static state, including default key bindings.
 

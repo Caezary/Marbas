@@ -21,4 +21,6 @@ let create (dispatch: Message -> unit) =
     let shortcut (key: Key, title: string, message) =
         new Shortcut(key, title, Action(fun () -> dispatch message), null)
 
-    new StatusBar(bindings |> List.map shortcut, Id = Id)
+    let bar = new StatusBar(bindings |> List.map shortcut, Id = Id)
+    bar.SetScheme ClassicScheme.keyBar |> ignore
+    bar

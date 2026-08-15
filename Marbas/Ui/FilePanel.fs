@@ -17,6 +17,7 @@ let private focusable (panel: FrameView) =
     panel.CanFocus <- true
     panel.TabStop <- TabBehavior.TabStop
     panel.BorderStyle <- LineStyle.Single
+    panel.SetScheme ClassicScheme.panel |> ignore
 
     panel.HasFocusChanged.Add(fun _ ->
         panel.BorderStyle <- if panel.HasFocus then LineStyle.Double else LineStyle.Single)
@@ -26,8 +27,12 @@ let private focusable (panel: FrameView) =
 
     list.KeystrokeNavigator <- null
 
-    panel.Add(list, new Label(Y = Pos.AnchorEnd 1, Width = Dim.Fill(), Height = 1))
-    |> ignore
+    let summary =
+        new Label(Y = Pos.AnchorEnd 1, Width = Dim.Fill(), Height = 1)
+
+    summary.SetScheme ClassicScheme.summary |> ignore
+
+    panel.Add(list, summary) |> ignore
 
     panel
 

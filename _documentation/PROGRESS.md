@@ -4,20 +4,21 @@ Status as of 2026-08-13. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–6 are complete** (24 of 29 tasks). Marbas runs as a full-screen
-two-panel file browser: both panels list a real directory, the keyboard moves
-between and inside them, entries can be marked one by one or by wildcard for
-later operations, a status line describes the entry under the cursor, and
-failures surface as dialogs instead of crashes. Every Norton function key does
-its job — `F3` views the file under the cursor and `F4` opens it in the system
-editor, `F5` copies and `F6` moves or renames into the other panel, `F7` makes
-a directory, `F8` deletes — the operations all acting on the same operation
-targets, with copying and moving running off the UI thread behind a progress
-window that `Esc` stops. Next comes Phase 7: colours, sorting, hidden files and
-persisted settings.
+**Phases 1–6 are complete, and Phase 7 has started** (25 of 29 tasks). Marbas
+runs as a full-screen two-panel file browser: both panels list a real directory,
+the keyboard moves between and inside them, entries can be marked one by one or
+by wildcard for later operations, a status line describes the entry under the
+cursor, and failures surface as dialogs instead of crashes. Every function key
+does its job — `F3` views the file under the cursor and `F4` opens
+it in the system editor, `F5` copies and `F6` moves or renames into the other
+panel, `F7` makes a directory, `F8` deletes — the operations all acting on the
+same operation targets, with copying and moving running off the UI thread behind
+a progress window that `Esc` stops. Since P7.1 the screen wears the classic
+colours: blue panels with cyan entries, a cyan cursor bar, yellow marks and a
+cyan function-key bar. Next comes sorting, hidden files and persisted settings.
 
-**359 tests pass** — 259 unit tests over the logic modules and the pure `Ui`
-ones, plus 100 integration tests driving real Terminal.Gui views over an
+**372 tests pass** — 266 unit tests over the logic modules and the pure `Ui`
+ones, plus 106 integration tests driving real Terminal.Gui views over an
 in-memory file system. All of them follow the arrange/act/assert shape and the
 folder layout described in [TESTING.md](TESTING.md).
 
@@ -29,7 +30,7 @@ folder layout described in [TESTING.md](TESTING.md).
 | 4 — Selection | P4.1–P4.3 | done |
 | 5 — File operations | P5.1–P5.6 | done |
 | 6 — Viewing files | P6.1–P6.2 | done |
-| 7 — Polish & configuration | P7.1–P7.4 | not started, P7.1 next |
+| 7 — Polish & configuration | P7.1–P7.4 | P7.1 done, P7.2 next |
 | 8 — Quality & release | P8.1–P8.3 | not started |
 
 ## What works today
@@ -104,7 +105,13 @@ folder layout described in [TESTING.md](TESTING.md).
   and the marks where they were, so a file saved (or created) meanwhile is on
   screen straight away. An editor that cannot be started is reported in a
   dialog; a directory or `..` under the cursor starts nothing.
-- `Ctrl+Q` or `F10` quits. The bottom bar lists the Norton-style function keys
+- The screen wears the classic colours: both panels are blue with their entries and
+  frames in bright cyan, the cursor bar of the focused panel is black on cyan,
+  marked entries and the summary line beneath them are bright yellow, the two
+  rows under the panels are light grey on black, and the function-key bar is
+  black on cyan. Every colour is one of the sixteen ANSI ones, so a terminal
+  with a limited palette shows them as they are.
+- `Ctrl+Q` or `F10` quits. The bottom bar lists the classic function keys
   (`F3 View`, `F4 Edit`, `F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`,
   `F10 Quit`) and every one of them now does its job.
 
@@ -125,6 +132,7 @@ Marbas/
     Update.fs             messages and effects: message + state -> state + effects
     Runtime.fs            generic host: the single mutable cell, dispatch, render
   Ui/
+    ClassicScheme.fs      the four schemes the screen is painted with
     EntrySize.fs          size column text, byte format injected per view
     EntryFormat.fs        one entry -> one fixed-width row
     SelectionSummary.fs   marked entries -> panel summary text
@@ -246,7 +254,7 @@ the other panel's path, and what comes back decides the operation:
 target means rename in place; otherwise the text is a directory — combined with
 the source panel's path, so a relative name lands beside the entries and an
 absolute one is taken as it stands. That keeps one edit box doing both jobs
-without a mode switch, the way Norton Commander does it.
+without a mode switch, the way the orthodox managers do it.
 
 **A rename moves the cursor with the entry.** `finishRename` reloads focusing
 `ByName newName`, so the renamed entry keeps the cursor even though the listing
@@ -442,6 +450,32 @@ the runtime — the `IsRendering` guard covers `ValueChanged`, but the
 lowers the flag for the render that is still running. Merging the loops would
 put that hazard into startup.
 
+**Colour is four schemes in one module; the views only ask for them.**
+`ClassicScheme` holds `screen`, `panel`, `summary` and `keyBar` as
+`Terminal.Gui` `Scheme` values, and four `SetScheme` calls put them on the
+window, the two panel frames, the summary label and the status bar. Nothing
+else in `Ui` mentions a colour. A scheme is inherited by every sub-view that
+has none of its own, which is why the entry list and the status line need no
+call: they take the scheme of the panel and of the window. Swapping the palette
+is one file, and P7.4 can persist a choice of scheme without touching a view.
+
+**Sixteen colours, on purpose.** Every attribute is built from `ColorName16`,
+the DOS palette the classic managers themselves had, so nothing has to be
+approximated on a terminal that offers no more than sixteen — which is what "respects
+terminals with limited colours" comes down to. A test walks every colour the
+schemes set and asserts it is exactly one of the sixteen, so a hand-picked RGB
+value cannot slip in unnoticed.
+
+**Which `VisualRole` a view draws with was measured, not guessed.** A view asks
+its scheme for an attribute through the `GettingAttributeForRole` event, so
+subscribing to it and drawing the view answers the question directly:
+`ListView` uses `Normal` for ordinary rows, `Focus` for the row under the cursor
+*only while it has focus*, and `Highlight` for marked ones; `FrameView` draws
+its border and title with `Normal` whether focused or not; `StatusBar` uses
+`Normal` and `HotNormal`. That settled the palette — the cursor bar disappearing
+from the panel that lost focus is Terminal.Gui's own behaviour, and it is what
+the managers Marbas follows do anyway.
+
 ## Traps already hit (details in [TESTING.md](TESTING.md))
 
 - `StatusBar` shortcuts swallow their key even with a `null` action — `F10`
@@ -454,16 +488,16 @@ put that hazard into startup.
 - `View.AddCommand` is `protected`; custom shortcuts use `KeyDown` handlers.
 - `ListView` type-ahead search swallowed `+` and `-` before any handler saw
   them; the panel disables it with `KeystrokeNavigator <- null`, which also
-  matches Norton Commander, where letters never move the cursor.
+  matches the orthodox managers, where letters never move the cursor.
 
 ## Next up
 
-**P7.1** — the Norton colour scheme: blue panels, cyan marks, a distinct
-colour for the active panel's cursor, degrading on terminals with few colours.
-Terminal.Gui 2 draws through `Scheme`s and `VisualRole`s, so the work is one Ui
-module holding the scheme and the views asking for it, rather than colours
-sprinkled over `FilePanel`. Marked rows already draw with
-`VisualRole.Highlight`, which is the hook the scheme has to fill in.
+**P7.2** — sorting: name / extension / date / size, ascending and descending,
+per panel, switched by `Ctrl+F3..F6` and shown in the panel. The ordering rule
+lives in `DirectoryListing`, which already puts `..` first and directories
+before files, so the work is a sort mode carried by `PanelState`, handed to the
+listing on every load and reload, plus the keys and the panel label that says
+which mode is on.
 
 ## Known rough edges
 
@@ -488,6 +522,16 @@ sprinkled over `FilePanel`. Marked rows already draw with
   process (`IDriver.Suspend` is `SIGTSTP`, a different thing). If that turns
   out to matter, the fix is to shut the driver down around the process and
   re-initialise afterwards, and it touches `Program.fs` only.
+- The cursor is invisible while it stands on a marked entry: `ListView` asks for
+  `Focus` and then for `Highlight` on that row, so the marked colour is the one
+  that lands. Colouring it the classic way — the marked yellow on the cursor's
+  cyan — needs the `RowRender` event, which hands over the row number and takes
+  a `RowAttribute` that overrides the role. It is one handler in `FilePanel`
+  whenever it starts to bother.
+- Dialogs, message boxes and the `F3` viewer keep Terminal.Gui's own theme; only
+  the main screen wears the classic colours. They are five separate surfaces
+  (`PromptDialog`, `PatternDialog`, `ProgressDialog`, `FileViewer`, `MessageBox`)
+  and colouring one without the rest would look worse than colouring none.
 - Delete still runs on the UI thread inside an `AppState` transition, so
   removing a huge tree blocks. It was never routed through an effect the way
   copy and move are, and `Directory.Delete` cannot report progress anyway.
