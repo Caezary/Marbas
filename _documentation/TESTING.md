@@ -68,9 +68,9 @@ reach the panel `ListView` a test drives.
 ## Injecting the outside world
 
 `MainWindow.create` takes a `Shell.Dependencies` record — file system, start
-path, quit callback, error reporter, drive chooser, pattern prompt, name
-prompt, confirmation, overwrite question, batch runner, file viewer, editor and
-modifier watch.
+path, settings path, quit callback, error reporter, drive chooser, pattern
+prompt, name prompt, confirmation, overwrite question, batch runner, file
+viewer, editor and modifier watch.
 Everything that would open a modal dialog, start a process or end the process
 is a function, so tests pass fakes and assert on what was requested.
 `Program.fs` is the only place that supplies the real `MessageBox` dialogs.
@@ -98,6 +98,14 @@ still asserts what the bottom bar shows. The polling itself lives in
 so a test hands it a function that records the path — and, where the point is
 the refresh that follows, one that writes into the `MockFileSystem` before
 answering `Ok`. Nothing in the suite starts a process.
+
+**The settings file is not a port.** `SettingsPath` is a plain path on the
+dependencies and `Settings.load`/`Settings.save` use the injected file system, so
+a test points the path into its own `MockFileSystem` and the real config file is
+never touched. That is what lets `Integration/SettingsTests.fs` state the whole
+promise of P7.4 in one test: build a window, sort it, show its hidden entries,
+send another panel to a second drive, press `Ctrl+Q`, then build a second window
+over the *same* mock file system and read the titles back.
 
 A UI test that needs the two panels on *different* directories gets there the
 way a user would: `press list PanelInput.rightDriveKey` with a `ChooseOption`

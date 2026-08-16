@@ -7,6 +7,7 @@ open Marbas.Ui
 let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
     { FileSystem = fs
       StartPath = FileSystemPath.create startPath
+      SettingsPath = FileSystemPath.create @"C:\marbas.conf"
       OnQuit = ignore
       ReportError = fun _ _ -> ()
       ChooseOption = fun _ _ -> None

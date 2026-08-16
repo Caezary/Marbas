@@ -1,10 +1,10 @@
 # Progress
 
-Status as of 2026-08-16. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-17. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–6 are complete, and Phase 7 has started** (28 of 30 tasks). Marbas
+**Phases 1–7 are complete** (29 of 32 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -20,10 +20,13 @@ or size in either direction, saying so in its title. P7.5 put every key binding
 into one table: the bottom bar is a row out of it, and holding `Ctrl` or `Alt`
 swaps that row for the commands those modifiers reach. Since P7.3 each panel
 also decides on its own whether the hidden entries — dotfiles and whatever the
-OS marks hidden or system — are listed at all. Next come persisted settings.
+OS marks hidden or system — are listed at all. P7.4 closed the phase: where each
+panel stands, how it sorts and whether it conceals are written to a config file
+when the app quits and read back when it starts, so a session survives a
+restart. Next comes Phase 8.
 
-**452 tests pass** — 329 unit tests over the logic modules and the pure `Ui`
-ones, plus 123 integration tests driving real Terminal.Gui views over an
+**483 tests pass** — 355 unit tests over the logic modules and the pure `Ui`
+ones, plus 128 integration tests driving real Terminal.Gui views over an
 in-memory file system. All of them follow the arrange/act/assert shape and the
 folder layout described in [TESTING.md](TESTING.md).
 
@@ -35,7 +38,7 @@ folder layout described in [TESTING.md](TESTING.md).
 | 4 — Selection | P4.1–P4.3 | done |
 | 5 — File operations | P5.1–P5.6 | done |
 | 6 — Viewing files | P6.1–P6.2 | done |
-| 7 — Polish & configuration | P7.1–P7.5 | P7.1, P7.2, P7.3, P7.5 done, P7.4 next |
+| 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | not started |
 
 ## What works today
@@ -144,6 +147,16 @@ folder layout described in [TESTING.md](TESTING.md).
   when they are let go. A modifier no command asks for shows an empty bar.
   Every entry can also be clicked. On Windows the modifiers are read from the
   keyboard ten times a second; elsewhere the bar stays on the classic row.
+- Quitting writes the session to `%APPDATA%\Marbas\settings.conf` (on Unix,
+  `~/.config/Marbas/settings.conf`): where each panel stands, which key it sorts
+  by and in which direction, and whether it conceals the hidden entries. The
+  next start reads it back, so both panels come up on the directories they were
+  left on, sorted the way they were sorted. The file is `key=value` lines meant
+  to be readable and editable by hand; anything it does not say, says wrongly or
+  spells in a way that means nothing falls back to what a first start would use,
+  and a directory that is no longer there falls back to the working directory
+  rather than raising an error at startup. A missing file is a first start. When
+  the file cannot be written at all, the app quits without complaining.
 
 ## Code map
 
@@ -154,13 +167,15 @@ Marbas/
     FileSystemPath.fs     single-case path type wrapping a raw string
     SortOrder.fs          which key a panel sorts by, in which direction
     HiddenEntries.fs      what makes an entry hidden, and whether a panel lists it
+    Settings.fs           the session both panels carry, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             mounted drives
     NamePattern.fs        wildcard matching for `+` / `-`
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     FileContent.fs        one file's content: text lines or bytes, errors as values
   State/
-    AppState.fs           immutable panel/app state and its transitions
+    AppState.fs           immutable panel/app state and its transitions,
+                          built from and read back as Settings
     Update.fs             messages and effects: message + state -> state + effects
     Runtime.fs            generic host: the single mutable cell, dispatch, render
   Ui/
@@ -612,6 +627,52 @@ its border and title with `Normal` whether focused or not; `StatusBar` uses
 from the panel that lost focus is Terminal.Gui's own behaviour, and it is what
 the managers Marbas follows do anyway.
 
+**The session is a value, and the state is built from it.** `Settings` holds
+exactly what survives a restart — path, sort order and hidden toggle, per panel
+— in the panel's own domain types, so nothing has to be converted twice.
+`AppState.fromSettings` builds a state from one and `AppState.settings` reads one
+back, which makes `AppState.create path` simply
+`fromSettings (Settings.forPath path)`. The first-start defaults therefore live
+in one place, `Settings`, rather than in the state constructor.
+
+**Settings go through `IFileSystem`, not through a port of their own.** The plan
+called for a load port and a save port; what it got is one `SettingsPath` on
+`Dependencies` plus `Settings.load` and `Settings.save` over the file system that
+is already injected. `Program.fs` is still the only place naming a real path
+(`%APPDATA%\Marbas\settings.conf`), and the parsing, the fallbacks and the file
+itself all run against `MockFileSystem` in the tests — which two opaque function
+ports would have left untestable.
+
+**The config file is `key=value` lines, and every value is optional.**
+`left.path`, `left.sort`, `left.direction`, `left.hidden`, and the same four for
+`right`. `Settings.parse` takes the defaults and folds onto them whatever it
+understood: an unknown key, a line with no `=`, a blank path and a word that
+names no sort key are all simply not read. A truncated or hand-edited file
+therefore degrades one setting at a time instead of being rejected whole. Keys
+and value words are matched lowercased; a path keeps the case it was written in.
+
+**A stored path is checked before it is used.** `Settings.load` ends by asking
+the file system whether each stored path is still a directory and falls back to
+the default start path when it is not, so a removed drive cannot greet a fresh
+start with an error dialog. Nothing else needs checking: a sort order and a
+hidden toggle cannot go stale.
+
+**Saving is an effect, so quitting stays a transition.** `QuitRequested` answers
+with two effects — `SaveSettings(settings state)` and then `Quit` — which keeps
+*what* is written a pure function of the state, asserted in `UpdateTests`, and
+keeps the writing itself in `Shell.interpret` with everything else that touches
+the world. A write that fails is swallowed: by then there is no screen left to
+report it on.
+
+**`Ctrl+Q` joined the key table, so quitting passes through the state.** It used
+to be only an application-level `Command.Quit` binding, which bypasses `Update`
+entirely — `F10` would have saved the session and `Ctrl+Q` would have dropped it.
+`KeyMap` now owns `quitKey` (off the bar, since `F10 Quit` already carries the
+label) and `MainWindow.configureQuitKey` binds the same key application-wide, so
+the panel handler wins wherever a panel has focus and the old binding stays as
+the fallback everywhere else. It also displaces `Esc`, which is what
+`Command.Quit` answers to by default.
+
 ## Traps already hit (details in [TESTING.md](TESTING.md))
 
 - `StatusBar` shortcuts swallow their key even with a `null` action — `F10`
@@ -639,15 +700,14 @@ the managers Marbas follows do anyway.
 
 ## Next up
 
-**P7.4** — persisted settings: both panel paths, both sort orders and both
-hidden toggles written to a config file on quit and read back on start. The
-values are already the panel's own domain types (`FileSystemPath`, `SortOrder`,
-`HiddenEntries`), so the work is a `Settings` module that maps them to and from
-a file, plus two ports on `Shell.Dependencies` (load and save) with `Program.fs`
-the only place naming a real path. Reading has to survive a missing, truncated
-or hand-edited file: whatever cannot be read falls back to what
-`AppState.create` uses today, and a start path that no longer exists must not
-keep the app from starting.
+**Phase 8 — quality & release.** **P8.1** consolidates the suite: it already
+runs green under `dotnet test` and is split the way [TESTING.md](TESTING.md)
+describes, so what is left is checking that the logic modules are covered end to
+end and that the run is CI-friendly. **P8.2** is the cross-platform pass —
+paths, drives, permissions and terminal quirks on Windows and Linux, written up
+as a checklist in `_documentation/`, where the modifier row, `Ctrl+H` and the
+`F4` editor round-trip are the known differences to confirm. **P8.3** adds
+publish profiles for self-contained single-file builds per OS.
 
 ## Known rough edges
 
@@ -704,3 +764,17 @@ keep the app from starting.
 - Delete still runs on the UI thread inside an `AppState` transition, so
   removing a huge tree blocks. It was never routed through an effect the way
   copy and move are, and `Directory.Delete` cannot report progress anyway.
+- The session is written only on quit, so a crash or a closed terminal loses it.
+  Writing after every navigation would keep it current at the cost of a file
+  write per keystroke; a write on a timer is the middle road if it ever matters.
+- `Ctrl+Q` pressed while a dialog holds focus still quits through the
+  application binding, which does not go through `Update` and therefore does not
+  save. Unbinding `Command.Quit` would fix it and hand `Esc` back its default
+  quit meaning, which is worse.
+- Which panel is active, where the cursors stand and what is marked are not
+  saved — P7.4 asked for paths, sort orders and toggles. The cursor would be the
+  obvious next one, and it fits the file as `left.cursor=<name>`, resolved the
+  way `FocusTarget.ByName` already resolves.
+- The settings file is read and written through the same `IFileSystem` the
+  panels browse. That is what makes it testable, but it also means a future
+  read-only or sandboxed file system would silently take the config with it.

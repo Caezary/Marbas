@@ -24,6 +24,12 @@ let private VkAlt = 0x12
 [<Literal>]
 let private PollInterval = 100.0
 
+[<Literal>]
+let private ConfigDirectory = "Marbas"
+
+[<Literal>]
+let private ConfigFile = "settings.conf"
+
 [<DllImport "user32.dll">]
 extern int16 private GetAsyncKeyState(int vKey)
 
@@ -147,10 +153,19 @@ let main _ =
         app.Run dialog |> ignore
         cancellation.Cancel()
 
+    let settingsPath =
+        fs.Path.Combine(
+            Environment.GetFolderPath Environment.SpecialFolder.ApplicationData,
+            ConfigDirectory,
+            ConfigFile
+        )
+        |> FileSystemPath.create
+
     use window =
         MainWindow.create
             { FileSystem = fs
               StartPath = fs.Directory.GetCurrentDirectory() |> FileSystemPath.create
+              SettingsPath = settingsPath
               OnQuit = fun () -> app.RequestStop()
               ReportError = reportError
               ChooseOption = chooseOption

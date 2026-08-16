@@ -50,6 +50,7 @@ type Effect =
     | PromptForName
     | PromptForPattern of SelectionMode
     | PromptForDrive of PanelSide
+    | SaveSettings of Settings
     | Quit
 
 type UpdateResult =
@@ -143,7 +144,9 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | Ok() -> refresh fs state |> applyListing state
     | DriveRequested side -> request state (PromptForDrive side)
     | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
-    | QuitRequested -> request state Quit
+    | QuitRequested ->
+        { State = state
+          Effects = [ SaveSettings(settings state); Quit ] }
 
 let step (fs: IFileSystem) (msg: Message) (state: AppState) =
     let result = update fs msg state

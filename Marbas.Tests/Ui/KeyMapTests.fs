@@ -112,6 +112,12 @@ let ``the classic hidden key is off the bar, because a VT terminal cannot send i
     Assert.Equal<Key list>([ Key.H.WithAlt ], labelled)
 
 [<Fact>]
+let ``the quit key requests a quit, so quitting always passes through the state`` () =
+    let message = KeyMap.messageFor KeyMap.quitKey
+
+    Assert.Equal(Some QuitRequested, message)
+
+[<Fact>]
 let ``an unmapped key produces no message`` () =
     let message = KeyMap.messageFor (Key 'z')
 

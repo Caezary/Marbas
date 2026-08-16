@@ -469,13 +469,13 @@ let ``a hidden toggle of a vanished directory is reported`` () =
     Assert.Equal<Effect list>([ ReportListingError(DirectoryListing.DirectoryNotFound(fp @"C:\start\docs")) ], result.Effects)
 
 [<Fact>]
-let ``quit requested raises the quit effect`` () =
+let ``quit requested saves what the panels are set to before it quits`` () =
     let fs = mockFs ()
-    let state = loaded fs
+    let state = loadedBoth fs |> sortBy SortKey.BySize Left
 
     let result = update fs QuitRequested state
 
-    Assert.Equal<Effect list>([ Quit ], result.Effects)
+    Assert.Equal<Effect list>([ SaveSettings(settings state); Quit ], result.Effects)
 
 [<Fact>]
 let ``step pairs the new state with its effects`` () =
@@ -485,4 +485,4 @@ let ``step pairs the new state with its effects`` () =
     let nextState, effects = step fs QuitRequested state
 
     Assert.Equal(state, nextState)
-    Assert.Equal<Effect list>([ Quit ], effects)
+    Assert.Equal<Effect list>([ SaveSettings(settings state); Quit ], effects)

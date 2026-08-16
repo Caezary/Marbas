@@ -353,6 +353,17 @@ let ``an editor that fails dispatches its failure back`` () =
     Assert.Equal<Message list>([ EditFinished(Error failure) ], List.ofSeq sent)
 
 [<Fact>]
+let ``saved settings are written where the settings path points`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory @"C:\start"
+    let settings = Settings.forPath (fp @"C:\start")
+    let deps = { noDeps () with FileSystem = fs; SettingsPath = fp @"C:\config\marbas.conf" }
+
+    Shell.interpret deps ignore (SaveSettings settings)
+
+    Assert.Equal(settings, Settings.load fs settings (fp @"C:\config\marbas.conf"))
+
+[<Fact>]
 let ``quit runs the quit port`` () =
     let mutable quit = false
     let deps = { noDeps () with OnQuit = fun () -> quit <- true }

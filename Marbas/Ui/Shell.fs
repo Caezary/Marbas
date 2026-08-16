@@ -29,6 +29,7 @@ let MoveTitle = "Moving"
 type Dependencies =
     { FileSystem: IFileSystem
       StartPath: FileSystemPath
+      SettingsPath: FileSystemPath
       OnQuit: unit -> unit
       ReportError: string -> string -> unit
       ChooseOption: string -> string list -> string option
@@ -98,4 +99,5 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.ChooseOption DrivePrompt drives with
         | Some drive -> dispatch (PathOpened(side, FileSystemPath.create drive))
         | None -> ()
+    | SaveSettings settings -> Settings.save deps.FileSystem deps.SettingsPath settings
     | Quit -> deps.OnQuit()

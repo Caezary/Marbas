@@ -20,6 +20,7 @@
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
     <Compile Include="FileSystem\HiddenEntriesTests.fs" />
+    <Compile Include="FileSystem\SettingsTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
     <Compile Include="FileSystem\FileContentTests.fs" />
   </ItemGroup>
@@ -32,6 +33,7 @@
     <Compile Include="State\SelectionTests.fs" />
     <Compile Include="State\SortTests.fs" />
     <Compile Include="State\HiddenTests.fs" />
+    <Compile Include="State\SettingsTests.fs" />
     <Compile Include="State\SelectionPatternTests.fs" />
     <Compile Include="State\MkdirTests.fs" />
     <Compile Include="State\DeleteTests.fs" />
@@ -81,6 +83,7 @@
     <Compile Include="Integration\SelectionPatternKeyTests.fs" />
     <Compile Include="Integration\SortKeyTests.fs" />
     <Compile Include="Integration\HiddenKeyTests.fs" />
+    <Compile Include="Integration\SettingsTests.fs" />
     <Compile Include="Integration\MkdirKeyTests.fs" />
     <Compile Include="Integration\DeleteKeyTests.fs" />
     <Compile Include="Integration\CopyKeyTests.fs" />

@@ -6,14 +6,16 @@ open Marbas.FileSystem
 open Marbas.State
 open Marbas.State.Runtime
 
-let quitKey = Key.Q.WithCtrl
-
 let configureQuitKey () =
-    Application.SetDefaultKeyBinding(Command.Quit, Bind.All(quitKey, Key.F10))
+    Application.SetDefaultKeyBinding(Command.Quit, Bind.All(KeyMap.quitKey, Key.F10))
 
 let create (deps: Shell.Dependencies) =
     let view = AppView.create ()
-    let appState = AppState.create deps.StartPath
+
+    let settings =
+        Settings.load deps.FileSystem (Settings.forPath deps.StartPath) deps.SettingsPath
+
+    let appState = AppState.fromSettings settings
 
     let runtime =
         Runtime(appState, Update.step deps.FileSystem, Shell.interpret deps, AppView.render view)
@@ -24,7 +26,7 @@ let create (deps: Shell.Dependencies) =
     view.Window.Add keyBar |> ignore
 
     for side, _ in AppView.panels view do
-        dispatch (Update.PathOpened(side, deps.StartPath))
+        dispatch (Update.PathOpened(side, (AppState.panel side appState).Path))
 
     let host: PanelWiring.Host =
         { Dispatch = dispatch

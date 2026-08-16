@@ -37,18 +37,29 @@ type FocusTarget =
     | Top
     | ByName of EntryName
 
-let create (path: FileSystemPath) =
-    let panel =
-        { Path = path
-          Entries = []
-          Cursor = 0
-          Selected = Set.empty
-          Sort = SortOrder.byName
-          Hidden = Concealed }
+let private panelFrom (settings: PanelSettings) =
+    { Path = settings.Path
+      Entries = []
+      Cursor = 0
+      Selected = Set.empty
+      Sort = settings.Sort
+      Hidden = settings.Hidden }
 
-    { Left = panel
-      Right = panel
+let fromSettings (settings: Settings) =
+    { Left = panelFrom settings.Left
+      Right = panelFrom settings.Right
       Active = Left }
+
+let create (path: FileSystemPath) = fromSettings (Settings.forPath path)
+
+let private panelSettings (p: PanelState) : PanelSettings =
+    { Path = p.Path
+      Sort = p.Sort
+      Hidden = p.Hidden }
+
+let settings (state: AppState) : Settings =
+    { Left = panelSettings state.Left
+      Right = panelSettings state.Right }
 
 let panel side state =
     match side with
@@ -57,7 +68,7 @@ let panel side state =
 
 let activePanel state = panel state.Active state
 
-let private updatePanel side f state =
+let private updatePanel side f (state: AppState) =
     match side with
     | Left -> { state with Left = f state.Left }
     | Right -> { state with Right = f state.Right }

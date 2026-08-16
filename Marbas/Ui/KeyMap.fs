@@ -35,6 +35,8 @@ let classicHiddenKey = Key.H.WithCtrl
 
 let hiddenKeys = [ hiddenKey; classicHiddenKey ]
 
+let quitKey = Key.Q.WithCtrl
+
 type Binding =
     { Key: Key
       Label: string option
@@ -65,6 +67,7 @@ let bindings =
       onBar leftDriveKey "Left" (DriveRequested Left)
       onBar rightDriveKey "Right" (DriveRequested Right)
       onBar hiddenKey "Hidden" HiddenToggled
+      offBar quitKey QuitRequested
       offBar classicHiddenKey HiddenToggled
       offBar refreshKey RefreshRequested
       offBar selectPatternKey (PatternRequested Select)
