@@ -55,35 +55,63 @@ let ``bar sticks to the bottom edge`` (width: int) (height: int) =
     Assert.Equal(1, frame.Height)
 
 [<Fact>]
-let ``every function key carries the message it stands for`` () =
-    let bindings = FunctionKeyBar.bindings
-
-    Assert.Equal<(Key * string * Message) list>(
-        [ Key.F3, "View", ViewRequested
-          Key.F4, "Edit", EditRequested
-          Key.F5, "Copy", CopyRequested
-          Key.F6, "RenMov", MoveRequested
-          Key.F7, "Mkdir", MakeDirectoryRequested
-          Key.F8, "Delete", DeleteRequested
-          Key.F10, "Quit", QuitRequested ],
-        bindings
-    )
-
-[<Fact>]
-let ``pressing a function key dispatches its message`` () =
+let ``the bar shows the row it is asked for`` () =
     let messages = ResizeArray<Message>()
     use bar = FunctionKeyBar.create messages.Add
 
-    press bar Key.F5
+    FunctionKeyBar.show messages.Add bar (Modifiers.held [ Ctrl ])
+
+    let shown =
+        bar.SubViews
+        |> Seq.choose (function
+            | :? Shortcut as s -> Some(s.Key, s.Title)
+            | _ -> None)
+        |> List.ofSeq
+
+    Assert.Equal<(Key * string) list>(
+        [ Key.F3.WithCtrl, "Name"
+          Key.F4.WithCtrl, "Ext"
+          Key.F5.WithCtrl, "Date"
+          Key.F6.WithCtrl, "Size" ],
+        shown
+    )
+
+[<Fact>]
+let ``a shortcut dispatches the command it stands for`` () =
+    let messages = ResizeArray<Message>()
+    use bar = FunctionKeyBar.create messages.Add
+
+    let copy =
+        bar.SubViews
+        |> Seq.pick (function
+            | :? Shortcut as s when s.Key = Key.F5 -> Some s
+            | _ -> None)
+
+    copy.Action.Invoke()
 
     Assert.Contains(CopyRequested, messages)
+
+[<Fact>]
+let ``no shortcut takes its key from the whole application`` () =
+    let messages = ResizeArray<Message>()
+    use bar = FunctionKeyBar.create messages.Add
+
+    let bound =
+        bar.SubViews
+        |> Seq.choose (function
+            | :? Shortcut as s -> Some s.BindKeyToApplication
+            | _ -> None)
+        |> List.ofSeq
+
+    Assert.NotEmpty bound
+    Assert.All(bound, Assert.False)
 
 [<Fact>]
 let ``F10 key triggers the quit action`` () =
     let mutable quitRequested = false
     use window = createInitializedWith (fun () -> quitRequested <- true)
 
-    press window Key.F10
+    pressKey window Key.F10
 
     Assert.True quitRequested
 

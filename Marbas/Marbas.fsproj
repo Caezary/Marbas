@@ -18,6 +18,8 @@
         <Compile Include="State\Update.fs" />
         <Compile Include="State\Runtime.fs" />
         <Compile Include="Ui\ClassicScheme.fs" />
+        <Compile Include="Ui\Modifiers.fs" />
+        <Compile Include="Ui\KeyMap.fs" />
         <Compile Include="Ui\EntrySize.fs" />
         <Compile Include="Ui\EntryFormat.fs" />
         <Compile Include="Ui\SelectionSummary.fs" />
@@ -33,7 +35,6 @@
         <Compile Include="Ui\PanelTitle.fs" />
         <Compile Include="Ui\FilePanel.fs" />
         <Compile Include="Ui\FunctionKeyBar.fs" />
-        <Compile Include="Ui\PanelInput.fs" />
         <Compile Include="Ui\PanelWiring.fs" />
         <Compile Include="Ui\AppView.fs" />
         <Compile Include="Ui\Shell.fs" />

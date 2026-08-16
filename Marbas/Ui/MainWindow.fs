@@ -19,8 +19,9 @@ let create (deps: Shell.Dependencies) =
         Runtime(appState, Update.step deps.FileSystem, Shell.interpret deps, AppView.render view)
 
     let dispatch = runtime.Dispatch
+    let keyBar = FunctionKeyBar.create dispatch
 
-    view.Window.Add(FunctionKeyBar.create dispatch) |> ignore
+    view.Window.Add keyBar |> ignore
 
     for side, _ in AppView.panels view do
         dispatch (Update.PathOpened(side, deps.StartPath))
@@ -32,5 +33,9 @@ let create (deps: Shell.Dependencies) =
 
     for side, panel in AppView.panels view do
         PanelWiring.attach host side panel
+
+    deps.WatchModifiers(fun modifiers ->
+        FunctionKeyBar.show dispatch keyBar modifiers
+        runtime.Refresh())
 
     view.Window

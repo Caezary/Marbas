@@ -61,24 +61,33 @@ let ``a cursor change raised while rendering is ignored`` () =
     Assert.Empty probe.Messages
 
 [<Fact>]
-let ``accepting an entry opens it at the cursor`` () =
+let ``accepting an entry opens it`` () =
     let probe, _, list = wired ()
     list.SelectedItem <- 1
     probe.Messages.Clear()
 
     press list Key.Enter
 
-    Assert.Contains(EntryOpened(cursor Left 1), probe.Messages)
+    Assert.Contains(EntryOpened, probe.Messages)
 
 [<Fact>]
-let ``panel keys are translated by PanelInput`` () =
+let ``panel keys are translated by KeyMap`` () =
     let probe, _, list = wired ()
     list.SelectedItem <- 1
     probe.Messages.Clear()
 
-    press list PanelInput.refreshKey
+    press list KeyMap.refreshKey
 
-    Assert.Contains(RefreshRequested(cursor Left 1), probe.Messages)
+    Assert.Contains(RefreshRequested, probe.Messages)
+
+[<Fact>]
+let ``a function key is translated by KeyMap too`` () =
+    let probe, _, list = wired ()
+    probe.Messages.Clear()
+
+    press list Key.F5
+
+    Assert.Contains(CopyRequested, probe.Messages)
 
 [<Fact>]
 let ``an unknown key is left to the view`` () =

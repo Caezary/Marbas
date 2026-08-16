@@ -24,7 +24,7 @@ let private silent = fun (_: string) (_: string) -> ()
 let ``alt+F1 opens the chosen drive in the left panel`` () =
     use window = windowWith (twoDriveFs ()) (fun _ _ -> Some @"D:\") silent
 
-    press (leftList window) PanelInput.leftDriveKey
+    press (leftList window) KeyMap.leftDriveKey
 
     Assert.Equal(@"D:\", shownPath FilePanel.LeftId window)
     Assert.Equal(@"C:\start", shownPath FilePanel.RightId window)
@@ -33,7 +33,7 @@ let ``alt+F1 opens the chosen drive in the left panel`` () =
 let ``alt+F2 opens the chosen drive in the right panel`` () =
     use window = windowWith (twoDriveFs ()) (fun _ _ -> Some @"D:\") silent
 
-    press (leftList window) PanelInput.rightDriveKey
+    press (leftList window) KeyMap.rightDriveKey
 
     Assert.Equal(@"D:\", shownPath FilePanel.RightId window)
     Assert.Equal(@"C:\start", shownPath FilePanel.LeftId window)
@@ -43,7 +43,7 @@ let ``the chooser is offered every mounted drive`` () =
     let offered = ResizeArray<string list>()
     use window = windowWith (twoDriveFs ()) (fun _ drives -> offered.Add drives; None) silent
 
-    press (leftList window) PanelInput.leftDriveKey
+    press (leftList window) KeyMap.leftDriveKey
 
     Assert.Equal<string list>([ @"C:\"; @"D:\" ], Assert.Single offered)
 
@@ -51,7 +51,7 @@ let ``the chooser is offered every mounted drive`` () =
 let ``cancelling the chooser leaves both panels untouched`` () =
     use window = windowWith (twoDriveFs ()) (fun _ _ -> None) silent
 
-    press (leftList window) PanelInput.leftDriveKey
+    press (leftList window) KeyMap.leftDriveKey
 
     Assert.Equal(@"C:\start", shownPath FilePanel.LeftId window)
 
@@ -60,7 +60,7 @@ let ``an unreadable drive is reported and the panel stays put`` () =
     let reported = ResizeArray<string>()
     use window = windowWith (twoDriveFs ()) (fun _ _ -> Some @"Z:\") (fun _ -> reported.Add)
 
-    press (leftList window) PanelInput.leftDriveKey
+    press (leftList window) KeyMap.leftDriveKey
 
     Assert.Contains(@"Z:\", Assert.Single reported)
     Assert.Equal(@"C:\start", shownPath FilePanel.LeftId window)

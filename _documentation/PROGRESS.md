@@ -4,7 +4,7 @@ Status as of 2026-08-15. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–6 are complete, and Phase 7 has started** (26 of 29 tasks). Marbas
+**Phases 1–6 are complete, and Phase 7 has started** (27 of 30 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -16,11 +16,13 @@ same operation targets, with copying and moving running off the UI thread behind
 a progress window that `Esc` stops. Since P7.1 the screen wears the classic
 colours: blue panels with cyan entries, a cyan cursor bar, yellow marks and a
 cyan function-key bar, and since P7.2 each panel sorts by name, extension, date
-or size in either direction, saying so in its title. Next come hidden files and
-persisted settings.
+or size in either direction, saying so in its title. P7.5 put every key binding
+into one table: the bottom bar is a row out of it, and holding `Ctrl` or `Alt`
+swaps that row for the commands those modifiers reach. Next come hidden files
+and persisted settings.
 
-**407 tests pass** — 297 unit tests over the logic modules and the pure `Ui`
-ones, plus 110 integration tests driving real Terminal.Gui views over an
+**421 tests pass** — 303 unit tests over the logic modules and the pure `Ui`
+ones, plus 118 integration tests driving real Terminal.Gui views over an
 in-memory file system. All of them follow the arrange/act/assert shape and the
 folder layout described in [TESTING.md](TESTING.md).
 
@@ -32,7 +34,7 @@ folder layout described in [TESTING.md](TESTING.md).
 | 4 — Selection | P4.1–P4.3 | done |
 | 5 — File operations | P5.1–P5.6 | done |
 | 6 — Viewing files | P6.1–P6.2 | done |
-| 7 — Polish & configuration | P7.1–P7.4 | P7.1–P7.2 done, P7.3 next |
+| 7 — Polish & configuration | P7.1–P7.5 | P7.1, P7.2, P7.5 done, P7.3 next |
 | 8 — Quality & release | P8.1–P8.3 | not started |
 
 ## What works today
@@ -123,6 +125,12 @@ folder layout described in [TESTING.md](TESTING.md).
 - `Ctrl+Q` or `F10` quits. The bottom bar lists the classic function keys
   (`F3 View`, `F4 Edit`, `F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`,
   `F10 Quit`) and every one of them now does its job.
+- The bar follows the modifiers being held: with `Ctrl` down it lists the sort
+  commands (`F3 Name`, `F4 Ext`, `F5 Date`, `F6 Size`), with `Alt` down the
+  drive choosers (`F1 Left`, `F2 Right`), and it goes back to the classic keys
+  when they are let go. A modifier no command asks for shows an empty bar.
+  Every entry can also be clicked. On Windows the modifiers are read from the
+  keyboard ten times a second; elsewhere the bar stays on the classic row.
 
 ## Code map
 
@@ -143,6 +151,8 @@ Marbas/
     Runtime.fs            generic host: the single mutable cell, dispatch, render
   Ui/
     ClassicScheme.fs      the four schemes the screen is painted with
+    Modifiers.fs          Ctrl / Alt / Shift as a set, and the set a key carries
+    KeyMap.fs             every key binding: key, bar label, message
     EntrySize.fs          size column text, byte format injected per view
     EntryFormat.fs        one entry -> one fixed-width row
     SelectionSummary.fs   marked entries -> panel summary text
@@ -157,8 +167,7 @@ Marbas/
     OverwriteQuestion.fs  collision -> question text, answer buttons and mapping
     PanelTitle.fs         path and sort order -> the panel frame's title
     FilePanel.fs          panel views, render state -> view
-    FunctionKeyBar.fs     bottom shortcut bar, one action per function key
-    PanelInput.fs         panel key -> message
+    FunctionKeyBar.fs     bottom bar: the KeyMap row of the modifiers held
     Shell.fs              Dependencies and the effect interpreter
     PromptDialog.fs       single-field text prompt (label + default)
     PatternDialog.fs      the `+` / `-` pattern prompt, over PromptDialog
@@ -312,14 +321,16 @@ so a failed batch can be retried by pressing the key again.
 volumes, which is the normal case for a two-panel manager, so directories are
 copied and then removed; files still use `IFile.Move`.
 
-**Function keys live on the `StatusBar`, not the panel.** A `StatusBar`
-shortcut swallows its key globally (see the `F10` trap), so a panel-level
-`KeyDown` handler for `F7` would never fire. `FunctionKeyBar.create` therefore
-takes an `Actions` record — one callback per function key — and `MainWindow`
-supplies the handlers. Their messages carry no side or index — a `StatusBar`
-shortcut has no notion of focus, so `CopyRequested` and its siblings read the
-active panel and its cursor from the state, which the panel events keep up to
-date.
+**No message carries a cursor except the one that moves it.** `CursorMoved` is
+the only message with a `PanelCursor`; `EntryOpened`, `SelectionToggled`,
+`SortRequested`, `RefreshRequested` and the pattern pair say what happened and
+nothing else, and `Update` reads the active panel and its cursor from the state.
+That is sound because the state is never behind: `ListView.ValueChanged`
+dispatches `CursorMoved` on every move and `HasFocusChanged` dispatches
+`PanelFocused`, so by the time a key is pressed the state already knows where
+the cursor stands. It is also what lets one binding serve both a key press and a
+mouse click on the bar, since a click has no notion of a cursor. `F5`, `F6` and
+`F8` were built this way from the start; P7.5 made the rest follow.
 
 **`ReportError` carries a title.** Listing failures and operation failures want
 different dialog captions, so the dependency is `title -> message -> unit`;
@@ -443,11 +454,42 @@ on the `TextView` because that is the view holding focus, and it marks the key
 handled so the `F3` shortcut on the main window's status bar cannot reopen a
 viewer on top of the one being closed.
 
-**Keys map to messages in tables, not in callbacks.** `PanelInput.messageFor`
-does it for the panel, `FunctionKeyBar.bindings` for the bottom bar — one list
-of key, title and `Message`, turned into `Shortcut`s by `FunctionKeyBar.create
-dispatch`. Both tables are asserted directly in tests, and `MainWindow` no
-longer knows which key stands for which message.
+**One table holds every key, and the bar is a view of it.** `KeyMap.bindings`
+is the whole keyboard: key, an optional bar label, and the `Message` the key
+stands for. `KeyMap.messageFor` is what the panel's single `KeyDown` handler
+asks, and `KeyMap.row modifiers` is what the bottom bar draws — the labelled
+bindings whose key carries exactly those modifiers, in table order. Adding a
+command is one line, and a command cannot be on the bar under one name and do
+something else when its key is pressed, because both come from the same row.
+There was a `PanelInput` module holding the panel half of this; P7.5 merged it
+into `KeyMap` and deleted it.
+
+**The bar shows keys, it no longer takes them.** Every `Shortcut` is built with
+`BindKeyToApplication <- false`, so it still renders `F5 Copy` and still answers
+to a mouse click, but the key itself is handled where every other key is — the
+`KeyDown` handler on the focused panel's `ListView`. That kills the trap that
+made `F7` unreachable from the panel, and it means a function key does nothing
+while a dialog holds focus, which is what it should do anyway. The price is that
+tests can no longer send `F5` to the window and have the bar catch it, so
+`Gui.pressKey` sends it to the panel that has focus, the way a user does.
+
+**Held modifiers are polled, because the driver will not report them.**
+Terminal.Gui 2.4.17 has the vocabulary for it — `Key.IsModifierOnly`,
+`Key.ModifierKey` — but only the kitty keyboard protocol fills it in. The
+Windows input processor returns from every key-up before anything is raised
+(`if (!inputEvent.KeyEvent.bKeyDown) { return; }`) and never surfaces a
+standalone `Ctrl`, so there is no event to listen to on the platform Marbas is
+developed on. `Dependencies.WatchModifiers` is therefore a port that hands over
+a callback; `Program.fs` is the only place that knows about `GetAsyncKeyState`
+and `app.AddTimeout`, polls ten times a second and reports only when the set
+changes. On anything but Windows it registers nothing and the bar keeps the
+classic row. Everything above the port — which row a set of modifiers means,
+what the bar then shows — is ordinary tested code, because tests call the
+captured callback themselves.
+
+**A row is what the table says, empty included.** Holding `Shift` shows an empty
+bar, because no command is bound to `Shift`. Falling back to the classic row
+would say that `Shift+F5` copies, which it does not.
 
 **Panel event wiring is its own module, attached after the panels are seeded.**
 `PanelWiring.attach` subscribes one panel's `ListView` and frame to a
@@ -528,6 +570,11 @@ the managers Marbas follows do anyway.
 - `ListView` type-ahead search swallowed `+` and `-` before any handler saw
   them; the panel disables it with `KeystrokeNavigator <- null`, which also
   matches the orthodox managers, where letters never move the cursor.
+- An F# list literal that mixes plain elements with a `for … -> …` comprehension
+  keeps only what the comprehension yields; the plain elements become ignored
+  statements. `KeyMap.bindings` lost every function key that way and only the
+  two selection keys survived, which looked like a broken key handler. The
+  compiler does say so (`FS0020`) — the warning was there to be read.
 
 ## Next up
 
@@ -573,6 +620,18 @@ dot, and `FileAttributes.Hidden`/`System`.
   the main screen wears the classic colours. They are five separate surfaces
   (`PromptDialog`, `PatternDialog`, `ProgressDialog`, `FileViewer`, `MessageBox`)
   and colouring one without the rest would look worse than colouring none.
+- The modifier row only appears on Windows. `WatchModifiers` registers nothing
+  elsewhere, because no Unix driver in Terminal.Gui 2.4.17 reports a standalone
+  modifier outside the kitty keyboard protocol. If that protocol is ever wired
+  through, the fix is one more implementation of the same port.
+- The poll reads the physical keyboard, not this window's: holding `Ctrl` in
+  another application changes Marbas's bar too, if it happens to be visible.
+  `GetConsoleWindow` would gate it, but under Windows Terminal that handle is
+  not the window the user sees, so the gate would switch the feature off where
+  it matters most.
+- The bar follows the keyboard ten times a second, so a `Ctrl` tapped and
+  released inside 100 ms may never show its row. Polling faster costs more than
+  the miss does.
 - Delete still runs on the UI thread inside an `AppState` transition, so
   removing a huge tree blocks. It was never routed through an effect the way
   copy and move are, and `Directory.Delete` cannot report progress anyway.

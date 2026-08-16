@@ -28,7 +28,7 @@ let ``F4 hands the file under the cursor to the editor`` () =
     use window = windowWith (mockFs ()) (fun path -> edited.Add path; Ok()) silent
     (leftList window).SelectedItem <- 2
 
-    press window Key.F4
+    pressKey window Key.F4
 
     Assert.Equal(@"C:\start\notes.txt", FileSystemPath.value (Assert.Single edited))
 
@@ -38,7 +38,7 @@ let ``F4 on a directory starts no editor`` () =
     use window = windowWith (mockFs ()) (fun path -> edited.Add path; Ok()) silent
     (leftList window).SelectedItem <- 1
 
-    press window Key.F4
+    pressKey window Key.F4
 
     Assert.Empty edited
 
@@ -49,7 +49,7 @@ let ``what the editor left behind shows up when it returns`` () =
     use window = windowWith fs (fun _ -> write (); Ok()) silent
     (leftList window).SelectedItem <- 2
 
-    press window Key.F4
+    pressKey window Key.F4
 
     Assert.Equal(4, (leftList window).Source.Count)
 
@@ -60,6 +60,6 @@ let ``an editor that could not be started is reported`` () =
     use window = windowWith (mockFs ()) (fun _ -> Error failure) (fun _ -> reported.Add)
     (leftList window).SelectedItem <- 2
 
-    press window Key.F4
+    pressKey window Key.F4
 
     Assert.Contains("notes.txt", Assert.Single reported)

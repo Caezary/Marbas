@@ -22,6 +22,14 @@ let rightList window = FilePanel.listView (panel FilePanel.RightId window)
 let press (view: View) (key: Key) =
     view.NewKeyDownEvent(Key key.KeyCode) |> ignore
 
+let private focusedList window =
+    if (panel FilePanel.RightId window).HasFocus then
+        rightList window
+    else
+        leftList window
+
+let pressKey window key = press (focusedList window) key
+
 let focusedWindow deps =
     let window = MainWindow.create deps
     window.BeginInit()

@@ -31,7 +31,7 @@ let ``the select key asks for a pattern and marks the matches`` () =
     use window = windowWith (fun title -> asked.Add title; Some "*.fs")
     let list = leftList window
 
-    press list PanelInput.selectPatternKey
+    press list KeyMap.selectPatternKey
 
     Assert.Equal<string list>([ Shell.SelectPrompt ], List.ofSeq asked)
     Assert.Collection(marked list, fun row -> Assert.StartsWith("setup.fs", row))
@@ -41,10 +41,10 @@ let ``the deselect key asks for a pattern and unmarks the matches`` () =
     let asked = ResizeArray<string>()
     use window = windowWith (fun title -> asked.Add title; Some "*.txt")
     let list = leftList window
-    press list PanelInput.selectPatternKey
+    press list KeyMap.selectPatternKey
     let markedBefore = marked list
 
-    press list PanelInput.deselectPatternKey
+    press list KeyMap.deselectPatternKey
 
     Assert.Equal<string list>([ Shell.SelectPrompt; Shell.DeselectPrompt ], List.ofSeq asked)
     Assert.Equal(2, markedBefore.Length)
@@ -55,9 +55,9 @@ let ``cancelling the pattern prompt changes nothing`` () =
     use window = windowWith (fun _ -> None)
     let list = leftList window
     list.SelectedItem <- 1
-    press list PanelInput.selectionKeys.Head
+    press list KeyMap.selectionKeys.Head
 
-    press list PanelInput.selectPatternKey
+    press list KeyMap.selectPatternKey
 
     Assert.Collection(marked list, fun row -> Assert.StartsWith("docs", row))
 
@@ -67,7 +67,7 @@ let ``the panel shows a summary of what is selected`` () =
     let panelView = panel FilePanel.LeftId window
     let summaryBefore = (FilePanel.summary panelView).Text
 
-    press (FilePanel.listView panelView) PanelInput.selectPatternKey
+    press (FilePanel.listView panelView) KeyMap.selectPatternKey
 
     Assert.Equal("", summaryBefore)
     Assert.Contains("2 selected", (FilePanel.summary panelView).Text)

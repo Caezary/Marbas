@@ -8,12 +8,12 @@ open Marbas.State.AppState
 type Message =
     | CursorMoved of PanelCursor
     | PanelFocused of PanelSide
-    | EntryOpened of PanelCursor
-    | RefreshRequested of PanelCursor
-    | SelectionToggled of PanelCursor
-    | SortRequested of PanelCursor * SortKey
-    | PatternRequested of PanelCursor * SelectionMode
-    | PatternEntered of PanelCursor * SelectionMode * NamePattern
+    | EntryOpened
+    | RefreshRequested
+    | SelectionToggled
+    | SortRequested of SortKey
+    | PatternRequested of SelectionMode
+    | PatternEntered of SelectionMode * NamePattern
     | MakeDirectoryRequested
     | NameEntered of name: EntryName
     | DeleteRequested
@@ -47,7 +47,7 @@ type Effect =
     | EditFile of path: FileSystemPath
     | PromptForTarget of suggestion: FileSystemPath
     | PromptForName
-    | PromptForPattern of PanelCursor * SelectionMode
+    | PromptForPattern of SelectionMode
     | PromptForDrive of PanelSide
     | Quit
 
@@ -58,9 +58,6 @@ type UpdateResult =
 let private stay state = { State = state; Effects = [] }
 
 let private request state effect = { State = state; Effects = [ effect ] }
-
-let private atCursor (cursor: PanelCursor) =
-    activate cursor.Side >> setCursor cursor.Side cursor.Index
 
 let private otherPath state =
     (panel (opposite state.Active) state).Path
@@ -87,13 +84,12 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     match msg with
     | CursorMoved cursor -> stay (setCursor cursor.Side cursor.Index state)
     | PanelFocused side -> stay (activate side state)
-    | EntryOpened cursor -> state |> atCursor cursor |> enter fs |> applyListing state
-    | RefreshRequested cursor -> state |> atCursor cursor |> refresh fs |> applyListing state
-    | SelectionToggled cursor -> stay (state |> atCursor cursor |> toggleSelectionAndAdvance cursor.Side)
-    | SortRequested(cursor, key) -> stay (state |> atCursor cursor |> sortBy key cursor.Side)
-    | PatternRequested(cursor, mode) -> request state (PromptForPattern(cursor, mode))
-    | PatternEntered(cursor, mode, pattern) ->
-        stay (state |> atCursor cursor |> applyPattern mode cursor.Side pattern)
+    | EntryOpened -> enter fs state |> applyListing state
+    | RefreshRequested -> refresh fs state |> applyListing state
+    | SelectionToggled -> stay (toggleSelectionAndAdvance state.Active state)
+    | SortRequested key -> stay (sortBy key state.Active state)
+    | PatternRequested mode -> request state (PromptForPattern mode)
+    | PatternEntered(mode, pattern) -> stay (applyPattern mode state.Active pattern state)
     | MakeDirectoryRequested -> request state PromptForName
     | NameEntered name -> makeDirectory fs state.Active name state |> applyOperation state
     | DeleteRequested ->

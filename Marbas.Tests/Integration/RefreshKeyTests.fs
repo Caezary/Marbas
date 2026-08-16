@@ -25,7 +25,7 @@ let ``Ctrl+R reloads the focused panel`` () =
     fs.AddFile(@"C:\start\added.txt", MockFileData "new")
     let rowsBefore = rows list
 
-    press list PanelInput.refreshKey
+    press list KeyMap.refreshKey
 
     Assert.DoesNotContain(rowsBefore, fun (row: string) -> row.StartsWith "added.txt")
     Assert.Contains(rows list, fun (row: string) -> row.StartsWith "added.txt")

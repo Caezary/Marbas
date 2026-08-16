@@ -31,7 +31,10 @@ Three modules sit outside the folders because everything uses them:
 `AssemblyInfo`. `Integration/Gui.fs` adds the view helpers — `focusedWindow`,
 `leftList`, `rightList`, `press`, `panel`, `panelTitle` and `shownPath`, which
 is the path part of a panel title, so a navigation test says which directory a
-panel shows without repeating the sort indicator that follows it. F# does not open an enclosing
+panel shows without repeating the sort indicator that follows it. `pressKey`
+sends a key to the panel that has focus — since the bottom bar stopped binding
+its keys application-wide, a function key only arrives if it is sent where the
+user's keystroke would go. F# does not open an enclosing
 namespace for you, so a file under `State/` that uses `Expect.ok` needs an
 explicit `open Marbas.Tests`.
 
@@ -66,7 +69,8 @@ reach the panel `ListView` a test drives.
 
 `MainWindow.create` takes a `Shell.Dependencies` record — file system, start
 path, quit callback, error reporter, drive chooser, pattern prompt, name
-prompt, confirmation, overwrite question, batch runner, file viewer and editor.
+prompt, confirmation, overwrite question, batch runner, file viewer, editor and
+modifier watch.
 Everything that would open a modal dialog, start a process or end the process
 is a function, so tests pass fakes and assert on what was requested.
 `Program.fs` is the only place that supplies the real `MessageBox` dialogs.
@@ -83,6 +87,12 @@ finds the files already copied when the call returns. Nothing in the suite
 waits on a thread. What that does *not* cover is `Program.fs` — the real
 runner, its progress dialog and the `Application.Invoke` marshalling are only
 ever exercised by running the app.
+
+**Held modifiers are a port too.** `WatchModifiers` is handed a callback at
+startup; a test keeps the callback and calls it with the modifiers it wants
+held, which is how `Integration/ModifierRowTests.fs` presses no key at all and
+still asserts what the bottom bar shows. The polling itself lives in
+`Program.fs` and is only exercised by running the app.
 
 **An external program is a port too.** `RunEditor` is what `F4` goes through,
 so a test hands it a function that records the path — and, where the point is

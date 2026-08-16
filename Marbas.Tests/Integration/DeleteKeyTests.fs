@@ -31,7 +31,7 @@ let ``F8 asks for confirmation and deletes the entry under the cursor`` () =
     let list = leftList window
     list.SelectedItem <- 3
 
-    press window Key.F8
+    pressKey window Key.F8
 
     let title, message = Assert.Single asked
     Assert.Equal(DeleteConfirmation.Title, title)
@@ -46,7 +46,7 @@ let ``a refused confirmation deletes nothing`` () =
     let list = leftList window
     list.SelectedItem <- 3
 
-    press window Key.F8
+    pressKey window Key.F8
 
     Assert.True(fs.File.Exists @"C:\start\notes.txt")
     Assert.Equal(5, list.Source.Count)
@@ -56,7 +56,7 @@ let ``F8 on the parent entry asks nothing`` () =
     let asked = ResizeArray<string>()
     use window = windowWith (mockFs ()) (fun title _ -> asked.Add title; true) silent
 
-    press window Key.F8
+    pressKey window Key.F8
 
     Assert.Empty asked
 
@@ -68,6 +68,6 @@ let ``a failed delete is reported`` () =
     (leftList window).SelectedItem <- 3
     fs.File.Delete @"C:\start\notes.txt"
 
-    press window Key.F8
+    pressKey window Key.F8
 
     Assert.Contains("notes.txt", Assert.Single reported)

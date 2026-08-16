@@ -26,7 +26,7 @@ let ``F7 asks for a name and the new directory shows up under the cursor`` () =
     let asked = ResizeArray<string>()
     use window = windowWith (mockFs ()) (fun title -> asked.Add title; Some "work") silent
 
-    press window Key.F7
+    pressKey window Key.F7
 
     Assert.Equal<string list>([ Shell.MkdirPrompt ], List.ofSeq asked)
     let list = leftList window
@@ -36,7 +36,7 @@ let ``F7 asks for a name and the new directory shows up under the cursor`` () =
 let ``cancelling the name prompt creates nothing`` () =
     use window = windowWith (mockFs ()) (fun _ -> None) silent
 
-    press window Key.F7
+    pressKey window Key.F7
 
     Assert.Equal(3, (leftList window).Source.Count)
 
@@ -44,7 +44,7 @@ let ``cancelling the name prompt creates nothing`` () =
 let ``a blank name creates nothing`` () =
     use window = windowWith (mockFs ()) (fun _ -> Some "   ") silent
 
-    press window Key.F7
+    pressKey window Key.F7
 
     Assert.Equal(3, (leftList window).Source.Count)
 
@@ -53,6 +53,6 @@ let ``a duplicate name is reported`` () =
     let reported = ResizeArray<string>()
     use window = windowWith (mockFs ()) (fun _ -> Some "docs") (fun _ -> reported.Add)
 
-    press window Key.F7
+    pressKey window Key.F7
 
     Assert.Contains("docs", Assert.Single reported)

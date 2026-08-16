@@ -27,7 +27,7 @@ let ``F3 shows the file under the cursor`` () =
     use window = windowWith (mockFs ()) (fun title lines -> shown.Add(title, lines)) silent
     (leftList window).SelectedItem <- 2
 
-    press window Key.F3
+    pressKey window Key.F3
 
     let title, lines = Assert.Single shown
     Assert.Equal(@"C:\start\notes.txt", title)
@@ -39,7 +39,7 @@ let ``F3 on a directory shows nothing`` () =
     use window = windowWith (mockFs ()) (fun title _ -> shown.Add title) silent
     (leftList window).SelectedItem <- 1
 
-    press window Key.F3
+    pressKey window Key.F3
 
     Assert.Empty shown
 
@@ -49,7 +49,7 @@ let ``F3 on the parent entry shows nothing`` () =
     use window = windowWith (mockFs ()) (fun title _ -> shown.Add title) silent
     (leftList window).SelectedItem <- 0
 
-    press window Key.F3
+    pressKey window Key.F3
 
     Assert.Empty shown
 
@@ -62,7 +62,7 @@ let ``a file that vanished is reported instead of shown`` () =
     (leftList window).SelectedItem <- 2
     fs.File.Delete @"C:\start\notes.txt"
 
-    press window Key.F3
+    pressKey window Key.F3
 
     Assert.Empty shown
     Assert.Contains("notes.txt", Assert.Single reported)

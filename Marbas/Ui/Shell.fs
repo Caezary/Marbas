@@ -39,6 +39,7 @@ type Dependencies =
       ShowFile: string -> string list -> unit
       RunEditor: FileSystemPath -> Result<unit, Operations.OperationError>
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
+      WatchModifiers: (Set<Modifier> -> unit) -> unit
       RunBatch:
           string -> (Operations.BatchControl -> Operations.ItemResult list) -> (Operations.ItemResult list -> unit) -> unit }
 
@@ -87,9 +88,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.AskName MkdirPrompt |> Option.bind EntryName.tryCreate with
         | Some name -> dispatch (NameEntered name)
         | None -> ()
-    | PromptForPattern(cursor, mode) ->
+    | PromptForPattern mode ->
         match deps.AskPattern (patternPrompt mode) |> Option.bind NamePattern.tryCreate with
-        | Some pattern -> dispatch (PatternEntered(cursor, mode, pattern))
+        | Some pattern -> dispatch (PatternEntered(mode, pattern))
         | None -> ()
     | PromptForDrive side ->
         let drives = Drives.list deps.FileSystem |> List.map FileSystemPath.value

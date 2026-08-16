@@ -17,4 +17,5 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       ShowFile = fun _ _ -> ()
       RunEditor = fun _ -> Ok()
       AskOverwrite = (fun _ _ -> Operations.No)
+      WatchModifiers = ignore
       RunBatch = fun _ work finish -> work Operations.unattended |> finish }

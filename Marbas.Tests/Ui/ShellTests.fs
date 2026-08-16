@@ -69,17 +69,17 @@ let ``the name prompt uses the mkdir label`` () =
     Assert.Equal(Shell.MkdirPrompt, asked)
 
 [<Fact>]
-let ``a selecting pattern uses the select label and carries the context back`` () =
+let ``a selecting pattern uses the select label and carries the answer back`` () =
     let sent, dispatch = capture ()
     let mutable asked = ""
     let deps = { noDeps () with AskPattern = fun title -> asked <- title; Some "*.fs" }
 
-    Shell.interpret deps dispatch (PromptForPattern(cursor Right 4, Select))
+    Shell.interpret deps dispatch (PromptForPattern Select)
 
     Assert.Equal(Shell.SelectPrompt, asked)
 
     Assert.Equal<Message list>(
-        [ PatternEntered(cursor Right 4, Select, NamePattern.tryCreate "*.fs" |> Expect.some) ],
+        [ PatternEntered(Select, NamePattern.tryCreate "*.fs" |> Expect.some) ],
         List.ofSeq sent
     )
 
@@ -89,7 +89,7 @@ let ``a deselecting pattern uses the deselect label`` () =
     let mutable asked = ""
     let deps = { noDeps () with AskPattern = fun title -> asked <- title; None }
 
-    Shell.interpret deps dispatch (PromptForPattern(cursor Left 0, Deselect))
+    Shell.interpret deps dispatch (PromptForPattern Deselect)
 
     Assert.Equal(Shell.DeselectPrompt, asked)
 
@@ -98,7 +98,7 @@ let ``an empty pattern never becomes a message`` () =
     let sent, dispatch = capture ()
     let deps = { noDeps () with AskPattern = fun _ -> Some "" }
 
-    Shell.interpret deps dispatch (PromptForPattern(cursor Left 0, Select))
+    Shell.interpret deps dispatch (PromptForPattern Select)
 
     Assert.Empty sent
 

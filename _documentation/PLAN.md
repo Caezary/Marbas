@@ -133,6 +133,10 @@ Goal: comfort features that make it feel like a finished tool.
 - **P7.4 Persisted settings** — panel paths, sort modes, and toggles saved
   to a config file and restored on start. *Done when:* restart preserves the
   session.
+- **P7.5 Modifier-aware key bar** — one table of every key binding, from which
+  both the bottom bar and the key handler are built; holding a modifier shows
+  the commands that modifier reaches (`Ctrl` the sort keys, `Alt` the drive
+  choosers). *Done when:* the bar follows the modifiers actually held.
 
 ## Phase 8 — Quality & release
 

@@ -26,7 +26,7 @@ let ``Ctrl+F6 sorts the focused panel by size`` () =
     let list = leftList window
     let before = names list
 
-    press list PanelInput.sizeSortKey
+    press list KeyMap.sizeSortKey
 
     Assert.Equal<string list>([ ".."; "big.txt"; "small.md" ], before)
     Assert.Equal<string list>([ ".."; "small.md"; "big.txt" ], names list)
@@ -36,9 +36,9 @@ let ``pressing the same sort key again reverses the panel`` () =
     let fs = mockFs ()
     use window = focusedWindow (Fakes.dependencies fs @"C:\start")
     let list = leftList window
-    press list PanelInput.sizeSortKey
+    press list KeyMap.sizeSortKey
 
-    press list PanelInput.sizeSortKey
+    press list KeyMap.sizeSortKey
 
     Assert.Equal<string list>([ ".."; "big.txt"; "small.md" ], names list)
 
@@ -48,7 +48,7 @@ let ``the panel title tells which sort order is on`` () =
     use window = focusedWindow (Fakes.dependencies fs @"C:\start")
     let list = leftList window
 
-    press list PanelInput.extensionSortKey
+    press list KeyMap.extensionSortKey
 
     Assert.Equal(@"C:\start [ext ↑]", panelTitle FilePanel.LeftId window)
 
@@ -58,7 +58,7 @@ let ``sorting the focused panel leaves the other one alone`` () =
     use window = focusedWindow (Fakes.dependencies fs @"C:\start")
     let list = leftList window
 
-    press list PanelInput.sizeSortKey
+    press list KeyMap.sizeSortKey
 
     Assert.Equal<string list>([ ".."; "big.txt"; "small.md" ], names (rightList window))
     Assert.Equal(@"C:\start [name ↑]", panelTitle FilePanel.RightId window)

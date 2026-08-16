@@ -24,7 +24,7 @@ let private windowWith (fs: MockFileSystem) askOverwrite reportError =
                 AskOverwrite = askOverwrite
                 ReportError = reportError }
 
-    press (leftList window) PanelInput.rightDriveKey
+    press (leftList window) KeyMap.rightDriveKey
     window
 
 let private silent = fun (_: string) (_: string) -> ()
@@ -37,7 +37,7 @@ let ``F5 copies the entry under the cursor into the other panel`` () =
     use window = windowWith fs noQuestion silent
     (leftList window).SelectedItem <- 2
 
-    press window Key.F5
+    pressKey window Key.F5
 
     Assert.Equal("hi", fs.File.ReadAllText @"C:\backup\notes.txt")
     Assert.Equal(2, (rightList window).Source.Count)
@@ -49,10 +49,10 @@ let ``F5 copies every marked entry`` () =
     let left = leftList window
 
     left.SelectedItem <- 1
-    press left PanelInput.selectionKeys.Head
+    press left KeyMap.selectionKeys.Head
     left.SelectedItem <- 3
-    press left PanelInput.selectionKeys.Head
-    press window Key.F5
+    press left KeyMap.selectionKeys.Head
+    pressKey window Key.F5
 
     Assert.Equal("x", fs.File.ReadAllText @"C:\backup\docs\inner.txt")
     Assert.Equal("read me", fs.File.ReadAllText @"C:\backup\readme.txt")
@@ -66,7 +66,7 @@ let ``F5 asks before replacing an existing entry`` () =
     use window = windowWith fs (fun title message -> asked.Add(title, message); Yes) silent
     (leftList window).SelectedItem <- 2
 
-    press window Key.F5
+    pressKey window Key.F5
 
     let title, message = Assert.Single asked
     Assert.Equal(OverwriteQuestion.Title, title)
@@ -80,7 +80,7 @@ let ``a refused overwrite leaves the target alone`` () =
     use window = windowWith fs (fun _ _ -> No) silent
     (leftList window).SelectedItem <- 2
 
-    press window Key.F5
+    pressKey window Key.F5
 
     Assert.Equal("old", fs.File.ReadAllText @"C:\backup\notes.txt")
 
@@ -94,10 +94,10 @@ let ``no to all leaves every colliding target alone after one question`` () =
     let left = leftList window
 
     left.SelectedItem <- 2
-    press left PanelInput.selectionKeys.Head
+    press left KeyMap.selectionKeys.Head
     left.SelectedItem <- 3
-    press left PanelInput.selectionKeys.Head
-    press window Key.F5
+    press left KeyMap.selectionKeys.Head
+    pressKey window Key.F5
 
     Assert.Single asked |> ignore
     Assert.Equal("old notes", fs.File.ReadAllText @"C:\backup\notes.txt")
@@ -110,7 +110,7 @@ let ``F5 on the parent entry copies nothing and asks nothing`` () =
     use window = windowWith fs (fun title _ -> asked.Add title; Yes) silent
     (leftList window).SelectedItem <- 0
 
-    press window Key.F5
+    pressKey window Key.F5
 
     Assert.Empty asked
     Assert.Empty(fs.Directory.GetFileSystemEntries @"C:\backup")
@@ -123,6 +123,6 @@ let ``a failed copy is reported`` () =
     (leftList window).SelectedItem <- 2
     fs.File.Delete @"C:\start\notes.txt"
 
-    press window Key.F5
+    pressKey window Key.F5
 
     Assert.Contains("notes.txt", Assert.Single reported)

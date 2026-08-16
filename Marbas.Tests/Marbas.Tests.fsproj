@@ -52,7 +52,8 @@
     <Compile Include="Ui\DeleteConfirmationTests.fs" />
     <Compile Include="Ui\OverwriteQuestionTests.fs" />
     <Compile Include="Ui\PanelTitleTests.fs" />
-    <Compile Include="Ui\PanelInputTests.fs" />
+    <Compile Include="Ui\ModifiersTests.fs" />
+    <Compile Include="Ui\KeyMapTests.fs" />
     <Compile Include="Ui\EditorCommandTests.fs" />
     <Compile Include="Ui\ShellTests.fs" />
   </ItemGroup>
@@ -64,6 +65,7 @@
     <Compile Include="Integration\PanelWiringTests.fs" />
     <Compile Include="Integration\AppViewTests.fs" />
     <Compile Include="Integration\FunctionKeyBarTests.fs" />
+    <Compile Include="Integration\ModifierRowTests.fs" />
     <Compile Include="Integration\SchemeTests.fs" />
     <Compile Include="Integration\FilePanelContentTests.fs" />
     <Compile Include="Integration\StatusLineTests.fs" />

@@ -8,19 +8,22 @@ open Marbas.State.Update
 [<Literal>]
 let Id = "functionKeyBar"
 
-let bindings =
-    [ Key.F3, "View", ViewRequested
-      Key.F4, "Edit", EditRequested
-      Key.F5, "Copy", CopyRequested
-      Key.F6, "RenMov", MoveRequested
-      Key.F7, "Mkdir", MakeDirectoryRequested
-      Key.F8, "Delete", DeleteRequested
-      Key.F10, "Quit", QuitRequested ]
+let private shortcut (dispatch: Message -> unit) (key: Key, title: string, message) =
+    let entry = new Shortcut(key, title, Action(fun () -> dispatch message), null)
+    entry.BindKeyToApplication <- false
+    entry
+
+let show (dispatch: Message -> unit) (bar: StatusBar) modifiers =
+    bar.RemoveAll() |> Seq.iter _.Dispose()
+
+    KeyMap.row modifiers
+    |> List.iteri (fun index binding -> bar.AddShortcutAt(index, shortcut dispatch binding))
+
+    bar.SetNeedsLayout()
+    bar.SetNeedsDraw()
 
 let create (dispatch: Message -> unit) =
-    let shortcut (key: Key, title: string, message) =
-        new Shortcut(key, title, Action(fun () -> dispatch message), null)
-
-    let bar = new StatusBar(bindings |> List.map shortcut, Id = Id)
+    let bar = new StatusBar(Id = Id)
     bar.SetScheme ClassicScheme.keyBar |> ignore
+    show dispatch bar Modifiers.none
     bar

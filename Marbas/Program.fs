@@ -3,6 +3,7 @@ module Marbas.Program
 open System
 open System.Diagnostics
 open System.IO.Abstractions
+open System.Runtime.InteropServices
 open System.Threading
 open System.Threading.Tasks
 open Terminal.Gui.App
@@ -10,6 +11,29 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.FileSystem
 open Marbas.Ui
+
+[<Literal>]
+let private VkShift = 0x10
+
+[<Literal>]
+let private VkControl = 0x11
+
+[<Literal>]
+let private VkAlt = 0x12
+
+[<Literal>]
+let private PollInterval = 100.0
+
+[<DllImport "user32.dll">]
+extern int16 private GetAsyncKeyState(int vKey)
+
+let private isDown vKey = GetAsyncKeyState vKey &&& 0x8000s <> 0s
+
+let private pollModifiers () =
+    [ if isDown VkControl then Ctrl
+      if isDown VkAlt then Alt
+      if isDown VkShift then Shift ]
+    |> Modifiers.held
 
 [<EntryPoint>]
 let main _ =
@@ -82,6 +106,23 @@ let main _ =
         with ex ->
             Error(Operations.mapException path ex)
 
+    let watchModifiers report =
+        if OperatingSystem.IsWindows() then
+            let held = ref Modifiers.none
+
+            app.AddTimeout(
+                TimeSpan.FromMilliseconds PollInterval,
+                fun () ->
+                    let current = pollModifiers ()
+
+                    if current <> held.Value then
+                        held.Value <- current
+                        report current
+
+                    true
+            )
+            |> ignore
+
     let runBatch title work finish =
         let cancellation = new CancellationTokenSource()
         let dialog = ProgressDialog.create title
@@ -120,6 +161,7 @@ let main _ =
               ShowFile = showFile
               RunEditor = runEditor
               AskOverwrite = askOverwrite
+              WatchModifiers = watchModifiers
               RunBatch = runBatch }
 
     app.Run window |> ignore

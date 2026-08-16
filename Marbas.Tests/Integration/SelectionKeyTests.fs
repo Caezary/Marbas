@@ -15,7 +15,7 @@ let private mockFs () =
 
 [<Fact>]
 let ``selection keys mark the cursor entry and move the cursor down`` () =
-    for key in PanelInput.selectionKeys do
+    for key in KeyMap.selectionKeys do
         use window = focusedWindow (Fakes.dependencies (mockFs ()) @"C:\start")
         let list = leftList window
         list.SelectedItem <- 1
@@ -27,7 +27,7 @@ let ``selection keys mark the cursor entry and move the cursor down`` () =
 
 [<Fact>]
 let ``a selection key pressed twice leaves the entry unmarked`` () =
-    for key in PanelInput.selectionKeys do
+    for key in KeyMap.selectionKeys do
         use window = focusedWindow (Fakes.dependencies (mockFs ()) @"C:\start")
         let list = leftList window
         list.SelectedItem <- 1
@@ -43,7 +43,7 @@ let ``the parent entry cannot be marked from the keyboard`` () =
     use window = focusedWindow (Fakes.dependencies (mockFs ()) @"C:\start")
     let list = leftList window
 
-    press list PanelInput.selectionKeys.Head
+    press list KeyMap.selectionKeys.Head
 
     Assert.False(list.Source.IsMarked 0)
     Assert.Equal(1, list.SelectedItem.GetValueOrDefault 0)
@@ -55,7 +55,7 @@ let ``marks follow the panel they were made in`` () =
     let right = rightList window
     left.SelectedItem <- 1
 
-    press left PanelInput.selectionKeys.Head
+    press left KeyMap.selectionKeys.Head
 
     Assert.True(left.Source.IsMarked 1)
     Assert.False(right.Source.IsMarked 1)

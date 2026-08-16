@@ -25,7 +25,7 @@ let private windowWith (fs: MockFileSystem) askTarget askOverwrite reportError =
                 AskOverwrite = askOverwrite
                 ReportError = reportError }
 
-    press (leftList window) PanelInput.rightDriveKey
+    press (leftList window) KeyMap.rightDriveKey
     window
 
 let private silent = fun (_: string) (_: string) -> ()
@@ -43,7 +43,7 @@ let ``F6 offers the other panel's path`` () =
     use window = windowWith fs (fun title suggestion -> offered.Add(title, suggestion); None) noQuestion silent
     (leftList window).SelectedItem <- 2
 
-    press window Key.F6
+    pressKey window Key.F6
 
     let title, suggestion = Assert.Single offered
     Assert.Equal(Shell.MovePrompt, title)
@@ -56,7 +56,7 @@ let ``F6 moves the entry under the cursor into the other panel`` () =
     let left = leftList window
     left.SelectedItem <- 2
 
-    press window Key.F6
+    pressKey window Key.F6
 
     Assert.Equal("hi", fs.File.ReadAllText @"C:\backup\notes.txt")
     Assert.False(fs.File.Exists @"C:\start\notes.txt")
@@ -69,10 +69,10 @@ let ``F6 moves every marked entry`` () =
     let left = leftList window
 
     left.SelectedItem <- 1
-    press left PanelInput.selectionKeys.Head
+    press left KeyMap.selectionKeys.Head
     left.SelectedItem <- 3
-    press left PanelInput.selectionKeys.Head
-    press window Key.F6
+    press left KeyMap.selectionKeys.Head
+    pressKey window Key.F6
 
     Assert.Equal("x", fs.File.ReadAllText @"C:\backup\docs\inner.txt")
     Assert.Equal("read me", fs.File.ReadAllText @"C:\backup\readme.txt")
@@ -85,7 +85,7 @@ let ``a bare name renames the entry under the cursor`` () =
     use window = windowWith fs (fun _ _ -> Some "aaa.txt") noQuestion silent
     (leftList window).SelectedItem <- 2
 
-    press window Key.F6
+    pressKey window Key.F6
 
     Assert.Equal("hi", fs.File.ReadAllText @"C:\start\aaa.txt")
     Assert.False(fs.File.Exists @"C:\start\notes.txt")
@@ -98,7 +98,7 @@ let ``the renamed entry keeps the cursor`` () =
     let left = leftList window
     left.SelectedItem <- 2
 
-    press window Key.F6
+    pressKey window Key.F6
 
     let row = string (left.Source.ToList()[left.SelectedItem.GetValueOrDefault 0])
     Assert.StartsWith("aaa.txt", row)
@@ -109,7 +109,7 @@ let ``cancelling the prompt moves nothing`` () =
     use window = windowWith fs refusing noQuestion silent
     (leftList window).SelectedItem <- 2
 
-    press window Key.F6
+    pressKey window Key.F6
 
     Assert.True(fs.File.Exists @"C:\start\notes.txt")
     Assert.Empty(fs.Directory.GetFileSystemEntries @"C:\backup")
@@ -121,7 +121,7 @@ let ``F6 on the parent entry asks nothing`` () =
     use window = windowWith fs (fun title suggestion -> asked.Add title; Some suggestion) noQuestion silent
     (leftList window).SelectedItem <- 0
 
-    press window Key.F6
+    pressKey window Key.F6
 
     Assert.Empty asked
     Assert.Empty(fs.Directory.GetFileSystemEntries @"C:\backup")
@@ -134,7 +134,7 @@ let ``a collision is asked about before the target is replaced`` () =
     use window = windowWith fs accepting (fun _ message -> asked.Add message; No) silent
     (leftList window).SelectedItem <- 2
 
-    press window Key.F6
+    pressKey window Key.F6
 
     Assert.Contains(@"C:\backup\notes.txt", Assert.Single asked)
     Assert.Equal("old", fs.File.ReadAllText @"C:\backup\notes.txt")
@@ -148,7 +148,7 @@ let ``a failed move is reported`` () =
     (leftList window).SelectedItem <- 2
     fs.File.Delete @"C:\start\notes.txt"
 
-    press window Key.F6
+    pressKey window Key.F6
 
     Assert.Contains("notes.txt", Assert.Single reported)
 
@@ -159,7 +159,7 @@ let ``a rename onto an existing name is reported`` () =
     use window = windowWith fs (fun _ _ -> Some "readme.txt") noQuestion (fun _ message -> reported.Add message)
     (leftList window).SelectedItem <- 2
 
-    press window Key.F6
+    pressKey window Key.F6
 
     Assert.Contains("readme.txt", Assert.Single reported)
     Assert.Equal("read me", fs.File.ReadAllText @"C:\start\readme.txt")
