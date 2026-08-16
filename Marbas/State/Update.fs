@@ -12,6 +12,7 @@ type Message =
     | RefreshRequested
     | SelectionToggled
     | SortRequested of SortKey
+    | HiddenToggled
     | PatternRequested of SelectionMode
     | PatternEntered of SelectionMode * NamePattern
     | MakeDirectoryRequested
@@ -88,6 +89,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | RefreshRequested -> refresh fs state |> applyListing state
     | SelectionToggled -> stay (toggleSelectionAndAdvance state.Active state)
     | SortRequested key -> stay (sortBy key state.Active state)
+    | HiddenToggled -> toggleHidden fs state.Active state |> applyListing state
     | PatternRequested mode -> request state (PromptForPattern mode)
     | PatternEntered(mode, pattern) -> stay (applyPattern mode state.Active pattern state)
     | MakeDirectoryRequested -> request state PromptForName

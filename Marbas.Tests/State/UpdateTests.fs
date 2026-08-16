@@ -446,6 +446,29 @@ let ``an editor that could not be started is reported`` () =
     Assert.Equal<Effect list>([ ReportOperationError failure ], result.Effects)
 
 [<Fact>]
+let ``a hidden toggle re-reads the active panel with its hidden entries`` () =
+    let fs = mockFs ()
+    fs.AddFile(@"C:\start\.profile", MockFileData "hi")
+    let state = loadedBoth fs |> activate Left
+
+    let result = update fs HiddenToggled state
+
+    Assert.Contains(".profile", names result.State.Left.Entries)
+    Assert.DoesNotContain(".profile", names (update fs HiddenToggled result.State).State.Left.Entries)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a hidden toggle of a vanished directory is reported`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> loadPanel fs Left (fp @"C:\start\docs") |> Expect.ok
+    fs.Directory.Delete @"C:\start\docs"
+
+    let result = update fs HiddenToggled state
+
+    Assert.Equal(state, result.State)
+    Assert.Equal<Effect list>([ ReportListingError(DirectoryListing.DirectoryNotFound(fp @"C:\start\docs")) ], result.Effects)
+
+[<Fact>]
 let ``quit requested raises the quit effect`` () =
     let fs = mockFs ()
     let state = loaded fs

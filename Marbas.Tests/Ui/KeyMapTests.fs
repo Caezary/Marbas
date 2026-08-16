@@ -35,12 +35,13 @@ let ``the Ctrl row is the sort commands`` () =
     )
 
 [<Fact>]
-let ``the Alt row is the drive choosers`` () =
+let ``the Alt row is the drive choosers and the hidden toggle`` () =
     let row = KeyMap.row (Modifiers.held [ Alt ])
 
     Assert.Equal<(Key * string * Message) list>(
         [ Key.F1.WithAlt, "Left", DriveRequested Left
-          Key.F2.WithAlt, "Right", DriveRequested Right ],
+          Key.F2.WithAlt, "Right", DriveRequested Right
+          Key.H.WithAlt, "Hidden", HiddenToggled ],
         row
     )
 
@@ -93,6 +94,22 @@ let ``a drive key targets its own side`` () =
 
     Assert.Equal(Some(DriveRequested Left), left)
     Assert.Equal(Some(DriveRequested Right), right)
+
+[<Fact>]
+let ``every hidden key toggles the hidden entries`` () =
+    for key in KeyMap.hiddenKeys do
+        let message = KeyMap.messageFor key
+
+        Assert.Equal(Some HiddenToggled, message)
+
+[<Fact>]
+let ``the classic hidden key is off the bar, because a VT terminal cannot send it`` () =
+    let labelled =
+        KeyMap.bindings
+        |> List.filter (fun binding -> binding.Message = HiddenToggled && binding.Label.IsSome)
+        |> List.map _.Key
+
+    Assert.Equal<Key list>([ Key.H.WithAlt ], labelled)
 
 [<Fact>]
 let ``an unmapped key produces no message`` () =

@@ -29,6 +29,12 @@ let dateSortKey = Key.F5.WithCtrl
 
 let sizeSortKey = Key.F6.WithCtrl
 
+let hiddenKey = Key.H.WithAlt
+
+let classicHiddenKey = Key.H.WithCtrl
+
+let hiddenKeys = [ hiddenKey; classicHiddenKey ]
+
 type Binding =
     { Key: Key
       Label: string option
@@ -58,6 +64,8 @@ let bindings =
       onBar sizeSortKey "Size" (SortRequested SortKey.BySize)
       onBar leftDriveKey "Left" (DriveRequested Left)
       onBar rightDriveKey "Right" (DriveRequested Right)
+      onBar hiddenKey "Hidden" HiddenToggled
+      offBar classicHiddenKey HiddenToggled
       offBar refreshKey RefreshRequested
       offBar selectPatternKey (PatternRequested Select)
       offBar deselectPatternKey (PatternRequested Deselect)

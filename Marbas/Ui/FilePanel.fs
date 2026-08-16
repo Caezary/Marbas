@@ -49,7 +49,7 @@ let summary (panel: View) =
         | _ -> None)
 
 let render (state: AppState.PanelState) (panel: FrameView) =
-    panel.Title <- PanelTitle.describe state.Path state.Sort
+    panel.Title <- PanelTitle.describe state.Path state.Sort state.Hidden
     let list = listView panel
     let width = list.Viewport.Width
 

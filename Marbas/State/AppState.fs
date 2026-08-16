@@ -25,7 +25,8 @@ type PanelState =
       Entries: Entry list
       Cursor: int
       Selected: Set<EntryName>
-      Sort: SortOrder }
+      Sort: SortOrder
+      Hidden: HiddenEntries }
 
 type AppState =
     { Left: PanelState
@@ -42,7 +43,8 @@ let create (path: FileSystemPath) =
           Entries = []
           Cursor = 0
           Selected = Set.empty
-          Sort = SortOrder.byName }
+          Sort = SortOrder.byName
+          Hidden = Concealed }
 
     { Left = panel
       Right = panel
@@ -79,9 +81,11 @@ let setCursor side index state =
     updatePanel side (withCursor index) state
 
 let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state =
-    let sort = (panel side state).Sort
+    let previous = panel side state
+    let sort = previous.Sort
+    let hidden = previous.Hidden
 
-    DirectoryListing.listForDisplay fs sort path
+    DirectoryListing.listForDisplay fs sort hidden path
     |> Result.map (fun entries ->
         let cursor =
             match focus with
@@ -95,7 +99,8 @@ let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state 
                   Entries = entries
                   Cursor = cursor
                   Selected = Set.empty
-                  Sort = sort })
+                  Sort = sort
+                  Hidden = hidden })
             state)
 
 let loadPanel fs side (path: FileSystemPath) state =
@@ -250,6 +255,14 @@ let refresh (fs: IFileSystem) state =
 
     loadPanelFocusing fs state.Active panel.Path (cursorFocus panel) state
     |> Result.map (updatePanel state.Active (keepSurviving panel.Selected))
+
+let toggleHidden (fs: IFileSystem) side state =
+    let previous = panel side state
+
+    state
+    |> updatePanel side (fun p -> { p with Hidden = HiddenEntries.toggle p.Hidden })
+    |> loadPanelFocusing fs side previous.Path (cursorFocus previous)
+    |> Result.map (updatePanel side (keepSurviving previous.Selected))
 
 let private navigateUp (fs: IFileSystem) side (from: FileSystemPath) state =
     match FileSystemPath.parent fs from with

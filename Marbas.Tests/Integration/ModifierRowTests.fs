@@ -63,13 +63,13 @@ let ``letting Ctrl go brings the classic keys back`` () =
     Assert.Equal<string list>(classic, labels window)
 
 [<Fact>]
-let ``holding Alt shows the drive choosers`` () =
+let ``holding Alt shows the drive choosers and the hidden toggle`` () =
     let window, hold = watchedWindow ()
     use window = window
 
     hold (Modifiers.held [ Alt ])
 
-    Assert.Equal<string list>([ "Left"; "Right" ], labels window)
+    Assert.Equal<string list>([ "Left"; "Right"; "Hidden" ], labels window)
 
 [<Fact>]
 let ``a modifier no command asks for empties the bar`` () =

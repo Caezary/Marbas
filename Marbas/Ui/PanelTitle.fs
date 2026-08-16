@@ -14,5 +14,13 @@ let private directionText direction =
     | Ascending -> "↑"
     | Descending -> "↓"
 
-let describe (path: FileSystemPath) (sort: SortOrder) =
-    $"{FileSystemPath.value path} [{keyText sort.Key} {directionText sort.Direction}]"
+let private hiddenText hidden =
+    match hidden with
+    | Shown -> [ "hidden" ]
+    | Concealed -> []
+
+let describe (path: FileSystemPath) (sort: SortOrder) (hidden: HiddenEntries) =
+    let marks =
+        [ keyText sort.Key; directionText sort.Direction ] @ hiddenText hidden
+
+    $"""{FileSystemPath.value path} [{String.concat " " marks}]"""

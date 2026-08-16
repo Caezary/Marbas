@@ -7,7 +7,7 @@ open Marbas.Ui
 let private fp = FileSystemPath.create
 
 let private describe key direction =
-    PanelTitle.describe (fp @"C:\start") (SortOrder.create key direction)
+    PanelTitle.describe (fp @"C:\start") (SortOrder.create key direction) Concealed
 
 [<Fact>]
 let ``the title is the path followed by the sort order`` () =
@@ -20,6 +20,12 @@ let ``a descending order points the arrow down`` () =
     let title = describe SortKey.ByName SortDirection.Descending
 
     Assert.Equal(@"C:\start [name ↓]", title)
+
+[<Fact>]
+let ``a panel showing hidden entries says so`` () =
+    let title = PanelTitle.describe (fp @"C:\start") SortOrder.byName Shown
+
+    Assert.Equal(@"C:\start [name ↑ hidden]", title)
 
 [<Fact>]
 let ``every sort key has its own label`` () =

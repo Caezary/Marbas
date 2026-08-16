@@ -11,7 +11,8 @@ type Entry =
     { Name: EntryName
       Kind: EntryKind
       Size: int64 option
-      Modified: DateTime }
+      Modified: DateTime
+      Visibility: EntryVisibility }
 
 let ParentName = EntryName.create ".."
 
@@ -26,16 +27,22 @@ let mapException path (ex: exn) =
     | _ -> ListingFailed(path, ex.Message)
 
 let private directoryEntry (info: IDirectoryInfo) =
-    { Name = EntryName.create info.Name
+    let name = EntryName.create info.Name
+
+    { Name = name
       Kind = Directory
       Size = None
-      Modified = info.LastWriteTime }
+      Modified = info.LastWriteTime
+      Visibility = EntryVisibility.classify name info.Attributes }
 
 let private fileEntry (info: IFileInfo) =
-    { Name = EntryName.create info.Name
+    let name = EntryName.create info.Name
+
+    { Name = name
       Kind = File
       Size = Some info.Length
-      Modified = info.LastWriteTime }
+      Modified = info.LastWriteTime
+      Visibility = EntryVisibility.classify name info.Attributes }
 
 let read (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingError> =
     try
@@ -85,6 +92,9 @@ let order (sort: SortOrder) (entries: Entry list) =
         | 0 -> direction sort * compareByKey sort.Key a b
         | grouped -> grouped)
 
+let shown (hidden: HiddenEntries) (entries: Entry list) =
+    entries |> List.filter (_.Visibility >> HiddenEntries.admits hidden)
+
 let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
     match fs.DirectoryInfo.New(FileSystemPath.value path).Parent with
     | null -> None
@@ -93,11 +103,14 @@ let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
             { Name = ParentName
               Kind = Directory
               Size = None
-              Modified = parent.LastWriteTime }
+              Modified = parent.LastWriteTime
+              Visibility = Plain }
 
-let listForDisplay (fs: IFileSystem) (sort: SortOrder) (path: FileSystemPath) =
+let listForDisplay (fs: IFileSystem) (sort: SortOrder) (hidden: HiddenEntries) (path: FileSystemPath) =
     read fs path
     |> Result.map (fun entries ->
+        let listed = shown hidden entries
+
         match parentEntry fs path with
-        | Some parent -> order sort (parent :: entries)
-        | None -> order sort entries)
+        | Some parent -> order sort (parent :: listed)
+        | None -> order sort listed)

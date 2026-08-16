@@ -1,10 +1,10 @@
 # Progress
 
-Status as of 2026-08-15. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-16. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–6 are complete, and Phase 7 has started** (27 of 30 tasks). Marbas
+**Phases 1–6 are complete, and Phase 7 has started** (28 of 30 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -18,11 +18,12 @@ colours: blue panels with cyan entries, a cyan cursor bar, yellow marks and a
 cyan function-key bar, and since P7.2 each panel sorts by name, extension, date
 or size in either direction, saying so in its title. P7.5 put every key binding
 into one table: the bottom bar is a row out of it, and holding `Ctrl` or `Alt`
-swaps that row for the commands those modifiers reach. Next come hidden files
-and persisted settings.
+swaps that row for the commands those modifiers reach. Since P7.3 each panel
+also decides on its own whether the hidden entries — dotfiles and whatever the
+OS marks hidden or system — are listed at all. Next come persisted settings.
 
-**421 tests pass** — 303 unit tests over the logic modules and the pure `Ui`
-ones, plus 118 integration tests driving real Terminal.Gui views over an
+**452 tests pass** — 329 unit tests over the logic modules and the pure `Ui`
+ones, plus 123 integration tests driving real Terminal.Gui views over an
 in-memory file system. All of them follow the arrange/act/assert shape and the
 folder layout described in [TESTING.md](TESTING.md).
 
@@ -34,7 +35,7 @@ folder layout described in [TESTING.md](TESTING.md).
 | 4 — Selection | P4.1–P4.3 | done |
 | 5 — File operations | P5.1–P5.6 | done |
 | 6 — Viewing files | P6.1–P6.2 | done |
-| 7 — Polish & configuration | P7.1–P7.5 | P7.1, P7.2, P7.5 done, P7.3 next |
+| 7 — Polish & configuration | P7.1–P7.5 | P7.1, P7.2, P7.3, P7.5 done, P7.4 next |
 | 8 — Quality & release | P8.1–P8.3 | not started |
 
 ## What works today
@@ -47,6 +48,17 @@ folder layout described in [TESTING.md](TESTING.md).
   cursor keeps the entry it was on, marks are untouched, and the panel title
   says which sort is on (`C:\start [size ↑]`). Each panel sorts on its own and
   keeps its order through every reload and every directory it is pointed at.
+- `Alt+H` (or the classic `Ctrl+H`, where the terminal delivers it) shows or
+  hides the hidden entries of the panel it is pressed in — a
+  name starting with a dot, or an entry the OS marks hidden or system. They are
+  concealed until asked for, they take their usual place in the order once shown
+  (`.config` sits among the files, not above them), and the title says so
+  (`C:\start [name ↑ hidden]`). The cursor keeps the entry it was on and the
+  marks of the entries that stay survive; a mark on an entry that has just been
+  concealed is dropped, so nothing can be operated on unseen. Each panel decides
+  on its own, and it keeps the decision through every reload and every directory
+  it is pointed at. `..` is never concealed, whatever the parent directory is
+  marked with.
 - `Tab` switches panels; the focused one is marked with a double border.
 - Both panels list a real directory: `..` first, then directories, then files,
   each group alphabetically, in aligned name / size / date columns that
@@ -127,7 +139,8 @@ folder layout described in [TESTING.md](TESTING.md).
   `F10 Quit`) and every one of them now does its job.
 - The bar follows the modifiers being held: with `Ctrl` down it lists the sort
   commands (`F3 Name`, `F4 Ext`, `F5 Date`, `F6 Size`), with `Alt` down the
-  drive choosers (`F1 Left`, `F2 Right`), and it goes back to the classic keys
+  drive choosers and the hidden toggle (`F1 Left`, `F2 Right`, `H Hidden`),
+  and it goes back to the classic keys
   when they are let go. A modifier no command asks for shows an empty bar.
   Every entry can also be clicked. On Windows the modifiers are read from the
   keyboard ten times a second; elsewhere the bar stays on the classic row.
@@ -140,6 +153,7 @@ Marbas/
     EntryName.fs          single-case type for the name of one entry
     FileSystemPath.fs     single-case path type wrapping a raw string
     SortOrder.fs          which key a panel sorts by, in which direction
+    HiddenEntries.fs      what makes an entry hidden, and whether a panel lists it
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             mounted drives
     NamePattern.fs        wildcard matching for `+` / `-`
@@ -543,9 +557,50 @@ the panel is not sorted by and flips the direction on the key it is, so
 
 **The title says which sort is on.** `PanelTitle.describe` puts the sort order
 after the path (`C:\start [size ↑]`), and `FilePanel.render` is the only caller.
-The tests that care about the directory a panel shows read it back through
-`Gui.shownPath`, so the wording of the indicator is asserted in one place
-instead of in every navigation test.
+Since P7.3 the same bracket carries the hidden toggle when it is on
+(`C:\start [name ↑ hidden]`), so one indicator holds everything the panel is set
+to and no test outside `PanelTitleTests` has to know its wording. The tests that
+care about the directory a panel shows read it back through `Gui.shownPath`.
+
+**An entry says whether it is hidden; the panel says whether that matters.**
+`EntryVisibility.classify` is a pure function of a name and its
+`FileAttributes` — `Hidden` for a leading dot, for `FileAttributes.Hidden` and
+for `FileAttributes.System`, `Plain` otherwise — so both conventions are asked
+about on both platforms rather than one rule per OS. `read` puts the answer on
+every `Entry`, which keeps the listing a statement of what is there;
+`HiddenEntries` (`Shown`/`Concealed`) is the panel's setting, and
+`DirectoryListing.shown` is the one place the two meet, filtering before `order`
+runs. `..` is built with `Plain` regardless of what its directory is marked
+with, and it is prepended after the filter anyway, so it can never be concealed.
+
+**Hiding is a reload, where sorting is not.** `sortBy` re-orders entries the
+panel already holds, but nothing can display what was never read, so
+`AppState.toggleHidden` switches the flag and then runs the same
+`loadPanelFocusing` that `Ctrl+R` does — which is why it answers with a
+`Result`, reports a `ListingError` through `ReportListingError`, and a directory
+that vanished meanwhile leaves the panel where it was. Keeping every entry in
+the state and filtering at render time was the alternative and was dropped: the
+cursor is an index into what is displayed, so two lists would mean two
+meanings for every index.
+
+**The hidden toggle is on `Alt+H`, because `Ctrl+H` is the byte `0x08`.**
+`Ctrl+H` is the classic binding and it was the first choice, but pressing it in
+the running app did nothing. Feeding synthetic input records to Terminal.Gui's
+own `WindowsKeyConverter` says why: a console key event carrying the virtual key
+`H` with the control state answers `Ctrl+H`, but a terminal in VT input mode —
+which is what Windows Terminal gives — sends only the byte `0x08` for `Ctrl+H`,
+and `0x08` *is* backspace, so the converter answers `Backspace` (or
+`Ctrl+Backspace`). No layer above it can tell the two apart; the kitty keyboard
+protocol exists precisely to make them distinguishable. `Ctrl+R` and
+`Ctrl+F3..F6` are unaffected because `0x12` and the function-key sequences
+collide with nothing. So `Alt+H` carries the label on the bar and `Ctrl+H` stays
+bound but off the bar, the way `Insert` and `Space` share one command — it works
+wherever the terminal reports it, and promises nothing where it cannot.
+
+**Concealing an entry drops its mark.** The reload keeps the marks that survive
+it, exactly like `refresh`, and an entry that has just been hidden does not
+survive. That is deliberate: `F5`, `F6` and `F8` work on the marks, and a mark
+nobody can see is a file operated on by accident.
 
 **Which `VisualRole` a view draws with was measured, not guessed.** A view asks
 its scheme for an attribute through the `GettingAttributeForRole` event, so
@@ -570,6 +625,12 @@ the managers Marbas follows do anyway.
 - `ListView` type-ahead search swallowed `+` and `-` before any handler saw
   them; the panel disables it with `KeystrokeNavigator <- null`, which also
   matches the orthodox managers, where letters never move the cursor.
+- A key binding no test can vouch for: tests send keys straight to the view, so
+  they prove the handler, never the terminal. `Ctrl+H` passed every test and did
+  nothing in the running app, because a VT terminal sends `0x08` for it — the
+  byte backspace already owns. Feeding a synthetic `InputRecord` to
+  Terminal.Gui's internal `WindowsKeyConverter` from `dotnet fsi` is what settled
+  it, and is the way to check the next binding that "should" work.
 - An F# list literal that mixes plain elements with a `for … -> …` comprehension
   keeps only what the comprehension yields; the plain elements become ignored
   statements. `KeyMap.bindings` lost every function key that way and only the
@@ -578,14 +639,15 @@ the managers Marbas follows do anyway.
 
 ## Next up
 
-**P7.3** — hidden files: a toggle that shows or hides dotfiles and entries the
-OS marks hidden or system. The filtering belongs next to the ordering in
-`DirectoryListing` — `read` already builds every `Entry`, so it is one more
-question asked before `order` — and the switch is a flag on `PanelState`
-travelling the same way `SortOrder` does: set by a key, handed to
-`listForDisplay` on every load, and visible in the panel. Windows and Unix
-disagree on what "hidden" means, so the rule has to answer to both: a leading
-dot, and `FileAttributes.Hidden`/`System`.
+**P7.4** — persisted settings: both panel paths, both sort orders and both
+hidden toggles written to a config file on quit and read back on start. The
+values are already the panel's own domain types (`FileSystemPath`, `SortOrder`,
+`HiddenEntries`), so the work is a `Settings` module that maps them to and from
+a file, plus two ports on `Shell.Dependencies` (load and save) with `Program.fs`
+the only place naming a real path. Reading has to survive a missing, truncated
+or hand-edited file: whatever cannot be read falls back to what
+`AppState.create` uses today, and a start path that no longer exists must not
+keep the app from starting.
 
 ## Known rough edges
 
@@ -632,6 +694,13 @@ dot, and `FileAttributes.Hidden`/`System`.
 - The bar follows the keyboard ten times a second, so a `Ctrl` tapped and
   released inside 100 ms may never show its row. Polling faster costs more than
   the miss does.
+- `Ctrl+H` toggles hidden entries only where the terminal reports it as a key
+  rather than as the byte `0x08`, which no terminal outside the kitty keyboard
+  protocol does. Under Windows Terminal it arrives as `Backspace` and does
+  nothing, which is why `Alt+H` is the binding on the bar. Nothing is bound to
+  `Backspace` itself, so the collision is silent rather than surprising — but it
+  is also the reason `Backspace` cannot later be given the "go up one directory"
+  meaning some managers have without a `Ctrl+H` pressed elsewhere reaching it.
 - Delete still runs on the UI thread inside an `AppState` transition, so
   removing a huge tree blocks. It was never routed through an effect the way
   copy and move are, and `Directory.Delete` cannot report progress anyway.

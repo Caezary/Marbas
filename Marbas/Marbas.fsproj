@@ -9,6 +9,7 @@
         <Compile Include="FileSystem\EntryName.fs" />
         <Compile Include="FileSystem\FileSystemPath.fs" />
         <Compile Include="FileSystem\SortOrder.fs" />
+        <Compile Include="FileSystem\HiddenEntries.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="FileSystem\Drives.fs" />
         <Compile Include="FileSystem\NamePattern.fs" />

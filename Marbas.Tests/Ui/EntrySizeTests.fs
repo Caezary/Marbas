@@ -13,7 +13,8 @@ let private entry kind size =
     { Name = EntryName.create "entry"
       Kind = kind
       Size = size
-      Modified = modified }
+      Modified = modified
+      Visibility = Plain }
 
 [<Fact>]
 let ``a file size is rendered by the given format`` () =
