@@ -16,6 +16,11 @@ let private withFile (data: MockFileData) =
     fs.AddFile(notes, data)
     fs
 
+let private failedPath error =
+    match error with
+    | ReadFailed(path, _) -> Some path
+    | _ -> None
+
 [<Fact>]
 let ``a text file is read line by line`` () =
     let fs = withFile (MockFileData "first\r\nsecond")
@@ -84,6 +89,16 @@ let ``a directory is not a file to read`` () =
     let result = read fs (fp @"C:\start\docs")
 
     Assert.Equal(Error(FileNotFound(fp @"C:\start\docs")), result)
+
+[<Fact>]
+let ``a file that cannot be opened is an error value, not an exception`` () =
+    let held = MockFileData "first\nsecond"
+    held.AllowedFileShare <- IO.FileShare.None
+    let fs = withFile held
+
+    let failure = read fs (fp notes) |> Expect.error
+
+    Assert.Equal(Some(fp notes), failedPath failure)
 
 [<Fact>]
 let ``access denied maps to an error value`` () =

@@ -268,6 +268,18 @@ let ``a finished copy reports the items that failed`` () =
     Assert.Equal<Effect list>([ ReportItemFailures failed ], result.Effects)
 
 [<Fact>]
+let ``a finished copy reports the panel it could no longer read`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs
+    let results = copyAll fs unattended [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
+    fs.Directory.Delete(@"C:\backup", true)
+
+    let result = update fs (CopyFinished results) state
+
+    Assert.Equal<Effect list>([ ReportOperationError(SourceNotFound(fp @"C:\backup")) ], result.Effects)
+    Assert.Equal(state, result.State)
+
+[<Fact>]
 let ``move requested offers the other panel's path`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2

@@ -23,12 +23,16 @@ also decides on its own whether the hidden entries — dotfiles and whatever the
 OS marks hidden or system — are listed at all. P7.4 closed the phase: where each
 panel stands, how it sorts and whether it conceals are written to a config file
 when the app quits and read back when it starts, so a session survives a
-restart. Next comes Phase 8.
+restart. Phase 8 has begun: P8.1 put a number on the suite and a workflow around
+it.
 
-**483 tests pass** — 355 unit tests over the logic modules and the pure `Ui`
+**492 tests pass** — 364 unit tests over the logic modules and the pure `Ui`
 ones, plus 128 integration tests driving real Terminal.Gui views over an
 in-memory file system. All of them follow the arrange/act/assert shape and the
-folder layout described in [TESTING.md](TESTING.md).
+folder layout described in [TESTING.md](TESTING.md). `dotnet test Marbas.slnx`
+is the whole run, and since P8.1 GitHub Actions runs it on every push and pull
+request; measured with `coverlet.runsettings` it covers 99% of the lines and 95%
+of the branches of everything but `Program.fs`.
 
 | Phase | Tasks | State |
 |-------|-------|-------|
@@ -39,7 +43,7 @@ folder layout described in [TESTING.md](TESTING.md).
 | 5 — File operations | P5.1–P5.6 | done |
 | 6 — Viewing files | P6.1–P6.2 | done |
 | 7 — Polish & configuration | P7.1–P7.5 | done |
-| 8 — Quality & release | P8.1–P8.3 | not started |
+| 8 — Quality & release | P8.1–P8.3 | P8.1 done |
 
 ## What works today
 
@@ -215,6 +219,10 @@ Marbas.Tests/
   Integration/            every test that constructs a Terminal.Gui view
     Gui.fs                focusedWindow, leftList, rightList, press, panel,
                           panelTitle, shownPath
+
+coverlet.runsettings      what coverage measures and what it leaves out
+.github/workflows/
+  ci.yml                  restore, build and test on every push and pull request
 ```
 
 Dependencies flow downward only: `Ui` → `State` → `FileSystem`.
@@ -673,6 +681,29 @@ the panel handler wins wherever a panel has focus and the old binding stays as
 the fallback everywhere else. It also displaces `Esc`, which is what
 `Command.Quit` answers to by default.
 
+**Coverage is a reading, not a target.** P8.1 measured the suite rather than
+adding to it blindly: the collector named the lines no test reached, and each
+one was either given a test that says something (a read-only file refuses to be
+deleted, a file in use cannot be viewed, an unreadable config file falls back to
+the defaults, every sort key survives being written and read back, a transfer
+whose other panel vanished answers with an error) or written down in
+[TESTING.md](TESTING.md) as unreachable with a reason. `Program.fs` is excluded
+in `coverlet.runsettings` instead of being counted and apologised for: it is the
+composition root, and a test that could reach it would be starting the real
+application.
+
+**A failure is arranged on the file itself.** `MockFileData.Attributes` set to
+`ReadOnly` and `AllowedFileShare` set to `None` are what make the `try … with`
+paths of `Operations`, `FileContent` and `Settings` ordinary tests, so no
+hand-written stub of `IFileSystem` exists anywhere in the suite. Directory
+enumeration has no such switch, which is why four lines stay uncovered.
+
+**CI runs the same three commands a developer does.** `.github/workflows/ci.yml`
+is restore, build, test — no bespoke script, no test-only project settings — so
+a green local run means a green remote one. Windows only for now, because the
+tests write `C:\…` paths into `MockFileSystem`; the Linux leg is P8.2's to add
+along with the rest of the cross-platform pass.
+
 ## Traps already hit (details in [TESTING.md](TESTING.md))
 
 - `StatusBar` shortcuts swallow their key even with a `null` action — `F10`
@@ -700,10 +731,7 @@ the fallback everywhere else. It also displaces `Esc`, which is what
 
 ## Next up
 
-**Phase 8 — quality & release.** **P8.1** consolidates the suite: it already
-runs green under `dotnet test` and is split the way [TESTING.md](TESTING.md)
-describes, so what is left is checking that the logic modules are covered end to
-end and that the run is CI-friendly. **P8.2** is the cross-platform pass —
+**Phase 8 — quality & release.** **P8.2** is the cross-platform pass —
 paths, drives, permissions and terminal quirks on Windows and Linux, written up
 as a checklist in `_documentation/`, where the modifier row, `Ctrl+H` and the
 `F4` editor round-trip are the known differences to confirm. **P8.3** adds
@@ -711,6 +739,11 @@ publish profiles for self-contained single-file builds per OS.
 
 ## Known rough edges
 
+- The suite writes `MockFileSystem` paths as `C:\…`, so it is Windows-bound and
+  CI runs on Windows alone. Nothing in it touches a real disk, so what stands in
+  the way is the literal paths in the arrange blocks, not the code under test; a
+  root fixture chosen per platform would free them, and it is P8.2's call whether
+  that is worth ~490 edits.
 - Both panels start on the same directory, so `F5` straight after launch copies
   a file onto itself and the OS refuses it with an error dialog. `F6` can be
   pointed elsewhere by hand, `F5` cannot — a target prompt for `F5`, or a check

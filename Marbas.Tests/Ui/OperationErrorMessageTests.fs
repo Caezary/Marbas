@@ -29,6 +29,13 @@ let ``access denied is explained with its path`` () =
     Assert.Contains("Access denied", message)
 
 [<Fact>]
+let ``an entry the batch stopped inside says so`` () =
+    let message = OperationErrorMessage.describe (Cancelled(fp @"C:\data\tree"))
+
+    Assert.Contains(@"C:\data\tree", message)
+    Assert.Contains("Stopped before", message)
+
+[<Fact>]
 let ``an unexpected failure includes the underlying reason`` () =
     let message = OperationErrorMessage.describe (OperationFailed(fp @"C:\bad", "disk full"))
 

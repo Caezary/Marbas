@@ -66,3 +66,13 @@ let ``a mark stays on an entry whose copy failed`` () =
     let updated = finished fs results (markedNotes state)
 
     Assert.Equal<string list>([ "notes.txt" ], selectedEntries updated.Left |> List.map (_.Name >> EntryName.value))
+
+[<Fact>]
+let ``a transfer whose other panel vanished answers with an operation error`` () =
+    let fs, state = started ()
+    let results = copyAll fs unattended [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
+    fs.Directory.Delete(@"C:\backup", true)
+
+    let result = finishTransfer fs results state
+
+    Assert.Equal(Error(SourceNotFound(fp @"C:\backup")), result)

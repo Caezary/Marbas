@@ -59,6 +59,25 @@ let ``each panel is written under its own name`` () =
     Assert.Contains("right.hidden=concealed", lines)
 
 [<Fact>]
+let ``every sort key is written under a name that is read back as itself`` () =
+    let roundTrip key =
+        let panel =
+            { defaults.Left with
+                Sort = SortOrder.create key Descending }
+
+        (Settings.format { defaults with Left = panel } |> Settings.parse defaults).Left.Sort
+
+    let parsed = [ ByName; ByExtension; ByDate; BySize ] |> List.map roundTrip
+
+    Assert.Equal<SortOrder list>(
+        [ SortOrder.create ByName Descending
+          SortOrder.create ByExtension Descending
+          SortOrder.create ByDate Descending
+          SortOrder.create BySize Descending ],
+        parsed
+    )
+
+[<Fact>]
 let ``a setting the file does not carry keeps its default`` () =
     let parsed = Settings.parse defaults [ @"left.path=C:\backup" ]
 
@@ -110,9 +129,20 @@ let ``a settings file that is not there leaves the defaults`` () =
     Assert.Equal(defaults, loaded)
 
 [<Fact>]
-let ``a settings file that cannot be read leaves the defaults`` () =
+let ``a settings path taken by a directory leaves the defaults`` () =
     let fs = mockFs ()
     fs.AddDirectory(FileSystemPath.value settingsPath)
+
+    let loaded = Settings.load fs defaults settingsPath
+
+    Assert.Equal(defaults, loaded)
+
+[<Fact>]
+let ``a settings file the file system refuses to read leaves the defaults`` () =
+    let fs = mockFs ()
+    let held = MockFileData(String.concat "\n" (Settings.format stored))
+    held.AllowedFileShare <- System.IO.FileShare.None
+    fs.AddFile(FileSystemPath.value settingsPath, held)
 
     let loaded = Settings.load fs defaults settingsPath
 

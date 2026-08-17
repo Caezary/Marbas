@@ -79,6 +79,17 @@ let ``refresh only reloads the active panel`` () =
     Assert.DoesNotContain("added.txt", names updated.Left.Entries)
 
 [<Fact>]
+let ``refresh leaves the cursor at the top of a panel with nothing in it`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory @"D:\"
+    let state = create (fp @"D:\") |> loaded Left (fp @"D:\") fs
+
+    let updated = refresh fs state |> Expect.ok
+
+    Assert.Empty updated.Left.Entries
+    Assert.Equal(0, updated.Left.Cursor)
+
+[<Fact>]
 let ``refreshing a directory that vanished reports an error`` () =
     let fs = mockFs ()
     let state = create (fp @"C:\start\docs") |> loaded Left (fp @"C:\start\docs") fs

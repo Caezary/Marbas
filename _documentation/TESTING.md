@@ -4,6 +4,47 @@ Tests live in `Marbas.Tests` (xUnit). Logic modules (`FileSystem`, `State`) are
 covered directly; UI behaviour is covered by driving real Terminal.Gui views
 with an in-memory file system (`MockFileSystem`), so no test touches the disk.
 
+## Running the suite
+
+```
+dotnet test Marbas.slnx
+```
+
+That is the whole suite — 492 tests, a few seconds, no disk, no terminal, no
+network, nothing to set up beyond the SDK. Nothing is skipped and nothing is
+marked flaky, so a red run is a real failure.
+
+Coverage comes from the collector the test project already references:
+
+```
+dotnet test Marbas.slnx --settings coverlet.runsettings
+```
+
+`coverlet.runsettings` asks for Cobertura and excludes `Program.fs`, the
+composition root — it is the one file that wires the real file system, the real
+dialogs and the real process, so there is nothing in it a test can reach.
+Everything else is measured, and stands at 99% of lines and 95% of branches.
+
+`.github/workflows/ci.yml` runs exactly the three commands above (restore,
+build, test) on `windows-latest` for every push to `main` and every pull
+request that touches something other than documentation, and keeps the `.trx`
+and the coverage file as an artifact. A second push to the same pull request
+cancels the run still going for the previous one; pushes to `main` are left to
+finish, so the badge and the history keep a result for every commit. It is
+Windows-only on purpose: the tests write `MockFileSystem` paths as `C:\…`, which
+is the platform Marbas is developed on. Adding a Linux leg to the matrix belongs
+to P8.2, together with the rest of the cross-platform pass.
+
+Four lines have no test and cannot get one from here: the `with ex ->` in
+`DirectoryListing.read` and in `Operations.isNonEmptyDirectory`, and the two
+`asOperationError` cases that only a failing listing produces. All three sit
+behind a directory enumeration that throws, and `MockFileSystem` has no way to
+make one throw — a file can be locked or made read-only, a directory cannot.
+What each of them maps is unit-tested directly through `mapException`, so the
+gap is the plumbing, not the rule. `AppState.navigateUp`'s `None` branch is
+unreachable by construction: only `..` leads there and a root directory is never
+listed with one.
+
 ## Layout
 
 `FileSystem/`, `State/` and `Ui/` mirror the source folders they cover, one test
@@ -107,14 +148,24 @@ promise of P7.4 in one test: build a window, sort it, show its hidden entries,
 send another panel to a second drive, press `Ctrl+Q`, then build a second window
 over the *same* mock file system and read the titles back.
 
+**A failure is arranged on the file, not faked around it.** `MockFileData` is
+what makes the error paths testable: `Attributes <- FileAttributes.ReadOnly`
+makes a delete or a write throw `UnauthorizedAccessException`, which is the
+`AccessDenied` case, and `AllowedFileShare <- FileShare.None` makes every open
+throw `IOException`, which is the unexpected-failure case that carries the OS
+message. That is how "delete refuses a read-only file", "the viewer reports a
+file it cannot open" and "an unreadable settings file falls back to the
+defaults" are ordinary tests rather than mocks of the file system interface.
+Directories have no equivalent — see *Running the suite*.
+
 A UI test that needs the two panels on *different* directories gets there the
-way a user would: `press list PanelInput.rightDriveKey` with a `ChooseOption`
+way a user would: `press list KeyMap.rightDriveKey` with a `ChooseOption`
 that answers with the wanted path. No test reaches into the state to set it.
 
 ## Terminal.Gui pitfalls
 
 **`Key` is mutable and `Handled` sticks.** Sending a shared `Key` instance
-(such as `PanelInput.refreshKey`) through `NewKeyDownEvent` sets `Handled` on
+(such as `KeyMap.refreshKey`) through `NewKeyDownEvent` sets `Handled` on
 that object permanently; every later send of the same instance is ignored and
 handlers stop firing. Use `Gui.press`, which sends a fresh copy.
 The symptom of getting this wrong is a test that passes alone but fails as

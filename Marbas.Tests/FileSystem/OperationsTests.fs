@@ -14,6 +14,11 @@ let private en = EntryName.create
 let private names (results: ItemResult list) =
     results |> List.map (_.Name >> EntryName.value)
 
+let private failedPath error =
+    match error with
+    | OperationFailed(path, _) -> Some path
+    | _ -> None
+
 [<Fact>]
 let ``makeDirectory creates a directory in the given parent`` () =
     let fs = MockFileSystem()
@@ -57,6 +62,29 @@ let ``delete reports a missing source`` () =
     let failure = delete fs (fp @"C:\data\gone.txt") |> Expect.error
 
     Assert.Equal(SourceNotFound(fp @"C:\data\gone.txt"), failure)
+
+[<Fact>]
+let ``delete reports a file the file system will not let go`` () =
+    let fs = MockFileSystem()
+    let guarded = MockFileData "hello"
+    guarded.Attributes <- IO.FileAttributes.ReadOnly
+    fs.AddFile(@"C:\data\notes.txt", guarded)
+
+    let failure = delete fs (fp @"C:\data\notes.txt") |> Expect.error
+
+    Assert.Equal(AccessDenied(fp @"C:\data\notes.txt"), failure)
+    Assert.True(fs.File.Exists @"C:\data\notes.txt")
+
+[<Fact>]
+let ``delete reports a file that is in use as a failure of its own`` () =
+    let fs = MockFileSystem()
+    let held = MockFileData "hello"
+    held.AllowedFileShare <- IO.FileShare.None
+    fs.AddFile(@"C:\data\notes.txt", held)
+
+    let failure = delete fs (fp @"C:\data\notes.txt") |> Expect.error
+
+    Assert.Equal(Some(fp @"C:\data\notes.txt"), failedPath failure)
 
 [<Fact>]
 let ``copy places a file in the target directory`` () =
