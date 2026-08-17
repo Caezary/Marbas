@@ -7,9 +7,11 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start"
+    fs.AddDirectory(at "start")
     fs
 
 let private watchedWindow () =
@@ -17,7 +19,7 @@ let private watchedWindow () =
 
     let window =
         focusedWindow
-            { Fakes.dependencies (mockFs ()) @"C:\start" with
+            { Fakes.dependencies (mockFs ()) (at "start") with
                 WatchModifiers = watchers.Add }
 
     let hold modifiers =

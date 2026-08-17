@@ -8,10 +8,12 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddFile(@"C:\start\big.txt", MockFileData(String.replicate 100 "x"))
-    fs.AddFile(@"C:\start\small.md", MockFileData "x")
+    fs.AddFile(at "start/big.txt", MockFileData(String.replicate 100 "x"))
+    fs.AddFile(at "start/small.md", MockFileData "x")
     fs
 
 let private names (list: ListView) =
@@ -22,7 +24,7 @@ let private names (list: ListView) =
 [<Fact>]
 let ``Ctrl+F6 sorts the focused panel by size`` () =
     let fs = mockFs ()
-    use window = focusedWindow (Fakes.dependencies fs @"C:\start")
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
     let list = leftList window
     let before = names list
 
@@ -34,7 +36,7 @@ let ``Ctrl+F6 sorts the focused panel by size`` () =
 [<Fact>]
 let ``pressing the same sort key again reverses the panel`` () =
     let fs = mockFs ()
-    use window = focusedWindow (Fakes.dependencies fs @"C:\start")
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
     let list = leftList window
     press list KeyMap.sizeSortKey
 
@@ -45,20 +47,20 @@ let ``pressing the same sort key again reverses the panel`` () =
 [<Fact>]
 let ``the panel title tells which sort order is on`` () =
     let fs = mockFs ()
-    use window = focusedWindow (Fakes.dependencies fs @"C:\start")
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
     let list = leftList window
 
     press list KeyMap.extensionSortKey
 
-    Assert.Equal(@"C:\start [ext ↑]", panelTitle FilePanel.LeftId window)
+    Assert.Equal(at "start" + " [ext ↑]", panelTitle FilePanel.LeftId window)
 
 [<Fact>]
 let ``sorting the focused panel leaves the other one alone`` () =
     let fs = mockFs ()
-    use window = focusedWindow (Fakes.dependencies fs @"C:\start")
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
     let list = leftList window
 
     press list KeyMap.sizeSortKey
 
     Assert.Equal<string list>([ ".."; "big.txt"; "small.md" ], names (rightList window))
-    Assert.Equal(@"C:\start [name ↑]", panelTitle FilePanel.RightId window)
+    Assert.Equal(at "start" + " [name ↑]", panelTitle FilePanel.RightId window)

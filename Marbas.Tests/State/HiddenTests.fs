@@ -9,6 +9,8 @@ open Marbas.FileSystem.DirectoryListing
 open Marbas.State.AppState
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private en = EntryName.create
@@ -20,21 +22,21 @@ let private hiddenFile content =
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "x")
-    fs.AddFile(@"C:\start\.config", MockFileData "x")
-    fs.AddFile(@"C:\start\vault.dat", hiddenFile "x")
-    fs.AddDirectory @"C:\backup"
-    fs.AddFile(@"C:\backup\.keep", MockFileData "x")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/notes.txt", MockFileData "x")
+    fs.AddFile(at "start/.config", MockFileData "x")
+    fs.AddFile(at "start/vault.dat", hiddenFile "x")
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "backup/.keep", MockFileData "x")
     fs
 
 let private loaded side path (fs: IFileSystem) state =
     loadPanel fs side path state |> Expect.ok
 
 let private both (fs: IFileSystem) =
-    create (fp @"C:\start")
-    |> loaded Left (fp @"C:\start") fs
-    |> loaded Right (fp @"C:\backup") fs
+    create (fp (at "start"))
+    |> loaded Left (fp (at "start")) fs
+    |> loaded Right (fp (at "backup")) fs
 
 let private names entries =
     entries |> List.map (fun (e: Entry) -> EntryName.value e.Name)
@@ -111,7 +113,7 @@ let ``a panel keeps showing hidden entries in the next directory it opens`` () =
     let fs = mockFs ()
 
     let state =
-        toggleHidden fs Left (both fs) |> Expect.ok |> loaded Left (fp @"C:\backup") fs
+        toggleHidden fs Left (both fs) |> Expect.ok |> loaded Left (fp (at "backup")) fs
 
     Assert.Equal(Shown, state.Left.Hidden)
     Assert.Equal<string list>([ ".."; ".keep" ], names state.Left.Entries)
@@ -128,9 +130,9 @@ let ``a refreshed panel keeps showing hidden entries`` () =
 [<Fact>]
 let ``toggling a directory that vanished reports an error`` () =
     let fs = mockFs ()
-    let state = both fs |> loaded Left (fp @"C:\start\docs") fs
-    fs.Directory.Delete @"C:\start\docs"
+    let state = both fs |> loaded Left (fp (at "start/docs")) fs
+    fs.Directory.Delete(at "start/docs")
 
     let result = toggleHidden fs Left state
 
-    Assert.Equal(Error(DirectoryNotFound(fp @"C:\start\docs")), result)
+    Assert.Equal(Error(DirectoryNotFound(fp (at "start/docs"))), result)

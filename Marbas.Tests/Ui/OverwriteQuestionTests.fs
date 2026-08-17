@@ -4,14 +4,17 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Ui
+open Marbas.Tests
+
+let private at = Root.at
 
 let private fp = FileSystemPath.create
 
 [<Fact>]
 let ``the question names the entry that would be replaced`` () =
-    let message = OverwriteQuestion.describe (fp @"C:\backup\notes.txt")
+    let message = OverwriteQuestion.describe (fp (at "backup/notes.txt"))
 
-    Assert.Contains(@"C:\backup\notes.txt", message)
+    Assert.Contains(at "backup/notes.txt", message)
     Assert.Contains("already exists", message)
 
 [<Fact>]

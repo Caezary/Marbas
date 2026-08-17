@@ -12,7 +12,7 @@
         <Compile Include="FileSystem\HiddenEntries.fs" />
         <Compile Include="FileSystem\Settings.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
-        <Compile Include="FileSystem\Drives.fs" />
+        <Compile Include="FileSystem\Roots.fs" />
         <Compile Include="FileSystem\NamePattern.fs" />
         <Compile Include="FileSystem\Operations.fs" />
         <Compile Include="FileSystem\FileContent.fs" />

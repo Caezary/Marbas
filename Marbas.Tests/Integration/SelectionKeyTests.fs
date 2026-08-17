@@ -6,17 +6,19 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
-    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "start/readme.txt", MockFileData "hi")
     fs
 
 [<Fact>]
 let ``selection keys mark the cursor entry and move the cursor down`` () =
     for key in KeyMap.selectionKeys do
-        use window = focusedWindow (Fakes.dependencies (mockFs ()) @"C:\start")
+        use window = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
         let list = leftList window
         list.SelectedItem <- 1
 
@@ -28,7 +30,7 @@ let ``selection keys mark the cursor entry and move the cursor down`` () =
 [<Fact>]
 let ``a selection key pressed twice leaves the entry unmarked`` () =
     for key in KeyMap.selectionKeys do
-        use window = focusedWindow (Fakes.dependencies (mockFs ()) @"C:\start")
+        use window = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
         let list = leftList window
         list.SelectedItem <- 1
 
@@ -40,7 +42,7 @@ let ``a selection key pressed twice leaves the entry unmarked`` () =
 
 [<Fact>]
 let ``the parent entry cannot be marked from the keyboard`` () =
-    use window = focusedWindow (Fakes.dependencies (mockFs ()) @"C:\start")
+    use window = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
     let list = leftList window
 
     press list KeyMap.selectionKeys.Head
@@ -50,7 +52,7 @@ let ``the parent entry cannot be marked from the keyboard`` () =
 
 [<Fact>]
 let ``marks follow the panel they were made in`` () =
-    use window = focusedWindow (Fakes.dependencies (mockFs ()) @"C:\start")
+    use window = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
     let left = leftList window
     let right = rightList window
     left.SelectedItem <- 1

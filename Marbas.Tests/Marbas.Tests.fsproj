@@ -7,6 +7,8 @@
 
   <ItemGroup>
     <Compile Include="AssemblyInfo.fs" />
+    <Compile Include="Root.fs" />
+    <Compile Include="WindowsFact.fs" />
     <Compile Include="Expect.fs" />
     <Compile Include="Fakes.fs" />
   </ItemGroup>
@@ -16,7 +18,7 @@
     <Compile Include="FileSystem\FileSystemPathTests.fs" />
     <Compile Include="FileSystem\SortOrderTests.fs" />
     <Compile Include="FileSystem\NamePatternTests.fs" />
-    <Compile Include="FileSystem\DrivesTests.fs" />
+    <Compile Include="FileSystem\RootsTests.fs" />
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
     <Compile Include="FileSystem\HiddenEntriesTests.fs" />

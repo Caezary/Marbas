@@ -4,51 +4,54 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Ui
+open Marbas.Tests
+
+let private at = Root.at
 
 let private fp = FileSystemPath.create
 
 [<Fact>]
 let ``a missing source is explained with its path`` () =
-    let message = OperationErrorMessage.describe (SourceNotFound(fp @"C:\gone"))
+    let message = OperationErrorMessage.describe (SourceNotFound(fp (at "gone")))
 
-    Assert.Contains(@"C:\gone", message)
+    Assert.Contains(at "gone", message)
     Assert.Contains("no longer exists", message)
 
 [<Fact>]
 let ``an existing target is explained with its path`` () =
-    let message = OperationErrorMessage.describe (TargetExists(fp @"C:\data\new"))
+    let message = OperationErrorMessage.describe (TargetExists(fp (at "data/new")))
 
-    Assert.Contains(@"C:\data\new", message)
+    Assert.Contains(at "data/new", message)
     Assert.Contains("already exists", message)
 
 [<Fact>]
 let ``access denied is explained with its path`` () =
-    let message = OperationErrorMessage.describe (AccessDenied(fp @"C:\locked"))
+    let message = OperationErrorMessage.describe (AccessDenied(fp (at "locked")))
 
-    Assert.Contains(@"C:\locked", message)
+    Assert.Contains(at "locked", message)
     Assert.Contains("Access denied", message)
 
 [<Fact>]
 let ``an entry the batch stopped inside says so`` () =
-    let message = OperationErrorMessage.describe (Cancelled(fp @"C:\data\tree"))
+    let message = OperationErrorMessage.describe (Cancelled(fp (at "data/tree")))
 
-    Assert.Contains(@"C:\data\tree", message)
+    Assert.Contains(at "data/tree", message)
     Assert.Contains("Stopped before", message)
 
 [<Fact>]
 let ``an unexpected failure includes the underlying reason`` () =
-    let message = OperationErrorMessage.describe (OperationFailed(fp @"C:\bad", "disk full"))
+    let message = OperationErrorMessage.describe (OperationFailed(fp (at "bad"), "disk full"))
 
-    Assert.Contains(@"C:\bad", message)
+    Assert.Contains(at "bad", message)
     Assert.Contains("disk full", message)
 
 [<Fact>]
 let ``every failed item is named with its own reason`` () =
     let items =
         [ { Name = EntryName.create "gone.txt"
-            Outcome = Error(SourceNotFound(fp @"C:\data\gone.txt")) }
+            Outcome = Error(SourceNotFound(fp (at "data/gone.txt"))) }
           { Name = EntryName.create "locked"
-            Outcome = Error(AccessDenied(fp @"C:\data\locked")) } ]
+            Outcome = Error(AccessDenied(fp (at "data/locked"))) } ]
 
     let message = OperationErrorMessage.describeFailures items
 
@@ -62,7 +65,7 @@ let ``items that succeeded are left out`` () =
     let items =
         [ { Name = EntryName.create "a.txt"; Outcome = Ok() }
           { Name = EntryName.create "gone.txt"
-            Outcome = Error(SourceNotFound(fp @"C:\data\gone.txt")) } ]
+            Outcome = Error(SourceNotFound(fp (at "data/gone.txt"))) } ]
 
     let message = OperationErrorMessage.describeFailures items
 

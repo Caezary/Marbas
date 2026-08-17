@@ -9,16 +9,18 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/readme.txt", MockFileData "hi")
     fs :> IFileSystem
 
 let private loaded (fs: IFileSystem) =
-    create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
+    create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
 let private rows panelView =
     let list = FilePanel.listView panelView
@@ -52,7 +54,7 @@ let ``rendering fills the panel of the side it belongs to`` () =
     AppView.render view state
 
     let left = panel FilePanel.LeftId view.Window
-    Assert.Equal(@"C:\start", shownPath FilePanel.LeftId view.Window)
+    Assert.Equal(at "start", shownPath FilePanel.LeftId view.Window)
     Assert.Contains("readme.txt", rows left)
     Assert.Empty(rows (panel FilePanel.RightId view.Window))
 

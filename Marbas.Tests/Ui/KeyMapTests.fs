@@ -39,8 +39,8 @@ let ``the Alt row is the drive choosers and the hidden toggle`` () =
     let row = KeyMap.row (Modifiers.held [ Alt ])
 
     Assert.Equal<(Key * string * Message) list>(
-        [ Key.F1.WithAlt, "Left", DriveRequested Left
-          Key.F2.WithAlt, "Right", DriveRequested Right
+        [ Key.F1.WithAlt, "Left", RootRequested Left
+          Key.F2.WithAlt, "Right", RootRequested Right
           Key.H.WithAlt, "Hidden", HiddenToggled ],
         row
     )
@@ -89,11 +89,11 @@ let ``the pattern keys select and deselect`` () =
 
 [<Fact>]
 let ``a drive key targets its own side`` () =
-    let left = KeyMap.messageFor KeyMap.leftDriveKey
-    let right = KeyMap.messageFor KeyMap.rightDriveKey
+    let left = KeyMap.messageFor KeyMap.leftRootKey
+    let right = KeyMap.messageFor KeyMap.rightRootKey
 
-    Assert.Equal(Some(DriveRequested Left), left)
-    Assert.Equal(Some(DriveRequested Right), right)
+    Assert.Equal(Some(RootRequested Left), left)
+    Assert.Equal(Some(RootRequested Right), right)
 
 [<Fact>]
 let ``every hidden key toggles the hidden entries`` () =

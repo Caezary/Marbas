@@ -8,18 +8,20 @@ open Marbas.FileSystem.Operations
 open Marbas.State.AppState
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
     fs
 
 let private loaded (fs: IFileSystem) =
-    create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
+    create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
 let private names panel = panel.Entries |> List.map (_.Name >> EntryName.value)
 
@@ -32,7 +34,7 @@ let ``making a directory adds it and lands the cursor on it`` () =
 
     let updated = makeDirectory fs Left (en "work") state |> Expect.ok
 
-    Assert.True(fs.Directory.Exists @"C:\start\work")
+    Assert.True(fs.Directory.Exists(at "start/work"))
     Assert.Contains("work", names updated.Left)
     Assert.Equal(Some "work", cursorEntry updated.Left |> Option.map (_.Name >> EntryName.value))
 
@@ -53,4 +55,4 @@ let ``an existing name is refused and leaves the panel unchanged`` () =
 
     let result = makeDirectory fs Left (en "docs") state
 
-    Assert.Equal(Error(TargetExists(fp @"C:\start\docs")), result)
+    Assert.Equal(Error(TargetExists(fp (at "start/docs"))), result)

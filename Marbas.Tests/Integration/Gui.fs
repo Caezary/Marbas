@@ -7,6 +7,8 @@ open Terminal.Gui.Views
 open Marbas.Ui
 open Marbas.Tests
 
+let private at = Root.at
+
 let panel id (window: Window) =
     window.SubViews |> Seq.find (fun v -> v.Id = id)
 
@@ -39,10 +41,10 @@ let focusedWindow deps =
 
 let createWindowWith onQuit =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start"
+    fs.AddDirectory(at "start")
 
     MainWindow.create
-        { Fakes.dependencies fs @"C:\start" with
+        { Fakes.dependencies fs (at "start") with
             OnQuit = onQuit }
 
 let createWindow () = createWindowWith ignore

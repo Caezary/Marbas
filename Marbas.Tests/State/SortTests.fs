@@ -9,25 +9,27 @@ open Marbas.FileSystem.DirectoryListing
 open Marbas.State.AppState
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\big.txt", MockFileData(String.replicate 100 "x"))
-    fs.AddFile(@"C:\start\small.md", MockFileData "x")
-    fs.AddDirectory @"C:\backup"
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/big.txt", MockFileData(String.replicate 100 "x"))
+    fs.AddFile(at "start/small.md", MockFileData "x")
+    fs.AddDirectory(at "backup")
     fs
 
 let private loaded side path (fs: IFileSystem) state =
     loadPanel fs side path state |> Expect.ok
 
 let private both (fs: IFileSystem) =
-    create (fp @"C:\start")
-    |> loaded Left (fp @"C:\start") fs
-    |> loaded Right (fp @"C:\backup") fs
+    create (fp (at "start"))
+    |> loaded Left (fp (at "start")) fs
+    |> loaded Right (fp (at "backup")) fs
 
 let private names entries =
     entries |> List.map (fun (e: Entry) -> EntryName.value e.Name)
@@ -103,11 +105,11 @@ let ``a refreshed panel keeps its sort order`` () =
 [<Fact>]
 let ``a panel opened on another directory keeps its sort order`` () =
     let fs = mockFs ()
-    fs.AddFile(@"C:\backup\huge.txt", MockFileData(String.replicate 50 "x"))
-    fs.AddFile(@"C:\backup\tiny.md", MockFileData "x")
+    fs.AddFile(at "backup/huge.txt", MockFileData(String.replicate 50 "x"))
+    fs.AddFile(at "backup/tiny.md", MockFileData "x")
 
     let state =
-        both fs |> sortBy SortKey.BySize Left |> loaded Left (fp @"C:\backup") fs
+        both fs |> sortBy SortKey.BySize Left |> loaded Left (fp (at "backup")) fs
 
     Assert.Equal(SortOrder.create SortKey.BySize SortDirection.Ascending, state.Left.Sort)
     Assert.Equal<string list>([ ".."; "tiny.md"; "huge.txt" ], names state.Left.Entries)

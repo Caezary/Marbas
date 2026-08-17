@@ -7,6 +7,8 @@ open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private en = EntryName.create
@@ -24,13 +26,13 @@ let private markDirectory (fs: MockFileSystem) path =
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddDirectory @"C:\start\cache"
-    markDirectory fs @"C:\start\cache"
-    fs.AddDirectory @"C:\start\.git"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "x")
-    fs.AddFile(@"C:\start\.config", MockFileData "x")
-    fs.AddFile(@"C:\start\swap.sys", markedFile FileAttributes.System)
+    fs.AddDirectory(at "start/docs")
+    fs.AddDirectory(at "start/cache")
+    markDirectory fs (at "start/cache")
+    fs.AddDirectory(at "start/.git")
+    fs.AddFile(at "start/notes.txt", MockFileData "x")
+    fs.AddFile(at "start/.config", MockFileData "x")
+    fs.AddFile(at "start/swap.sys", markedFile FileAttributes.System)
     fs
 
 [<Fact>]
@@ -76,7 +78,7 @@ let ``showing admits every entry`` () =
 let ``reading a directory says which entries are hidden`` () =
     let fs = mockFs ()
 
-    let entries = read fs (fp @"C:\start") |> Expect.ok
+    let entries = read fs (fp (at "start")) |> Expect.ok
     let byName name = entries |> List.find (fun e -> e.Name = en name)
 
     Assert.Equal(Plain, (byName "notes.txt").Visibility)
@@ -90,7 +92,7 @@ let ``reading a directory says which entries are hidden`` () =
 let ``a concealing listing leaves the hidden entries out`` () =
     let fs = mockFs ()
 
-    let entries = listForDisplay fs SortOrder.byName Concealed (fp @"C:\start") |> Expect.ok
+    let entries = listForDisplay fs SortOrder.byName Concealed (fp (at "start")) |> Expect.ok
 
     Assert.Equal<string list>([ ".."; "docs"; "notes.txt" ], names entries)
 
@@ -98,7 +100,7 @@ let ``a concealing listing leaves the hidden entries out`` () =
 let ``a showing listing lists the hidden entries in their usual place`` () =
     let fs = mockFs ()
 
-    let entries = listForDisplay fs SortOrder.byName Shown (fp @"C:\start") |> Expect.ok
+    let entries = listForDisplay fs SortOrder.byName Shown (fp (at "start")) |> Expect.ok
 
     Assert.Equal<string list>(
         [ ".."; ".git"; "cache"; "docs"; ".config"; "notes.txt"; "swap.sys" ],
@@ -108,9 +110,9 @@ let ``a showing listing lists the hidden entries in their usual place`` () =
 [<Fact>]
 let ``the parent entry is never concealed`` () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\sub"
-    markDirectory fs @"C:\start"
+    fs.AddDirectory(at "start/sub")
+    markDirectory fs (at "start")
 
-    let entries = listForDisplay fs SortOrder.byName Concealed (fp @"C:\start\sub") |> Expect.ok
+    let entries = listForDisplay fs SortOrder.byName Concealed (fp (at "start/sub")) |> Expect.ok
 
     Assert.Equal<string list>([ ".." ], names entries)

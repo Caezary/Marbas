@@ -8,15 +8,17 @@ open Marbas.FileSystem.Operations
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
     fs
 
 let private windowWith (fs: MockFileSystem) runEditor reportError =
     focusedWindow
-        { Fakes.dependencies fs @"C:\start" with
+        { Fakes.dependencies fs (at "start") with
             RunEditor = runEditor
             ReportError = reportError }
 
@@ -30,7 +32,7 @@ let ``F4 hands the file under the cursor to the editor`` () =
 
     pressKey window Key.F4
 
-    Assert.Equal(@"C:\start\notes.txt", FileSystemPath.value (Assert.Single edited))
+    Assert.Equal(at "start/notes.txt", FileSystemPath.value (Assert.Single edited))
 
 [<Fact>]
 let ``F4 on a directory starts no editor`` () =
@@ -45,7 +47,7 @@ let ``F4 on a directory starts no editor`` () =
 [<Fact>]
 let ``what the editor left behind shows up when it returns`` () =
     let fs = mockFs ()
-    let write () = fs.AddFile(@"C:\start\notes.txt.bak", MockFileData "hi")
+    let write () = fs.AddFile(at "start/notes.txt.bak", MockFileData "hi")
     use window = windowWith fs (fun _ -> write (); Ok()) silent
     (leftList window).SelectedItem <- 2
 
@@ -56,7 +58,7 @@ let ``what the editor left behind shows up when it returns`` () =
 [<Fact>]
 let ``an editor that could not be started is reported`` () =
     let reported = ResizeArray<string>()
-    let failure = OperationFailed(FileSystemPath.create @"C:\start\notes.txt", "no editor")
+    let failure = OperationFailed(FileSystemPath.create (at "start/notes.txt"), "no editor")
     use window = windowWith (mockFs ()) (fun _ -> Error failure) (fun _ -> reported.Add)
     (leftList window).SelectedItem <- 2
 

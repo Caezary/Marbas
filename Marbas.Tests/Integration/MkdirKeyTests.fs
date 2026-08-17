@@ -7,15 +7,17 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
     fs
 
 let private windowWith (fs: MockFileSystem) askName reportError =
     focusedWindow
-        { Fakes.dependencies fs @"C:\start" with
+        { Fakes.dependencies fs (at "start") with
             AskName = askName
             ReportError = reportError }
 

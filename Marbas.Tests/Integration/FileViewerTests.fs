@@ -7,9 +7,12 @@ open Terminal.Gui.Input
 open Terminal.Gui.Views
 open Marbas.Ui
 open Marbas.Tests.Integration.Gui
+open Marbas.Tests
+
+let private at = Root.at
 
 let private viewing close lines =
-    let dialog = FileViewer.create close @"C:\start\notes.txt" lines
+    let dialog = FileViewer.create close (at "start/notes.txt") lines
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore

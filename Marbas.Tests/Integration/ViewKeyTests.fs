@@ -7,15 +7,17 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "first\r\nsecond")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/notes.txt", MockFileData "first\r\nsecond")
     fs
 
 let private windowWith (fs: MockFileSystem) showFile reportError =
     focusedWindow
-        { Fakes.dependencies fs @"C:\start" with
+        { Fakes.dependencies fs (at "start") with
             ShowFile = showFile
             ReportError = reportError }
 
@@ -30,7 +32,7 @@ let ``F3 shows the file under the cursor`` () =
     pressKey window Key.F3
 
     let title, lines = Assert.Single shown
-    Assert.Equal(@"C:\start\notes.txt", title)
+    Assert.Equal(at "start/notes.txt", title)
     Assert.Equal<string list>([ "first"; "second" ], lines)
 
 [<Fact>]
@@ -60,7 +62,7 @@ let ``a file that vanished is reported instead of shown`` () =
     let reported = ResizeArray<string>()
     use window = windowWith fs (fun title _ -> shown.Add title) (fun _ -> reported.Add)
     (leftList window).SelectedItem <- 2
-    fs.File.Delete @"C:\start\notes.txt"
+    fs.File.Delete(at "start/notes.txt")
 
     pressKey window Key.F3
 

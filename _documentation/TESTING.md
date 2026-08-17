@@ -10,9 +10,20 @@ with an in-memory file system (`MockFileSystem`), so no test touches the disk.
 dotnet test Marbas.slnx
 ```
 
-That is the whole suite — 492 tests, a few seconds, no disk, no terminal, no
-network, nothing to set up beyond the SDK. Nothing is skipped and nothing is
-marked flaky, so a red run is a real failure.
+That is the whole suite — 498 tests, a few seconds, no disk, no terminal, no
+network, nothing to set up beyond the SDK. Nothing is marked flaky, so a red run
+is a real failure. On Linux three of them skip, and only three: the ones whose
+subject is drive letters.
+
+**One suite, two platforms.** Every path in an arrange block is built with
+`Root.at`, which answers `C:\start\docs` on Windows and `/start/docs` on Linux,
+so `MockFileSystem` is handed paths its own platform understands. `Root.relative`
+does the same without a root, for the tests that care about a name carrying a
+directory — on Linux a backslash is an ordinary character in a file name, so
+`docs\notes.txt` there is one file and not a path. `[<WindowsFact>]` marks the
+three tests that assert on mounted drives; it sets `Skip` off Windows, because
+`MockFileSystem` emulates drives Windows-style and answers a duplicated `/:\`
+elsewhere. Nothing else in the suite knows which platform it is on.
 
 Coverage comes from the collector the test project already references:
 
@@ -26,14 +37,17 @@ dialogs and the real process, so there is nothing in it a test can reach.
 Everything else is measured, and stands at 99% of lines and 95% of branches.
 
 `.github/workflows/ci.yml` runs exactly the three commands above (restore,
-build, test) on `windows-latest` for every push to `main` and every pull
-request that touches something other than documentation, and keeps the `.trx`
-and the coverage file as an artifact. A second push to the same pull request
-cancels the run still going for the previous one; pushes to `main` are left to
-finish, so the badge and the history keep a result for every commit. It is
-Windows-only on purpose: the tests write `MockFileSystem` paths as `C:\…`, which
-is the platform Marbas is developed on. Adding a Linux leg to the matrix belongs
-to P8.2, together with the rest of the cross-platform pass.
+build, test) on `windows-latest` and on `ubuntu-latest` for every push to `main`
+and every pull request that touches something other than documentation, and
+keeps each leg's `.trx` and coverage file as its own artifact. `fail-fast` is
+off, so one platform going red still shows what the other did. A second push to
+the same pull request cancels the run still going for the previous one; pushes
+to `main` are left to finish, so the badge and the history keep a result for
+every commit.
+
+What the suite cannot check on either platform — colours, a resized terminal,
+the mouse, a real permission bit, an editor sharing the terminal — is the
+checklist in [CROSS-PLATFORM.md](CROSS-PLATFORM.md).
 
 Four lines have no test and cannot get one from here: the `with ex ->` in
 `DirectoryListing.read` and in `Operations.isNonEmptyDirectory`, and the two
@@ -67,9 +81,10 @@ runs on its own:
 dotnet test --filter "FullyQualifiedName~Marbas.Tests.Integration"
 ```
 
-Three modules sit outside the folders because everything uses them:
-`Expect` (result unwrapping), `Fakes` (the do-nothing `Shell.Dependencies`) and
-`AssemblyInfo`. `Integration/Gui.fs` adds the view helpers — `focusedWindow`,
+Five modules sit outside the folders because everything uses them: `Root` (the
+platform's root, and paths built on it), `WindowsFact` (the `Fact` that skips
+where drive letters do not exist), `Expect` (result unwrapping), `Fakes` (the
+do-nothing `Shell.Dependencies`) and `AssemblyInfo`. `Integration/Gui.fs` adds the view helpers — `focusedWindow`,
 `leftList`, `rightList`, `press`, `panel`, `panelTitle` and `shownPath`, which
 is the path part of a panel title, so a navigation test says which directory a
 panel shows without repeating the sort indicator that follows it. `pressKey`
@@ -86,9 +101,9 @@ one thing under test, then assert. There are no `// Arrange` comments; the blank
 lines carry the structure.
 
 The act is a named binding, even when the call would fit inside the assertion:
-`let drives = Drives.list fs` followed by `Assert.Equal<FileSystemPath
-list>([...], drives)`, never `Assert.Equal<FileSystemPath list>([...],
-Drives.list fs)`. Where a test
+`let roots = Roots.list fs MountedDrives` followed by `Assert.Equal<FileSystemPath
+list>([...], roots)`, never `Assert.Equal<FileSystemPath list>([...],
+Roots.list fs MountedDrives)`. Where a test
 needs to compare before and after, the "before" value is captured in the arrange
 block and asserted at the end, so no assertion sits between two acts.
 
@@ -109,7 +124,7 @@ reach the panel `ListView` a test drives.
 ## Injecting the outside world
 
 `MainWindow.create` takes a `Shell.Dependencies` record — file system, start
-path, settings path, quit callback, error reporter, drive chooser, pattern
+path, settings path, quit callback, error reporter, root chooser, pattern
 prompt, name prompt, confirmation, overwrite question, batch runner, file
 viewer, editor and modifier watch.
 Everything that would open a modal dialog, start a process or end the process
@@ -159,7 +174,7 @@ defaults" are ordinary tests rather than mocks of the file system interface.
 Directories have no equivalent — see *Running the suite*.
 
 A UI test that needs the two panels on *different* directories gets there the
-way a user would: `press list KeyMap.rightDriveKey` with a `ChooseOption`
+way a user would: `press list KeyMap.rightRootKey` with a `ChooseOption`
 that answers with the wanted path. No test reaches into the state to set it.
 
 ## Terminal.Gui pitfalls

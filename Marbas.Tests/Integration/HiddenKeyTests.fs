@@ -8,6 +8,8 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private hiddenFile content =
     let data = MockFileData(content: string)
     data.Attributes <- FileAttributes.Hidden
@@ -15,9 +17,9 @@ let private hiddenFile content =
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "x")
-    fs.AddFile(@"C:\start\.config", MockFileData "x")
-    fs.AddFile(@"C:\start\vault.dat", hiddenFile "x")
+    fs.AddFile(at "start/notes.txt", MockFileData "x")
+    fs.AddFile(at "start/.config", MockFileData "x")
+    fs.AddFile(at "start/vault.dat", hiddenFile "x")
     fs
 
 let private names (list: ListView) =
@@ -28,7 +30,7 @@ let private names (list: ListView) =
 [<Fact>]
 let ``Alt+H brings the hidden entries into the focused panel`` () =
     let fs = mockFs ()
-    use window = focusedWindow (Fakes.dependencies fs @"C:\start")
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
     let list = leftList window
     let before = names list
 
@@ -40,7 +42,7 @@ let ``Alt+H brings the hidden entries into the focused panel`` () =
 [<Fact>]
 let ``pressing the key again takes them back out`` () =
     let fs = mockFs ()
-    use window = focusedWindow (Fakes.dependencies fs @"C:\start")
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
     let list = leftList window
     press list KeyMap.hiddenKey
 
@@ -51,7 +53,7 @@ let ``pressing the key again takes them back out`` () =
 [<Fact>]
 let ``the classic key does the same where the terminal delivers it`` () =
     let fs = mockFs ()
-    use window = focusedWindow (Fakes.dependencies fs @"C:\start")
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
     let list = leftList window
 
     press list KeyMap.classicHiddenKey
@@ -61,20 +63,20 @@ let ``the classic key does the same where the terminal delivers it`` () =
 [<Fact>]
 let ``the panel title says the hidden entries are on show`` () =
     let fs = mockFs ()
-    use window = focusedWindow (Fakes.dependencies fs @"C:\start")
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
     let list = leftList window
 
     press list KeyMap.hiddenKey
 
-    Assert.Equal(@"C:\start [name ↑ hidden]", panelTitle FilePanel.LeftId window)
+    Assert.Equal(at "start" + " [name ↑ hidden]", panelTitle FilePanel.LeftId window)
 
 [<Fact>]
 let ``the other panel is left alone`` () =
     let fs = mockFs ()
-    use window = focusedWindow (Fakes.dependencies fs @"C:\start")
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
     let list = leftList window
 
     press list KeyMap.hiddenKey
 
     Assert.Equal<string list>([ ".."; "notes.txt" ], names (rightList window))
-    Assert.Equal(@"C:\start [name ↑]", panelTitle FilePanel.RightId window)
+    Assert.Equal(at "start" + " [name ↑]", panelTitle FilePanel.RightId window)

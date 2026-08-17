@@ -9,6 +9,8 @@ open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private en = EntryName.create
@@ -20,17 +22,17 @@ let private names (entries: DirectoryListing.Entry list) =
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
-    fs.AddFile(@"C:\start\setup.fs", MockFileData "hi")
-    fs.AddDirectory @"C:\backup"
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "start/setup.fs", MockFileData "hi")
+    fs.AddDirectory(at "backup")
     fs
 
 let private loaded (fs: IFileSystem) =
-    create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
+    create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
 let private loadedBoth (fs: IFileSystem) =
-    loaded fs |> loadPanel fs Right (fp @"C:\backup") |> Expect.ok
+    loaded fs |> loadPanel fs Right (fp (at "backup")) |> Expect.ok
 
 [<Fact>]
 let ``cursor moved updates the cursor without effects`` () =
@@ -78,7 +80,7 @@ let ``a valid name creates the directory on the active side`` () =
 
     let result = update fs (NameEntered(en "work")) state
 
-    Assert.True(fs.Directory.Exists @"C:\start\work")
+    Assert.True(fs.Directory.Exists(at "start/work"))
     Assert.Equal(Some "work", cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
     Assert.Empty result.Effects
 
@@ -90,7 +92,7 @@ let ``a duplicate name reports an operation error and keeps state`` () =
     let result = update fs (NameEntered(en "docs")) state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportOperationError(TargetExists(fp @"C:\start\docs")) ], result.Effects)
+    Assert.Equal<Effect list>([ ReportOperationError(TargetExists(fp (at "start/docs"))) ], result.Effects)
 
 [<Fact>]
 let ``pattern requested defers to a pattern prompt`` () =
@@ -116,18 +118,18 @@ let ``drive requested defers to a drive prompt`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (DriveRequested Right) state
+    let result = update fs (RootRequested Right) state
 
-    Assert.Equal<Effect list>([ PromptForDrive Right ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForRoot Right ], result.Effects)
 
 [<Fact>]
 let ``opening a path loads it into the given side`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (PathOpened(Right, fp @"C:\start")) state
+    let result = update fs (PathOpened(Right, fp (at "start"))) state
 
-    Assert.Equal(fp @"C:\start", result.State.Right.Path)
+    Assert.Equal(fp (at "start"), result.State.Right.Path)
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -135,10 +137,10 @@ let ``opening a missing path reports a listing error`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs (PathOpened(Right, fp @"C:\gone")) state
+    let result = update fs (PathOpened(Right, fp (at "gone"))) state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportListingError(DirectoryListing.DirectoryNotFound(fp @"C:\gone")) ], result.Effects)
+    Assert.Equal<Effect list>([ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "gone"))) ], result.Effects)
 
 [<Fact>]
 let ``entering a directory navigates into it`` () =
@@ -147,7 +149,7 @@ let ``entering a directory navigates into it`` () =
 
     let result = update fs EntryOpened state
 
-    Assert.Equal(fp @"C:\start\docs", result.State.Left.Path)
+    Assert.Equal(fp (at "start/docs"), result.State.Left.Path)
 
 [<Fact>]
 let ``toggling selection marks the entry under the cursor and advances`` () =
@@ -176,7 +178,7 @@ let ``delete requested asks to confirm the cursor entry`` () =
 [<Fact>]
 let ``delete requested warns when a target directory is not empty`` () =
     let fs = mockFs ()
-    fs.AddFile(@"C:\start\docs\inner.txt", MockFileData "x")
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
     let state = loaded fs |> setCursor Left 1
 
     let result = update fs DeleteRequested state
@@ -205,7 +207,7 @@ let ``a confirmed delete removes the target and raises no effect`` () =
 
     let result = update fs DeleteConfirmed state
 
-    Assert.False(fs.File.Exists @"C:\start\notes.txt")
+    Assert.False(fs.File.Exists(at "start/notes.txt"))
     Assert.DoesNotContain("notes.txt", names result.State.Left.Entries)
     Assert.Empty result.Effects
 
@@ -213,14 +215,14 @@ let ``a confirmed delete removes the target and raises no effect`` () =
 let ``a delete that fails is reported item by item`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
-    fs.File.Delete @"C:\start\notes.txt"
+    fs.File.Delete(at "start/notes.txt")
 
     let result = update fs DeleteConfirmed state
 
     Assert.Equal<Effect list>(
         [ ReportItemFailures
               [ { Name = EntryName.create "notes.txt"
-                  Outcome = Error(SourceNotFound(fp @"C:\start\notes.txt")) } ] ],
+                  Outcome = Error(SourceNotFound(fp (at "start/notes.txt"))) } ] ],
         result.Effects
     )
 
@@ -231,7 +233,7 @@ let ``copy requested aims at the other panel's directory`` () =
 
     let result = update fs CopyRequested state
 
-    Assert.Equal<Effect list>([ CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup") ], result.Effects)
+    Assert.Equal<Effect list>([ CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")) ], result.Effects)
 
 [<Fact>]
 let ``copy requested on the parent entry raises no effect`` () =
@@ -247,7 +249,7 @@ let ``copy requested on the parent entry raises no effect`` () =
 let ``a finished copy shows the new entry in the other panel`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
-    let results = copyAll fs unattended [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
+    let results = copyAll fs unattended [ fp (at "start/notes.txt") ] (fp (at "backup"))
 
     let result = update fs (CopyFinished results) state
 
@@ -261,7 +263,7 @@ let ``a finished copy reports the items that failed`` () =
 
     let failed =
         [ { Name = EntryName.create "notes.txt"
-            Outcome = Error(AccessDenied(fp @"C:\backup\notes.txt")) } ]
+            Outcome = Error(AccessDenied(fp (at "backup/notes.txt"))) } ]
 
     let result = update fs (CopyFinished failed) state
 
@@ -271,12 +273,12 @@ let ``a finished copy reports the items that failed`` () =
 let ``a finished copy reports the panel it could no longer read`` () =
     let fs = mockFs ()
     let state = loadedBoth fs
-    let results = copyAll fs unattended [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
-    fs.Directory.Delete(@"C:\backup", true)
+    let results = copyAll fs unattended [ fp (at "start/notes.txt") ] (fp (at "backup"))
+    fs.Directory.Delete(at "backup", true)
 
     let result = update fs (CopyFinished results) state
 
-    Assert.Equal<Effect list>([ ReportOperationError(SourceNotFound(fp @"C:\backup")) ], result.Effects)
+    Assert.Equal<Effect list>([ ReportOperationError(SourceNotFound(fp (at "backup"))) ], result.Effects)
     Assert.Equal(state, result.State)
 
 [<Fact>]
@@ -286,7 +288,7 @@ let ``move requested offers the other panel's path`` () =
 
     let result = update fs MoveRequested state
 
-    Assert.Equal<Effect list>([ PromptForTarget(fp @"C:\backup") ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForTarget(fp (at "backup")) ], result.Effects)
 
 [<Fact>]
 let ``move requested on the parent entry raises no effect`` () =
@@ -303,9 +305,9 @@ let ``an entered path moves the targets into it`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
 
-    let result = update fs (TargetEntered @"C:\backup") state
+    let result = update fs (TargetEntered (at "backup")) state
 
-    Assert.Equal<Effect list>([ MoveTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup") ], result.Effects)
+    Assert.Equal<Effect list>([ MoveTargets([ fp (at "start/notes.txt") ], fp (at "backup")) ], result.Effects)
 
 [<Fact>]
 let ``a bare name renames the only target`` () =
@@ -314,7 +316,7 @@ let ``a bare name renames the only target`` () =
 
     let result = update fs (TargetEntered "readme.txt") state
 
-    Assert.Equal<Effect list>([ RenameTarget(fp @"C:\start\notes.txt", en "readme.txt") ], result.Effects)
+    Assert.Equal<Effect list>([ RenameTarget(fp (at "start/notes.txt"), en "readme.txt") ], result.Effects)
 
 [<Fact>]
 let ``a bare name with several targets names a directory beside them`` () =
@@ -329,7 +331,7 @@ let ``a bare name with several targets names a directory beside them`` () =
     let result = update fs (TargetEntered "archive") state
 
     Assert.Equal<Effect list>(
-        [ MoveTargets([ fp @"C:\start\notes.txt"; fp @"C:\start\setup.fs" ], fp @"C:\start\archive") ],
+        [ MoveTargets([ fp (at "start/notes.txt"); fp (at "start/setup.fs") ], fp (at "start/archive")) ],
         result.Effects
     )
 
@@ -347,7 +349,7 @@ let ``a blank target changes nothing`` () =
 let ``a finished move shows the entry in the other panel`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
-    let results = moveAll fs unattended [ fp @"C:\start\notes.txt" ] (fp @"C:\backup")
+    let results = moveAll fs unattended [ fp (at "start/notes.txt") ] (fp (at "backup"))
 
     let result = update fs (MoveFinished results) state
 
@@ -359,7 +361,7 @@ let ``a finished move shows the entry in the other panel`` () =
 let ``a finished rename puts the cursor on the new name`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
-    rename fs (fp @"C:\start\notes.txt") (en "zzz.txt") |> ignore
+    rename fs (fp (at "start/notes.txt")) (en "zzz.txt") |> ignore
 
     let result = update fs (RenameFinished(en "zzz.txt", Ok())) state
 
@@ -370,7 +372,7 @@ let ``a finished rename puts the cursor on the new name`` () =
 let ``a failed rename is reported and leaves the panel alone`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
-    let taken = TargetExists(fp @"C:\start\docs")
+    let taken = TargetExists(fp (at "start/docs"))
 
     let result = update fs (RenameFinished(en "docs", Error taken)) state
 
@@ -384,7 +386,7 @@ let ``view requested aims at the file under the cursor`` () =
 
     let result = update fs ViewRequested state
 
-    Assert.Equal<Effect list>([ ViewFile(fp @"C:\start\notes.txt") ], result.Effects)
+    Assert.Equal<Effect list>([ ViewFile(fp (at "start/notes.txt")) ], result.Effects)
 
 [<Fact>]
 let ``view requested on a directory raises no effect`` () =
@@ -413,7 +415,7 @@ let ``view requested ignores what is marked and takes the cursor entry`` () =
 
     let result = update fs ViewRequested state
 
-    Assert.Equal<Effect list>([ ViewFile(fp @"C:\start\notes.txt") ], result.Effects)
+    Assert.Equal<Effect list>([ ViewFile(fp (at "start/notes.txt")) ], result.Effects)
 
 [<Fact>]
 let ``edit requested aims at the file under the cursor`` () =
@@ -422,7 +424,7 @@ let ``edit requested aims at the file under the cursor`` () =
 
     let result = update fs EditRequested state
 
-    Assert.Equal<Effect list>([ EditFile(fp @"C:\start\notes.txt") ], result.Effects)
+    Assert.Equal<Effect list>([ EditFile(fp (at "start/notes.txt")) ], result.Effects)
 
 [<Fact>]
 let ``edit requested on a directory raises no effect`` () =
@@ -438,7 +440,7 @@ let ``edit requested on a directory raises no effect`` () =
 let ``a finished edit re-reads the panel it was started from`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
-    fs.AddFile(@"C:\start\notes.txt.bak", MockFileData "hi")
+    fs.AddFile(at "start/notes.txt.bak", MockFileData "hi")
 
     let result = update fs (EditFinished(Ok())) state
 
@@ -450,7 +452,7 @@ let ``a finished edit re-reads the panel it was started from`` () =
 let ``an editor that could not be started is reported`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
-    let failure = OperationFailed(fp @"C:\start\notes.txt", "no editor")
+    let failure = OperationFailed(fp (at "start/notes.txt"), "no editor")
 
     let result = update fs (EditFinished(Error failure)) state
 
@@ -460,7 +462,7 @@ let ``an editor that could not be started is reported`` () =
 [<Fact>]
 let ``a hidden toggle re-reads the active panel with its hidden entries`` () =
     let fs = mockFs ()
-    fs.AddFile(@"C:\start\.profile", MockFileData "hi")
+    fs.AddFile(at "start/.profile", MockFileData "hi")
     let state = loadedBoth fs |> activate Left
 
     let result = update fs HiddenToggled state
@@ -472,13 +474,13 @@ let ``a hidden toggle re-reads the active panel with its hidden entries`` () =
 [<Fact>]
 let ``a hidden toggle of a vanished directory is reported`` () =
     let fs = mockFs ()
-    let state = loaded fs |> loadPanel fs Left (fp @"C:\start\docs") |> Expect.ok
-    fs.Directory.Delete @"C:\start\docs"
+    let state = loaded fs |> loadPanel fs Left (fp (at "start/docs")) |> Expect.ok
+    fs.Directory.Delete(at "start/docs")
 
     let result = update fs HiddenToggled state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportListingError(DirectoryListing.DirectoryNotFound(fp @"C:\start\docs")) ], result.Effects)
+    Assert.Equal<Effect list>([ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "start/docs"))) ], result.Effects)
 
 [<Fact>]
 let ``quit requested saves what the panels are set to before it quits`` () =

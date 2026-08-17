@@ -7,10 +7,12 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/readme.txt", MockFileData "hi")
     fs
 
 let private rows (list: ListView) =
@@ -20,9 +22,9 @@ let private rows (list: ListView) =
 [<Fact>]
 let ``Ctrl+R reloads the focused panel`` () =
     let fs = mockFs ()
-    use window = focusedWindow (Fakes.dependencies fs @"C:\start")
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
     let list = leftList window
-    fs.AddFile(@"C:\start\added.txt", MockFileData "new")
+    fs.AddFile(at "start/added.txt", MockFileData "new")
     let rowsBefore = rows list
 
     press list KeyMap.refreshKey

@@ -7,13 +7,15 @@ open Marbas.FileSystem
 open Marbas.State.AppState
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
-    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "start/readme.txt", MockFileData "hi")
     fs
 
 let private loaded side path (fs: IFileSystem) state =
@@ -21,7 +23,7 @@ let private loaded side path (fs: IFileSystem) state =
 
 let private started () =
     let fs = mockFs ()
-    fs, create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs
+    fs, create (fp (at "start")) |> loaded Left (fp (at "start")) fs
 
 let private selectedNames panel =
     selectedEntries panel |> List.map (_.Name >> EntryName.value)
@@ -88,7 +90,7 @@ let ``the cursor stops at the last entry`` () =
 [<Fact>]
 let ``selection belongs to one panel only`` () =
     let fs = mockFs ()
-    let state = create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> loaded Right (fp @"C:\start") fs
+    let state = create (fp (at "start")) |> loaded Left (fp (at "start")) fs |> loaded Right (fp (at "start")) fs
 
     let updated = state |> setCursor Left 1 |> toggleSelectionAndAdvance Left
 
@@ -102,7 +104,7 @@ let ``entering a directory clears the selection`` () =
     let selected = state |> setCursor Left 2 |> toggleSelectionAndAdvance Left
     let updated = selected |> setCursor Left 1 |> enter fs |> Expect.ok
 
-    Assert.Equal(fp @"C:\start\docs", updated.Left.Path)
+    Assert.Equal(fp (at "start/docs"), updated.Left.Path)
     Assert.Empty(selectedEntries updated.Left)
 
 [<Fact>]
@@ -115,7 +117,7 @@ let ``refresh keeps the selection and drops entries that disappeared`` () =
         |> toggleSelectionAndAdvance Left
         |> toggleSelectionAndAdvance Left
 
-    fs.File.Delete @"C:\start\notes.txt"
+    fs.File.Delete(at "start/notes.txt")
 
     let updated = refresh fs selected |> Expect.ok
 

@@ -8,15 +8,17 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/readme.txt", MockFileData "hi")
     fs :> IFileSystem
 
 let private statusText (window: Window) = (panel StatusLine.Id window).Text
 
-let private startedWindow () = focusedWindow (Fakes.dependencies (mockFs ()) @"C:\start")
+let private startedWindow () = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
 
 [<Fact>]
 let ``the window has a status line above the function key bar`` () =

@@ -15,6 +15,15 @@ type Settings =
 module Settings =
 
     [<Literal>]
+    let private ConfigDirectory = "Marbas"
+
+    [<Literal>]
+    let private ConfigFile = "settings.conf"
+
+    [<Literal>]
+    let private ConfigHome = ".config"
+
+    [<Literal>]
     let private LeftPrefix = "left."
 
     [<Literal>]
@@ -77,6 +86,15 @@ module Settings =
     let forPath path : Settings =
         { Left = panelOn path
           Right = panelOn path }
+
+    let location (fs: IFileSystem) (applicationData: string) (userProfile: string) =
+        let home =
+            if String.IsNullOrWhiteSpace applicationData then
+                fs.Path.Combine(userProfile, ConfigHome)
+            else
+                applicationData
+
+        fs.Path.Combine(home, ConfigDirectory, ConfigFile) |> FileSystemPath.create
 
     let private line prefix setting value = $"{prefix}{setting}={value}"
 

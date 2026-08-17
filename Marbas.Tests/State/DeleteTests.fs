@@ -8,18 +8,20 @@ open Marbas.FileSystem.Operations
 open Marbas.State.AppState
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddFile(@"C:\start\docs\inner.txt", MockFileData "x")
-    fs.AddDirectory @"C:\start\empty"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
-    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
+    fs.AddDirectory(at "start/empty")
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "start/readme.txt", MockFileData "hi")
     fs
 
 let private loaded (fs: IFileSystem) =
-    create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
+    create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
 let private started () =
     let fs = mockFs ()
@@ -64,7 +66,7 @@ let ``deleting removes the cursor entry and refreshes the panel`` () =
 
     let updated, _ = state |> setCursor Left 3 |> deleted fs
 
-    Assert.False(fs.File.Exists @"C:\start\notes.txt")
+    Assert.False(fs.File.Exists(at "start/notes.txt"))
     Assert.DoesNotContain("notes.txt", updated.Left.Entries |> List.map (_.Name >> EntryName.value))
 
 [<Fact>]
@@ -73,7 +75,7 @@ let ``deleting a directory takes its contents with it`` () =
 
     let updated, _ = state |> setCursor Left 1 |> deleted fs
 
-    Assert.False(fs.Directory.Exists @"C:\start\docs")
+    Assert.False(fs.Directory.Exists(at "start/docs"))
     Assert.DoesNotContain("docs", updated.Left.Entries |> List.map (_.Name >> EntryName.value))
 
 [<Fact>]
@@ -90,8 +92,8 @@ let ``every marked entry is deleted and reported`` () =
 
     Assert.Equal<string list>([ "notes.txt"; "readme.txt" ], results |> List.map (_.Name >> EntryName.value))
     Assert.All(results, fun item -> Assert.Equal(Ok(), item.Outcome))
-    Assert.False(fs.File.Exists @"C:\start\notes.txt")
-    Assert.False(fs.File.Exists @"C:\start\readme.txt")
+    Assert.False(fs.File.Exists(at "start/notes.txt"))
+    Assert.False(fs.File.Exists(at "start/readme.txt"))
 
 [<Fact>]
 let ``a vanished entry is reported while the rest still go`` () =
@@ -103,13 +105,13 @@ let ``a vanished entry is reported while the rest still go`` () =
         |> toggleSelectionAndAdvance Left
         |> toggleSelectionAndAdvance Left
 
-    fs.File.Delete @"C:\start\notes.txt"
+    fs.File.Delete(at "start/notes.txt")
 
     let _, results = deleted fs marked
 
-    Assert.Equal(Error(SourceNotFound(fp @"C:\start\notes.txt")), results[0].Outcome)
+    Assert.Equal(Error(SourceNotFound(fp (at "start/notes.txt"))), results[0].Outcome)
     Assert.Equal(Ok(), results[1].Outcome)
-    Assert.False(fs.File.Exists @"C:\start\readme.txt")
+    Assert.False(fs.File.Exists(at "start/readme.txt"))
 
 [<Fact>]
 let ``marks are dropped along with the entries they pointed at`` () =
@@ -125,8 +127,8 @@ let ``marks are dropped along with the entries they pointed at`` () =
     let updated, _ = deleted fs marked
 
     Assert.Empty(selectedEntries updated.Left)
-    Assert.False(fs.Directory.Exists @"C:\start\docs")
-    Assert.False(fs.File.Exists @"C:\start\notes.txt")
+    Assert.False(fs.Directory.Exists(at "start/docs"))
+    Assert.False(fs.File.Exists(at "start/notes.txt"))
 
 [<Fact>]
 let ``a non-empty directory among the targets widens the scope`` () =

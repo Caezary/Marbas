@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-08-17. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-18. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
@@ -23,16 +23,20 @@ also decides on its own whether the hidden entries — dotfiles and whatever the
 OS marks hidden or system — are listed at all. P7.4 closed the phase: where each
 panel stands, how it sorts and whether it conceals are written to a config file
 when the app quits and read back when it starts, so a session survives a
-restart. Phase 8 has begun: P8.1 put a number on the suite and a workflow around
-it.
+restart. P8.1 put a number on the suite and a workflow around it, and P8.2 made
+both hold on Linux as well as on Windows.
 
-**492 tests pass** — 364 unit tests over the logic modules and the pure `Ui`
-ones, plus 128 integration tests driving real Terminal.Gui views over an
-in-memory file system. All of them follow the arrange/act/assert shape and the
-folder layout described in [TESTING.md](TESTING.md). `dotnet test Marbas.slnx`
-is the whole run, and since P8.1 GitHub Actions runs it on every push and pull
-request; measured with `coverlet.runsettings` it covers 99% of the lines and 95%
-of the branches of everything but `Program.fs`.
+**498 tests pass on Windows; on Linux 495 pass and 3 skip** — the three that
+assert on drive letters, which exist nowhere else. 367 are unit tests over the
+logic modules and the pure `Ui` ones, plus 131 integration tests driving real
+Terminal.Gui views over an in-memory file system. All of them follow the
+arrange/act/assert shape and the folder layout described in
+[TESTING.md](TESTING.md). `dotnet test Marbas.slnx` is the whole run, and
+GitHub Actions runs it on both operating systems on every push and pull request;
+measured with `coverlet.runsettings` it covers 99% of the lines and 95% of the
+branches of everything but `Program.fs`. What no test can reach — colours, a
+resized terminal, a real permission bit, the mouse — is written up as the
+checklist in [CROSS-PLATFORM.md](CROSS-PLATFORM.md).
 
 | Phase | Tasks | State |
 |-------|-------|-------|
@@ -43,7 +47,7 @@ of the branches of everything but `Program.fs`.
 | 5 — File operations | P5.1–P5.6 | done |
 | 6 — Viewing files | P6.1–P6.2 | done |
 | 7 — Polish & configuration | P7.1–P7.5 | done |
-| 8 — Quality & release | P8.1–P8.3 | P8.1 done |
+| 8 — Quality & release | P8.1–P8.3 | P8.1, P8.2 done |
 
 ## What works today
 
@@ -75,7 +79,8 @@ of the branches of everything but `Program.fs`.
 - Unreadable or vanished directories raise a message box; the panel stays put.
 - `Ctrl+R` reloads the active panel, keeping the cursor on the same entry even
   when its position changed.
-- `Alt+F1` / `Alt+F2` open a drive chooser for the left / right panel.
+- `Alt+F1` / `Alt+F2` open a root chooser for the left / right panel — the ready
+  drives on Windows, the file-system root and the home directory on Unix.
 - `Insert` or `Space` marks the entry under the cursor and moves one entry
   down; pressing it again unmarks. Marked entries are highlighted, `..` can
   never be marked, and each panel keeps its own marks — they survive `Ctrl+R`
@@ -146,7 +151,7 @@ of the branches of everything but `Program.fs`.
   `F10 Quit`) and every one of them now does its job.
 - The bar follows the modifiers being held: with `Ctrl` down it lists the sort
   commands (`F3 Name`, `F4 Ext`, `F5 Date`, `F6 Size`), with `Alt` down the
-  drive choosers and the hidden toggle (`F1 Left`, `F2 Right`, `H Hidden`),
+  root choosers and the hidden toggle (`F1 Left`, `F2 Right`, `H Hidden`),
   and it goes back to the classic keys
   when they are let go. A modifier no command asks for shows an empty bar.
   Every entry can also be clicked. On Windows the modifiers are read from the
@@ -173,7 +178,7 @@ Marbas/
     HiddenEntries.fs      what makes an entry hidden, and whether a panel lists it
     Settings.fs           the session both panels carry, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
-    Drives.fs             mounted drives
+    Roots.fs              where a panel can be sent: drives, or root and home
     NamePattern.fs        wildcard matching for `+` / `-`
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     FileContent.fs        one file's content: text lines or bytes, errors as values
@@ -211,6 +216,8 @@ Marbas/
   Program.fs              real file system and real dialogs
 
 Marbas.Tests/
+  Root.fs                 the root every test path is built on, per platform
+  WindowsFact.fs          a Fact that skips where drive letters do not exist
   Expect.fs               Result unwrapping, so act and assert stay apart
   Fakes.fs                the do-nothing Shell.Dependencies every test starts from
   FileSystem/             unit tests, one module per FileSystem module
@@ -222,7 +229,7 @@ Marbas.Tests/
 
 coverlet.runsettings      what coverage measures and what it leaves out
 .github/workflows/
-  ci.yml                  restore, build and test on every push and pull request
+  ci.yml                  restore, build and test on Windows and Linux
 ```
 
 Dependencies flow downward only: `Ui` → `State` → `FileSystem`.
@@ -268,7 +275,7 @@ re-renders after each dispatch and hands the effects to the interpreter.
 Handlers send messages, they never mutate. See PLAN.md, *State handling*.
 
 **The outside world is injected.** `Shell.Dependencies` names every port (file
-system, start path, quit callback, error reporter, drive chooser, pattern
+system, start path, quit callback, error reporter, root chooser, pattern
 prompt, name prompt, confirmation) and `Shell.interpret` is the only place that
 turns an `Effect` into a call on one of them.
 `Program.fs` is the only place that opens real dialogs, which keeps
@@ -700,9 +707,48 @@ enumeration has no such switch, which is why four lines stay uncovered.
 
 **CI runs the same three commands a developer does.** `.github/workflows/ci.yml`
 is restore, build, test — no bespoke script, no test-only project settings — so
-a green local run means a green remote one. Windows only for now, because the
-tests write `C:\…` paths into `MockFileSystem`; the Linux leg is P8.2's to add
-along with the rest of the cross-platform pass.
+a green local run means a green remote one. Since P8.2 it runs them twice, on
+`windows-latest` and `ubuntu-latest`, with `fail-fast` off so one platform's
+failure still shows the other's result.
+
+**One root fixture is what makes one suite serve two platforms.**
+`Marbas.Tests.Root.at "start/docs"` answers `C:\start\docs` on Windows and
+`/start/docs` on Linux, and every arrange block goes through it — some seven
+hundred literals were rewritten at once. `Root.relative` does the same for a
+path with no root, which is what "a name carrying a directory is not a bare
+name" needs, since a backslash is an ordinary character in a Linux file name and
+the test would otherwise assert the opposite of the truth. The alternative —
+keeping `C:\…` everywhere and teaching `MockFileSystem` to accept it — does not
+exist: the mock normalises through the real `System.IO.Path`.
+
+**Three tests skip off Windows, and say why.** `[<WindowsFact>]` sets `Skip`
+unless `OperatingSystem.IsWindows()`. It is used only where drive letters are
+the subject, because `MockFileSystem` emulates drives Windows-style and answers a
+duplicated `/:\` on Linux — asserting on that would be asserting on a bug in the
+mock. Everything else about the root chooser is covered on both platforms
+through `RootChoice`.
+
+**The roots a panel can be sent to are a value, not a platform check.**
+`Drives.list` used to call `DriveInfo.GetDrives()` everywhere, which on Unix
+meant a list of mount points — and no way at all to reach the home directory,
+though P3.5 had asked for `/` and `~`. It is now `Roots.list fs choice` with
+`RootChoice` being `MountedDrives` or `RootAndHome home`; `Program.fs` picks one
+and `Shell.Dependencies` carries it, so both branches are ordinary tested code
+and neither platform is a special case below the composition root. The module
+was renamed from `Drives` because on Unix it does not answer drives, and the
+vocabulary follows: `RootRequested`, `PromptForRoot`, `leftRootKey`, and a
+dialog that says *Select root*.
+
+**`SpecialFolder.ApplicationData` is empty on a Linux machine without
+`~/.config`.** The old `Program.fs` combined that empty string with `Marbas` and
+`settings.conf`, which yields a *relative* path — so the session was written to
+`./Marbas/settings.conf`, next to wherever the app was started, and a start from
+another directory found no session at all. Running the app under WSL is what
+caught it; no test could have, because the value comes from the environment.
+`Settings.location` now holds the rule — application data if the platform names
+one, `$HOME/.config` otherwise — and it takes both values as arguments, so it is
+tested on both platforms while `Program.fs` keeps only the two environment
+reads.
 
 ## Traps already hit (details in [TESTING.md](TESTING.md))
 
@@ -723,6 +769,15 @@ along with the rest of the cross-platform pass.
   byte backspace already owns. Feeding a synthetic `InputRecord` to
   Terminal.Gui's internal `WindowsKeyConverter` from `dotnet fsi` is what settled
   it, and is the way to check the next binding that "should" work.
+- `Environment.GetFolderPath SpecialFolder.ApplicationData` answers an empty
+  string on Linux when `~/.config` does not exist yet, and combining an empty
+  string into a path yields a *relative* one that quietly resolves against the
+  working directory. `Settings.save` swallows its failures, so nothing complained
+  — the session simply appeared in `./Marbas/settings.conf` and was never found
+  again. Only running the application caught it.
+- `MockFileSystem` emulates drives Windows-style on every platform: on Linux
+  `DriveInfo.GetDrives()` answers `/:\` twice. Any test that asserts on the drive
+  list is therefore Windows-only, whatever the code under test does.
 - An F# list literal that mixes plain elements with a `for … -> …` comprehension
   keeps only what the comprehension yields; the plain elements become ignored
   statements. `KeyMap.bindings` lost every function key that way and only the
@@ -731,19 +786,17 @@ along with the rest of the cross-platform pass.
 
 ## Next up
 
-**Phase 8 — quality & release.** **P8.2** is the cross-platform pass —
-paths, drives, permissions and terminal quirks on Windows and Linux, written up
-as a checklist in `_documentation/`, where the modifier row, `Ctrl+H` and the
-`F4` editor round-trip are the known differences to confirm. **P8.3** adds
-publish profiles for self-contained single-file builds per OS.
+**Phase 8 — quality & release.** **P8.3** is what is left: publish profiles for
+self-contained single-file builds per OS. The rows still marked *manual* in
+[CROSS-PLATFORM.md](CROSS-PLATFORM.md) — colours, a resized terminal, the mouse,
+a real Unix permission bit, and `F4` with a full-screen console editor — want a
+person at a terminal on each platform, and the last of them is the one known
+defect left: a console editor on Unix shares the terminal with a driver that
+never let go of it, which needs a driver shutdown around the child process and a
+switch to keep it off Windows.
 
 ## Known rough edges
 
-- The suite writes `MockFileSystem` paths as `C:\…`, so it is Windows-bound and
-  CI runs on Windows alone. Nothing in it touches a real disk, so what stands in
-  the way is the literal paths in the arrange blocks, not the code under test; a
-  root fixture chosen per platform would free them, and it is P8.2's call whether
-  that is worth ~490 edits.
 - Both panels start on the same directory, so `F5` straight after launch copies
   a file onto itself and the OS refuses it with an error dialog. `F6` can be
   pointed elsewhere by hand, `F5` cannot — a target prompt for `F5`, or a check

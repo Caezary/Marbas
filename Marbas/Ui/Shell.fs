@@ -15,7 +15,7 @@ let DeselectPrompt = "Deselect"
 let MkdirPrompt = "Create directory"
 
 [<Literal>]
-let DrivePrompt = "Select drive"
+let RootPrompt = "Select root"
 
 [<Literal>]
 let MovePrompt = "Move or rename"
@@ -30,6 +30,7 @@ type Dependencies =
     { FileSystem: IFileSystem
       StartPath: FileSystemPath
       SettingsPath: FileSystemPath
+      Roots: RootChoice
       OnQuit: unit -> unit
       ReportError: string -> string -> unit
       ChooseOption: string -> string list -> string option
@@ -93,11 +94,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.AskPattern (patternPrompt mode) |> Option.bind NamePattern.tryCreate with
         | Some pattern -> dispatch (PatternEntered(mode, pattern))
         | None -> ()
-    | PromptForDrive side ->
-        let drives = Drives.list deps.FileSystem |> List.map FileSystemPath.value
+    | PromptForRoot side ->
+        let roots = Roots.list deps.FileSystem deps.Roots |> List.map FileSystemPath.value
 
-        match deps.ChooseOption DrivePrompt drives with
-        | Some drive -> dispatch (PathOpened(side, FileSystemPath.create drive))
+        match deps.ChooseOption RootPrompt roots with
+        | Some root -> dispatch (PathOpened(side, FileSystemPath.create root))
         | None -> ()
     | SaveSettings settings -> Settings.save deps.FileSystem deps.SettingsPath settings
     | Quit -> deps.OnQuit()

@@ -28,7 +28,7 @@ type Message =
     | ViewRequested
     | EditRequested
     | EditFinished of outcome: Result<unit, Operations.OperationError>
-    | DriveRequested of PanelSide
+    | RootRequested of PanelSide
     | PathOpened of PanelSide * FileSystemPath
     | QuitRequested
 
@@ -49,7 +49,7 @@ type Effect =
     | PromptForTarget of suggestion: FileSystemPath
     | PromptForName
     | PromptForPattern of SelectionMode
-    | PromptForDrive of PanelSide
+    | PromptForRoot of PanelSide
     | SaveSettings of Settings
     | Quit
 
@@ -142,7 +142,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         match outcome with
         | Error error -> request state (ReportOperationError error)
         | Ok() -> refresh fs state |> applyListing state
-    | DriveRequested side -> request state (PromptForDrive side)
+    | RootRequested side -> request state (PromptForRoot side)
     | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
     | QuitRequested ->
         { State = state

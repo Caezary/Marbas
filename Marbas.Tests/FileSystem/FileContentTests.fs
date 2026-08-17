@@ -7,9 +7,11 @@ open Marbas.FileSystem
 open Marbas.FileSystem.FileContent
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
-let private notes = @"C:\start\notes.txt"
+let private notes = at "start/notes.txt"
 
 let private withFile (data: MockFileData) =
     let fs = MockFileSystem()
@@ -84,11 +86,11 @@ let ``a missing file is an error value, not an exception`` () =
 [<Fact>]
 let ``a directory is not a file to read`` () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
+    fs.AddDirectory(at "start/docs")
 
-    let result = read fs (fp @"C:\start\docs")
+    let result = read fs (fp (at "start/docs"))
 
-    Assert.Equal(Error(FileNotFound(fp @"C:\start\docs")), result)
+    Assert.Equal(Error(FileNotFound(fp (at "start/docs"))), result)
 
 [<Fact>]
 let ``a file that cannot be opened is an error value, not an exception`` () =
@@ -104,14 +106,14 @@ let ``a file that cannot be opened is an error value, not an exception`` () =
 let ``access denied maps to an error value`` () =
     let denied = UnauthorizedAccessException()
 
-    let contentError = mapException (fp @"C:\locked.txt") denied
+    let contentError = mapException (fp (at "locked.txt")) denied
 
-    Assert.Equal(AccessDenied(fp @"C:\locked.txt"), contentError)
+    Assert.Equal(AccessDenied(fp (at "locked.txt")), contentError)
 
 [<Fact>]
 let ``unexpected failures map to an error value`` () =
     let failure = IO.IOException "boom"
 
-    let contentError = mapException (fp @"C:\bad.txt") failure
+    let contentError = mapException (fp (at "bad.txt")) failure
 
-    Assert.Equal(ReadFailed(fp @"C:\bad.txt", "boom"), contentError)
+    Assert.Equal(ReadFailed(fp (at "bad.txt"), "boom"), contentError)

@@ -7,17 +7,19 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddFile(@"C:\start\docs\inner.txt", MockFileData "x")
-    fs.AddDirectory @"C:\start\empty"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
-    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
+    fs.AddDirectory(at "start/empty")
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "start/readme.txt", MockFileData "hi")
     fs
 
 let private windowWith (fs: MockFileSystem) confirm reportError =
     focusedWindow
-        { Fakes.dependencies fs @"C:\start" with
+        { Fakes.dependencies fs (at "start") with
             Confirm = confirm
             ReportError = reportError }
 
@@ -36,7 +38,7 @@ let ``F8 asks for confirmation and deletes the entry under the cursor`` () =
     let title, message = Assert.Single asked
     Assert.Equal(DeleteConfirmation.Title, title)
     Assert.Contains("notes.txt", message)
-    Assert.False(fs.File.Exists @"C:\start\notes.txt")
+    Assert.False(fs.File.Exists(at "start/notes.txt"))
     Assert.Equal(4, list.Source.Count)
 
 [<Fact>]
@@ -48,7 +50,7 @@ let ``a refused confirmation deletes nothing`` () =
 
     pressKey window Key.F8
 
-    Assert.True(fs.File.Exists @"C:\start\notes.txt")
+    Assert.True(fs.File.Exists(at "start/notes.txt"))
     Assert.Equal(5, list.Source.Count)
 
 [<Fact>]
@@ -66,7 +68,7 @@ let ``a failed delete is reported`` () =
     let reported = ResizeArray<string>()
     use window = windowWith fs (fun _ _ -> true) (fun _ -> reported.Add)
     (leftList window).SelectedItem <- 3
-    fs.File.Delete @"C:\start\notes.txt"
+    fs.File.Delete(at "start/notes.txt")
 
     pressKey window Key.F8
 

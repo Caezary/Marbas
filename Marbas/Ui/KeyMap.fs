@@ -17,9 +17,9 @@ let selectPatternKey = Key '+'
 
 let deselectPatternKey = Key '-'
 
-let leftDriveKey = Key.F1.WithAlt
+let leftRootKey = Key.F1.WithAlt
 
-let rightDriveKey = Key.F2.WithAlt
+let rightRootKey = Key.F2.WithAlt
 
 let nameSortKey = Key.F3.WithCtrl
 
@@ -64,8 +64,8 @@ let bindings =
       onBar extensionSortKey "Ext" (SortRequested SortKey.ByExtension)
       onBar dateSortKey "Date" (SortRequested SortKey.ByDate)
       onBar sizeSortKey "Size" (SortRequested SortKey.BySize)
-      onBar leftDriveKey "Left" (DriveRequested Left)
-      onBar rightDriveKey "Right" (DriveRequested Right)
+      onBar leftRootKey "Left" (RootRequested Left)
+      onBar rightRootKey "Right" (RootRequested Right)
       onBar hiddenKey "Hidden" HiddenToggled
       offBar quitKey QuitRequested
       offBar classicHiddenKey HiddenToggled

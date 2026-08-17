@@ -7,17 +7,19 @@ open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
+let private at = Root.at
+
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
-    fs.AddFile(@"C:\start\readme.TXT", MockFileData "hi")
-    fs.AddFile(@"C:\start\setup.fs", MockFileData "hi")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "start/readme.TXT", MockFileData "hi")
+    fs.AddFile(at "start/setup.fs", MockFileData "hi")
     fs
 
 let private windowWith askPattern =
     focusedWindow
-        { Fakes.dependencies (mockFs ()) @"C:\start" with
+        { Fakes.dependencies (mockFs ()) (at "start") with
             AskPattern = askPattern }
 
 let private marked (list: ListView) =

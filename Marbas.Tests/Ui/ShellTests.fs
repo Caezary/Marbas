@@ -9,11 +9,13 @@ open Marbas.State.Update
 open Marbas.Ui
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
-let private noDeps () = Fakes.dependencies (MockFileSystem()) @"C:\start"
+let private noDeps () = Fakes.dependencies (MockFileSystem()) (at "start")
 
 let private deleteRequest names scope = { Targets = names; Scope = scope }
 
@@ -103,24 +105,45 @@ let ``an empty pattern never becomes a message`` () =
     Assert.Empty sent
 
 [<Fact>]
-let ``a chosen drive is dispatched as an opened path`` () =
+let ``a chosen root is dispatched as an opened path`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with ChooseOption = fun _ _ -> Some @"D:\" }
+    let deps = { noDeps () with ChooseOption = fun _ _ -> Some(at "elsewhere") }
 
-    Shell.interpret deps dispatch (PromptForDrive Right)
+    Shell.interpret deps dispatch (PromptForRoot Right)
 
-    Assert.Equal<Message list>([ PathOpened(Right, fp @"D:\") ], List.ofSeq sent)
+    Assert.Equal<Message list>([ PathOpened(Right, fp (at "elsewhere")) ], List.ofSeq sent)
 
 [<Fact>]
-let ``the drive chooser is offered every mounted drive`` () =
+let ``the chooser is offered the roots the platform was given`` () =
+    let _, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "home/user")
+    let mutable offered = []
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            Roots = RootAndHome(fp (at "home/user"))
+            ChooseOption = fun _ roots -> offered <- roots; None }
+
+    Shell.interpret deps dispatch (PromptForRoot Left)
+
+    Assert.Equal<string list>([ at ""; at "home/user" ], offered)
+
+[<WindowsFact>]
+let ``the chooser is offered every mounted drive`` () =
     let _, dispatch = capture ()
     let fs = MockFileSystem()
     fs.AddDirectory @"C:\start"
     fs.AddDirectory @"D:\data"
     let mutable offered = []
-    let deps = { noDeps () with FileSystem = fs; ChooseOption = fun _ drives -> offered <- drives; None }
 
-    Shell.interpret deps dispatch (PromptForDrive Left)
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            ChooseOption = fun _ drives -> offered <- drives; None }
+
+    Shell.interpret deps dispatch (PromptForRoot Left)
 
     Assert.Equal<string list>([ @"C:\"; @"D:\" ], offered)
 
@@ -129,17 +152,17 @@ let ``a listing error is reported under the listing title`` () =
     let mutable reported = ("", "")
     let deps = { noDeps () with ReportError = fun title message -> reported <- (title, message) }
 
-    Shell.interpret deps ignore (ReportListingError(DirectoryListing.DirectoryNotFound(fp @"C:\gone")))
+    Shell.interpret deps ignore (ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "gone"))))
 
     Assert.Equal(ListingErrorMessage.Title, fst reported)
-    Assert.Contains(@"C:\gone", snd reported)
+    Assert.Contains(at "gone", snd reported)
 
 [<Fact>]
 let ``an operation error is reported under the operation title`` () =
     let mutable reported = ("", "")
     let deps = { noDeps () with ReportError = fun title message -> reported <- (title, message) }
 
-    Shell.interpret deps ignore (ReportOperationError(TargetExists(fp @"C:\start\docs")))
+    Shell.interpret deps ignore (ReportOperationError(TargetExists(fp (at "start/docs"))))
 
     Assert.Equal(OperationErrorMessage.Title, fst reported)
     Assert.Contains("docs", snd reported)
@@ -179,7 +202,7 @@ let ``item failures are reported under the operation title`` () =
 
     let failed =
         [ { Name = EntryName.create "gone.txt"
-            Outcome = Error(SourceNotFound(fp @"C:\start\gone.txt")) } ]
+            Outcome = Error(SourceNotFound(fp (at "start/gone.txt"))) } ]
 
     Shell.interpret deps ignore (ReportItemFailures failed)
 
@@ -188,8 +211,8 @@ let ``item failures are reported under the operation title`` () =
 
 let private copyReadyFs () =
     let fs = MockFileSystem()
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "new")
-    fs.AddDirectory @"C:\backup"
+    fs.AddFile(at "start/notes.txt", MockFileData "new")
+    fs.AddDirectory(at "backup")
     fs
 
 [<Fact>]
@@ -198,9 +221,9 @@ let ``copy targets are copied and the outcome dispatched back`` () =
     let fs = copyReadyFs ()
     let deps = { noDeps () with FileSystem = fs }
 
-    Shell.interpret deps dispatch (CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
+    Shell.interpret deps dispatch (CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
 
-    Assert.Equal("new", fs.File.ReadAllText @"C:\backup\notes.txt")
+    Assert.Equal("new", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.Equal<Message list>(
         [ CopyFinished [ { Name = EntryName.create "notes.txt"; Outcome = Ok() } ] ],
         List.ofSeq sent
@@ -215,8 +238,8 @@ let ``a batch is handed to the runner under its own title`` () =
             FileSystem = copyReadyFs ()
             RunBatch = fun title work finish -> titles.Add title; work Operations.unattended |> finish }
 
-    Shell.interpret (deps ()) dispatch (CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
-    Shell.interpret (deps ()) dispatch (MoveTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
+    Shell.interpret (deps ()) dispatch (CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
+    Shell.interpret (deps ()) dispatch (MoveTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
 
     Assert.Equal<string list>([ Shell.CopyTitle; Shell.MoveTitle ], List.ofSeq titles)
 
@@ -224,7 +247,7 @@ let ``a batch is handed to the runner under its own title`` () =
 let ``nothing is run when every collision is refused`` () =
     let sent, dispatch = capture ()
     let fs = copyReadyFs ()
-    fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
+    fs.AddFile(at "backup/notes.txt", MockFileData "old")
     let mutable started = false
     let deps =
         { noDeps () with
@@ -232,28 +255,28 @@ let ``nothing is run when every collision is refused`` () =
             AskOverwrite = (fun _ _ -> Operations.No)
             RunBatch = fun _ work finish -> started <- true; work Operations.unattended |> finish }
 
-    Shell.interpret deps dispatch (CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
+    Shell.interpret deps dispatch (CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
 
     Assert.False started
     Assert.Empty sent
-    Assert.Equal("old", fs.File.ReadAllText @"C:\backup\notes.txt")
+    Assert.Equal("old", fs.File.ReadAllText(at "backup/notes.txt"))
 
 [<Fact>]
 let ``a collision asks the overwrite question under its own title`` () =
     let _, dispatch = capture ()
     let fs = copyReadyFs ()
-    fs.AddFile(@"C:\backup\notes.txt", MockFileData "old")
+    fs.AddFile(at "backup/notes.txt", MockFileData "old")
     let mutable asked = ("", "")
     let deps =
         { noDeps () with
             FileSystem = fs
             AskOverwrite = fun title message -> asked <- (title, message); Operations.No }
 
-    Shell.interpret deps dispatch (CopyTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
+    Shell.interpret deps dispatch (CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
 
     Assert.Equal(OverwriteQuestion.Title, fst asked)
-    Assert.Contains(@"C:\backup\notes.txt", snd asked)
-    Assert.Equal("old", fs.File.ReadAllText @"C:\backup\notes.txt")
+    Assert.Contains(at "backup/notes.txt", snd asked)
+    Assert.Equal("old", fs.File.ReadAllText(at "backup/notes.txt"))
 
 [<Fact>]
 let ``the target prompt suggests a path and carries back what was typed`` () =
@@ -263,17 +286,17 @@ let ``the target prompt suggests a path and carries back what was typed`` () =
         { noDeps () with
             AskTarget = fun title suggestion -> offered <- (title, suggestion); Some "readme.txt" }
 
-    Shell.interpret deps dispatch (PromptForTarget(fp @"C:\backup"))
+    Shell.interpret deps dispatch (PromptForTarget(fp (at "backup")))
 
     Assert.Equal(Shell.MovePrompt, fst offered)
-    Assert.Equal(@"C:\backup", snd offered)
+    Assert.Equal(at "backup", snd offered)
     Assert.Equal<Message list>([ TargetEntered "readme.txt" ], List.ofSeq sent)
 
 [<Fact>]
 let ``a cancelled target prompt dispatches nothing`` () =
     let sent, dispatch = capture ()
 
-    Shell.interpret (noDeps ()) dispatch (PromptForTarget(fp @"C:\backup"))
+    Shell.interpret (noDeps ()) dispatch (PromptForTarget(fp (at "backup")))
 
     Assert.Empty sent
 
@@ -283,10 +306,10 @@ let ``move targets are moved and the outcome dispatched back`` () =
     let fs = copyReadyFs ()
     let deps = { noDeps () with FileSystem = fs }
 
-    Shell.interpret deps dispatch (MoveTargets([ fp @"C:\start\notes.txt" ], fp @"C:\backup"))
+    Shell.interpret deps dispatch (MoveTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
 
-    Assert.Equal("new", fs.File.ReadAllText @"C:\backup\notes.txt")
-    Assert.False(fs.File.Exists @"C:\start\notes.txt")
+    Assert.Equal("new", fs.File.ReadAllText(at "backup/notes.txt"))
+    Assert.False(fs.File.Exists(at "start/notes.txt"))
     Assert.Equal<Message list>(
         [ MoveFinished [ { Name = EntryName.create "notes.txt"; Outcome = Ok() } ] ],
         List.ofSeq sent
@@ -298,21 +321,21 @@ let ``a rename is carried out and its outcome dispatched back`` () =
     let fs = copyReadyFs ()
     let deps = { noDeps () with FileSystem = fs }
 
-    Shell.interpret deps dispatch (RenameTarget(fp @"C:\start\notes.txt", en "readme.txt"))
+    Shell.interpret deps dispatch (RenameTarget(fp (at "start/notes.txt"), en "readme.txt"))
 
-    Assert.Equal("new", fs.File.ReadAllText @"C:\start\readme.txt")
+    Assert.Equal("new", fs.File.ReadAllText(at "start/readme.txt"))
     Assert.Equal<Message list>([ RenameFinished(en "readme.txt", Ok()) ], List.ofSeq sent)
 
 [<Fact>]
 let ``a viewed file is handed over under its own path with its lines`` () =
     let fs = MockFileSystem()
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "first\r\nsecond")
+    fs.AddFile(at "start/notes.txt", MockFileData "first\r\nsecond")
     let mutable shown = ("", [])
     let deps = { noDeps () with FileSystem = fs; ShowFile = fun title lines -> shown <- (title, lines) }
 
-    Shell.interpret deps ignore (ViewFile(fp @"C:\start\notes.txt"))
+    Shell.interpret deps ignore (ViewFile(fp (at "start/notes.txt")))
 
-    Assert.Equal(@"C:\start\notes.txt", fst shown)
+    Assert.Equal(at "start/notes.txt", fst shown)
     Assert.Equal<string list>([ "first"; "second" ], snd shown)
 
 [<Fact>]
@@ -325,7 +348,7 @@ let ``a file that cannot be read is reported instead of shown`` () =
             ShowFile = fun _ _ -> shown <- true
             ReportError = fun title message -> reported <- (title, message) }
 
-    Shell.interpret deps ignore (ViewFile(fp @"C:\start\gone.txt"))
+    Shell.interpret deps ignore (ViewFile(fp (at "start/gone.txt")))
 
     Assert.False shown
     Assert.Equal(ContentErrorMessage.Title, fst reported)
@@ -337,31 +360,31 @@ let ``an edited file is handed to the editor and its outcome dispatched back`` (
     let edited = ResizeArray<FileSystemPath>()
     let deps = { noDeps () with RunEditor = fun path -> edited.Add path; Ok() }
 
-    Shell.interpret deps dispatch (EditFile(fp @"C:\start\notes.txt"))
+    Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt")))
 
-    Assert.Equal(fp @"C:\start\notes.txt", Assert.Single edited)
+    Assert.Equal(fp (at "start/notes.txt"), Assert.Single edited)
     Assert.Equal<Message list>([ EditFinished(Ok()) ], List.ofSeq sent)
 
 [<Fact>]
 let ``an editor that fails dispatches its failure back`` () =
     let sent, dispatch = capture ()
-    let failure = OperationFailed(fp @"C:\start\notes.txt", "no editor")
+    let failure = OperationFailed(fp (at "start/notes.txt"), "no editor")
     let deps = { noDeps () with RunEditor = fun _ -> Error failure }
 
-    Shell.interpret deps dispatch (EditFile(fp @"C:\start\notes.txt"))
+    Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt")))
 
     Assert.Equal<Message list>([ EditFinished(Error failure) ], List.ofSeq sent)
 
 [<Fact>]
 let ``saved settings are written where the settings path points`` () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start"
-    let settings = Settings.forPath (fp @"C:\start")
-    let deps = { noDeps () with FileSystem = fs; SettingsPath = fp @"C:\config\marbas.conf" }
+    fs.AddDirectory(at "start")
+    let settings = Settings.forPath (fp (at "start"))
+    let deps = { noDeps () with FileSystem = fs; SettingsPath = fp (at "config/marbas.conf") }
 
     Shell.interpret deps ignore (SaveSettings settings)
 
-    Assert.Equal(settings, Settings.load fs settings (fp @"C:\config\marbas.conf"))
+    Assert.Equal(settings, Settings.load fs settings (fp (at "config/marbas.conf")))
 
 [<Fact>]
 let ``quit runs the quit port`` () =

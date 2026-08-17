@@ -7,20 +7,22 @@ open Marbas.FileSystem
 open Marbas.State.AppState
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private pattern raw = NamePattern.tryCreate raw |> Expect.some
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\notes.txt", MockFileData "hi")
-    fs.AddFile(@"C:\start\readme.TXT", MockFileData "hi")
-    fs.AddFile(@"C:\start\setup.fs", MockFileData "hi")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "start/readme.TXT", MockFileData "hi")
+    fs.AddFile(at "start/setup.fs", MockFileData "hi")
     fs
 
 let private loaded (fs: IFileSystem) =
-    create (fp @"C:\start") |> loadPanel fs Left (fp @"C:\start") |> Expect.ok
+    create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
 let private selectedNames panel =
     selectedEntries panel |> List.map (_.Name >> EntryName.value)

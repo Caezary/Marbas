@@ -38,3 +38,4 @@ The tests run against an in-memory file system and never touch the disk, so
 - [Progress](_documentation/PROGRESS.md)
 - [Implementation plan](_documentation/PLAN.md)
 - [Testing notes](_documentation/TESTING.md)
+- [Cross-platform checklist](_documentation/CROSS-PLATFORM.md)

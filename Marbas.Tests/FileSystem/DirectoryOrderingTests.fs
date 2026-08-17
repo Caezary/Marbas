@@ -7,6 +7,8 @@ open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private entry name kind =
@@ -128,10 +130,10 @@ let ``entries of the same size are sorted by name`` () =
 [<Fact>]
 let ``non-root listing starts with the parent entry`` () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\sub"
-    fs.AddFile(@"C:\start\sub\a.txt", MockFileData "x")
+    fs.AddDirectory(at "start/sub")
+    fs.AddFile(at "start/sub/a.txt", MockFileData "x")
 
-    let entries = listForDisplay fs byName Concealed (fp @"C:\start\sub") |> Expect.ok
+    let entries = listForDisplay fs byName Concealed (fp (at "start/sub")) |> Expect.ok
 
     Assert.Equal("..", EntryName.value entries.Head.Name)
     Assert.Equal(Directory, entries.Head.Kind)
@@ -139,29 +141,29 @@ let ``non-root listing starts with the parent entry`` () =
 [<Fact>]
 let ``the parent entry stays first whatever the sort`` () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\sub\inner"
-    fs.AddFile(@"C:\start\sub\a.txt", MockFileData "x")
+    fs.AddDirectory(at "start/sub/inner")
+    fs.AddFile(at "start/sub/a.txt", MockFileData "x")
 
     let entries =
-        listForDisplay fs (descending SortKey.ByName) Concealed (fp @"C:\start\sub") |> Expect.ok
+        listForDisplay fs (descending SortKey.ByName) Concealed (fp (at "start/sub")) |> Expect.ok
 
     Assert.Equal<string list>([ ".."; "inner"; "a.txt" ], names entries)
 
 [<Fact>]
 let ``root listing has no parent entry`` () =
     let fs = MockFileSystem()
-    fs.AddFile(@"C:\a.txt", MockFileData "x")
+    fs.AddFile(at "a.txt", MockFileData "x")
 
-    let entries = listForDisplay fs byName Concealed (fp @"C:\") |> Expect.ok
+    let entries = listForDisplay fs byName Concealed (fp (at "")) |> Expect.ok
 
     Assert.DoesNotContain(entries, fun e -> EntryName.value e.Name = "..")
 
 [<Fact>]
 let ``parent entry is followed by ordered content`` () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\sub\inner"
-    fs.AddFile(@"C:\start\sub\a.txt", MockFileData "x")
+    fs.AddDirectory(at "start/sub/inner")
+    fs.AddFile(at "start/sub/a.txt", MockFileData "x")
 
-    let entries = listForDisplay fs byName Concealed (fp @"C:\start\sub") |> Expect.ok
+    let entries = listForDisplay fs byName Concealed (fp (at "start/sub")) |> Expect.ok
 
     Assert.Equal<string list>([ ".."; "inner"; "a.txt" ], names entries)

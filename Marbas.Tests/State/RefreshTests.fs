@@ -8,12 +8,14 @@ open Marbas.FileSystem.DirectoryListing
 open Marbas.State.AppState
 open Marbas.Tests
 
+let private at = Root.at
+
 let private fp = FileSystemPath.create
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start\docs"
-    fs.AddFile(@"C:\start\readme.txt", MockFileData "hi")
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/readme.txt", MockFileData "hi")
     fs
 
 let private loaded side path (fs: IFileSystem) state =
@@ -25,8 +27,8 @@ let private names entries =
 [<Fact>]
 let ``refresh picks up entries created after the panel was loaded`` () =
     let fs = mockFs ()
-    let state = create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs
-    fs.AddFile(@"C:\start\added.txt", MockFileData "new")
+    let state = create (fp (at "start")) |> loaded Left (fp (at "start")) fs
+    fs.AddFile(at "start/added.txt", MockFileData "new")
 
     let updated = refresh fs state |> Expect.ok
 
@@ -37,10 +39,10 @@ let ``refresh keeps the cursor on the same entry when its index shifts`` () =
     let fs = mockFs ()
 
     let state =
-        create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> setCursor Left 2
+        create (fp (at "start")) |> loaded Left (fp (at "start")) fs |> setCursor Left 2
 
     let cursorName = state.Left.Entries[state.Left.Cursor].Name
-    fs.AddDirectory @"C:\start\aaa"
+    fs.AddDirectory(at "start/aaa")
 
     let updated = refresh fs state |> Expect.ok
 
@@ -53,9 +55,9 @@ let ``refresh falls back to the first entry when the cursor entry is gone`` () =
     let fs = mockFs ()
 
     let state =
-        create (fp @"C:\start") |> loaded Left (fp @"C:\start") fs |> setCursor Left 2
+        create (fp (at "start")) |> loaded Left (fp (at "start")) fs |> setCursor Left 2
 
-    fs.File.Delete @"C:\start\readme.txt"
+    fs.File.Delete(at "start/readme.txt")
 
     let updated = refresh fs state |> Expect.ok
 
@@ -66,12 +68,12 @@ let ``refresh only reloads the active panel`` () =
     let fs = mockFs ()
 
     let state =
-        create (fp @"C:\start")
-        |> loaded Left (fp @"C:\start") fs
-        |> loaded Right (fp @"C:\start") fs
+        create (fp (at "start"))
+        |> loaded Left (fp (at "start")) fs
+        |> loaded Right (fp (at "start")) fs
         |> activate Right
 
-    fs.AddFile(@"C:\start\added.txt", MockFileData "new")
+    fs.AddFile(at "start/added.txt", MockFileData "new")
 
     let updated = refresh fs state |> Expect.ok
 
@@ -80,9 +82,8 @@ let ``refresh only reloads the active panel`` () =
 
 [<Fact>]
 let ``refresh leaves the cursor at the top of a panel with nothing in it`` () =
-    let fs = MockFileSystem()
-    fs.AddDirectory @"D:\"
-    let state = create (fp @"D:\") |> loaded Left (fp @"D:\") fs
+    let fs = MockFileSystem(MockFileSystemOptions(CreateDefaultTempDir = false))
+    let state = create (fp (at "")) |> loaded Left (fp (at "")) fs
 
     let updated = refresh fs state |> Expect.ok
 
@@ -92,9 +93,9 @@ let ``refresh leaves the cursor at the top of a panel with nothing in it`` () =
 [<Fact>]
 let ``refreshing a directory that vanished reports an error`` () =
     let fs = mockFs ()
-    let state = create (fp @"C:\start\docs") |> loaded Left (fp @"C:\start\docs") fs
-    fs.Directory.Delete @"C:\start\docs"
+    let state = create (fp (at "start/docs")) |> loaded Left (fp (at "start/docs")) fs
+    fs.Directory.Delete(at "start/docs")
 
     let result = refresh fs state
 
-    Assert.Equal(Error(DirectoryNotFound(fp @"C:\start\docs")), result)
+    Assert.Equal(Error(DirectoryNotFound(fp (at "start/docs"))), result)

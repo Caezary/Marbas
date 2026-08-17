@@ -3,26 +3,29 @@ module Marbas.Tests.FileSystem.SettingsTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.Tests
+
+let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private settingsPath = fp @"C:\config\marbas.conf"
+let private settingsPath = fp (at "config/marbas.conf")
 
 let private mockFs () =
     let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start"
-    fs.AddDirectory @"C:\backup"
+    fs.AddDirectory(at "start")
+    fs.AddDirectory(at "backup")
     fs
 
-let private defaults = Settings.forPath (fp @"C:\start")
+let private defaults = Settings.forPath (fp (at "start"))
 
 let private stored: Settings =
     { Left =
-        { Path = fp @"C:\backup"
+        { Path = fp (at "backup")
           Sort = SortOrder.create BySize Descending
           Hidden = Shown }
       Right =
-        { Path = fp @"C:\start"
+        { Path = fp (at "start")
           Sort = SortOrder.create ByDate Ascending
           Hidden = Concealed } }
 
@@ -31,10 +34,10 @@ let private write (fs: MockFileSystem) lines =
 
 [<Fact>]
 let ``the defaults put both panels on one path, sorted by name, hidden concealed`` () =
-    let settings = Settings.forPath (fp @"C:\start")
+    let settings = Settings.forPath (fp (at "start"))
 
-    Assert.Equal(fp @"C:\start", settings.Left.Path)
-    Assert.Equal(fp @"C:\start", settings.Right.Path)
+    Assert.Equal(fp (at "start"), settings.Left.Path)
+    Assert.Equal(fp (at "start"), settings.Right.Path)
     Assert.Equal(SortOrder.byName, settings.Left.Sort)
     Assert.Equal(Concealed, settings.Left.Hidden)
     Assert.Equal(settings.Left, settings.Right)
@@ -49,11 +52,11 @@ let ``what is formatted is what is parsed back`` () =
 let ``each panel is written under its own name`` () =
     let lines = Settings.format stored
 
-    Assert.Contains(@"left.path=C:\backup", lines)
+    Assert.Contains("left.path=" + at "backup", lines)
     Assert.Contains("left.sort=size", lines)
     Assert.Contains("left.direction=descending", lines)
     Assert.Contains("left.hidden=shown", lines)
-    Assert.Contains(@"right.path=C:\start", lines)
+    Assert.Contains("right.path=" + at "start", lines)
     Assert.Contains("right.sort=date", lines)
     Assert.Contains("right.direction=ascending", lines)
     Assert.Contains("right.hidden=concealed", lines)
@@ -79,9 +82,9 @@ let ``every sort key is written under a name that is read back as itself`` () =
 
 [<Fact>]
 let ``a setting the file does not carry keeps its default`` () =
-    let parsed = Settings.parse defaults [ @"left.path=C:\backup" ]
+    let parsed = Settings.parse defaults [ "left.path=" + at "backup" ]
 
-    Assert.Equal(fp @"C:\backup", parsed.Left.Path)
+    Assert.Equal(fp (at "backup"), parsed.Left.Path)
     Assert.Equal(SortOrder.byName, parsed.Left.Sort)
     Assert.Equal(Concealed, parsed.Left.Hidden)
     Assert.Equal(defaults.Right, parsed.Right)
@@ -97,12 +100,12 @@ let ``a value that means nothing keeps its default`` () =
 let ``a blank path keeps its default`` () =
     let parsed = Settings.parse defaults [ "left.path=   " ]
 
-    Assert.Equal(fp @"C:\start", parsed.Left.Path)
+    Assert.Equal(fp (at "start"), parsed.Left.Path)
 
 [<Fact>]
 let ``lines that are not settings are passed over`` () =
     let parsed =
-        Settings.parse defaults [ ""; "# hand written"; "nonsense"; "top.path=C:\\gone"; "left.sort=size" ]
+        Settings.parse defaults [ ""; "# hand written"; "nonsense"; "top.path=" + at "gone"; "left.sort=size" ]
 
     Assert.Equal(BySize, parsed.Left.Sort.Key)
     Assert.Equal(defaults.Right, parsed.Right)
@@ -116,9 +119,33 @@ let ``keys and values are read whatever their case`` () =
 
 [<Fact>]
 let ``a path keeps the case it was written in`` () =
-    let parsed = Settings.parse defaults [ @"left.path=C:\Backup" ]
+    let parsed = Settings.parse defaults [ "left.path=" + at "Backup" ]
 
-    Assert.Equal(fp @"C:\Backup", parsed.Left.Path)
+    Assert.Equal(fp (at "Backup"), parsed.Left.Path)
+
+[<Fact>]
+let ``the settings file sits in the directory the platform keeps application data in`` () =
+    let fs = mockFs ()
+
+    let location = Settings.location fs (at "home/user/AppData") (at "home/user")
+
+    Assert.Equal(fp (at "home/user/AppData/Marbas/settings.conf"), location)
+
+[<Fact>]
+let ``a platform that names no application data directory falls back to .config at home`` () =
+    let fs = mockFs ()
+
+    let location = Settings.location fs "" (at "home/user")
+
+    Assert.Equal(fp (at "home/user/.config/Marbas/settings.conf"), location)
+
+[<Fact>]
+let ``a blank application data directory falls back the same way`` () =
+    let fs = mockFs ()
+
+    let location = Settings.location fs "   " (at "home/user")
+
+    Assert.Equal(fp (at "home/user/.config/Marbas/settings.conf"), location)
 
 [<Fact>]
 let ``a settings file that is not there leaves the defaults`` () =
@@ -160,22 +187,22 @@ let ``a stored session is loaded panel by panel`` () =
 [<Fact>]
 let ``a stored path that is no longer a directory falls back to the default`` () =
     let fs = mockFs ()
-    write fs [ @"left.path=C:\gone"; "left.sort=size" ]
+    write fs [ "left.path=" + at "gone"; "left.sort=size" ]
 
     let loaded = Settings.load fs defaults settingsPath
 
-    Assert.Equal(fp @"C:\start", loaded.Left.Path)
+    Assert.Equal(fp (at "start"), loaded.Left.Path)
     Assert.Equal(BySize, loaded.Left.Sort.Key)
 
 [<Fact>]
 let ``a stored path that names a file falls back to the default`` () =
     let fs = mockFs ()
-    fs.AddFile(@"C:\notes.txt", MockFileData "x")
-    write fs [ @"left.path=C:\notes.txt" ]
+    fs.AddFile(at "notes.txt", MockFileData "x")
+    write fs [ "left.path=" + at "notes.txt" ]
 
     let loaded = Settings.load fs defaults settingsPath
 
-    Assert.Equal(fp @"C:\start", loaded.Left.Path)
+    Assert.Equal(fp (at "start"), loaded.Left.Path)
 
 [<Fact>]
 let ``what is saved is what is loaded back`` () =
@@ -205,8 +232,8 @@ let ``saving over an older file replaces it`` () =
 [<Fact>]
 let ``saving where nothing can be written is passed over in silence`` () =
     let fs = mockFs ()
-    fs.AddFile(@"C:\blocked", MockFileData "x")
+    fs.AddFile(at "blocked", MockFileData "x")
 
-    Settings.save fs (fp @"C:\blocked\marbas.conf") stored
+    Settings.save fs (fp (at "blocked/marbas.conf")) stored
 
-    Assert.False(fs.File.Exists @"C:\blocked\marbas.conf")
+    Assert.False(fs.File.Exists(at "blocked/marbas.conf"))
