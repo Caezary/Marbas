@@ -4,7 +4,7 @@ Status as of 2026-08-18. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Phases 1–7 are complete** (29 of 32 tasks). Marbas
+**All eight phases are complete** (32 of 32 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -24,7 +24,10 @@ OS marks hidden or system — are listed at all. P7.4 closed the phase: where ea
 panel stands, how it sorts and whether it conceals are written to a config file
 when the app quits and read back when it starts, so a session survives a
 restart. P8.1 put a number on the suite and a workflow around it, and P8.2 made
-both hold on Linux as well as on Windows.
+both hold on Linux as well as on Windows. P8.3 closed the plan: two publish
+profiles turn the project into one self-contained, single-file executable per
+operating system, and a tag builds both on their own runners and hangs them off
+a GitHub release.
 
 **498 tests pass on Windows; on Linux 495 pass and 3 skip** — the three that
 assert on drive letters, which exist nowhere else. 367 are unit tests over the
@@ -47,7 +50,7 @@ checklist in [CROSS-PLATFORM.md](CROSS-PLATFORM.md).
 | 5 — File operations | P5.1–P5.6 | done |
 | 6 — Viewing files | P6.1–P6.2 | done |
 | 7 — Polish & configuration | P7.1–P7.5 | done |
-| 8 — Quality & release | P8.1–P8.3 | P8.1, P8.2 done |
+| 8 — Quality & release | P8.1–P8.3 | done |
 
 ## What works today
 
@@ -214,6 +217,9 @@ Marbas/
     EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
     MainWindow.fs         composition: views, runtime, event wiring
   Program.fs              real file system and real dialogs
+  Properties/PublishProfiles/
+    win-x64.pubxml        self-contained single-file build for Windows
+    linux-x64.pubxml      the same for Linux
 
 Marbas.Tests/
   Root.fs                 the root every test path is built on, per platform
@@ -230,6 +236,7 @@ Marbas.Tests/
 coverlet.runsettings      what coverage measures and what it leaves out
 .github/workflows/
   ci.yml                  restore, build and test on Windows and Linux
+  release.yml             publish both profiles on a tag, attach them to a release
 ```
 
 Dependencies flow downward only: `Ui` → `State` → `FileSystem`.
@@ -750,6 +757,35 @@ one, `$HOME/.config` otherwise — and it takes both values as arguments, so it 
 tested on both platforms while `Program.fs` keeps only the two environment
 reads.
 
+**A release is one file, and it carries its own runtime.** The two publish
+profiles are self-contained and single-file, with the native libraries and the
+compression inside, so what ships is one executable of about 50 MB that runs
+where no .NET is installed — a file manager is a tool you copy onto a machine,
+not something you install a runtime for. Trimming is off on purpose:
+Terminal.Gui resolves drivers and views by reflection and FSharp.Core formats
+and compares by it, neither of which a trimmer can see, so a trimmed build is
+one that starts and then fails on the path nobody tried. Globalization stays in
+for the same reason in miniature — entry names are sorted culture-aware, and
+`InvariantGlobalization` would change the order a panel lists its files in.
+Details and the rest of the properties are in [PACKAGING.md](PACKAGING.md).
+
+**The tag is the version.** `Marbas.fsproj` carries a `Version` for an ordinary
+`dotnet publish`, and `release.yml` overrides it from the tag it was triggered
+by, so the version stamped on the binary and the version of the release cannot
+drift apart. Each profile is published on its own runner — Windows on
+`windows-latest`, Linux on `ubuntu-latest` — even though either could be
+cross-published from the other, so what is released is what that platform's SDK
+produced. The archives differ for one reason: `.tar.gz` on Linux keeps the
+executable bit, which a `.zip` drops.
+
+**A published binary is checked by running it, not by a green publish.** Nothing
+in `dotnet test` touches the build itself, and a self-contained build fails at
+startup if it fails at all. The Linux binary was run under WSL through the same
+pseudo-terminal recipe P8.2 used and quit with `F10`, which wrote the session
+file; the Windows one was started from its publish directory and outlived the
+wait. What either *looks* like stays a manual row in
+[CROSS-PLATFORM.md](CROSS-PLATFORM.md).
+
 ## Traps already hit (details in [TESTING.md](TESTING.md))
 
 - `StatusBar` shortcuts swallow their key even with a `null` action — `F10`
@@ -778,6 +814,12 @@ reads.
 - `MockFileSystem` emulates drives Windows-style on every platform: on Linux
   `DriveInfo.GetDrives()` answers `/:\` twice. Any test that asserts on the drive
   list is therefore Windows-only, whatever the code under test does.
+- The stock Visual Studio `.gitignore` ignores `*.pubxml`, because a *web*
+  deploy profile can hold a connection string with a password in it. A publish
+  profile for a console application holds nothing of the sort, so both files
+  would have been silently left out of the commit; `.gitignore` now un-ignores
+  `Marbas/Properties/PublishProfiles/*.pubxml`. `git status` is what says so —
+  a new file that does not appear there is ignored, not missed.
 - An F# list literal that mixes plain elements with a `for … -> …` comprehension
   keeps only what the comprehension yields; the plain elements become ignored
   statements. `KeyMap.bindings` lost every function key that way and only the
@@ -786,14 +828,18 @@ reads.
 
 ## Next up
 
-**Phase 8 — quality & release.** **P8.3** is what is left: publish profiles for
-self-contained single-file builds per OS. The rows still marked *manual* in
-[CROSS-PLATFORM.md](CROSS-PLATFORM.md) — colours, a resized terminal, the mouse,
-a real Unix permission bit, and `F4` with a full-screen console editor — want a
-person at a terminal on each platform, and the last of them is the one known
-defect left: a console editor on Unix shares the terminal with a driver that
-never let go of it, which needs a driver shutdown around the child process and a
-switch to keep it off Windows.
+**The plan is finished.** Every task from P1.1 to P8.3 is done, so what follows
+is no longer plan order but choice. Three things are waiting:
+
+- The rows still marked *manual* in [CROSS-PLATFORM.md](CROSS-PLATFORM.md) —
+  colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
+  with a full-screen console editor — want a person at a terminal on each
+  platform, and now also the published binaries rather than `dotnet run`.
+- The one known defect: a full-screen console editor on Unix shares the terminal
+  with a driver that never let go of it, which needs a driver shutdown around
+  the child process and a switch to keep the detour off Windows.
+- Everything under *Known rough edges* below, of which both panels starting on
+  the same directory is the one a user meets first.
 
 ## Known rough edges
 

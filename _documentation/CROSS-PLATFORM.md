@@ -160,6 +160,18 @@ dotnet test Marbas.slnx          # both legs of the table marked "suite"
 dotnet run --project Marbas      # everything marked "manual"
 ```
 
+Before a release, run the *manual* rows against the published binary rather than
+`dotnet run` — it is a different build (self-contained, single-file,
+ready-to-run), and it is what a user gets:
+
+```
+dotnet publish Marbas/Marbas.fsproj -p:PublishProfile=win-x64
+dotnet publish Marbas/Marbas.fsproj -p:PublishProfile=linux-x64
+```
+
+See [PACKAGING.md](PACKAGING.md) for what those profiles decide and how a tag
+turns them into a release.
+
 Under WSL, build outputs are best kept away from the Windows ones:
 
 ```

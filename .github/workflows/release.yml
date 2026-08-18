@@ -1,0 +1,89 @@
+name: release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            profile: win-x64
+            binary: Marbas.exe
+          - os: ubuntu-latest
+            profile: linux-x64
+            binary: Marbas
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Version
+        id: version
+        shell: bash
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=0.0.0-dev" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish
+        run: >
+          dotnet publish Marbas/Marbas.fsproj
+          -p:PublishProfile=${{ matrix.profile }}
+          -p:Version=${{ steps.version.outputs.value }}
+
+      - name: Archive (zip)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: >
+          Compress-Archive
+          -Path Marbas/bin/publish/${{ matrix.profile }}/${{ matrix.binary }}
+          -DestinationPath marbas-${{ steps.version.outputs.value }}-${{ matrix.profile }}.zip
+
+      - name: Archive (tar.gz)
+        if: runner.os != 'Windows'
+        run: >
+          tar -czf marbas-${{ steps.version.outputs.value }}-${{ matrix.profile }}.tar.gz
+          -C Marbas/bin/publish/${{ matrix.profile }} ${{ matrix.binary }}
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: marbas-${{ matrix.profile }}
+          path: marbas-*.*
+
+  release:
+    needs: publish
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: marbas-*
+          merge-multiple: true
+          path: artifacts
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME"
+          --repo "$GITHUB_REPOSITORY"
+          --title "$GITHUB_REF_NAME"
+          --generate-notes
+          artifacts/*

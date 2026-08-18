@@ -33,9 +33,23 @@ The tests run against an in-memory file system and never touch the disk, so
 `dotnet test` is safe to run anywhere. Coverage is collected with
 `dotnet test Marbas.slnx --settings coverlet.runsettings`.
 
+## Standalone binaries
+
+```
+dotnet publish Marbas/Marbas.fsproj -p:PublishProfile=win-x64
+dotnet publish Marbas/Marbas.fsproj -p:PublishProfile=linux-x64
+```
+
+Each profile writes one self-contained, single-file executable to
+`Marbas/bin/publish/<runtime>/` — the .NET runtime travels inside it, so the
+machine it is copied onto needs nothing installed. Either can be built from
+either operating system. Tagging `v*` builds both on GitHub Actions and attaches
+them to a release; see [Packaging](_documentation/PACKAGING.md).
+
 ## Documentation
 
 - [Progress](_documentation/PROGRESS.md)
 - [Implementation plan](_documentation/PLAN.md)
 - [Testing notes](_documentation/TESTING.md)
 - [Cross-platform checklist](_documentation/CROSS-PLATFORM.md)
+- [Packaging](_documentation/PACKAGING.md)
