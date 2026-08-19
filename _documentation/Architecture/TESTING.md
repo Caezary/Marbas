@@ -95,9 +95,11 @@ Five modules sit outside the folders because everything uses them: `Root` (the
 platform's root, and paths built on it), `WindowsFact` (the `Fact` that skips
 where drive letters do not exist), `Expect` (result unwrapping), `Fakes` (the
 do-nothing `Shell.Dependencies`) and `AssemblyInfo`. `Integration/Gui.fs` adds the view helpers — `focusedWindow`,
-`leftList`, `rightList`, `press`, `panel`, `panelTitle` and `shownPath`, which
+`leftList`, `rightList`, `press`, `panel`, `panelTitle`, `shownPath`, which
 is the path part of a panel title, so a navigation test says which directory a
-panel shows without repeating the sort indicator that follows it. `pressKey`
+panel shows without repeating the sort indicator that follows it, and
+`drawnText`, which is the text a view formats for the screen rather than the
+text it was handed. `pressKey`
 sends a key to the panel that has focus — since the bottom bar stopped binding
 its keys application-wide, a function key only arrives if it is sent where the
 user's keystroke would go. F# does not open an enclosing
@@ -247,6 +249,16 @@ test constructs a `ListViewRowEventArgs row`, raises it and reads
 `RowAttribute` back — the one thing about colour that is observable without a
 driver. `null` there means "leave the row alone", which is what a marked row and
 the row under the cursor of a focused list must get.
+
+**`View.Text` is what was set, not what is drawn.** A `Label` that eats an
+underscore as its hot key specifier still hands the underscore back from `Text`,
+so an assertion there cannot see the bug at all. `Gui.drawnText` reads
+`view.TextFormatter.GetLines()` instead, which is the formatted text with the
+specifier already removed — the closest a driverless test gets to the screen.
+`TitleTextFormatter` is not public, so the panel frame is covered the other way
+round: a title carrying an underscore must leave `view.HotKey` empty. Both need
+a layout pass first, and the underscore has to be followed by a character —
+a trailing `_` is not a specifier and survives untouched.
 
 **`RequestStop` does nothing outside a run.** `Runnable.RequestStop` goes
 through the application that is running the dialog, so a dialog built in a test

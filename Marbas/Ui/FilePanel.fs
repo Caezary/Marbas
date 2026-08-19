@@ -63,6 +63,7 @@ let private focusable (panel: PanelView) =
 
     let footer =
         new Label(Y = Pos.AnchorEnd 1, Width = Dim.Fill(), Height = 1)
+        |> LiteralText.showing
 
     footer.SetScheme ClassicScheme.summary |> ignore
 
@@ -104,9 +105,11 @@ let pairs (panels: Panels) =
 let createPair () =
     let left =
         new PanelView(Id = LeftId, Width = Dim.Percent 50, Height = Dim.Fill 2)
+        |> LiteralText.showing
 
     let right =
         new PanelView(Id = RightId, X = Pos.Right left, Width = Dim.Fill(), Height = Dim.Fill 2)
+        |> LiteralText.showing
 
     { Left = focusable left
       Right = focusable right }

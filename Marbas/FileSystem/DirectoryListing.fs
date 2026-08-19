@@ -67,11 +67,14 @@ let private groupRank entry =
         | Directory -> 1
         | File -> 2
 
+let private compareText (left: string) (right: string) =
+    String.Compare(left, right, StringComparison.InvariantCultureIgnoreCase)
+
 let private compareNames a b =
-    String.Compare(EntryName.value a.Name, EntryName.value b.Name, StringComparison.OrdinalIgnoreCase)
+    compareText (EntryName.value a.Name) (EntryName.value b.Name)
 
 let private compareExtensions a b =
-    String.Compare(EntryName.extension a.Name, EntryName.extension b.Name, StringComparison.OrdinalIgnoreCase)
+    compareText (EntryName.extension a.Name) (EntryName.extension b.Name)
 
 let private compareByKey key a b =
     let primary =

@@ -58,6 +58,25 @@ let ``names are sorted alphabetically ignoring case`` () =
     Assert.Equal<string list>([ "Bravo"; "zulu"; "Alpha.txt"; "delta.txt" ], names ordered)
 
 [<Fact>]
+let ``names starting with punctuation come before names starting with a letter`` () =
+    let unordered =
+        [ entry "beta.txt" File
+          entry "_notes.txt" File
+          entry "alpha.txt" File ]
+
+    let ordered = order byName unordered
+
+    Assert.Equal<string list>([ "_notes.txt"; "alpha.txt"; "beta.txt" ], names ordered)
+
+[<Fact>]
+let ``extensions starting with punctuation come before extensions starting with a letter`` () =
+    let unordered = [ entry "second.bak" File; entry "first._old" File ]
+
+    let ordered = order (ascending SortKey.ByExtension) unordered
+
+    Assert.Equal<string list>([ "first._old"; "second.bak" ], names ordered)
+
+[<Fact>]
 let ``a descending sort reverses the entries inside their groups`` () =
     let unordered =
         [ entry "delta.txt" File

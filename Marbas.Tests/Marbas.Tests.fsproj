@@ -83,6 +83,7 @@
     <Compile Include="Integration\PanelPaintingTests.fs" />
     <Compile Include="Integration\SearchKeyTests.fs" />
     <Compile Include="Integration\StatusLineTests.fs" />
+    <Compile Include="Integration\LiteralTextTests.fs" />
     <Compile Include="Integration\PatternDialogTests.fs" />
     <Compile Include="Integration\ProgressDialogTests.fs" />
     <Compile Include="Integration\FileViewerTests.fs" />

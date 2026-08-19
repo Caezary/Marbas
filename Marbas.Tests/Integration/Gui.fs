@@ -14,6 +14,9 @@ let panel id (window: Window) =
 
 let panelTitle id window = (panel id window).Title
 
+let drawnText (view: View) =
+    view.TextFormatter.GetLines() |> String.concat ""
+
 let shownPath id window =
     (panelTitle id window).Split " [" |> Array.head
 

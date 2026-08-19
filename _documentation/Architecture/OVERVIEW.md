@@ -52,6 +52,7 @@ Marbas/
     Runtime.fs            generic host: the single mutable cell, dispatch, render
   Ui/
     ClassicScheme.fs      the four schemes the screen is painted with
+    LiteralText.fs        turns a view's hot key specifier off, so `_` is shown
     Modifiers.fs          Ctrl / Alt / Shift as a set, and the set a key carries
     KeyMap.fs             every key binding: key, bar label, message; the
                           shifted page keys, which only carry a direction
@@ -95,7 +96,7 @@ Marbas.Tests/
   Ui/                     unit tests of the pure Ui modules and the Shell interpreter
   Integration/            every test that constructs a Terminal.Gui view
     Gui.fs                 focusedWindow, leftList, rightList, press, panel,
-                          panelTitle, shownPath
+                          panelTitle, shownPath, drawnText
 
 coverlet.runsettings      what coverage measures and what it leaves out
 .github/workflows/

@@ -141,6 +141,15 @@ rank, which is why a descending sort still keeps `..` on top and directories
 above files, the way the classic managers do it. Sorting by name is the same
 rule with an empty key comparison, so it needs no case of its own.
 
+**Names collate, they do not compare byte by byte.** Names and extensions go
+through `StringComparison.InvariantCultureIgnoreCase`, which puts punctuation
+before digits and digits before letters — so `_notes.txt` heads the listing,
+where an ordinal comparison put it after `zebra` because `_` is `0x5F` and the
+letters it was being weighed against uppercase to `0x41..0x5A`. Invariant rather
+than current culture, so the same directory lists in the same order on every
+machine; `InvariantGlobalization` therefore has to stay off, which
+[PACKAGING.md](PACKAGING.md) records.
+
 **Re-sorting never touches the disk.** `AppState.sortBy` is a pure transition:
 it switches the panel's `SortOrder`, re-orders the entries already in the panel
 and moves the cursor to wherever the entry it was on landed, leaving the marks
@@ -216,6 +225,17 @@ the marks, then what the directory holds. A blank row read as the end of the
 listing, which is why it is never blank now and why a `Line` separates it from
 the entries. `SelectionSummary` kept its job — it describes marked entries — and
 `PanelFooter` is the choice above it.
+
+**A file name is content, not markup.** Terminal.Gui reads `_` in a `Label`'s
+`Text` and in a `FrameView`'s `Title` as the hot key specifier: it takes the
+underscore out of what it draws and binds the letter after it as a shortcut, so
+`_notes.txt` reached the status line as `notes.txt` and a panel sitting in
+`C:\start\_sub` claimed `Alt+S` for itself. `LiteralText.showing` sets
+`HotKeySpecifier` to `0xffff`, which is Terminal.Gui's "this view has no hot
+key", and every view that displays something the file system named goes through
+it — the two panel frames, the panel footers, the status line and the progress
+dialog's line. The views whose text Marbas writes itself keep the default, which
+is what makes `_Cancel` and `_Ok` work on the dialog buttons.
 
 ## The key table and the bar
 

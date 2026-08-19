@@ -9,7 +9,10 @@ let LineId = "progressLine"
 let create title =
     let dialog = new Dialog(Title = title, Width = 60, Height = 8)
 
-    dialog.Add(new Label(X = 1, Y = 0, Width = Dim.Fill 1, Height = 1, Text = "", Id = LineId))
+    dialog.Add(
+        new Label(X = 1, Y = 0, Width = Dim.Fill 1, Height = 1, Text = "", Id = LineId)
+        |> LiteralText.showing
+    )
     |> ignore
 
     dialog.AddButton(new Button(Title = "_Cancel"))

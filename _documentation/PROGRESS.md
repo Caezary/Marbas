@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-08-19. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-20. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
@@ -36,7 +36,10 @@ coloured by what they are, the bottom row of a panel is separated by a rule and
 says what the directory holds, and typing a letter searches the panel. **A
 second round widened marking**: holding `Shift` and running an arrow marks or
 unmarks an entry per step, in the direction of the arrow, and a shifted page
-key does the same to the whole page at once.
+key does the same to the whole page at once. **A third round fixed two things
+about names carrying an underscore**: they now sort where a file manager puts
+them — first, ahead of the letters — and they are drawn with the underscore in
+them, which Terminal.Gui had been reading as a hot key marker.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -106,7 +109,14 @@ checklist in [Cross-platform](Architecture/CROSS-PLATFORM.md).
   bar, so neither is repainted.
 - Both panels list a real directory: `..` first, then directories, then files,
   each group alphabetically, in aligned name / size / date columns that
-  reformat when the terminal is resized. Directories show `<DIR>`.
+  reformat when the terminal is resized. Directories show `<DIR>`. Names collate
+  the way a reader expects rather than by byte value — punctuation before
+  digits, digits before letters, case ignored — so `_notes.txt` heads its group
+  instead of trailing behind `zebra`.
+- An underscore in a name is shown, not swallowed. Terminal.Gui reads `_` as its
+  hot key marker, so every view that displays something the file system named —
+  the panel frames, the panel footers, the status line, the progress window —
+  has that marker turned off.
 - `Enter` descends into the directory under the cursor. `Enter` on `..` goes
   up and places the cursor on the directory just left.
 - Unreadable or vanished directories raise a message box; the panel stays put.
