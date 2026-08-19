@@ -16,6 +16,10 @@ type SelectionMode =
     | Select
     | Deselect
 
+type CursorDirection =
+    | Upward
+    | Downward
+
 type DeleteScope =
     | NamedEntriesOnly
     | WithDirectoryContents
@@ -193,11 +197,16 @@ let private toggleSelectedAtCursor (p: PanelState) =
 let toggleSelection side state =
     updatePanel side toggleSelectedAtCursor state
 
-let advanceCursor side state =
-    updatePanel side (moveCursorBy 1) state
+let private step direction =
+    match direction with
+    | Upward -> -1
+    | Downward -> 1
 
-let toggleSelectionAndAdvance side state =
-    state |> toggleSelection side |> advanceCursor side
+let moveCursor direction side state =
+    updatePanel side (moveCursorBy (step direction)) state
+
+let toggleSelectionMoving direction side state =
+    state |> toggleSelection side |> moveCursor direction side
 
 let private matching pattern panel =
     panel.Entries

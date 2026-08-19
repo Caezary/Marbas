@@ -54,9 +54,9 @@ let ``marked entries are the targets in listing order`` () =
     let marked =
         state
         |> setCursor Left 4
-        |> toggleSelectionAndAdvance Left
+        |> toggleSelectionMoving Downward Left
         |> setCursor Left 1
-        |> toggleSelectionAndAdvance Left
+        |> toggleSelectionMoving Downward Left
 
     Assert.Equal<string list>([ "docs"; "readme.txt" ], targetNames marked)
 
@@ -85,8 +85,8 @@ let ``every marked entry is deleted and reported`` () =
     let marked =
         state
         |> setCursor Left 3
-        |> toggleSelectionAndAdvance Left
-        |> toggleSelectionAndAdvance Left
+        |> toggleSelectionMoving Downward Left
+        |> toggleSelectionMoving Downward Left
 
     let _, results = deleted fs marked
 
@@ -102,8 +102,8 @@ let ``a vanished entry is reported while the rest still go`` () =
     let marked =
         state
         |> setCursor Left 3
-        |> toggleSelectionAndAdvance Left
-        |> toggleSelectionAndAdvance Left
+        |> toggleSelectionMoving Downward Left
+        |> toggleSelectionMoving Downward Left
 
     fs.File.Delete(at "start/notes.txt")
 
@@ -120,9 +120,9 @@ let ``marks are dropped along with the entries they pointed at`` () =
     let marked =
         state
         |> setCursor Left 3
-        |> toggleSelectionAndAdvance Left
+        |> toggleSelectionMoving Downward Left
         |> setCursor Left 1
-        |> toggleSelectionAndAdvance Left
+        |> toggleSelectionMoving Downward Left
 
     let updated, _ = deleted fs marked
 

@@ -33,11 +33,13 @@ a GitHub release.
 met straight away: the cursor no longer falls out of a panel at its last entry,
 the left and right arrows jump by page instead of switching panels, entries are
 coloured by what they are, the bottom row of a panel is separated by a rule and
-says what the directory holds, and typing a letter searches the panel.
+says what the directory holds, and typing a letter searches the panel. **A
+second round widened marking**: holding `Shift` and running an arrow marks or
+unmarks an entry per step, in the direction of the arrow.
 
-**587 tests pass on Windows; on Linux 584 pass and 3 skip** — the three that
-assert on drive letters, which exist nowhere else. 433 are unit tests over the
-logic modules and the pure `Ui` ones, plus 154 integration tests driving real
+**601 tests pass on Windows; on Linux 598 pass and 3 skip** — the three that
+assert on drive letters, which exist nowhere else. 441 are unit tests over the
+logic modules and the pure `Ui` ones, plus 160 integration tests driving real
 Terminal.Gui views over an in-memory file system. All of them follow the
 arrange/act/assert shape and the folder layout described in
 [TESTING.md](TESTING.md). `dotnet test Marbas.slnx` is the whole run, and
@@ -111,13 +113,19 @@ checklist in [CROSS-PLATFORM.md](CROSS-PLATFORM.md).
   when its position changed.
 - `Alt+F1` / `Alt+F2` open a root chooser for the left / right panel — the ready
   drives on Windows, the file-system root and the home directory on Unix.
-- `Insert` or `Space` marks the entry under the cursor and moves one entry
-  down; pressing it again unmarks. Marked entries are highlighted, `..` can
-  never be marked, and each panel keeps its own marks — they survive `Ctrl+R`
-  (minus whatever disappeared) and are dropped when the panel changes
-  directory.
+- `Insert`, `Space` and `Shift+↓` mark the entry under the cursor and move one
+  entry down; `Shift+↑` marks it and moves one entry up. Every one of them
+  toggles, so holding `Shift` and running an arrow over a marked stretch clears
+  it again. Marked entries are highlighted, `..` can never be marked, and each
+  panel keeps its own marks — they survive `Ctrl+R` (minus whatever
+  disappeared) and are dropped when the panel changes directory. The cursor
+  stops at the ends of the listing while the entry it stopped on still gets
+  marked.
 - `+` and `-` ask for a wildcard pattern and mark or unmark everything it
   matches, so `*.fs` is one step. Matching ignores case and never touches `..`.
+  There is one selection per panel, so a pattern and the keys above add to and
+  take from the same set: `*.txt` and then `Shift+↓` over one of the matches
+  leaves the rest marked.
 - A rule separates the listing from the bottom row of each panel, and that row
   is never blank: it summarises the marks — how many entries and how many bytes
   they add up to — and falls back to what the directory holds (`3 files   1,234
@@ -467,6 +475,24 @@ checkbox glyphs, and `FilePanel.render` re-applies `Source.SetMark` from the
 state after every render. `Insert`/`Space` are handled by Marbas and marked
 handled, so the built-in SPACE marking never runs and cannot disagree with the
 state.
+
+**Marking carries a direction, not a second command.** `SelectionToggled` takes
+a `CursorDirection` (`Upward` / `Downward`) and `AppState.toggleSelectionMoving`
+is the only transition behind it: toggle the entry under the cursor, then step
+one entry that way, clamped at the ends. `Insert`, `Space` and `Shift+↓` are
+three keys for `SelectionToggled Downward` and `Shift+↑` is the one key for
+`Upward`, so all four are the same rule and the marking behaviour cannot drift
+between them. Because it toggles rather than extends, a held `Shift` clears a
+run as readily as it makes one — and because there is one `Selected` set per
+panel, it composes with the `+` / `-` patterns without either knowing about the
+other.
+
+**The shift arrows are ordinary `KeyMap` bindings, which is what keeps them out
+of the panel's other arrow rules.** `PanelWiring` asks `KeyMap.messageFor`
+first, and `Key.CursorDown.WithShift` is a different key from `Key.CursorDown`,
+so the page jumps on `←`/`→` and the edge-stopping on `↑`/`↓` never see them.
+They are off the bar, like `Insert` and `Space`: holding `Shift` therefore
+leaves the function-key row empty rather than showing a row of its own.
 
 **The cursor lives in the state, and rendering is guarded.** The panel's
 `ListView.ValueChanged` dispatches `AppState.setCursor`, so state always knows
@@ -959,6 +985,14 @@ is no longer plan order but choice. Three things are waiting:
   key, is the fix whenever it starts to bother.
 - `Home` and `End` are swallowed at the ends of the listing rather than handled,
   which is invisible while nothing else wants them.
+- Holding `Shift` empties the function-key bar on Windows, because the modifier
+  watcher asks `KeyMap.row` for a row `Shift` has no labelled bindings on. It
+  was already so before the shift arrows existed; now that a user holds `Shift`
+  to mark a run, giving that row two labels of its own would be worth more than
+  leaving it blank.
+- Whether the terminal delivers `Shift+↑` / `Shift+↓` as a key of their own is
+  the driver's business, and no test reaches it — the suite injects the key.
+  It is a manual row in [CROSS-PLATFORM.md](CROSS-PLATFORM.md).
 - Both panels start on the same directory, so `F5` straight after launch copies
   a file onto itself and the OS refuses it with an error dialog. `F6` can be
   pointed elsewhere by hand, `F5` cannot — a target prompt for `F5`, or a check

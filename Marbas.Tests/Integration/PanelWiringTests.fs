@@ -117,7 +117,7 @@ let ``keys bound to a command never reach the search`` () =
 
     press list KeyMap.spaceKey
 
-    Assert.Contains(SelectionToggled, probe.Messages)
+    Assert.Contains(SelectionToggled Downward, probe.Messages)
     Assert.DoesNotContain(SearchTyped ' ', probe.Messages)
 
 [<Fact>]
@@ -148,6 +148,30 @@ let ``any other key closes an open search and then does its own job`` () =
     press list KeyMap.refreshKey
 
     Assert.Equal<Message list>([ SearchCancelled; RefreshRequested ], List.ofSeq probe.Messages)
+
+[<Fact>]
+let ``a shift arrow marks instead of moving the cursor by itself`` () =
+    let probe, _, list = wired ()
+    list.SelectedItem <- 1
+    probe.Messages.Clear()
+
+    let down = pressReturning list KeyMap.selectionDownKey
+    let up = pressReturning list KeyMap.selectionUpKey
+
+    Assert.True(down.Handled, "a shift arrow should not leave the panel")
+    Assert.True(up.Handled, "a shift arrow should not leave the panel")
+    Assert.Equal<Message list>([ SelectionToggled Downward; SelectionToggled Upward ], List.ofSeq probe.Messages)
+
+[<Fact>]
+let ``a shift arrow still marks at the edge it cannot move past`` () =
+    let probe, _, list = wired ()
+    list.SelectedItem <- 2
+    probe.Messages.Clear()
+
+    let key = pressReturning list KeyMap.selectionDownKey
+
+    Assert.True key.Handled
+    Assert.Contains(SelectionToggled Downward, probe.Messages)
 
 [<Fact>]
 let ``the cursor stops at the top of the listing`` () =

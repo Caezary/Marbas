@@ -188,10 +188,20 @@ let ``toggling selection marks the entry under the cursor and advances`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
 
-    let result = update fs SelectionToggled state
+    let result = update fs (SelectionToggled Downward) state
 
     Assert.Equal<string list>([ "notes.txt" ], selectedEntries result.State.Left |> names)
     Assert.Equal(3, result.State.Left.Cursor)
+
+[<Fact>]
+let ``toggling selection upward marks the entry under the cursor and steps back`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+
+    let result = update fs (SelectionToggled Upward) state
+
+    Assert.Equal<string list>([ "notes.txt" ], selectedEntries result.State.Left |> names)
+    Assert.Equal(1, result.State.Left.Cursor)
 
 [<Fact>]
 let ``delete requested asks to confirm the cursor entry`` () =
@@ -357,8 +367,8 @@ let ``a bare name with several targets names a directory beside them`` () =
     let state =
         loadedBoth fs
         |> setCursor Left 2
-        |> toggleSelectionAndAdvance Left
-        |> toggleSelectionAndAdvance Left
+        |> toggleSelectionMoving Downward Left
+        |> toggleSelectionMoving Downward Left
 
     let result = update fs (TargetEntered "archive") state
 

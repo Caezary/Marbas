@@ -7,7 +7,7 @@ known to differ. Run it before a release and after anything that touches
 Three kinds of evidence appear below:
 
 - **suite** — an automated test asserts it; `dotnet test` on both platforms is
-  the whole check. 587 tests on Windows, 584 plus 3 skipped on Linux, and
+  the whole check. 601 tests on Windows, 598 plus 3 skipped on Linux, and
   `.github/workflows/ci.yml` runs both legs on every push.
 - **WSL** — verified by running the built application under WSL (Ubuntu 24.04,
   .NET 10.0.110) on 2026-08-18, driving it through a pseudo-terminal and
@@ -103,6 +103,7 @@ tested and was confirmed by running the app.
 | `Ctrl+H` toggles hidden entries | only where the terminal reports it as a key | only under the kitty keyboard protocol | known difference |
 | The bar follows a held `Ctrl` / `Alt` | yes | **no, by design** | known difference |
 | `+` / `-` open the pattern prompt | yes | **manual** | manual |
+| `Shift+↑` / `Shift+↓` arrive as keys of their own and mark a run | **manual** | **manual** | suite (injected), manual |
 | The screen redraws when the terminal is resized | **manual** | **manual** | manual |
 | The sixteen classic colours look right | **manual** | **manual** | manual |
 | Directory / file / archive / program colours are told apart | **manual** | **manual** | manual |

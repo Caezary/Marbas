@@ -34,7 +34,7 @@ let private started () =
     fs, state
 
 let private markedNotes state =
-    state |> setCursor Left 2 |> toggleSelectionAndAdvance Left
+    state |> setCursor Left 2 |> toggleSelectionMoving Downward Left
 
 let private finished fs results state =
     finishTransfer fs results state |> Expect.ok |> fst

@@ -11,7 +11,11 @@ let insertKey = Key.InsertChar
 
 let spaceKey = Key.Space
 
-let selectionKeys = [ insertKey; spaceKey ]
+let selectionDownKey = Key.CursorDown.WithShift
+
+let selectionUpKey = Key.CursorUp.WithShift
+
+let selectionKeys = [ insertKey; spaceKey; selectionDownKey ]
 
 let selectPatternKey = Key '+'
 
@@ -72,8 +76,10 @@ let bindings =
       offBar refreshKey RefreshRequested
       offBar selectPatternKey (PatternRequested Select)
       offBar deselectPatternKey (PatternRequested Deselect)
-      offBar insertKey SelectionToggled
-      offBar spaceKey SelectionToggled ]
+      offBar insertKey (SelectionToggled Downward)
+      offBar spaceKey (SelectionToggled Downward)
+      offBar selectionDownKey (SelectionToggled Downward)
+      offBar selectionUpKey (SelectionToggled Upward) ]
 
 let row modifiers =
     bindings

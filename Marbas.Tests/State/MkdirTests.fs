@@ -41,7 +41,7 @@ let ``making a directory adds it and lands the cursor on it`` () =
 [<Fact>]
 let ``making a directory keeps the existing selection`` () =
     let fs = mockFs ()
-    let state = loaded fs |> setCursor Left 2 |> toggleSelectionAndAdvance Left
+    let state = loaded fs |> setCursor Left 2 |> toggleSelectionMoving Downward Left
 
     let updated = makeDirectory fs Left (en "work") state |> Expect.ok
 

@@ -10,7 +10,7 @@ type Message =
     | PanelFocused of PanelSide
     | EntryOpened
     | RefreshRequested
-    | SelectionToggled
+    | SelectionToggled of CursorDirection
     | SortRequested of SortKey
     | HiddenToggled
     | SearchTyped of character: char
@@ -91,7 +91,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | PanelFocused side -> stay (activate side state)
     | EntryOpened -> enter fs state |> applyListing state
     | RefreshRequested -> refresh fs state |> applyListing state
-    | SelectionToggled -> stay (toggleSelectionAndAdvance state.Active state)
+    | SelectionToggled direction -> stay (toggleSelectionMoving direction state.Active state)
     | SortRequested key -> stay (sortBy key state.Active state)
     | HiddenToggled -> toggleHidden fs state.Active state |> applyListing state
     | SearchTyped character -> stay (typeIntoSearch state.Active character state)

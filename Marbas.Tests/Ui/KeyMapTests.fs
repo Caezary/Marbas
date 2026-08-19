@@ -73,11 +73,24 @@ let ``the refresh key requests a refresh`` () =
     Assert.Equal(Some RefreshRequested, message)
 
 [<Fact>]
-let ``every selection key toggles the selection`` () =
+let ``every selection key toggles the selection and moves on down`` () =
     for key in KeyMap.selectionKeys do
         let message = KeyMap.messageFor key
 
-        Assert.Equal(Some SelectionToggled, message)
+        Assert.Equal(Some(SelectionToggled Downward), message)
+
+[<Fact>]
+let ``shift and an arrow toggle the selection in the direction of the arrow`` () =
+    let down = KeyMap.messageFor KeyMap.selectionDownKey
+    let up = KeyMap.messageFor KeyMap.selectionUpKey
+
+    Assert.Equal(Some(SelectionToggled Downward), down)
+    Assert.Equal(Some(SelectionToggled Upward), up)
+
+[<Fact>]
+let ``the selection arrows are the plain arrows with shift held`` () =
+    Assert.Equal(Key.CursorDown.WithShift, KeyMap.selectionDownKey)
+    Assert.Equal(Key.CursorUp.WithShift, KeyMap.selectionUpKey)
 
 [<Fact>]
 let ``the pattern keys select and deselect`` () =
