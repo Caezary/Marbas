@@ -12,7 +12,8 @@ type Entry =
       Kind: EntryKind
       Size: int64 option
       Modified: DateTime
-      Visibility: EntryVisibility }
+      Visibility: EntryVisibility
+      Executability: Executability }
 
 let ParentName = EntryName.create ".."
 
@@ -33,7 +34,8 @@ let private directoryEntry (info: IDirectoryInfo) =
       Kind = Directory
       Size = None
       Modified = info.LastWriteTime
-      Visibility = EntryVisibility.classify name info.Attributes }
+      Visibility = EntryVisibility.classify name info.Attributes
+      Executability = NotExecutable }
 
 let private fileEntry (info: IFileInfo) =
     let name = EntryName.create info.Name
@@ -42,7 +44,8 @@ let private fileEntry (info: IFileInfo) =
       Kind = File
       Size = Some info.Length
       Modified = info.LastWriteTime
-      Visibility = EntryVisibility.classify name info.Attributes }
+      Visibility = EntryVisibility.classify name info.Attributes
+      Executability = Executability.classify name info.UnixFileMode }
 
 let read (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingError> =
     try
@@ -104,7 +107,8 @@ let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
               Kind = Directory
               Size = None
               Modified = parent.LastWriteTime
-              Visibility = Plain }
+              Visibility = Plain
+              Executability = NotExecutable }
 
 let listForDisplay (fs: IFileSystem) (sort: SortOrder) (hidden: HiddenEntries) (path: FileSystemPath) =
     read fs path

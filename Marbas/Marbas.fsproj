@@ -13,6 +13,8 @@
         <Compile Include="FileSystem\FileSystemPath.fs" />
         <Compile Include="FileSystem\SortOrder.fs" />
         <Compile Include="FileSystem\HiddenEntries.fs" />
+        <Compile Include="FileSystem\Executability.fs" />
+        <Compile Include="FileSystem\SearchText.fs" />
         <Compile Include="FileSystem\Settings.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="FileSystem\Roots.fs" />
@@ -27,7 +29,10 @@
         <Compile Include="Ui\KeyMap.fs" />
         <Compile Include="Ui\EntrySize.fs" />
         <Compile Include="Ui\EntryFormat.fs" />
+        <Compile Include="Ui\EntryColor.fs" />
+        <Compile Include="Ui\PageJump.fs" />
         <Compile Include="Ui\SelectionSummary.fs" />
+        <Compile Include="Ui\PanelFooter.fs" />
         <Compile Include="Ui\CursorInfo.fs" />
         <Compile Include="Ui\StatusLine.fs" />
         <Compile Include="Ui\HexDump.fs" />

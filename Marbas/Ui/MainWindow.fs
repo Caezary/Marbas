@@ -31,7 +31,8 @@ let create (deps: Shell.Dependencies) =
     let host: PanelWiring.Host =
         { Dispatch = dispatch
           Refresh = fun () -> runtime.Refresh()
-          IsRendering = fun () -> runtime.IsRendering }
+          IsRendering = fun () -> runtime.IsRendering
+          IsSearching = fun side -> (AppState.panel side runtime.State).Search |> Option.isSome }
 
     for side, panel in AppView.panels view do
         PanelWiring.attach host side panel

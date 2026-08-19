@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-08-18. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-19. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
@@ -29,9 +29,15 @@ profiles turn the project into one self-contained, single-file executable per
 operating system, and a tag builds both on their own runners and hangs them off
 a GitHub release.
 
-**498 tests pass on Windows; on Linux 495 pass and 3 skip** — the three that
-assert on drive letters, which exist nowhere else. 367 are unit tests over the
-logic modules and the pure `Ui` ones, plus 131 integration tests driving real
+**Since the plan closed, one round of panel work** answered five things a user
+met straight away: the cursor no longer falls out of a panel at its last entry,
+the left and right arrows jump by page instead of switching panels, entries are
+coloured by what they are, the bottom row of a panel is separated by a rule and
+says what the directory holds, and typing a letter searches the panel.
+
+**587 tests pass on Windows; on Linux 584 pass and 3 skip** — the three that
+assert on drive letters, which exist nowhere else. 433 are unit tests over the
+logic modules and the pure `Ui` ones, plus 154 integration tests driving real
 Terminal.Gui views over an in-memory file system. All of them follow the
 arrange/act/assert shape and the folder layout described in
 [TESTING.md](TESTING.md). `dotnet test Marbas.slnx` is the whole run, and
@@ -73,7 +79,28 @@ checklist in [CROSS-PLATFORM.md](CROSS-PLATFORM.md).
   on its own, and it keeps the decision through every reload and every directory
   it is pointed at. `..` is never concealed, whatever the parent directory is
   marked with.
-- `Tab` switches panels; the focused one is marked with a double border.
+- `Tab` switches panels; the focused one is marked with a double border, and
+  nothing else moves between them. `↑`/`↓`, `PgUp`/`PgDn` and `Home`/`End`
+  stop at the first and the last entry instead of falling out of the panel.
+- `→` moves the cursor to the last entry of the page on screen and, pressed
+  again, a page forward onto the last entry of the next one; `←` does the same
+  backwards, first to the top of the page and then a page back. Both stop at
+  the ends of the listing and neither changes panel. The page is the one
+  actually on screen — the jump is measured from the list's own scroll offset,
+  so it follows a panel that has been scrolled.
+- Typing a printable character opens a search in the active panel: the bottom
+  row shows `Search: …` and the cursor moves to the first entry whose name
+  contains the text, wherever in the name and whatever the case. `Backspace`
+  shortens it and closes it on the last character, `Esc` closes it, and any
+  other key closes it and then does its own job — so `Enter` opens what was
+  found and `F5` copies it. While the search is open every printable key is
+  text, `Space` and `+` included; while it is closed those keep their commands.
+  Switching panels or reloading a panel closes its search, and the cursor stays
+  where the search left it.
+- Entries are coloured by what they are: directories and `..` white, ordinary
+  files bright blue, archives bright magenta and executables bright green. A
+  marked entry stays yellow and the entry under the cursor keeps the cursor
+  bar, so neither is repainted.
 - Both panels list a real directory: `..` first, then directories, then files,
   each group alphabetically, in aligned name / size / date columns that
   reformat when the terminal is resized. Directories show `<DIR>`.
@@ -91,8 +118,11 @@ checklist in [CROSS-PLATFORM.md](CROSS-PLATFORM.md).
   directory.
 - `+` and `-` ask for a wildcard pattern and mark or unmark everything it
   matches, so `*.fs` is one step. Matching ignores case and never touches `..`.
-- The bottom row of each panel summarises its marks — how many entries and how
-  many bytes they add up to — and stays empty while nothing is marked.
+- A rule separates the listing from the bottom row of each panel, and that row
+  is never blank: it summarises the marks — how many entries and how many bytes
+  they add up to — and falls back to what the directory holds (`3 files   1,234
+  bytes`, counting files only) while nothing is marked. An open search takes it
+  over from both.
 - A status line above the function-key bar describes the entry under the cursor
   of the active panel — untruncated name, exact size in bytes (`<DIR>` for
   directories) and modification date. It follows both cursor movement and
@@ -179,6 +209,8 @@ Marbas/
     FileSystemPath.fs     single-case path type wrapping a raw string
     SortOrder.fs          which key a panel sorts by, in which direction
     HiddenEntries.fs      what makes an entry hidden, and whether a panel lists it
+    Executability.fs      what makes an entry a program, by name and by mode bit
+    SearchText.fs         the text a panel is being searched for, and what it matches
     Settings.fs           the session both panels carry, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Roots.fs              where a panel can be sent: drives, or root and home
@@ -196,7 +228,10 @@ Marbas/
     KeyMap.fs             every key binding: key, bar label, message
     EntrySize.fs          size column text, byte format injected per view
     EntryFormat.fs        one entry -> one fixed-width row
+    EntryColor.fs         one entry -> its colour group, and that group's attribute
+    PageJump.fs           where the left and right arrows land, from the page on screen
     SelectionSummary.fs   marked entries -> panel summary text
+    PanelFooter.fs        panel state -> the one line under the rule
     CursorInfo.fs         cursor entry -> status line text
     StatusLine.fs         the status line view
     HexDump.fs            bytes -> offset / hex / text rows
@@ -786,6 +821,71 @@ file; the Windows one was started from its publish directory and outlived the
 wait. What either *looks* like stays a manual row in
 [CROSS-PLATFORM.md](CROSS-PLATFORM.md).
 
+**A key that must not leave the panel is one the panel marks handled.**
+`ListView.MoveDown` answers `false` at the last entry, and an unhandled key
+walks up to Terminal.Gui's focus navigation — which is why the cursor used to
+land in the other panel. `PanelWiring` therefore ends in
+`key.Handled <- handle …` and `stopsAtEdge` answers `true` for `↑`/`PgUp`/`Home`
+at the top and `↓`/`PgDn`/`End` at the bottom: the panel swallows the key and
+nothing happens, which is what the orthodox managers do. `←` and `→` were never
+bound in `ListView` at all, so they escaped immediately; they are now handled
+outright.
+
+**A page jump is a pure function of the page on screen.** `PageJump.forward`
+and `PageJump.backward` take `{ FirstVisible; Height; Count }` and a cursor and
+answer an index — the far edge of the visible page if the cursor is not on it
+yet, otherwise a whole page further. The geometry comes from `ListView`'s own
+`Viewport.Y` and `Viewport.Height`, which is the list's scroll offset and the
+rows it shows, so a scrolled panel jumps from where it actually stands. The rule
+lives in `Ui` because only `Ui` knows the geometry; what it produces is an
+ordinary `CursorMoved`, so no new message carries a cursor.
+
+**An entry says whether it is a program; `Ui` says what colour that is.**
+`Executability.classify` mirrors `EntryVisibility.classify`: it takes the name
+and the `UnixFileMode` and answers `Executable` for a Windows program extension
+*or* for any execute bit, so both platforms' conventions are asked about on both.
+`IFileSystemInfo.UnixFileMode` answers `None` on Windows rather than throwing,
+and `MockFileSystem` lets a test set it, which is what makes the Unix half
+testable from a Windows machine. Which colour an entry then gets is
+`EntryColor.classify` — directory, archive (by extension), executable, plain —
+and it is `Ui`'s alone, because an archive is a display grouping and not a fact
+about the file.
+
+**Rows are painted through `RowRender`, and only the ones nobody else owns.**
+`ListViewRowEventArgs.RowAttribute` overrides whatever attribute `ListView`
+chose for that row, marked and focused included, so the handler must hand the
+row back when it is marked (`Source.IsMarked`) or under the cursor of a focused
+list. What it needs is one attribute per row, which is why `FilePanel.PanelView`
+is a `FrameView` carrying a `RowColors` array that `render` fills — the handler
+is attached once and reads the array, rather than being re-subscribed on every
+render. `OnRowRender` is public, so a test raises it and reads the attribute
+back; nothing else about colour is observable without a driver.
+
+**The bottom row of a panel has three states, and one module picks.**
+`PanelFooter.describe` takes the whole `PanelState`: an open search wins, then
+the marks, then what the directory holds. A blank row read as the end of the
+listing, which is why it is never blank now and why a `Line` separates it from
+the entries. `SelectionSummary` kept its job — it describes marked entries — and
+`PanelFooter` is the choice above it.
+
+**A search is a domain type, and the panel it belongs to holds it.**
+`SearchText` sits beside `NamePattern`: a single-case union over a string with
+`ofChar`, `append`, `backspace` (which answers `None` on the last character, so
+running out of text *is* closing the search) and `matches`, which is a
+case-insensitive substring test. `PanelState.Search` makes it per panel, so the
+footer of the panel being searched is the one that changes, and
+`loadPanelFocusing` clears it along with the marks — a search cannot outlive the
+listing it was run against. `activate` clears both panels' searches, which is
+what closes one when `Tab` moves on.
+
+**Which mode the keyboard is in decides who reads a key first.** With no search
+open, `KeyMap` wins and a printable key left over opens a search; with one open,
+every printable key is text — `Space` and `+` included — and anything else
+closes the search before being handled normally. `PanelWiring.Host` grew an
+`IsSearching` for exactly that question, answered from `Runtime.State`. The
+alternative, letting `KeyMap` always win, would have made a file name with a
+space unsearchable.
+
 ## Traps already hit (details in [TESTING.md](TESTING.md))
 
 - `StatusBar` shortcuts swallow their key even with a `null` action — `F10`
@@ -797,8 +897,13 @@ wait. What either *looks* like stays a manual row in
   focused `ListView`.
 - `View.AddCommand` is `protected`; custom shortcuts use `KeyDown` handlers.
 - `ListView` type-ahead search swallowed `+` and `-` before any handler saw
-  them; the panel disables it with `KeystrokeNavigator <- null`, which also
-  matches the orthodox managers, where letters never move the cursor.
+  them; the panel disables it with `KeystrokeNavigator <- null`. It stays
+  disabled now that letters *do* move the cursor, because its own matching is
+  prefix-only, invisible and unaware of the panel state — the search Marbas
+  runs is its own.
+- A key `ListView` cannot act on is reported unhandled and walks up to focus
+  navigation, so `↓` at the last entry moved to the other panel. Nothing in the
+  key table said so; only pressing the key does.
 - A key binding no test can vouch for: tests send keys straight to the view, so
   they prove the handler, never the terminal. `Ctrl+H` passed every test and did
   nothing in the running app, because a VT terminal sends `0x08` for it — the
@@ -843,6 +948,17 @@ is no longer plan order but choice. Three things are waiting:
 
 ## Known rough edges
 
+- The entry colours and the rule under the listing are drawn by a driver no test
+  has, so what a test can say is which attribute `RowRender` hands back and
+  where the `Line` sits — not what the screen looks like. Both belong on the
+  manual row of [CROSS-PLATFORM.md](CROSS-PLATFORM.md), and bright blue on the
+  panel's blue background is the one to look at first.
+- The search matches the first entry from the top of the listing and there is no
+  "next match" key, so a name that shares its text with an earlier one cannot be
+  reached by typing alone. Searching on from the cursor, or binding a repeat
+  key, is the fix whenever it starts to bother.
+- `Home` and `End` are swallowed at the ends of the listing rather than handled,
+  which is invisible while nothing else wants them.
 - Both panels start on the same directory, so `F5` straight after launch copies
   a file onto itself and the OS refuses it with an error dialog. `F6` can be
   pointed elsewhere by hand, `F5` cannot — a target prompt for `F5`, or a check

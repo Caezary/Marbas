@@ -13,14 +13,16 @@ let private file name size =
       Kind = File
       Size = Some size
       Modified = modified
-      Visibility = Plain }
+      Visibility = Plain
+      Executability = NotExecutable }
 
 let private directory name =
     { Name = EntryName.create name
       Kind = Directory
       Size = None
       Modified = modified
-      Visibility = Plain }
+      Visibility = Plain
+      Executability = NotExecutable }
 
 [<Fact>]
 let ``a file is described by name size and date`` () =

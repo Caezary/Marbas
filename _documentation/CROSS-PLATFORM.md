@@ -7,7 +7,7 @@ known to differ. Run it before a release and after anything that touches
 Three kinds of evidence appear below:
 
 - **suite** — an automated test asserts it; `dotnet test` on both platforms is
-  the whole check. 498 tests on Windows, 495 plus 3 skipped on Linux, and
+  the whole check. 587 tests on Windows, 584 plus 3 skipped on Linux, and
   `.github/workflows/ci.yml` runs both legs on every push.
 - **WSL** — verified by running the built application under WSL (Ubuntu 24.04,
   .NET 10.0.110) on 2026-08-18, driving it through a pseudo-terminal and
@@ -105,6 +105,12 @@ tested and was confirmed by running the app.
 | `+` / `-` open the pattern prompt | yes | **manual** | manual |
 | The screen redraws when the terminal is resized | **manual** | **manual** | manual |
 | The sixteen classic colours look right | **manual** | **manual** | manual |
+| Directory / file / archive / program colours are told apart | **manual** | **manual** | manual |
+| Bright blue file names stay readable on the blue panel | **manual** | **manual** | manual |
+| The rule under the listing joins the panel border | **manual** | **manual** | manual |
+| Arrows stop at the ends of a panel; only `Tab` leaves it | **manual** | **manual** | suite (as handled keys), manual |
+| `←` / `→` jump by the page on screen | **manual** | **manual** | suite, manual |
+| Typing opens the search bar and moves the cursor | **manual** | **manual** | suite, manual |
 | The mouse selects an entry and clicks the key bar | **manual** | **manual** | manual |
 
 `Ctrl+Q` deserves a note: it is `0x11`, which is also `XON`, so a terminal doing

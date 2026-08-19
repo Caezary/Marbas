@@ -56,6 +56,38 @@ let ``a sort request reorders the panel it names and keeps the cursor entry`` ()
     Assert.Empty result.Effects
 
 [<Fact>]
+let ``a typed character searches the active panel without effects`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> activate Left
+
+    let result = update fs (SearchTyped 'n') state
+
+    Assert.Equal(Some "n", result.State.Left.Search |> Option.map SearchText.value)
+    Assert.Equal(2, result.State.Left.Cursor)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a backspace shortens the search of the active panel`` () =
+    let fs = mockFs ()
+    let state = update fs (SearchTyped 'n') (loaded fs) |> _.State
+
+    let result = update fs SearchBackspaced state
+
+    Assert.Equal<SearchText option>(None, result.State.Left.Search)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a cancelled search closes it on the active panel`` () =
+    let fs = mockFs ()
+    let state = update fs (SearchTyped 'n') (loaded fs) |> _.State
+
+    let result = update fs SearchCancelled state
+
+    Assert.Equal<SearchText option>(None, result.State.Left.Search)
+    Assert.Equal(2, result.State.Left.Cursor)
+    Assert.Empty result.Effects
+
+[<Fact>]
 let ``panel focused activates the side`` () =
     let fs = mockFs ()
     let state = loaded fs

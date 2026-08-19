@@ -10,7 +10,7 @@ with an in-memory file system (`MockFileSystem`), so no test touches the disk.
 dotnet test Marbas.slnx
 ```
 
-That is the whole suite — 498 tests, a few seconds, no disk, no terminal, no
+That is the whole suite — 587 tests, a few seconds, no disk, no terminal, no
 network, nothing to set up beyond the SDK. Nothing is marked flaky, so a red run
 is a real failure. On Linux three of them skip, and only three: the ones whose
 subject is drive letters.
@@ -119,7 +119,8 @@ the top the way they already alias `fp` — `let private en = EntryName.create`.
 
 `Integration/Gui.fs` carries the arrange boilerplate: `focusedWindow deps`
 builds, initialises and focuses a `MainWindow`, and `leftList` / `rightList`
-reach the panel `ListView` a test drives.
+reach the panel `ListView` a test drives. `pressReturning` is `press` that hands
+the key back, for the tests whose subject is whether it was handled.
 
 ## Injecting the outside world
 
@@ -213,6 +214,26 @@ with `key.Handled` still `false`.
 **StatusBar shortcuts swallow their keys.** A `Shortcut` marks its key handled
 even with a `null` action, which is why every shortcut that should do
 something gets a real callback.
+
+**A key that escapes a view can only be caught as `Handled`.** Focus navigation
+runs above `NewKeyDownEvent`, so a test cannot watch `↓` at the last entry move
+to the other panel — what it can assert is that the panel marked the key
+handled, which is the whole mechanism that keeps it in. `Gui.pressReturning`
+sends a fresh key and hands it back for exactly that assertion; `Gui.press` is
+it with the answer thrown away.
+
+**`ListView.Viewport.Y` is the list's scroll offset** and `Viewport.Height` the
+rows it shows, which is what the page jumps are measured from. Both are zero
+until a layout pass, so a test about them lays the panel out first —
+`view.Layout(Size(40, 12))` — and one test asserts `Viewport.Y > 0` after
+scrolling, so the assumption fails loudly if a future version moves the offset
+elsewhere.
+
+**`RowRender` is raisable from a test.** `ListView.OnRowRender` is public, so a
+test constructs a `ListViewRowEventArgs row`, raises it and reads
+`RowAttribute` back — the one thing about colour that is observable without a
+driver. `null` there means "leave the row alone", which is what a marked row and
+the row under the cursor of a focused list must get.
 
 **`RequestStop` does nothing outside a run.** `Runnable.RequestStop` goes
 through the application that is running the dialog, so a dialog built in a test

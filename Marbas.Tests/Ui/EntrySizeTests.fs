@@ -14,7 +14,8 @@ let private entry kind size =
       Kind = kind
       Size = size
       Modified = modified
-      Visibility = Plain }
+      Visibility = Plain
+      Executability = NotExecutable }
 
 [<Fact>]
 let ``a file size is rendered by the given format`` () =

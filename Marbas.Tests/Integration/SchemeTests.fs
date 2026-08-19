@@ -35,7 +35,7 @@ let ``entries are drawn in the panel scheme`` () =
 let ``the marked summary line wears the summary scheme`` () =
     use window = createInitialized ()
 
-    let scheme = (FilePanel.summary (panel FilePanel.LeftId window)).GetScheme()
+    let scheme = (FilePanel.footer (panel FilePanel.LeftId window)).GetScheme()
 
     Assert.Equal(ClassicScheme.summary, scheme)
 

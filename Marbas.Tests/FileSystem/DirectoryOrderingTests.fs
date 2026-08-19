@@ -18,7 +18,8 @@ let private entry name kind =
               | File -> Some 1L
               | Directory -> None)
       Modified = DateTime(2026, 1, 1)
-      Visibility = Plain }
+      Visibility = Plain
+      Executability = NotExecutable }
 
 let private sized name size =
     { entry name File with Size = Some size }

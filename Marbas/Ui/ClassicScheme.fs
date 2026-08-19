@@ -26,6 +26,14 @@ let panel =
         Disabled = attribute ColorName16.DarkGray ColorName16.Blue
     )
 
+let directoryEntry = attribute ColorName16.White ColorName16.Blue
+
+let plainEntry = attribute ColorName16.BrightBlue ColorName16.Blue
+
+let archiveEntry = attribute ColorName16.BrightMagenta ColorName16.Blue
+
+let executableEntry = attribute ColorName16.BrightGreen ColorName16.Blue
+
 let summary =
     Scheme(
         Normal = attribute ColorName16.BrightYellow ColorName16.Blue,

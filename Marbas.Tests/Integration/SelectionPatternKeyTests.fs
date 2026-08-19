@@ -67,10 +67,10 @@ let ``cancelling the pattern prompt changes nothing`` () =
 let ``the panel shows a summary of what is selected`` () =
     use window = windowWith (fun _ -> Some "*.txt")
     let panelView = panel FilePanel.LeftId window
-    let summaryBefore = (FilePanel.summary panelView).Text
+    let footerBefore = (FilePanel.footer panelView).Text
 
     press (FilePanel.listView panelView) KeyMap.selectPatternKey
 
-    Assert.Equal("", summaryBefore)
-    Assert.Contains("2 selected", (FilePanel.summary panelView).Text)
-    Assert.Contains("4 bytes", (FilePanel.summary panelView).Text)
+    Assert.Contains("3 files", footerBefore)
+    Assert.Contains("2 selected", (FilePanel.footer panelView).Text)
+    Assert.Contains("4 bytes", (FilePanel.footer panelView).Text)

@@ -22,6 +22,8 @@
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
     <Compile Include="FileSystem\HiddenEntriesTests.fs" />
+    <Compile Include="FileSystem\ExecutabilityTests.fs" />
+    <Compile Include="FileSystem\SearchTextTests.fs" />
     <Compile Include="FileSystem\SettingsTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
     <Compile Include="FileSystem\FileContentTests.fs" />
@@ -40,6 +42,7 @@
     <Compile Include="State\MkdirTests.fs" />
     <Compile Include="State\DeleteTests.fs" />
     <Compile Include="State\TransferTests.fs" />
+    <Compile Include="State\SearchTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
   </ItemGroup>
@@ -49,7 +52,10 @@
     <Compile Include="Ui\EntrySizeTests.fs" />
     <Compile Include="Ui\EntryFormatTests.fs" />
     <Compile Include="Ui\CursorInfoTests.fs" />
+    <Compile Include="Ui\EntryColorTests.fs" />
+    <Compile Include="Ui\PageJumpTests.fs" />
     <Compile Include="Ui\SelectionSummaryTests.fs" />
+    <Compile Include="Ui\PanelFooterTests.fs" />
     <Compile Include="Ui\HexDumpTests.fs" />
     <Compile Include="Ui\FileViewTests.fs" />
     <Compile Include="Ui\ListingErrorMessageTests.fs" />
@@ -74,6 +80,8 @@
     <Compile Include="Integration\ModifierRowTests.fs" />
     <Compile Include="Integration\SchemeTests.fs" />
     <Compile Include="Integration\FilePanelContentTests.fs" />
+    <Compile Include="Integration\PanelPaintingTests.fs" />
+    <Compile Include="Integration\SearchKeyTests.fs" />
     <Compile Include="Integration\StatusLineTests.fs" />
     <Compile Include="Integration\PatternDialogTests.fs" />
     <Compile Include="Integration\ProgressDialogTests.fs" />

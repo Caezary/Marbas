@@ -4,6 +4,8 @@ open System.Drawing
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Terminal.Gui.ViewBase
+open Terminal.Gui.Views
 open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
@@ -52,6 +54,45 @@ let ``after layout rows are formatted into aligned columns`` () =
     Assert.NotEmpty rows
     Assert.All(rows, fun row -> Assert.Equal(list.Viewport.Width, row.Length))
     Assert.Contains(rows, fun (row: string) -> row.StartsWith "docs" && row.Contains "<DIR>")
+
+let private rule (panelView: View) =
+    panelView.SubViews
+    |> Seq.pick (function
+        | :? Line as line -> Some line
+        | _ -> None)
+
+[<Fact>]
+let ``a rule separates the listing from the footer`` () =
+    use window = MainWindow.create (Fakes.dependencies (mockFs ()) (at "start"))
+    window.BeginInit()
+    window.EndInit()
+    let panelView = panel FilePanel.LeftId window
+
+    window.Layout(Size(80, 24)) |> ignore
+
+    Assert.Equal(Orientation.Horizontal, (rule panelView).Orientation)
+    Assert.Equal(panelView.Viewport.Height - 2, (rule panelView).Frame.Y)
+
+[<Fact>]
+let ``the listing gives up the two rows the rule and the footer take`` () =
+    use window = MainWindow.create (Fakes.dependencies (mockFs ()) (at "start"))
+    window.BeginInit()
+    window.EndInit()
+    let panelView = panel FilePanel.LeftId window
+    let list = FilePanel.listView panelView
+
+    window.Layout(Size(80, 24)) |> ignore
+
+    Assert.Equal(panelView.Viewport.Height - 2, list.Viewport.Height)
+
+[<Fact>]
+let ``the footer counts the files of the directory while nothing is marked`` () =
+    use window = MainWindow.create (Fakes.dependencies (mockFs ()) (at "start"))
+
+    let text = (FilePanel.footer (panel FilePanel.LeftId window)).Text
+
+    Assert.Contains("1 files", text)
+    Assert.Contains("2 bytes", text)
 
 [<Fact>]
 let ``enter key on a directory navigates the focused panel`` () =

@@ -26,7 +26,8 @@ type PanelState =
       Cursor: int
       Selected: Set<EntryName>
       Sort: SortOrder
-      Hidden: HiddenEntries }
+      Hidden: HiddenEntries
+      Search: SearchText option }
 
 type AppState =
     { Left: PanelState
@@ -43,7 +44,8 @@ let private panelFrom (settings: PanelSettings) =
       Cursor = 0
       Selected = Set.empty
       Sort = settings.Sort
-      Hidden = settings.Hidden }
+      Hidden = settings.Hidden
+      Search = None }
 
 let fromSettings (settings: Settings) =
     { Left = panelFrom settings.Left
@@ -73,15 +75,19 @@ let private updatePanel side f (state: AppState) =
     | Left -> { state with Left = f state.Left }
     | Right -> { state with Right = f state.Right }
 
-let activate side state = { state with Active = side }
+let private withoutSearch (p: PanelState) = { p with Search = None }
+
+let closeSearch side state = updatePanel side withoutSearch state
+
+let activate side state =
+    { state with Active = side } |> closeSearch Left |> closeSearch Right
 
 let opposite side =
     match side with
     | Left -> Right
     | Right -> Left
 
-let toggleActive state =
-    { state with Active = opposite state.Active }
+let toggleActive state = activate (opposite state.Active) state
 
 let private withCursor index (p: PanelState) = { p with Cursor = index }
 
@@ -90,6 +96,34 @@ let private moveCursorBy delta (p: PanelState) =
 
 let setCursor side index state =
     updatePanel side (withCursor index) state
+
+let private focusFirstMatch (p: PanelState) =
+    match p.Search with
+    | None -> p
+    | Some text ->
+        match p.Entries |> List.tryFindIndex (fun e -> SearchText.matches text e.Name) with
+        | Some index -> withCursor index p
+        | None -> p
+
+let private searchFor text (p: PanelState) = focusFirstMatch { p with Search = text }
+
+let typeIntoSearch side character state =
+    updatePanel
+        side
+        (fun p ->
+            match p.Search with
+            | None -> searchFor (Some(SearchText.ofChar character)) p
+            | Some text -> searchFor (Some(SearchText.append character text)) p)
+        state
+
+let backspaceSearch side state =
+    updatePanel
+        side
+        (fun p ->
+            match p.Search with
+            | None -> p
+            | Some text -> searchFor (SearchText.backspace text) p)
+        state
 
 let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state =
     let previous = panel side state
@@ -111,7 +145,8 @@ let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state 
                   Cursor = cursor
                   Selected = Set.empty
                   Sort = sort
-                  Hidden = hidden })
+                  Hidden = hidden
+                  Search = None })
             state)
 
 let loadPanel fs side (path: FileSystemPath) state =
