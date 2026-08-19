@@ -7,8 +7,7 @@ known to differ. Run it before a release and after anything that touches
 Three kinds of evidence appear below:
 
 - **suite** — an automated test asserts it; `dotnet test` on both platforms is
-  the whole check. 617 tests on Windows, 614 plus 3 skipped on Linux, and
-  `.github/workflows/ci.yml` runs both legs on every push.
+  the whole check, and `.github/workflows/ci.yml` runs both legs on every push.
 - **WSL** — verified by running the built application under WSL (Ubuntu 24.04,
   .NET 10.0.110) on 2026-08-18, driving it through a pseudo-terminal and
   reading the screen back.
@@ -142,6 +141,19 @@ driver down around the process and re-initialise afterwards; it touches
 on Windows, so it wants a switch of its own rather than an unconditional detour.
 Until then, `EDITOR=code -w` or any windowed editor is the way to use `F4` on
 Linux.
+
+## Decisions
+
+**The roots a panel can be sent to are a value, not a platform check.**
+`Drives.list` used to call `DriveInfo.GetDrives()` everywhere, which on Unix
+meant a list of mount points — and no way at all to reach the home directory,
+though P3.5 had asked for `/` and `~`. It is now `Roots.list fs choice` with
+`RootChoice` being `MountedDrives` or `RootAndHome home`; `Program.fs` picks one
+and `Shell.Dependencies` carries it, so both branches are ordinary tested code
+and neither platform is a special case below the composition root. The module
+was renamed from `Drives` because on Unix it does not answer drives, and the
+vocabulary follows: `RootRequested`, `PromptForRoot`, `leftRootKey`, and a
+dialog that says *Select root*.
 
 ## Differences that are meant to be there
 

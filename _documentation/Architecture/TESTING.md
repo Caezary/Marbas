@@ -10,10 +10,10 @@ with an in-memory file system (`MockFileSystem`), so no test touches the disk.
 dotnet test Marbas.slnx
 ```
 
-That is the whole suite — 617 tests, a few seconds, no disk, no terminal, no
+That is the whole suite — a few seconds, no disk, no terminal, no
 network, nothing to set up beyond the SDK. Nothing is marked flaky, so a red run
-is a real failure. On Linux three of them skip, and only three: the ones whose
-subject is drive letters.
+is a real failure. A handful skip on Linux: the ones whose subject is drive
+letters.
 
 **One suite, two platforms.** Every path in an arrange block is built with
 `Root.at`, which answers `C:\start\docs` on Windows and `/start/docs` on Linux,
@@ -34,7 +34,17 @@ dotnet test Marbas.slnx --settings coverlet.runsettings
 `coverlet.runsettings` asks for Cobertura and excludes `Program.fs`, the
 composition root — it is the one file that wires the real file system, the real
 dialogs and the real process, so there is nothing in it a test can reach.
-Everything else is measured, and stands at 99% of lines and 95% of branches.
+Everything else is measured, and coverage stays close to complete.
+
+**Coverage is a reading, not a target.** P8.1 measured the suite rather than
+adding to it blindly: the collector named the lines no test reached, and each
+one was either given a test that says something (a read-only file refuses to be
+deleted, a file in use cannot be viewed, an unreadable config file falls back to
+the defaults, every sort key survives being written and read back, a transfer
+whose other panel vanished answers with an error) or written down below as
+unreachable with a reason. `Program.fs` is excluded in `coverlet.runsettings`
+instead of being counted and apologised for: it is the composition root, and a
+test that could reach it would be starting the real application.
 
 `.github/workflows/ci.yml` runs exactly the three commands above (restore,
 build, test) on `windows-latest` and on `ubuntu-latest` for every push to `main`
@@ -190,6 +200,9 @@ part of the suite.
 **Keys do not bubble.** `NewKeyDownEvent` on a nested view is not forwarded to
 its parent, so key handlers are attached to the view that actually holds focus
 — the panel's `ListView`.
+
+**`View.AddCommand` is `protected`.** Custom shortcuts use `KeyDown` handlers
+instead.
 
 **Application-level bindings need the running app.** Defaults such as
 Tab → `NextTabStop` and `Command.Quit` are not exercised by

@@ -1,0 +1,101 @@
+# State and effects
+
+**Immutable state, one mutable cell.** `AppState` transitions are pure
+functions; `Update.update` folds a `Message` into a new state plus a list of
+`Effect` values, and the generic `Runtime` holds the only mutable reference,
+re-renders after each dispatch and hands the effects to the interpreter.
+Handlers send messages, they never mutate. See PLAN.md, *State handling*.
+
+**The outside world is injected.** `Shell.Dependencies` names every port (file
+system, start path, quit callback, error reporter, root chooser, pattern
+prompt, name prompt, confirmation) and `Shell.interpret` is the only place that
+turns an `Effect` into a call on one of them.
+`Program.fs` is the only place that opens real dialogs, which keeps
+dialog-triggering behaviour testable. The dialogs themselves are built in `Ui`
+modules (`PatternDialog`) so their layout can be tested too — a field placed
+outside the dialog's content area is invisible yet still typable, which no
+behaviour test would notice.
+
+**No message carries a cursor except the one that moves it.** `CursorMoved` is
+the only message with a `PanelCursor`; `EntryOpened`, `SelectionToggled`,
+`SortRequested`, `RefreshRequested` and the pattern pair say what happened and
+nothing else, and `Update` reads the active panel and its cursor from the state.
+That is sound because the state is never behind: `ListView.ValueChanged`
+dispatches `CursorMoved` on every move and `HasFocusChanged` dispatches
+`PanelFocused`, so by the time a key is pressed the state already knows where
+the cursor stands. It is also what lets one binding serve both a key press and a
+mouse click on the bar, since a click has no notion of a cursor. `F5`, `F6` and
+`F8` were built this way from the start; P7.5 made the rest follow.
+
+**The cursor lives in the state, and rendering is guarded.** The panel's
+`ListView.ValueChanged` dispatches `AppState.setCursor`, so state always knows
+where the cursor is. Rendering also writes `ListView.SelectedItem`, which
+raises the same event, so `Runtime` raises its `IsRendering` flag while it
+renders and the handler ignores events raised inside it. Without the flag,
+render and handler bounce off each other.
+
+**`MainWindow` is a composition root, `AppView` is the screen.** `AppView.create`
+builds the window, the two panels and the status line and hands back a record;
+`AppView.render` is the whole screen as a function of `AppState`, so it can be
+tested by rendering a state into a view and reading the panels back, with no
+`Runtime` involved. The side-to-view pairing lives in `FilePanel.Panels` and
+`FilePanel.pairs`, which is what render, seeding and wiring all iterate.
+`MainWindow.create` is left with four steps: build the view, build the runtime,
+seed both panels, attach the wiring. The function key bar is added after the
+runtime exists, because it needs `dispatch` — which needs the runtime, which
+needs the render function, which needs the views.
+
+**Panel event wiring is its own module, attached after the panels are seeded.**
+`PanelWiring.attach` subscribes one panel's `ListView` and frame to a
+`PanelWiring.Host` — dispatch, repaint, and the "am I rendering?" question —
+so `MainWindow` only builds views and hands over that host, and the wiring can
+be tested against a bare `FilePanel` with a recording host instead of a whole
+window. `MainWindow` keeps two loops over the panels on purpose: the first
+dispatches the startup `PathOpened`, the second attaches the wiring. While the
+initial state is being seeded no handler exists yet, so nothing can re-enter
+the runtime — the `IsRendering` guard covers `ValueChanged`, but the
+`FrameChanged` handler calls `Runtime.Refresh` directly, and a nested `paint`
+lowers the flag for the render that is still running. Merging the loops would
+put that hazard into startup.
+
+**Which mode the keyboard is in decides who reads a key first.** With no search
+open, `KeyMap` wins and a printable key left over opens a search; with one open,
+every printable key is text — `Space` and `+` included — and anything else
+closes the search before being handled normally. `PanelWiring.Host` grew an
+`IsSearching` for exactly that question, answered from `Runtime.State`. The
+alternative, letting `KeyMap` always win, would have made a file name with a
+space unsearchable.
+
+**The background thread is a port, not a thread.** `Dependencies.RunBatch`
+takes the progress title, the work to do (handed a `BatchControl` to report
+through and to ask whether it should stop) and what to do with the results.
+`Program.fs` is the only place that knows about `Task.Run`, `app.Invoke` and
+running the progress dialog modally; the tests pass a runner that does the work
+inline, which is why every `F5`/`F6` test stayed synchronous and none of them
+had to change when the operations moved off the UI thread.
+
+**Cancelling means "the progress window is gone".** The token is cancelled the
+moment `app.Run dialog` returns, whatever the reason. `Esc` closes the dialog,
+so the batch stops at its next file; if instead the batch finished first, its
+`Invoke` callback closes the dialog and the cancel that follows changes
+nothing. The same flag guards the stop request, so a batch that finishes after
+the window is already gone cannot stop the main window by mistake — which
+would quit the application.
+
+**A stopped entry is reported, not passed over in silence.** Cancelling inside
+a tree leaves it half-copied, so the item answers `Cancelled path`, counts as a
+failure and is listed with the others; its mark stays, because it never
+finished. Entries the batch never reached are simply absent. A move that was
+interrupted never deletes its source: the delete is sequenced after the copy in
+the same `result` block, so a failed copy skips it.
+
+**`ReportError` carries a title.** Listing failures and operation failures want
+different dialog captions, so the dependency is `title -> message -> unit`;
+`ListingErrorMessage`/`OperationErrorMessage` each own their `Title`, and
+`Program.fs` just forwards both to the message box.
+
+**Operation errors are mapped, not re-thrown, inside a transition.**
+`AppState.makeDirectory` creates the directory and then reloads the panel; the
+reload returns a `ListingError`, which a private pure mapping folds into an
+`OperationError` so the whole transition answers with one error type. State
+still never depends on Ui — the mapping is over the raw error values.

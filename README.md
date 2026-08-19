@@ -19,37 +19,14 @@ Planned core features:
 - Basic file operations: copy, move, rename, delete, create directory
 - Cross-platform: Windows, Linux, macOS (.NET)
 
-## Building and running
+## Getting Marbas
 
-Requires the .NET 10 SDK.
-
-```
-dotnet build Marbas.slnx
-dotnet run --project Marbas
-dotnet test Marbas.slnx
-```
-
-The tests run against an in-memory file system and never touch the disk, so
-`dotnet test` is safe to run anywhere. Coverage is collected with
-`dotnet test Marbas.slnx --settings coverlet.runsettings`.
-
-## Standalone binaries
-
-```
-dotnet publish Marbas/Marbas.fsproj -p:PublishProfile=win-x64
-dotnet publish Marbas/Marbas.fsproj -p:PublishProfile=linux-x64
-```
-
-Each profile writes one self-contained, single-file executable to
-`Marbas/bin/publish/<runtime>/` — the .NET runtime travels inside it, so the
-machine it is copied onto needs nothing installed. Either can be built from
-either operating system. Tagging `v*` builds both on GitHub Actions and attaches
-them to a release; see [Packaging](_documentation/PACKAGING.md).
+Prebuilt, self-contained binaries for Windows and Linux are attached to every
+[release](https://github.com/Caezary/Marbas/releases) — no .NET installation
+needed. See the [user guide](_documentation/USER-GUIDE.md) for how to run it
+and its keyboard shortcuts.
 
 ## Documentation
 
-- [Progress](_documentation/PROGRESS.md)
-- [Implementation plan](_documentation/PLAN.md)
-- [Testing notes](_documentation/TESTING.md)
-- [Cross-platform checklist](_documentation/CROSS-PLATFORM.md)
-- [Packaging](_documentation/PACKAGING.md)
+- [User guide](_documentation/USER-GUIDE.md) — running Marbas, keyboard shortcuts
+- [Development](_documentation/DEVELOPMENT.md) — building from source, testing, architecture docs

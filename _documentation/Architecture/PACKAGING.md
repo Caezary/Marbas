@@ -98,3 +98,12 @@ self-contained build fails at startup, if it fails at all. Both were run.
 Run both again after anything that touches the profiles, the runtime version or
 a native dependency. Nothing here is covered by `dotnet test`, because what is
 being tested is the build itself.
+
+## A trap already hit
+
+The stock Visual Studio `.gitignore` ignores `*.pubxml`, because a *web* deploy
+profile can hold a connection string with a password in it. A publish profile
+for a console application holds nothing of the sort, so both files would have
+been silently left out of the commit; `.gitignore` now un-ignores
+`Marbas/Properties/PublishProfiles/*.pubxml`. `git status` is what says so —
+a new file that does not appear there is ignored, not missed.
