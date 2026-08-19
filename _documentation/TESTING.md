@@ -10,7 +10,7 @@ with an in-memory file system (`MockFileSystem`), so no test touches the disk.
 dotnet test Marbas.slnx
 ```
 
-That is the whole suite — 601 tests, a few seconds, no disk, no terminal, no
+That is the whole suite — 617 tests, a few seconds, no disk, no terminal, no
 network, nothing to set up beyond the SDK. Nothing is marked flaky, so a red run
 is a real failure. On Linux three of them skip, and only three: the ones whose
 subject is drive letters.

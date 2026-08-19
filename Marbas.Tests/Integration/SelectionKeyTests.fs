@@ -1,5 +1,6 @@
 module Marbas.Tests.Integration.SelectionKeyTests
 
+open System.Drawing
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Ui
@@ -78,6 +79,50 @@ let ``holding shift back over a marked run unmarks it`` () =
     Assert.False(list.Source.IsMarked 1)
     Assert.False(list.Source.IsMarked 2)
     Assert.Equal(0, list.SelectedItem.GetValueOrDefault 0)
+
+let private laidOutWindow () =
+    let window = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
+    window.Layout(Size(80, 24)) |> ignore
+    window
+
+[<Fact>]
+let ``a shift page key marks up to the entry the cursor lands on, not including it`` () =
+    use window = laidOutWindow ()
+    let list = leftList window
+    list.SelectedItem <- 1
+
+    press list KeyMap.selectionPageDownKeys.Head
+
+    Assert.Equal<bool list>([ true; true; false ], [ for i in 1..3 -> list.Source.IsMarked i ])
+    Assert.Equal(3, list.SelectedItem.GetValueOrDefault -1)
+
+[<Fact>]
+let ``a shift page key over a half marked page goes by the entry under the cursor`` () =
+    use window = laidOutWindow ()
+    let list = leftList window
+    list.SelectedItem <- 2
+    press list KeyMap.selectionDownKey
+    list.SelectedItem <- 1
+
+    press list KeyMap.selectionPageDownKeys.Head
+
+    Assert.Equal<bool list>([ true; true ], [ for i in 1..2 -> list.Source.IsMarked i ])
+
+[<Fact>]
+let ``pressing a shift page key on and on marks the whole listing`` () =
+    let fs = MockFileSystem()
+
+    for number in 1..40 do
+        fs.AddFile(at $"start/file{number:D2}.txt", MockFileData "hi")
+
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
+    window.Layout(Size(80, 24)) |> ignore
+    let list = leftList window
+
+    for _ in 1..12 do
+        press list KeyMap.selectionPageDownKeys.Head
+
+    Assert.Equal<bool list>(List.replicate 40 true, [ for i in 1..40 -> list.Source.IsMarked i ])
 
 [<Fact>]
 let ``a shift arrow and a pattern add up to one selection`` () =

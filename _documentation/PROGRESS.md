@@ -35,11 +35,12 @@ the left and right arrows jump by page instead of switching panels, entries are
 coloured by what they are, the bottom row of a panel is separated by a rule and
 says what the directory holds, and typing a letter searches the panel. **A
 second round widened marking**: holding `Shift` and running an arrow marks or
-unmarks an entry per step, in the direction of the arrow.
+unmarks an entry per step, in the direction of the arrow, and a shifted page
+key does the same to the whole page at once.
 
-**601 tests pass on Windows; on Linux 598 pass and 3 skip** — the three that
-assert on drive letters, which exist nowhere else. 441 are unit tests over the
-logic modules and the pure `Ui` ones, plus 160 integration tests driving real
+**617 tests pass on Windows; on Linux 614 pass and 3 skip** — the three that
+assert on drive letters, which exist nowhere else. 451 are unit tests over the
+logic modules and the pure `Ui` ones, plus 166 integration tests driving real
 Terminal.Gui views over an in-memory file system. All of them follow the
 arrange/act/assert shape and the folder layout described in
 [TESTING.md](TESTING.md). `dotnet test Marbas.slnx` is the whole run, and
@@ -121,6 +122,18 @@ checklist in [CROSS-PLATFORM.md](CROSS-PLATFORM.md).
   disappeared) and are dropped when the panel changes directory. The cursor
   stops at the ends of the listing while the entry it stopped on still gets
   marked.
+- `Shift+PgDn` (or `Shift+→`) does the same to a whole page: everything from
+  the cursor up to — but not including — where a page jump would land, with the
+  cursor following onto that last, untouched entry. `Shift+PgUp` and `Shift+←`
+  go the other way. Leaving the landing entry out is what lets the key be held:
+  the cursor always comes to rest on an unmarked entry, so the next press
+  carries on marking instead of undoing the page just marked, and pressing on
+  and on marks the whole listing. At the very bottom, where the cursor has
+  nowhere left to land, the entry it stands on is marked. On a page that is
+  marked only in part the entry under the cursor decides for the whole run —
+  standing on an unmarked one marks it all, standing on a marked one clears it
+  all — so the result never depends on what the run happens to contain. `..` is
+  skipped as always, and a run that reaches past the last entry stops at it.
 - `+` and `-` ask for a wildcard pattern and mark or unmark everything it
   matches, so `*.fs` is one step. Matching ignores case and never touches `..`.
   There is one selection per panel, so a pattern and the keys above add to and
@@ -233,11 +246,12 @@ Marbas/
   Ui/
     ClassicScheme.fs      the four schemes the screen is painted with
     Modifiers.fs          Ctrl / Alt / Shift as a set, and the set a key carries
-    KeyMap.fs             every key binding: key, bar label, message
+    KeyMap.fs             every key binding: key, bar label, message; the
+                          shifted page keys, which only carry a direction
     EntrySize.fs          size column text, byte format injected per view
     EntryFormat.fs        one entry -> one fixed-width row
     EntryColor.fs         one entry -> its colour group, and that group's attribute
-    PageJump.fs           where the left and right arrows land, from the page on screen
+    PageJump.fs           where a page key lands, from the page on screen
     SelectionSummary.fs   marked entries -> panel summary text
     PanelFooter.fs        panel state -> the one line under the rule
     CursorInfo.fs         cursor entry -> status line text
@@ -476,16 +490,40 @@ state after every render. `Insert`/`Space` are handled by Marbas and marked
 handled, so the built-in SPACE marking never runs and cannot disagree with the
 state.
 
-**Marking carries a direction, not a second command.** `SelectionToggled` takes
-a `CursorDirection` (`Upward` / `Downward`) and `AppState.toggleSelectionMoving`
-is the only transition behind it: toggle the entry under the cursor, then step
-one entry that way, clamped at the ends. `Insert`, `Space` and `Shift+↓` are
-three keys for `SelectionToggled Downward` and `Shift+↑` is the one key for
-`Upward`, so all four are the same rule and the marking behaviour cannot drift
-between them. Because it toggles rather than extends, a held `Shift` clears a
-run as readily as it makes one — and because there is one `Selected` set per
-panel, it composes with the `+` / `-` patterns without either knowing about the
-other.
+**One transition marks, however far it reaches.**
+`AppState.toggleSelectionThrough side target` is the whole rule: take the run
+from the cursor to `target`, mark or unmark all of it, put the cursor on
+`target`. Everything else is a caller that works out `target` —
+`toggleSelectionMoving` adds ±1 for `Insert`, `Space` and the shift arrows,
+`toggleSelection` passes the cursor itself, and the shifted page keys pass what
+`PageJump` measured. There is no second toggling code path to drift out of step
+with the first.
+
+**The run stops short of where the cursor lands.** Going down it is
+`[cursor .. target-1]`, going up `[target+1 .. cursor]` — the entry started
+from is always in, the entry landed on is always out. That is exactly what
+`Shift+↓` does when repeated, which is what makes the page keys equal to
+holding the arrow, and it is what makes a page key repeatable at all: an
+inclusive run leaves the cursor on an entry it has just marked, so the next
+press reads that mark, decides "unmark" and gives most of the page back. When
+the cursor cannot move — the target is the cursor, at either end of the listing
+— the run is the single entry it stands on, so nothing is unreachable and the
+behaviour still matches `Shift+↓` pressed at the bottom.
+
+**A run goes by the entry under the cursor, not entry by entry.** Toggling each
+entry of a half-marked page separately would invert it, which is unpredictable
+in exactly the case a user reaches for a page key. So `toggleSelectionThrough`
+reads the mark under the cursor once and applies that one decision to the whole
+run. Over a run of one entry it is plain toggling, which is why the same
+function serves `Insert` as serves `Shift+PgDn`. And because there is one
+`Selected` set per panel, all of it composes with the `+` / `-` patterns
+without either side knowing about the other.
+
+**Marking a page is a message with an index, because the page is the view's
+business.** The state cannot know how tall a panel is, so `SelectionToggledTo`
+carries a `PanelCursor` the way `CursorMoved` does: the wiring measures the page
+with the same `PageJump` the `←`/`→` jumps use and says which entry to mark
+through.
 
 **The shift arrows are ordinary `KeyMap` bindings, which is what keeps them out
 of the panel's other arrow rules.** `PanelWiring` asks `KeyMap.messageFor`
@@ -493,6 +531,13 @@ first, and `Key.CursorDown.WithShift` is a different key from `Key.CursorDown`,
 so the page jumps on `←`/`→` and the edge-stopping on `↑`/`↓` never see them.
 They are off the bar, like `Insert` and `Space`: holding `Shift` therefore
 leaves the function-key row empty rather than showing a row of its own.
+
+**The shifted page keys cannot be `KeyMap.bindings`, so `KeyMap` answers with a
+direction instead.** `bindings` maps a key to a whole `Message`, and these four
+keys only become a message once the view has measured the page. `KeyMap` keeps
+what it can — `selectionPageDownKeys` and `selectionPageUpKeys`, two keys each,
+and `selectionPageDirection` to look one up — so every key of the application
+is still named in one file and `PanelWiring` decides nothing but the index.
 
 **The cursor lives in the state, and rendering is guarded.** The panel's
 `ListView.ValueChanged` dispatches `AppState.setCursor`, so state always knows
@@ -990,9 +1035,12 @@ is no longer plan order but choice. Three things are waiting:
   was already so before the shift arrows existed; now that a user holds `Shift`
   to mark a run, giving that row two labels of its own would be worth more than
   leaving it blank.
-- Whether the terminal delivers `Shift+↑` / `Shift+↓` as a key of their own is
-  the driver's business, and no test reaches it — the suite injects the key.
-  It is a manual row in [CROSS-PLATFORM.md](CROSS-PLATFORM.md).
+- Whether the terminal delivers `Shift+↑` / `Shift+↓` / `Shift+PgUp` /
+  `Shift+PgDn` as keys of their own is the driver's business, and no test
+  reaches it — the suite injects the key. It is a manual row in
+  [CROSS-PLATFORM.md](CROSS-PLATFORM.md), and `Shift+←` / `Shift+→` are bound
+  to the same two commands partly as a way round a terminal that drops the
+  shifted page keys.
 - Both panels start on the same directory, so `F5` straight after launch copies
   a file onto itself and the OS refuses it with an error dialog. `F6` can be
   pointed elsewhere by hand, `F5` cannot — a target prompt for `F5`, or a check

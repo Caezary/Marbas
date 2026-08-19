@@ -95,8 +95,8 @@ let toggleActive state = activate (opposite state.Active) state
 
 let private withCursor index (p: PanelState) = { p with Cursor = index }
 
-let private moveCursorBy delta (p: PanelState) =
-    { p with Cursor = max 0 (min (p.Cursor + delta) (p.Entries.Length - 1)) }
+let private withCursorWithin index (p: PanelState) =
+    { p with Cursor = index |> min (p.Entries.Length - 1) |> max 0 }
 
 let setCursor side index state =
     updatePanel side (withCursor index) state
@@ -183,30 +183,47 @@ let private selectable entry = entry.Name <> DirectoryListing.ParentName
 let selectedEntries panel =
     panel.Entries |> List.filter (fun e -> panel.Selected.Contains e.Name)
 
-let private toggle name selected =
-    if Set.contains name selected then
-        Set.remove name selected
-    else
-        Set.add name selected
-
-let private toggleSelectedAtCursor (p: PanelState) =
+let private markedAtCursor (p: PanelState) =
     match cursorEntry p with
-    | Some entry when selectable entry -> { p with Selected = toggle entry.Name p.Selected }
-    | _ -> p
+    | Some entry -> p.Selected.Contains entry.Name
+    | None -> false
+
+let private runFrom cursor target =
+    if cursor < target then [ cursor .. target - 1 ]
+    elif cursor > target then [ target + 1 .. cursor ]
+    else [ cursor ]
+
+let private namesOf indexes (p: PanelState) =
+    indexes
+    |> List.choose (fun index -> List.tryItem index p.Entries)
+    |> List.filter selectable
+    |> List.map _.Name
+    |> Set.ofList
+
+let private toggleSelectedThrough target (p: PanelState) =
+    let run = namesOf (runFrom p.Cursor target) p
+
+    let selected =
+        if markedAtCursor p then
+            Set.difference p.Selected run
+        else
+            Set.union p.Selected run
+
+    withCursorWithin target { p with Selected = selected }
+
+let toggleSelectionThrough side target state =
+    updatePanel side (toggleSelectedThrough target) state
 
 let toggleSelection side state =
-    updatePanel side toggleSelectedAtCursor state
+    toggleSelectionThrough side (panel side state).Cursor state
 
 let private step direction =
     match direction with
     | Upward -> -1
     | Downward -> 1
 
-let moveCursor direction side state =
-    updatePanel side (moveCursorBy (step direction)) state
-
 let toggleSelectionMoving direction side state =
-    state |> toggleSelection side |> moveCursor direction side
+    toggleSelectionThrough side ((panel side state).Cursor + step direction) state
 
 let private matching pattern panel =
     panel.Entries

@@ -93,6 +93,22 @@ let ``the selection arrows are the plain arrows with shift held`` () =
     Assert.Equal(Key.CursorUp.WithShift, KeyMap.selectionUpKey)
 
 [<Fact>]
+let ``both page keys of a direction select a page that way`` () =
+    let down = [ Key.CursorRight.WithShift; Key.PageDown.WithShift ]
+    let up = [ Key.CursorLeft.WithShift; Key.PageUp.WithShift ]
+
+    for key in down do
+        Assert.Equal(Some Downward, KeyMap.selectionPageDirection key)
+
+    for key in up do
+        Assert.Equal(Some Upward, KeyMap.selectionPageDirection key)
+
+[<Fact>]
+let ``a page key without shift selects nothing`` () =
+    for key in [ Key.CursorRight; Key.CursorLeft; Key.PageDown; Key.PageUp ] do
+        Assert.Equal(None, KeyMap.selectionPageDirection key)
+
+[<Fact>]
 let ``the pattern keys select and deselect`` () =
     let selecting = KeyMap.messageFor KeyMap.selectPatternKey
     let deselecting = KeyMap.messageFor KeyMap.deselectPatternKey

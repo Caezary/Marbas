@@ -39,13 +39,22 @@ let private stopsAtEdge (list: ListView) (key: Key) =
     else
         false
 
-let private jump (list: ListView) (key: Key) =
-    if key = Key.CursorRight then
-        Some(PageJump.forward (page list) (cursor list))
-    elif key = Key.CursorLeft then
-        Some(PageJump.backward (page list) (cursor list))
-    else
-        None
+let private pageTarget (list: ListView) direction =
+    match direction with
+    | Downward -> PageJump.forward (page list) (cursor list)
+    | Upward -> PageJump.backward (page list) (cursor list)
+
+let private jumpDirection (key: Key) =
+    if key = Key.CursorRight then Some Downward
+    elif key = Key.CursorLeft then Some Upward
+    else None
+
+let private overPage side (list: ListView) (key: Key) =
+    let at direction = { Side = side; Index = pageTarget list direction }
+
+    match KeyMap.selectionPageDirection key with
+    | Some direction -> Some(SelectionToggledTo(at direction))
+    | None -> jumpDirection key |> Option.map (at >> CursorMoved)
 
 let private command (host: Host) side (list: ListView) (key: Key) =
     match KeyMap.messageFor key with
@@ -53,11 +62,12 @@ let private command (host: Host) side (list: ListView) (key: Key) =
         host.Dispatch message
         true
     | None ->
-        match jump list key with
-        | Some index when count list > 0 ->
-            host.Dispatch(CursorMoved { Side = side; Index = index })
+        match overPage side list key with
+        | Some message ->
+            if count list > 0 then
+                host.Dispatch message
+
             true
-        | Some _ -> true
         | None ->
             if stopsAtEdge list key then
                 true

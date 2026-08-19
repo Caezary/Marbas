@@ -174,6 +174,54 @@ let ``a shift arrow still marks at the edge it cannot move past`` () =
     Assert.Contains(SelectionToggled Downward, probe.Messages)
 
 [<Fact>]
+let ``a shift page key marks through the page instead of jumping over it`` () =
+    let probe, view, list = wired ()
+    view.Layout(Size(40, 12)) |> ignore
+    list.SelectedItem <- 0
+    probe.Messages.Clear()
+
+    let key = pressReturning list KeyMap.selectionPageDownKeys.Head
+
+    Assert.True key.Handled
+    Assert.Contains(SelectionToggledTo(cursor Left 2), probe.Messages)
+
+[<Fact>]
+let ``the page keys of one direction agree on where they mark to`` () =
+    let sent =
+        [ KeyMap.selectionPageUpKeys; KeyMap.selectionPageDownKeys ]
+        |> List.collect (fun keys ->
+            keys
+            |> List.map (fun key ->
+                let probe, view, list = wired ()
+                view.Layout(Size(40, 12)) |> ignore
+                list.SelectedItem <- 1
+                probe.Messages.Clear()
+                press list key
+                List.ofSeq probe.Messages))
+
+    Assert.Equal<Message list list>(
+        [ [ SelectionToggledTo(cursor Left 0) ]
+          [ SelectionToggledTo(cursor Left 0) ]
+          [ SelectionToggledTo(cursor Left 2) ]
+          [ SelectionToggledTo(cursor Left 2) ] ],
+        sent
+    )
+
+[<Fact>]
+let ``a shift page key of an empty listing is swallowed`` () =
+    let probe = probe ()
+    let panels = FilePanel.createPair ()
+    PanelWiring.attach probe.Host Left panels.Left
+    let list = FilePanel.listView panels.Left
+    list.SetSource(ObservableCollection<string> [])
+    probe.Messages.Clear()
+
+    let key = pressReturning list KeyMap.selectionPageDownKeys.Head
+
+    Assert.True key.Handled
+    Assert.Empty probe.Messages
+
+[<Fact>]
 let ``the cursor stops at the top of the listing`` () =
     let probe, _, list = wired ()
     list.SelectedItem <- 0
