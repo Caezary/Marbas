@@ -228,7 +228,15 @@ with `key.Handled` still `false`.
 
 **StatusBar shortcuts swallow their keys.** A `Shortcut` marks its key handled
 even with a `null` action, which is why every shortcut that should do
-something gets a real callback.
+something gets a real callback. That is the reason the bottom bar stopped being
+a `StatusBar` of `Shortcut`s: a plain `View` of slot views takes no key at all,
+and a test asserts it by sending `F5` to the bar and finding it unhandled.
+
+**A mouse click is raisable from a test.** `View.NewMouseEvent` is public and
+takes a `Terminal.Gui.Input.Mouse`, so
+`slot.NewMouseEvent(Mouse(Flags = MouseFlags.LeftButtonClicked))` is a click on
+a bar slot — no driver, no layout pass, no `Position`. That is what covers the
+one input the bottom bar owns.
 
 **A key that escapes a view can only be caught as `Handled`.** Focus navigation
 runs above `NewKeyDownEvent`, so a test cannot watch `↓` at the last entry move
@@ -278,7 +286,9 @@ test, so nothing can read back what was painted. What a test can assert is the
 holds, which is what `Integration/SchemeTests.fs` and `Ui/ClassicSchemeTests.fs`
 do. A view without a scheme of its own inherits its super-view's, so the panel
 list and the status line are covered by the schemes set on the panel frame and
-on the window.
+on the window. It is also why the bottom bar draws a key name and its command as
+two `Label`s rather than as one line in two attributes: two views are two
+schemes to read back, one hand-painted line is nothing at all.
 
 **Which `VisualRole` a view draws with is observable.** Subscribing to
 `view.GettingAttributeForRole`, laying the view out and calling `Draw()` records

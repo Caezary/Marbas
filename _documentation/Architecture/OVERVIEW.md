@@ -51,11 +51,14 @@ Marbas/
     Update.fs             messages and effects: message + state -> state + effects
     Runtime.fs            generic host: the single mutable cell, dispatch, render
   Ui/
-    ClassicScheme.fs      the four schemes the screen is painted with
+    ClassicScheme.fs      the five schemes the screen is painted with
     LiteralText.fs        turns a view's hot key specifier off, so `_` is shown
-    Modifiers.fs          Ctrl / Alt / Shift as a set, and the set a key carries
-    KeyMap.fs             every key binding: key, bar label, message; the
-                          shifted page keys, which only carry a direction
+    Modifiers.fs          Ctrl / Alt / Shift as a set, the set a key carries,
+                          and the key a set makes of a plain one
+    KeyMap.fs             every key binding: key, bar label, message; the twelve
+                          bar slots of a set of modifiers; the shifted page keys,
+                          which only carry a direction
+    KeyBarLayout.fs       bar width -> where each of the twelve slots sits
     EntrySize.fs          size column text, byte format injected per view
     EntryFormat.fs        one entry -> one fixed-width row
     EntryColor.fs         one entry -> its colour group, and that group's attribute
@@ -73,7 +76,7 @@ Marbas/
     OverwriteQuestion.fs  collision -> question text, answer buttons and mapping
     PanelTitle.fs           path and sort order -> the panel frame's title
     FilePanel.fs             panel views, render state -> view
-    FunctionKeyBar.fs       bottom bar: the KeyMap row of the modifiers held
+    FunctionKeyBar.fs       bottom bar: a slot per function key, F1 to F12
     Shell.fs                 Dependencies and the effect interpreter
     PromptDialog.fs         single-field text prompt (label + default)
     PatternDialog.fs         the `+` / `-` pattern prompt, over PromptDialog

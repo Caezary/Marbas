@@ -5,6 +5,20 @@ open Marbas.FileSystem
 open Marbas.State.AppState
 open Marbas.State.Update
 
+let functionKeys =
+    [ Key.F1
+      Key.F2
+      Key.F3
+      Key.F4
+      Key.F5
+      Key.F6
+      Key.F7
+      Key.F8
+      Key.F9
+      Key.F10
+      Key.F11
+      Key.F12 ]
+
 let refreshKey = Key.R.WithCtrl
 
 let insertKey = Key.InsertChar
@@ -79,7 +93,7 @@ let bindings =
       onBar sizeSortKey "Size" (SortRequested SortKey.BySize)
       onBar leftRootKey "Left" (RootRequested Left)
       onBar rightRootKey "Right" (RootRequested Right)
-      onBar hiddenKey "Hidden" HiddenToggled
+      offBar hiddenKey HiddenToggled
       offBar quitKey QuitRequested
       offBar classicHiddenKey HiddenToggled
       offBar refreshKey RefreshRequested
@@ -90,12 +104,29 @@ let bindings =
       offBar selectionDownKey (SelectionToggled Downward)
       offBar selectionUpKey (SelectionToggled Upward) ]
 
-let row modifiers =
+type BarSlot =
+    { Name: string
+      Key: Key
+      Label: string
+      Message: Message option }
+
+let private commandOn key =
     bindings
-    |> List.choose (fun binding ->
+    |> List.tryPick (fun binding ->
         match binding.Label with
-        | Some label when Modifiers.ofKey binding.Key = modifiers -> Some(binding.Key, label, binding.Message)
+        | Some label when binding.Key = key -> Some(label, binding.Message)
         | _ -> None)
+
+let bar modifiers =
+    functionKeys
+    |> List.mapi (fun index functionKey ->
+        let key = Modifiers.apply modifiers functionKey
+        let command = commandOn key
+
+        { Name = $"F{index + 1}"
+          Key = key
+          Label = command |> Option.map fst |> Option.defaultValue ""
+          Message = command |> Option.map snd })
 
 let messageFor (key: Key) =
     bindings

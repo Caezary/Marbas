@@ -38,7 +38,7 @@ let create (deps: Shell.Dependencies) =
         PanelWiring.attach host side panel
 
     deps.WatchModifiers(fun modifiers ->
-        FunctionKeyBar.show dispatch keyBar modifiers
+        FunctionKeyBar.show keyBar modifiers
         runtime.Refresh())
 
     view.Window

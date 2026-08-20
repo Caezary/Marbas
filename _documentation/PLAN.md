@@ -134,9 +134,12 @@ Goal: comfort features that make it feel like a finished tool.
   to a config file and restored on start. *Done when:* restart preserves the
   session.
 - **P7.5 Modifier-aware key bar** — one table of every key binding, from which
-  both the bottom bar and the key handler are built; holding a modifier shows
-  the commands that modifier reaches (`Ctrl` the sort keys, `Alt` the drive
-  choosers). *Done when:* the bar follows the modifiers actually held.
+  both the bottom bar and the key handler are built; the bar keeps a slot for
+  every function key from `F1` to `F12`, evenly spread and with the key name in
+  a background of its own, and holding a modifier swaps the commands on those
+  slots for the ones that modifier reaches (`Ctrl` the sort keys, `Alt` the
+  drive choosers). *Done when:* the bar follows the modifiers actually held and
+  the key names stay put while it does.
 
 ## Phase 8 — Quality & release
 

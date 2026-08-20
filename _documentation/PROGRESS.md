@@ -17,8 +17,9 @@ a progress window that `Esc` stops. Since P7.1 the screen wears the classic
 colours: blue panels with cyan entries, a cyan cursor bar, yellow marks and a
 cyan function-key bar, and since P7.2 each panel sorts by name, extension, date
 or size in either direction, saying so in its title. P7.5 put every key binding
-into one table: the bottom bar is a row out of it, and holding `Ctrl` or `Alt`
-swaps that row for the commands those modifiers reach. Since P7.3 each panel
+into one table: the bottom bar is a fixed row of twelve slots read out of it,
+one per function key, and holding `Ctrl` or `Alt` swaps the commands on those
+slots for the ones those modifiers reach without moving a key name. Since P7.3 each panel
 also decides on its own whether the hidden entries — dotfiles and whatever the
 OS marks hidden or system — are listed at all. P7.4 closed the phase: where each
 panel stands, how it sorts and whether it conceals are written to a config file
@@ -210,14 +211,18 @@ checklist in [Cross-platform](Architecture/CROSS-PLATFORM.md).
   rows under the panels are light grey on black, and the function-key bar is
   black on cyan. Every colour is one of the sixteen ANSI ones, so a terminal
   with a limited palette shows them as they are.
-- `Ctrl+Q` or `F10` quits. The bottom bar lists the classic function keys
-  (`F3 View`, `F4 Edit`, `F5 Copy`, `F6 RenMov`, `F7 Mkdir`, `F8 Delete`,
-  `F10 Quit`) and every one of them now does its job.
-- The bar follows the modifiers being held: with `Ctrl` down it lists the sort
-  commands (`F3 Name`, `F4 Ext`, `F5 Date`, `F6 Size`), with `Alt` down the
-  root choosers and the hidden toggle (`F1 Left`, `F2 Right`, `H Hidden`),
-  and it goes back to the classic keys
-  when they are let go. A modifier no command asks for shows an empty bar.
+- `Ctrl+Q` or `F10` quits. The bottom bar keeps a slot for every function key
+  from `F1` to `F12`, the twelve sharing the width of the terminal evenly. Each
+  slot draws its key name on a black background and the command beside it on the
+  cyan one, so `F5 Copy` reads as a key and a command; a click on a slot runs it.
+  The classic commands (`F3 View`, `F4 Edit`, `F5 Copy`, `F6 RenMov`,
+  `F7 Mkdir`, `F8 Delete`, `F10 Quit`) all do their job.
+- The commands follow the modifiers being held, the key names never move: with
+  `Ctrl` down the slots read `F3 Name`, `F4 Ext`, `F5 Date`, `F6 Size`, with
+  `Alt` down `F1 Left` and `F2 Right`, and the classic commands come back when
+  they are let go. A modifier no command asks for leaves the slots empty. Keys
+  that are not function keys — `Alt+H`, `Ctrl+R`, `+`, `-` and the rest — are
+  bound but off the bar.
   Every entry can also be clicked. On Windows the modifiers are read from the
   keyboard ten times a second; elsewhere the bar stays on the classic row.
 - Quitting writes the session to `%APPDATA%\Marbas\settings.conf` (on Unix,
@@ -265,11 +270,19 @@ is no longer plan order but choice. Three things are waiting:
   key, is the fix whenever it starts to bother.
 - `Home` and `End` are swallowed at the ends of the listing rather than handled,
   which is invisible while nothing else wants them.
-- Holding `Shift` empties the function-key bar on Windows, because the modifier
-  watcher asks `KeyMap.row` for a row `Shift` has no labelled bindings on. It
-  was already so before the shift arrows existed; now that a user holds `Shift`
-  to mark a run, giving that row two labels of its own would be worth more than
-  leaving it blank.
+- Holding `Shift` leaves every slot of the function-key bar without a command on
+  Windows, because `Shift` has no labelled bindings on it. The slots stay where
+  they are, so it no longer looks like the bar disappeared — but now that a user
+  holds `Shift` to mark a run, giving that row two commands of its own would be
+  worth more than leaving it blank.
+- The bar gives each of `F1` … `F12` an equal slice of the terminal, so below
+  about ninety columns the longer commands are clipped (`Quit` reads `Qui` at
+  eighty). Shorter labels would fix the narrow case and waste the wide one; a
+  width-aware label (long name where it fits, short where it does not) is the
+  fix if it ever matters.
+- `F1`, `F2`, `F9`, `F11` and `F12` have slots and no commands, which is what
+  the reserved space is for — `F1` help and `F2` a user menu are the classic
+  fillers.
 - Whether the terminal delivers `Shift+↑` / `Shift+↓` / `Shift+PgUp` /
   `Shift+PgDn` as keys of their own is the driver's business, and no test
   reaches it — the suite injects the key. It is a manual row in

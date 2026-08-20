@@ -28,6 +28,7 @@
         <Compile Include="Ui\LiteralText.fs" />
         <Compile Include="Ui\Modifiers.fs" />
         <Compile Include="Ui\KeyMap.fs" />
+        <Compile Include="Ui\KeyBarLayout.fs" />
         <Compile Include="Ui\EntrySize.fs" />
         <Compile Include="Ui\EntryFormat.fs" />
         <Compile Include="Ui\EntryColor.fs" />

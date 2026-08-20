@@ -65,10 +65,23 @@ remembered per panel.
 
 ## The function-key bar
 
-The bottom bar always shows the classic keys (`F3 View` … `F10 Quit`). On
-Windows, holding `Ctrl` or `Alt` temporarily swaps it for the sort keys or
-the root choosers; this is a Windows-only feature (see
+The bottom bar has one slot per function key, `F1` … `F12`, sharing the width
+of the terminal evenly between them. Each slot names its key on a background
+of its own and puts the command beside it, so `F5 Copy` reads as a key and a
+command rather than as one word.
+
+The key names never move. On Windows, holding `Ctrl` or `Alt` swaps the
+*commands* for the sort keys or the root choosers while the modifier is down —
+`F3` stays `F3` and its command becomes `Name`. A modifier no command asks for
+leaves every slot empty. Held modifiers are a Windows-only feature (see
 [Cross-platform](Architecture/CROSS-PLATFORM.md#differences-that-are-meant-to-be-there)).
+
+Clicking a slot runs its command.
+
+Twelve slots want room: below about 90 columns the longer commands
+(`RenMov`, `Delete`) are clipped to fit. Only `Alt+H`, `Ctrl+H`, `Ctrl+R`,
+`Ctrl+Q`, `+`, `-`, `Insert` and the shifted arrows are off the bar altogether
+— the bar shows function keys and nothing else.
 
 `Ctrl+Q` or `F10` quits and saves the session.
 

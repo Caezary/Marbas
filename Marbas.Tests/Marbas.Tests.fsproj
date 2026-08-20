@@ -66,6 +66,7 @@
     <Compile Include="Ui\PanelTitleTests.fs" />
     <Compile Include="Ui\ModifiersTests.fs" />
     <Compile Include="Ui\KeyMapTests.fs" />
+    <Compile Include="Ui\KeyBarLayoutTests.fs" />
     <Compile Include="Ui\EditorCommandTests.fs" />
     <Compile Include="Ui\ShellTests.fs" />
   </ItemGroup>

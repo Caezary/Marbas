@@ -84,13 +84,15 @@ outright.
 
 ## Colour
 
-**Colour is four schemes in one module; the views only ask for them.**
-`ClassicScheme` holds `screen`, `panel`, `summary` and `keyBar` as
-`Terminal.Gui` `Scheme` values, and four `SetScheme` calls put them on the
-window, the two panel frames, the summary label and the status bar. Nothing
+**Colour is five schemes in one module; the views only ask for them.**
+`ClassicScheme` holds `screen`, `panel`, `summary`, `keyBar` and `keyName` as
+`Terminal.Gui` `Scheme` values, and a handful of `SetScheme` calls put them on
+the window, the two panel frames, the summary label, the bottom bar and the key
+name inside each of its slots. Nothing
 else in `Ui` mentions a colour. A scheme is inherited by every sub-view that
-has none of its own, which is why the entry list and the status line need no
-call: they take the scheme of the panel and of the window. Swapping the palette
+has none of its own, which is why the entry list, the status line and the bar's
+command labels need no call: they take the scheme of the panel, of the window
+and of the bar. Swapping the palette
 is one file, and persisting a choice of scheme would not touch a view.
 
 **Sixteen colours, on purpose.** Every attribute is built from `ColorName16`,
@@ -242,21 +244,55 @@ is what makes `_Cancel` and `_Ok` work on the dialog buttons.
 **One table holds every key, and the bar is a view of it.** `KeyMap.bindings`
 is the whole keyboard: key, an optional bar label, and the `Message` the key
 stands for. `KeyMap.messageFor` is what the panel's single `KeyDown` handler
-asks, and `KeyMap.row modifiers` is what the bottom bar draws — the labelled
-bindings whose key carries exactly those modifiers, in table order. Adding a
+asks, and `KeyMap.bar modifiers` is what the bottom bar draws. Adding a
 command is one line, and a command cannot be on the bar under one name and do
 something else when its key is pressed, because both come from the same row.
 There was a `PanelInput` module holding the panel half of this; P7.5 merged it
 into `KeyMap` and deleted it.
 
-**The bar shows keys, it no longer takes them.** Every `Shortcut` is built with
-`BindKeyToApplication <- false`, so it still renders `F5 Copy` and still answers
-to a mouse click, but the key itself is handled where every other key is — the
-`KeyDown` handler on the focused panel's `ListView`. That kills the trap that
-made `F7` unreachable from the panel, and it means a function key does nothing
-while a dialog holds focus, which is what it should do anyway. The price is that
-tests can no longer send `F5` to the window and have the bar catch it, so
-`Gui.pressKey` sends it to the panel that has focus, the way a user does.
+**The bar is twelve slots, not a list of what happens to be bound.**
+`KeyMap.bar` walks `KeyMap.functionKeys` — `F1` … `F12`, in order — applies the
+held modifiers to each with `Modifiers.apply` and looks the result up in
+`bindings`. It always answers twelve `BarSlot`s: a name (`F1` … `F12`), the
+key the modifiers make of it, the command's label or `""`, and the `Message` or
+`None`. A slot's label and its message come out of the same lookup, so a slot
+cannot show a command it would not run. `Modifiers.apply` is the inverse of
+`Modifiers.ofKey`, which is what makes "the `Ctrl` row" mean `Ctrl` laid on
+every function key rather than a filter over the table.
+
+**Only a function key carries a label, because only a function key has a
+place.** `Alt+H` used to be labelled `Hidden` and rode the `Alt` row; the bar
+now has no slot to put it in, so it is `offBar` like `Ctrl+H` and `Ctrl+R`. A
+test asserts that every labelled binding is some function key with modifiers on
+it, so a label on a key with nowhere to go fails the suite rather than
+disappearing quietly.
+
+**Where the slots sit is arithmetic, and the arithmetic is its own module.**
+`KeyBarLayout.cell count index width` answers `{ X; Width }` from
+`index * width / count` — proportional division, so the remainder is spread
+along the row instead of heaped on one end and no two slots differ by more than
+a column. `FunctionKeyBar` hands it to `Pos.Func`/`Dim.Func` against the bar's
+own `Viewport.Width`, which is re-evaluated on every layout pass, so a resized
+terminal re-tiles without a handler of its own.
+
+**Two backgrounds means two views, which is also what makes it testable.** A
+slot is a `SlotView` holding a `Label` for the key name — wearing
+`ClassicScheme.keyName`, white on black — and a `Label` for the command, which
+inherits the bar's `keyBar`, black on cyan. Painting one line in two attributes
+by hand would have been fewer views and unassertable: there is no driver in a
+test, so what a test can read back is a view's `Scheme`, not a cell. Because the
+names never change, `FunctionKeyBar.show` only writes the command labels and the
+messages; the slots themselves are built once.
+
+**The bar shows keys, it does not take them.** It is a plain `View` with no key
+bindings at all, so `F5` is handled where every other key is — the `KeyDown`
+handler on the focused panel's `ListView`. That kills the trap that made `F7`
+unreachable from the panel, and it means a function key does nothing while a
+dialog holds focus, which is what it should do anyway. The price is that tests
+can no longer send `F5` to the window and have the bar catch it, so
+`Gui.pressKey` sends it to the panel that has focus, the way a user does. The
+mouse is the one input the bar does own: a left click on a slot, or on either of
+its labels, dispatches whatever `Message` the slot is currently carrying.
 
 **Held modifiers are polled, because the driver will not report them.**
 Terminal.Gui 2.4.17 has the vocabulary for it — `Key.IsModifierOnly`,
@@ -272,9 +308,17 @@ classic row. Everything above the port — which row a set of modifiers means,
 what the bar then shows — is ordinary tested code, because tests call the
 captured callback themselves.
 
-**A row is what the table says, empty included.** Holding `Shift` shows an empty
-bar, because no command is bound to `Shift`. Falling back to the classic row
-would say that `Shift+F5` copies, which it does not.
+**A row is what the table says, empty included.** Holding `Shift` leaves every
+slot without a command, because no command is bound to a shifted function key.
+Falling back to the classic row would say that `Shift+F5` copies, which it does
+not. The slots stay where they are while it happens, so the bar reads as twelve
+keys with nothing on them rather than as a bar that vanished.
+
+**Twelve slots want a wide terminal, and clipping is the honest answer.**
+`F10` plus a command in one twelfth of eighty columns leaves three characters,
+so `Quit` is drawn as `Qui` there; from about ninety columns every label fits.
+Shortening the labels would buy the narrow case at the cost of the wide one,
+and the bar is meant to be read at the width a file manager is actually run at.
 
 **A trap already hit.** An F# list literal that mixes plain elements with a
 `for … -> …` comprehension keeps only what the comprehension yields; the plain

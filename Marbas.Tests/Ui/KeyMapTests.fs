@@ -7,58 +7,62 @@ open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Ui
 
-[<Fact>]
-let ``the bar row of no modifier is the classic function key strip`` () =
-    let row = KeyMap.row Modifiers.none
+let private commandsOn modifiers = KeyMap.bar modifiers |> List.map _.Label
 
-    Assert.Equal<(Key * string * Message) list>(
-        [ Key.F3, "View", ViewRequested
-          Key.F4, "Edit", EditRequested
-          Key.F5, "Copy", CopyRequested
-          Key.F6, "RenMov", MoveRequested
-          Key.F7, "Mkdir", MakeDirectoryRequested
-          Key.F8, "Delete", DeleteRequested
-          Key.F10, "Quit", QuitRequested ],
-        row
+[<Fact>]
+let ``the bar names every function key, whatever is held`` () =
+    let names = KeyMap.bar (Modifiers.held [ Shift ]) |> List.map _.Name
+
+    Assert.Equal<string list>(
+        [ "F1"; "F2"; "F3"; "F4"; "F5"; "F6"; "F7"; "F8"; "F9"; "F10"; "F11"; "F12" ],
+        names
     )
 
 [<Fact>]
-let ``the Ctrl row is the sort commands`` () =
-    let row = KeyMap.row (Modifiers.held [ Ctrl ])
+let ``the bar of no modifier carries the classic commands`` () =
+    let commands = commandsOn Modifiers.none
 
-    Assert.Equal<(Key * string * Message) list>(
-        [ Key.F3.WithCtrl, "Name", SortRequested SortKey.ByName
-          Key.F4.WithCtrl, "Ext", SortRequested SortKey.ByExtension
-          Key.F5.WithCtrl, "Date", SortRequested SortKey.ByDate
-          Key.F6.WithCtrl, "Size", SortRequested SortKey.BySize ],
-        row
+    Assert.Equal<string list>(
+        [ ""; ""; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; ""; "" ],
+        commands
     )
 
 [<Fact>]
-let ``the Alt row is the drive choosers and the hidden toggle`` () =
-    let row = KeyMap.row (Modifiers.held [ Alt ])
+let ``holding Ctrl puts the sort commands on the same slots`` () =
+    let commands = commandsOn (Modifiers.held [ Ctrl ])
 
-    Assert.Equal<(Key * string * Message) list>(
-        [ Key.F1.WithAlt, "Left", RootRequested Left
-          Key.F2.WithAlt, "Right", RootRequested Right
-          Key.H.WithAlt, "Hidden", HiddenToggled ],
-        row
-    )
+    Assert.Equal<string list>([ ""; ""; "Name"; "Ext"; "Date"; "Size"; ""; ""; ""; ""; ""; "" ], commands)
 
 [<Fact>]
-let ``a modifier no command asks for has an empty row`` () =
-    let row = KeyMap.row (Modifiers.held [ Shift ])
+let ``holding Alt puts the drive choosers on the first two slots`` () =
+    let commands = commandsOn (Modifiers.held [ Alt ])
 
-    Assert.Empty row
+    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; ""; ""; ""; ""; ""; ""; "" ], commands)
 
 [<Fact>]
-let ``every command on a row answers to its own key`` () =
-    let rows =
-        [ Modifiers.none; Modifiers.held [ Ctrl ]; Modifiers.held [ Alt ] ]
-        |> List.collect KeyMap.row
+let ``a modifier no command asks for leaves every slot without one`` () =
+    let commands = commandsOn (Modifiers.held [ Shift ])
 
-    for key, _, message in rows do
-        Assert.Equal(Some message, KeyMap.messageFor key)
+    Assert.Equal<string list>(List.replicate 12 "", commands)
+
+[<Fact>]
+let ``a slot carries the key the modifiers held make of its function key`` () =
+    let keys = KeyMap.bar (Modifiers.held [ Ctrl ]) |> List.map _.Key
+
+    Assert.Equal<Key list>(KeyMap.functionKeys |> List.map _.WithCtrl, keys)
+
+[<Fact>]
+let ``a slot carries what its own key stands for`` () =
+    for modifiers in [ Modifiers.none; Modifiers.held [ Ctrl ]; Modifiers.held [ Alt ]; Modifiers.held [ Shift ] ] do
+        for slot in KeyMap.bar modifiers do
+            Assert.Equal(KeyMap.messageFor slot.Key, slot.Message)
+
+[<Fact>]
+let ``a slot with no command carries no message`` () =
+    let unlabelled = KeyMap.bar Modifiers.none |> List.filter (fun slot -> slot.Label = "")
+
+    Assert.NotEmpty unlabelled
+    Assert.All(unlabelled, fun slot -> Assert.Equal(None, slot.Message))
 
 [<Fact>]
 let ``no key stands for two commands`` () =
@@ -132,13 +136,26 @@ let ``every hidden key toggles the hidden entries`` () =
         Assert.Equal(Some HiddenToggled, message)
 
 [<Fact>]
-let ``the classic hidden key is off the bar, because a VT terminal cannot send it`` () =
+let ``both hidden keys are off the bar, because neither is a function key`` () =
     let labelled =
         KeyMap.bindings
         |> List.filter (fun binding -> binding.Message = HiddenToggled && binding.Label.IsSome)
+
+    Assert.Empty labelled
+
+[<Fact>]
+let ``only a function key is labelled, because the bar holds nothing else`` () =
+    let labelled =
+        KeyMap.bindings
+        |> List.filter (fun binding -> binding.Label.IsSome)
         |> List.map _.Key
 
-    Assert.Equal<Key list>([ Key.H.WithAlt ], labelled)
+    let isFunctionKey (key: Key) =
+        KeyMap.functionKeys
+        |> List.exists (fun functionKey -> Modifiers.apply (Modifiers.ofKey key) functionKey = key)
+
+    Assert.NotEmpty labelled
+    Assert.All(labelled, fun key -> Assert.True(isFunctionKey key, string key))
 
 [<Fact>]
 let ``the quit key requests a quit, so quitting always passes through the state`` () =

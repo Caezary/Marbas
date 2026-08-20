@@ -47,3 +47,11 @@ let keyBar =
         Focus = attribute ColorName16.Black ColorName16.Cyan,
         HotFocus = attribute ColorName16.White ColorName16.Cyan
     )
+
+let keyName =
+    Scheme(
+        Normal = attribute ColorName16.White ColorName16.Black,
+        HotNormal = attribute ColorName16.White ColorName16.Black,
+        Focus = attribute ColorName16.White ColorName16.Black,
+        HotFocus = attribute ColorName16.White ColorName16.Black
+    )

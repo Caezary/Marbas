@@ -59,12 +59,26 @@ let ``the function key bar is black on cyan`` () =
     Assert.Equal(attribute ColorName16.Black ColorName16.Cyan, normal)
 
 [<Fact>]
+let ``a key name on the bar is white on black, so it parts from its command`` () =
+    let normal = ClassicScheme.keyName.Normal
+
+    Assert.Equal(attribute ColorName16.White ColorName16.Black, normal)
+
+[<Fact>]
+let ``a key name and its command do not share a background`` () =
+    let name = ClassicScheme.keyName.Normal
+    let command = ClassicScheme.keyBar.Normal
+
+    Assert.NotEqual(command.Background, name.Background)
+
+[<Fact>]
 let ``every chosen colour is one of the sixteen ansi colours`` () =
     let schemes =
         [ ClassicScheme.screen
           ClassicScheme.panel
           ClassicScheme.summary
-          ClassicScheme.keyBar ]
+          ClassicScheme.keyBar
+          ClassicScheme.keyName ]
 
     let colours =
         schemes

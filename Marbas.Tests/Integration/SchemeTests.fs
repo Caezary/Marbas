@@ -54,3 +54,12 @@ let ``the function key bar wears the key bar scheme`` () =
     let scheme = (panel FunctionKeyBar.Id window).GetScheme()
 
     Assert.Equal(ClassicScheme.keyBar, scheme)
+
+[<Fact>]
+let ``a key name wears a scheme of its own, so it stands apart from its command`` () =
+    use window = createInitialized ()
+
+    let slot = FunctionKeyBar.slots (panel FunctionKeyBar.Id window) |> List.head
+
+    Assert.Equal(ClassicScheme.keyName, slot.KeyName.GetScheme())
+    Assert.Equal(ClassicScheme.keyBar, slot.CommandName.GetScheme())

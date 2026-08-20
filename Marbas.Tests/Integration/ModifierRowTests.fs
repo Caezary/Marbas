@@ -2,7 +2,7 @@ module Marbas.Tests.Integration.ModifierRowTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
-open Terminal.Gui.Views
+open Terminal.Gui.Input
 open Marbas.Ui
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
@@ -28,22 +28,24 @@ let private watchedWindow () =
 
     window, hold
 
-let private labels window =
-    (panel FunctionKeyBar.Id window).SubViews
-    |> Seq.choose (function
-        | :? Shortcut as shortcut -> Some shortcut.Title
-        | _ -> None)
-    |> List.ofSeq
+let private slots window = FunctionKeyBar.slots (panel FunctionKeyBar.Id window)
+
+let private commands window = slots window |> List.map _.CommandName.Text
+
+let private names window = slots window |> List.map _.KeyName.Text
+
+let private functionKeys =
+    [ "F1"; "F2"; "F3"; "F4"; "F5"; "F6"; "F7"; "F8"; "F9"; "F10"; "F11"; "F12" ]
 
 let private classic =
-    [ "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; "Quit" ]
+    [ ""; ""; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; ""; "" ]
 
 [<Fact>]
 let ``the bar starts on the classic function keys`` () =
     let window, _ = watchedWindow ()
     use window = window
 
-    Assert.Equal<string list>(classic, labels window)
+    Assert.Equal<string list>(classic, commands window)
 
 [<Fact>]
 let ``holding Ctrl turns the bar into the sort commands`` () =
@@ -52,7 +54,7 @@ let ``holding Ctrl turns the bar into the sort commands`` () =
 
     hold (Modifiers.held [ Ctrl ])
 
-    Assert.Equal<string list>([ "Name"; "Ext"; "Date"; "Size" ], labels window)
+    Assert.Equal<string list>([ ""; ""; "Name"; "Ext"; "Date"; "Size"; ""; ""; ""; ""; ""; "" ], commands window)
 
 [<Fact>]
 let ``letting Ctrl go brings the classic keys back`` () =
@@ -62,38 +64,46 @@ let ``letting Ctrl go brings the classic keys back`` () =
 
     hold Modifiers.none
 
-    Assert.Equal<string list>(classic, labels window)
+    Assert.Equal<string list>(classic, commands window)
 
 [<Fact>]
-let ``holding Alt shows the drive choosers and the hidden toggle`` () =
+let ``holding Alt shows the drive choosers`` () =
     let window, hold = watchedWindow ()
     use window = window
 
     hold (Modifiers.held [ Alt ])
 
-    Assert.Equal<string list>([ "Left"; "Right"; "Hidden" ], labels window)
+    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; ""; ""; ""; ""; ""; ""; "" ], commands window)
 
 [<Fact>]
-let ``a modifier no command asks for empties the bar`` () =
+let ``a modifier no command asks for leaves the slots standing and empty`` () =
     let window, hold = watchedWindow ()
     use window = window
 
     hold (Modifiers.held [ Shift ])
 
-    Assert.Empty(labels window)
+    Assert.Equal<string list>(List.replicate 12 "", commands window)
 
 [<Fact>]
-let ``the keys of the row on show carry their commands`` () =
+let ``a key keeps its name whatever modifier is held`` () =
+    let window, hold = watchedWindow ()
+    use window = window
+
+    for modifiers in [ Modifiers.held [ Ctrl ]; Modifiers.held [ Alt ]; Modifiers.held [ Shift ]; Modifiers.none ] do
+        hold modifiers
+
+        Assert.Equal<string list>(functionKeys, names window)
+
+[<Fact>]
+let ``the slots on show carry the commands of the modifiers held`` () =
     let window, hold = watchedWindow ()
     use window = window
 
     hold (Modifiers.held [ Ctrl ])
 
-    let keys =
-        (panel FunctionKeyBar.Id window).SubViews
-        |> Seq.choose (function
-            | :? Shortcut as shortcut -> Some shortcut.Key
-            | _ -> None)
-        |> List.ofSeq
+    let carried = slots window |> List.map _.Message
 
-    Assert.Equal<Terminal.Gui.Input.Key list>(KeyMap.row (Modifiers.held [ Ctrl ]) |> List.map (fun (key, _, _) -> key), keys)
+    Assert.Equal<Marbas.State.Update.Message option list>(
+        KeyMap.bar (Modifiers.held [ Ctrl ]) |> List.map _.Message,
+        carried
+    )
