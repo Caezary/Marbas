@@ -44,7 +44,10 @@ Marbas/
     Roots.fs              where a panel can be sent: drives, or root and home
     NamePattern.fs        wildcard matching for `+` / `-`
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
-    FileContent.fs        one file's content: text lines or bytes, errors as values
+    ContentError.fs       what can go wrong reading a file, as values
+    TextEncoding.fs       which encoding a file carries, from its mark or its bytes
+    FileWindow.fs         a file held open, read one byte range at a time
+    LineIndex.fs          line starts scanned forward on demand, and the line at one
   State/
     AppState.fs           immutable panel/app state and its transitions,
                           built from and read back as Settings
@@ -67,8 +70,12 @@ Marbas/
     PanelFooter.fs         panel state -> the one line under the rule
     CursorInfo.fs           cursor entry -> status line text
     StatusLine.fs           the status line view
-    HexDump.fs             bytes -> offset / hex / text rows
-    FileView.fs             file content -> the lines the viewer shows
+    HexDump.fs             bytes at an offset -> one offset / hex / text row
+    ViewerMode.fs           text or hex, wrapped or not
+    PrintableText.fs        a decoded line -> what a terminal can show of it
+    LineWrap.fs             a line -> the rows it takes, or the window shown of it
+    ViewerScroll.fs         clamped scrolling, how many lines fill a page, percent
+    ViewerHeader.fs         name, mode, encoding, size, place -> the viewer's top bar
     ListingErrorMessage.fs  ListingError -> user-facing text
     ContentErrorMessage.fs  ContentError -> user-facing text
     OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
@@ -77,11 +84,12 @@ Marbas/
     PanelTitle.fs           path and sort order -> the panel frame's title
     FilePanel.fs             panel views, render state -> view
     FunctionKeyBar.fs       bottom bar: a slot per function key, F1 to F12
+    ViewerKeys.fs           the viewer's own key table and its twelve bar labels
     Shell.fs                 Dependencies and the effect interpreter
     PromptDialog.fs         single-field text prompt (label + default)
     PatternDialog.fs         the `+` / `-` pattern prompt, over PromptDialog
     ProgressDialog.fs       the window shown while a batch runs
-    FileViewer.fs             the full-screen read-only viewer behind `F3`
+    FileViewer.fs             the full-screen viewer behind `F3`: header, rows, bar
     EditorCommand.fs        which editor `F4` starts, per platform and `$EDITOR`
     MainWindow.fs             composition: views, runtime, event wiring
   Program.fs              real file system and real dialogs

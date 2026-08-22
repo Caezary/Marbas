@@ -326,3 +326,39 @@ elements become ignored statements. `KeyMap.bindings` lost every function key
 that way and only the two selection keys survived, which looked like a broken
 key handler. The compiler does say so (`FS0020`) — the warning was there to be
 read.
+
+## The viewer's own screen
+
+**The viewer is a screen, not a dialog.** `F3` runs a second `Window` with
+`BorderStyle = LineStyle.None`, exactly the way the main screen is built, so it
+covers the terminal edge to edge with no frame to eat four columns and no title
+bar to repeat what the header already says. Row 0 is the header, the last row is
+a key bar, and everything between is the content.
+
+**Its key table is its own.** `ViewerKeys` is a second, much smaller `KeyMap`:
+the arrows move by a line, `PgUp`/`PgDn` by a page, `Home`/`End` reach the ends
+of the file, the side arrows move across a long line — a column at a time, a
+screen at a time with `Ctrl` held — `F2` wraps, `F4` switches to the hex dump
+and back, and `F3`, `F10` and `Esc` leave. Nothing is bound to the panel's
+table while the viewer is up, because the viewer's content view is what holds
+focus and keys do not bubble.
+
+**Both bars are the same bar.** `FunctionKeyBar.build` makes the twelve-slot
+row — the proportional layout, the two schemes, the `SlotView`s — and both the
+panel bar and the viewer bar are built from it; `show` fills the panel's slots
+from `KeyMap`, `label` fills the viewer's from `ViewerKeys.bar`, which asks for
+the mode and the wrap so `F4` reads `Hex` in text and `Text` in hex.
+
+**The content view draws itself, because nothing in the toolkit fits.**
+`TextView` was deprecated in 2.4.17, and it was the wrong shape anyway: it owns
+a document, and the point of the viewer is to own nothing and read the file
+through a window. `ContentView` overrides `OnDrawingContent` and paints the
+rows of the current viewport, padded to the width so the row beneath is erased
+without a clear. Because the rows come from `Rows()`, which a test can call,
+scrolling, wrapping and the hex switch are all assertable without a driver.
+
+**Wrapping moves by whole lines.** With `F2` on, one line can take several
+rows, but the top of the screen is always the start of a line — a page down
+advances by however many lines the screen held (`ViewerScroll.filling`), not by
+a row count. That keeps the line index the one measure of position, and it is
+what a wrapped page up and a percentage in the header are both counted from.

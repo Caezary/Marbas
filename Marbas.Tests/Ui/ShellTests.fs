@@ -327,11 +327,18 @@ let ``a rename is carried out and its outcome dispatched back`` () =
     Assert.Equal<Message list>([ RenameFinished(en "readme.txt", Ok()) ], List.ofSeq sent)
 
 [<Fact>]
-let ``a viewed file is handed over under its own path with its lines`` () =
+let ``a viewed file is handed over opened under its own path`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "start/notes.txt", MockFileData "first\r\nsecond")
     let mutable shown = ("", [])
-    let deps = { noDeps () with FileSystem = fs; ShowFile = fun title lines -> shown <- (title, lines) }
+
+    let readOut (source: FileWindow.Source) =
+        let index = LineIndex.Index source
+        index.ScanAll()
+        let lines = [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
+        shown <- (FileSystemPath.value source.Path, lines)
+
+    let deps = { noDeps () with FileSystem = fs; ShowFile = readOut }
 
     Shell.interpret deps ignore (ViewFile(fp (at "start/notes.txt")))
 
@@ -345,7 +352,7 @@ let ``a file that cannot be read is reported instead of shown`` () =
 
     let deps =
         { noDeps () with
-            ShowFile = fun _ _ -> shown <- true
+            ShowFile = fun _ -> shown <- true
             ReportError = fun title message -> reported <- (title, message) }
 
     Shell.interpret deps ignore (ViewFile(fp (at "start/gone.txt")))

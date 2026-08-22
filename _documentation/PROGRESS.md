@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-08-20. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-22. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
@@ -40,7 +40,14 @@ unmarks an entry per step, in the direction of the arrow, and a shifted page
 key does the same to the whole page at once. **A third round fixed two things
 about names carrying an underscore**: they now sort where a file manager puts
 them — first, ahead of the letters — and they are drawn with the underscore in
-them, which Terminal.Gui had been reading as a hot key marker.
+them, which Terminal.Gui had been reading as a hot key marker. **A fourth round
+rebuilt the file viewer.** It had buffered the whole file, capped it at a
+megabyte, called every UTF-16 file a binary, taken the page keys but not the
+arrows, and rested on a `TextView` that 2.4.17 deprecated. It is now a
+frameless full-screen window that reads only the rows it shows, over a file held
+open and a line index scanned forward on demand; it settles the encoding before
+deciding anything, always opens as text, and puts wrapping and the hex dump on
+`F2` and `F4`.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -193,12 +200,20 @@ checklist in [Cross-platform](Architecture/CROSS-PLATFORM.md).
   was interrupted never deletes its source. Every overwrite question is
   answered before the work starts, so nothing can block waiting for the user.
 - `F3` opens the file under the cursor — only that one, never the marked
-  entries — in a read-only, scrollable viewer titled with its path, which `F3`
-  or `Esc` closes. A directory or `..` under the cursor opens nothing. Text is
-  shown line by line whatever its line endings; a file holding a zero byte is
-  shown as a hex dump instead; only the first megabyte is read, and a file
-  longer than that says so on its last line. A file that cannot be read (it
-  vanished, or the OS refused) is reported in a dialog.
+  entries — in a viewer that covers the whole terminal without a frame. The top
+  row names the file, says whether it is showing text or a hex dump, which
+  encoding it read, how many bytes the file holds, which line the screen starts
+  on and how far into the file that is; the bottom row is the same twelve-slot
+  key bar the panels wear, filled with the viewer's own commands. The arrows
+  move by a line, `PgUp`/`PgDn` by a page, `Home`/`End` reach the ends, the side
+  arrows move across a long line (a screen at a time with `Ctrl` held), `F2`
+  wraps and unwraps, `F4` switches to the hex dump and back at the same place in
+  the file, and `F3`, `F10` or `Esc` closes. A directory or `..` under the
+  cursor opens nothing. Nothing is read but the rows on screen, so a file of any
+  size opens at once and there is no length limit; the encoding is settled from
+  the byte order mark, the zero-byte pattern of UTF-16, or whether the bytes are
+  valid UTF-8, falling back to Latin-1. A file that cannot be read (it vanished,
+  or the OS refused) is reported in a dialog.
 - `F4` opens the same file — the one under the cursor — in the system editor:
   whatever `$EDITOR` names, otherwise `notepad` on Windows and `vi` elsewhere.
   Marbas waits for the editor to close, then re-reads the panel with the cursor
@@ -297,11 +312,19 @@ is no longer plan order but choice. Three things are waiting:
   files therefore queues thousands of callbacks; if that ever stutters, the fix
   is to coalesce (keep the latest path in a field and refresh on a timer)
   rather than to report less.
-- The viewer is opened by `Shell` through the `ShowFile` port, so the modal
-  run itself (`app.Run dialog` in `Program.fs`) is only exercised by running
+- The viewer is opened by `Shell` through the `ShowFile` port, which now hands
+  over an opened `FileWindow.Source` rather than a list of lines, so the modal
+  run itself (`app.Run viewer` in `Program.fs`) is only exercised by running
   the app — the same blind spot the progress dialog has. What the tests do
-  cover is that the viewer takes `F3`/`Esc` for itself before anything else
-  sees them.
+  cover is every key the viewer takes and every row it would draw.
+- The viewer shows one encoding per file and offers no way to override it. Where
+  detection has to guess — a byte order mark is missing and the bytes are not
+  valid UTF-8 — it says Latin-1 and renders every byte, which is readable but
+  wrong for a single-byte code page that is not Latin-1. A key that cycles the
+  encoding would be a small addition to `ViewerKeys` and `ContentView`.
+- A single line longer than `LineIndex.MaxLineLength` (a megabyte) is cut there.
+  Nothing in a viewer can show more of one line than a screen holds, but
+  scrolling right past that point stops rather than going on.
 - `F4` starts the editor as a child process sharing this terminal and only
   forces a redraw (`ClearScreenNextIteration`) when it returns. A windowed
   editor — `notepad`, VS Code — round-trips cleanly. A full-screen console
@@ -316,9 +339,9 @@ is no longer plan order but choice. Three things are waiting:
   cyan — needs the `RowRender` event, which hands over the row number and takes
   a `RowAttribute` that overrides the role. It is one handler in `FilePanel`
   whenever it starts to bother.
-- Dialogs, message boxes and the `F3` viewer keep Terminal.Gui's own theme; only
-  the main screen wears the classic colours. They are five separate surfaces
-  (`PromptDialog`, `PatternDialog`, `ProgressDialog`, `FileViewer`, `MessageBox`)
+- Dialogs and message boxes keep Terminal.Gui's own theme; the main screen and
+  the `F3` viewer wear the classic colours. The remaining four surfaces
+  (`PromptDialog`, `PatternDialog`, `ProgressDialog`, `MessageBox`) are separate
   and colouring one without the rest would look worse than colouring none.
 - The modifier row only appears on Windows. `WatchModifiers` registers nothing
   elsewhere, because no Unix driver in Terminal.Gui 2.4.17 reports a standalone

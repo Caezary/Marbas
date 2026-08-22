@@ -38,7 +38,7 @@ type Dependencies =
       AskName: string -> string option
       AskTarget: string -> string -> string option
       Confirm: string -> string -> bool
-      ShowFile: string -> string list -> unit
+      ShowFile: FileWindow.Source -> unit
       RunEditor: FileSystemPath -> Result<unit, Operations.OperationError>
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
       WatchModifiers: (Set<Modifier> -> unit) -> unit
@@ -78,8 +78,10 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         |> fun outcome -> RenameFinished(newName, outcome)
         |> dispatch
     | ViewFile path ->
-        match FileContent.read deps.FileSystem path with
-        | Ok content -> deps.ShowFile (FileSystemPath.value path) (FileView.lines content)
+        match FileWindow.openFile deps.FileSystem path with
+        | Ok source ->
+            use source = source
+            deps.ShowFile source
         | Error error -> deps.ReportError ContentErrorMessage.Title (ContentErrorMessage.describe error)
     | EditFile path -> deps.RunEditor path |> EditFinished |> dispatch
     | PromptForTarget suggestion ->

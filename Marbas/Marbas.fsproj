@@ -11,6 +11,8 @@
     <ItemGroup>
         <Compile Include="FileSystem\EntryName.fs" />
         <Compile Include="FileSystem\FileSystemPath.fs" />
+        <Compile Include="FileSystem\ContentError.fs" />
+        <Compile Include="FileSystem\TextEncoding.fs" />
         <Compile Include="FileSystem\SortOrder.fs" />
         <Compile Include="FileSystem\HiddenEntries.fs" />
         <Compile Include="FileSystem\Executability.fs" />
@@ -20,7 +22,8 @@
         <Compile Include="FileSystem\Roots.fs" />
         <Compile Include="FileSystem\NamePattern.fs" />
         <Compile Include="FileSystem\Operations.fs" />
-        <Compile Include="FileSystem\FileContent.fs" />
+        <Compile Include="FileSystem\FileWindow.fs" />
+        <Compile Include="FileSystem\LineIndex.fs" />
         <Compile Include="State\AppState.fs" />
         <Compile Include="State\Update.fs" />
         <Compile Include="State\Runtime.fs" />
@@ -38,7 +41,12 @@
         <Compile Include="Ui\CursorInfo.fs" />
         <Compile Include="Ui\StatusLine.fs" />
         <Compile Include="Ui\HexDump.fs" />
-        <Compile Include="Ui\FileView.fs" />
+        <Compile Include="Ui\ViewerMode.fs" />
+        <Compile Include="Ui\PrintableText.fs" />
+        <Compile Include="Ui\LineWrap.fs" />
+        <Compile Include="Ui\ViewerScroll.fs" />
+        <Compile Include="Ui\ViewerHeader.fs" />
+        <Compile Include="Ui\ViewerKeys.fs" />
         <Compile Include="Ui\ListingErrorMessage.fs" />
         <Compile Include="Ui\ContentErrorMessage.fs" />
         <Compile Include="Ui\OperationErrorMessage.fs" />

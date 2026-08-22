@@ -86,31 +86,52 @@ is marked. Viewing and editing are a different act: each opens one file, so
 both read `AppState.cursorFilePath`, which also filters out directories and
 `..`. There is nothing to view or edit for a directory, so nothing happens.
 
-**Reading a file answers what it is, not what it looks like.**
-`FileContent.read` hands back a `Content` — a `ContentBody` that is either
-`Text` lines or the raw `Binary` bytes, plus a `ContentExtent` saying whether
-the file fits in what was read. Which of the two it is comes from one rule: a
-zero byte anywhere in what was read means binary, because text encodings do not
-carry one. Turning that into rows on a screen is Ui's job — `HexDump.describe`
-formats bytes as offset / hex / text, `FileView.lines` picks between the two
-bodies and appends the truncation notice. `FileSystem` therefore stays free of
-formatting and the hex layout can be tested without a terminal.
+**The viewer never reads a file whole.** `F3` opens a file, it does not load
+one. `FileWindow.openFile` keeps the stream open behind a `Source` that answers
+one byte range at a time, and the only thing read up front is a probe of
+`TextEncoding.ProbeLength` bytes, which settles the encoding. Everything after
+that is pulled as it is needed: the viewer asks for the rows its viewport shows
+and nothing else, so a gigabyte opens as fast as a kilobyte and there is no size
+limit and no truncation notice to write.
 
-**The viewer reads at most a megabyte.** A file manager is pointed at whatever
-is under the cursor, disk images included, so `read` opens a stream, takes
-`FileContent.MaxBytes` at most and answers `Truncated` when there was more.
-That keeps `F3` from pulling gigabytes into memory on the UI thread. The
-notice on the last line is what tells the user they are not seeing everything.
+**Where a line begins is scanned forward, never indexed up front.**
+`LineIndex.Index` holds the byte offset of every line start it has seen and
+scans on in `ChunkLength` steps only when asked for a line it has not reached.
+Opening a file of a hundred thousand lines therefore indexes one chunk, not the
+file. `ScanAll` is the one call that reads to the end, and only `End` makes it.
+The scan works in the encoding's own code units, so a line feed in UTF-16 is
+`0A 00` and not a stray byte, and the byte order mark is skipped as a preamble
+rather than shown as content.
+
+**The encoding decides, the content does not.** The old rule — a zero byte
+anywhere means binary — turned every UTF-16 file into a hex dump, which is what
+Windows PowerShell's `>` writes. So the order is now the other way round:
+`TextEncoding.detect` reads the mark, falls back to a zero-byte pattern that
+only UTF-16 makes, then to whether the probe is valid UTF-8, and last to
+Latin-1, which maps every byte to a character and so can render anything. A
+file always opens as text; `F4` switches to the hex dump and back, and the
+switch keeps the place by going through the byte offset — the line's start
+offset becomes a dump row, a dump row's offset becomes the line holding it.
+Nothing guesses on the user's behalf and nothing is unreachable.
+
+**Formatting stays pure, and so does the scrolling.** `HexDump.row` renders one
+row at an absolute offset, `PrintableText.describe` turns tabs and control
+characters into something a terminal can draw, `LineWrap` cuts a line into the
+rows it takes or the window shown of it, `ViewerScroll` clamps a move and
+measures how many lines fill a page, and `ViewerHeader.describe` lays the top
+bar out to a width. `FileViewer.ContentView` holds the mutable place — mode,
+wrap, top row, left column — and exposes `Rows()`, the very list it draws, so
+a test asserts on what the screen would show without a driver painting one.
 
 **Closing the viewer is injected, because `RequestStop` needs a running app.**
-`Runnable.RequestStop` does nothing unless the dialog is being run by an
+`Runnable.RequestStop` does nothing unless the window is being run by an
 application, so a test cannot observe it. `FileViewer.create` therefore takes
 the closing action as its first argument — `Program.fs` passes
 `_.RequestStop()`, the tests pass a recorder — which leaves "F3 and Esc close
 the viewer, other keys do not" as an ordinary assertion. The key handler sits
-on the `TextView` because that is the view holding focus, and it marks the key
-handled so the `F3` shortcut on the main window's status bar cannot reopen a
-viewer on top of the one being closed.
+on the content view because that is the view holding focus, and it marks the
+key handled so the `F3` binding on the main window cannot reopen a viewer on
+top of the one being closed.
 
 **The editor is a port, and its failure is an operation failure.**
 `Dependencies.RunEditor` takes the path and answers

@@ -33,6 +33,26 @@ let slots (bar: View) =
         | _ -> None)
     |> List.ofSeq
 
+let build id (names: string list) =
+    let bar =
+        new View(Id = id, Y = Pos.AnchorEnd 1, Width = Dim.Fill(), Height = 1)
+
+    bar.SetScheme ClassicScheme.keyBar |> ignore
+    let count = List.length names
+
+    names
+    |> List.iteri (fun index name ->
+        let slot = new SlotView(name)
+        slot.X <- Pos.Func((fun (view: View) -> (KeyBarLayout.cell count index view.Viewport.Width).X), bar)
+        slot.Width <- Dim.Func((fun (view: View) -> (KeyBarLayout.cell count index view.Viewport.Width).Width), bar)
+        bar.Add slot |> ignore)
+
+    bar
+
+let label (bar: View) (labels: string list) =
+    List.iter2 (fun (view: SlotView) text -> view.CommandName.Text <- text) (slots bar) labels
+    bar.SetNeedsDraw()
+
 let show (bar: View) modifiers =
     List.iter2
         (fun (view: SlotView) (slot: KeyMap.BarSlot) ->
@@ -54,18 +74,10 @@ let private dispatching (dispatch: Message -> unit) (slot: SlotView) =
 
 let create (dispatch: Message -> unit) =
     let bar =
-        new View(Id = Id, Y = Pos.AnchorEnd 1, Width = Dim.Fill(), Height = 1)
+        KeyMap.bar Modifiers.none |> List.map _.Name |> build Id
 
-    bar.SetScheme ClassicScheme.keyBar |> ignore
-    let count = List.length KeyMap.functionKeys
-
-    KeyMap.bar Modifiers.none
-    |> List.iteri (fun index barSlot ->
-        let slot = new SlotView(barSlot.Name)
-        slot.X <- Pos.Func((fun (view: View) -> (KeyBarLayout.cell count index view.Viewport.Width).X), bar)
-        slot.Width <- Dim.Func((fun (view: View) -> (KeyBarLayout.cell count index view.Viewport.Width).Width), bar)
+    for slot in slots bar do
         dispatching dispatch slot
-        bar.Add slot |> ignore)
 
     show bar Modifiers.none
     bar

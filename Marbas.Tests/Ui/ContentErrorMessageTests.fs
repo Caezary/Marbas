@@ -2,7 +2,6 @@ module Marbas.Tests.Ui.ContentErrorMessageTests
 
 open Xunit
 open Marbas.FileSystem
-open Marbas.FileSystem.FileContent
 open Marbas.Ui
 open Marbas.Tests
 

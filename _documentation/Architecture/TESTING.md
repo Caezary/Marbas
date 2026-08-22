@@ -275,10 +275,13 @@ has to close itself therefore takes the closing action as an argument
 (`FileViewer.create close …`), which a test can record and `Program.fs` fills
 in with `_.RequestStop()`.
 
-**A `TextView` lets its `KeyDown` handlers see `Esc` and function keys**, and
-normalises the text it is given: lines joined with `\n` come back joined with
-`Environment.NewLine`, so an assertion on `TextView.Text` has to use the
-platform separator.
+**A view that paints by hand is asserted through what it would paint.** There
+is no driver in a test, so nothing can read the screen back. `FileViewer`'s
+content view therefore computes its rows in one place — `Rows()` — and
+`OnDrawingContent` only paints what that answers. A test calls `Rows()` and
+compares strings, which is how scrolling, wrapping, the hex switch and a
+UTF-16 file are all covered without a terminal. A view that painted straight
+from its own state inside the override would be untestable here.
 
 **Colours are asserted as schemes, never as pixels.** There is no driver in a
 test, so nothing can read back what was painted. What a test can assert is the

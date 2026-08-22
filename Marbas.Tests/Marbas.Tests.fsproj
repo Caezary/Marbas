@@ -16,6 +16,10 @@
   <ItemGroup>
     <Compile Include="FileSystem\EntryNameTests.fs" />
     <Compile Include="FileSystem\FileSystemPathTests.fs" />
+    <Compile Include="FileSystem\ContentErrorTests.fs" />
+    <Compile Include="FileSystem\TextEncodingTests.fs" />
+    <Compile Include="FileSystem\FileWindowTests.fs" />
+    <Compile Include="FileSystem\LineIndexTests.fs" />
     <Compile Include="FileSystem\SortOrderTests.fs" />
     <Compile Include="FileSystem\NamePatternTests.fs" />
     <Compile Include="FileSystem\RootsTests.fs" />
@@ -26,7 +30,6 @@
     <Compile Include="FileSystem\SearchTextTests.fs" />
     <Compile Include="FileSystem\SettingsTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
-    <Compile Include="FileSystem\FileContentTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -57,7 +60,11 @@
     <Compile Include="Ui\SelectionSummaryTests.fs" />
     <Compile Include="Ui\PanelFooterTests.fs" />
     <Compile Include="Ui\HexDumpTests.fs" />
-    <Compile Include="Ui\FileViewTests.fs" />
+    <Compile Include="Ui\PrintableTextTests.fs" />
+    <Compile Include="Ui\LineWrapTests.fs" />
+    <Compile Include="Ui\ViewerScrollTests.fs" />
+    <Compile Include="Ui\ViewerHeaderTests.fs" />
+    <Compile Include="Ui\ViewerKeysTests.fs" />
     <Compile Include="Ui\ListingErrorMessageTests.fs" />
     <Compile Include="Ui\ContentErrorMessageTests.fs" />
     <Compile Include="Ui\OperationErrorMessageTests.fs" />

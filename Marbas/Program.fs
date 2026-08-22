@@ -77,9 +77,9 @@ let main _ =
         app.Run dialog |> ignore
         PromptDialog.text dialog
 
-    let showFile title lines =
-        use dialog = FileViewer.create (_.RequestStop()) title lines
-        app.Run dialog |> ignore
+    let showFile source =
+        use viewer = FileViewer.create _.RequestStop() source
+        app.Run viewer |> ignore
 
     let editorCommand =
         let platform =

@@ -1,7 +1,6 @@
 module Marbas.Ui.ContentErrorMessage
 
 open Marbas.FileSystem
-open Marbas.FileSystem.FileContent
 
 [<Literal>]
 let Title = "Cannot view file"

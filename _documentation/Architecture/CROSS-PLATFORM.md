@@ -125,7 +125,9 @@ disagrees.
 | Check | Windows | Linux | Evidence |
 |-------|---------|-------|----------|
 | `F3` opens the viewer, `F3`/`Esc` closes it | same | same | suite |
-| A binary file falls back to a hex dump | same | same | suite |
+| `F4` in the viewer switches to a hex dump | same | same | suite |
+| A UTF-16 file is shown as the text it is | same | same | suite |
+| The viewer's arrows, page keys, `Home`/`End` and `F2` wrap | same | same | suite |
 | `F4` starts `$EDITOR` when it is set | same | same | suite |
 | `F4` falls back to a default | `notepad` | `vi` | suite |
 | The screen is whole again after the editor exits | windowed editors: yes | **manual, and see below** | manual |
@@ -170,8 +172,8 @@ dialog that says *Select root*.
 - **Drive letters do not exist on Unix**, so three tests skip there rather than
   pretending. `MockFileSystem` emulates drives Windows-style and answers a
   duplicated `/:\` on Linux, which is a second reason not to assert on it.
-- **Dialogs, message boxes and the viewer keep Terminal.Gui's own theme** on both
-  platforms; only the main screen wears the classic colours.
+- **Dialogs and message boxes keep Terminal.Gui's own theme** on both
+  platforms; the main screen and the viewer wear the classic colours.
 
 ## Running the checks
 
