@@ -15,6 +15,15 @@ The tests run against an in-memory file system and never touch the disk, so
 dotnet test Marbas.slnx --settings coverlet.runsettings
 ```
 
+## Build configuration
+
+`Directory.Build.props` in the repository root holds what both projects share —
+the target framework, the product name, the version and
+`TreatWarningsAsErrors`, which is on in every configuration.
+`Directory.Packages.props` holds the package versions: a new package needs a
+`PackageVersion` there and a bare `PackageReference Include="..."`, without a
+version, in the project that uses it.
+
 ## Publishing a binary
 
 ```

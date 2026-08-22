@@ -55,8 +55,8 @@ in — a saving of a few megabytes for a change in behaviour.
 
 ## The version
 
-`Marbas.fsproj` carries `Version`, which is what an unqualified `dotnet publish`
-stamps on the binary. A release overrides it from the tag
+`Directory.Build.props` carries `Version`, which is what an unqualified `dotnet
+publish` stamps on the binary. A release overrides it from the tag
 (`-p:Version=1.2.3`), so the version in the file and the version in the tag are
 the same by construction rather than by remembering to edit the project file.
 
