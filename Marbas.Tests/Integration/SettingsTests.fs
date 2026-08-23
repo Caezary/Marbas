@@ -67,7 +67,8 @@ let ``a stored session puts each panel where it says`` () =
           Right =
             { Path = fp (at "start")
               Sort = SortOrder.byName
-              Hidden = Shown } }
+              Hidden = Shown }
+          LastCreatedDirectory = None }
 
     use window = focusedWindow (deps fs)
 
@@ -85,7 +86,8 @@ let ``a stored directory that is gone starts the panel on the start path without
             { Path = fp (at "gone")
               Sort = SortOrder.create BySize Ascending
               Hidden = Concealed }
-          Right = { Path = fp (at "start"); Sort = SortOrder.byName; Hidden = Concealed } }
+          Right = { Path = fp (at "start"); Sort = SortOrder.byName; Hidden = Concealed }
+          LastCreatedDirectory = None }
 
     use window =
         focusedWindow

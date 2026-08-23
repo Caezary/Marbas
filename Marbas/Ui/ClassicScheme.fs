@@ -55,3 +55,31 @@ let keyName =
         Focus = attribute ColorName16.White ColorName16.Black,
         HotFocus = attribute ColorName16.White ColorName16.Black
     )
+
+let dialog =
+    Scheme(
+        Normal = attribute ColorName16.White ColorName16.Blue,
+        HotNormal = attribute ColorName16.BrightYellow ColorName16.Blue,
+        Focus = attribute ColorName16.Black ColorName16.Cyan,
+        HotFocus = attribute ColorName16.BrightYellow ColorName16.Cyan,
+        Active = attribute ColorName16.Black ColorName16.White,
+        HotActive = attribute ColorName16.Blue ColorName16.White,
+        Highlight = attribute ColorName16.BrightYellow ColorName16.Blue,
+        Editable = attribute ColorName16.Black ColorName16.Cyan,
+        ReadOnly = attribute ColorName16.White ColorName16.Blue,
+        Disabled = attribute ColorName16.DarkGray ColorName16.Blue
+    )
+
+let errorDialog =
+    Scheme(
+        Normal = attribute ColorName16.White ColorName16.Red,
+        HotNormal = attribute ColorName16.BrightYellow ColorName16.Red,
+        Focus = attribute ColorName16.Black ColorName16.White,
+        HotFocus = attribute ColorName16.Red ColorName16.White,
+        Active = attribute ColorName16.Black ColorName16.White,
+        HotActive = attribute ColorName16.Red ColorName16.White,
+        Highlight = attribute ColorName16.BrightYellow ColorName16.Red,
+        Editable = attribute ColorName16.Black ColorName16.White,
+        ReadOnly = attribute ColorName16.White ColorName16.Red,
+        Disabled = attribute ColorName16.DarkGray ColorName16.Red
+    )

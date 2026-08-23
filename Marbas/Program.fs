@@ -40,6 +40,7 @@ let main _ =
     MainWindow.configureQuitKey ()
     let fs = FileSystem()
     use app = Application.Create().Init()
+    DialogStyle.apply ()
 
     let reportError title message =
         MessageBox.ErrorQuery(app, title, message, "Ok") |> ignore
@@ -67,8 +68,8 @@ let main _ =
         app.Run dialog |> ignore
         PatternDialog.pattern dialog
 
-    let askName title =
-        use dialog = PromptDialog.create title "Name:" ""
+    let askName title suggestion =
+        use dialog = PromptDialog.create title "Name:" suggestion |> PromptDialog.selecting
         app.Run dialog |> ignore
         PromptDialog.text dialog
 

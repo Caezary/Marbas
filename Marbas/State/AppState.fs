@@ -36,7 +36,8 @@ type PanelState =
 type AppState =
     { Left: PanelState
       Right: PanelState
-      Active: PanelSide }
+      Active: PanelSide
+      LastCreatedDirectory: EntryName option }
 
 type FocusTarget =
     | Top
@@ -54,7 +55,8 @@ let private panelFrom (settings: PanelSettings) =
 let fromSettings (settings: Settings) =
     { Left = panelFrom settings.Left
       Right = panelFrom settings.Right
-      Active = Left }
+      Active = Left
+      LastCreatedDirectory = settings.LastCreatedDirectory }
 
 let create (path: FileSystemPath) = fromSettings (Settings.forPath path)
 
@@ -65,7 +67,8 @@ let private panelSettings (p: PanelState) : PanelSettings =
 
 let settings (state: AppState) : Settings =
     { Left = panelSettings state.Left
-      Right = panelSettings state.Right }
+      Right = panelSettings state.Right
+      LastCreatedDirectory = state.LastCreatedDirectory }
 
 let panel side state =
     match side with
@@ -320,7 +323,10 @@ let makeDirectory (fs: IFileSystem) side name state : Result<AppState, Operation
     |> Result.bind (fun () ->
         loadPanelFocusing fs side previous.Path (ByName name) state
         |> Result.mapError asOperationError
-        |> Result.map (updatePanel side (keepSurviving previous.Selected)))
+        |> Result.map (updatePanel side (keepSurviving previous.Selected))
+        |> Result.map (fun updated ->
+            { updated with
+                LastCreatedDirectory = Some name }))
 
 let refresh (fs: IFileSystem) state =
     let panel = activePanel state

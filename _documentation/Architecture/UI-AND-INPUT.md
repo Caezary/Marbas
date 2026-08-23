@@ -239,6 +239,59 @@ it — the two panel frames, the panel footers, the status line and the progress
 dialog's line. The views whose text Marbas writes itself keep the default, which
 is what makes `_Cancel` and `_Ok` work on the dialog buttons.
 
+## Popups
+
+**Every popup is dressed once, in one place.** `DialogStyle.apply` runs from
+`Program.fs` right after `Application.Init` and sets what Terminal.Gui keeps as
+process-wide defaults: a double frame on `Dialog` and on `MessageBox` — the
+frame a focused panel wears — buttons centred under the question, no shadow on
+either, and `[` `]` for the brackets drawn around a button. It also registers
+`ClassicScheme.dialog` and `ClassicScheme.errorDialog` under the `Dialog` and
+`Error` scheme names, which is the only way to reach a `MessageBox`: it builds
+and runs a dialog of its own, so nothing outside it can call `SetScheme`. After
+`Init` rather than before, because the configuration manager fills those
+statics in as the application starts and would overwrite an earlier call.
+
+**What it replaces was not a matter of taste.** 2.4.17 ships a `Heavy` frame,
+an opaque shadow under every button and `⟦ ⟧` (U+27E6/7) for the brackets. Those
+brackets and the heavy box glyphs are missing from the usual console fonts, so
+they came out as gaps and boxes, and a button's shadow is drawn *outside* the
+button — which pushed the row past the frame and squeezed the prompt's label and
+input field off the dialog altogether. Rendering a popup into
+`IDriver.Contents` and reading the screen back is what settled each of them;
+what the suite can assert without a driver is the frame, the shadow, the
+alignment, the brackets and the scheme.
+
+**A shadow can only be taken off before the popup exists.** `DialogStyle.dress`
+puts the frame, the button alignment and the scheme on a dialog of ours one by
+one, so those hold whatever the process-wide defaults happen to be — but a
+shadow is a `Margin` thickness fixed while the view is constructed, and setting
+`ShadowStyle`, `Margin.ShadowStyle` or the thickness itself afterwards changes
+nothing. `Dialog.DefaultShadow` and `Button.DefaultShadow` are therefore the
+only levers, which is why `apply` has to run before the first popup is built —
+`Program.fs` calls it two lines after `Init`, and every test that lays a dialog
+out calls it first. That is also how the suite caught it: with the shadows
+back, the content area of a six-row dialog measures zero.
+
+**`Esc` closes a popup because the quit command answers to it.** Terminal.Gui
+ends a running `Dialog` on `Application.GetDefaultKey Command.Quit`, `Esc` by
+default; binding that command to `Ctrl+Q` and `F10` had taken `Esc` from every
+popup, the progress window included. The binding now carries all three, and
+`PanelWiring.swallowed` consumes `Esc` in the panel — where it cancels a search
+or does nothing — so it never reaches the application binding and quits.
+Application-level bindings are consulted last, after the focused view has had
+the key, which is what makes swallowing it enough.
+
+**A prompt suggests, it does not decide.** `PromptDialog.create` takes the text
+to open with and puts the caret behind it, so `F6` opens on the other panel's
+path with the end of it ready to edit. `F7` adds `PromptDialog.selecting`, which
+selects the whole suggestion: the name of the last directory made — see
+[SETTINGS-PERSISTENCE.md](SETTINGS-PERSISTENCE.md) — is one keystroke from being
+replaced and `Enter` alone accepts it. Selected text is drawn with
+`VisualRole.Active`, which is why the dialog scheme gives that role a colour of
+its own instead of the one the input field wears; with both black on cyan the
+selection was invisible.
+
 ## The key table and the bar
 
 **One table holds every key, and the bar is a view of it.** `KeyMap.bindings`

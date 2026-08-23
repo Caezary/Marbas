@@ -317,3 +317,22 @@ let ``messages carry the side the panel was wired to`` () =
     list.SelectedItem <- 2
 
     Assert.Contains(CursorMoved(cursor Right 2), probe.Messages)
+
+[<Fact>]
+let ``Esc in a panel is swallowed, so it never reaches the quit binding`` () =
+    let probe, _, list = wired ()
+
+    let key = pressReturning list KeyMap.cancelKey
+
+    Assert.True(key.Handled, "Esc with nothing to cancel must not quit the application")
+    Assert.Empty probe.Messages
+
+[<Fact>]
+let ``Esc while searching cancels the search`` () =
+    let probe, _, list = wired ()
+    probe.Searching.Value <- true
+
+    let key = pressReturning list KeyMap.cancelKey
+
+    Assert.True key.Handled
+    Assert.Equal<Message list>([ SearchCancelled ], List.ofSeq probe.Messages)

@@ -35,7 +35,7 @@ type Dependencies =
       ReportError: string -> string -> unit
       ChooseOption: string -> string list -> string option
       AskPattern: string -> string option
-      AskName: string -> string option
+      AskName: string -> string -> string option
       AskTarget: string -> string -> string option
       Confirm: string -> string -> bool
       ShowFile: FileWindow.Source -> unit
@@ -88,8 +88,10 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.AskTarget MovePrompt (FileSystemPath.value suggestion) with
         | Some text -> dispatch (TargetEntered text)
         | None -> ()
-    | PromptForName ->
-        match deps.AskName MkdirPrompt |> Option.bind EntryName.tryCreate with
+    | PromptForName suggestion ->
+        let offered = suggestion |> Option.map EntryName.value |> Option.defaultValue ""
+
+        match deps.AskName MkdirPrompt offered |> Option.bind EntryName.tryCreate with
         | Some name -> dispatch (NameEntered name)
         | None -> ()
     | PromptForPattern mode ->

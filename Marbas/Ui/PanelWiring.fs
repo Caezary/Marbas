@@ -26,7 +26,7 @@ let private printable (key: Key) =
     not key.IsCtrl && not key.IsAlt && key.AsRune.Value >= 32 && key.AsRune.Value <> 127
 
 let private searchMessage (key: Key) =
-    if key = Key.Esc then Some SearchCancelled
+    if key = KeyMap.cancelKey then Some SearchCancelled
     elif key = Key.Backspace then Some SearchBackspaced
     elif printable key then Some(SearchTyped(char key.AsRune.Value))
     else None
@@ -38,6 +38,9 @@ let private stopsAtEdge (list: ListView) (key: Key) =
         cursor list >= count list - 1
     else
         false
+
+let private swallowed (list: ListView) (key: Key) =
+    key = KeyMap.cancelKey || stopsAtEdge list key
 
 let private pageTarget (list: ListView) direction =
     match direction with
@@ -69,7 +72,7 @@ let private command (host: Host) side (list: ListView) (key: Key) =
 
             true
         | None ->
-            if stopsAtEdge list key then
+            if swallowed list key then
                 true
             elif printable key then
                 host.Dispatch(SearchTyped(char key.AsRune.Value))

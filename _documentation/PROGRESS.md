@@ -47,7 +47,14 @@ arrows, and rested on a `TextView` that 2.4.17 deprecated. It is now a
 frameless full-screen window that reads only the rows it shows, over a file held
 open and a line index scanned forward on demand; it settles the encoding before
 deciding anything, always opens as text, and puts wrapping and the hex dump on
-`F2` and `F4`.
+`F2` and `F4`. **A fifth round took the popups in hand.** They wore
+Terminal.Gui's own defaults — a heavy frame and brackets in glyphs a console
+font does not carry, and a shadow under each button that pushed the buttons past
+the frame and squeezed the prompt's own label and input field off the dialog.
+Every popup now wears a double frame, centred buttons, no shadow and the
+classic colours, message boxes included; `Esc` closes any of them again, which
+the quit key had quietly taken away; and `F7` opens on the name of the last
+directory made, remembered across a restart.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -169,7 +176,9 @@ checklist in [Cross-platform](Architecture/CROSS-PLATFORM.md).
 - `F7` prompts for a name and creates that directory in the active panel; the
   panel refreshes with the cursor on the new entry and existing marks intact. A
   blank name or a cancelled prompt does nothing; a clash (or any failure) is
-  reported in a dialog.
+  reported in a dialog. The prompt opens on the name the last directory was
+  given, selected, so one keystroke replaces it and Enter alone accepts it. That
+  name is kept in the settings file, so it is still offered after a restart.
 - `F8` deletes the operation targets of the active panel — the marked entries,
   or the entry under the cursor when nothing is marked, never `..`. It first
   asks for confirmation, naming a single target or counting several, with an
@@ -370,8 +379,8 @@ is no longer plan order but choice. Three things are waiting:
   write per keystroke; a write on a timer is the middle road if it ever matters.
 - `Ctrl+Q` pressed while a dialog holds focus still quits through the
   application binding, which does not go through `Update` and therefore does not
-  save. Unbinding `Command.Quit` would fix it and hand `Esc` back its default
-  quit meaning, which is worse.
+  save. Unbinding `Command.Quit` is not the way out: `Esc` answers to that same
+  command on purpose, since that is what closes a popup.
 - Which panel is active, where the cursors stand and what is marked are not
   saved — P7.4 asked for paths, sort orders and toggles. The cursor would be the
   obvious next one, and it fits the file as `left.cursor=<name>`, resolved the

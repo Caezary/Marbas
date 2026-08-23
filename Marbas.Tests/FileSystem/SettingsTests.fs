@@ -9,6 +9,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
+let private en = EntryName.create
+
 let private settingsPath = fp (at "config/marbas.conf")
 
 let private mockFs () =
@@ -27,7 +29,8 @@ let private stored: Settings =
       Right =
         { Path = fp (at "start")
           Sort = SortOrder.create ByDate Ascending
-          Hidden = Concealed } }
+          Hidden = Concealed }
+      LastCreatedDirectory = Some(en "work") }
 
 let private write (fs: MockFileSystem) lines =
     fs.AddFile(FileSystemPath.value settingsPath, MockFileData(String.concat "\n" lines))
@@ -237,3 +240,27 @@ let ``saving where nothing can be written is passed over in silence`` () =
     Settings.save fs (fp (at "blocked/marbas.conf")) stored
 
     Assert.False(fs.File.Exists(at "blocked/marbas.conf"))
+
+[<Fact>]
+let ``the name of the last created directory is written under its own key`` () =
+    let lines = Settings.format stored
+
+    Assert.Contains("mkdir.name=work", lines)
+
+[<Fact>]
+let ``nothing is written when no directory was ever created`` () =
+    let lines = Settings.format defaults
+
+    Assert.DoesNotContain(lines, fun (line: string) -> line.StartsWith "mkdir.")
+
+[<Fact>]
+let ``a remembered name survives being written and read back`` () =
+    let parsed = Settings.parse defaults [ "mkdir.name=Work Files" ]
+
+    Assert.Equal(Some(en "Work Files"), parsed.LastCreatedDirectory)
+
+[<Fact>]
+let ``a blank remembered name is read as none`` () =
+    let parsed = Settings.parse defaults [ "mkdir.name=   " ]
+
+    Assert.Equal(None, parsed.LastCreatedDirectory)

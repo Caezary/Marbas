@@ -28,27 +28,27 @@ let private capture () =
 [<Fact>]
 let ``a supplied name is dispatched as NameEntered`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with AskName = fun _ -> Some "work" }
+    let deps = { noDeps () with AskName = fun _ _ -> Some "work" }
 
-    Shell.interpret deps dispatch PromptForName
+    Shell.interpret deps dispatch (PromptForName None)
 
     Assert.Equal<Message list>([ NameEntered(en "work") ], List.ofSeq sent)
 
 [<Fact>]
 let ``a name is trimmed before it becomes a message`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with AskName = fun _ -> Some "  work  " }
+    let deps = { noDeps () with AskName = fun _ _ -> Some "  work  " }
 
-    Shell.interpret deps dispatch PromptForName
+    Shell.interpret deps dispatch (PromptForName None)
 
     Assert.Equal<Message list>([ NameEntered(en "work") ], List.ofSeq sent)
 
 [<Fact>]
 let ``a blank name never becomes a message`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with AskName = fun _ -> Some "   " }
+    let deps = { noDeps () with AskName = fun _ _ -> Some "   " }
 
-    Shell.interpret deps dispatch PromptForName
+    Shell.interpret deps dispatch (PromptForName None)
 
     Assert.Empty sent
 
@@ -56,7 +56,7 @@ let ``a blank name never becomes a message`` () =
 let ``a cancelled name prompt dispatches nothing`` () =
     let sent, dispatch = capture ()
 
-    Shell.interpret (noDeps ()) dispatch PromptForName
+    Shell.interpret (noDeps ()) dispatch (PromptForName None)
 
     Assert.Empty sent
 
@@ -64,9 +64,9 @@ let ``a cancelled name prompt dispatches nothing`` () =
 let ``the name prompt uses the mkdir label`` () =
     let _, dispatch = capture ()
     let mutable asked = ""
-    let deps = { noDeps () with AskName = fun title -> asked <- title; None }
+    let deps = { noDeps () with AskName = fun title _ -> asked <- title; None }
 
-    Shell.interpret deps dispatch PromptForName
+    Shell.interpret deps dispatch (PromptForName None)
 
     Assert.Equal(Shell.MkdirPrompt, asked)
 
@@ -401,3 +401,23 @@ let ``quit runs the quit port`` () =
     Shell.interpret deps ignore Quit
 
     Assert.True quit
+
+[<Fact>]
+let ``the name prompt offers the name that was remembered`` () =
+    let _, dispatch = capture ()
+    let mutable offered = ""
+    let deps = { noDeps () with AskName = fun _ suggestion -> offered <- suggestion; None }
+
+    Shell.interpret deps dispatch (PromptForName(Some(en "work")))
+
+    Assert.Equal("work", offered)
+
+[<Fact>]
+let ``the name prompt starts empty when nothing was remembered`` () =
+    let _, dispatch = capture ()
+    let mutable offered = "something"
+    let deps = { noDeps () with AskName = fun _ suggestion -> offered <- suggestion; None }
+
+    Shell.interpret deps dispatch (PromptForName None)
+
+    Assert.Equal("", offered)

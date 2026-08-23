@@ -8,6 +8,7 @@ open Marbas.Tests
 let private at = Root.at
 
 let private laidOut title =
+    DialogStyle.apply ()
     let dialog = ProgressDialog.create title
     dialog.BeginInit()
     dialog.EndInit()

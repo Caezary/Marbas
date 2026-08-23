@@ -25,6 +25,7 @@
         <Compile Include="State\Update.fs" />
         <Compile Include="State\Runtime.fs" />
         <Compile Include="Ui\ClassicScheme.fs" />
+        <Compile Include="Ui\DialogStyle.fs" />
         <Compile Include="Ui\LiteralText.fs" />
         <Compile Include="Ui\Modifiers.fs" />
         <Compile Include="Ui\KeyMap.fs" />

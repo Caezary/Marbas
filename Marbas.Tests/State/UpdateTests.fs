@@ -103,7 +103,7 @@ let ``make directory requested asks for a name`` () =
 
     let result = update fs MakeDirectoryRequested state
 
-    Assert.Equal<Effect list>([ PromptForName ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForName None ], result.Effects)
 
 [<Fact>]
 let ``a valid name creates the directory on the active side`` () =
@@ -542,3 +542,13 @@ let ``step pairs the new state with its effects`` () =
 
     Assert.Equal(state, nextState)
     Assert.Equal<Effect list>([ SaveSettings(settings state); Quit ], effects)
+
+[<Fact>]
+let ``the name prompt is asked for with the name of the last directory created`` () =
+    let fs = mockFs ()
+    let state = loaded fs
+    let made = update fs (NameEntered(en "work")) state
+
+    let result = update fs MakeDirectoryRequested made.State
+
+    Assert.Equal<Effect list>([ PromptForName(Some(en "work")) ], result.Effects)

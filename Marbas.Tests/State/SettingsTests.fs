@@ -10,6 +10,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
+let private en = EntryName.create
+
 let private mockFs () =
     let fs = MockFileSystem()
     fs.AddDirectory(at "start/docs")
@@ -25,7 +27,8 @@ let private stored: Settings =
       Right =
         { Path = fp (at "start")
           Sort = SortOrder.create ByDate Ascending
-          Hidden = Concealed } }
+          Hidden = Concealed }
+      LastCreatedDirectory = Some(en "work") }
 
 [<Fact>]
 let ``a state built from settings gives each panel its own path, sort and hidden`` () =
@@ -87,3 +90,19 @@ let ``a panel that has been navigated says where it is in the settings`` () =
 
     Assert.Equal(fp (at "start/docs"), current.Left.Path)
     Assert.Equal(fp (at "start"), current.Right.Path)
+
+[<Fact>]
+let ``a state built from settings remembers the name the last directory was given`` () =
+    let state = fromSettings stored
+
+    Assert.Equal(Some(en "work"), state.LastCreatedDirectory)
+
+[<Fact>]
+let ``the name a new directory was given goes into the settings`` () =
+    let fs = mockFs ()
+    let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
+
+    let made = makeDirectory fs Left (en "reports") state |> Expect.ok
+
+    Assert.Equal(Some(en "reports"), (settings made).LastCreatedDirectory)
+    Assert.Equal(None, (settings state).LastCreatedDirectory)

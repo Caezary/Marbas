@@ -51,7 +51,7 @@ type Effect =
     | ViewFile of path: FileSystemPath
     | EditFile of path: FileSystemPath
     | PromptForTarget of suggestion: FileSystemPath
-    | PromptForName
+    | PromptForName of suggestion: EntryName option
     | PromptForPattern of SelectionMode
     | PromptForRoot of PanelSide
     | SaveSettings of Settings
@@ -101,7 +101,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | SearchCancelled -> stay (closeSearch state.Active state)
     | PatternRequested mode -> request state (PromptForPattern mode)
     | PatternEntered(mode, pattern) -> stay (applyPattern mode state.Active pattern state)
-    | MakeDirectoryRequested -> request state PromptForName
+    | MakeDirectoryRequested -> request state (PromptForName state.LastCreatedDirectory)
     | NameEntered name -> makeDirectory fs state.Active name state |> applyOperation state
     | DeleteRequested ->
         let target = activePanel state

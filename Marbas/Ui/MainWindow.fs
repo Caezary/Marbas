@@ -7,7 +7,7 @@ open Marbas.State
 open Marbas.State.Runtime
 
 let configureQuitKey () =
-    Application.SetDefaultKeyBinding(Command.Quit, Bind.All(KeyMap.quitKey, Key.F10))
+    Application.SetDefaultKeyBinding(Command.Quit, Bind.All(KeyMap.quitKey, Key.F10, KeyMap.cancelKey))
 
 let create (deps: Shell.Dependencies) =
     let view = AppView.create ()

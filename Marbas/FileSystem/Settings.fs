@@ -10,7 +10,8 @@ type PanelSettings =
 
 type Settings =
     { Left: PanelSettings
-      Right: PanelSettings }
+      Right: PanelSettings
+      LastCreatedDirectory: EntryName option }
 
 module Settings =
 
@@ -40,6 +41,12 @@ module Settings =
 
     [<Literal>]
     let private HiddenSetting = "hidden"
+
+    [<Literal>]
+    let private DirectoryPrefix = "mkdir."
+
+    [<Literal>]
+    let private NameSetting = "name"
 
     let private sortText key =
         match key with
@@ -85,7 +92,8 @@ module Settings =
 
     let forPath path : Settings =
         { Left = panelOn path
-          Right = panelOn path }
+          Right = panelOn path
+          LastCreatedDirectory = None }
 
     let location (fs: IFileSystem) (applicationData: string) (userProfile: string) =
         let home =
@@ -104,8 +112,15 @@ module Settings =
           line prefix DirectionSetting (directionText panel.Sort.Direction)
           line prefix HiddenSetting (hiddenText panel.Hidden) ]
 
+    let private directoryLines (name: EntryName option) =
+        name
+        |> Option.map (EntryName.value >> line DirectoryPrefix NameSetting)
+        |> Option.toList
+
     let format (settings: Settings) =
-        panelLines LeftPrefix settings.Left @ panelLines RightPrefix settings.Right
+        panelLines LeftPrefix settings.Left
+        @ panelLines RightPrefix settings.Right
+        @ directoryLines settings.LastCreatedDirectory
 
     let private entry (text: string) =
         match text.Split('=', 2) with
@@ -138,7 +153,11 @@ module Settings =
         let read = entries lines
 
         { Left = panelFrom read LeftPrefix defaults.Left
-          Right = panelFrom read RightPrefix defaults.Right }
+          Right = panelFrom read RightPrefix defaults.Right
+          LastCreatedDirectory =
+            Map.tryFind (DirectoryPrefix + NameSetting) read
+            |> Option.bind EntryName.tryCreate
+            |> Option.orElse defaults.LastCreatedDirectory }
 
     let private stored (fs: IFileSystem) defaults path =
         try
@@ -159,8 +178,9 @@ module Settings =
     let load (fs: IFileSystem) (defaults: Settings) (path: FileSystemPath) : Settings =
         let settings = stored fs defaults path
 
-        { Left = reachable fs defaults.Left settings.Left
-          Right = reachable fs defaults.Right settings.Right }
+        { settings with
+            Left = reachable fs defaults.Left settings.Left
+            Right = reachable fs defaults.Right settings.Right }
 
     let save (fs: IFileSystem) (path: FileSystemPath) (settings: Settings) =
         try

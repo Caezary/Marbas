@@ -53,3 +53,11 @@ let ``quit command is bound to Ctrl+Q`` () =
     let quitKey = Application.GetDefaultKey Command.Quit
 
     Assert.Equal(Key.Q.WithCtrl, quitKey)
+
+[<Fact>]
+let ``Esc closes whatever popup is open`` () =
+    MainWindow.configureQuitKey ()
+
+    let keys = Application.GetDefaultKeys Command.Quit
+
+    Assert.Contains(KeyMap.cancelKey, keys)

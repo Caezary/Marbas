@@ -5,6 +5,7 @@ open Xunit
 open Marbas.Ui
 
 let private laidOut title =
+    DialogStyle.apply ()
     let dialog = PatternDialog.create title
     dialog.BeginInit()
     dialog.EndInit()

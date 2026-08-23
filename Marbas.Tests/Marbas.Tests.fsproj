@@ -92,6 +92,8 @@
     <Compile Include="Integration\StatusLineTests.fs" />
     <Compile Include="Integration\LiteralTextTests.fs" />
     <Compile Include="Integration\PatternDialogTests.fs" />
+    <Compile Include="Integration\PromptDialogTests.fs" />
+    <Compile Include="Integration\DialogStyleTests.fs" />
     <Compile Include="Integration\ProgressDialogTests.fs" />
     <Compile Include="Integration\FileViewerTests.fs" />
     <Compile Include="Integration\ListingErrorTests.fs" />

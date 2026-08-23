@@ -64,6 +64,8 @@ let hiddenKeys = [ hiddenKey; classicHiddenKey ]
 
 let quitKey = Key.Q.WithCtrl
 
+let cancelKey = Key.Esc
+
 type Binding =
     { Key: Key
       Label: string option

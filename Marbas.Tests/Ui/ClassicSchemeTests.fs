@@ -78,7 +78,9 @@ let ``every chosen colour is one of the sixteen ansi colours`` () =
           ClassicScheme.panel
           ClassicScheme.summary
           ClassicScheme.keyBar
-          ClassicScheme.keyName ]
+          ClassicScheme.keyName
+          ClassicScheme.dialog
+          ClassicScheme.errorDialog ]
 
     let colours =
         schemes
@@ -87,3 +89,17 @@ let ``every chosen colour is one of the sixteen ansi colours`` () =
 
     Assert.NotEmpty colours
     Assert.All(colours, fun colour -> Assert.True(isAnsi16 colour, string colour))
+
+[<Fact>]
+let ``a popup is white on blue, with an input field black on cyan`` () =
+    Assert.Equal(attribute ColorName16.White ColorName16.Blue, ClassicScheme.dialog.Normal)
+    Assert.Equal(attribute ColorName16.Black ColorName16.Cyan, ClassicScheme.dialog.Editable)
+
+[<Fact>]
+let ``selected text parts from the field it is selected in`` () =
+    Assert.NotEqual(ClassicScheme.dialog.Editable, ClassicScheme.dialog.Active)
+    Assert.NotEqual(ClassicScheme.dialog.Editable, ClassicScheme.dialog.HotActive)
+
+[<Fact>]
+let ``a popup that reports a failure is white on red`` () =
+    Assert.Equal(attribute ColorName16.White ColorName16.Red, ClassicScheme.errorDialog.Normal)
