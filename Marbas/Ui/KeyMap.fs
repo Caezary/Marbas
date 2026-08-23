@@ -56,6 +56,10 @@ let dateSortKey = Key.F5.WithCtrl
 
 let sizeSortKey = Key.F6.WithCtrl
 
+let newFileKey = Key.F4.WithShift
+
+let settingsKey = Key.F12
+
 let hiddenKey = Key.H.WithAlt
 
 let classicHiddenKey = Key.H.WithCtrl
@@ -92,8 +96,10 @@ let bindings =
       onBar Key.F6 "RenMov" MoveRequested
       onBar Key.F7 "Mkdir" MakeDirectoryRequested
       onBar Key.F8 "Delete" (DeleteRequested ToTrash)
+      onBar newFileKey "NewFile" NewFileRequested
       onBar Key.F8.WithShift "Erase" (DeleteRequested Permanently)
       onBar Key.F10 "Quit" QuitRequested
+      onBar settingsKey "Setup" SettingsRequested
       onBar nameSortKey "Name" (SortRequested SortKey.ByName)
       onBar extensionSortKey "Ext" (SortRequested SortKey.ByExtension)
       onBar dateSortKey "Date" (SortRequested SortKey.ByDate)

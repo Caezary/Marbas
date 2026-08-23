@@ -80,6 +80,7 @@ let ``every chosen colour is one of the sixteen ansi colours`` () =
           ClassicScheme.keyBar
           ClassicScheme.keyName
           ClassicScheme.dialog
+          ClassicScheme.input
           ClassicScheme.errorDialog ]
 
     let colours =
@@ -94,6 +95,11 @@ let ``every chosen colour is one of the sixteen ansi colours`` () =
 let ``a popup is white on blue, with an input field black on cyan`` () =
     Assert.Equal(attribute ColorName16.White ColorName16.Blue, ClassicScheme.dialog.Normal)
     Assert.Equal(attribute ColorName16.Black ColorName16.Cyan, ClassicScheme.dialog.Editable)
+
+[<Fact>]
+let ``a field that is typed into is black on cyan, and black on white where the cursor is`` () =
+    Assert.Equal(attribute ColorName16.Black ColorName16.Cyan, ClassicScheme.input.Normal)
+    Assert.Equal(attribute ColorName16.Black ColorName16.White, ClassicScheme.input.Focus)
 
 [<Fact>]
 let ``selected text parts from the field it is selected in`` () =

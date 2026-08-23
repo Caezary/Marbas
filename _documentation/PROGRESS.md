@@ -55,7 +55,14 @@ the frame and squeezed the prompt's own label and input field off the dialog.
 Every popup now wears a double frame, centred buttons, no shadow and the
 classic colours, message boxes included; `Esc` closes any of them again, which
 the quit key had quietly taken away; and `F7` opens on the name of the last
-directory made, remembered across a restart.
+directory made, remembered across a restart. **A sixth round widened `F4`.** It
+had one editor, `$EDITOR` or `notepad`, and it did nothing at all on a
+directory. There is now a default editor and an editor per extension, both kept
+in the settings file and both edited from a settings popup on `F12`;
+`Shift+F4` creates a file in the panel's directory and opens it in the editor
+its extension asks for; and `F4` on a directory opens a properties popup — the
+read-only, hidden, system and archive flags and the three timestamps — writing
+back only what it was given and re-reading the panel afterwards.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -228,12 +235,39 @@ checklist in [Cross-platform](Architecture/CROSS-PLATFORM.md).
   the byte order mark, the zero-byte pattern of UTF-16, or whether the bytes are
   valid UTF-8, falling back to Latin-1. A file that cannot be read (it vanished,
   or the OS refused) is reported in a dialog.
-- `F4` opens the same file — the one under the cursor — in the system editor:
-  whatever `$EDITOR` names, otherwise `notepad` on Windows and `vi` elsewhere.
-  Marbas waits for the editor to close, then re-reads the panel with the cursor
-  and the marks where they were, so a file saved (or created) meanwhile is on
-  screen straight away. An editor that cannot be started is reported in a
-  dialog; a directory or `..` under the cursor starts nothing.
+- `F4` opens the same file — the one under the cursor — in an editor: the one
+  its extension is associated with, otherwise the default editor named in the
+  settings, otherwise whatever `$EDITOR` names, otherwise `notepad` on Windows
+  and `vi` elsewhere. Marbas waits for the editor to close, then re-reads the
+  panel with the cursor and the marks where they were, so a file saved (or
+  created) meanwhile is on screen straight away. An editor that cannot be
+  started is reported in a dialog; `..` under the cursor starts nothing.
+- `F4` on a *directory* opens its properties instead: a popup naming the path,
+  with a tick box for each of read-only, hidden, system and archive and a field
+  for each of the created, modified and accessed stamps, written
+  `2024-03-01 09:05:07` whatever the machine's locale. Accepting it writes the
+  stamps first and the flags last — a read-only bit set first would refuse the
+  stamps — and only the four flags Marbas offers are touched, so nothing else
+  the entry carries is lost. The panel is re-read afterwards, which is why a
+  directory just marked hidden disappears from a panel that conceals hidden
+  entries. A stamp typed as something that is no date leaves the one the entry
+  had; cancelling changes nothing; an entry that vanished meanwhile is reported
+  in a dialog.
+- `Shift+F4` asks for a name and creates that file in the active panel, then
+  opens it in the editor its extension is associated with. The panel comes back
+  with the cursor on the new file and the existing marks intact. A name a file
+  already answers to is opened as it stands rather than emptied; a name a
+  directory answers to is refused in a dialog; a blank name or a cancelled
+  prompt does nothing.
+- `F12` opens the settings popup, which is where the editors are chosen: one
+  field for the default editor — the path to an executable, left blank to fall
+  back the way the app always did — and, beneath it, an extension and an editor
+  with `Add` and `Remove` beside a list of what is already associated. Moving
+  the cursor over a row fills both fields from it, so `Add` re-typed over a
+  known extension replaces it and `Remove` takes it out. Extensions are matched
+  without their dot and without regard to case, so `.TXT` and `txt` are one
+  entry. What the popup returns is kept with the rest of the session and
+  written to the settings file on quit.
 - The screen wears the classic colours: both panels are blue with their entries and
   frames in bright cyan, the cursor bar of the focused panel is black on cyan,
   marked entries and the summary line beneath them are bright yellow, the two
@@ -245,19 +279,20 @@ checklist in [Cross-platform](Architecture/CROSS-PLATFORM.md).
   slot draws its key name on a black background and the command beside it on the
   cyan one, so `F5 Copy` reads as a key and a command; a click on a slot runs it.
   The classic commands (`F3 View`, `F4 Edit`, `F5 Copy`, `F6 RenMov`,
-  `F7 Mkdir`, `F8 Delete`, `F10 Quit`) all do their job.
+  `F7 Mkdir`, `F8 Delete`, `F10 Quit`, `F12 Setup`) all do their job.
 - The commands follow the modifiers being held, the key names never move: with
   `Ctrl` down the slots read `F3 Name`, `F4 Ext`, `F5 Date`, `F6 Size`, with
-  `Alt` down `F1 Left` and `F2 Right`, with `Shift` down `F8 Erase`, and the
-  classic commands come back when they are let go. A slot no command asks for
+  `Alt` down `F1 Left` and `F2 Right`, with `Shift` down `F4 NewFile` and
+  `F8 Erase`, and the classic commands come back when they are let go. A slot no command asks for
   stays empty. Keys that are not function keys — `Alt+H`, `Ctrl+R`, `+`, `-`,
   `Del`, `Shift+Del` and the rest — are bound but off the bar.
   Every entry can also be clicked. On Windows the modifiers are read from the
   keyboard ten times a second; elsewhere the bar stays on the classic row.
 - Quitting writes the session to `%APPDATA%\Marbas\settings.conf` (on Unix,
   `~/.config/Marbas/settings.conf`): where each panel stands, which key it sorts
-  by and in which direction, and whether it conceals the hidden entries. The
-  next start reads it back, so both panels come up on the directories they were
+  by and in which direction, whether it conceals the hidden entries, and which
+  editors `F4` reaches — `editor.default` and one `editor.extension.<ext>` line
+  per association. The next start reads it back, so both panels come up on the directories they were
   left on, sorted the way they were sorted. The file is `key=value` lines meant
   to be readable and editable by hand; anything it does not say, says wrongly or
   spells in a way that means nothing falls back to what a first start would use,
@@ -299,19 +334,29 @@ is no longer plan order but choice. Three things are waiting:
   key, is the fix whenever it starts to bother.
 - `Home` and `End` are swallowed at the ends of the listing rather than handled,
   which is invisible while nothing else wants them.
-- Holding `Shift` leaves every slot of the function-key bar without a command on
-  Windows, because `Shift` has no labelled bindings on it. The slots stay where
-  they are, so it no longer looks like the bar disappeared — but now that a user
-  holds `Shift` to mark a run, giving that row two commands of its own would be
-  worth more than leaving it blank.
+- Holding `Shift` on Windows now shows two commands, `F4 NewFile` and
+  `F8 Erase`; the other ten slots of that row are still blank, because `Shift`
+  has no other labelled bindings on it.
 - The bar gives each of `F1` … `F12` an equal slice of the terminal, so below
   about ninety columns the longer commands are clipped (`Quit` reads `Qui` at
-  eighty). Shorter labels would fix the narrow case and waste the wide one; a
-  width-aware label (long name where it fits, short where it does not) is the
-  fix if it ever matters.
-- `F1`, `F2`, `F9`, `F11` and `F12` have slots and no commands, which is what
-  the reserved space is for — `F1` help and `F2` a user menu are the classic
+  eighty, `NewFile` reads `New`). Shorter labels would fix the narrow case and
+  waste the wide one; a width-aware label (long name where it fits, short where
+  it does not) is the fix if it ever matters. It is also why `F12` is labelled
+  `Setup` while the popup it opens is titled `Settings` — `Settings` beside a
+  three-character key name is clipped to `Set` on an eighty-column terminal.
+- `F1`, `F2`, `F9` and `F11` have slots and no commands, which is what the
+  reserved space is for — `F1` help and `F2` a user menu are the classic
   fillers.
+- The settings popup covers the editors and nothing else. Everything else the
+  settings file holds — where each panel stands, how it sorts, whether it
+  conceals — is still written on quit and editable only by hand. Adding those
+  rows is a matter of more fields on the same popup whenever it is wanted.
+- Nothing checks that a configured editor exists before `F4` starts it. A path
+  that names nothing is reported the way any other failed start is, after the
+  key was pressed, rather than when it was typed into the popup.
+- The properties popup edits one entry, the one under the cursor, and never the
+  marked ones. It also offers no way to reach the properties of `..` or of a
+  file — `F4` on a file goes to the editor, which is what the key is for.
 - Whether the terminal delivers `Shift+↑` / `Shift+↓` / `Shift+PgUp` /
   `Shift+PgDn` as keys of their own is the driver's business, and no test
   reaches it — the suite injects the key. It is a manual row in

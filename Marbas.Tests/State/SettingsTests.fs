@@ -28,7 +28,12 @@ let private stored: Settings =
         { Path = fp (at "start")
           Sort = SortOrder.create ByDate Ascending
           Hidden = Concealed }
-      LastCreatedDirectory = Some(en "work") }
+      LastCreatedDirectory = Some(en "work")
+      Editors =
+        { DefaultEditor = EditorPath.tryCreate "code.exe"
+          Associations =
+            [ { Extension = Expect.some (FileExtension.tryCreate "txt")
+                Editor = Expect.some (EditorPath.tryCreate "notepad.exe") } ] } }
 
 [<Fact>]
 let ``a state built from settings gives each panel its own path, sort and hidden`` () =
@@ -96,6 +101,28 @@ let ``a state built from settings remembers the name the last directory was give
     let state = fromSettings stored
 
     Assert.Equal(Some(en "work"), state.LastCreatedDirectory)
+
+[<Fact>]
+let ``a state built from settings carries the editors it names`` () =
+    let state = fromSettings stored
+
+    Assert.Equal(stored.Editors, state.Editors)
+
+[<Fact>]
+let ``editors that have been changed go into the settings`` () =
+    let state = create (fp (at "start"))
+
+    let changed = withEditors stored.Editors state
+
+    Assert.Equal(stored.Editors, (settings changed).Editors)
+    Assert.Equal(EditorSettings.none, (settings state).Editors)
+
+[<Fact>]
+let ``the editor a name is opened with comes from the state`` () =
+    let state = fromSettings stored
+
+    Assert.Equal(EditorPath.tryCreate "notepad.exe", editorFor (en "notes.txt") state)
+    Assert.Equal(EditorPath.tryCreate "code.exe", editorFor (en "Program.fs") state)
 
 [<Fact>]
 let ``the name a new directory was given goes into the settings`` () =

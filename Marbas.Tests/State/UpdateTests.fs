@@ -488,16 +488,123 @@ let ``edit requested aims at the file under the cursor`` () =
 
     let result = update fs EditRequested state
 
-    Assert.Equal<Effect list>([ EditFile(fp (at "start/notes.txt")) ], result.Effects)
+    Assert.Equal<Effect list>([ EditFile(fp (at "start/notes.txt"), None) ], result.Effects)
 
 [<Fact>]
-let ``edit requested on a directory raises no effect`` () =
+let ``edit requested names the editor the extension is associated with`` () =
+    let fs = mockFs ()
+    let chosen = Expect.some (EditorPath.tryCreate "rider.exe")
+
+    let editors =
+        EditorSettings.associate (Expect.some (FileExtension.tryCreate "fs")) chosen EditorSettings.none
+
+    let state = loaded fs |> withEditors editors |> setCursor Left 3
+
+    let result = update fs EditRequested state
+
+    Assert.Equal<Effect list>([ EditFile(fp (at "start/setup.fs"), Some chosen) ], result.Effects)
+
+[<Fact>]
+let ``edit requested on a directory asks for its properties`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 1
+    let shown = EntryProperties.read fs (fp (at "start/docs")) |> Expect.ok
 
     let result = update fs EditRequested state
 
     Assert.Equal(state, result.State)
+    Assert.Equal<Effect list>([ ShowProperties shown ], result.Effects)
+
+[<Fact>]
+let ``edit requested on the parent entry raises no effect`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 0
+
+    let result = update fs EditRequested state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``properties that come back are written and the panel re-read`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 1
+    let changed =
+        EntryProperties.read fs (fp (at "start/docs"))
+        |> Expect.ok
+        |> EntryProperties.setFlag ReadOnlyFlag true
+
+    let result = update fs (PropertiesEntered changed) state
+
+    Assert.Empty result.Effects
+    Assert.True(EntryProperties.read fs (fp (at "start/docs")) |> Expect.ok |> EntryProperties.has ReadOnlyFlag)
+
+[<Fact>]
+let ``properties that cannot be written are reported`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 1
+    let changed = EntryProperties.read fs (fp (at "start/docs")) |> Expect.ok
+    fs.Directory.Delete(at "start/docs")
+
+    let result = update fs (PropertiesEntered changed) state
+
+    Assert.Equal<Effect list>([ ReportOperationError(SourceNotFound(fp (at "start/docs"))) ], result.Effects)
+
+[<Fact>]
+let ``a new file is asked for by name`` () =
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let result = update fs NewFileRequested state
+
+    Assert.Equal<Effect list>([ PromptForFileName ], result.Effects)
+
+[<Fact>]
+let ``a named new file is created and handed to its editor`` () =
+    let fs = mockFs ()
+    let chosen = Expect.some (EditorPath.tryCreate "code.exe")
+    let editors =
+        EditorSettings.associate (Expect.some (FileExtension.tryCreate "md")) chosen EditorSettings.none
+    let state = loaded fs |> withEditors editors
+    
+    let result = update fs (FileNameEntered(en "draft.md")) state
+
+    Assert.True(fs.File.Exists(at "start/draft.md"))
+    Assert.Equal<Effect list>([ EditFile(fp (at "start/draft.md"), Some chosen) ], result.Effects)
+    Assert.Equal(Some "draft.md", cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
+
+[<Fact>]
+let ``a new file a directory already answers to is reported`` () =
+    let fs = mockFs ()
+    let state = loaded fs
+
+    let result = update fs (FileNameEntered(en "docs")) state
+
+    Assert.Equal(state, result.State)
+    Assert.Equal<Effect list>([ ReportOperationError(TargetExists(fp (at "start/docs"))) ], result.Effects)
+
+[<Fact>]
+let ``a settings request hands over the editors in force`` () =
+    let fs = mockFs ()
+    let editors =
+        { EditorSettings.none with
+            DefaultEditor = EditorPath.tryCreate "code.exe" }
+    let state = loaded fs |> withEditors editors
+
+    let result = update fs SettingsRequested state
+
+    Assert.Equal<Effect list>([ ShowSettings editors ], result.Effects)
+
+[<Fact>]
+let ``editors that come back take the place of the ones in force`` () =
+    let fs = mockFs ()
+    let editors =
+        { EditorSettings.none with
+            DefaultEditor = EditorPath.tryCreate "code.exe" }
+
+    let result = update fs (EditorsEntered editors) (loaded fs)
+
+    Assert.Equal(editors, result.State.Editors)
     Assert.Empty result.Effects
 
 [<Fact>]

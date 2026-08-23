@@ -41,7 +41,8 @@ type AppState =
     { Left: PanelState
       Right: PanelState
       Active: PanelSide
-      LastCreatedDirectory: EntryName option }
+      LastCreatedDirectory: EntryName option
+      Editors: EditorSettings }
 
 type FocusTarget =
     | Top
@@ -60,7 +61,8 @@ let fromSettings (settings: Settings) =
     { Left = panelFrom settings.Left
       Right = panelFrom settings.Right
       Active = Left
-      LastCreatedDirectory = settings.LastCreatedDirectory }
+      LastCreatedDirectory = settings.LastCreatedDirectory
+      Editors = settings.Editors }
 
 let create (path: FileSystemPath) = fromSettings (Settings.forPath path)
 
@@ -72,7 +74,13 @@ let private panelSettings (p: PanelState) : PanelSettings =
 let settings (state: AppState) : Settings =
     { Left = panelSettings state.Left
       Right = panelSettings state.Right
-      LastCreatedDirectory = state.LastCreatedDirectory }
+      LastCreatedDirectory = state.LastCreatedDirectory
+      Editors = state.Editors }
+
+let withEditors (editors: EditorSettings) (state: AppState) = { state with Editors = editors }
+
+let editorFor (name: EntryName) (state: AppState) =
+    EditorSettings.editorFor name state.Editors
 
 let panel side state =
     match side with
@@ -286,6 +294,11 @@ let cursorFilePath (fs: IFileSystem) panel =
     |> Option.filter (fun entry -> entry.Kind = File)
     |> Option.map (entryPath fs panel)
 
+let cursorDirectoryPath (fs: IFileSystem) panel =
+    cursorEntry panel
+    |> Option.filter (fun entry -> entry.Kind = Directory && selectable entry)
+    |> Option.map (entryPath fs panel)
+
 let deleteScope (fs: IFileSystem) panel =
     let reachesContents =
         operationTargets panel
@@ -330,11 +343,25 @@ let makeDirectory (fs: IFileSystem) side name state : Result<AppState, Operation
             { updated with
                 LastCreatedDirectory = Some name }))
 
+let makeFile (fs: IFileSystem) side name state : Result<AppState * FileSystemPath, Operations.OperationError> =
+    let previous = panel side state
+
+    Operations.makeFile fs previous.Path name
+    |> Result.bind (fun path ->
+        loadPanelFocusing fs side previous.Path (ByName name) state
+        |> Result.mapError asOperationError
+        |> Result.map (updatePanel side (keepSurviving previous.Selected))
+        |> Result.map (fun updated -> updated, path))
+
 let refresh (fs: IFileSystem) state =
     let panel = activePanel state
 
     loadPanelFocusing fs state.Active panel.Path (cursorFocus panel) state
     |> Result.map (updatePanel state.Active (keepSurviving panel.Selected))
+
+let applyProperties (fs: IFileSystem) (properties: EntryProperties) state =
+    EntryProperties.write fs properties
+    |> Result.bind (fun () -> refresh fs state |> Result.mapError asOperationError)
 
 let toggleHidden (fs: IFileSystem) side state =
     let previous = panel side state

@@ -87,6 +87,18 @@ let makeDirectory (fs: IFileSystem) (parent: FileSystemPath) (name: EntryName) =
     | NoEntry -> attempt fs path createDirectory
     | _ -> Error(TargetExists path)
 
+let private createFile (fs: IFileSystem) (path: FileSystemPath) =
+    use stream = fs.File.Create(FileSystemPath.value path)
+    ignore stream
+
+let makeFile (fs: IFileSystem) (parent: FileSystemPath) (name: EntryName) =
+    let path = FileSystemPath.combine fs parent (EntryName.value name)
+
+    match FileSystemPath.kind fs path with
+    | DirectoryEntry -> Error(TargetExists path)
+    | FileEntry -> Ok path
+    | NoEntry -> attempt fs path createFile |> Result.map (fun () -> path)
+
 let delete (fs: IFileSystem) (path: FileSystemPath) =
     match FileSystemPath.kind fs path with
     | DirectoryEntry -> attempt fs path deleteDirectory

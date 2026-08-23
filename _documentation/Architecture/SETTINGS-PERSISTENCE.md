@@ -66,3 +66,20 @@ caught it; no test could have, because the value comes from the environment.
 one, `$HOME/.config` otherwise — and it takes both values as arguments, so it is
 tested on both platforms while `Program.fs` keeps only the two environment
 reads.
+
+**The editors are session settings too, under one prefix.** `editor.default`
+names the editor `F4` starts when nothing more specific applies, and
+`editor.extension.<ext>` names one per extension — `editor.extension.fs=…`,
+`editor.extension.txt=…`. A file that names no editor at all keeps the
+defaults; a key with a blank extension or a blank editor is passed over the way
+every other unreadable line is, so one mistyped association cannot cost the
+rest. The associations come back out of the `key=value` map in key order, which
+is extension order, so the file, the popup and `EditorSettings.associate` all
+agree without anyone sorting twice.
+
+**An empty default editor still means what it always meant.** `EditorCommand`
+was written around one `$EDITOR` and it still is: `Program.fs` resolves an
+editor by asking the state first (`EditorSettings.editorFor`, which tries the
+extension and falls back to the default), then `$EDITOR`, then `notepad` on
+Windows and `vi` elsewhere. Leaving the field blank in the settings popup
+therefore restores exactly the behaviour of the version before it existed.

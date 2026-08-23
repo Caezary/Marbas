@@ -14,10 +14,18 @@ let LeftBracket = Rune '['
 
 let RightBracket = Rune ']'
 
+let Checked = Rune '■'
+
+let Unchecked = Rune '·'
+
 let button title =
     let button = new Button(Title = title)
     button.ShadowStyle <- ShadowStyles.None
     button
+
+let typedInto (field: #View) =
+    field.SetScheme ClassicScheme.input |> ignore
+    field
 
 let dress (dialog: Dialog) =
     dialog.BorderStyle <- Frame
@@ -39,3 +47,5 @@ let apply () =
 
     Glyphs.LeftBracket <- LeftBracket
     Glyphs.RightBracket <- RightBracket
+    Glyphs.CheckStateChecked <- Checked
+    Glyphs.CheckStateUnChecked <- Unchecked

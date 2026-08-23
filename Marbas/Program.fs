@@ -112,16 +112,32 @@ let main _ =
         use viewer = FileViewer.create _.RequestStop() source
         app.Run viewer |> ignore
 
-    let editorCommand =
-        let platform =
-            if OperatingSystem.IsWindows() then
-                EditorCommand.Windows
-            else
-                EditorCommand.Unix
+    let editProperties properties =
+        use dialog = PropertiesDialog.create properties
+        app.Run dialog |> ignore
+        PropertiesDialog.properties properties dialog
 
-        EditorCommand.choose (Environment.GetEnvironmentVariable "EDITOR" |> Option.ofObj) platform
+    let editEditors editors =
+        use dialog = SettingsDialog.create editors
+        app.Run dialog |> ignore
+        SettingsDialog.editors dialog
 
-    let runEditor path =
+    let platform =
+        if OperatingSystem.IsWindows() then
+            EditorCommand.Windows
+        else
+            EditorCommand.Unix
+
+    let environmentEditor =
+        Environment.GetEnvironmentVariable "EDITOR" |> Option.ofObj
+
+    let runEditor (chosen: EditorPath option) path =
+        let editorCommand =
+            chosen
+            |> Option.map EditorPath.value
+            |> Option.orElse environmentEditor
+            |> fun configured -> EditorCommand.choose configured platform
+
         try
             let start = ProcessStartInfo(editorCommand, UseShellExecute = false)
             start.ArgumentList.Add(FileSystemPath.value path)
@@ -208,6 +224,8 @@ let main _ =
               SendToTrash = sendToTrash
               ShowFile = showFile
               RunEditor = runEditor
+              EditProperties = editProperties
+              EditEditors = editEditors
               AskOverwrite = askOverwrite
               WatchModifiers = watchModifiers
               RunBatch = runBatch }

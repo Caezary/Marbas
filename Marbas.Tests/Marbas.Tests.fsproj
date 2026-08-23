@@ -27,7 +27,9 @@
     <Compile Include="FileSystem\HiddenEntriesTests.fs" />
     <Compile Include="FileSystem\ExecutabilityTests.fs" />
     <Compile Include="FileSystem\SearchTextTests.fs" />
+    <Compile Include="FileSystem\EditorSettingsTests.fs" />
     <Compile Include="FileSystem\SettingsTests.fs" />
+    <Compile Include="FileSystem\EntryPropertiesTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
     <Compile Include="FileSystem\TrashTests.fs" />
   </ItemGroup>
@@ -46,6 +48,8 @@
     <Compile Include="State\DeleteTests.fs" />
     <Compile Include="State\TransferTests.fs" />
     <Compile Include="State\SearchTests.fs" />
+    <Compile Include="State\NewFileTests.fs" />
+    <Compile Include="State\PropertiesTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
   </ItemGroup>
@@ -74,6 +78,8 @@
     <Compile Include="Ui\ModifiersTests.fs" />
     <Compile Include="Ui\KeyMapTests.fs" />
     <Compile Include="Ui\KeyBarLayoutTests.fs" />
+    <Compile Include="Ui\TimestampTextTests.fs" />
+    <Compile Include="Ui\AssociationRowTests.fs" />
     <Compile Include="Ui\EditorCommandTests.fs" />
     <Compile Include="Ui\ShellTests.fs" />
   </ItemGroup>
@@ -94,6 +100,8 @@
     <Compile Include="Integration\LiteralTextTests.fs" />
     <Compile Include="Integration\PatternDialogTests.fs" />
     <Compile Include="Integration\PromptDialogTests.fs" />
+    <Compile Include="Integration\PropertiesDialogTests.fs" />
+    <Compile Include="Integration\SettingsDialogTests.fs" />
     <Compile Include="Integration\DialogStyleTests.fs" />
     <Compile Include="Integration\ProgressDialogTests.fs" />
     <Compile Include="Integration\FileViewerTests.fs" />

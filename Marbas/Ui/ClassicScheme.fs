@@ -70,6 +70,19 @@ let dialog =
         Disabled = attribute ColorName16.DarkGray ColorName16.Blue
     )
 
+let input =
+    Scheme(
+        Normal = attribute ColorName16.Black ColorName16.Cyan,
+        HotNormal = attribute ColorName16.BrightYellow ColorName16.Cyan,
+        Focus = attribute ColorName16.Black ColorName16.White,
+        HotFocus = attribute ColorName16.BrightYellow ColorName16.White,
+        Active = attribute ColorName16.Black ColorName16.White,
+        HotActive = attribute ColorName16.BrightYellow ColorName16.White,
+        Editable = attribute ColorName16.Black ColorName16.Cyan,
+        ReadOnly = attribute ColorName16.DarkGray ColorName16.Cyan,
+        Disabled = attribute ColorName16.DarkGray ColorName16.Blue
+    )
+
 let errorDialog =
     Scheme(
         Normal = attribute ColorName16.White ColorName16.Red,

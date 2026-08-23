@@ -11,7 +11,8 @@ type PanelSettings =
 type Settings =
     { Left: PanelSettings
       Right: PanelSettings
-      LastCreatedDirectory: EntryName option }
+      LastCreatedDirectory: EntryName option
+      Editors: EditorSettings }
 
 module Settings =
 
@@ -44,6 +45,15 @@ module Settings =
 
     [<Literal>]
     let private DirectoryPrefix = "mkdir."
+
+    [<Literal>]
+    let private EditorPrefix = "editor."
+
+    [<Literal>]
+    let private DefaultSetting = "default"
+
+    [<Literal>]
+    let private ExtensionPrefix = "editor.extension."
 
     [<Literal>]
     let private NameSetting = "name"
@@ -93,7 +103,8 @@ module Settings =
     let forPath path : Settings =
         { Left = panelOn path
           Right = panelOn path
-          LastCreatedDirectory = None }
+          LastCreatedDirectory = None
+          Editors = EditorSettings.none }
 
     let location (fs: IFileSystem) (applicationData: string) (userProfile: string) =
         let home =
@@ -117,10 +128,19 @@ module Settings =
         |> Option.map (EntryName.value >> line DirectoryPrefix NameSetting)
         |> Option.toList
 
+    let private editorLines (editors: EditorSettings) =
+        (editors.DefaultEditor
+         |> Option.map (EditorPath.value >> line EditorPrefix DefaultSetting)
+         |> Option.toList)
+        @ (editors.Associations
+           |> List.map (fun association ->
+               line ExtensionPrefix (FileExtension.value association.Extension) (EditorPath.value association.Editor)))
+
     let format (settings: Settings) =
         panelLines LeftPrefix settings.Left
         @ panelLines RightPrefix settings.Right
         @ directoryLines settings.LastCreatedDirectory
+        @ editorLines settings.Editors
 
     let private entry (text: string) =
         match text.Split('=', 2) with
@@ -149,6 +169,21 @@ module Settings =
                 |> Option.defaultValue fallback.Sort.Direction }
           Hidden = token HiddenSetting |> Option.bind hiddenOf |> Option.defaultValue fallback.Hidden }
 
+    let private associationFrom (key: string) (value: string) =
+        if key.StartsWith ExtensionPrefix then
+            match FileExtension.tryCreate (key.Substring ExtensionPrefix.Length), EditorPath.tryCreate value with
+            | Some extension, Some editor -> Some { Extension = extension; Editor = editor }
+            | _ -> None
+        else
+            None
+
+    let private editorsFrom (read: Map<string, string>) (fallback: EditorSettings) =
+        let editors =
+            { DefaultEditor = Map.tryFind (EditorPrefix + DefaultSetting) read |> Option.bind EditorPath.tryCreate
+              Associations = read |> Map.toList |> List.choose (fun (key, value) -> associationFrom key value) }
+
+        if editors = EditorSettings.none then fallback else editors
+
     let parse (defaults: Settings) (lines: string list) : Settings =
         let read = entries lines
 
@@ -157,7 +192,8 @@ module Settings =
           LastCreatedDirectory =
             Map.tryFind (DirectoryPrefix + NameSetting) read
             |> Option.bind EntryName.tryCreate
-            |> Option.orElse defaults.LastCreatedDirectory }
+            |> Option.orElse defaults.LastCreatedDirectory
+          Editors = editorsFrom read defaults.Editors }
 
     let private stored (fs: IFileSystem) defaults path =
         try

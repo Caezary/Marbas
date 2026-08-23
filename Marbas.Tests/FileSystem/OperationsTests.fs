@@ -40,6 +40,35 @@ let ``makeDirectory refuses an existing name`` () =
     Assert.Equal(TargetExists(fp (at "data/new")), failure)
 
 [<Fact>]
+let ``makeFile creates an empty file in the given parent`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "data")
+
+    let path = makeFile fs (fp (at "data")) (en "notes.txt") |> Expect.ok
+
+    Assert.Equal(at "data/notes.txt", FileSystemPath.value path)
+    Assert.Equal("", fs.File.ReadAllText(at "data/notes.txt"))
+
+[<Fact>]
+let ``makeFile leaves an existing file as it stands`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "data/notes.txt", MockFileData "hello")
+
+    let path = makeFile fs (fp (at "data")) (en "notes.txt") |> Expect.ok
+
+    Assert.Equal(at "data/notes.txt", FileSystemPath.value path)
+    Assert.Equal("hello", fs.File.ReadAllText(at "data/notes.txt"))
+
+[<Fact>]
+let ``makeFile refuses a name a directory already carries`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "data/notes.txt")
+
+    let failure = makeFile fs (fp (at "data")) (en "notes.txt") |> Expect.error
+
+    Assert.Equal(TargetExists(fp (at "data/notes.txt")), failure)
+
+[<Fact>]
 let ``delete removes a file`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/notes.txt", MockFileData "hello")

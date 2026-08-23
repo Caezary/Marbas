@@ -71,6 +71,20 @@ let ``a popup is bracketed with signs every console font carries`` () =
     Assert.Equal(DialogStyle.RightBracket, Glyphs.RightBracket)
 
 [<Fact>]
+let ``a tick box is marked with signs every console font carries`` () =
+    DialogStyle.apply ()
+
+    Assert.Equal(DialogStyle.Checked, Glyphs.CheckStateChecked)
+    Assert.Equal(DialogStyle.Unchecked, Glyphs.CheckStateUnChecked)
+
+[<Fact>]
+let ``a field that is typed into stands out from the popup around it`` () =
+    let field = new TextField() |> DialogStyle.typedInto
+
+    Assert.Equal(ClassicScheme.input, field.GetScheme())
+    Assert.NotEqual(ClassicScheme.dialog.Normal, ClassicScheme.input.Normal)
+
+[<Fact>]
 let ``a message box is framed and aligned like every other popup`` () =
     DialogStyle.apply ()
 

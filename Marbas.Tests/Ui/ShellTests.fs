@@ -1,5 +1,6 @@
 module Marbas.Tests.Ui.ShellTests
 
+open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
@@ -451,22 +452,110 @@ let ``a file that cannot be read is reported instead of shown`` () =
 let ``an edited file is handed to the editor and its outcome dispatched back`` () =
     let sent, dispatch = capture ()
     let edited = ResizeArray<FileSystemPath>()
-    let deps = { noDeps () with RunEditor = fun path -> edited.Add path; Ok() }
+    let deps = { noDeps () with RunEditor = fun _ path -> edited.Add path; Ok() }
 
-    Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt")))
+    Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), None))
 
     Assert.Equal(fp (at "start/notes.txt"), Assert.Single edited)
     Assert.Equal<Message list>([ EditFinished(Ok()) ], List.ofSeq sent)
 
 [<Fact>]
+let ``the editor the effect names is the one that is started`` () =
+    let _, dispatch = capture ()
+    let started = ResizeArray<EditorPath option>()
+    let deps = { noDeps () with RunEditor = fun chosen _ -> started.Add chosen; Ok() }
+    let chosen = EditorPath.tryCreate "code.exe"
+
+    Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), chosen))
+
+    Assert.Equal(chosen, Assert.Single started)
+
+[<Fact>]
 let ``an editor that fails dispatches its failure back`` () =
     let sent, dispatch = capture ()
     let failure = OperationFailed(fp (at "start/notes.txt"), "no editor")
-    let deps = { noDeps () with RunEditor = fun _ -> Error failure }
+    let deps = { noDeps () with RunEditor = fun _ _ -> Error failure }
 
-    Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt")))
+    Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), None))
 
     Assert.Equal<Message list>([ EditFinished(Error failure) ], List.ofSeq sent)
+
+[<Fact>]
+let ``a name for a new file is dispatched as FileNameEntered`` () =
+    let sent, dispatch = capture ()
+    let deps = { noDeps () with AskName = fun _ _ -> Some "draft.md" }
+
+    Shell.interpret deps dispatch PromptForFileName
+
+    Assert.Equal<Message list>([ FileNameEntered(en "draft.md") ], List.ofSeq sent)
+
+[<Fact>]
+let ``a cancelled new file prompt dispatches nothing`` () =
+    let sent, dispatch = capture ()
+    let deps = { noDeps () with AskName = fun _ _ -> None }
+
+    Shell.interpret deps dispatch PromptForFileName
+
+    Assert.Empty sent
+
+[<Fact>]
+let ``the new file prompt opens on nothing`` () =
+    let offered = ResizeArray<string>()
+    let deps = { noDeps () with AskName = fun _ suggestion -> offered.Add suggestion; None }
+
+    Shell.interpret deps ignore PromptForFileName
+
+    Assert.Equal("", Assert.Single offered)
+
+[<Fact>]
+let ``changed properties are dispatched back`` () =
+    let sent, dispatch = capture ()
+    let shown =
+        { Path = fp (at "start/docs")
+          Flags = Set.empty
+          Created = DateTime(2024, 1, 1)
+          Modified = DateTime(2024, 1, 1)
+          Accessed = DateTime(2024, 1, 1) }
+    let changed = EntryProperties.setFlag HiddenFlag true shown
+    let deps = { noDeps () with EditProperties = fun _ -> Some changed }
+
+    Shell.interpret deps dispatch (ShowProperties shown)
+
+    Assert.Equal<Message list>([ PropertiesEntered changed ], List.ofSeq sent)
+
+[<Fact>]
+let ``a dismissed properties dialog dispatches nothing`` () =
+    let sent, dispatch = capture ()
+    let shown =
+        { Path = fp (at "start/docs")
+          Flags = Set.empty
+          Created = DateTime(2024, 1, 1)
+          Modified = DateTime(2024, 1, 1)
+          Accessed = DateTime(2024, 1, 1) }
+
+    Shell.interpret (noDeps ()) dispatch (ShowProperties shown)
+
+    Assert.Empty sent
+
+[<Fact>]
+let ``changed editors are dispatched back`` () =
+    let sent, dispatch = capture ()
+    let changed =
+        { EditorSettings.none with
+            DefaultEditor = EditorPath.tryCreate "code.exe" }
+    let deps = { noDeps () with EditEditors = fun _ -> Some changed }
+
+    Shell.interpret deps dispatch (ShowSettings EditorSettings.none)
+
+    Assert.Equal<Message list>([ EditorsEntered changed ], List.ofSeq sent)
+
+[<Fact>]
+let ``a dismissed settings dialog dispatches nothing`` () =
+    let sent, dispatch = capture ()
+
+    Shell.interpret (noDeps ()) dispatch (ShowSettings EditorSettings.none)
+
+    Assert.Empty sent
 
 [<Fact>]
 let ``saved settings are written where the settings path points`` () =

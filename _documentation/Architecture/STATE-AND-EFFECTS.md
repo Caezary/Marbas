@@ -99,3 +99,36 @@ different dialog captions, so the dependency is `title -> message -> unit`;
 reload returns a `ListingError`, which a private pure mapping folds into an
 `OperationError` so the whole transition answers with one error type. State
 still never depends on Ui — the mapping is over the raw error values.
+
+**`F4` reads the entry under the cursor and answers with a different effect for
+each kind.** `EditRequested` is one message; `Update` asks the panel whether the
+cursor stands on a file or on a directory and raises `EditFile` or
+`ShowProperties`. `..` answers neither, so it still starts nothing. That keeps
+the key binding one line in `KeyMap` and the decision where the state is, which
+is also the only place that knows which editor an extension is associated with:
+`EditFile` carries the resolved `EditorPath option` beside the path, so
+`Shell` and `Program.fs` never look a setting up.
+
+**Reading and writing properties happen inside a transition, like making a
+directory.** `EditRequested` reads them (`EntryProperties.read`, mapped to
+`ReportOperationError` when the entry is gone) and `PropertiesEntered` writes
+them and re-reads the panel, so a directory that has just been marked hidden
+disappears from a panel that conceals hidden entries without anyone asking for a
+refresh. The popup itself is a port — `Dependencies.EditProperties` takes the
+properties it should show and answers with the ones the user accepted, or
+`None` — which is what lets every one of those paths be tested with no dialog on
+screen.
+
+**`Shift+F4` creates the file first and edits it second, in one transition.**
+`FileNameEntered` runs `AppState.makeFile`, which creates the file, reloads the
+panel with the cursor on it and hands the path back; the resulting state is what
+`EditFile` is raised from, so the editor is chosen from the name that was just
+typed. A name a file already answers to is opened as it stands rather than
+truncated — the point of the key is to reach an editor, not to erase anything —
+while a name a *directory* answers to is a `TargetExists` failure.
+
+**The settings popup is a port too, and what it returns is state.**
+`SettingsRequested` hands `state.Editors` to `Dependencies.EditEditors` through
+the `ShowSettings` effect; `EditorsEntered` puts the answer back into the state
+and nothing else. It reaches the file the way every other setting does, when
+`QuitRequested` saves the session.

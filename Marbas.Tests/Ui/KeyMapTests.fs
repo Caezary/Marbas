@@ -23,7 +23,7 @@ let ``the bar of no modifier carries the classic commands`` () =
     let commands = commandsOn Modifiers.none
 
     Assert.Equal<string list>(
-        [ ""; ""; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; ""; "" ],
+        [ ""; ""; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; ""; "Setup" ],
         commands
     )
 
@@ -43,7 +43,7 @@ let ``holding Alt puts the drive choosers on the first two slots`` () =
 let ``holding Shift puts the permanent delete on the delete slot`` () =
     let commands = commandsOn (Modifiers.held [ Shift ])
 
-    Assert.Equal<string list>([ ""; ""; ""; ""; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands)
+    Assert.Equal<string list>([ ""; ""; ""; "NewFile"; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands)
 
 [<Fact>]
 let ``a slot carries the key the modifiers held make of its function key`` () =

@@ -146,8 +146,13 @@ disagrees.
 | `F4` in the viewer switches to a hex dump | same | same | suite |
 | A UTF-16 file is shown as the text it is | same | same | suite |
 | The viewer's arrows, page keys, `Home`/`End` and `F2` wrap | same | same | suite |
-| `F4` starts `$EDITOR` when it is set | same | same | suite |
-| `F4` falls back to a default | `notepad` | `vi` | suite |
+| `F4` starts the editor the extension is associated with | same | same | suite |
+| `F4` falls back to the default editor, then `$EDITOR` | same | same | suite |
+| `F4` falls back again when neither is set | `notepad` | `vi` | suite |
+| `F4` on a directory opens its properties | same | same | suite |
+| A flag written to a directory is read back | same | **manual** | suite (mock) |
+| `Shift+F4` creates a file and opens it | same | same | suite |
+| `F12` opens the settings popup | same | same | suite |
 | The screen is whole again after the editor exits | windowed editors: yes | **manual, and see below** | manual |
 
 **The known one.** `F4` starts the editor as a child process sharing this
@@ -159,8 +164,17 @@ let go of it, and the v2 API has no suspend/resume for a child process
 driver down around the process and re-initialise afterwards; it touches
 `Program.fs` only, and it is deliberately not done yet — it would be dead weight
 on Windows, so it wants a switch of its own rather than an unconditional detour.
-Until then, `EDITOR=code -w` or any windowed editor is the way to use `F4` on
-Linux.
+Until then, `EDITOR=code -w`, a default editor named in the settings popup, or
+any windowed editor is the way to use `F4` on Linux.
+
+**Attributes are not the same bits everywhere.** The properties popup offers
+read-only, hidden, system and archive because that is what `FileAttributes`
+carries; on Linux only the read-only bit maps onto anything real (the write
+permission), and .NET reports hidden for a name starting with a dot rather than
+for a bit that can be set. `EntryProperties.write` folds the four flags onto the
+attributes the entry already has and swallows nothing — a platform that refuses
+one is reported as an operation failure — but *what* a tick does on Linux is a
+manual row, since `MockFileSystem` accepts every flag the tests set.
 
 ## Decisions
 

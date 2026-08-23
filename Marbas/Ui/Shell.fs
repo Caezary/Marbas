@@ -15,6 +15,9 @@ let DeselectPrompt = "Deselect"
 let MkdirPrompt = "Create directory"
 
 [<Literal>]
+let NewFilePrompt = "Create file"
+
+[<Literal>]
 let RootPrompt = "Select root"
 
 [<Literal>]
@@ -40,7 +43,9 @@ type Dependencies =
       Confirm: string -> string -> bool
       SendToTrash: FileSystemPath -> Result<unit, Operations.OperationError>
       ShowFile: FileWindow.Source -> unit
-      RunEditor: FileSystemPath -> Result<unit, Operations.OperationError>
+      RunEditor: EditorPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
+      EditProperties: EntryProperties -> EntryProperties option
+      EditEditors: EditorSettings -> EditorSettings option
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
       WatchModifiers: (Set<Modifier> -> unit) -> unit
       RunBatch:
@@ -91,7 +96,15 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
             use source = source
             deps.ShowFile source
         | Error error -> deps.ReportError ContentErrorMessage.Title (ContentErrorMessage.describe error)
-    | EditFile path -> deps.RunEditor path |> EditFinished |> dispatch
+    | EditFile(path, editor) -> deps.RunEditor editor path |> EditFinished |> dispatch
+    | ShowProperties properties ->
+        match deps.EditProperties properties with
+        | Some changed -> dispatch (PropertiesEntered changed)
+        | None -> ()
+    | ShowSettings editors ->
+        match deps.EditEditors editors with
+        | Some changed -> dispatch (EditorsEntered changed)
+        | None -> ()
     | PromptForTarget suggestion ->
         match deps.AskTarget MovePrompt (FileSystemPath.value suggestion) with
         | Some text -> dispatch (TargetEntered text)
@@ -101,6 +114,10 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
 
         match deps.AskName MkdirPrompt offered |> Option.bind EntryName.tryCreate with
         | Some name -> dispatch (NameEntered name)
+        | None -> ()
+    | PromptForFileName ->
+        match deps.AskName NewFilePrompt "" |> Option.bind EntryName.tryCreate with
+        | Some name -> dispatch (FileNameEntered name)
         | None -> ()
     | PromptForPattern mode ->
         match deps.AskPattern (patternPrompt mode) |> Option.bind NamePattern.tryCreate with

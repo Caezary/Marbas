@@ -30,7 +30,14 @@ let private stored: Settings =
         { Path = fp (at "start")
           Sort = SortOrder.create ByDate Ascending
           Hidden = Concealed }
-      LastCreatedDirectory = Some(en "work") }
+      LastCreatedDirectory = Some(en "work")
+      Editors =
+        { DefaultEditor = EditorPath.tryCreate "code.exe"
+          Associations =
+            [ { Extension = Expect.some (FileExtension.tryCreate "fs")
+                Editor = Expect.some (EditorPath.tryCreate "rider.exe") }
+              { Extension = Expect.some (FileExtension.tryCreate "txt")
+                Editor = Expect.some (EditorPath.tryCreate "notepad.exe") } ] } }
 
 let private write (fs: MockFileSystem) lines =
     fs.AddFile(FileSystemPath.value settingsPath, MockFileData(String.concat "\n" lines))
@@ -82,6 +89,33 @@ let ``every sort key is written under a name that is read back as itself`` () =
           SortOrder.create BySize Descending ],
         parsed
     )
+
+[<Fact>]
+let ``the editors are written under their own names`` () =
+    let lines = Settings.format stored
+
+    Assert.Contains("editor.default=code.exe", lines)
+    Assert.Contains("editor.extension.fs=rider.exe", lines)
+    Assert.Contains("editor.extension.txt=notepad.exe", lines)
+
+[<Fact>]
+let ``a file that names no editor keeps the default editors`` () =
+    let parsed = Settings.parse defaults [ "left.sort=size" ]
+
+    Assert.Equal(EditorSettings.none, parsed.Editors)
+
+[<Fact>]
+let ``an association is read whatever the case its extension was written in`` () =
+    let parsed = Settings.parse defaults [ "editor.extension.TXT=notepad.exe" ]
+
+    Assert.Equal(EditorPath.tryCreate "notepad.exe", EditorSettings.editorFor (en "notes.txt") parsed.Editors)
+
+[<Fact>]
+let ``an association with nothing on either side is passed over`` () =
+    let parsed =
+        Settings.parse defaults [ "editor.extension.=notepad.exe"; "editor.extension.md=  "; "editor.default=   " ]
+
+    Assert.Equal(EditorSettings.none, parsed.Editors)
 
 [<Fact>]
 let ``a setting the file does not carry keeps its default`` () =

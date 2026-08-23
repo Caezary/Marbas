@@ -38,7 +38,7 @@ let private functionKeys =
     [ "F1"; "F2"; "F3"; "F4"; "F5"; "F6"; "F7"; "F8"; "F9"; "F10"; "F11"; "F12" ]
 
 let private classic =
-    [ ""; ""; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; ""; "" ]
+    [ ""; ""; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; ""; "Setup" ]
 
 [<Fact>]
 let ``the bar starts on the classic function keys`` () =
@@ -82,7 +82,7 @@ let ``holding Shift shows the permanent delete on the delete slot`` () =
 
     hold (Modifiers.held [ Shift ])
 
-    Assert.Equal<string list>([ ""; ""; ""; ""; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands window)
+    Assert.Equal<string list>([ ""; ""; ""; "NewFile"; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands window)
 
 [<Fact>]
 let ``a key keeps its name whatever modifier is held`` () =

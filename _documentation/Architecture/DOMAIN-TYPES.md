@@ -32,3 +32,23 @@ footer of the panel being searched is the one that changes, and
 `loadPanelFocusing` clears it along with the marks — a search cannot outlive the
 listing it was run against. `activate` clears both panels' searches, which is
 what closes one when `Tab` moves on.
+
+**An editor is named by a path, and an extension is what picks it.**
+`EditorPath` and `FileExtension` are single-case unions with `tryCreate` only,
+because both come from a text field: an editor left blank is *no editor*, not
+an empty command line, and an extension is normalised as it is created —
+trimmed, stripped of leading dots and lowercased — so `.TXT`, `txt` and `  .txt`
+are one key. `FileExtension.ofName` reads one off an `EntryName`, which is what
+makes the lookup `EditorSettings.editorFor name` rather than a string compare
+at the call site. `EditorSettings` is the pair of them: a default editor and an
+ordered list of `EditorAssociation`, kept sorted by extension so the file it is
+written to and the list a popup shows are in the same order every time.
+
+**Properties are a value the file system is read into and written back from.**
+`EntryProperties` carries the path, the three timestamps and a `Set<EntryFlag>`
+— `ReadOnlyFlag`, `HiddenFlag`, `SystemFlag`, `ArchiveFlag` — instead of a raw
+`FileAttributes`. That keeps the four bits Marbas offers apart from the ones it
+must not touch: `EntryProperties.write` folds the set back onto the attributes
+the entry already carries, so `Directory`, `ReparsePoint` and everything else
+survive a save. The flags are written last, after the timestamps, because a
+read-only bit set first would refuse them.

@@ -292,6 +292,45 @@ replaced and `Enter` alone accepts it. Selected text is drawn with
 its own instead of the one the input field wears; with both black on cyan the
 selection was invisible.
 
+**A field that is typed into stands out from the popup it sits in.**
+`DialogStyle.typedInto` puts `ClassicScheme.input` on a `TextField` — black on
+cyan, black on white where the caret is — because a popup with more than one
+field cannot rely on focus to show where the fields are. `PromptDialog` has one
+field and it is always focused, so it keeps the dialog scheme; the properties
+and settings popups have three each and would otherwise draw them white on blue,
+indistinguishable from the label beside them. It was the rendered screen that
+said so, not a property: an empty unfocused field is invisible to every test
+that reads `Frame` and `Text`.
+
+**The properties popup is a value in and a value out.** `PropertiesDialog.create`
+takes an `EntryProperties`, ticks a `CheckBox` per `EntryFlag` and writes each
+timestamp through `TimestampText` into a field; `PropertiesDialog.properties`
+takes the original back and folds the boxes and the fields onto it. Reading the
+original in is what makes a timestamp the user mistyped harmless — it is left as
+it was rather than zeroed — and it is what keeps the path untouched, since
+nothing on screen can change it. `TimestampText` fixes one pattern,
+`yyyy-MM-dd HH:mm:ss`, on the invariant culture, so what a machine in another
+locale shows is what it reads back.
+
+**A tick box is marked with signs a console font carries.** Terminal.Gui draws
+`CheckState` with U+2610 and U+2611, which are in the same class of glyph as the
+brackets `DialogStyle` already replaced. `apply` sets them to a filled square
+and a middle dot — both CP437 — so a checked flag reads at a glance and an
+unchecked one still shows where the box is.
+
+**The settings popup keeps its own working copy, so it needs no nested modal.**
+`SettingsDialog.SettingsView` holds an `EditorSettings` in a field and edits it
+in place: the extension and editor fields plus `Add` make one association
+(`EditorSettings.associate`, which replaces an extension already known),
+`Remove` takes the extension in the field back out, and moving the cursor in the
+list fills both fields from the row under it. A second dialog for adding a row
+would have needed `app.Run` from inside a dialog, which only `Program.fs` may
+do; this way the whole popup is one view and every one of those steps is a test
+that never runs an application loop. `Enter` in either of the two fields does
+what `Add` does and is marked handled there, because the alternative is what
+Terminal.Gui does by default — bubble to the dialog's last button, which is
+`Ok`, closing the popup and throwing the association away.
+
 ## The key table and the bar
 
 **One table holds every key, and the bar is a view of it.** `KeyMap.bindings`

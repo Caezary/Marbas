@@ -38,7 +38,7 @@ let ``the classic commands sit on the slots of their keys`` () =
     let commands = FunctionKeyBar.slots (bar window) |> List.map _.CommandName.Text
 
     Assert.Equal<string list>(
-        [ ""; ""; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; ""; "" ],
+        [ ""; ""; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; ""; "Setup" ],
         commands
     )
 

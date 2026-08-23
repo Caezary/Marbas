@@ -14,11 +14,13 @@
         <Compile Include="FileSystem\HiddenEntries.fs" />
         <Compile Include="FileSystem\Executability.fs" />
         <Compile Include="FileSystem\SearchText.fs" />
+        <Compile Include="FileSystem\EditorSettings.fs" />
         <Compile Include="FileSystem\Settings.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="FileSystem\Roots.fs" />
         <Compile Include="FileSystem\NamePattern.fs" />
         <Compile Include="FileSystem\Operations.fs" />
+        <Compile Include="FileSystem\EntryProperties.fs" />
         <Compile Include="FileSystem\Trash.fs" />
         <Compile Include="FileSystem\FileWindow.fs" />
         <Compile Include="FileSystem\LineIndex.fs" />
@@ -61,6 +63,10 @@
         <Compile Include="Ui\PatternDialog.fs" />
         <Compile Include="Ui\ProgressDialog.fs" />
         <Compile Include="Ui\FileViewer.fs" />
+        <Compile Include="Ui\TimestampText.fs" />
+        <Compile Include="Ui\AssociationRow.fs" />
+        <Compile Include="Ui\PropertiesDialog.fs" />
+        <Compile Include="Ui\SettingsDialog.fs" />
         <Compile Include="Ui\EditorCommand.fs" />
         <Compile Include="Ui\MainWindow.fs" />
         <Compile Include="Program.fs" />

@@ -1,0 +1,142 @@
+module Marbas.Tests.FileSystem.EntryPropertiesTests
+
+open System
+open System.IO
+open System.IO.Abstractions.TestingHelpers
+open Xunit
+open Marbas.FileSystem
+open Marbas.Tests
+
+let private at = Root.at
+
+let private fp = FileSystemPath.create
+
+let private mockFs () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "start/docs")
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs
+
+let private read fs path = EntryProperties.read fs path |> Expect.ok
+
+[<Fact>]
+let ``the properties of a directory are read off it`` () =
+    let fs = mockFs ()
+    let stamp = DateTime(2024, 3, 1, 10, 30, 0)
+    fs.DirectoryInfo.New(at "start/docs").CreationTime <- stamp
+
+    let properties = read fs (fp (at "start/docs"))
+
+    Assert.Equal(fp (at "start/docs"), properties.Path)
+    Assert.Equal(stamp, properties.Created)
+
+[<Fact>]
+let ``a directory the file system marks hidden reads as hidden`` () =
+    let fs = mockFs ()
+    let info = fs.DirectoryInfo.New(at "start/docs")
+    info.Attributes <- info.Attributes ||| FileAttributes.Hidden
+
+    let properties = read fs (fp (at "start/docs"))
+
+    Assert.True(EntryProperties.has HiddenFlag properties)
+    Assert.False(EntryProperties.has ReadOnlyFlag properties)
+
+[<Fact>]
+let ``the properties of a file are read off it`` () =
+    let fs = mockFs ()
+
+    let properties = read fs (fp (at "start/notes.txt"))
+
+    Assert.False(EntryProperties.has HiddenFlag properties)
+
+[<Fact>]
+let ``an entry that is not there has no properties`` () =
+    let fs = mockFs ()
+
+    let outcome = EntryProperties.read fs (fp (at "start/gone"))
+
+    Assert.Equal(Error(Operations.SourceNotFound(fp (at "start/gone"))), outcome)
+
+[<Fact>]
+let ``a flag that is set can be cleared and set again`` () =
+    let fs = mockFs ()
+    let properties = read fs (fp (at "start/docs"))
+
+    let hidden = EntryProperties.setFlag HiddenFlag true properties
+
+    Assert.True(EntryProperties.has HiddenFlag hidden)
+    Assert.False(EntryProperties.has HiddenFlag (EntryProperties.setFlag HiddenFlag false hidden))
+
+[<Fact>]
+let ``the flags written to a directory are read back from it`` () =
+    let fs = mockFs ()
+    let path = fp (at "start/docs")
+
+    read fs path
+    |> EntryProperties.setFlag HiddenFlag true
+    |> EntryProperties.setFlag ReadOnlyFlag true
+    |> EntryProperties.write fs
+    |> Expect.ok
+
+    let written = read fs path
+
+    Assert.True(EntryProperties.has HiddenFlag written)
+    Assert.True(EntryProperties.has ReadOnlyFlag written)
+
+[<Fact>]
+let ``clearing a flag takes it off the entry`` () =
+    let fs = mockFs ()
+    let path = fp (at "start/docs")
+    read fs path |> EntryProperties.setFlag HiddenFlag true |> EntryProperties.write fs |> Expect.ok
+
+    read fs path
+    |> EntryProperties.setFlag HiddenFlag false
+    |> EntryProperties.write fs
+    |> Expect.ok
+
+    Assert.False(EntryProperties.has HiddenFlag (read fs path))
+
+[<Fact>]
+let ``writing the properties keeps the entry a directory`` () =
+    let fs = mockFs ()
+    let path = fp (at "start/docs")
+
+    read fs path |> EntryProperties.setFlag ArchiveFlag true |> EntryProperties.write fs |> Expect.ok
+
+    Assert.Equal(DirectoryEntry, FileSystemPath.kind fs path)
+
+[<Fact>]
+let ``the timestamps written to a directory are read back from it`` () =
+    let fs = mockFs ()
+    let path = fp (at "start/docs")
+    let created = DateTime(2001, 2, 3, 4, 5, 6)
+    let modified = DateTime(2002, 3, 4, 5, 6, 7)
+
+    read fs path
+    |> fun properties ->
+        { properties with
+            Created = created
+            Modified = modified }
+    |> EntryProperties.write fs
+    |> Expect.ok
+
+    let written = read fs path
+
+    Assert.Equal(created, written.Created)
+    Assert.Equal(modified, written.Modified)
+
+[<Fact>]
+let ``properties cannot be written to an entry that is gone`` () =
+    let fs = mockFs ()
+    let properties = read fs (fp (at "start/docs"))
+    fs.Directory.Delete(at "start/docs")
+
+    let outcome = EntryProperties.write fs properties
+
+    Assert.Equal(Error(Operations.SourceNotFound(fp (at "start/docs"))), outcome)
+
+[<Fact>]
+let ``every flag has a name to put on a screen`` () =
+    let named = EntryProperties.flags |> List.map EntryProperties.label
+
+    Assert.Equal<string list>([ "Read-only"; "Hidden"; "System"; "Archive" ], named)

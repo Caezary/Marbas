@@ -33,6 +33,11 @@ type Message =
     | ViewRequested
     | EditRequested
     | EditFinished of outcome: Result<unit, Operations.OperationError>
+    | NewFileRequested
+    | FileNameEntered of name: EntryName
+    | PropertiesEntered of EntryProperties
+    | SettingsRequested
+    | EditorsEntered of EditorSettings
     | RootRequested of PanelSide
     | PathOpened of PanelSide * FileSystemPath
     | QuitRequested
@@ -52,9 +57,12 @@ type Effect =
     | MoveTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
-    | EditFile of path: FileSystemPath
+    | EditFile of path: FileSystemPath * editor: EditorPath option
+    | ShowProperties of EntryProperties
+    | ShowSettings of EditorSettings
     | PromptForTarget of suggestion: FileSystemPath
     | PromptForName of suggestion: EntryName option
+    | PromptForFileName
     | PromptForPattern of SelectionMode
     | PromptForRoot of PanelSide
     | SaveSettings of Settings
@@ -151,9 +159,23 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | None -> stay state
         | Some path -> request state (ViewFile path)
     | EditRequested ->
-        match cursorFilePath fs (activePanel state) with
-        | None -> stay state
-        | Some path -> request state (EditFile path)
+        let target = activePanel state
+
+        match cursorFilePath fs target, cursorDirectoryPath fs target with
+        | Some path, _ -> request state (EditFile(path, editorFor (FileSystemPath.name fs path) state))
+        | _, Some path ->
+            match EntryProperties.read fs path with
+            | Ok properties -> request state (ShowProperties properties)
+            | Error error -> request state (ReportOperationError error)
+        | None, None -> stay state
+    | NewFileRequested -> request state PromptForFileName
+    | FileNameEntered name ->
+        match makeFile fs state.Active name state with
+        | Error error -> request state (ReportOperationError error)
+        | Ok(updated, path) -> request updated (EditFile(path, editorFor name updated))
+    | PropertiesEntered properties -> applyProperties fs properties state |> applyOperation state
+    | SettingsRequested -> request state (ShowSettings state.Editors)
+    | EditorsEntered editors -> stay (withEditors editors state)
     | EditFinished outcome ->
         match outcome with
         | Error error -> request state (ReportOperationError error)
