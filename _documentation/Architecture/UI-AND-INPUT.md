@@ -228,6 +228,14 @@ listing, which is why it is never blank now and why a `Line` separates it from
 the entries. `SelectionSummary` kept its job — it describes marked entries — and
 `PanelFooter` is the choice above it.
 
+**The directory line counts both kinds, the total counts one.** `3 files, 2
+folders   1,234 bytes` answers "what is in here" for a panel that is mostly
+subdirectories, which a file count alone did not. `..` is a way out of the
+directory rather than something in it, so it is left out of both counts, and
+folders carry no size, so only the files add to the total. The nouns are
+pluralised, because `1 files` is the kind of detail a file manager is read on
+all day.
+
 **A file name is content, not markup.** Terminal.Gui reads `_` in a `Label`'s
 `Text` and in a `FrameView`'s `Title` as the hot key specifier: it takes the
 underscore out of what it draws and binds the letter after it as a shortcut, so

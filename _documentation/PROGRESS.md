@@ -176,9 +176,9 @@ checklist in [Cross-platform](Architecture/CROSS-PLATFORM.md).
   leaves the rest marked.
 - A rule separates the listing from the bottom row of each panel, and that row
   is never blank: it summarises the marks — how many entries and how many bytes
-  they add up to — and falls back to what the directory holds (`3 files   1,234
-  bytes`, counting files only) while nothing is marked. An open search takes it
-  over from both.
+  they add up to — and falls back to what the directory holds (`3 files, 2
+  folders   1,234 bytes`; `..` counts as neither, and only the files add to the
+  total) while nothing is marked. An open search takes it over from both.
 - A status line above the function-key bar describes the entry under the cursor
   of the active panel — untruncated name, exact size in bytes (`<DIR>` for
   directories) and modification date. It follows both cursor movement and

@@ -39,18 +39,35 @@ let private panel =
       Search = None }
 
 [<Fact>]
-let ``with nothing marked the footer counts the files of the directory`` () =
+let ``with nothing marked the footer counts the files and the folders of the directory`` () =
     let text = PanelFooter.describe panel
 
     Assert.Contains("2 files", text)
+    Assert.Contains("1 folder", text)
     Assert.Contains("1,234 bytes", text)
 
 [<Fact>]
-let ``directories are left out of the count and of the total`` () =
+let ``the parent entry is counted as neither file nor folder`` () =
+    let text = PanelFooter.describe { panel with Entries = [ directory ".." ] }
+
+    Assert.Contains("0 files", text)
+    Assert.Contains("0 folders", text)
+
+[<Fact>]
+let ``folders are left out of the total size`` () =
     let text = PanelFooter.describe { panel with Entries = [ directory ".."; directory "docs" ] }
 
     Assert.Contains("0 files", text)
+    Assert.Contains("1 folder", text)
     Assert.Contains("0 bytes", text)
+
+[<Fact>]
+let ``a single file and a single folder are named in the singular`` () =
+    let text =
+        PanelFooter.describe { panel with Entries = [ directory "docs"; file "a.txt" 5L ] }
+
+    Assert.Contains("1 file,", text)
+    Assert.Contains("1 folder ", text)
 
 [<Fact>]
 let ``marked entries take the footer over`` () =

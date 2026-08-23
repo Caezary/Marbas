@@ -86,12 +86,13 @@ let ``the listing gives up the two rows the rule and the footer take`` () =
     Assert.Equal(panelView.Viewport.Height - 2, list.Viewport.Height)
 
 [<Fact>]
-let ``the footer counts the files of the directory while nothing is marked`` () =
+let ``the footer counts the files and folders of the directory while nothing is marked`` () =
     use window = MainWindow.create (Fakes.dependencies (mockFs ()) (at "start"))
 
     let text = (FilePanel.footer (panel FilePanel.LeftId window)).Text
 
-    Assert.Contains("1 files", text)
+    Assert.Contains("1 file,", text)
+    Assert.Contains("1 folder", text)
     Assert.Contains("2 bytes", text)
 
 [<Fact>]
