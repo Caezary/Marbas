@@ -308,3 +308,17 @@ Formatting depends on the panel width, so rows are only column-formatted after
 a layout pass. Tests that assert on column alignment call
 `window.Layout(Size(width, height))` first; tests that only check entry names
 inspect the unformatted rows produced before the first layout.
+
+## Seeing the screen
+
+What no assertion reaches — a frame, a shadow, a glyph a font may not carry, one
+attribute against another — can still be read rather than guessed. A throwaway
+console project in the scratchpad, referencing `Marbas.fsproj`, runs the real
+view under `Application.Create().Init()` with a piped stdout and prints
+`Driver.ToString()` as text and `Driver.Contents[row, col]` as colours; a
+timeout injects keys and takes the shot from inside the loop. The popups of the
+`DialogStyle` round were settled that way, before and after side by side. It
+belongs beside the suite rather than in it: it needs a driver, it is slow, and
+what it proves is a picture. The `render-tui-screen` skill in `.claude/skills`
+carries the harness and the traps — chiefly that the screen measures 0x0 when
+stdout is piped, which makes `MessageBox` throw until it is set.
