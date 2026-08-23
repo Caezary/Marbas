@@ -132,7 +132,7 @@ let copy (fs: IFileSystem) control (targetDirectory: FileSystemPath) (source: Fi
         |> inDirectory fs targetDirectory
         |> copyTo fs control source
 
-let private moveTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
+let moveTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
     match FileSystemPath.kind fs source with
     | NoEntry -> Error(SourceNotFound source)
     | DirectoryEntry ->
@@ -171,7 +171,9 @@ let private itemResults (fs: IFileSystem) sources outcome =
 let failures (results: ItemResult list) =
     results |> List.filter (_.Outcome >> Result.isError)
 
-let deleteAll (fs: IFileSystem) sources = itemResults fs sources (delete fs)
+let removeAll (fs: IFileSystem) remove sources = itemResults fs sources remove
+
+let deleteAll (fs: IFileSystem) sources = removeAll fs (delete fs) sources
 
 type private StandingAnswer =
     | AskEachTime

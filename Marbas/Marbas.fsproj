@@ -19,6 +19,7 @@
         <Compile Include="FileSystem\Roots.fs" />
         <Compile Include="FileSystem\NamePattern.fs" />
         <Compile Include="FileSystem\Operations.fs" />
+        <Compile Include="FileSystem\Trash.fs" />
         <Compile Include="FileSystem\FileWindow.fs" />
         <Compile Include="FileSystem\LineIndex.fs" />
         <Compile Include="State\AppState.fs" />

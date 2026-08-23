@@ -62,6 +62,10 @@ let classicHiddenKey = Key.H.WithCtrl
 
 let hiddenKeys = [ hiddenKey; classicHiddenKey ]
 
+let trashKey = Key.Delete
+
+let permanentDeleteKey = Key.Delete.WithShift
+
 let quitKey = Key.Q.WithCtrl
 
 let cancelKey = Key.Esc
@@ -87,7 +91,8 @@ let bindings =
       onBar Key.F5 "Copy" CopyRequested
       onBar Key.F6 "RenMov" MoveRequested
       onBar Key.F7 "Mkdir" MakeDirectoryRequested
-      onBar Key.F8 "Delete" DeleteRequested
+      onBar Key.F8 "Delete" (DeleteRequested ToTrash)
+      onBar Key.F8.WithShift "Erase" (DeleteRequested Permanently)
       onBar Key.F10 "Quit" QuitRequested
       onBar nameSortKey "Name" (SortRequested SortKey.ByName)
       onBar extensionSortKey "Ext" (SortRequested SortKey.ByExtension)
@@ -95,6 +100,8 @@ let bindings =
       onBar sizeSortKey "Size" (SortRequested SortKey.BySize)
       onBar leftRootKey "Left" (RootRequested Left)
       onBar rightRootKey "Right" (RootRequested Right)
+      offBar trashKey (DeleteRequested ToTrash)
+      offBar permanentDeleteKey (DeleteRequested Permanently)
       offBar hiddenKey HiddenToggled
       offBar quitKey QuitRequested
       offBar classicHiddenKey HiddenToggled

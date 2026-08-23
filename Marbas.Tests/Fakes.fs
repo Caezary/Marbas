@@ -19,6 +19,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       AskName = fun _ _ -> None
       AskTarget = fun _ _ -> None
       Confirm = fun _ _ -> false
+      SendToTrash = fun _ -> Ok()
       ShowFile = ignore
       RunEditor = fun _ -> Ok()
       AskOverwrite = (fun _ _ -> Operations.No)

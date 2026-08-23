@@ -63,13 +63,55 @@ everything that succeeded loses its mark. Delete, copy and move share the rule,
 so a failed batch can be retried by pressing the key again.
 
 **A confirmation is an effect; its wording belongs to Ui.** `ConfirmDelete`
-carries a `DeleteRequest` — the target names plus a `DeleteScope` saying
+carries a `DeleteRequest` — the target names, a `DeleteScope` saying
 whether the delete stops at those entries (`NamedEntriesOnly`) or reaches
-inside a directory as well (`WithDirectoryContents`) — and
-`DeleteConfirmation.describe` turns that into the question. `AppState.deleteScope`
-decides it in the state layer, where the file system already is
+inside a directory as well (`WithDirectoryContents`), and the `DeleteMode`
+asked for — and `DeleteConfirmation.describe` turns that into the question,
+`DeleteConfirmation.title` into the title above it. `AppState.deleteScope`
+decides the scope in the state layer, where the file system already is
 (`Operations.isNonEmptyDirectory`); a directory that cannot be enumerated
 counts as non-empty, so the warning errs towards showing up.
+
+**Deleting has two meanings, and the key says which.** `DeleteMode` is
+`ToTrash` or `Permanently`: `F8` and `Del` ask for the first, `Shift+F8` and
+`Shift+Del` for the second. The mode rides the whole way through —
+`DeleteRequested`, the `DeleteRequest` being confirmed, `DeleteConfirmed`, and
+the `DeleteTargets` effect — so nothing has to remember which key started it,
+and the question the user answers is the question that gets carried out: *Move
+'docs' to the trash?* under **Delete**, or *Delete 'docs' for good?* under
+**Delete for good**.
+
+**The trash is a port; a permanent delete is not.** `Shell.interpret` picks
+`deps.SendToTrash` for `ToTrash` and `Operations.delete` for `Permanently`, and
+hands either to `Operations.removeAll`, which is `deleteAll` with the removal
+left open. What the port does is the platform's business and `Program.fs`
+decides it — the Windows recycle bin through
+`Microsoft.VisualBasic.FileIO.FileSystem` (`SendToRecycleBin`), the freedesktop
+trash through `Trash.send` everywhere else. Both answer
+`Result<unit, OperationError>`, so a refusal is reported like any other item
+failure and the marks of what did not go survive.
+
+**The freedesktop trash is ordinary file-system code.** `Trash.send` writes
+`info/<name>.trashinfo` — `[Trash Info]`, the URL-encoded original `Path`, the
+`DeletionDate` — and then moves the entry into `files/<name>`, taking
+`name_2`, `name_3` … when the name is already there (both directories are
+checked, since either one being taken makes the name unusable). The info file
+is written first, as the spec asks, and removed again if the move fails, so a
+failed delete leaves no phantom entry behind. Because every step goes through
+`IFileSystem` — the move is `Operations.moveTo`, which copies and deletes a
+directory rather than renaming it across volumes — the whole thing is tested on
+`MockFileSystem`, on both platforms, without a real trash anywhere.
+`Trash.location` picks `$XDG_DATA_HOME/Trash` or falls back to
+`$HOME/.local/share/Trash`, mirroring `Settings.location`.
+
+**Delete is an effect now, like copy and move.** It used to happen inside the
+`AppState` transition for `DeleteConfirmed`, which left no room for a port that
+the state layer must not know about. The walk is now `DeleteRequested mode` →
+`ConfirmDelete` → `DeleteConfirmed mode` → `DeleteTargets` → the removal in
+`Shell` → `DeleteFinished results` → `AppState.finishDelete`, which only
+re-reads the active panel and keeps the marks of what did not finish. It still
+runs on the UI thread rather than behind `RunBatch`: `Directory.Delete` and the
+recycle bin report no progress, so there would be nothing to show.
 
 **Per-item failures share one dialog.** `Operations.deleteAll` answers for every
 target, `Operations.failures` keeps the ones that went wrong, and the

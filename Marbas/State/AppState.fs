@@ -24,6 +24,10 @@ type DeleteScope =
     | NamedEntriesOnly
     | WithDirectoryContents
 
+type DeleteMode =
+    | ToTrash
+    | Permanently
+
 type PanelState =
     { Path: FileSystemPath
       Entries: Entry list
@@ -302,10 +306,8 @@ let private reloadFocusing (fs: IFileSystem) side focus keep state =
 let private reload (fs: IFileSystem) side keep state =
     reloadFocusing fs side (cursorFocus (panel side state)) keep state
 
-let deleteTargets (fs: IFileSystem) side state =
-    let results = operationPaths fs (panel side state) |> Operations.deleteAll fs
-
-    reload fs side (fun previous -> keepUnfinished results previous.Selected) state
+let finishDelete (fs: IFileSystem) results state =
+    reload fs state.Active (fun previous -> keepUnfinished results previous.Selected) state
     |> Result.map (fun updated -> updated, results)
 
 let finishTransfer (fs: IFileSystem) results state =

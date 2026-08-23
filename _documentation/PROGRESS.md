@@ -11,7 +11,8 @@ by wildcard for later operations, a status line describes the entry under the
 cursor, and failures surface as dialogs instead of crashes. Every function key
 does its job — `F3` views the file under the cursor and `F4` opens
 it in the system editor, `F5` copies and `F6` moves or renames into the other
-panel, `F7` makes a directory, `F8` deletes — the operations all acting on the
+panel, `F7` makes a directory, `F8` deletes to the trash and `Shift+F8` for
+good — the operations all acting on the
 same operation targets, with copying and moving running off the UI thread behind
 a progress window that `Esc` stops. Since P7.1 the screen wears the classic
 colours: blue panels with cyan entries, a cyan cursor bar, yellow marks and a
@@ -179,13 +180,17 @@ checklist in [Cross-platform](Architecture/CROSS-PLATFORM.md).
   reported in a dialog. The prompt opens on the name the last directory was
   given, selected, so one keystroke replaces it and Enter alone accepts it. That
   name is kept in the settings file, so it is still offered after a restart.
-- `F8` deletes the operation targets of the active panel — the marked entries,
-  or the entry under the cursor when nothing is marked, never `..`. It first
-  asks for confirmation, naming a single target or counting several, with an
-  extra warning when a target directory is not empty; saying no changes
-  nothing. Directories go with everything inside them, the panel refreshes with
-  the marks of the deleted entries dropped, and whatever failed is listed
-  entry by entry in one dialog while the rest of the batch still goes through.
+- `F8` (or `Del`) sends the operation targets of the active panel to the trash —
+  the marked entries, or the entry under the cursor when nothing is marked,
+  never `..`. `Shift+F8` (or `Shift+Del`) deletes them for good instead. Either
+  way it first asks for confirmation, in the wording of the mode it will carry
+  out, naming a single target or counting several, with an extra warning when a
+  target directory is not empty; saying no changes nothing. Directories go with
+  everything inside them, the panel refreshes with the marks of the deleted
+  entries dropped, and whatever failed is listed entry by entry in one dialog
+  while the rest of the batch still goes through. The trash is the recycle bin
+  on Windows and `$XDG_DATA_HOME/Trash` (freedesktop, home trash only) on
+  Linux.
 - `F5` copies the same operation targets into the directory shown by the other
   panel. Nothing is asked while nothing collides; a target that already exists
   raises a Yes / No / Yes to all / No to all / Cancel question naming it, where
@@ -243,10 +248,10 @@ checklist in [Cross-platform](Architecture/CROSS-PLATFORM.md).
   `F7 Mkdir`, `F8 Delete`, `F10 Quit`) all do their job.
 - The commands follow the modifiers being held, the key names never move: with
   `Ctrl` down the slots read `F3 Name`, `F4 Ext`, `F5 Date`, `F6 Size`, with
-  `Alt` down `F1 Left` and `F2 Right`, and the classic commands come back when
-  they are let go. A modifier no command asks for leaves the slots empty. Keys
-  that are not function keys — `Alt+H`, `Ctrl+R`, `+`, `-` and the rest — are
-  bound but off the bar.
+  `Alt` down `F1 Left` and `F2 Right`, with `Shift` down `F8 Erase`, and the
+  classic commands come back when they are let go. A slot no command asks for
+  stays empty. Keys that are not function keys — `Alt+H`, `Ctrl+R`, `+`, `-`,
+  `Del`, `Shift+Del` and the rest — are bound but off the bar.
   Every entry can also be clicked. On Windows the modifiers are read from the
   keyboard ten times a second; elsewhere the bar stays on the classic row.
 - Quitting writes the session to `%APPDATA%\Marbas\settings.conf` (on Unix,
@@ -371,9 +376,17 @@ is no longer plan order but choice. Three things are waiting:
   `Backspace` itself, so the collision is silent rather than surprising — but it
   is also the reason `Backspace` cannot later be given the "go up one directory"
   meaning some managers have without a `Ctrl+H` pressed elsewhere reaching it.
-- Delete still runs on the UI thread inside an `AppState` transition, so
-  removing a huge tree blocks. It was never routed through an effect the way
-  copy and move are, and `Directory.Delete` cannot report progress anyway.
+- Delete goes through an effect now, like copy and move, but it still runs on
+  the UI thread rather than behind `RunBatch`, so removing a huge tree blocks.
+  Neither `Directory.Delete` nor the recycle bin reports progress, so a
+  progress window would have nothing to show; cancelling is what it would buy.
+- Only the home trash is written on Unix, never the per-volume
+  `$topdir/.Trash-$uid` the freedesktop spec asks for. Deleting from another
+  disk therefore copies the entry across rather than renaming it — correct, but
+  slow for a large tree.
+- Nothing in Marbas browses or empties the trash; that is the desktop's job.
+  A `Trash.restore` reading the `.trashinfo` files back would be the obvious
+  next step if it is ever wanted.
 - The session is written only on quit, so a crash or a closed terminal loses it.
   Writing after every navigation would keep it current at the cost of a file
   write per keystroke; a write on a timer is the middle road if it ever matters.

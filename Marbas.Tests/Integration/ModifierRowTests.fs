@@ -76,13 +76,13 @@ let ``holding Alt shows the drive choosers`` () =
     Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; ""; ""; ""; ""; ""; ""; "" ], commands window)
 
 [<Fact>]
-let ``a modifier no command asks for leaves the slots standing and empty`` () =
+let ``holding Shift shows the permanent delete on the delete slot`` () =
     let window, hold = watchedWindow ()
     use window = window
 
     hold (Modifiers.held [ Shift ])
 
-    Assert.Equal<string list>(List.replicate 12 "", commands window)
+    Assert.Equal<string list>([ ""; ""; ""; ""; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands window)
 
 [<Fact>]
 let ``a key keeps its name whatever modifier is held`` () =

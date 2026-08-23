@@ -29,7 +29,9 @@ let private started () =
 
 let private targetNames state = operationTargets state.Left |> List.map (_.Name >> EntryName.value)
 
-let private deleted fs state = deleteTargets fs Left state |> Expect.ok
+let private deleted (fs: IFileSystem) state =
+    let results = operationPaths fs (panel Left state) |> deleteAll fs
+    finishDelete fs results state |> Expect.ok
 
 [<Fact>]
 let ``with nothing marked the cursor entry is the only target`` () =

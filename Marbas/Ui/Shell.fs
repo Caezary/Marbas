@@ -38,6 +38,7 @@ type Dependencies =
       AskName: string -> string -> string option
       AskTarget: string -> string -> string option
       Confirm: string -> string -> bool
+      SendToTrash: FileSystemPath -> Result<unit, Operations.OperationError>
       ShowFile: FileWindow.Source -> unit
       RunEditor: FileSystemPath -> Result<unit, Operations.OperationError>
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
@@ -67,8 +68,15 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
     | ReportItemFailures failures ->
         deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describeFailures failures)
     | ConfirmDelete request ->
-        if deps.Confirm DeleteConfirmation.Title (DeleteConfirmation.describe request) then
-            dispatch DeleteConfirmed
+        if deps.Confirm (DeleteConfirmation.title request) (DeleteConfirmation.describe request) then
+            dispatch (DeleteConfirmed request.Mode)
+    | DeleteTargets(sources, mode) ->
+        let remove =
+            match mode with
+            | ToTrash -> deps.SendToTrash
+            | Permanently -> Operations.delete deps.FileSystem
+
+        Operations.removeAll deps.FileSystem remove sources |> DeleteFinished |> dispatch
     | CopyTargets(sources, targetDirectory) ->
         startBatch deps CopyTitle Operations.copyAll (CopyFinished >> dispatch) sources targetDirectory
     | MoveTargets(sources, targetDirectory) ->

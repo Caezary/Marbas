@@ -82,9 +82,10 @@ that touches Terminal.Gui needs `BeginInit`/`EndInit`, a layout pass and the
 process-wide statics that force parallelisation off, so it belongs on the other
 side of the fence from the pure ones.
 
-The split is what makes a file like `State/DeleteTests.fs` (does `deleteTargets`
-delete the right entries?) readable next to `Integration/DeleteKeyTests.fs`
-(does `F8` confirm and then delete?) — they used to be one file. Either half
+The split is what makes a file like `State/DeleteTests.fs` (does the panel come
+back right once the entries are gone?) readable next to
+`Integration/DeleteKeyTests.fs` (does `F8` confirm and then reach the trash?) —
+they used to be one file. Either half
 runs on its own:
 
 ```

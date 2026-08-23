@@ -208,12 +208,13 @@ let ``delete requested asks to confirm the cursor entry`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
 
-    let result = update fs DeleteRequested state
+    let result = update fs (DeleteRequested ToTrash) state
 
     Assert.Equal<Effect list>(
         [ ConfirmDelete
               { Targets = [ en "notes.txt" ]
-                Scope = NamedEntriesOnly } ],
+                Scope = NamedEntriesOnly
+                Mode = ToTrash } ],
         result.Effects
     )
 
@@ -223,12 +224,13 @@ let ``delete requested warns when a target directory is not empty`` () =
     fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
     let state = loaded fs |> setCursor Left 1
 
-    let result = update fs DeleteRequested state
+    let result = update fs (DeleteRequested Permanently) state
 
     Assert.Equal<Effect list>(
         [ ConfirmDelete
               { Targets = [ en "docs" ]
-                Scope = WithDirectoryContents } ],
+                Scope = WithDirectoryContents
+                Mode = Permanently } ],
         result.Effects
     )
 
@@ -237,17 +239,37 @@ let ``delete requested on the parent entry asks nothing`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = update fs DeleteRequested state
+    let result = update fs (DeleteRequested ToTrash) state
 
     Assert.Equal(state, result.State)
     Assert.Empty result.Effects
 
 [<Fact>]
-let ``a confirmed delete removes the target and raises no effect`` () =
+let ``a confirmed delete hands the targets over with the mode it was asked for`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
 
-    let result = update fs DeleteConfirmed state
+    let result = update fs (DeleteConfirmed ToTrash) state
+
+    Assert.Equal<Effect list>([ DeleteTargets([ fp (at "start/notes.txt") ], ToTrash) ], result.Effects)
+    Assert.True(fs.File.Exists(at "start/notes.txt"))
+
+[<Fact>]
+let ``a confirmed permanent delete carries its own mode`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+
+    let result = update fs (DeleteConfirmed Permanently) state
+
+    Assert.Equal<Effect list>([ DeleteTargets([ fp (at "start/notes.txt") ], Permanently) ], result.Effects)
+
+[<Fact>]
+let ``a finished delete refreshes the panel and raises no effect`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+    let results = deleteAll fs [ fp (at "start/notes.txt") ]
+
+    let result = update fs (DeleteFinished results) state
 
     Assert.False(fs.File.Exists(at "start/notes.txt"))
     Assert.DoesNotContain("notes.txt", names result.State.Left.Entries)
@@ -257,14 +279,14 @@ let ``a confirmed delete removes the target and raises no effect`` () =
 let ``a delete that fails is reported item by item`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
-    fs.File.Delete(at "start/notes.txt")
+    let results = deleteAll fs [ fp (at "start/gone.txt") ]
 
-    let result = update fs DeleteConfirmed state
+    let result = update fs (DeleteFinished results) state
 
     Assert.Equal<Effect list>(
         [ ReportItemFailures
-              [ { Name = EntryName.create "notes.txt"
-                  Outcome = Error(SourceNotFound(fp (at "start/notes.txt"))) } ] ],
+              [ { Name = EntryName.create "gone.txt"
+                  Outcome = Error(SourceNotFound(fp (at "start/gone.txt"))) } ] ],
         result.Effects
     )
 

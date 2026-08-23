@@ -60,6 +60,24 @@ drive letters exist nowhere else.
 than switching on the OS, which is why a `.gitignore` copied onto a Windows
 drive still reads as hidden there.
 
+## Deleting
+
+| Check | Windows | Linux | Evidence |
+|-------|---------|-------|----------|
+| `F8` / `Del` ask before sending the targets to the trash | same | same | suite |
+| `Shift+F8` / `Shift+Del` ask before deleting for good | same | same | suite |
+| What the trash does with them | recycle bin | `~/.local/share/Trash` | **manual** |
+| A deleted entry can be put back by the desktop's own tool | Explorer's *Restore* | the file manager's *Restore* | **manual** |
+| A trash that refuses is reported entry by entry, marks kept | same | same | suite |
+
+`Shell` asks `deps.SendToTrash`, and `Program.fs` decides what that is:
+`Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile` /
+`DeleteDirectory` with `RecycleOption.SendToRecycleBin` on Windows — the VB
+runtime ships with .NET, so nothing is added to the package list — and
+`Trash.send` elsewhere, which is the freedesktop home trash written through
+`IFileSystem` and therefore tested on `MockFileSystem` on both legs of CI. A
+permanent delete is the same `Operations.delete` as before on either platform.
+
 ## Permissions
 
 | Check | Windows | Linux | Evidence |
@@ -174,6 +192,16 @@ dialog that says *Select root*.
   duplicated `/:\` on Linux, which is a second reason not to assert on it.
 - **Dialogs and message boxes keep Terminal.Gui's own theme** on both
   platforms; the main screen and the viewer wear the classic colours.
+- **Only the home trash is written on Unix.** The freedesktop spec puts a trash
+  on every volume (`$topdir/.Trash-$uid`) so that deleting never crosses a
+  device; `Trash.send` always writes `$XDG_DATA_HOME/Trash` and lets
+  `Operations.moveTo` copy the entry over when the volume differs. It ends up
+  in the right place either way — it is slower for a large tree on another
+  disk, and the desktop's *Restore* still works, because the original path is
+  recorded in the `.trashinfo` file.
+- **macOS would get the freedesktop trash, not `~/.Trash`.** Nothing publishes
+  a macOS build today; when something does, the Finder trash is one more
+  implementation of the same port.
 
 ## Running the checks
 

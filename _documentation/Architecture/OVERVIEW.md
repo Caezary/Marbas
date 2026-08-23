@@ -44,6 +44,7 @@ Marbas/
     Roots.fs              where a panel can be sent: drives, or root and home
     NamePattern.fs        wildcard matching for `+` / `-`
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
+    Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     ContentError.fs       what can go wrong reading a file, as values
     TextEncoding.fs       which encoding a file carries, from its mark or its bytes
     FileWindow.fs         a file held open, read one byte range at a time

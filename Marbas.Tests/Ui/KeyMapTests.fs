@@ -40,10 +40,10 @@ let ``holding Alt puts the drive choosers on the first two slots`` () =
     Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; ""; ""; ""; ""; ""; ""; "" ], commands)
 
 [<Fact>]
-let ``a modifier no command asks for leaves every slot without one`` () =
+let ``holding Shift puts the permanent delete on the delete slot`` () =
     let commands = commandsOn (Modifiers.held [ Shift ])
 
-    Assert.Equal<string list>(List.replicate 12 "", commands)
+    Assert.Equal<string list>([ ""; ""; ""; ""; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands)
 
 [<Fact>]
 let ``a slot carries the key the modifiers held make of its function key`` () =
@@ -156,6 +156,18 @@ let ``only a function key is labelled, because the bar holds nothing else`` () =
 
     Assert.NotEmpty labelled
     Assert.All(labelled, fun key -> Assert.True(isFunctionKey key, string key))
+
+[<Fact>]
+let ``the delete keys tell the trash from the permanent delete`` () =
+    Assert.Equal(Some(DeleteRequested ToTrash), KeyMap.messageFor Key.F8)
+    Assert.Equal(Some(DeleteRequested ToTrash), KeyMap.messageFor KeyMap.trashKey)
+    Assert.Equal(Some(DeleteRequested Permanently), KeyMap.messageFor KeyMap.permanentDeleteKey)
+    Assert.Equal(Some(DeleteRequested Permanently), KeyMap.messageFor Key.F8.WithShift)
+
+[<Fact>]
+let ``the permanent delete keys are the delete keys with shift held`` () =
+    Assert.Equal(Key.Delete, KeyMap.trashKey)
+    Assert.Equal(KeyMap.trashKey.WithShift, KeyMap.permanentDeleteKey)
 
 [<Fact>]
 let ``the quit key requests a quit, so quitting always passes through the state`` () =

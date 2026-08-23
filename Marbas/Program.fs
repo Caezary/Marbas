@@ -59,6 +59,36 @@ let main _ =
         let answer = MessageBox.Query(app, title, message, "_Yes", "_No")
         answer.HasValue && answer.Value = 0
 
+    let recycle path =
+        let raw = FileSystemPath.value path
+        let interaction = Microsoft.VisualBasic.FileIO.UIOption.OnlyErrorDialogs
+        let recycleBin = Microsoft.VisualBasic.FileIO.RecycleOption.SendToRecycleBin
+        let refusal = Microsoft.VisualBasic.FileIO.UICancelOption.ThrowException
+
+        try
+            match FileSystemPath.kind fs path with
+            | NoEntry -> Error(Operations.SourceNotFound path)
+            | DirectoryEntry ->
+                Microsoft.VisualBasic.FileIO.FileSystem.DeleteDirectory(raw, interaction, recycleBin, refusal)
+                Ok()
+            | FileEntry ->
+                Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile(raw, interaction, recycleBin, refusal)
+                Ok()
+        with ex ->
+            Error(Operations.mapException path ex)
+
+    let sendToTrash =
+        if OperatingSystem.IsWindows() then
+            recycle
+        else
+            let trash =
+                Trash.location
+                    fs
+                    (Environment.GetEnvironmentVariable "XDG_DATA_HOME")
+                    (Environment.GetFolderPath Environment.SpecialFolder.UserProfile)
+
+            Trash.send fs trash (fun () -> DateTime.Now)
+
     let askOverwrite (title: string) (message: string) =
         let answer = MessageBox.Query(app, title, message, Array.ofList OverwriteQuestion.Answers)
         OverwriteQuestion.answerAt (if answer.HasValue then answer.Value else -1)
@@ -175,6 +205,7 @@ let main _ =
               AskName = askName
               AskTarget = askTarget
               Confirm = confirm
+              SendToTrash = sendToTrash
               ShowFile = showFile
               RunEditor = runEditor
               AskOverwrite = askOverwrite

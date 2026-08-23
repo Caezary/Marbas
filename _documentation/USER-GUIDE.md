@@ -43,8 +43,11 @@ cursor when nothing is marked.
 - `F6` moves/renames — accept the suggested path to move, or type a bare
   name to rename in place.
 - `F7` creates a directory.
-- `F8` deletes, after confirming (with an extra warning for non-empty
-  directories).
+- `F8` (or `Del`) sends the targets to the trash — the recycle bin on Windows,
+  `~/.local/share/Trash` on Linux — after confirming.
+- `Shift+F8` (or `Shift+Del`) deletes for good, skipping the trash. The
+  question says which of the two is about to happen, and warns separately when
+  a target directory is not empty.
 - `F3` opens the file under the cursor in a read-only viewer (binary files
   show as a hex dump); `F3`/`Esc` closes it.
 - `F4` opens it in your `$EDITOR`, or the platform default (`notepad` on
@@ -70,10 +73,10 @@ of the terminal evenly between them. Each slot names its key on a background
 of its own and puts the command beside it, so `F5 Copy` reads as a key and a
 command rather than as one word.
 
-The key names never move. On Windows, holding `Ctrl` or `Alt` swaps the
-*commands* for the sort keys or the root choosers while the modifier is down —
-`F3` stays `F3` and its command becomes `Name`. A modifier no command asks for
-leaves every slot empty. Held modifiers are a Windows-only feature (see
+The key names never move. On Windows, holding `Ctrl`, `Alt` or `Shift` swaps
+the *commands* for the sort keys, the root choosers or the permanent delete
+while the modifier is down — `F3` stays `F3` and its command becomes `Name`,
+`F8` becomes `Erase`. A slot no command asks for stays empty. Held modifiers are a Windows-only feature (see
 [Cross-platform](Architecture/CROSS-PLATFORM.md#differences-that-are-meant-to-be-there)).
 
 Clicking a slot runs its command.

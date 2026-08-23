@@ -29,6 +29,7 @@
     <Compile Include="FileSystem\SearchTextTests.fs" />
     <Compile Include="FileSystem\SettingsTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
+    <Compile Include="FileSystem\TrashTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

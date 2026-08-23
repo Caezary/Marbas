@@ -21,8 +21,9 @@ type Message =
     | PatternEntered of SelectionMode * NamePattern
     | MakeDirectoryRequested
     | NameEntered of name: EntryName
-    | DeleteRequested
-    | DeleteConfirmed
+    | DeleteRequested of DeleteMode
+    | DeleteConfirmed of DeleteMode
+    | DeleteFinished of Operations.ItemResult list
     | CopyRequested
     | CopyFinished of Operations.ItemResult list
     | MoveRequested
@@ -38,13 +39,15 @@ type Message =
 
 type DeleteRequest =
     { Targets: EntryName list
-      Scope: DeleteScope }
+      Scope: DeleteScope
+      Mode: DeleteMode }
 
 type Effect =
     | ReportListingError of ListingError
     | ReportOperationError of Operations.OperationError
     | ReportItemFailures of Operations.ItemResult list
     | ConfirmDelete of DeleteRequest
+    | DeleteTargets of sources: FileSystemPath list * mode: DeleteMode
     | CopyTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | MoveTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | RenameTarget of source: FileSystemPath * newName: EntryName
@@ -103,7 +106,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | PatternEntered(mode, pattern) -> stay (applyPattern mode state.Active pattern state)
     | MakeDirectoryRequested -> request state (PromptForName state.LastCreatedDirectory)
     | NameEntered name -> makeDirectory fs state.Active name state |> applyOperation state
-    | DeleteRequested ->
+    | DeleteRequested mode ->
         let target = activePanel state
 
         match operationTargets target with
@@ -113,8 +116,13 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
                 state
                 (ConfirmDelete
                     { Targets = targets |> List.map _.Name
-                      Scope = deleteScope fs target })
-    | DeleteConfirmed -> deleteTargets fs state.Active state |> applyBatch state
+                      Scope = deleteScope fs target
+                      Mode = mode })
+    | DeleteConfirmed mode ->
+        match operationPaths fs (activePanel state) with
+        | [] -> stay state
+        | paths -> request state (DeleteTargets(paths, mode))
+    | DeleteFinished results -> finishDelete fs results state |> applyBatch state
     | CopyRequested ->
         match operationPaths fs (activePanel state) with
         | [] -> stay state

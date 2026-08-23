@@ -17,7 +17,10 @@ let private en = EntryName.create
 
 let private noDeps () = Fakes.dependencies (MockFileSystem()) (at "start")
 
-let private deleteRequest names scope = { Targets = names; Scope = scope }
+let private deleteRequest names scope =
+    { Targets = names
+      Scope = scope
+      Mode = ToTrash }
 
 let private cursor side index = { Side = side; Index = index }
 
@@ -174,7 +177,7 @@ let ``a confirmed delete is dispatched back`` () =
 
     Shell.interpret deps dispatch (ConfirmDelete(deleteRequest [ en "notes.txt" ] NamedEntriesOnly))
 
-    Assert.Equal<Message list>([ DeleteConfirmed ], List.ofSeq sent)
+    Assert.Equal<Message list>([ DeleteConfirmed ToTrash ], List.ofSeq sent)
 
 [<Fact>]
 let ``a refused delete dispatches nothing`` () =
@@ -193,7 +196,90 @@ let ``the delete question carries its own title and the warning`` () =
     Shell.interpret deps dispatch (ConfirmDelete(deleteRequest [ en "docs" ] WithDirectoryContents))
 
     Assert.Equal(DeleteConfirmation.Title, fst asked)
-    Assert.Contains(DeleteConfirmation.NonEmptyWarning, snd asked)
+    Assert.Contains(DeleteConfirmation.TrashWarning, snd asked)
+
+[<Fact>]
+let ``a permanent delete asks under its own title`` () =
+    let _, dispatch = capture ()
+    let mutable asked = ("", "")
+    let deps = { noDeps () with Confirm = fun title message -> asked <- (title, message); false }
+
+    let request =
+        { deleteRequest [ en "notes.txt" ] NamedEntriesOnly with Mode = Permanently }
+
+    Shell.interpret deps dispatch (ConfirmDelete request)
+
+    Assert.Equal(DeleteConfirmation.PermanentTitle, fst asked)
+
+[<Fact>]
+let ``a confirmed permanent delete is dispatched back with its mode`` () =
+    let sent, dispatch = capture ()
+    let deps = { noDeps () with Confirm = fun _ _ -> true }
+
+    let request =
+        { deleteRequest [ en "notes.txt" ] NamedEntriesOnly with Mode = Permanently }
+
+    Shell.interpret deps dispatch (ConfirmDelete request)
+
+    Assert.Equal<Message list>([ DeleteConfirmed Permanently ], List.ofSeq sent)
+
+[<Fact>]
+let ``targets sent to the trash go through the port, not the file system`` () =
+    let sent, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    let trashed = ResizeArray<FileSystemPath>()
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            SendToTrash = fun path -> trashed.Add path; Ok() }
+
+    Shell.interpret deps dispatch (DeleteTargets([ fp (at "start/notes.txt") ], ToTrash))
+
+    Assert.Equal<FileSystemPath list>([ fp (at "start/notes.txt") ], List.ofSeq trashed)
+    Assert.True(fs.File.Exists(at "start/notes.txt"))
+
+    Assert.Equal<Message list>(
+        [ DeleteFinished [ { Name = en "notes.txt"; Outcome = Ok() } ] ],
+        List.ofSeq sent
+    )
+
+[<Fact>]
+let ``a permanent delete removes the target itself`` () =
+    let sent, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            SendToTrash = fun path -> failwith $"the trash was asked for {FileSystemPath.value path}" }
+
+    Shell.interpret deps dispatch (DeleteTargets([ fp (at "start/notes.txt") ], Permanently))
+
+    Assert.False(fs.File.Exists(at "start/notes.txt"))
+
+    Assert.Equal<Message list>(
+        [ DeleteFinished [ { Name = en "notes.txt"; Outcome = Ok() } ] ],
+        List.ofSeq sent
+    )
+
+[<Fact>]
+let ``what the trash refused is reported item by item`` () =
+    let sent, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    let refusal = AccessDenied(fp (at "start/notes.txt"))
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            SendToTrash = fun _ -> Error refusal }
+
+    Shell.interpret deps dispatch (DeleteTargets([ fp (at "start/notes.txt") ], ToTrash))
+
+    Assert.Equal<Message list>(
+        [ DeleteFinished [ { Name = en "notes.txt"; Outcome = Error refusal } ] ],
+        List.ofSeq sent
+    )
 
 [<Fact>]
 let ``item failures are reported under the operation title`` () =
