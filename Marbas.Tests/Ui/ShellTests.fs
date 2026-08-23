@@ -513,9 +513,9 @@ let ``changed properties are dispatched back`` () =
     let shown =
         { Path = fp (at "start/docs")
           Flags = Set.empty
-          Created = DateTime(2024, 1, 1)
-          Modified = DateTime(2024, 1, 1)
-          Accessed = DateTime(2024, 1, 1) }
+          Created = DateTimeOffset(DateTime(2024, 1, 1))
+          Modified = DateTimeOffset(DateTime(2024, 1, 1))
+          Accessed = DateTimeOffset(DateTime(2024, 1, 1)) }
     let changed = EntryProperties.setFlag HiddenFlag true shown
     let deps = { noDeps () with EditProperties = fun _ -> Some changed }
 
@@ -529,9 +529,9 @@ let ``a dismissed properties dialog dispatches nothing`` () =
     let shown =
         { Path = fp (at "start/docs")
           Flags = Set.empty
-          Created = DateTime(2024, 1, 1)
-          Modified = DateTime(2024, 1, 1)
-          Accessed = DateTime(2024, 1, 1) }
+          Created = DateTimeOffset(DateTime(2024, 1, 1))
+          Modified = DateTimeOffset(DateTime(2024, 1, 1))
+          Accessed = DateTimeOffset(DateTime(2024, 1, 1)) }
 
     Shell.interpret (noDeps ()) dispatch (ShowProperties shown)
 
@@ -543,17 +543,27 @@ let ``changed editors are dispatched back`` () =
     let changed =
         { EditorSettings.none with
             DefaultEditor = EditorPath.tryCreate "code.exe" }
-    let deps = { noDeps () with EditEditors = fun _ -> Some changed }
+    let deps = { noDeps () with EditEditors = fun _ _ -> Some changed }
 
-    Shell.interpret deps dispatch (ShowSettings EditorSettings.none)
+    Shell.interpret deps dispatch (ShowSettings(EditorSettings.none, None))
 
     Assert.Equal<Message list>([ EditorsEntered changed ], List.ofSeq sent)
+
+[<Fact>]
+let ``the executable the effect names is offered to the settings popup`` () =
+    let offered = ResizeArray<EditorPath option>()
+    let deps = { noDeps () with EditEditors = fun _ candidate -> offered.Add candidate; None }
+    let candidate = EditorPath.tryCreate (at "start/rider64.exe")
+
+    Shell.interpret deps ignore (ShowSettings(EditorSettings.none, candidate))
+
+    Assert.Equal(candidate, Assert.Single offered)
 
 [<Fact>]
 let ``a dismissed settings dialog dispatches nothing`` () =
     let sent, dispatch = capture ()
 
-    Shell.interpret (noDeps ()) dispatch (ShowSettings EditorSettings.none)
+    Shell.interpret (noDeps ()) dispatch (ShowSettings(EditorSettings.none, None))
 
     Assert.Empty sent
 

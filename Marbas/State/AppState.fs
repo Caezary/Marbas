@@ -294,6 +294,11 @@ let cursorFilePath (fs: IFileSystem) panel =
     |> Option.filter (fun entry -> entry.Kind = File)
     |> Option.map (entryPath fs panel)
 
+let cursorExecutablePath (fs: IFileSystem) panel =
+    cursorEntry panel
+    |> Option.filter (fun entry -> entry.Kind = File && entry.Executability = Executable)
+    |> Option.map (entryPath fs panel)
+
 let cursorDirectoryPath (fs: IFileSystem) panel =
     cursorEntry panel
     |> Option.filter (fun entry -> entry.Kind = Directory && selectable entry)

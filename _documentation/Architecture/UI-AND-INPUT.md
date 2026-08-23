@@ -310,7 +310,11 @@ original in is what makes a timestamp the user mistyped harmless — it is left 
 it was rather than zeroed — and it is what keeps the path untouched, since
 nothing on screen can change it. `TimestampText` fixes one pattern,
 `yyyy-MM-dd HH:mm:ss`, on the invariant culture, so what a machine in another
-locale shows is what it reads back.
+locale shows is what it reads back. The pattern carries no offset on purpose —
+a file's stamps are local and `+02:00` on every row would be noise — so a
+`DateTimeOffset` is written in the terms of its own offset and text typed back
+is read with `AssumeLocal`. For a stamp that came off the file system, which is
+the only kind the popup ever shows, those are the same offset.
 
 **A tick box is marked with signs a console font carries.** Terminal.Gui draws
 `CheckState` with U+2610 and U+2611, which are in the same class of glyph as the
@@ -330,6 +334,17 @@ that never runs an application loop. `Enter` in either of the two fields does
 what `Add` does and is marked handled there, because the alternative is what
 Terminal.Gui does by default — bubble to the dialog's last button, which is
 `Ok`, closing the popup and throwing the association away.
+
+**`Under cursor` saves retyping the path of an editor the panel is already
+standing on.** `SettingsRequested` reads the entry under the cursor and, when it
+is an executable (`Executability.Executable`, which is the extension on Windows
+and the exec bit on Unix), hands its path to the popup as a candidate; `Alt+U`
+puts it into whichever editor field was last focused, the default one until
+another has been typed in. With no executable under the cursor there is no
+candidate and the button is disabled, which says so on the screen rather than
+answering a keystroke with nothing. Making it a button rather than a bare
+binding is what makes it discoverable: a hotkey nobody can see is a hotkey
+nobody presses.
 
 ## The key table and the bar
 

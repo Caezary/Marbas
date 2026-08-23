@@ -81,7 +81,7 @@ let private encode (fs: IFileSystem) (raw: string) =
     |> Array.map Uri.EscapeDataString
     |> String.concat (string separator)
 
-let private describe (fs: IFileSystem) (source: FileSystemPath) (deletedAt: DateTime) =
+let private describe (fs: IFileSystem) (source: FileSystemPath) (deletedAt: DateTimeOffset) =
     [ InfoHeader
       $"Path={encode fs (FileSystemPath.value source)}"
       $"DeletionDate={deletedAt.ToString(DeletionDateFormat, CultureInfo.InvariantCulture)}"
@@ -97,7 +97,7 @@ let private discard (fs: IFileSystem) (path: FileSystemPath) =
     with _ ->
         ()
 
-let send (fs: IFileSystem) (trash: FileSystemPath) (now: unit -> DateTime) (source: FileSystemPath) =
+let send (fs: IFileSystem) (trash: FileSystemPath) (now: unit -> DateTimeOffset) (source: FileSystemPath) =
     match FileSystemPath.kind fs source with
     | NoEntry -> Error(SourceNotFound source)
     | _ ->

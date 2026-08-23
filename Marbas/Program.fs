@@ -87,7 +87,7 @@ let main _ =
                     (Environment.GetEnvironmentVariable "XDG_DATA_HOME")
                     (Environment.GetFolderPath Environment.SpecialFolder.UserProfile)
 
-            Trash.send fs trash (fun () -> DateTime.Now)
+            Trash.send fs trash (fun () -> DateTimeOffset.Now)
 
     let askOverwrite (title: string) (message: string) =
         let answer = MessageBox.Query(app, title, message, Array.ofList OverwriteQuestion.Answers)
@@ -117,8 +117,8 @@ let main _ =
         app.Run dialog |> ignore
         PropertiesDialog.properties properties dialog
 
-    let editEditors editors =
-        use dialog = SettingsDialog.create editors
+    let editEditors editors candidate =
+        use dialog = SettingsDialog.create editors candidate
         app.Run dialog |> ignore
         SettingsDialog.editors dialog
 

@@ -593,7 +593,29 @@ let ``a settings request hands over the editors in force`` () =
 
     let result = update fs SettingsRequested state
 
-    Assert.Equal<Effect list>([ ShowSettings editors ], result.Effects)
+    Assert.Equal<Effect list>([ ShowSettings(editors, None) ], result.Effects)
+
+[<Fact>]
+let ``a settings request offers the executable under the cursor`` () =
+    let fs = mockFs ()
+    fs.AddFile(at "start/rider64.exe", MockFileData "mz")
+    let state = loaded fs |> setCursor Left 3
+
+    let result = update fs SettingsRequested state
+
+    Assert.Equal<Effect list>(
+        [ ShowSettings(EditorSettings.none, EditorPath.tryCreate (at "start/rider64.exe")) ],
+        result.Effects
+    )
+
+[<Fact>]
+let ``a settings request offers nothing when the cursor is not on an executable`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+
+    let result = update fs SettingsRequested state
+
+    Assert.Equal<Effect list>([ ShowSettings(EditorSettings.none, None) ], result.Effects)
 
 [<Fact>]
 let ``editors that come back take the place of the ones in force`` () =

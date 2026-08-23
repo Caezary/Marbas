@@ -17,7 +17,7 @@ let private entry name kind =
       Size = (match kind with
               | File -> Some 1L
               | Directory -> None)
-      Modified = DateTime(2026, 1, 1)
+      Modified = DateTimeOffset(DateTime(2026, 1, 1))
       Visibility = Plain
       Executability = NotExecutable }
 
@@ -25,7 +25,7 @@ let private sized name size =
     { entry name File with Size = Some size }
 
 let private dated name day =
-    { entry name File with Modified = DateTime(2026, 1, day) }
+    { entry name File with Modified = DateTimeOffset(DateTime(2026, 1, day)) }
 
 let private names entries = entries |> List.map (_.Name >> EntryName.value)
 

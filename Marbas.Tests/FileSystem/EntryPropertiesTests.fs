@@ -22,8 +22,8 @@ let private read fs path = EntryProperties.read fs path |> Expect.ok
 [<Fact>]
 let ``the properties of a directory are read off it`` () =
     let fs = mockFs ()
-    let stamp = DateTime(2024, 3, 1, 10, 30, 0)
-    fs.DirectoryInfo.New(at "start/docs").CreationTime <- stamp
+    let stamp = DateTimeOffset(DateTime(2024, 3, 1, 10, 30, 0))
+    fs.DirectoryInfo.New(at "start/docs").CreationTime <- stamp.LocalDateTime
 
     let properties = read fs (fp (at "start/docs"))
 
@@ -109,8 +109,8 @@ let ``writing the properties keeps the entry a directory`` () =
 let ``the timestamps written to a directory are read back from it`` () =
     let fs = mockFs ()
     let path = fp (at "start/docs")
-    let created = DateTime(2001, 2, 3, 4, 5, 6)
-    let modified = DateTime(2002, 3, 4, 5, 6, 7)
+    let created = DateTimeOffset(DateTime(2001, 2, 3, 4, 5, 6))
+    let modified = DateTimeOffset(DateTime(2002, 3, 4, 5, 6, 7))
 
     read fs path
     |> fun properties ->
@@ -124,6 +124,17 @@ let ``the timestamps written to a directory are read back from it`` () =
 
     Assert.Equal(created, written.Created)
     Assert.Equal(modified, written.Modified)
+
+[<Fact>]
+let ``a stamp written in another offset comes back as the same moment`` () =
+    let fs = mockFs ()
+    let path = fp (at "start/docs")
+    let elsewhere = DateTimeOffset(DateTime(2001, 2, 3, 4, 5, 6), TimeSpan.FromHours 5.0)
+    let properties = read fs path
+
+    { properties with Created = elsewhere } |> EntryProperties.write fs |> Expect.ok
+
+    Assert.Equal(elsewhere, (read fs path).Created)
 
 [<Fact>]
 let ``properties cannot be written to an entry that is gone`` () =

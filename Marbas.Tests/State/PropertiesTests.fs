@@ -82,7 +82,7 @@ let ``a stamp that is applied is what the entry carries afterwards`` () =
     let fs = mockFs ()
     let state = loaded fs
     let path = fp (at "start/docs")
-    let created = DateTime(2001, 2, 3, 4, 5, 6)
+    let created = DateTimeOffset(DateTime(2001, 2, 3, 4, 5, 6))
 
     let read = EntryProperties.read fs path |> Expect.ok
     let properties = { read with Created = created }

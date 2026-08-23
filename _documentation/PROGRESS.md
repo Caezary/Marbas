@@ -62,7 +62,9 @@ in the settings file and both edited from a settings popup on `F12`;
 `Shift+F4` creates a file in the panel's directory and opens it in the editor
 its extension asks for; and `F4` on a directory opens a properties popup — the
 read-only, hidden, system and archive flags and the three timestamps — writing
-back only what it was given and re-reading the panel afterwards.
+back only what it was given and re-reading the panel afterwards. The same round
+moved every timestamp in the app from `DateTime` to `DateTimeOffset`, so a
+moment always says which offset it was read in.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -264,10 +266,18 @@ checklist in [Cross-platform](Architecture/CROSS-PLATFORM.md).
   back the way the app always did — and, beneath it, an extension and an editor
   with `Add` and `Remove` beside a list of what is already associated. Moving
   the cursor over a row fills both fields from it, so `Add` re-typed over a
-  known extension replaces it and `Remove` takes it out. Extensions are matched
-  without their dot and without regard to case, so `.TXT` and `txt` are one
-  entry. What the popup returns is kept with the rest of the session and
+  known extension replaces it and `Remove` takes it out; `Enter` in either
+  field does what `Add` does rather than closing the popup. Extensions are
+  matched without their dot and without regard to case, so `.TXT` and `txt` are
+  one entry. What the popup returns is kept with the rest of the session and
   written to the settings file on quit.
+- `Alt+U` (the `Under cursor` button) in that popup fills the editor field being
+  typed in — the default one, or the one beside the extension — with the path of
+  the executable the panel cursor was standing on when `F12` was pressed, so an
+  editor can be pointed at by walking to it instead of by typing its path. An
+  executable is what the panel already colours as one: `.exe`, `.com`, `.bat`,
+  `.cmd` or `.msi` on Windows, the exec bit on Unix. The button is disabled when
+  the cursor was not on one.
 - The screen wears the classic colours: both panels are blue with their entries and
   frames in bright cyan, the cursor bar of the focused panel is black on cyan,
   marked entries and the summary line beneath them are bright yellow, the two

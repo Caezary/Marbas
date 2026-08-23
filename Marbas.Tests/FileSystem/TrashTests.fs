@@ -14,7 +14,7 @@ let private fp = FileSystemPath.create
 
 let private trash = fp (at "home/.local/share/Trash")
 
-let private deletedAt = DateTime(2026, 8, 23, 14, 5, 9)
+let private deletedAt = DateTimeOffset(DateTime(2026, 8, 23, 14, 5, 9))
 
 let private clock () = deletedAt
 

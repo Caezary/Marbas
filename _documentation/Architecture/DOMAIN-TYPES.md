@@ -44,6 +44,15 @@ at the call site. `EditorSettings` is the pair of them: a default editor and an
 ordered list of `EditorAssociation`, kept sorted by extension so the file it is
 written to and the list a popup shows are in the same order every time.
 
+**A moment in time is a `DateTimeOffset`, never a `DateTime`.** Every timestamp
+Marbas holds — `Entry.Modified`, the three on `EntryProperties`, the deletion
+date a trashed entry is stamped with — says which offset it was taken in, so
+nothing depends on the machine's idea of local time at the moment it is read.
+`IFileSystemInfo` speaks `DateTime`, so the conversion happens on the edge and
+nowhere else: `DateTimeOffset info.LastWriteTime` on the way in (a local-kind
+`DateTime` keeps its instant) and `properties.Created.LocalDateTime` on the way
+out.
+
 **Properties are a value the file system is read into and written back from.**
 `EntryProperties` carries the path, the three timestamps and a `Set<EntryFlag>`
 — `ReadOnlyFlag`, `HiddenFlag`, `SystemFlag`, `ArchiveFlag` — instead of a raw

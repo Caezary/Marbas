@@ -45,7 +45,7 @@ type Dependencies =
       ShowFile: FileWindow.Source -> unit
       RunEditor: EditorPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       EditProperties: EntryProperties -> EntryProperties option
-      EditEditors: EditorSettings -> EditorSettings option
+      EditEditors: EditorSettings -> EditorPath option -> EditorSettings option
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
       WatchModifiers: (Set<Modifier> -> unit) -> unit
       RunBatch:
@@ -101,8 +101,8 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.EditProperties properties with
         | Some changed -> dispatch (PropertiesEntered changed)
         | None -> ()
-    | ShowSettings editors ->
-        match deps.EditEditors editors with
+    | ShowSettings(editors, candidate) ->
+        match deps.EditEditors editors candidate with
         | Some changed -> dispatch (EditorsEntered changed)
         | None -> ()
     | PromptForTarget suggestion ->

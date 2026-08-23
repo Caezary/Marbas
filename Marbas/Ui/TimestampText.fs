@@ -6,10 +6,10 @@ open System.Globalization
 [<Literal>]
 let Pattern = "yyyy-MM-dd HH:mm:ss"
 
-let format (stamp: DateTime) =
+let format (stamp: DateTimeOffset) =
     stamp.ToString(Pattern, CultureInfo.InvariantCulture)
 
 let tryParse (text: string) =
-    match DateTime.TryParseExact(text.Trim(), Pattern, CultureInfo.InvariantCulture, DateTimeStyles.None) with
+    match DateTimeOffset.TryParseExact(text.Trim(), Pattern, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal) with
     | true, stamp -> Some stamp
     | _ -> None

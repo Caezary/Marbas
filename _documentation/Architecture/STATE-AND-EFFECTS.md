@@ -129,6 +129,8 @@ while a name a *directory* answers to is a `TargetExists` failure.
 
 **The settings popup is a port too, and what it returns is state.**
 `SettingsRequested` hands `state.Editors` to `Dependencies.EditEditors` through
-the `ShowSettings` effect; `EditorsEntered` puts the answer back into the state
+the `ShowSettings` effect, along with the executable under the panel cursor if
+there is one — the popup has no panel to look at, so what it can offer has to be
+read before it opens; `EditorsEntered` puts the answer back into the state
 and nothing else. It reaches the file the way every other setting does, when
 `QuitRequested` saves the session.

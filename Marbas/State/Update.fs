@@ -59,7 +59,7 @@ type Effect =
     | ViewFile of path: FileSystemPath
     | EditFile of path: FileSystemPath * editor: EditorPath option
     | ShowProperties of EntryProperties
-    | ShowSettings of EditorSettings
+    | ShowSettings of EditorSettings * candidate: EditorPath option
     | PromptForTarget of suggestion: FileSystemPath
     | PromptForName of suggestion: EntryName option
     | PromptForFileName
@@ -174,7 +174,12 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | Error error -> request state (ReportOperationError error)
         | Ok(updated, path) -> request updated (EditFile(path, editorFor name updated))
     | PropertiesEntered properties -> applyProperties fs properties state |> applyOperation state
-    | SettingsRequested -> request state (ShowSettings state.Editors)
+    | SettingsRequested ->
+        let candidate =
+            cursorExecutablePath fs (activePanel state)
+            |> Option.bind (FileSystemPath.value >> EditorPath.tryCreate)
+
+        request state (ShowSettings(state.Editors, candidate))
     | EditorsEntered editors -> stay (withEditors editors state)
     | EditFinished outcome ->
         match outcome with

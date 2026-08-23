@@ -7,7 +7,7 @@ open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Ui
 
-let private modified = DateTime(2026, 7, 1, 12, 30, 0)
+let private modified = DateTimeOffset(DateTime(2026, 7, 1, 12, 30, 0))
 
 let private entry kind size =
     { Name = EntryName.create "entry"

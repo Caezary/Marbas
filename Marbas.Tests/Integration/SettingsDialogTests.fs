@@ -17,13 +17,15 @@ let private stored =
         [ { Extension = ext "fs"; Editor = editor "rider.exe" }
           { Extension = ext "txt"; Editor = editor "notepad.exe" } ] }
 
-let private laidOut editors =
+let private laidOutWith editors candidate =
     DialogStyle.apply ()
-    let dialog = SettingsDialog.create editors
+    let dialog = SettingsDialog.create editors candidate
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore
     dialog
+
+let private laidOut editors = laidOutWith editors None
 
 let private press (dialog: SettingsDialog.SettingsView) id =
     (SettingsDialog.button dialog id).InvokeCommand Command.Accept |> ignore
@@ -155,6 +157,53 @@ let ``the association under the cursor fills the fields`` () =
 
     Assert.Equal("txt", (SettingsDialog.field dialog SettingsDialog.ExtensionId).Text)
     Assert.Equal("notepad.exe", (SettingsDialog.field dialog SettingsDialog.EditorId).Text)
+
+[<Fact>]
+let ``the executable under the panel cursor fills the default editor`` () =
+    use dialog = laidOutWith stored (Some(editor "C:/tools/notepad++.exe"))
+    (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).SetFocus() |> ignore
+
+    press dialog SettingsDialog.CandidateId
+
+    Assert.Equal("C:/tools/notepad++.exe", (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).Text)
+
+[<Fact>]
+let ``the executable under the panel cursor fills the editor being associated`` () =
+    use dialog = laidOutWith stored (Some(editor "C:/tools/notepad++.exe"))
+    (SettingsDialog.field dialog SettingsDialog.EditorId).SetFocus() |> ignore
+
+    press dialog SettingsDialog.CandidateId
+
+    Assert.Equal("C:/tools/notepad++.exe", (SettingsDialog.field dialog SettingsDialog.EditorId).Text)
+    Assert.Equal("code.exe", (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).Text)
+
+[<Fact>]
+let ``the default editor is the field filled before any has been typed in`` () =
+    use dialog = laidOutWith stored (Some(editor "C:/tools/notepad++.exe"))
+
+    press dialog SettingsDialog.CandidateId
+
+    Assert.Equal("C:/tools/notepad++.exe", (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).Text)
+
+[<Fact>]
+let ``with no executable under the cursor the button cannot be reached`` () =
+    use dialog = laidOut stored
+
+    Assert.False((SettingsDialog.button dialog SettingsDialog.CandidateId).Enabled)
+
+[<Fact>]
+let ``an executable under the cursor makes the button reachable`` () =
+    use dialog = laidOutWith stored (Some(editor "C:/tools/notepad++.exe"))
+
+    Assert.True((SettingsDialog.button dialog SettingsDialog.CandidateId).Enabled)
+
+[<Fact>]
+let ``every button fits inside the dialog`` () =
+    use dialog = laidOutWith stored (Some(editor "C:/tools/notepad++.exe"))
+
+    for id in [ SettingsDialog.AddId; SettingsDialog.RemoveId; SettingsDialog.CandidateId ] do
+        let frame = (SettingsDialog.button dialog id).Frame
+        Assert.True(frame.Right <= dialog.Viewport.Width, $"the button {id} at %A{frame} runs past the frame")
 
 [<Fact>]
 let ``every field fits inside the dialog`` () =

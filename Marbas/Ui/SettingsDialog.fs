@@ -24,7 +24,13 @@ let AddId = "add"
 [<Literal>]
 let RemoveId = "remove"
 
-type SettingsView(editors: EditorSettings) as this =
+[<Literal>]
+let CandidateId = "candidate"
+
+[<Literal>]
+let CandidateLabel = "_Under cursor"
+
+type SettingsView(editors: EditorSettings, candidate: EditorPath option) as this =
     inherit Dialog()
 
     let mutable associated = editors
@@ -52,6 +58,10 @@ type SettingsView(editors: EditorSettings) as this =
 
     let remove = DialogStyle.button "_Remove"
 
+    let fromCursor = DialogStyle.button CandidateLabel
+
+    let mutable target = defaultEditor
+
     let show () =
         associated.Associations
         |> List.map AssociationRow.describe
@@ -65,12 +75,16 @@ type SettingsView(editors: EditorSettings) as this =
         DialogStyle.dress this |> ignore
 
         known.KeystrokeNavigator <- null
-        add.X <- 32
+        add.X <- 12
         add.Y <- 4
         add.Id <- AddId
         remove.X <- Pos.Right add + Pos.Absolute 2
         remove.Y <- 4
         remove.Id <- RemoveId
+        fromCursor.X <- Pos.Right remove + Pos.Absolute 2
+        fromCursor.Y <- 4
+        fromCursor.Id <- CandidateId
+        fromCursor.Enabled <- candidate.IsSome
 
         this.Add(
             new Label(X = 1, Y = 0, Height = 1, Text = "Default editor:"),
@@ -81,6 +95,7 @@ type SettingsView(editors: EditorSettings) as this =
             editor,
             add,
             remove,
+            fromCursor,
             new Label(X = 1, Y = 5, Height = 1, Text = "Editor by extension:"),
             known
         )
@@ -108,6 +123,13 @@ type SettingsView(editors: EditorSettings) as this =
                 show ()
             | None -> ())
 
+        for field in [ defaultEditor; editor ] do
+            field.HasFocusChanged.Add(fun _ -> if field.HasFocus then target <- field)
+
+        fromCursor.Accepting.Add(fun args ->
+            args.Handled <- true
+            candidate |> Option.iter (fun chosen -> target.Text <- EditorPath.value chosen))
+
         known.ValueChanged.Add(fun args ->
             match associated.Associations |> List.tryItem (args.NewValue.GetValueOrDefault 0) with
             | Some association ->
@@ -124,7 +146,7 @@ type SettingsView(editors: EditorSettings) as this =
         { associated with
             DefaultEditor = EditorPath.tryCreate defaultEditor.Text }
 
-let create (editors: EditorSettings) = new SettingsView(editors)
+let create (editors: EditorSettings) (candidate: EditorPath option) = new SettingsView(editors, candidate)
 
 let field (dialog: Dialog) id =
     dialog.SubViews

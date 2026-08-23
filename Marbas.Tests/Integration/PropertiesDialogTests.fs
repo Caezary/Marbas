@@ -13,9 +13,9 @@ let private at = Root.at
 let private shown =
     { Path = FileSystemPath.create (at "start/docs")
       Flags = Set.ofList [ HiddenFlag ]
-      Created = DateTime(2024, 3, 1, 9, 5, 7)
-      Modified = DateTime(2024, 4, 2, 10, 6, 8)
-      Accessed = DateTime(2024, 5, 3, 11, 7, 9) }
+      Created = DateTimeOffset(DateTime(2024, 3, 1, 9, 5, 7))
+      Modified = DateTimeOffset(DateTime(2024, 4, 2, 10, 6, 8))
+      Accessed = DateTimeOffset(DateTime(2024, 5, 3, 11, 7, 9)) }
 
 let private laidOut properties =
     DialogStyle.apply ()
@@ -83,7 +83,7 @@ let ``a stamp that was typed comes back`` () =
 
     let answered = PropertiesDialog.properties shown dialog |> Expect.some
 
-    Assert.Equal(DateTime(1999, 12, 31, 23, 59, 58), answered.Created)
+    Assert.Equal(DateTimeOffset(DateTime(1999, 12, 31, 23, 59, 58)), answered.Created)
 
 [<Fact>]
 let ``a stamp that reads as nothing leaves the one the entry carried`` () =

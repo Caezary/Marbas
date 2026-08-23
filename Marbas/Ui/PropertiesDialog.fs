@@ -30,7 +30,7 @@ let flagId flag =
     | SystemFlag -> "system"
     | ArchiveFlag -> "archive"
 
-let private stampRow y id caption (stamp: DateTime) =
+let private stampRow y id caption (stamp: DateTimeOffset) =
     [ new Label(X = 1, Y = Pos.Absolute y, Height = 1, Text = caption) :> View
       new TextField(
           X = Pos.Absolute(1 + CaptionWidth),

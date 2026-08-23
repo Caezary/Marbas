@@ -7,7 +7,7 @@ open Marbas.FileSystem.DirectoryListing
 open Marbas.Ui
 open Marbas.Ui.EntryColor
 
-let private modified = DateTime(2026, 7, 1, 12, 30, 0)
+let private modified = DateTimeOffset(DateTime(2026, 7, 1, 12, 30, 0))
 
 let private file name executability =
     { Name = EntryName.create name

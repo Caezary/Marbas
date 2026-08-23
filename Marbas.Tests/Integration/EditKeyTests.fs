@@ -166,7 +166,7 @@ let ``F12 hands the editors in force to the settings popup and takes back what i
         focusedWindow
             { Fakes.dependencies fs (at "start") with
                 EditEditors =
-                    fun editors ->
+                    fun editors _ ->
                         shown.Add editors
                         Some { editors with DefaultEditor = Some chosen }
                 RunEditor = fun editor _ -> started.Add editor; Ok() }
@@ -177,3 +177,36 @@ let ``F12 hands the editors in force to the settings popup and takes back what i
 
     Assert.Equal(EditorSettings.none, Assert.Single shown)
     Assert.Equal(Some chosen, Assert.Single started)
+
+[<Fact>]
+let ``F12 offers the executable under the cursor to the settings popup`` () =
+    let fs = mockFs ()
+    fs.AddFile(at "start/rider64.exe", MockFileData "mz")
+    let offered = ResizeArray<EditorPath option>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                EditEditors = fun _ candidate -> offered.Add candidate; None }
+
+    (leftList window).SelectedItem <- 3
+
+    pressKey window KeyMap.settingsKey
+
+    Assert.Equal(EditorPath.tryCreate (at "start/rider64.exe"), Assert.Single offered)
+
+[<Fact>]
+let ``F12 offers nothing when the cursor is not on an executable`` () =
+    let fs = mockFs ()
+    let offered = ResizeArray<EditorPath option>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                EditEditors = fun _ candidate -> offered.Add candidate; None }
+
+    (leftList window).SelectedItem <- 2
+
+    pressKey window KeyMap.settingsKey
+
+    Assert.Equal(None, Assert.Single offered)

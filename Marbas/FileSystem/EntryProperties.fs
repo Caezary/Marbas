@@ -13,9 +13,9 @@ type EntryFlag =
 type EntryProperties =
     { Path: FileSystemPath
       Flags: Set<EntryFlag>
-      Created: DateTime
-      Modified: DateTime
-      Accessed: DateTime }
+      Created: DateTimeOffset
+      Modified: DateTimeOffset
+      Accessed: DateTimeOffset }
 
 module EntryProperties =
 
@@ -74,9 +74,9 @@ module EntryProperties =
                 Ok
                     { Path = path
                       Flags = flagsOf entry.Attributes
-                      Created = entry.CreationTime
-                      Modified = entry.LastWriteTime
-                      Accessed = entry.LastAccessTime }
+                      Created = DateTimeOffset entry.CreationTime
+                      Modified = DateTimeOffset entry.LastWriteTime
+                      Accessed = DateTimeOffset entry.LastAccessTime }
             with ex ->
                 Error(Operations.mapException path ex)
 
@@ -85,9 +85,9 @@ module EntryProperties =
         | None -> Error(Operations.SourceNotFound properties.Path)
         | Some entry ->
             try
-                entry.CreationTime <- properties.Created
-                entry.LastWriteTime <- properties.Modified
-                entry.LastAccessTime <- properties.Accessed
+                entry.CreationTime <- properties.Created.LocalDateTime
+                entry.LastWriteTime <- properties.Modified.LocalDateTime
+                entry.LastAccessTime <- properties.Accessed.LocalDateTime
                 entry.Attributes <- attributesOf entry.Attributes properties.Flags
                 Ok()
             with ex ->

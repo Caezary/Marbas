@@ -6,7 +6,7 @@ open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Ui
 
-let private modified = DateTime(2026, 7, 20, 14, 5, 0)
+let private modified = DateTimeOffset(DateTime(2026, 7, 20, 14, 5, 0))
 
 let private file name size =
     { Name = EntryName.create name

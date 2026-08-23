@@ -8,7 +8,7 @@ open Marbas.State.AppState
 open Marbas.Ui
 open Marbas.Tests
 
-let private modified = DateTime(2026, 7, 1, 12, 30, 0)
+let private modified = DateTimeOffset(DateTime(2026, 7, 1, 12, 30, 0))
 
 let private file name size =
     { Name = EntryName.create name
