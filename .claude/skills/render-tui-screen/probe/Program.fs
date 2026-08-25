@@ -5,7 +5,9 @@ open System.Drawing
 open Terminal.Gui.App
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
-open Marbas.Ui
+open Marbas.Ui.Theme
+open Marbas.Ui.Dialogs
+open Marbas.Ui.App
 
 let private screenSize = Rectangle(0, 0, 100, 24)
 

@@ -73,18 +73,23 @@ listed with one.
 
 `FileSystem/`, `State/` and `Ui/` mirror the source folders they cover, one test
 module per module under test, and namespaces follow: `Marbas.Tests.State.
-UpdateTests` covers `Marbas.State.Update`. Everything in them is a unit test —
+UpdateTests` covers `Marbas.State.Update`. `Ui/` mirrors the source down to the
+subfolder, so `Ui/Panels/PanelTitleTests.fs` covers `Ui/Panels/PanelTitle.fs` as
+`Marbas.Tests.Ui.Panels.PanelTitleTests`. Everything in them is a unit test —
 pure, fast, no Terminal.Gui.
 
 `Integration/` holds every test that constructs a Terminal.Gui view, from a lone
 dialog up to a whole `MainWindow` driven by keystrokes. That is the line: a test
 that touches Terminal.Gui needs `BeginInit`/`EndInit`, a layout pass and the
 process-wide statics that force parallelisation off, so it belongs on the other
-side of the fence from the pure ones.
+side of the fence from the pure ones. It carries the same subfolders as
+`Marbas/Ui` — all but `Messages/`, whose modules are pure text and never build a
+view — so a feature's unit tests and its Terminal.Gui tests sit at matching
+paths on either side.
 
 The split is what makes a file like `State/DeleteTests.fs` (does the panel come
 back right once the entries are gone?) readable next to
-`Integration/DeleteKeyTests.fs` (does `F8` confirm and then reach the trash?) —
+`Integration/App/DeleteKeyTests.fs` (does `F8` confirm and then reach the trash?) —
 they used to be one file. Either half
 runs on its own:
 
@@ -160,7 +165,7 @@ ever exercised by running the app.
 
 **Held modifiers are a port too.** `WatchModifiers` is handed a callback at
 startup; a test keeps the callback and calls it with the modifiers it wants
-held, which is how `Integration/ModifierRowTests.fs` presses no key at all and
+held, which is how `Integration/Keys/ModifierRowTests.fs` presses no key at all and
 still asserts what the bottom bar shows. The polling itself lives in
 `Program.fs` and is only exercised by running the app.
 
@@ -172,7 +177,7 @@ answering `Ok`. Nothing in the suite starts a process.
 **The settings file is not a port.** `SettingsPath` is a plain path on the
 dependencies and `Settings.load`/`Settings.save` use the injected file system, so
 a test points the path into its own `MockFileSystem` and the real config file is
-never touched. That is what lets `Integration/SettingsTests.fs` state the whole
+never touched. That is what lets `Integration/App/SettingsTests.fs` state the whole
 promise of P7.4 in one test: build a window, sort it, show its hidden entries,
 send another panel to a second drive, press `Ctrl+Q`, then build a second window
 over the *same* mock file system and read the titles back.
@@ -287,7 +292,7 @@ from its own state inside the override would be untestable here.
 **Colours are asserted as schemes, never as pixels.** There is no driver in a
 test, so nothing can read back what was painted. What a test can assert is the
 `Scheme` a view resolves to — `view.GetScheme()` — and the attributes the scheme
-holds, which is what `Integration/SchemeTests.fs` and `Ui/ClassicSchemeTests.fs`
+holds, which is what `Integration/Theme/SchemeTests.fs` and `Ui/Theme/ClassicSchemeTests.fs`
 do. A view without a scheme of its own inherits its super-view's, so the panel
 list and the status line are covered by the schemes set on the panel frame and
 on the window. It is also why the bottom bar draws a key name and its command as

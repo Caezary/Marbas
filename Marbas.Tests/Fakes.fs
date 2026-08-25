@@ -2,7 +2,7 @@ module Marbas.Tests.Fakes
 
 open System.IO.Abstractions
 open Marbas.FileSystem
-open Marbas.Ui
+open Marbas.Ui.App
 open Marbas.Tests
 
 let private at = Root.at

@@ -4,7 +4,8 @@ open System.IO.Abstractions.TestingHelpers
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
-open Marbas.Ui
+open Marbas.Ui.Panels
+open Marbas.Ui.App
 open Marbas.Tests
 
 let private at = Root.at

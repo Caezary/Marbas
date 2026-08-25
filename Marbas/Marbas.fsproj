@@ -24,51 +24,81 @@
         <Compile Include="FileSystem\Trash.fs" />
         <Compile Include="FileSystem\FileWindow.fs" />
         <Compile Include="FileSystem\LineIndex.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Compile Include="State\AppState.fs" />
         <Compile Include="State\Update.fs" />
         <Compile Include="State\Runtime.fs" />
-        <Compile Include="Ui\ClassicScheme.fs" />
-        <Compile Include="Ui\DialogStyle.fs" />
-        <Compile Include="Ui\LiteralText.fs" />
-        <Compile Include="Ui\Modifiers.fs" />
-        <Compile Include="Ui\KeyMap.fs" />
-        <Compile Include="Ui\KeyBarLayout.fs" />
-        <Compile Include="Ui\EntrySize.fs" />
-        <Compile Include="Ui\EntryFormat.fs" />
-        <Compile Include="Ui\EntryColor.fs" />
-        <Compile Include="Ui\PageJump.fs" />
-        <Compile Include="Ui\SelectionSummary.fs" />
-        <Compile Include="Ui\PanelFooter.fs" />
-        <Compile Include="Ui\CursorInfo.fs" />
-        <Compile Include="Ui\StatusLine.fs" />
-        <Compile Include="Ui\HexDump.fs" />
-        <Compile Include="Ui\ViewerMode.fs" />
-        <Compile Include="Ui\PrintableText.fs" />
-        <Compile Include="Ui\LineWrap.fs" />
-        <Compile Include="Ui\ViewerScroll.fs" />
-        <Compile Include="Ui\ViewerHeader.fs" />
-        <Compile Include="Ui\ViewerKeys.fs" />
-        <Compile Include="Ui\ListingErrorMessage.fs" />
-        <Compile Include="Ui\ContentErrorMessage.fs" />
-        <Compile Include="Ui\OperationErrorMessage.fs" />
-        <Compile Include="Ui\DeleteConfirmation.fs" />
-        <Compile Include="Ui\OverwriteQuestion.fs" />
-        <Compile Include="Ui\PanelTitle.fs" />
-        <Compile Include="Ui\FilePanel.fs" />
-        <Compile Include="Ui\FunctionKeyBar.fs" />
-        <Compile Include="Ui\PanelWiring.fs" />
-        <Compile Include="Ui\AppView.fs" />
-        <Compile Include="Ui\Shell.fs" />
-        <Compile Include="Ui\PromptDialog.fs" />
-        <Compile Include="Ui\PatternDialog.fs" />
-        <Compile Include="Ui\ProgressDialog.fs" />
-        <Compile Include="Ui\FileViewer.fs" />
-        <Compile Include="Ui\TimestampText.fs" />
-        <Compile Include="Ui\AssociationRow.fs" />
-        <Compile Include="Ui\PropertiesDialog.fs" />
-        <Compile Include="Ui\SettingsDialog.fs" />
-        <Compile Include="Ui\EditorCommand.fs" />
-        <Compile Include="Ui\MainWindow.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Ui\Theme\ClassicScheme.fs" />
+        <Compile Include="Ui\Theme\DialogStyle.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Ui\Format\LiteralText.fs" />
+        <Compile Include="Ui\Format\EntrySize.fs" />
+        <Compile Include="Ui\Format\EntryFormat.fs" />
+        <Compile Include="Ui\Format\TimestampText.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Ui\Keys\Modifiers.fs" />
+        <Compile Include="Ui\Keys\KeyMap.fs" />
+        <Compile Include="Ui\Keys\KeyBarLayout.fs" />
+        <Compile Include="Ui\Keys\FunctionKeyBar.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Ui\Messages\ListingErrorMessage.fs" />
+        <Compile Include="Ui\Messages\ContentErrorMessage.fs" />
+        <Compile Include="Ui\Messages\OperationErrorMessage.fs" />
+        <Compile Include="Ui\Messages\DeleteConfirmation.fs" />
+        <Compile Include="Ui\Messages\OverwriteQuestion.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Ui\Panels\EntryColor.fs" />
+        <Compile Include="Ui\Panels\PageJump.fs" />
+        <Compile Include="Ui\Panels\SelectionSummary.fs" />
+        <Compile Include="Ui\Panels\PanelFooter.fs" />
+        <Compile Include="Ui\Panels\PanelTitle.fs" />
+        <Compile Include="Ui\Panels\FilePanel.fs" />
+        <Compile Include="Ui\Panels\PanelWiring.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Ui\Viewer\HexDump.fs" />
+        <Compile Include="Ui\Viewer\ViewerMode.fs" />
+        <Compile Include="Ui\Viewer\PrintableText.fs" />
+        <Compile Include="Ui\Viewer\LineWrap.fs" />
+        <Compile Include="Ui\Viewer\ViewerScroll.fs" />
+        <Compile Include="Ui\Viewer\ViewerHeader.fs" />
+        <Compile Include="Ui\Viewer\ViewerKeys.fs" />
+        <Compile Include="Ui\Viewer\FileViewer.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Ui\Dialogs\PromptDialog.fs" />
+        <Compile Include="Ui\Dialogs\PatternDialog.fs" />
+        <Compile Include="Ui\Dialogs\ProgressDialog.fs" />
+        <Compile Include="Ui\Dialogs\AssociationRow.fs" />
+        <Compile Include="Ui\Dialogs\PropertiesDialog.fs" />
+        <Compile Include="Ui\Dialogs\SettingsDialog.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Ui\App\CursorInfo.fs" />
+        <Compile Include="Ui\App\StatusLine.fs" />
+        <Compile Include="Ui\App\AppView.fs" />
+        <Compile Include="Ui\App\Shell.fs" />
+        <Compile Include="Ui\App\EditorCommand.fs" />
+        <Compile Include="Ui\App\MainWindow.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Compile Include="Program.fs" />
     </ItemGroup>
 

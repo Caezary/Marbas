@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-08-22. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-26. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
@@ -64,7 +64,13 @@ its extension asks for; and `F4` on a directory opens a properties popup — the
 read-only, hidden, system and archive flags and the three timestamps — writing
 back only what it was given and re-reading the panel afterwards. The same round
 moved every timestamp in the app from `DateTime` to `DateTimeOffset`, so a
-moment always says which offset it was read in.
+moment always says which offset it was read in. **A seventh round was
+housekeeping.** `Ui` had grown to forty-three modules in one folder, so they
+were split into eight — `Theme`, `Format`, `Keys`, `Messages`, `Panels`,
+`Viewer`, `Dialogs` and `App` — each folder a namespace, with the tests
+following into the same folders on both sides of the unit/integration fence.
+Nothing the application does changed: the compile order simply became the
+folder order, and every dependency inside `Ui` now points at a folder above it.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit

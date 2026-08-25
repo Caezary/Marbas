@@ -17,6 +17,15 @@ the disk. See [Testing](TESTING.md) for how the suite itself is organised.
 
 **No code comments.** Intent lives in names, tests and these documents.
 
+**`Ui` is one layer in eight folders.** Forty-odd modules under a single folder
+stopped being navigable, so they are grouped by what they are about — theme,
+formatting, keys, messages, panels, viewer, dialogs, and the application's own
+composition root — and each folder is a namespace: `Marbas.Ui.Panels.FilePanel`.
+The folder order in the code map below is also the compile order, and every
+dependency inside `Ui` points at a folder listed above it, which is what keeps
+the layer acyclic without any tooling. `Ui` is still one layer of `Ui` → `State`
+→ `FileSystem`; the folders divide it by subject, not by rank.
+
 ## Topics
 
 - [Domain types](DOMAIN-TYPES.md) — paths as a type, typed messages and effects
@@ -54,45 +63,61 @@ Marbas/
                           built from and read back as Settings
     Update.fs             messages and effects: message + state -> state + effects
     Runtime.fs            generic host: the single mutable cell, dispatch, render
-  Ui/
-    ClassicScheme.fs      the five schemes the screen is painted with
-    LiteralText.fs        turns a view's hot key specifier off, so `_` is shown
-    Modifiers.fs          Ctrl / Alt / Shift as a set, the set a key carries,
-                          and the key a set makes of a plain one
-    KeyMap.fs             every key binding: key, bar label, message; the twelve
-                          bar slots of a set of modifiers; the shifted page keys,
-                          which only carry a direction
-    KeyBarLayout.fs       bar width -> where each of the twelve slots sits
-    EntrySize.fs          size column text, byte format injected per view
-    EntryFormat.fs        one entry -> one fixed-width row
-    EntryColor.fs         one entry -> its colour group, and that group's attribute
-    PageJump.fs            where a page key lands, from the page on screen
-    SelectionSummary.fs   marked entries -> panel summary text
-    PanelFooter.fs         panel state -> the one line under the rule
-    CursorInfo.fs           cursor entry -> status line text
-    StatusLine.fs           the status line view
-    HexDump.fs             bytes at an offset -> one offset / hex / text row
-    ViewerMode.fs           text or hex, wrapped or not
-    PrintableText.fs        a decoded line -> what a terminal can show of it
-    LineWrap.fs             a line -> the rows it takes, or the window shown of it
-    ViewerScroll.fs         clamped scrolling, how many lines fill a page, percent
-    ViewerHeader.fs         name, mode, encoding, size, place -> the viewer's top bar
-    ListingErrorMessage.fs  ListingError -> user-facing text
-    ContentErrorMessage.fs  ContentError -> user-facing text
-    OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
-    DeleteConfirmation.fs delete targets -> confirmation question
-    OverwriteQuestion.fs  collision -> question text, answer buttons and mapping
-    PanelTitle.fs           path and sort order -> the panel frame's title
-    FilePanel.fs             panel views, render state -> view
-    FunctionKeyBar.fs       bottom bar: a slot per function key, F1 to F12
-    ViewerKeys.fs           the viewer's own key table and its twelve bar labels
-    Shell.fs                 Dependencies and the effect interpreter
-    PromptDialog.fs         single-field text prompt (label + default)
-    PatternDialog.fs         the `+` / `-` pattern prompt, over PromptDialog
-    ProgressDialog.fs       the window shown while a batch runs
-    FileViewer.fs             the full-screen viewer behind `F3`: header, rows, bar
-    EditorCommand.fs        which editor `F4` starts, per platform and `$EDITOR`
-    MainWindow.fs             composition: views, runtime, event wiring
+  Ui/                     eight folders, compiled in this order; every
+                          dependency points at a folder listed above it
+    Theme/                the look, applied before any view is built
+      ClassicScheme.fs      the five schemes the screen is painted with
+      DialogStyle.fs        frame, buttons, glyphs and schemes every popup wears
+    Format/               the text more than one feature formats with
+      LiteralText.fs        turns a view's hot key specifier off, so `_` is shown
+      EntrySize.fs          size column text, byte format injected per view
+      EntryFormat.fs        one entry -> one fixed-width row
+      TimestampText.fs      one moment <-> the text a dialog reads and writes back
+    Keys/                 what a keystroke means, and the bar that names them
+      Modifiers.fs          Ctrl / Alt / Shift as a set, the set a key carries,
+                            and the key a set makes of a plain one
+      KeyMap.fs             every key binding: key, bar label, message; the twelve
+                            bar slots of a set of modifiers; the shifted page keys,
+                            which only carry a direction
+      KeyBarLayout.fs       bar width -> where each of the twelve slots sits
+      FunctionKeyBar.fs     bottom bar: a slot per function key, F1 to F12
+    Messages/             the words the application says, from values it holds
+      ListingErrorMessage.fs    ListingError -> user-facing text
+      ContentErrorMessage.fs    ContentError -> user-facing text
+      OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
+      DeleteConfirmation.fs     delete targets -> confirmation question
+      OverwriteQuestion.fs      collision -> question text, answer buttons and mapping
+    Panels/               the two panels and everything drawn inside one
+      EntryColor.fs         one entry -> its colour group, and that group's attribute
+      PageJump.fs           where a page key lands, from the page on screen
+      SelectionSummary.fs   marked entries -> panel summary text
+      PanelFooter.fs        panel state -> the one line under the rule
+      PanelTitle.fs         path and sort order -> the panel frame's title
+      FilePanel.fs          panel views, render state -> view
+      PanelWiring.fs        one panel's list bound to keys, cursor and search
+    Viewer/               the full-screen viewer behind `F3`
+      HexDump.fs            bytes at an offset -> one offset / hex / text row
+      ViewerMode.fs         text or hex, wrapped or not
+      PrintableText.fs      a decoded line -> what a terminal can show of it
+      LineWrap.fs           a line -> the rows it takes, or the window shown of it
+      ViewerScroll.fs       clamped scrolling, how many lines fill a page, percent
+      ViewerHeader.fs       name, mode, encoding, size, place -> the viewer's top bar
+      ViewerKeys.fs         the viewer's own key table and its twelve bar labels
+      FileViewer.fs         the viewer itself: header, rows, bar
+    Dialogs/              the modal popups, each one built where a test can lay it out
+      PromptDialog.fs       single-field text prompt (label + default)
+      PatternDialog.fs      the `+` / `-` pattern prompt, over PromptDialog
+      ProgressDialog.fs     the window shown while a batch runs
+      AssociationRow.fs     one extension and its editor -> one row of the list
+      PropertiesDialog.fs   what `F4` shows for a directory, and writes back
+      SettingsDialog.fs     the default editor and the extension associations
+    App/                  the composition root, and the way out to the world
+      CursorInfo.fs         cursor entry -> status line text
+      StatusLine.fs         the status line view
+      AppView.fs            window, both panels and the status line in one record
+      Shell.fs              Dependencies and the effect interpreter
+      EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
+      MainWindow.fs         composition: views, runtime, event wiring
   Program.fs              real file system and real dialogs
   Properties/PublishProfiles/
     win-x64.pubxml        self-contained single-file build for Windows
@@ -105,8 +130,10 @@ Marbas.Tests/
   Fakes.fs                the do-nothing Shell.Dependencies every test starts from
   FileSystem/             unit tests, one module per FileSystem module
   State/                  unit tests, one module per State module
-  Ui/                     unit tests of the pure Ui modules and the Shell interpreter
-  Integration/            every test that constructs a Terminal.Gui view
+  Ui/                     unit tests of the pure Ui modules and the Shell
+                          interpreter, in the same eight folders as the source
+  Integration/            every test that constructs a Terminal.Gui view, in
+                          those same folders
     Gui.fs                 focusedWindow, leftList, rightList, press, panel,
                           panelTitle, shownPath, drawnText
 

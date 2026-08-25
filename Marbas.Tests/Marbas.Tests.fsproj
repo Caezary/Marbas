@@ -55,70 +55,112 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Ui\ClassicSchemeTests.fs" />
-    <Compile Include="Ui\EntrySizeTests.fs" />
-    <Compile Include="Ui\EntryFormatTests.fs" />
-    <Compile Include="Ui\CursorInfoTests.fs" />
-    <Compile Include="Ui\EntryColorTests.fs" />
-    <Compile Include="Ui\PageJumpTests.fs" />
-    <Compile Include="Ui\SelectionSummaryTests.fs" />
-    <Compile Include="Ui\PanelFooterTests.fs" />
-    <Compile Include="Ui\HexDumpTests.fs" />
-    <Compile Include="Ui\PrintableTextTests.fs" />
-    <Compile Include="Ui\LineWrapTests.fs" />
-    <Compile Include="Ui\ViewerScrollTests.fs" />
-    <Compile Include="Ui\ViewerHeaderTests.fs" />
-    <Compile Include="Ui\ViewerKeysTests.fs" />
-    <Compile Include="Ui\ListingErrorMessageTests.fs" />
-    <Compile Include="Ui\ContentErrorMessageTests.fs" />
-    <Compile Include="Ui\OperationErrorMessageTests.fs" />
-    <Compile Include="Ui\DeleteConfirmationTests.fs" />
-    <Compile Include="Ui\OverwriteQuestionTests.fs" />
-    <Compile Include="Ui\PanelTitleTests.fs" />
-    <Compile Include="Ui\ModifiersTests.fs" />
-    <Compile Include="Ui\KeyMapTests.fs" />
-    <Compile Include="Ui\KeyBarLayoutTests.fs" />
-    <Compile Include="Ui\TimestampTextTests.fs" />
-    <Compile Include="Ui\AssociationRowTests.fs" />
-    <Compile Include="Ui\EditorCommandTests.fs" />
-    <Compile Include="Ui\ShellTests.fs" />
+    <Compile Include="Ui\Theme\ClassicSchemeTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Ui\Format\EntrySizeTests.fs" />
+    <Compile Include="Ui\Format\EntryFormatTests.fs" />
+    <Compile Include="Ui\Format\TimestampTextTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Ui\Keys\ModifiersTests.fs" />
+    <Compile Include="Ui\Keys\KeyMapTests.fs" />
+    <Compile Include="Ui\Keys\KeyBarLayoutTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Ui\Messages\ListingErrorMessageTests.fs" />
+    <Compile Include="Ui\Messages\ContentErrorMessageTests.fs" />
+    <Compile Include="Ui\Messages\OperationErrorMessageTests.fs" />
+    <Compile Include="Ui\Messages\DeleteConfirmationTests.fs" />
+    <Compile Include="Ui\Messages\OverwriteQuestionTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Ui\Panels\EntryColorTests.fs" />
+    <Compile Include="Ui\Panels\PageJumpTests.fs" />
+    <Compile Include="Ui\Panels\SelectionSummaryTests.fs" />
+    <Compile Include="Ui\Panels\PanelFooterTests.fs" />
+    <Compile Include="Ui\Panels\PanelTitleTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Ui\Viewer\HexDumpTests.fs" />
+    <Compile Include="Ui\Viewer\PrintableTextTests.fs" />
+    <Compile Include="Ui\Viewer\LineWrapTests.fs" />
+    <Compile Include="Ui\Viewer\ViewerScrollTests.fs" />
+    <Compile Include="Ui\Viewer\ViewerHeaderTests.fs" />
+    <Compile Include="Ui\Viewer\ViewerKeysTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Ui\Dialogs\AssociationRowTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Ui\App\CursorInfoTests.fs" />
+    <Compile Include="Ui\App\EditorCommandTests.fs" />
+    <Compile Include="Ui\App\ShellTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Integration\Gui.fs" />
-    <Compile Include="Integration\MainWindowTests.fs" />
-    <Compile Include="Integration\PanelFocusTests.fs" />
-    <Compile Include="Integration\PanelWiringTests.fs" />
-    <Compile Include="Integration\AppViewTests.fs" />
-    <Compile Include="Integration\FunctionKeyBarTests.fs" />
-    <Compile Include="Integration\ModifierRowTests.fs" />
-    <Compile Include="Integration\SchemeTests.fs" />
-    <Compile Include="Integration\FilePanelContentTests.fs" />
-    <Compile Include="Integration\PanelPaintingTests.fs" />
-    <Compile Include="Integration\SearchKeyTests.fs" />
-    <Compile Include="Integration\StatusLineTests.fs" />
-    <Compile Include="Integration\LiteralTextTests.fs" />
-    <Compile Include="Integration\PatternDialogTests.fs" />
-    <Compile Include="Integration\PromptDialogTests.fs" />
-    <Compile Include="Integration\PropertiesDialogTests.fs" />
-    <Compile Include="Integration\SettingsDialogTests.fs" />
-    <Compile Include="Integration\DialogStyleTests.fs" />
-    <Compile Include="Integration\ProgressDialogTests.fs" />
-    <Compile Include="Integration\FileViewerTests.fs" />
-    <Compile Include="Integration\ListingErrorTests.fs" />
-    <Compile Include="Integration\DriveSelectionTests.fs" />
-    <Compile Include="Integration\RefreshKeyTests.fs" />
-    <Compile Include="Integration\SelectionKeyTests.fs" />
-    <Compile Include="Integration\SelectionPatternKeyTests.fs" />
-    <Compile Include="Integration\SortKeyTests.fs" />
-    <Compile Include="Integration\HiddenKeyTests.fs" />
-    <Compile Include="Integration\SettingsTests.fs" />
-    <Compile Include="Integration\MkdirKeyTests.fs" />
-    <Compile Include="Integration\DeleteKeyTests.fs" />
-    <Compile Include="Integration\CopyKeyTests.fs" />
-    <Compile Include="Integration\MoveKeyTests.fs" />
-    <Compile Include="Integration\ViewKeyTests.fs" />
-    <Compile Include="Integration\EditKeyTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Integration\Theme\DialogStyleTests.fs" />
+    <Compile Include="Integration\Theme\SchemeTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Integration\Format\LiteralTextTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Integration\Keys\FunctionKeyBarTests.fs" />
+    <Compile Include="Integration\Keys\ModifierRowTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Integration\Panels\PanelFocusTests.fs" />
+    <Compile Include="Integration\Panels\PanelWiringTests.fs" />
+    <Compile Include="Integration\Panels\FilePanelContentTests.fs" />
+    <Compile Include="Integration\Panels\PanelPaintingTests.fs" />
+    <Compile Include="Integration\Panels\SearchKeyTests.fs" />
+    <Compile Include="Integration\Panels\DriveSelectionTests.fs" />
+    <Compile Include="Integration\Panels\RefreshKeyTests.fs" />
+    <Compile Include="Integration\Panels\SelectionKeyTests.fs" />
+    <Compile Include="Integration\Panels\SelectionPatternKeyTests.fs" />
+    <Compile Include="Integration\Panels\SortKeyTests.fs" />
+    <Compile Include="Integration\Panels\HiddenKeyTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Integration\Viewer\FileViewerTests.fs" />
+    <Compile Include="Integration\Viewer\ViewKeyTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Integration\Dialogs\PromptDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\PatternDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\ProgressDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\PropertiesDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\SettingsDialogTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Integration\App\MainWindowTests.fs" />
+    <Compile Include="Integration\App\AppViewTests.fs" />
+    <Compile Include="Integration\App\StatusLineTests.fs" />
+    <Compile Include="Integration\App\ListingErrorTests.fs" />
+    <Compile Include="Integration\App\SettingsTests.fs" />
+    <Compile Include="Integration\App\MkdirKeyTests.fs" />
+    <Compile Include="Integration\App\DeleteKeyTests.fs" />
+    <Compile Include="Integration\App\CopyKeyTests.fs" />
+    <Compile Include="Integration\App\MoveKeyTests.fs" />
+    <Compile Include="Integration\App\EditKeyTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -133,4 +175,4 @@
     <ProjectReference Include="..\Marbas\Marbas.fsproj" />
   </ItemGroup>
 
-</Project>
+</Project>

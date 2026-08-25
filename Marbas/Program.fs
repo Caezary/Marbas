@@ -10,7 +10,12 @@ open Terminal.Gui.App
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.FileSystem
-open Marbas.Ui
+open Marbas.Ui.Theme
+open Marbas.Ui.Keys
+open Marbas.Ui.Messages
+open Marbas.Ui.Viewer
+open Marbas.Ui.Dialogs
+open Marbas.Ui.App
 
 [<Literal>]
 let private VkShift = 0x10

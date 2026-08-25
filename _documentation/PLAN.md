@@ -158,7 +158,9 @@ Goal: comfort features that make it feel like a finished tool.
 Marbas/
   FileSystem/        P2, P5 — listing, operations (no UI dependencies)
   State/             P3, P4 — panel & app state, selection, Store
-  Ui/                P1+    — panels, dialogs, key bindings, theming
+  Ui/                P1+    — panels, dialogs, key bindings, theming;
+                              since grouped into feature folders, see
+                              Architecture/OVERVIEW.md
   Program.fs         composition root
 ```
 
