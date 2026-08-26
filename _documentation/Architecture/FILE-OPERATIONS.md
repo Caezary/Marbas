@@ -84,12 +84,12 @@ and the question the user answers is the question that gets carried out: *Move
 **The trash is a port; a permanent delete is not.** `Shell.interpret` picks
 `deps.SendToTrash` for `ToTrash` and `Operations.delete` for `Permanently`, and
 hands either to `Operations.removeAll`, which is `deleteAll` with the removal
-left open. What the port does is the platform's business and `Program.fs`
-decides it — the Windows recycle bin through
-`Microsoft.VisualBasic.FileIO.FileSystem` (`SendToRecycleBin`), the freedesktop
-trash through `Trash.send` everywhere else. Both answer
-`Result<unit, OperationError>`, so a refusal is reported like any other item
-failure and the marks of what did not go survive.
+left open. What the port does is the platform's business and
+`Dependencies.create` decides it — the Windows recycle bin through
+`RecycleBin.send` and `Microsoft.VisualBasic.FileIO.FileSystem`
+(`SendToRecycleBin`), the freedesktop trash through `Trash.send` everywhere
+else. Both answer `Result<unit, OperationError>`, so a refusal is reported
+like any other item failure and the marks of what did not go survive.
 
 **The freedesktop trash is ordinary file-system code.** `Trash.send` writes
 `info/<name>.trashinfo` — `[Trash Info]`, the URL-encoded original `Path`, the
@@ -168,7 +168,7 @@ a test asserts on what the screen would show without a driver painting one.
 **Closing the viewer is injected, because `RequestStop` needs a running app.**
 `Runnable.RequestStop` does nothing unless the window is being run by an
 application, so a test cannot observe it. `FileViewer.create` therefore takes
-the closing action as its first argument — `Program.fs` passes
+the closing action as its first argument — `Prompts.showFile` passes
 `_.RequestStop()`, the tests pass a recorder — which leaves "F3 and Esc close
 the viewer, other keys do not" as an ordinary assertion. The key handler sits
 on the content view because that is the view holding focus, and it marks the
@@ -177,9 +177,9 @@ top of the one being closed.
 
 **The editor is a port, and its failure is an operation failure.**
 `Dependencies.RunEditor` takes the path and answers
-`Result<unit, Operations.OperationError>`; `Program.fs` is the only place that
-knows about `Process.Start`, `WaitForExit` and repainting the screen
-afterwards, and it maps whatever the start threw through
+`Result<unit, Operations.OperationError>`; `EditorProcess.run` is the only
+place that knows about `Process.Start`, `WaitForExit` and repainting the
+screen afterwards, and it maps whatever the start threw through
 `Operations.mapException`. That reuses the error type, the
 `ReportOperationError` effect and `OperationErrorMessage` rather than inventing
 a second failure vocabulary for one case — an editor that will not start failed
@@ -189,7 +189,7 @@ records the path and can write to the mock file system, which is what makes
 
 **Which editor to start is a pure choice.** `EditorCommand.choose` takes
 `$EDITOR` as an option and a `Platform` (`Windows`/`Unix`) and answers with the
-command: what was configured, trimmed, or `notepad`/`vi`. `Program.fs` only
+command: what was configured, trimmed, or `notepad`/`vi`. `Adapters` only
 reads the environment and asks. A blank `$EDITOR` counts as unset.
 
 **A finished edit re-reads the panel it started from.** `EditFinished Ok` runs

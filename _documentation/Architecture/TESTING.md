@@ -31,10 +31,11 @@ Coverage comes from the collector the test project already references:
 dotnet test Marbas.slnx --settings coverlet.runsettings
 ```
 
-`coverlet.runsettings` asks for Cobertura and excludes `Program.fs`, the
-composition root — it is the one file that wires the real file system, the real
-dialogs and the real process, so there is nothing in it a test can reach.
-Everything else is measured, and coverage stays close to complete.
+`coverlet.runsettings` asks for Cobertura and excludes `Program.fs` and
+`Adapters/`, the composition root — they are the files that wire the real file
+system, the real dialogs and the real process, so there is nothing in them a
+test can reach. Everything else is measured, and coverage stays close to
+complete.
 
 **Coverage is a reading, not a target.** P8.1 measured the suite rather than
 adding to it blindly: the collector named the lines no test reached, and each
@@ -42,9 +43,10 @@ one was either given a test that says something (a read-only file refuses to be
 deleted, a file in use cannot be viewed, an unreadable config file falls back to
 the defaults, every sort key survives being written and read back, a transfer
 whose other panel vanished answers with an error) or written down below as
-unreachable with a reason. `Program.fs` is excluded in `coverlet.runsettings`
-instead of being counted and apologised for: it is the composition root, and a
-test that could reach it would be starting the real application.
+unreachable with a reason. `Program.fs` and `Adapters/` are excluded in
+`coverlet.runsettings` instead of being counted and apologised for: they are
+the composition root, and a test that could reach them would be starting the
+real application.
 
 `.github/workflows/ci.yml` runs exactly the three commands above (restore,
 build, test) on `windows-latest` and on `ubuntu-latest` for every push to `main`
@@ -148,7 +150,7 @@ prompt, name prompt, confirmation, overwrite question, batch runner, file
 viewer, editor and modifier watch.
 Everything that would open a modal dialog, start a process or end the process
 is a function, so tests pass fakes and assert on what was requested.
-`Program.fs` is the only place that supplies the real `MessageBox` dialogs.
+`Adapters/Prompts.fs` is the only place that supplies the real `MessageBox` dialogs.
 `Fakes.dependencies` gives every port a do-nothing default — a
 confirmation that answers no, an overwrite question that skips, prompts that
 cancel — so a test only overrides the one it cares about. A prompt that carries
@@ -159,7 +161,7 @@ suggestion`, which is exactly "the user pressed Ok".
 dependency that copies and moves go through; `Fakes` supplies one that
 runs the work inline with `Operations.unattended`, so a test presses `F5` and
 finds the files already copied when the call returns. Nothing in the suite
-waits on a thread. What that does *not* cover is `Program.fs` — the real
+waits on a thread. What that does *not* cover is `BatchRunner` — the real
 runner, its progress dialog and the `Application.Invoke` marshalling are only
 ever exercised by running the app.
 
@@ -167,7 +169,7 @@ ever exercised by running the app.
 startup; a test keeps the callback and calls it with the modifiers it wants
 held, which is how `Integration/Keys/ModifierRowTests.fs` presses no key at all and
 still asserts what the bottom bar shows. The polling itself lives in
-`Program.fs` and is only exercised by running the app.
+`ModifierWatch` and is only exercised by running the app.
 
 **An external program is a port too.** `RunEditor` is what `F4` goes through,
 so a test hands it a function that records the path — and, where the point is
@@ -222,8 +224,8 @@ separately.
 eat six rows, so `Height = 7` leaves a one-row content area and anything placed
 below it is clipped — while still taking focus and keys, which looks like an
 invisible but typable field. Dialogs are built in `Ui` modules, not inline in
-`Program.fs`, so a test can lay one out and assert its views fit inside
-`dialog.Viewport`.
+the adapter that runs them, so a test can lay one out and assert its views fit
+inside `dialog.Viewport`.
 
 **`ListView` type-ahead swallows printable keys.** `ListView.OnKeyDown` runs
 before the `KeyDown` event and hands printable characters to its
@@ -278,7 +280,7 @@ a trailing `_` is not a specifier and survives untouched.
 through the application that is running the dialog, so a dialog built in a test
 never sets `StopRequested` — not even after `SetIsRunning true`. A view that
 has to close itself therefore takes the closing action as an argument
-(`FileViewer.create close …`), which a test can record and `Program.fs` fills
+(`FileViewer.create close …`), which a test can record and `Prompts.showFile` fills
 in with `_.RequestStop()`.
 
 **A view that paints by hand is asserted through what it would paint.** There

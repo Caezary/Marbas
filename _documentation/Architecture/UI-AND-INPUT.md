@@ -336,8 +336,8 @@ in place: the extension and editor fields plus `Add` make one association
 (`EditorSettings.associate`, which replaces an extension already known),
 `Remove` takes the extension in the field back out, and moving the cursor in the
 list fills both fields from the row under it. A second dialog for adding a row
-would have needed `app.Run` from inside a dialog, which only `Program.fs` may
-do; this way the whole popup is one view and every one of those steps is a test
+would have needed `app.Run` from inside a dialog, which only `Prompts` may do;
+this way the whole popup is one view and every one of those steps is a test
 that never runs an application loop. `Enter` in either of the two fields does
 what `Add` does and is marked handled there, because the alternative is what
 Terminal.Gui does by default — bubble to the dialog's last button, which is
@@ -416,12 +416,12 @@ Windows input processor returns from every key-up before anything is raised
 (`if (!inputEvent.KeyEvent.bKeyDown) { return; }`) and never surfaces a
 standalone `Ctrl`, so there is no event to listen to on the platform Marbas is
 developed on. `Dependencies.WatchModifiers` is therefore a port that hands over
-a callback; `Program.fs` is the only place that knows about `GetAsyncKeyState`
-and `app.AddTimeout`, polls ten times a second and reports only when the set
-changes. On anything but Windows it registers nothing and the bar keeps the
-classic row. Everything above the port — which row a set of modifiers means,
-what the bar then shows — is ordinary tested code, because tests call the
-captured callback themselves.
+a callback; `ModifierWatch` is the only place that knows about
+`GetAsyncKeyState` and `app.AddTimeout`, polls ten times a second and reports
+only when the set changes. On anything but Windows it registers nothing and
+the bar keeps the classic row. Everything above the port — which row a set of
+modifiers means, what the bar then shows — is ordinary tested code, because
+tests call the captured callback themselves.
 
 **A row is what the table says, empty included.** Holding `Shift` leaves every
 slot without a command, because no command is bound to a shifted function key.

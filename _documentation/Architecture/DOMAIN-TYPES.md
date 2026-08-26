@@ -5,8 +5,8 @@ single-case union with a private constructor and a companion module; the
 fs-dependent helpers (`combine`/`name`/`directory`/`parent`) take `IFileSystem`
 so path handling stays consistent with `MockFileSystem`. It flows through the
 listing, operations, and panel/navigation layers and the error path fields.
-Raw OS strings are wrapped once at the outside edge — `Program.fs` for the
-start path, `Shell` for drive roots and prompt answers.
+Raw OS strings are wrapped once at the outside edge — `Dependencies.create` for
+the start path, `Shell` for drive roots and prompt answers.
 
 **Every value a `Message` or `Effect` carries says what it is**.
 `EntryName` for an entry's name, `NamePattern` for a wildcard, `FileSystemPath`

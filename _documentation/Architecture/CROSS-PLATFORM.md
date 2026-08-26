@@ -2,7 +2,7 @@
 
 P8.2. What has to hold on Windows and on Linux, how to check it, and what is
 known to differ. Run it before a release and after anything that touches
-`Program.fs`, `Roots`, `Settings` or a key binding.
+`Adapters/`, `Roots`, `Settings` or a key binding.
 
 Three kinds of evidence appear below:
 
@@ -42,10 +42,10 @@ suite covers both.
 | A removable drive that is not ready is left out | yes | n/a | suite (Windows-only test) |
 
 The Unix list is `RootAndHome`: the file-system root plus `$HOME`, which is what
-P3.5 asked for. Windows gets `MountedDrives`. `Program.fs` picks between them;
-everything below it takes the choice as a value, so both branches are tested on
-both platforms. Three tests carry `[<WindowsFact>]` and skip elsewhere, because
-drive letters exist nowhere else.
+P3.5 asked for. Windows gets `MountedDrives`. `Dependencies.create` picks
+between them; everything below it takes the choice as a value, so both branches
+are tested on both platforms. Three tests carry `[<WindowsFact>]` and skip
+elsewhere, because drive letters exist nowhere else.
 
 ## Hidden entries
 
@@ -70,9 +70,10 @@ drive still reads as hidden there.
 | A deleted entry can be put back by the desktop's own tool | Explorer's *Restore* | the file manager's *Restore* | **manual** |
 | A trash that refuses is reported entry by entry, marks kept | same | same | suite |
 
-`Shell` asks `deps.SendToTrash`, and `Program.fs` decides what that is:
+`Shell` asks `deps.SendToTrash`, and `Dependencies.create` decides what that is:
+`RecycleBin.send` on Windows, which is
 `Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile` /
-`DeleteDirectory` with `RecycleOption.SendToRecycleBin` on Windows — the VB
+`DeleteDirectory` with `RecycleOption.SendToRecycleBin` — the VB
 runtime ships with .NET, so nothing is added to the package list — and
 `Trash.send` elsewhere, which is the freedesktop home trash written through
 `IFileSystem` and therefore tested on `MockFileSystem` on both legs of CI. A
@@ -162,8 +163,9 @@ editor on Unix — `vi`, `nano` — shares the terminal with a driver that has n
 let go of it, and the v2 API has no suspend/resume for a child process
 (`IDriver.Suspend` is `SIGTSTP`, a different thing). The fix is to shut the
 driver down around the process and re-initialise afterwards; it touches
-`Program.fs` only, and it is deliberately not done yet — it would be dead weight
-on Windows, so it wants a switch of its own rather than an unconditional detour.
+`Adapters/EditorProcess.fs` only, and it is deliberately not done yet — it
+would be dead weight on Windows, so it wants a switch of its own rather than an
+unconditional detour.
 Until then, `EDITOR=code -w`, a default editor named in the settings popup, or
 any windowed editor is the way to use `F4` on Linux.
 
@@ -182,20 +184,20 @@ manual row, since `MockFileSystem` accepts every flag the tests set.
 `Drives.list` used to call `DriveInfo.GetDrives()` everywhere, which on Unix
 meant a list of mount points — and no way at all to reach the home directory,
 though P3.5 had asked for `/` and `~`. It is now `Roots.list fs choice` with
-`RootChoice` being `MountedDrives` or `RootAndHome home`; `Program.fs` picks one
-and `Shell.Dependencies` carries it, so both branches are ordinary tested code
-and neither platform is a special case below the composition root. The module
-was renamed from `Drives` because on Unix it does not answer drives, and the
-vocabulary follows: `RootRequested`, `PromptForRoot`, `leftRootKey`, and a
-dialog that says *Select root*.
+`RootChoice` being `MountedDrives` or `RootAndHome home`; `Dependencies.create`
+picks one and `Shell.Dependencies` carries it, so both branches are ordinary
+tested code and neither platform is a special case below the composition root.
+The module was renamed from `Drives` because on Unix it does not answer
+drives, and the vocabulary follows: `RootRequested`, `PromptForRoot`,
+`leftRootKey`, and a dialog that says *Select root*.
 
 ## Differences that are meant to be there
 
 - **The modifier row is Windows-only.** Holding `Ctrl` or `Alt` swaps the bottom
   bar for the commands that modifier reaches. It is polled through
   `GetAsyncKeyState`, a `user32.dll` import that is never reached off Windows —
-  `WatchModifiers` registers nothing there, and the P/Invoke is therefore never
-  bound, which the WSL run confirms by not crashing. No Unix driver in
+  `Dependencies.create` binds `ModifierWatch.unsupported` there, so the P/Invoke
+  is never bound, which the WSL run confirms by not crashing. No Unix driver in
   Terminal.Gui 2.4.17 reports a standalone modifier outside the kitty keyboard
   protocol, so there is nothing to poll.
 - **`Ctrl+H` is `0x08` on a VT terminal**, the byte backspace already owns, so it

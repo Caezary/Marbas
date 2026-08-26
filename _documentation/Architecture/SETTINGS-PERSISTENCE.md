@@ -12,10 +12,10 @@ in one place, `Settings`, rather than in the state constructor.
 **Settings go through `IFileSystem`, not through a port of their own.** The plan
 called for a load port and a save port; what it got is one `SettingsPath` on
 `Dependencies` plus `Settings.load` and `Settings.save` over the file system that
-is already injected. `Program.fs` is still the only place naming a real path
-(`%APPDATA%\Marbas\settings.conf`), and the parsing, the fallbacks and the file
-itself all run against `MockFileSystem` in the tests — which two opaque function
-ports would have left untestable.
+is already injected. `Dependencies.create` is still the only place naming a real
+path (`%APPDATA%\Marbas\settings.conf`), and the parsing, the fallbacks and the
+file itself all run against `MockFileSystem` in the tests — which two opaque
+function ports would have left untestable.
 
 **The config file is `key=value` lines, and every value is optional.**
 `left.path`, `left.sort`, `left.direction`, `left.hidden`, and the same four for
@@ -64,8 +64,8 @@ another directory found no session at all. Running the app under WSL is what
 caught it; no test could have, because the value comes from the environment.
 `Settings.location` now holds the rule — application data if the platform names
 one, `$HOME/.config` otherwise — and it takes both values as arguments, so it is
-tested on both platforms while `Program.fs` keeps only the two environment
-reads.
+tested on both platforms while `HostEnvironment` keeps only the two
+environment reads.
 
 **The editors are session settings too, under one prefix.** `editor.default`
 names the editor `F4` starts when nothing more specific applies, and
@@ -78,8 +78,8 @@ is extension order, so the file, the popup and `EditorSettings.associate` all
 agree without anyone sorting twice.
 
 **An empty default editor still means what it always meant.** `EditorCommand`
-was written around one `$EDITOR` and it still is: `Program.fs` resolves an
-editor by asking the state first (`EditorSettings.editorFor`, which tries the
-extension and falls back to the default), then `$EDITOR`, then `notepad` on
-Windows and `vi` elsewhere. Leaving the field blank in the settings popup
+was written around one `$EDITOR` and it still is: `EditorProcess.run` resolves
+an editor by asking the state first (`EditorSettings.editorFor`, which tries
+the extension and falls back to the default), then `$EDITOR`, then `notepad`
+on Windows and `vi` elsewhere. Leaving the field blank in the settings popup
 therefore restores exactly the behaviour of the version before it existed.

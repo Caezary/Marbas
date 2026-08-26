@@ -6,6 +6,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="Platform.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Compile Include="FileSystem\EntryName.fs" />
         <Compile Include="FileSystem\FileSystemPath.fs" />
         <Compile Include="FileSystem\ContentError.fs" />
@@ -96,6 +100,16 @@
         <Compile Include="Ui\App\Shell.fs" />
         <Compile Include="Ui\App\EditorCommand.fs" />
         <Compile Include="Ui\App\MainWindow.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Adapters\HostEnvironment.fs" />
+        <Compile Include="Adapters\Prompts.fs" />
+        <Compile Include="Adapters\RecycleBin.fs" />
+        <Compile Include="Adapters\EditorProcess.fs" />
+        <Compile Include="Adapters\BatchRunner.fs" />
+        <Compile Include="Adapters\ModifierWatch.fs" />
+        <Compile Include="Adapters\Dependencies.fs" />
     </ItemGroup>
 
     <ItemGroup>

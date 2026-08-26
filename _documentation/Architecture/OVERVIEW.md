@@ -1,10 +1,11 @@
 # Architecture overview
 
-Dependencies flow downward only: `Ui` → `State` → `FileSystem`. `AppState`
-transitions are pure; the generic `State/Runtime.fs` host holds the only
-mutable cell and drives the update/render/effect loop. The outside world
+Dependencies flow downward only: `Adapters` → `Ui` → `State` → `FileSystem`.
+`AppState` transitions are pure; the generic `State/Runtime.fs` host holds the
+only mutable cell and drives the update/render/effect loop. The outside world
 (file system, dialogs, quit) is injected through `Shell.Dependencies` and run
-by `Shell.interpret`; `Program.fs` is the only place wiring the real ones.
+by `Shell.interpret`; `Adapters/` holds the real implementations of those ports
+and `Adapters/Dependencies.fs` is the one place that wires them.
 
 **Terminal.Gui 2.4 over Spectre.Console and Consolonia.** Only Terminal.Gui is
 a full TUI framework (windows, focus, event loop) with a large, active
@@ -23,8 +24,19 @@ formatting, keys, messages, panels, viewer, dialogs, and the application's own
 composition root — and each folder is a namespace: `Marbas.Ui.Panels.FilePanel`.
 The folder order in the code map below is also the compile order, and every
 dependency inside `Ui` points at a folder listed above it, which is what keeps
-the layer acyclic without any tooling. `Ui` is still one layer of `Ui` → `State`
-→ `FileSystem`; the folders divide it by subject, not by rank.
+the layer acyclic without any tooling. `Ui` is still one layer of `Adapters` →
+`Ui` → `State` → `FileSystem`; the folders divide it by subject, not by rank.
+
+**`Adapters` is where the operating system is allowed in.** `Shell.Dependencies`
+declares the ports; every real implementation of one lives in `Adapters/`, and
+nothing below that folder opens `System.Diagnostics`, imports `user32.dll` or
+asks which operating system it is running on. The answer to that last question
+is read once, by `HostEnvironment.current`, and carried as a value: `Platform`,
+the two home directories, `$EDITOR`. `Dependencies.create` reads it and picks a
+Windows or a Unix function per port — `RecycleBin.send` or `Trash.send`,
+`ModifierWatch.poll` or `ModifierWatch.unsupported`, `MountedDrives` or
+`RootAndHome` — so no branch on the platform survives below the composition
+root. `Program.fs` is left with the handful of lines that start the application.
 
 ## Topics
 
@@ -41,6 +53,7 @@ the layer acyclic without any tooling. `Ui` is still one layer of `Ui` → `Stat
 
 ```
 Marbas/
+  Platform.fs             which operating system this is, as a value
   FileSystem/
     EntryName.fs          single-case type for the name of one entry
     FileSystemPath.fs     single-case path type wrapping a raw string
@@ -118,7 +131,16 @@ Marbas/
       Shell.fs              Dependencies and the effect interpreter
       EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
       MainWindow.fs         composition: views, runtime, event wiring
-  Program.fs              real file system and real dialogs
+  Adapters/               the real implementations of Shell.Dependencies;
+                          the only folder allowed to touch the OS
+    HostEnvironment.fs    platform, home directories and `$EDITOR`, read once
+    Prompts.fs            the message boxes and popups the application runs
+    RecycleBin.fs         the Windows recycle bin, through the VB runtime
+    EditorProcess.fs      the editor started as a child process, and waited on
+    BatchRunner.fs        a batch on a background task under the progress dialog
+    ModifierWatch.fs      held Ctrl / Alt / Shift, polled on Windows, absent elsewhere
+    Dependencies.fs       every port bound to one implementation, platform picked here
+  Program.fs              quit key, application, theme, dependencies, window
   Properties/PublishProfiles/
     win-x64.pubxml        self-contained single-file build for Windows
     linux-x64.pubxml      the same for Linux

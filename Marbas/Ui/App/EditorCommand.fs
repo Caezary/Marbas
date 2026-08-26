@@ -1,8 +1,6 @@
 module Marbas.Ui.App.EditorCommand
 
-type Platform =
-    | Windows
-    | Unix
+open Marbas
 
 [<Literal>]
 let WindowsDefault = "notepad"

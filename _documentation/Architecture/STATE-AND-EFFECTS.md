@@ -10,7 +10,7 @@ Handlers send messages, they never mutate. See PLAN.md, *State handling*.
 system, start path, quit callback, error reporter, root chooser, pattern
 prompt, name prompt, confirmation) and `Shell.interpret` is the only place that
 turns an `Effect` into a call on one of them.
-`Program.fs` is the only place that opens real dialogs, which keeps
+`Adapters/Prompts.fs` is the only place that opens real dialogs, which keeps
 dialog-triggering behaviour testable. The dialogs themselves are built in `Ui`
 modules (`PatternDialog`) so their layout can be tested too — a field placed
 outside the dialog's content area is invisible yet still typable, which no
@@ -69,7 +69,7 @@ space unsearchable.
 **The background thread is a port, not a thread.** `Dependencies.RunBatch`
 takes the progress title, the work to do (handed a `BatchControl` to report
 through and to ask whether it should stop) and what to do with the results.
-`Program.fs` is the only place that knows about `Task.Run`, `app.Invoke` and
+`BatchRunner` is the only place that knows about `Task.Run`, `app.Invoke` and
 running the progress dialog modally; the tests pass a runner that does the work
 inline, which is why every `F5`/`F6` test stayed synchronous and none of them
 had to change when the operations moved off the UI thread.
@@ -92,7 +92,7 @@ the same `result` block, so a failed copy skips it.
 **`ReportError` carries a title.** Listing failures and operation failures want
 different dialog captions, so the dependency is `title -> message -> unit`;
 `ListingErrorMessage`/`OperationErrorMessage` each own their `Title`, and
-`Program.fs` just forwards both to the message box.
+`Prompts.reportError` just forwards both to the message box.
 
 **Operation errors are mapped, not re-thrown, inside a transition.**
 `AppState.makeDirectory` creates the directory and then reloads the panel; the
@@ -107,7 +107,7 @@ cursor stands on a file or on a directory and raises `EditFile` or
 the key binding one line in `KeyMap` and the decision where the state is, which
 is also the only place that knows which editor an extension is associated with:
 `EditFile` carries the resolved `EditorPath option` beside the path, so
-`Shell` and `Program.fs` never look a setting up.
+`Shell` and the adapters never look a setting up.
 
 **Reading and writing properties happen inside a transition, like making a
 directory.** `EditRequested` reads them (`EntryProperties.read`, mapped to

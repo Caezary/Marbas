@@ -27,11 +27,12 @@ dotnet test Marbas.slnx
 - **No code comments.** Names and tests carry the intent; anything that needs
   explaining goes into `_documentation/*.md`.
 - **The user commits manually.** Never run `git commit`.
-- **Dependencies flow downward only:** `Ui` → `State` → `FileSystem`.
-  `AppState` transitions are pure; the generic `State/Runtime.fs` host holds
-  the only mutable cell and drives the update/render/effect loop. The outside
-  world (file system, dialogs, quit) is injected through
-  `Shell.Dependencies` and run by `Shell.interpret`; `Program.fs` is the only
-  place wiring the real ones.
+- **Dependencies flow downward only:** `Adapters` → `Ui` → `State` →
+  `FileSystem`. `AppState` transitions are pure; the generic `State/Runtime.fs`
+  host holds the only mutable cell and drives the update/render/effect loop.
+  The outside world (file system, dialogs, quit) is injected through
+  `Shell.Dependencies` and run by `Shell.interpret`; `Adapters/` holds the real
+  ones and `Adapters/Dependencies.fs` wires them, `Program.fs` only starts the
+  application. Only `Adapters` may touch the operating system directly.
 - Work task by task, in plan order, keeping the application runnable after
   each one.

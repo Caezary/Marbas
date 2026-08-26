@@ -72,6 +72,16 @@ following into the same folders on both sides of the unit/integration fence.
 Nothing the application does changed: the compile order simply became the
 folder order, and every dependency inside `Ui` now points at a folder above it.
 
+**An eighth round emptied `Program.fs`.** It had become initialisation, the
+wiring of the dependencies, the implementations of those dependencies and four
+separate questions about which operating system this is. The real
+implementations of `Shell.Dependencies` now live in `Adapters/` — the prompts,
+the recycle bin, the editor process, the batch runner and the modifier poll —
+the platform and the environment are read once into `HostEnvironment` and
+carried as a value, and `Dependencies.create` is the single place where a
+Windows function or a Unix one is chosen per port. `Program.fs` is down to
+starting the application. Nothing the application does changed.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -79,10 +89,11 @@ real Terminal.Gui views over an in-memory file system. All of them follow the
 arrange/act/assert shape and the folder layout described in
 [Testing](Architecture/TESTING.md). `dotnet test Marbas.slnx` is the whole run,
 and GitHub Actions runs it on both operating systems on every push and pull
-request; coverage stays close to complete for everything but `Program.fs`, the
-composition root no test can reach. What no test can reach otherwise — colours,
-a resized terminal, a real permission bit, the mouse — is written up as the
-checklist in [Cross-platform](Architecture/CROSS-PLATFORM.md).
+request; coverage stays close to complete for everything but `Program.fs` and
+`Adapters/`, the composition root no test can reach. What no test can reach
+otherwise — colours, a resized terminal, a real permission bit, the mouse — is
+written up as the checklist in
+[Cross-platform](Architecture/CROSS-PLATFORM.md).
 
 | Phase | Tasks | State |
 |-------|-------|-------|
@@ -389,7 +400,7 @@ is no longer plan order but choice. Three things are waiting:
   rather than to report less.
 - The viewer is opened by `Shell` through the `ShowFile` port, which now hands
   over an opened `FileWindow.Source` rather than a list of lines, so the modal
-  run itself (`app.Run viewer` in `Program.fs`) is only exercised by running
+  run itself (`app.Run viewer` in `Prompts.showFile`) is only exercised by running
   the app — the same blind spot the progress dialog has. What the tests do
   cover is every key the viewer takes and every row it would draw.
 - The viewer shows one encoding per file and offers no way to override it. Where
@@ -407,7 +418,7 @@ is no longer plan order but choice. Three things are waiting:
   reading input, and there is no suspend/resume in the v2 API for a child
   process (`IDriver.Suspend` is `SIGTSTP`, a different thing). If that turns
   out to matter, the fix is to shut the driver down around the process and
-  re-initialise afterwards, and it touches `Program.fs` only.
+  re-initialise afterwards, and it touches `Adapters/EditorProcess.fs` only.
 - The cursor is invisible while it stands on a marked entry: `ListView` asks for
   `Focus` and then for `Highlight` on that row, so the marked colour is the one
   that lands. Colouring it the classic way — the marked yellow on the cursor's
