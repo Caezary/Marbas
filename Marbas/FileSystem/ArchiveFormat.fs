@@ -9,10 +9,18 @@ type ArchiveCompression =
     | Normal
     | Maximum
 
+type ArchivePassword = private ArchivePassword of string
+
 type ArchiveRequest =
     { Path: FileSystemPath
       Format: ArchiveFormat
       Compression: ArchiveCompression }
+
+type ArchiveChoice =
+    { Target: string
+      Format: ArchiveFormat
+      Compression: ArchiveCompression
+      Password: ArchivePassword option }
 
 module ArchiveFormat =
 
@@ -27,3 +35,16 @@ module ArchiveFormat =
         match format with
         | Zip -> true
         | TarGz -> false
+
+module ArchiveCompression =
+
+    let all = [ Stored; Normal; Maximum ]
+
+module ArchivePassword =
+
+    let tryCreate (raw: string) =
+        match raw with
+        | "" -> None
+        | text -> Some(ArchivePassword text)
+
+    let value (ArchivePassword text) = text

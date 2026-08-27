@@ -65,3 +65,24 @@ let ``each format owns an extension`` () =
 let ``only zip carries a password`` () =
     Assert.True(ArchiveFormat.carriesPassword Zip)
     Assert.False(ArchiveFormat.carriesPassword TarGz)
+
+[<Fact>]
+let ``retargeting keeps the directory the name was typed into`` () =
+    let retargeted = ArchiveName.retarget fs TarGz (Root.at "backup/src.zip")
+
+    Assert.Equal(Root.at "backup/src.tar.gz", retargeted)
+
+[<Fact>]
+let ``retargeting a bare name leaves it bare`` () =
+    Assert.Equal("src.tar.gz", ArchiveName.retarget fs TarGz "src.zip")
+
+[<Fact>]
+let ``retargeting text that names no file leaves it alone`` () =
+    let directory = Root.at "backup/"
+
+    Assert.Equal(directory, ArchiveName.retarget fs Zip directory)
+
+[<Fact>]
+let ``a password is what was typed and nothing else is one`` () =
+    Assert.Equal("secret ", ArchivePassword.tryCreate "secret " |> Expect.some |> ArchivePassword.value)
+    Assert.Equal(None, ArchivePassword.tryCreate "")

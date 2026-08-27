@@ -151,6 +151,7 @@
     <Compile Include="Integration\Dialogs\ProgressDialogTests.fs" />
     <Compile Include="Integration\Dialogs\PropertiesDialogTests.fs" />
     <Compile Include="Integration\Dialogs\SettingsDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\PackDialogTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

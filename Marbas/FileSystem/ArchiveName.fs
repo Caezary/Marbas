@@ -57,3 +57,13 @@ module ArchiveName =
         | _ -> directoryStem fs directory
         |> EntryName.create
         |> inFormat format
+
+    let retarget (fs: IFileSystem) (format: ArchiveFormat) (text: string) =
+        match fs.Path.GetFileName text with
+        | "" -> text
+        | fileName ->
+            let renamed = EntryName.create fileName |> inFormat format |> EntryName.value
+
+            match fs.Path.GetDirectoryName text with
+            | directory when String.IsNullOrEmpty directory -> renamed
+            | directory -> fs.Path.Combine(directory, renamed)
