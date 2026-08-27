@@ -152,6 +152,57 @@ Goal: comfort features that make it feel like a finished tool.
 - **P8.3 Packaging** — publish profiles for self-contained single-file
   builds per OS. *Done when:* `dotnet publish` produces a runnable binary.
 
+## Phase 9 — Archives
+
+Goal: pack and later unpack archives without leaving the manager. Creating an
+archive comes first; the format vocabulary is chosen so that reading can be
+added without reshaping it.
+
+- **P9.1 Archive format and suggested name** — `ArchiveFormat` (`Zip`,
+  `TarGz`) with the extension each one owns, and `ArchiveName.suggest`: one
+  target gives its own name without the old extension, several targets give
+  the active directory's name, a directory root gives `disk<letter>contents`.
+  Changing the format swaps the extension on a name already typed.
+  *Done when:* suggestion and extension rules are covered by tests.
+- **P9.2 Writing an archive** — `Archive.write` walks the sources through
+  `IFileSystem` and streams every file into the archive, entry paths relative
+  to the source directory and separated by `/`, empty directories kept,
+  modification times preserved. It answers an `ItemResult` per top-level
+  source the way `copyAll` does, reports each entry through `BatchControl` and
+  stops when it is cancelled, deleting the half-written file on the way out.
+  *Done when:* archives written on `MockFileSystem` read back with the
+  expected entries, and a cancelled run leaves nothing behind.
+- **P9.3 The pack dialog** — `Shift+F1` opens a popup with the target (an edit
+  box holding the other panel's path and the suggested name, read like `F6`'s),
+  the format, the compression level and a password field.
+  *Done when:* the dialog answers with everything the effect needs, or with
+  nothing when it is cancelled.
+- **P9.4 Packing end to end** — `PackRequested` → the dialog →
+  `ArchiveTargets` → the batch → `PackFinished`: the operation targets of the
+  active panel are packed into the other panel's directory, an existing
+  archive asks the overwrite question, a target that would land inside what is
+  being packed is refused, the other panel is re-read with the cursor on the
+  new archive, and the marks of what did not make it survive.
+  *Done when:* `Shift+F1` produces an archive from marks or from the cursor
+  entry.
+- **P9.5 Password-protected zip** — a password turns the zip into an AES-256
+  one; the field is disabled for the formats that cannot carry one.
+  *Done when:* a protected archive refuses to open without the password.
+
+Later in this phase, once creating works: unpacking the archive under the
+cursor into the other panel, and walking into an archive as though it were a
+directory. Both read formats Marbas cannot write — `rar` above all, whose
+compression is proprietary and which therefore never appears among the formats
+an archive can be created in.
+
+### Libraries
+
+`SharpZipLib` (MIT) writes zip, because it is the only maintained managed
+library that can encrypt one; `SharpCompress` (MIT) writes tar.gz and, later,
+7z, and reads everything including rar. Both are fully managed, which keeps
+the single-file publish of P8.3 intact, and neither is copyleft. Wrappers
+around the native `7z.dll` are LGPL and were rejected on both counts.
+
 ## Suggested module layout
 
 ```

@@ -1,0 +1,59 @@
+namespace Marbas.FileSystem
+
+open System
+open System.IO.Abstractions
+
+module ArchiveName =
+
+    [<Literal>]
+    let private RootStem = "rootcontents"
+
+    let private extensions =
+        ArchiveFormat.all
+        |> List.map ArchiveFormat.extension
+        |> List.sortByDescending String.length
+
+    let private withoutArchiveExtension (raw: string) =
+        let getStripped extension =
+            let suffix = "." + extension
+
+            if raw.Length > suffix.Length && raw.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) then
+                Some(raw.Substring(0, raw.Length - suffix.Length))
+            else
+                None
+
+        extensions
+        |> List.tryPick getStripped
+
+    let private stem (name: EntryName) =
+        let raw = EntryName.value name
+
+        match withoutArchiveExtension raw with
+        | Some stripped -> stripped
+        | None ->
+            match raw.LastIndexOf '.' with
+            | dot when dot <= 0 -> raw
+            | dot -> raw.Substring(0, dot)
+
+    let private diskStem (fs: IFileSystem) (directory: FileSystemPath) =
+        match fs.Path.GetPathRoot(FileSystemPath.value directory) |> Seq.tryFind Char.IsLetter with
+        | Some letter -> $"disk{letter}contents"
+        | None -> RootStem
+
+    let private directoryStem (fs: IFileSystem) (directory: FileSystemPath) =
+        match FileSystemPath.name fs directory |> EntryName.value with
+        | "" -> diskStem fs directory
+        | named -> named
+
+    let inFormat (format: ArchiveFormat) (name: EntryName) =
+        let raw = EntryName.value name
+        let bare = withoutArchiveExtension raw |> Option.defaultValue raw
+
+        EntryName.create $"{bare}.{ArchiveFormat.extension format}"
+
+    let suggest (fs: IFileSystem) (format: ArchiveFormat) (directory: FileSystemPath) (targets: EntryName list) =
+        match targets with
+        | [ single ] -> stem single
+        | _ -> directoryStem fs directory
+        |> EntryName.create
+        |> inFormat format
