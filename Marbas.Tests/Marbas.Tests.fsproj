@@ -8,6 +8,7 @@
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="Root.fs" />
     <Compile Include="WindowsFact.fs" />
+    <Compile Include="UnixFact.fs" />
     <Compile Include="Expect.fs" />
     <Compile Include="Fakes.fs" />
   </ItemGroup>
@@ -30,6 +31,8 @@
     <Compile Include="FileSystem\EditorSettingsTests.fs" />
     <Compile Include="FileSystem\SettingsTests.fs" />
     <Compile Include="FileSystem\EntryPropertiesTests.fs" />
+    <Compile Include="FileSystem\ArchiveNameTests.fs" />
+    <Compile Include="FileSystem\ArchiveTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
     <Compile Include="FileSystem\TrashTests.fs" />
   </ItemGroup>
@@ -166,6 +169,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="SharpZipLib" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />

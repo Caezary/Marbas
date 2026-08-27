@@ -173,7 +173,7 @@ let rename (fs: IFileSystem) (source: FileSystemPath) (newName: EntryName) =
     | NoEntry -> moveTo fs unattended source target
     | _ -> Error(TargetExists target)
 
-let private itemResult (fs: IFileSystem) source outcome =
+let itemResult (fs: IFileSystem) source outcome =
     { Name = FileSystemPath.name fs source
       Outcome = outcome }
 
@@ -221,7 +221,7 @@ let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources t
 
     run AskEachTime [] sources
 
-let private allWatched (fs: IFileSystem) (control: BatchControl) apply sources =
+let allWatched (fs: IFileSystem) (control: BatchControl) apply sources =
     let rec run finished remaining =
         match remaining with
         | [] -> List.rev finished
