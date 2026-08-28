@@ -45,6 +45,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
       RunEditor = runEditor app env
       EditProperties = Prompts.editProperties app
       EditEditors = Prompts.editEditors app
+      AskArchive = Prompts.askArchive app (ArchiveName.retarget fs)
       AskOverwrite = Prompts.askOverwrite app
       WatchModifiers = watchModifiers app env
       RunBatch = BatchRunner.run app }

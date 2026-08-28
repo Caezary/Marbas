@@ -9,6 +9,7 @@ type OperationError =
     | TargetExists of path: FileSystemPath
     | AccessDenied of path: FileSystemPath
     | Cancelled of path: FileSystemPath
+    | TargetWithinSource of path: FileSystemPath
     | OperationFailed of path: FileSystemPath * message: string
 
 type ItemResult =

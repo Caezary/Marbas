@@ -29,6 +29,9 @@ type Message =
     | MoveRequested
     | TargetEntered of text: string
     | MoveFinished of Operations.ItemResult list
+    | PackRequested
+    | ArchiveEntered of ArchiveChoice
+    | PackFinished of archive: EntryName * results: Operations.ItemResult list
     | RenameFinished of newName: EntryName * outcome: Result<unit, Operations.OperationError>
     | ViewRequested
     | EditRequested
@@ -55,12 +58,14 @@ type Effect =
     | DeleteTargets of sources: FileSystemPath list * mode: DeleteMode
     | CopyTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | MoveTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
+    | ArchiveTargets of sources: FileSystemPath list * request: ArchiveRequest
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
     | EditFile of path: FileSystemPath * editor: EditorPath option
     | ShowProperties of EntryProperties
     | ShowSettings of EditorSettings * candidate: EditorPath option
     | PromptForTarget of suggestion: FileSystemPath
+    | PromptForArchive of suggestion: FileSystemPath
     | PromptForName of suggestion: EntryName option
     | PromptForFileName
     | PromptForPattern of SelectionMode
@@ -150,6 +155,31 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
             request state (RenameTarget(single, EntryName.create trimmed))
         | trimmed, paths -> request state (MoveTargets(paths, FileSystemPath.combine fs source.Path trimmed))
     | MoveFinished results -> finishTransfer fs results state |> applyBatch state
+    | PackRequested ->
+        match operationTargets (activePanel state) with
+        | [] -> stay state
+        | _ -> request state (PromptForArchive(archiveSuggestion fs ArchiveFormat.initial state))
+    | ArchiveEntered choice ->
+        let source = activePanel state
+
+        match choice.Target.Trim(), operationPaths fs source with
+        | "", _
+        | _, [] -> stay state
+        | trimmed, paths ->
+            let target = FileSystemPath.combine fs source.Path trimmed
+
+            if Archive.wouldPackItself fs target paths then
+                request state (ReportOperationError(Operations.TargetWithinSource target))
+            else
+                request
+                    state
+                    (ArchiveTargets(
+                        paths,
+                        { Path = target
+                          Format = choice.Format
+                          Compression = choice.Compression }
+                    ))
+    | PackFinished(archive, results) -> finishPack fs archive results state |> applyBatch state
     | RenameFinished(newName, outcome) ->
         match outcome with
         | Error error -> request state (ReportOperationError error)

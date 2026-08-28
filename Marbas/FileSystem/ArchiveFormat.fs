@@ -26,6 +26,8 @@ module ArchiveFormat =
 
     let all = [ Zip; TarGz ]
 
+    let initial = Zip
+
     let extension format =
         match format with
         | Zip -> "zip"
@@ -39,6 +41,8 @@ module ArchiveFormat =
 module ArchiveCompression =
 
     let all = [ Stored; Normal; Maximum ]
+
+    let initial = Normal
 
 module ArchivePassword =
 

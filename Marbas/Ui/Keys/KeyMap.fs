@@ -58,6 +58,8 @@ let sizeSortKey = Key.F6.WithCtrl
 
 let newFileKey = Key.F4.WithShift
 
+let packKey = Key.F1.WithShift
+
 let settingsKey = Key.F12
 
 let hiddenKey = Key.H.WithAlt
@@ -96,6 +98,7 @@ let bindings =
       onBar Key.F6 "RenMov" MoveRequested
       onBar Key.F7 "Mkdir" MakeDirectoryRequested
       onBar Key.F8 "Delete" (DeleteRequested ToTrash)
+      onBar packKey "Pack" PackRequested
       onBar newFileKey "NewFile" NewFileRequested
       onBar Key.F8.WithShift "Erase" (DeleteRequested Permanently)
       onBar Key.F10 "Quit" QuitRequested

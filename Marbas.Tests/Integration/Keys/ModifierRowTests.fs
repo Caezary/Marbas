@@ -82,7 +82,7 @@ let ``holding Shift shows the permanent delete on the delete slot`` () =
 
     hold (Modifiers.held [ Shift ])
 
-    Assert.Equal<string list>([ ""; ""; ""; "NewFile"; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands window)
+    Assert.Equal<string list>([ "Pack"; ""; ""; "NewFile"; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands window)
 
 [<Fact>]
 let ``a key keeps its name whatever modifier is held`` () =

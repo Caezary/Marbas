@@ -12,6 +12,7 @@ let describe error =
     | TargetExists path -> $"'{FileSystemPath.value path}' already exists."
     | AccessDenied path -> $"Access denied to '{FileSystemPath.value path}'."
     | Cancelled path -> $"Stopped before '{FileSystemPath.value path}' was finished."
+    | TargetWithinSource path -> $"An archive cannot be created inside what it packs: '{FileSystemPath.value path}'."
     | OperationFailed(path, reason) -> $"Could not complete '{FileSystemPath.value path}': {reason}"
 
 let describeFailures (results: ItemResult list) =

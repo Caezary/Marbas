@@ -31,6 +31,9 @@ let CopyTitle = "Copying"
 [<Literal>]
 let MoveTitle = "Moving"
 
+[<Literal>]
+let PackTitle = "Packing"
+
 type Dependencies =
     { FileSystem: IFileSystem
       StartPath: FileSystemPath
@@ -49,6 +52,7 @@ type Dependencies =
       EditProperties: EntryProperties -> EntryProperties option
       EditEditors: EditorSettings -> EditorPath option -> EditorSettings option
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
+      AskArchive: string -> ArchiveChoice option
       WatchModifiers: (Set<Modifier> -> unit) -> unit
       RunBatch:
           string -> (Operations.BatchControl -> Operations.ItemResult list) -> (Operations.ItemResult list -> unit) -> unit }
@@ -88,6 +92,20 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         startBatch deps CopyTitle Operations.copyAll (CopyFinished >> dispatch) sources targetDirectory
     | MoveTargets(sources, targetDirectory) ->
         startBatch deps MoveTitle Operations.moveAll (MoveFinished >> dispatch) sources targetDirectory
+    | PromptForArchive suggestion ->
+        match deps.AskArchive(FileSystemPath.value suggestion) with
+        | Some choice -> dispatch (ArchiveEntered choice)
+        | None -> ()
+    | ArchiveTargets(sources, archive) ->
+        let target = archive.Path
+
+        let allowed =
+            FileSystemPath.kind deps.FileSystem target = NoEntry
+            || deps.Confirm OverwriteQuestion.Title (OverwriteQuestion.describe target)
+
+        if allowed then
+            deps.RunBatch PackTitle (fun control -> Archive.write deps.FileSystem control archive sources) (fun results ->
+                dispatch (PackFinished(FileSystemPath.name deps.FileSystem target, results)))
     | RenameTarget(source, newName) ->
         Operations.rename deps.FileSystem source newName
         |> fun outcome -> RenameFinished(newName, outcome)

@@ -212,3 +212,22 @@ let ``the zip is one that any reader can open`` () =
     )
 
     Assert.Equal("inner", reader.ReadToEnd())
+
+[<Fact>]
+let ``an archive beside what it packs is allowed`` () =
+    let fs = packed ()
+
+    Assert.False(Archive.wouldPackItself fs (fp (at "work/data.zip")) [ fp (at "work/docs") ])
+
+[<Fact>]
+let ``an archive inside a directory it packs would pack itself`` () =
+    let fs = packed ()
+
+    Assert.True(Archive.wouldPackItself fs (fp (at "work/docs/data.zip")) [ fp (at "work/docs") ])
+    Assert.True(Archive.wouldPackItself fs (fp (at "work/docs/deep/data.zip")) [ fp (at "work/docs") ])
+
+[<Fact>]
+let ``an archive that is one of the sources would pack itself`` () =
+    let fs = packed ()
+
+    Assert.True(Archive.wouldPackItself fs (fp (at "work/notes.txt")) [ fp (at "work/notes.txt") ])

@@ -135,3 +135,13 @@ module Archive =
                 |> List.map (fun source -> Operations.itemResult fs source (Error(Operations.Cancelled source)))
             else
                 packed
+
+    let private within (fs: IFileSystem) (directory: FileSystemPath) (path: FileSystemPath) =
+        let inside =
+            FileSystemPath.value directory + string fs.Path.DirectorySeparatorChar
+
+        (FileSystemPath.value path).StartsWith(inside, StringComparison.OrdinalIgnoreCase)
+
+    let wouldPackItself (fs: IFileSystem) (target: FileSystemPath) sources =
+        sources
+        |> List.exists (fun source -> source = target || within fs source target)

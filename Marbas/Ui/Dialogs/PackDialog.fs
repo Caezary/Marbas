@@ -62,14 +62,18 @@ let create (retarget: ArchiveFormat -> string -> string) (suggestion: string) =
         |> DialogStyle.typedInto
 
     let formats =
-        selecting FormatId 1 (ArchiveFormat.all |> List.map formatLabel) 0
+        selecting
+            FormatId
+            1
+            (ArchiveFormat.all |> List.map formatLabel)
+            (ArchiveFormat.all |> List.findIndex ((=) ArchiveFormat.initial))
 
     let levels =
         selecting
             CompressionId
             SecondColumn
             (ArchiveCompression.all |> List.map compressionLabel)
-            (ArchiveCompression.all |> List.findIndex ((=) Normal))
+            (ArchiveCompression.all |> List.findIndex ((=) ArchiveCompression.initial))
 
     dialog.Add(
         new Label(X = 1, Y = 0, Height = 1, Text = "Pack into:"),

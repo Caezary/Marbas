@@ -52,6 +52,11 @@ let editProperties (app: IApplication) properties =
     app.Run dialog |> ignore
     PropertiesDialog.properties properties dialog
 
+let askArchive (app: IApplication) retarget suggestion =
+    use dialog = PackDialog.create retarget suggestion
+    app.Run dialog |> ignore
+    PackDialog.choice dialog
+
 let editEditors (app: IApplication) editors candidate =
     use dialog = SettingsDialog.create editors candidate
     app.Run dialog |> ignore

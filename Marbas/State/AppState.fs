@@ -333,6 +333,21 @@ let finishTransfer (fs: IFileSystem) results state =
     |> Result.bind (reload fs (opposite state.Active) (fun previous -> keepSurviving previous.Selected))
     |> Result.map (fun updated -> updated, results)
 
+
+let archiveSuggestion (fs: IFileSystem) format state =
+    let source = activePanel state
+
+    operationTargets source
+    |> List.map _.Name
+    |> ArchiveName.suggest fs format source.Path
+    |> EntryName.value
+    |> FileSystemPath.combine fs (panel (opposite state.Active) state).Path
+
+let finishPack (fs: IFileSystem) (archive: EntryName) results state =
+    reload fs state.Active (fun previous -> keepUnfinished results previous.Selected) state
+    |> Result.bind (reloadFocusing fs (opposite state.Active) (ByName archive) (fun previous -> keepSurviving previous.Selected))
+    |> Result.map (fun updated -> updated, results)
+
 let finishRename (fs: IFileSystem) newName state =
     reloadFocusing fs state.Active (ByName newName) (fun previous -> keepSurviving previous.Selected) state
 
