@@ -2,8 +2,10 @@ module Marbas.Tests.Integration.App.ArchiveBrowseTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Terminal.Gui.Input
 open Terminal.Gui.Views
 open Marbas.FileSystem
+open Marbas.Ui.Keys
 open Marbas.Ui.Panels
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
@@ -46,7 +48,7 @@ let ``Enter on an archive browses it in the panel it was pressed in`` () =
     let list = leftList window
     list.SelectedItem <- 1
 
-    press list Terminal.Gui.Input.Key.Enter
+    press list Key.Enter
 
     Assert.Equal(at "start/backup.zip", shownPath FilePanel.LeftId window)
     Assert.Equal<string list>([ ".."; "docs"; "notes.txt" ], named list)
@@ -56,10 +58,54 @@ let ``Enter on the way out of an archive comes back to the directory holding it`
     use window = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
     let list = leftList window
     list.SelectedItem <- 1
-    press list Terminal.Gui.Input.Key.Enter
+    press list Key.Enter
 
-    press list Terminal.Gui.Input.Key.Enter
+    press list Key.Enter
 
     Assert.Equal(at "start", shownPath FilePanel.LeftId window)
     Assert.Equal(System.Nullable 1, list.SelectedItem)
     Assert.Equal<string list>([ ".."; "backup.zip" ], named list)
+
+[<Fact>]
+let ``F5 inside an archive copies the entry under the cursor into the other panel`` () =
+    let fs = mockFs ()
+    fs.AddDirectory(at "backup")
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                ChooseOption = fun _ _ -> Some(at "backup")
+                AskOverwrite = fun _ _ -> Operations.Yes }
+
+    let list = leftList window
+    press list KeyMap.rightRootKey
+    list.SelectedItem <- 1
+    press list Key.Enter
+    list.SelectedItem <- 2
+
+    press list Key.F5
+
+    Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
+    Assert.Equal<string list>([ ".."; "docs"; "notes.txt" ], named list)
+
+[<Fact>]
+let ``F5 inside an archive takes the tree of a marked directory`` () =
+    let fs = mockFs ()
+    fs.AddDirectory(at "backup")
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                ChooseOption = fun _ _ -> Some(at "backup")
+                AskOverwrite = fun _ _ -> Operations.Yes }
+
+    let list = leftList window
+    press list KeyMap.rightRootKey
+    list.SelectedItem <- 1
+    press list Key.Enter
+    list.SelectedItem <- 1
+    press list KeyMap.selectionKeys.Head
+
+    press list Key.F5
+
+    Assert.Equal("inner", fs.File.ReadAllText(at "backup/docs/inner.txt"))

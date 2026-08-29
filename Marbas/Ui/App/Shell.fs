@@ -90,17 +90,24 @@ let private passwordFor (deps: Dependencies) (archive: FileSystemPath) =
     else
         NotNeeded
 
-let private unpackTargets (deps: Dependencies) targetDirectory (archive: FileSystemPath) =
-    let named path =
-        FileSystemPath.name deps.FileSystem path |> ArchivePath.child ArchivePath.root
+let private approvedEntries (deps: Dependencies) targetDirectory archive entries =
+    let spelled =
+        entries
+        |> List.map (fun entry -> ArchivePath.spelled deps.FileSystem archive entry, entry)
 
+    let allowed =
+        Operations.approve deps.FileSystem (askOverwrite deps) (List.map fst spelled) targetDirectory
+        |> Set.ofList
+
+    spelled |> List.filter (fst >> allowed.Contains) |> List.map snd
+
+let private unpackTargets (deps: Dependencies) targetDirectory (archive: FileSystemPath) =
     match ArchiveListing.read deps.FileSystem archive ArchivePath.root with
     | Error _ -> [ ArchivePath.root ]
     | Ok entries ->
         entries
-        |> List.map (_.Name >> EntryName.value >> FileSystemPath.combine deps.FileSystem archive)
-        |> fun candidates -> Operations.approve deps.FileSystem (askOverwrite deps) candidates targetDirectory
-        |> List.map named
+        |> List.map (_.Name >> ArchivePath.child ArchivePath.root)
+        |> approvedEntries deps targetDirectory archive
 
 let private showEntry (deps: Dependencies) archive password entry =
     match FileWindow.openEntry deps.FileSystem password archive entry with
@@ -109,22 +116,28 @@ let private showEntry (deps: Dependencies) archive password entry =
         deps.ShowFile source
     | Error error -> deps.ReportError ArchiveErrorMessage.Title (ArchiveErrorMessage.describe error)
 
-let private unpackPlan (deps: Dependencies) targetDirectory archive =
+let private planFor (deps: Dependencies) targetDirectory archive (targets: unit -> ArchivePath list) =
     let planned password =
-        match unpackTargets deps targetDirectory archive with
+        match targets () with
         | [] -> None
-        | targets ->
+        | approved ->
             Some
                 { Request =
                     { Archive = archive
                       Password = password
                       Destination = targetDirectory }
-                  Targets = targets }
+                  Targets = approved }
 
     match passwordFor deps archive with
     | NotNeeded -> planned None
     | Given password -> planned (Some password)
     | NotGiven -> None
+
+let private unpackPlan (deps: Dependencies) targetDirectory archive =
+    planFor deps targetDirectory archive (fun () -> unpackTargets deps targetDirectory archive)
+
+let private extractPlan (deps: Dependencies) targetDirectory archive entries =
+    planFor deps targetDirectory archive (fun () -> approvedEntries deps targetDirectory archive entries)
 
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
@@ -162,6 +175,14 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         if allowed then
             deps.RunBatch PackTitle (fun control -> Archive.write deps.FileSystem control archive sources) (fun results ->
                 dispatch (PackFinished(FileSystemPath.name deps.FileSystem target, results)))
+    | ExtractEntries(archive, entries, targetDirectory) ->
+        match extractPlan deps targetDirectory archive entries with
+        | None -> ()
+        | Some plan ->
+            deps.RunBatch
+                CopyTitle
+                (fun control -> Archive.extractAll deps.FileSystem control [ plan ])
+                (CopyFinished >> dispatch)
     | ExtractTargets(archives, targetDirectory) ->
         match archives |> List.choose (unpackPlan deps targetDirectory) with
         | [] -> ()

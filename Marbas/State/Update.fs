@@ -62,6 +62,7 @@ type Effect =
     | MoveTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | ArchiveTargets of sources: FileSystemPath list * request: ArchiveRequest
     | ExtractTargets of archives: FileSystemPath list * targetDirectory: FileSystemPath
+    | ExtractEntries of archive: FileSystemPath * entries: ArchivePath list * targetDirectory: FileSystemPath
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
     | ViewArchiveEntry of archive: FileSystemPath * entry: ArchivePath
@@ -145,10 +146,12 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | paths -> request state (DeleteTargets(paths, mode))
     | DeleteFinished results -> finishDelete fs results state |> applyBatch state
     | CopyRequested ->
-        match operationPaths fs (activePanel state), targetDirectory state with
-        | [], _
+        match transferSource fs (activePanel state), targetDirectory state with
+        | None, _
         | _, None -> stay state
-        | paths, Some target -> request state (CopyTargets(paths, target))
+        | Some(FromDisk paths), Some target -> request state (CopyTargets(paths, target))
+        | Some(FromArchive(archive, entries)), Some target ->
+            request state (ExtractEntries(archive, entries, target))
     | CopyFinished results -> finishTransfer fs results state |> applyBatch state
     | MoveRequested ->
         match operationPaths fs (activePanel state), targetDirectory state with

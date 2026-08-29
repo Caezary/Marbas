@@ -55,6 +55,7 @@
     <Compile Include="State\ArchiveFixture.fs" />
     <Compile Include="State\ArchivePanelTests.fs" />
     <Compile Include="State\ArchiveNavigationTests.fs" />
+    <Compile Include="State\ArchiveCopyTests.fs" />
     <Compile Include="State\SelectionPatternTests.fs" />
     <Compile Include="State\MkdirTests.fs" />
     <Compile Include="State\DeleteTests.fs" />

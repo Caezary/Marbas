@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-08-29. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-30. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
@@ -142,8 +142,19 @@ damaged archive says so in a message box instead of opening. `F3` views a file
 inside an archive by streaming that entry into the viewer — asking for the
 password first when the archive carries one — while `F4` is the one key that
 refuses, because editing an entry in place would mean rewriting the archive
-when the editor returns. What is missing now is copying out of an archive and
-the operations that change one.
+when the editor returns.
+
+**`F5` now copies out of an archive.** From a panel standing inside one it
+takes the same operation targets every other key takes — the marks, or the
+entry under the cursor — and extracts them into the other panel's directory, a
+marked directory bringing the tree below it. It runs behind the progress window
+titled "Copying" with `Esc` stopping it where it stood, asks the archive's
+password once when there is one, asks the ordinary five-answer overwrite
+question for every entry that would land on something already there, and
+finishes by re-reading both panels with the marks of whatever did not make it
+still on — the same walk `F5` between two directories follows. The archive
+itself is only read: its bytes are the same afterwards. What is missing now is
+the operations that change an archive.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -168,7 +179,7 @@ written up as the checklist in
 | 6 — Viewing files | P6.1–P6.2 | done |
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
-| 9 — Archives | P9.1–P9.11 | `Shift+F1` packs, `Shift+F2` unpacks, `Enter` browses an archive; copying out of one and changing one to come |
+| 9 — Archives | P9.1–P9.12 | `Shift+F1` packs, `Shift+F2` unpacks, `Enter` browses an archive, `F5` copies out of one; changing one to come |
 
 ## What works today
 
@@ -235,8 +246,11 @@ written up as the checklist in
   answers with is the same list of entries a directory answers with. `F3` views
   a file inside an archive, asking once for the password if the archive carries
   one; `F4` refuses with a message, because an entry cannot be edited in place.
-  The operations that write — `F5`, `F6`, `F7`, `F8`, `Shift+F1` — do nothing
-  from inside an archive yet.
+  `F5` copies the targets out into the other panel — a marked directory with
+  the tree below it — behind the same progress window, with the same overwrite
+  question and the same surviving marks as a copy between two directories, and
+  the archive is left exactly as it was. The keys that would change an archive
+  — `F6`, `F7`, `F8`, `Shift+F1` — still do nothing from inside one.
 - Unreadable or vanished directories raise a message box; the panel stays put.
 - `Ctrl+R` reloads the active panel, keeping the cursor on the same entry even
   when its position changed.

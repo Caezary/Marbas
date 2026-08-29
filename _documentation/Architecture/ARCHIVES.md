@@ -469,10 +469,56 @@ opener, the same one zip uses, and nothing above `ArchiveReader` asks what kind
 it is holding; what is missing is a checked-in archive to read, which is what
 P9.14 brings along with the rest of the readable set.
 
-**What the operations do inside an archive is still P9.12 and P9.13.** `F5`,
-`F6`, `F7`, `F8` and `Shift+F1` ask the location for a disk directory, find
-none, and do nothing — the gates P9.10 put in. Nothing is silently half-done;
-the keys simply have no work to offer yet.
+**What the operations that write do inside an archive is still P9.13.** `F6`,
+`F7`, `F8` and `Shift+F1` ask the location for a disk directory, find none, and
+do nothing — the gates P9.10 put in. Nothing is silently half-done; the keys
+simply have no work to offer yet.
+
+## Copying out of an archive
+
+**`F5` asks where the panel stands before it asks what to do.**
+`AppState.transferSource` answers what the operation targets *are* from where
+the panel is: `FromDisk` of paths when it stands on disk, `FromArchive` of the
+archive and one `ArchivePath` per target when it stands inside one, and `None`
+when there is nothing under the cursor to take (`..` alone). `Update` turns the
+first into `CopyTargets` and the second into `ExtractEntries`, so the key has
+one message, the state has one decision and neither has to ask what kind of
+place a panel is twice. Both need a *disk* directory to write into, which is
+the other panel's; a target panel standing inside an archive is P9.13 and does
+nothing today.
+
+**The targets are the level's own names, and the extractor does the rest.**
+An entry is named `ArchivePath.child level name`, so copying `inner.txt` out of
+`backup.zip\docs` hands over `docs/inner.txt` and it lands as
+`C:\out\inner.txt` — the rule `Archive.extract` already followed, where a
+target arrives under its last name with the tree below it. A marked directory
+is one target and brings everything under it; nothing walks the archive twice
+to expand it.
+
+**`Shift+F2` and `F5` are the same machinery with different targets.**
+`Shell.planFor` asks the password once and then the overwrite question, and
+answers an `ExtractPlan` or `None`; `Shift+F2` feeds it the archive's top-level
+entries, `F5` feeds it the panel's targets. `approvedEntries` is where the
+five-answer question is asked for both: each `ArchivePath` is spelled
+`…\backup.zip\docs\inner.txt`, the spelled paths go through the same
+`Operations.approve` that copying and moving use — which computes the landing
+place and asks per collision — and the approved ones are mapped back to the
+`ArchivePath`s they came from. The pairing is what lets a target at any depth
+survive the round trip; the old code mapped back by name and only worked at the
+top level.
+
+**It is a copy, so it says "Copying" and answers `CopyFinished`.** The batch
+runs under `CopyTitle`, reports each entry through the same `BatchControl` the
+progress window drives, stops on `Esc` where it stood, and finishes through
+`finishTransfer` — the active panel re-read (through the archive, since that is
+where it stands) keeping the marks of whatever did not make it, the other panel
+re-read from disk. Nothing distinguishes it from `F5` between two directories
+except that the source is read out of a file.
+
+**The archive is never written.** Extraction only reads: the file's bytes are
+the same after the batch as before it, which is asserted rather than assumed.
+An archive that cannot be read fails the whole plan as one `ItemResult` named
+after the archive, the way `Shift+F2` reports it.
 
 ## Libraries and licences
 

@@ -48,6 +48,10 @@ type FocusTarget =
     | Top
     | ByName of EntryName
 
+type TransferSource =
+    | FromDisk of paths: FileSystemPath list
+    | FromArchive of archive: FileSystemPath * entries: ArchivePath list
+
 let private panelFrom (settings: PanelSettings) =
     { Path = OnDisk settings.Path
       Entries = []
@@ -313,6 +317,13 @@ let cursorExecutablePath (fs: IFileSystem) panel =
     cursorEntry panel
     |> Option.filter (fun entry -> entry.Kind = File && entry.Executability = Executable)
     |> Option.bind (entryPath fs panel)
+
+let transferSource (fs: IFileSystem) panel =
+    match panel.Path, operationTargets panel with
+    | _, [] -> None
+    | OnDisk _, _ -> Some(FromDisk(operationPaths fs panel))
+    | InArchive(archive, level), targets ->
+        Some(FromArchive(archive, targets |> List.map (fun entry -> ArchivePath.child level entry.Name)))
 
 let private entryInArchive panel (entry: Entry) =
     match panel.Path with

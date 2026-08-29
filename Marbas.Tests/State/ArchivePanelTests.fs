@@ -25,15 +25,6 @@ let ``the targets of a panel inside an archive have no paths on disk`` () =
     Assert.Empty paths
 
 [<Fact>]
-let ``a copy out of a panel inside an archive asks for nothing`` () =
-    let fs = mockFs ()
-    let state = standingInside fs Left |> setCursor Left 2
-
-    let result = update fs CopyRequested state
-
-    Assert.Empty result.Effects
-
-[<Fact>]
 let ``a copy into a panel inside an archive asks for nothing`` () =
     let fs = mockFs ()
     let state = standingInside fs Right |> setCursor Left 1
