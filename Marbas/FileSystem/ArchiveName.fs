@@ -8,22 +8,10 @@ module ArchiveName =
     [<Literal>]
     let private RootStem = "rootcontents"
 
-    let private extensions =
-        ArchiveFormat.all
-        |> List.map ArchiveFormat.extension
-        |> List.sortByDescending String.length
-
     let private withoutArchiveExtension (raw: string) =
-        let getStripped extension =
-            let suffix = "." + extension
-
-            if raw.Length > suffix.Length && raw.EndsWith(suffix, StringComparison.OrdinalIgnoreCase) then
-                Some(raw.Substring(0, raw.Length - suffix.Length))
-            else
-                None
-
-        extensions
-        |> List.tryPick getStripped
+        EntryName.create raw
+        |> ArchiveKind.recognise
+        |> Option.map (fun kind -> raw.Substring(0, raw.Length - ArchiveKind.extension(kind).Length - 1))
 
     let private stem (name: EntryName) =
         let raw = EntryName.value name

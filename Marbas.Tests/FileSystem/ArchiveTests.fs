@@ -16,6 +16,10 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
+let private zip = ArchiveFormat.ofKind Zip |> Expect.some
+
+let private tarGz = ArchiveFormat.ofKind TarGz |> Expect.some
+
 let private target = at "backup/data.zip"
 
 let private tarTarget = at "backup/data.tar.gz"
@@ -85,7 +89,7 @@ let ``a file is packed under its own name`` () =
     let fs = packed ()
 
     let results =
-        Archive.write fs unattended (requested Zip target) [ fp (at "work/notes.txt") ]
+        Archive.write fs unattended (requested zip target) [ fp (at "work/notes.txt") ]
 
     Assert.Equal<string list>([ "notes.txt" ], zipEntries fs target)
     Assert.Equal("notes", zipText fs target "notes.txt")
@@ -95,7 +99,7 @@ let ``a file is packed under its own name`` () =
 let ``a directory is packed with the whole tree below it`` () =
     let fs = packed ()
 
-    Archive.write fs unattended (requested Zip target) [ fp (at "work/docs") ] |> ignore
+    Archive.write fs unattended (requested zip target) [ fp (at "work/docs") ] |> ignore
 
     Assert.Equal<string list>(
         [ "docs/"; "docs/deep/"; "docs/deep/leaf.txt"; "docs/inner.txt" ],
@@ -109,7 +113,7 @@ let ``an empty directory is kept as an entry of its own`` () =
     let fs = packed ()
     fs.AddDirectory(at "work/empty")
 
-    Archive.write fs unattended (requested Zip target) [ fp (at "work/empty") ] |> ignore
+    Archive.write fs unattended (requested zip target) [ fp (at "work/empty") ] |> ignore
 
     Assert.Equal<string list>([ "empty/" ], zipEntries fs target)
 
@@ -121,7 +125,7 @@ let ``the modification time of a file survives the packing`` () =
     file.LastWriteTime <- DateTimeOffset modified
     fs.AddFile(at "work/dated.txt", file)
 
-    Archive.write fs unattended (requested Zip target) [ fp (at "work/dated.txt") ] |> ignore
+    Archive.write fs unattended (requested zip target) [ fp (at "work/dated.txt") ] |> ignore
 
     Assert.Equal(modified, zipEntry fs target "dated.txt")
 
@@ -130,7 +134,7 @@ let ``several sources land side by side in one archive`` () =
     let fs = packed ()
 
     let results =
-        Archive.write fs unattended (requested Zip target) [ fp (at "work/notes.txt"); fp (at "work/docs") ]
+        Archive.write fs unattended (requested zip target) [ fp (at "work/notes.txt"); fp (at "work/docs") ]
 
     Assert.Equal<string list>(
         [ "docs/"; "docs/deep/"; "docs/deep/leaf.txt"; "docs/inner.txt"; "notes.txt" ],
@@ -143,7 +147,7 @@ let ``several sources land side by side in one archive`` () =
 let ``a tar gz keeps the same tree with directories of its own`` () =
     let fs = packed ()
 
-    Archive.write fs unattended (requested TarGz tarTarget) [ fp (at "work/docs") ] |> ignore
+    Archive.write fs unattended (requested tarGz tarTarget) [ fp (at "work/docs") ] |> ignore
 
     Assert.Equal<(string * TarEntryType) list>(
         [ "docs/", TarEntryType.Directory
@@ -158,7 +162,7 @@ let ``a source that is gone fails alone and the rest is packed`` () =
     let fs = packed ()
 
     let results =
-        Archive.write fs unattended (requested Zip target) [ fp (at "work/missing.txt"); fp (at "work/notes.txt") ]
+        Archive.write fs unattended (requested zip target) [ fp (at "work/missing.txt"); fp (at "work/notes.txt") ]
 
     Assert.Equal<(string * Result<unit, OperationError>) list>(
         [ "missing.txt", Error(SourceNotFound(fp (at "work/missing.txt")))
@@ -173,7 +177,7 @@ let ``every packed file is reported as it goes in`` () =
     let fs = packed ()
     let reported, control = watching Int32.MaxValue
 
-    Archive.write fs control (requested Zip target) [ fp (at "work/docs") ] |> ignore
+    Archive.write fs control (requested zip target) [ fp (at "work/docs") ] |> ignore
 
     Assert.Equal<string list>(
         [ at "work/docs/deep/leaf.txt"; at "work/docs/inner.txt" ],
@@ -186,7 +190,7 @@ let ``a cancelled packing leaves no archive behind and nothing packed`` () =
     let _, control = watching 1
 
     let results =
-        Archive.write fs control (requested Zip target) [ fp (at "work/notes.txt"); fp (at "work/docs") ]
+        Archive.write fs control (requested zip target) [ fp (at "work/notes.txt"); fp (at "work/docs") ]
 
     Assert.False(fs.File.Exists target)
 
@@ -200,7 +204,7 @@ let ``a cancelled packing leaves no archive behind and nothing packed`` () =
 let ``the zip is one that any reader can open`` () =
     let fs = packed ()
 
-    Archive.write fs unattended (requested Zip target) [ fp (at "work/docs") ] |> ignore
+    Archive.write fs unattended (requested zip target) [ fp (at "work/docs") ] |> ignore
 
     use stream = opened fs target
     use archive = new ZipArchive(stream, ZipArchiveMode.Read)
@@ -241,7 +245,7 @@ let private secured format path secret =
 let ``a zip given a password locks every entry with AES-256`` () =
     let fs = packed ()
 
-    Archive.write fs unattended (secured Zip target "letmein") [ fp (at "work/docs") ]
+    Archive.write fs unattended (secured zip target "letmein") [ fp (at "work/docs") ]
     |> ignore
 
     use stream = opened fs target
@@ -255,7 +259,7 @@ let ``a zip given a password locks every entry with AES-256`` () =
 let ``a protected zip refuses to open without the password`` () =
     let fs = packed ()
 
-    Archive.write fs unattended (secured Zip target "letmein") [ fp (at "work/notes.txt") ]
+    Archive.write fs unattended (secured zip target "letmein") [ fp (at "work/notes.txt") ]
     |> ignore
 
     use stream = opened fs target
@@ -268,7 +272,7 @@ let ``a protected zip refuses to open without the password`` () =
 let ``a protected zip opens with the password it was given`` () =
     let fs = packed ()
 
-    Archive.write fs unattended (secured Zip target "letmein") [ fp (at "work/notes.txt") ]
+    Archive.write fs unattended (secured zip target "letmein") [ fp (at "work/notes.txt") ]
     |> ignore
 
     use stream = opened fs target
@@ -283,7 +287,7 @@ let ``a protected zip opens with the password it was given`` () =
 let ``a zip without a password is not encrypted`` () =
     let fs = packed ()
 
-    Archive.write fs unattended (requested Zip target) [ fp (at "work/notes.txt") ] |> ignore
+    Archive.write fs unattended (requested zip target) [ fp (at "work/notes.txt") ] |> ignore
 
     use stream = opened fs target
     use archive = new ZipFile(stream)

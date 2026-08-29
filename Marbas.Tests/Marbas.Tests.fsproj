@@ -31,6 +31,7 @@
     <Compile Include="FileSystem\EditorSettingsTests.fs" />
     <Compile Include="FileSystem\SettingsTests.fs" />
     <Compile Include="FileSystem\EntryPropertiesTests.fs" />
+    <Compile Include="FileSystem\ArchiveKindTests.fs" />
     <Compile Include="FileSystem\ArchiveNameTests.fs" />
     <Compile Include="FileSystem\ArchiveTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />

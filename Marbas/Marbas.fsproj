@@ -23,6 +23,7 @@
         <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="FileSystem\Roots.fs" />
         <Compile Include="FileSystem\NamePattern.fs" />
+        <Compile Include="FileSystem\ArchiveKind.fs" />
         <Compile Include="FileSystem\ArchiveFormat.fs" />
         <Compile Include="FileSystem\ArchiveName.fs" />
         <Compile Include="FileSystem\Operations.fs" />

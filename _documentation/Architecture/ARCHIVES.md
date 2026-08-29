@@ -6,28 +6,51 @@ phase 9 and is not built yet; what follows is about creating them.
 
 ## The vocabulary
 
-**A format is a closed set, and it says what it can carry.** `ArchiveFormat` is
-`Zip` or `TarGz`, and `ArchiveFormat.extension` owns the extension each one
-answers to. `carriesPassword` is part of the same type, because whether a
-format can be locked is a property of the format and not of the dialog that
-offers the field: it is `true` for zip and `false` for tar.gz, and every place
-that has to decide — the popup enabling its field, the answer it gives back —
-asks the type rather than repeating the rule. `ArchiveFormat.initial` and
-`ArchiveCompression.initial` are what a fresh popup opens on, read by both the
-popup and the name suggested to it, so the two cannot drift apart.
+**A kind is what an archive is; a format is what one can be created in.**
+`ArchiveKind` is the closed set of archives Marbas has a name for — `Zip`,
+`Tar`, `TarGz`, `TarBz2`, `TarXz`, `SevenZip`, `Rar` — and
+`ArchiveKind.extension` owns the suffix each one answers to. `ArchiveFormat` is
+that set narrowed to the kinds that can be written: its case is private and
+`ArchiveFormat.ofKind` answers `None` for a kind whose capabilities say it
+cannot be created, so a rar target cannot be built even by mistake.
+`ArchiveFormat.all` is the projection itself, in the order the kinds are
+declared, and it is what the pack dialog offers; `ArchiveFormat.initial` is its
+head, zip. There is no second list to keep in step: turning one flag on in the
+table adds a format to the popup.
 
-**The formats that can be written are not the formats that can be read.** Zip
-and tar.gz are the two that can be created. Rar can never join them: its
-compression is proprietary and the licence of the unrar sources forbids using
-them to build a compressor, so no library — whatever its licence — will ever
-create one. It belongs on the reading side alone, which is why the type says
-what an archive can be *created* in rather than what an archive *is*.
+**One record says what can be done to a kind.** `ArchiveKind.capabilities`
+answers an `ArchiveCapabilities` — `CanRead`, `CanCreate`, `CanChange` — and
+every place that has to decide asks it rather than naming a format. Zip is all
+three: it is read, written and changed entry by entry. Tar.gz is read and
+written but never changed, because a gzip stream has no entry to replace
+without rewriting the file. 7z and rar are read alone today — 7z joins the
+written and the changed when P9.14 arrives, rar never does, since its
+compression is proprietary and the licence of the unrar sources forbids
+building a compressor from them. Tar, tar.bz2 and tar.xz claim nothing yet and
+join the readable set with the same task. The flags are what the readers and
+writers of P9.7 onwards are built against: reading is declared here before it
+is coded, and `CanRead` false is what keeps a kind out of everything until its
+reader lands.
+
+**Recognition reads a compound suffix whole.** `ArchiveKind.recognise` takes an
+`EntryName` and matches the longest suffix first, so `release.tar.gz` is a
+tar.gz and not a tar, and `release.gz` is no archive at all — gz alone is not a
+kind Marbas names. The comparison ignores case, and a name that is nothing but
+a suffix is not an archive either: `.zip` is a hidden file, the same rule the
+suggested name follows.
 
 **The extension is a string, deliberately.** `FileExtension` normalises to a
 single member — `FileExtension.ofName "a.tar.gz"` is `gz` — so a compound
-suffix put through it would be a value that lies. `ArchiveFormat.extension`
-answers a plain string instead, used only by `ArchiveName`, rather than bending
-the existing type around one case.
+suffix put through it would be a value that lies. `ArchiveKind.extension`
+answers a plain string instead, read by recognition and by `ArchiveName`,
+rather than bending the existing type around one case.
+
+**A password is a property of the kind.** `ArchiveKind.carriesPassword` is
+`true` for zip and `false` for everything else, and `ArchiveFormat` projects it
+the way it projects the extension: whether an archive can be locked belongs to
+what it is, not to the dialog that offers the field. 7z can carry one in the
+format but not through `SharpCompress`, which is why it says `false` and the
+field stays shut when P9.14 adds it.
 
 **A password is a domain type that trims nothing.** `ArchivePassword.tryCreate`
 answers `None` only for the empty string: a password made of spaces is a
@@ -44,6 +67,9 @@ more — a directory `docs` suggests `docs.zip`, and two or more targets are
 named after the directory holding them. A compound archive extension is dropped
 whole, so `release.tar.gz` suggests `release.zip` and not `release.tar.zip`, and
 a name that is all extension keeps it: `.gitignore` suggests `.gitignore.zip`.
+What counts as an archive extension is what `ArchiveKind.recognise` answers, so
+a kind Marbas cannot create loses its suffix just the same: `book.rar` suggests
+`book.zip`.
 
 **A root has no name, so it is named after its disk.** `C:\` suggests
 `diskCcontents.zip`, keeping the letter as the system spells it. A Unix root has
@@ -94,7 +120,9 @@ APIs over the stream the mock file system hands out, which is what keeps the
 whole feature testable without a disk. The split is not arbitrary: only
 SharpZipLib can encrypt a zip, and only `System.Formats.Tar` knows a directory
 entry and a modification time as first-class things rather than as a name
-ending in a slash.
+ending in a slash. The choice is a match on `ArchiveFormat.kind`, so the two
+writers are picked out of the one kind vocabulary; a kind neither of them knows
+cannot reach it, because only a creatable kind is a format at all.
 
 **Entry paths are relative to the source's own parent, and always use `/`.**
 Each top-level source contributes the tree below it named from the directory it

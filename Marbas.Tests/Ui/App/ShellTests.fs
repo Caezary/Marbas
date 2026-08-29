@@ -614,15 +614,17 @@ let private packReadyFs () =
     fs.AddDirectory(at "backup")
     fs
 
+let private zipFormat = ArchiveFormat.ofKind Zip |> Expect.some
+
 let private packing path =
     { Path = fp path
-      Format = Zip
+      Format = zipFormat
       Compression = Normal
       Password = None }
 
 let private choice =
     { Target = at "backup/notes.zip"
-      Format = Zip
+      Format = zipFormat
       Compression = Maximum
       Password = None }
 

@@ -1,8 +1,6 @@
 namespace Marbas.FileSystem
 
-type ArchiveFormat =
-    | Zip
-    | TarGz
+type ArchiveFormat = private ArchiveFormat of ArchiveKind
 
 type ArchiveCompression =
     | Stored
@@ -25,19 +23,20 @@ type ArchiveChoice =
 
 module ArchiveFormat =
 
-    let all = [ Zip; TarGz ]
+    let all =
+        ArchiveKind.all
+        |> List.filter (fun kind -> (ArchiveKind.capabilities kind).CanCreate)
+        |> List.map ArchiveFormat
 
-    let initial = Zip
+    let kind (ArchiveFormat kind) = kind
 
-    let extension format =
-        match format with
-        | Zip -> "zip"
-        | TarGz -> "tar.gz"
+    let ofKind wanted = all |> List.tryFind (kind >> (=) wanted)
 
-    let carriesPassword format =
-        match format with
-        | Zip -> true
-        | TarGz -> false
+    let initial = List.head all
+
+    let extension format = kind format |> ArchiveKind.extension
+
+    let carriesPassword format = kind format |> ArchiveKind.carriesPassword
 
 module ArchiveCompression =
 

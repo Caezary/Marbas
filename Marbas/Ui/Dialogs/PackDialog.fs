@@ -25,9 +25,14 @@ let PasswordId = "packPassword"
 let private SecondColumn = 26
 
 let formatLabel format =
-    match format with
+    match ArchiveFormat.kind format with
     | Zip -> "_Zip"
+    | Tar -> "_Tar"
     | TarGz -> "_Tar.gz"
+    | TarBz2 -> "Tar._bz2"
+    | TarXz -> "Tar.x_z"
+    | SevenZip -> "_7z"
+    | Rar -> "_Rar"
 
 let compressionLabel compression =
     match compression with

@@ -124,9 +124,10 @@ module Archive =
         |> Operations.allWatched fs control (fun source -> add fs control sink (FileSystemPath.directory fs source) source)
 
     let private packInto fs control (request: ArchiveRequest) sources stream =
-        match request.Format with
+        match ArchiveFormat.kind request.Format with
         | Zip -> intoZip fs request stream (packAll fs control sources)
         | TarGz -> intoTarGz fs request.Compression stream (packAll fs control sources)
+        | uncreatable -> invalidOp $"no writer for {ArchiveKind.extension uncreatable}"
 
     let write (fs: IFileSystem) control (request: ArchiveRequest) sources =
         match attempting request.Path (fun () -> fs.File.Create(FileSystemPath.value request.Path)) with

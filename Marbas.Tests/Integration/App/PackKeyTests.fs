@@ -26,11 +26,13 @@ let private windowWith (fs: MockFileSystem) askArchive =
     press (leftList window) KeyMap.rightRootKey
     window
 
+let private zipFormat = ArchiveFormat.ofKind Zip |> Expect.some
+
 let private answering target =
     fun (_: string) ->
         Some
             { Target = target
-              Format = Zip
+              Format = zipFormat
               Compression = Normal
               Password = None }
 

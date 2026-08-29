@@ -100,7 +100,7 @@ let ``what was typed and chosen is what comes back`` () =
     let answered = accepted dialog
 
     Assert.Equal(Root.at "backup/release.tar.gz", answered.Target)
-    Assert.Equal(TarGz, answered.Format)
+    Assert.Equal(TarGz, ArchiveFormat.kind answered.Format)
     Assert.Equal(Maximum, answered.Compression)
     Assert.Equal(None, answered.Password)
 
