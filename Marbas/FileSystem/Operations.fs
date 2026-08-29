@@ -11,6 +11,7 @@ type OperationError =
     | Cancelled of path: FileSystemPath
     | TargetWithinSource of path: FileSystemPath
     | EntryOutsideTarget of path: FileSystemPath
+    | ArchiveFailed of error: ArchiveError
     | OperationFailed of path: FileSystemPath * message: string
 
 type ItemResult =

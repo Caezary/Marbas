@@ -242,19 +242,34 @@ module Archive =
 
         run [] targets
 
-    let private locked (fs: IFileSystem) (request: ExtractRequest) kind =
-        request.Password.IsNone
-        && ArchiveKind.carriesPassword kind
-        && ArchiveReader.items fs None kind request.Archive |> Seq.exists _.IsEncrypted
+    let needsPassword (fs: IFileSystem) (archive: FileSystemPath) =
+        match ArchiveReader.kindOf fs archive with
+        | Some kind when ArchiveKind.carriesPassword kind ->
+            try
+                ArchiveReader.items fs None kind archive |> Seq.exists _.IsEncrypted
+            with _ ->
+                false
+        | _ -> false
 
     let extract (fs: IFileSystem) control (request: ExtractRequest) (targets: ArchivePath list) =
         match ArchiveReader.kindOf fs request.Archive with
         | None -> Error(KindCannotBeRead request.Archive)
         | Some kind ->
             try
-                if locked fs request kind then
+                if request.Password.IsNone && needsPassword fs request.Archive then
                     Error(PasswordNeeded request.Archive)
                 else
                     Ok(eachTarget fs control request.Archive (unpackTarget fs control request kind) targets)
             with ex ->
                 Error(ArchiveReader.mapException request.Archive ex)
+
+    let extractAll (fs: IFileSystem) control (plans: ExtractPlan list) =
+        let refused (request: ExtractRequest) error : Operations.ItemResult =
+            { Name = FileSystemPath.name fs request.Archive
+              Outcome = Error(Operations.ArchiveFailed error) }
+
+        plans
+        |> List.collect (fun plan ->
+            match extract fs control plan.Request plan.Targets with
+            | Ok results -> results
+            | Error error -> [ refused plan.Request error ])

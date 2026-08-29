@@ -43,7 +43,7 @@ let ``holding Alt puts the drive choosers on the first two slots`` () =
 let ``holding Shift puts the permanent delete on the delete slot`` () =
     let commands = commandsOn (Modifiers.held [ Shift ])
 
-    Assert.Equal<string list>([ "Pack"; ""; ""; "NewFile"; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands)
+    Assert.Equal<string list>([ "Pack"; "Unpack"; ""; "NewFile"; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands)
 
 [<Fact>]
 let ``a slot carries the key the modifiers held make of its function key`` () =
@@ -193,3 +193,16 @@ let ``packing takes the first slot of the shift row`` () =
     Assert.Equal("F1", slot.Name)
     Assert.Equal("Pack", slot.Label)
     Assert.Equal(Some PackRequested, slot.Message)
+
+[<Fact>]
+let ``the unpack key is F2 with shift and asks for an unpack`` () =
+    Assert.Equal(Key.F2.WithShift, KeyMap.unpackKey)
+    Assert.Equal(Some UnpackRequested, KeyMap.messageFor KeyMap.unpackKey)
+
+[<Fact>]
+let ``unpacking takes the second slot of the shift row`` () =
+    let slot = KeyMap.bar (Set.singleton Shift) |> List.item 1
+
+    Assert.Equal("F2", slot.Name)
+    Assert.Equal("Unpack", slot.Label)
+    Assert.Equal(Some UnpackRequested, slot.Message)

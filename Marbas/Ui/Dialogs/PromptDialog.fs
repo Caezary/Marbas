@@ -29,5 +29,9 @@ let selecting (dialog: Dialog) =
     (field dialog).SelectAll() |> ignore
     dialog
 
+let secret (dialog: Dialog) =
+    (field dialog).Secret <- true
+    dialog
+
 let text (dialog: Dialog) =
     if dialog.Canceled then None else Some (field dialog).Text

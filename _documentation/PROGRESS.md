@@ -105,8 +105,19 @@ times, and directories synthesised where the archive stores none — and
 `Archive.extract` takes named entries back out into a directory, a directory
 target bringing the tree below it, times restored, entries that would climb out
 of the target refused, each entry reported through the same batch control that
-copying uses. What is missing is the way in: `Shift+F2`, walking into an archive
-from a panel, and the operations that change one.
+copying uses.
+
+**`Shift+F2` now empties an archive into the other panel.** It takes the same
+operation targets every other key takes — the marks, or the entry under the
+cursor — and unpacks each of them into the other panel's directory behind the
+progress window. Before the batch starts it asks what it has to ask: a
+protected archive asks for its password once, in a popup that hides what is
+typed, and every top-level entry already in the target directory asks the
+ordinary five-answer overwrite question. A target that is no archive Marbas can
+read — a plain file, or a `tar` whose reader has not landed yet — reports itself
+in the failures dialog instead of doing nothing, and both panels are read again
+afterwards. What is missing now is walking into an archive from a panel, and
+the operations that change one.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -131,7 +142,7 @@ written up as the checklist in
 | 6 — Viewing files | P6.1–P6.2 | done |
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
-| 9 — Archives | P9.1–P9.8 | packing done, an archive reads back and comes apart |
+| 9 — Archives | P9.1–P9.9 | `Shift+F1` packs, `Shift+F2` unpacks; browsing an archive to come |
 
 ## What works today
 
@@ -379,18 +390,17 @@ behaviour.
 
 ## Next up
 
-**The first eight phases are finished**, and the ninth is half of one: P9.1 to
-P9.8 create archives, name every kind Marbas handles, read one back level by
-level and take entries out of it; none of it is on a key yet. What follows is
-only partly plan order, and mostly choice. Four things are waiting:
+**The first eight phases are finished**, and the ninth is two thirds of one:
+P9.1 to P9.9 pack on `Shift+F1` and unpack on `Shift+F2`, with every archive
+kind named and one read back level by level. What follows is only partly plan
+order, and mostly choice. Four things are waiting:
 
-- The rest of phase 9, P9.9 to P9.14: `Shift+F2` unpacking into the other panel,
-  a panel located inside an archive, `Enter` walking into one, `F5` copying out
-  of one, and `F5`, `F6`, `F7` and `F8` changing one where the kind allows it — a
-  move out of an archive dropping the entry only once the extraction is in. Then
-  the formats that are left: 7z on the writing side, tar.bz2, tar.xz and rar on
-  the reading one. Rar is readable and uncreatable for good: its compression is
-  proprietary.
+- The rest of phase 9, P9.10 to P9.14: a panel located inside an archive,
+  `Enter` walking into one, `F5` copying out of one, and `F5`, `F6`, `F7` and
+  `F8` changing one where the kind allows it — a move out of an archive dropping
+  the entry only once the extraction is in. Then the formats that are left: 7z
+  on the writing side, tar.bz2, tar.xz and rar on the reading one. Rar is
+  readable and uncreatable for good: its compression is proprietary.
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
   with a full-screen console editor — want a person at a terminal on each

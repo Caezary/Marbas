@@ -65,9 +65,11 @@
     <ItemGroup>
         <Compile Include="Ui\Messages\ListingErrorMessage.fs" />
         <Compile Include="Ui\Messages\ContentErrorMessage.fs" />
+        <Compile Include="Ui\Messages\ArchiveErrorMessage.fs" />
         <Compile Include="Ui\Messages\OperationErrorMessage.fs" />
         <Compile Include="Ui\Messages\DeleteConfirmation.fs" />
         <Compile Include="Ui\Messages\OverwriteQuestion.fs" />
+        <Compile Include="Ui\Messages\PasswordQuestion.fs" />
     </ItemGroup>
 
     <ItemGroup>

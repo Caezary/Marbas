@@ -65,3 +65,9 @@ let ``a suggestion can be offered selected, so the first key typed replaces it``
     Assert.Equal(0, input.SelectedStart)
     Assert.Equal(4, input.SelectedLength)
     Assert.Equal("work", input.SelectedText)
+
+[<Fact>]
+let ``a prompt can hide what is typed into it`` () =
+    use dialog = laidOut "" |> PromptDialog.secret
+
+    Assert.True((PromptDialog.field dialog).Secret)

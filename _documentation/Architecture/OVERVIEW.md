@@ -105,9 +105,11 @@ Marbas/
     Messages/             the words the application says, from values it holds
       ListingErrorMessage.fs    ListingError -> user-facing text
       ContentErrorMessage.fs    ContentError -> user-facing text
+      ArchiveErrorMessage.fs    ArchiveError -> user-facing text
       OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
       DeleteConfirmation.fs     delete targets -> confirmation question
       OverwriteQuestion.fs      collision -> question text, answer buttons and mapping
+      PasswordQuestion.fs       protected archive -> the words of the password prompt
     Panels/               the two panels and everything drawn inside one
       EntryColor.fs         one entry -> its colour group, and that group's attribute
       PageJump.fs           where a page key lands, from the page on screen
@@ -126,7 +128,7 @@ Marbas/
       ViewerKeys.fs         the viewer's own key table and its twelve bar labels
       FileViewer.fs         the viewer itself: header, rows, bar
     Dialogs/              the modal popups, each one built where a test can lay it out
-      PromptDialog.fs       single-field text prompt (label + default)
+      PromptDialog.fs       single-field text prompt (label + default), plain or secret
       PatternDialog.fs      the `+` / `-` pattern prompt, over PromptDialog
       ProgressDialog.fs     the window shown while a batch runs
       AssociationRow.fs     one extension and its editor -> one row of the list

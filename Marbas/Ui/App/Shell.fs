@@ -34,6 +34,9 @@ let MoveTitle = "Moving"
 [<Literal>]
 let PackTitle = "Packing"
 
+[<Literal>]
+let UnpackTitle = "Unpacking"
+
 type Dependencies =
     { FileSystem: IFileSystem
       StartPath: FileSystemPath
@@ -53,6 +56,7 @@ type Dependencies =
       EditEditors: EditorSettings -> EditorPath option -> EditorSettings option
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
       AskArchive: string -> ArchiveChoice option
+      AskPassword: string -> string -> string option
       WatchModifiers: (Set<Modifier> -> unit) -> unit
       RunBatch:
           string -> (Operations.BatchControl -> Operations.ItemResult list) -> (Operations.ItemResult list -> unit) -> unit }
@@ -69,6 +73,51 @@ let private startBatch (deps: Dependencies) title operation finished sources tar
     match Operations.approve deps.FileSystem (askOverwrite deps) sources targetDirectory with
     | [] -> ()
     | approved -> deps.RunBatch title (fun control -> operation deps.FileSystem control approved targetDirectory) finished
+
+type private PasswordOutcome =
+    | NotNeeded
+    | NotGiven
+    | Given of password: ArchivePassword
+
+let private passwordFor (deps: Dependencies) (archive: FileSystemPath) =
+    if Archive.needsPassword deps.FileSystem archive then
+        FileSystemPath.name deps.FileSystem archive
+        |> PasswordQuestion.describe
+        |> deps.AskPassword PasswordQuestion.Title
+        |> Option.bind ArchivePassword.tryCreate
+        |> Option.map Given
+        |> Option.defaultValue NotGiven
+    else
+        NotNeeded
+
+let private unpackTargets (deps: Dependencies) targetDirectory (archive: FileSystemPath) =
+    let named path =
+        FileSystemPath.name deps.FileSystem path |> ArchivePath.child ArchivePath.root
+
+    match ArchiveListing.read deps.FileSystem archive ArchivePath.root with
+    | Error _ -> [ ArchivePath.root ]
+    | Ok entries ->
+        entries
+        |> List.map (_.Name >> EntryName.value >> FileSystemPath.combine deps.FileSystem archive)
+        |> fun candidates -> Operations.approve deps.FileSystem (askOverwrite deps) candidates targetDirectory
+        |> List.map named
+
+let private unpackPlan (deps: Dependencies) targetDirectory archive =
+    let planned password =
+        match unpackTargets deps targetDirectory archive with
+        | [] -> None
+        | targets ->
+            Some
+                { Request =
+                    { Archive = archive
+                      Password = password
+                      Destination = targetDirectory }
+                  Targets = targets }
+
+    match passwordFor deps archive with
+    | NotNeeded -> planned None
+    | Given password -> planned (Some password)
+    | NotGiven -> None
 
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
@@ -106,6 +155,14 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         if allowed then
             deps.RunBatch PackTitle (fun control -> Archive.write deps.FileSystem control archive sources) (fun results ->
                 dispatch (PackFinished(FileSystemPath.name deps.FileSystem target, results)))
+    | ExtractTargets(archives, targetDirectory) ->
+        match archives |> List.choose (unpackPlan deps targetDirectory) with
+        | [] -> ()
+        | plans ->
+            deps.RunBatch
+                UnpackTitle
+                (fun control -> Archive.extractAll deps.FileSystem control plans)
+                (UnpackFinished >> dispatch)
     | RenameTarget(source, newName) ->
         Operations.rename deps.FileSystem source newName
         |> fun outcome -> RenameFinished(newName, outcome)

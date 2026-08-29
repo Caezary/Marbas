@@ -84,6 +84,8 @@ permanent delete is the same `Operations.delete` as before on either platform.
 | Check | Windows | Linux | Evidence |
 |-------|---------|-------|----------|
 | `Shift+F1` packs the targets into an archive in the other panel | same | same | suite |
+| `Shift+F2` empties the archives under the cursor or marked into the other panel | same | same | suite |
+| An archive made by another tool unpacks here with its tree and its times | 7-Zip, Explorer | `zip`, `tar` | **manual** |
 | The name is deduced from the targets, the root from the drive | `diskCcontents.zip` | `rootcontents.zip` | suite (one test per platform) |
 | Entry paths inside the archive are relative and separated by `/` | `docs\a.txt` is stored as `docs/a.txt` | already `/` | suite |
 | A backslash inside a Linux file name stays in the entry name | n/a | it does not: `SharpZipLib`'s `ZipEntry` cleans the name, so `a\b.txt` is written as `a/b.txt` and the archive gains a level the disk never had | **manual** (seen while writing P9.7, never run on Linux) |

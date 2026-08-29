@@ -81,6 +81,7 @@
   <ItemGroup>
     <Compile Include="Ui\Messages\ListingErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\ContentErrorMessageTests.fs" />
+    <Compile Include="Ui\Messages\ArchiveErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\OperationErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\DeleteConfirmationTests.fs" />
     <Compile Include="Ui\Messages\OverwriteQuestionTests.fs" />
@@ -169,6 +170,7 @@
     <Compile Include="Integration\App\DeleteKeyTests.fs" />
     <Compile Include="Integration\App\CopyKeyTests.fs" />
     <Compile Include="Integration\App\PackKeyTests.fs" />
+    <Compile Include="Integration\App\UnpackKeyTests.fs" />
     <Compile Include="Integration\App\MoveKeyTests.fs" />
     <Compile Include="Integration\App\EditKeyTests.fs" />
   </ItemGroup>

@@ -20,6 +20,10 @@ type ExtractRequest =
       Password: ArchivePassword option
       Destination: FileSystemPath }
 
+type ExtractPlan =
+    { Request: ExtractRequest
+      Targets: ArchivePath list }
+
 type ArchiveChoice =
     { Target: string
       Format: ArchiveFormat

@@ -32,6 +32,8 @@ type Message =
     | PackRequested
     | ArchiveEntered of ArchiveChoice
     | PackFinished of archive: EntryName * results: Operations.ItemResult list
+    | UnpackRequested
+    | UnpackFinished of results: Operations.ItemResult list
     | RenameFinished of newName: EntryName * outcome: Result<unit, Operations.OperationError>
     | ViewRequested
     | EditRequested
@@ -59,6 +61,7 @@ type Effect =
     | CopyTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | MoveTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | ArchiveTargets of sources: FileSystemPath list * request: ArchiveRequest
+    | ExtractTargets of archives: FileSystemPath list * targetDirectory: FileSystemPath
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
     | EditFile of path: FileSystemPath * editor: EditorPath option
@@ -181,6 +184,11 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
                           Password = choice.Password }
                     ))
     | PackFinished(archive, results) -> finishPack fs archive results state |> applyBatch state
+    | UnpackRequested ->
+        match operationPaths fs (activePanel state) with
+        | [] -> stay state
+        | paths -> request state (ExtractTargets(paths, otherPath state))
+    | UnpackFinished results -> finishTransfer fs results state |> applyBatch state
     | RenameFinished(newName, outcome) ->
         match outcome with
         | Error error -> request state (ReportOperationError error)

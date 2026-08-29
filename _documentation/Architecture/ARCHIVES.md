@@ -1,10 +1,9 @@
 # Archives
 
 `Shift+F1` packs what the active panel points at into an archive in the other
-panel; `ArchiveListing` reads one back level by level and `Archive.extract`
-takes entries out of it. The keys that would let a user do the reading —
-`Shift+F2` and browsing an archive from a panel — are the rest of phase 9 and
-are not built yet.
+panel, and `Shift+F2` empties an archive into it. Browsing an archive from a
+panel — walking into one as though it were a directory, and the operations that
+change one — is the rest of phase 9 and is not built yet.
 
 ## The vocabulary
 
@@ -303,6 +302,52 @@ reads the archive five times. For a zip that is five reads of the table of
 contents; for a `tar.gz` it is five decompressions, which is the price of
 keeping the streaming reader — which can only go forwards — and the per-target
 `ItemResult` in the same design.
+
+## The walk from key to unpacking
+
+`UnpackRequested` → `ExtractTargets` → the dialogs → the batch →
+`UnpackFinished`, the shape `F5` and `Shift+F1` already follow. `Shift+F2`
+carries it, on the second slot of the shift row of the key bar, and the targets
+are the ordinary operation targets: every marked entry, or the one under the
+cursor.
+
+**Every target is handed to the archive machinery, whatever it is.** `Update`
+does not ask which targets look like archives — a target that is no archive at
+all comes back as `KindCannotBeRead` from `Archive.extract` and is reported like
+any other failed item, which is the same answer a `release.tar` gets today for a
+different reason. Silence would leave `Shift+F2` on a text file looking broken.
+
+**`Shell` asks everything before the batch starts.** A batch runs off the UI
+thread, so no dialog may open inside it. For each archive `Shell` therefore
+asks, in order: the password, when `Archive.needsPassword` says an entry is
+encrypted and none was given — the prompt answers a `PasswordOutcome`, one of
+`NotNeeded`, `NotGiven` or `Given`, and the middle one drops the archive from
+the batch, which covers a dismissed prompt and an empty field alike, since
+neither is a password to unpack with — and then the five-answer overwrite
+question, for each top-level entry that already exists in the target directory.
+What the user approves becomes the archive's list of `ArchivePath`s; approving
+nothing drops the archive too. An archive that cannot even be listed keeps
+`ArchivePath.root` as its target, so the batch itself produces the honest error
+instead of `Shell` inventing one.
+
+**The overwrite question is asked about the top level only.** `Operations.approve`
+is the same function copying and moving use, fed with the archive's top-level
+entries spelled `…\backup.zip\notes.txt`, so it computes the same landing places
+and asks the same five answers. A file deeper inside a directory being unpacked
+is overwritten without a question — the level the user can see is the level they
+answer for.
+
+**An archive that fails answers under its own name.** `Archive.extractAll` runs
+the plans one after another and turns an `Error` from `extract` into a single
+`ItemResult` named after the archive, carrying `Operations.ArchiveFailed`. That
+case wraps the `ArchiveError` whole rather than flattening it to a string, so
+the failures dialog words it through `ArchiveErrorMessage` and nothing in
+`FileSystem` has to know how to phrase anything.
+
+**Both panels are re-read afterwards.** `UnpackFinished` goes through the same
+`finishTransfer` that `F5` and `F6` use: the active panel keeps the marks of
+what did not make it, and the other panel — where the entries landed — is read
+again from disk.
 
 ## Libraries and licences
 

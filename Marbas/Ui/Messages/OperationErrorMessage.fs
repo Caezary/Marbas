@@ -13,6 +13,7 @@ let describe error =
     | AccessDenied path -> $"Access denied to '{FileSystemPath.value path}'."
     | Cancelled path -> $"Stopped before '{FileSystemPath.value path}' was finished."
     | TargetWithinSource path -> $"An archive cannot be created inside what it packs: '{FileSystemPath.value path}'."
+    | ArchiveFailed error -> ArchiveErrorMessage.describe error
     | EntryOutsideTarget path ->
         $"An entry of the archive would land outside the target directory: '{FileSystemPath.value path}'."
     | OperationFailed(path, reason) -> $"Could not complete '{FileSystemPath.value path}': {reason}"

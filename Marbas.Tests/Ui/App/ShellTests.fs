@@ -730,3 +730,159 @@ let ``an accepted overwrite replaces the archive`` () =
 
     Assert.Equal<byte list>([ 0x50uy; 0x4Buy ], written |> Array.truncate 2 |> List.ofArray)
     Assert.Single sent |> ignore
+
+let private unpackReadyFs password =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/work/notes.txt", MockFileData "notes")
+    fs.AddFile(at "start/work/docs/inner.txt", MockFileData "inner")
+    fs.AddDirectory(at "backup")
+
+    Archive.write
+        fs
+        unattended
+        { Path = fp (at "start/data.zip")
+          Format = zipFormat
+          Compression = Normal
+          Password = password }
+        [ fp (at "start/work/notes.txt"); fp (at "start/work/docs") ]
+    |> ignore
+
+    fs
+
+[<Fact>]
+let ``an archive is emptied into the target directory and the outcome dispatched back`` () =
+    let sent, dispatch = capture ()
+    let fs = unpackReadyFs None
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
+
+    Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
+    Assert.Equal("inner", fs.File.ReadAllText(at "backup/docs/inner.txt"))
+
+    Assert.Equal<Message list>(
+        [ UnpackFinished(
+              [ { Name = en "notes.txt"; Outcome = Ok() }
+                { Name = en "docs"; Outcome = Ok() } ]
+          ) ],
+        List.ofSeq sent
+    )
+
+[<Fact>]
+let ``unpacking runs under its own title`` () =
+    let _, dispatch = capture ()
+    let titles = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = unpackReadyFs None
+            RunBatch =
+                fun title work finish ->
+                    titles.Add title
+                    work Operations.unattended |> finish }
+
+    Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
+
+    Assert.Equal<string list>([ Shell.UnpackTitle ], List.ofSeq titles)
+
+[<Fact>]
+let ``an entry already in the target directory is asked about`` () =
+    let _, dispatch = capture ()
+    let fs = unpackReadyFs None
+    fs.AddFile(at "backup/notes.txt", MockFileData "old")
+    let asked = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            AskOverwrite =
+                fun _ message ->
+                    asked.Add message
+                    No }
+
+    Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
+
+    Assert.Equal(1, asked.Count)
+    Assert.Contains(at "backup/notes.txt", asked[0])
+    Assert.Equal("old", fs.File.ReadAllText(at "backup/notes.txt"))
+    Assert.Equal("inner", fs.File.ReadAllText(at "backup/docs/inner.txt"))
+
+[<Fact>]
+let ``a protected archive is asked for its password once`` () =
+    let fs = unpackReadyFs (ArchivePassword.tryCreate "letmein")
+    let _, dispatch = capture ()
+    let asked = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            AskPassword =
+                fun _ label ->
+                    asked.Add label
+                    Some "letmein" }
+
+    Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
+
+    Assert.Equal(1, asked.Count)
+    Assert.Contains("data.zip", asked[0])
+    Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
+
+[<Fact>]
+let ``an archive that needs no password is never asked for one`` () =
+    let _, dispatch = capture ()
+    let mutable asked = false
+
+    let deps =
+        { noDeps () with
+            FileSystem = unpackReadyFs None
+            AskPassword =
+                fun _ _ ->
+                    asked <- true
+                    None }
+
+    Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
+
+    Assert.False asked
+
+[<Fact>]
+let ``a dismissed password prompt leaves the archive alone`` () =
+    let sent, dispatch = capture ()
+    let fs = unpackReadyFs (ArchivePassword.tryCreate "letmein")
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
+
+    Assert.Empty sent
+    Assert.Empty(fs.Directory.GetFiles(at "backup"))
+
+[<Fact>]
+let ``an archive that cannot be read answers for itself`` () =
+    let sent, dispatch = capture ()
+    let fs = unpackReadyFs None
+    fs.AddFile(at "start/data.tar", MockFileData "whatever")
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.tar") ], fp (at "backup")))
+
+    Assert.Equal<Message list>(
+        [ UnpackFinished(
+              [ { Name = en "data.tar"
+                  Outcome = Error(ArchiveFailed(KindCannotBeRead(fp (at "start/data.tar")))) } ]
+          ) ],
+        List.ofSeq sent
+    )
+
+[<Fact>]
+let ``a password prompt answered with nothing leaves the archive alone`` () =
+    let sent, dispatch = capture ()
+    let fs = unpackReadyFs (ArchivePassword.tryCreate "letmein")
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            AskPassword = fun _ _ -> Some "" }
+
+    Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
+
+    Assert.Empty sent
+    Assert.Empty(fs.Directory.GetFiles(at "backup"))

@@ -252,3 +252,67 @@ let ``a damaged archive is refused as a whole`` () =
         |> Expect.error
 
     Assert.Equal(Some(fp archive), damagedPath error)
+
+let private plan path password targets =
+    { Request = unpacking path password
+      Targets = targets }
+
+[<Fact>]
+let ``several archives are emptied in one batch`` () =
+    let fs = packed None
+    Archive.write fs unattended (packing zip (at "backup/other.zip") None) [ fp (at "work/docs") ]
+    |> ignore
+
+    let results =
+        Archive.extractAll
+            fs
+            unattended
+            [ plan archive None [ inside "notes.txt" ]
+              plan (at "backup/other.zip") None [ inside "docs" ] ]
+
+    Assert.Equal<(string * Result<unit, OperationError>) list>(
+        [ "notes.txt", Ok(); "docs", Ok() ],
+        outcomes results
+    )
+
+    Assert.Equal("notes", fs.File.ReadAllText(at "out/notes.txt"))
+    Assert.Equal("inner", fs.File.ReadAllText(at "out/docs/inner.txt"))
+
+[<Fact>]
+let ``an archive that refuses as a whole answers for itself under its own name`` () =
+    let fs = tree ()
+    fs.AddFile(at "backup/data.tar", MockFileData "whatever")
+
+    let results =
+        Archive.extractAll fs unattended [ plan (at "backup/data.tar") None [ ArchivePath.root ] ]
+
+    Assert.Equal<(string * Result<unit, OperationError>) list>(
+        [ "data.tar", Error(ArchiveFailed(KindCannotBeRead(fp (at "backup/data.tar")))) ],
+        outcomes results
+    )
+
+[<Fact>]
+let ``a protected archive is known to need a password`` () =
+    let fs = packed (ArchivePassword.tryCreate "letmein")
+
+    Assert.True(Archive.needsPassword fs (fp archive))
+
+[<Fact>]
+let ``an archive with nothing to hide needs no password`` () =
+    let fs = packed None
+
+    Assert.False(Archive.needsPassword fs (fp archive))
+
+[<Fact>]
+let ``a kind that carries no password never needs one`` () =
+    let fs = tree ()
+    Archive.write fs unattended (packing tarGz tarArchive None) sources |> ignore
+
+    Assert.False(Archive.needsPassword fs (fp tarArchive))
+
+[<Fact>]
+let ``an archive that cannot be opened is not asked for a password`` () =
+    let fs = tree ()
+    fs.AddFile(archive, MockFileData "not an archive at all")
+
+    Assert.False(Archive.needsPassword fs (fp archive))

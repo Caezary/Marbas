@@ -60,6 +60,8 @@ let newFileKey = Key.F4.WithShift
 
 let packKey = Key.F1.WithShift
 
+let unpackKey = Key.F2.WithShift
+
 let settingsKey = Key.F12
 
 let hiddenKey = Key.H.WithAlt
@@ -99,6 +101,7 @@ let bindings =
       onBar Key.F7 "Mkdir" MakeDirectoryRequested
       onBar Key.F8 "Delete" (DeleteRequested ToTrash)
       onBar packKey "Pack" PackRequested
+      onBar unpackKey "Unpack" UnpackRequested
       onBar newFileKey "NewFile" NewFileRequested
       onBar Key.F8.WithShift "Erase" (DeleteRequested Permanently)
       onBar Key.F10 "Quit" QuitRequested

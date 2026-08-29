@@ -43,6 +43,11 @@ let askTarget (app: IApplication) title suggestion =
     app.Run dialog |> ignore
     PromptDialog.text dialog
 
+let askPassword (app: IApplication) title label =
+    use dialog = PromptDialog.create title label "" |> PromptDialog.secret
+    app.Run dialog |> ignore
+    PromptDialog.text dialog
+
 let showFile (app: IApplication) (source: FileWindow.Source) =
     use viewer = FileViewer.create _.RequestStop() source
     app.Run viewer |> ignore

@@ -847,3 +847,46 @@ let ``the password from the dialog rides into the request`` () =
           ) ],
         result.Effects
     )
+
+[<Fact>]
+let ``unpack requested sends the targets to the other panel`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
+
+    let result = update fs UnpackRequested state
+
+    Assert.Equal<Effect list>([ ExtractTargets([ fp (at "start/notes.txt") ], fp (at "backup")) ], result.Effects)
+
+[<Fact>]
+let ``unpack requested on the parent entry raises no effect`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs
+
+    let result = update fs UnpackRequested state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a finished unpack shows what came out of the archive`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
+    let results = copyAll fs unattended [ fp (at "start/notes.txt") ] (fp (at "backup"))
+
+    let result = update fs (UnpackFinished results) state
+
+    Assert.Contains("notes.txt", names result.State.Right.Entries)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a finished unpack reports the archives that failed`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs
+
+    let failed =
+        [ { Name = en "data.tar"
+            Outcome = Error(ArchiveFailed(KindCannotBeRead(fp (at "start/data.tar")))) } ]
+
+    let result = update fs (UnpackFinished failed) state
+
+    Assert.Equal<Effect list>([ ReportItemFailures failed ], result.Effects)
