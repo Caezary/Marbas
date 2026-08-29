@@ -39,6 +39,13 @@ let ``an entry the batch stopped inside says so`` () =
     Assert.Contains("Stopped before", message)
 
 [<Fact>]
+let ``an entry that would land outside the target says where`` () =
+    let message = OperationErrorMessage.describe (EntryOutsideTarget(fp (at "evil.txt")))
+
+    Assert.Contains(at "evil.txt", message)
+    Assert.Contains("outside the target", message)
+
+[<Fact>]
 let ``an unexpected failure includes the underlying reason`` () =
     let message = OperationErrorMessage.describe (OperationFailed(fp (at "bad"), "disk full"))
 

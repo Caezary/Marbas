@@ -36,6 +36,8 @@ module ArchivePath =
     let child path (name: EntryName) =
         ArchivePath(segments path @ [ name ])
 
+    let name path = segments path |> List.tryLast
+
     let parent path =
         match segments path |> List.rev with
         | [] -> None

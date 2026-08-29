@@ -10,6 +10,7 @@ type OperationError =
     | AccessDenied of path: FileSystemPath
     | Cancelled of path: FileSystemPath
     | TargetWithinSource of path: FileSystemPath
+    | EntryOutsideTarget of path: FileSystemPath
     | OperationFailed of path: FileSystemPath * message: string
 
 type ItemResult =

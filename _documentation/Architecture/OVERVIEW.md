@@ -43,7 +43,7 @@ root. `Program.fs` is left with the handful of lines that start the application.
 - [Domain types](DOMAIN-TYPES.md) — paths as a type, typed messages and effects
 - [State and effects](STATE-AND-EFFECTS.md) — the update loop, dependency injection, composition
 - [File operations](FILE-OPERATIONS.md) — copy/move/delete/rename, batches, viewer and editor
-- [Archives](ARCHIVES.md) — kinds and formats, the deduced name, the writer, reading a level, the libraries
+- [Archives](ARCHIVES.md) — kinds and formats, the deduced name, writing, reading, extracting, the libraries
 - [UI and input](UI-AND-INPUT.md) — colour, sorting, hidden entries, search, the key table
 - [Settings persistence](SETTINGS-PERSISTENCE.md) — the config file and what survives a restart
 - [Testing](TESTING.md) — suite layout, conventions, Terminal.Gui pitfalls
@@ -71,8 +71,9 @@ Marbas/
     ArchivePath.fs        a place inside an archive: never rooted, never climbing
     ArchiveFormat.fs      which kinds can be created, and what each one carries
     ArchiveName.fs        the name an archive is offered under, and its extension
+    ArchiveReader.fs      opening an archive: its entries, their content, failures as values
     ArchiveListing.fs     reading one level of an archive as the entries a directory gives
-    Archive.fs            writing one: the walk, the entries, cancelling, the password
+    Archive.fs            writing one and taking one apart: the walk, cancelling, the password
     Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     ContentError.fs       what can go wrong reading a file, as values
     TextEncoding.fs       which encoding a file carries, from its mark or its bytes

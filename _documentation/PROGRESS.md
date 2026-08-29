@@ -94,8 +94,19 @@ progress window with `Esc` stopping it — and a stopped run deletes the
 half-written file and keeps every mark. An archive that already exists asks
 before it is replaced, one that would land inside what it packs is refused
 outright, and when the batch finishes the other panel is re-read with the cursor
-on the new archive. Reading archives is the rest of the phase and is not built
-yet: unpacking one, and walking into one as though it were a directory.
+on the new archive.
+
+**The reading half of the phase now exists underneath the keys.** Every archive
+kind Marbas will ever handle has a name, an extension and a record saying
+whether it can be read, created or changed, and the formats the pack dialog
+offers are that table's creatable half rather than a second list. `ArchiveListing`
+reads one level of an archive as the same entries a directory gives — sizes,
+times, and directories synthesised where the archive stores none — and
+`Archive.extract` takes named entries back out into a directory, a directory
+target bringing the tree below it, times restored, entries that would climb out
+of the target refused, each entry reported through the same batch control that
+copying uses. What is missing is the way in: `Shift+F2`, walking into an archive
+from a panel, and the operations that change one.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -120,7 +131,7 @@ written up as the checklist in
 | 6 — Viewing files | P6.1–P6.2 | done |
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
-| 9 — Archives | P9.1–P9.7 | packing done, an archive reads back level by level |
+| 9 — Archives | P9.1–P9.8 | packing done, an archive reads back and comes apart |
 
 ## What works today
 
@@ -369,17 +380,17 @@ behaviour.
 ## Next up
 
 **The first eight phases are finished**, and the ninth is half of one: P9.1 to
-P9.7 create archives, name every kind Marbas handles and read one back level by
-level; taking an archive apart from the panels is still open. What follows is
+P9.8 create archives, name every kind Marbas handles, read one back level by
+level and take entries out of it; none of it is on a key yet. What follows is
 only partly plan order, and mostly choice. Four things are waiting:
 
-- The rest of phase 9, P9.8 to P9.14: extracting entries, `Shift+F2` unpacking
-  into the other panel, a panel located inside an archive, `Enter` walking into
-  one, `F5` copying out of one, and `F5`, `F6`, `F7` and `F8` changing one where
-  the kind allows it — a move out of an archive dropping the entry only once the
-  extraction is in. Then the formats that are left: 7z on the writing side,
-  tar.bz2, tar.xz and rar on the reading one. Rar is readable and uncreatable
-  for good: its compression is proprietary.
+- The rest of phase 9, P9.9 to P9.14: `Shift+F2` unpacking into the other panel,
+  a panel located inside an archive, `Enter` walking into one, `F5` copying out
+  of one, and `F5`, `F6`, `F7` and `F8` changing one where the kind allows it — a
+  move out of an archive dropping the entry only once the extraction is in. Then
+  the formats that are left: 7z on the writing side, tar.bz2, tar.xz and rar on
+  the reading one. Rar is readable and uncreatable for good: its compression is
+  proprietary.
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
   with a full-screen console editor — want a person at a terminal on each
@@ -403,6 +414,15 @@ only partly plan order, and mostly choice. Four things are waiting:
   all of the entries and keeps the one level asked for. For the archives a
   panel will show that costs nothing measurable, but an archive of a hundred
   thousand entries pays the walk on every step into it.
+- Extracting opens the archive once per target, because the tar reader can only
+  go forwards and each target answers for itself. Unpacking ten marked entries
+  out of a `tar.gz` therefore decompresses it ten times. A single pass that
+  keeps a result per target would fix it, at the cost of holding every target's
+  outcome while the entries arrive in the archive's own order.
+- A wrong password is reported entry by entry with the library's own wording,
+  not as "the password is wrong": `PasswordNeeded` is only answered before an
+  extraction starts, when the archive holds an encrypted entry and no password
+  was given at all.
 - An archive is written whole or not at all only when it is cancelled. A single
   unreadable file inside one source leaves the archive standing with everything
   that did go in, which is deliberate — the failures are listed and the marks

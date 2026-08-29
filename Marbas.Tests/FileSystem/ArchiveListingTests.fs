@@ -263,27 +263,3 @@ let ``a file that only looks like an archive is damaged`` () =
     let error = refused fs (at "backup/broken.zip")
 
     Assert.Equal(Some(fp (at "backup/broken.zip")), damagedPath error)
-
-[<Fact>]
-let ``a missing file maps to an archive that is not there`` () =
-    let failure = IO.FileNotFoundException "gone"
-
-    let error = ArchiveListing.mapException (fp target) failure
-
-    Assert.Equal(ArchiveNotFound(fp target), error)
-
-[<Fact>]
-let ``a refused password maps to a password that is needed`` () =
-    let failure = SharpCompress.Common.CryptographicException "wrong password"
-
-    let error = ArchiveListing.mapException (fp target) failure
-
-    Assert.Equal(PasswordNeeded(fp target), error)
-
-[<Fact>]
-let ``every other failure maps to a damaged archive`` () =
-    let failure = IO.IOException "boom"
-
-    let error = ArchiveListing.mapException (fp target) failure
-
-    Assert.Equal(ArchiveDamaged(fp target, "boom"), error)

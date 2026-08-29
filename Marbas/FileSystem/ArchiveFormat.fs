@@ -15,6 +15,11 @@ type ArchiveRequest =
       Compression: ArchiveCompression
       Password: ArchivePassword option }
 
+type ExtractRequest =
+    { Archive: FileSystemPath
+      Password: ArchivePassword option
+      Destination: FileSystemPath }
+
 type ArchiveChoice =
     { Target: string
       Format: ArchiveFormat

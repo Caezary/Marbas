@@ -1,9 +1,10 @@
 # Archives
 
 `Shift+F1` packs what the active panel points at into an archive in the other
-panel, and `ArchiveListing` reads one back level by level. Unpacking with
-`Shift+F2` and browsing an archive from a panel are the rest of phase 9 and are
-not built yet.
+panel; `ArchiveListing` reads one back level by level and `Archive.extract`
+takes entries out of it. The keys that would let a user do the reading —
+`Shift+F2` and browsing an archive from a panel — are the rest of phase 9 and
+are not built yet.
 
 ## The vocabulary
 
@@ -216,14 +217,19 @@ was listed. Only `/` separates a level from the next: a backslash is an
 ordinary character in a key, so an entry named `a\b.txt` is one entry and not
 two levels, which is what the format says whatever platform reads it.
 
-**Two openers, chosen by kind.** Zip, 7z and rar go through
+**One reader under both, with two openers chosen by kind.** `ArchiveReader` is
+where an archive is opened: it answers a lazy sequence of `ArchiveItem`s — the
+names a key is made of, whether the entry is a directory, its size, its time,
+whether it is encrypted, and a `WriteTo` that streams its content — and both
+the listing and the extraction read that one shape. Zip, 7z and rar go through
 `ArchiveFactory.OpenArchive`, which seeks and reads the archive's own table of
-contents. The tar family goes through `ReaderFactory.OpenReader`, which
-streams: `ArchiveFactory` sees a `tar.gz` as a gzip holding one file and stops
-there, while the reader unwraps the compression and hands over the tar's own
-entries. Both read the stream `IFileSystem` opens, so listing is tested on
-`MockFileSystem` like everything else — the archives the tests read are the
-ones `Archive.write` wrote a line earlier.
+contents; the tar family goes through `ReaderFactory.OpenReader`, which
+streams, because `ArchiveFactory` sees a `tar.gz` as a gzip holding one file
+and stops there while the reader unwraps the compression and hands over the
+tar's own entries. Both read the stream `IFileSystem` opens, so all of it is
+tested on `MockFileSystem` — the archives the tests read are the ones
+`Archive.write` wrote a line earlier. `WriteTo` is only good while the walk
+stands on its entry: the streaming reader has no way back.
 
 **A kind that cannot be read is refused before the file is opened.** `read`
 asks `ArchiveKind.recognise` and the capability table first, so `release.tar` —
@@ -237,8 +243,66 @@ like an archive produces.
 **A password hides content, not names.** An AES zip lists its entries without
 one — the names, sizes and times are in the clear, as the writing side already
 said — so `read` asks for no password. `PasswordNeeded` is there for the kinds
-that encrypt their headers, and a password reaches the reading side when P9.8
-extracts content that has to be decrypted.
+that encrypt their headers; extraction is where a password is asked for, since
+that is where content has to be decrypted.
+
+## Extracting
+
+**One request, a list of targets, an `ItemResult` each.** `Archive.extract`
+takes an `ExtractRequest` — the archive, the password if there is one, and the
+directory to write into — and a list of `ArchivePath`s to take out of it. It
+answers `Result<ItemResult list, ArchiveError>`: the `Error` side is the
+archive refusing as a whole (a kind that cannot be read, a file that is gone, a
+password that is needed, an archive that is damaged), the `Ok` side is one
+result per target the way `Archive.write` and `copyAll` answer per source.
+`ArchivePath.root` as the only target is how the whole archive is emptied into
+the destination, and it answers under the archive's own name.
+
+**A target is written under its last name, with the tree below it.** Extracting
+`docs/deep` into `C:\out` writes `C:\out\deep\leaf.txt`: the entry's path is
+taken relative to the target's parent, exactly as `Archive.write` names entries
+relative to the source's parent, so packing and unpacking are each other's
+mirror. Directories stored in the archive are created even when they are empty,
+directories only implied by a deeper entry are created on the way, and every
+file gets its modification time back — set as UTC, because a
+`DateTimeOffset.MinValue` on an entry that carries no time cannot be converted
+to a local time west of Greenwich without falling off the calendar.
+
+**An entry that would climb out of the target is refused.** Every entry's
+landing place is resolved with `GetFullPath` and checked against the
+destination; `docs/../../evil.txt` therefore fails its target with
+`EntryOutsideTarget` and nothing is written outside. The check is on the
+resolved path rather than on the key, so a key that climbs and comes back
+(`docs/../docs/inner.txt`) is allowed, which is what it means: the same file.
+`ArchivePath` cannot hold `..` at all, so this rule guards only what other
+tools put in an archive.
+
+**The first failure ends that target and no other.** Entries are walked one by
+one and the first `Error` stops the walk for that target, leaving the rest of
+the targets to run — the rule `Operations.allWatched` follows for copy and
+move. A target no entry answers to is `SourceNotFound`, spelled the way a place
+inside an archive will be spelled from P9.10 on: `…\backup.zip\docs`.
+
+**Cancelling stops where it stood.** Each file reports its landing place
+through `BatchControl` before it is written, `Esc` in the progress window makes
+the next entry answer `Cancelled`, and the batch stops after the target it was
+in. What was already written stays on disk — unlike packing, where the archive
+is deleted, there is nothing half-made to remove: the files that arrived are
+whole.
+
+**A password is asked for before anything is unpacked, not after.** When the
+kind can carry a password, none was given and any entry to be written is
+encrypted, `extract` answers `PasswordNeeded` without writing a byte, so
+`Shift+F2` can ask once and run again. A password that is *wrong* is a
+different story: the library throws while reading the entry and the target
+fails with the reason it gave.
+
+**Every target opens the archive again.** `ArchiveReader.items` is a lazy
+sequence that opens the file when it is enumerated, so a batch of five targets
+reads the archive five times. For a zip that is five reads of the table of
+contents; for a `tar.gz` it is five decompressions, which is the price of
+keeping the streaming reader — which can only go forwards — and the per-target
+`ItemResult` in the same design.
 
 ## Libraries and licences
 

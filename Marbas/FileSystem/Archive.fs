@@ -154,3 +154,107 @@ module Archive =
     let wouldPackItself (fs: IFileSystem) (target: FileSystemPath) sources =
         sources
         |> List.exists (fun source -> source = target || within fs source target)
+
+    let private inArchive (fs: IFileSystem) (archive: FileSystemPath) (target: ArchivePath) =
+        FileSystemPath.combine fs archive (ArchivePath.value target)
+
+    let private under (target: ArchivePath) (item: ArchiveItem) =
+        let names = ArchivePath.segments target
+
+        item.Segments.Length >= names.Length
+        && List.truncate names.Length item.Segments = names
+
+    let private beneath (target: ArchivePath) (item: ArchiveItem) =
+        item.Segments
+        |> List.skip (max 0 (List.length (ArchivePath.segments target) - 1))
+
+    let private landingPlace (fs: IFileSystem) (destination: FileSystemPath) segments =
+        segments
+        |> List.fold (fun path name -> FileSystemPath.combine fs path (EntryName.value name)) destination
+        |> FileSystemPath.value
+        |> fs.Path.GetFullPath
+        |> FileSystemPath.create
+
+    let private makeRoom (fs: IFileSystem) (path: FileSystemPath) =
+        fs.Directory.CreateDirectory(fs.Path.GetDirectoryName(FileSystemPath.value path)) |> ignore
+
+    let private writeContent (fs: IFileSystem) (item: ArchiveItem) (path: FileSystemPath) =
+        use stream = fs.File.Create(FileSystemPath.value path)
+        item.WriteTo stream
+
+    let private restoreTime (fs: IFileSystem) (item: ArchiveItem) (path: FileSystemPath) =
+        fs.FileInfo.New(FileSystemPath.value path).LastWriteTimeUtc <- item.Modified.UtcDateTime
+
+    let private unpackEntry (fs: IFileSystem) (control: Operations.BatchControl) destination target item =
+        let path = landingPlace fs destination (beneath target item)
+
+        if control.IsCancelled() then
+            Error(Operations.Cancelled path)
+        elif not (within fs destination path) then
+            Error(Operations.EntryOutsideTarget path)
+        elif item.IsDirectory then
+            attempt path (fun () -> fs.Directory.CreateDirectory(FileSystemPath.value path) |> ignore)
+        else
+            control.Report path
+
+            attempt path (fun () ->
+                makeRoom fs path
+                writeContent fs item path
+                restoreTime fs item path)
+
+    let private walking step (items: seq<ArchiveItem>) =
+        use walker = items.GetEnumerator()
+
+        let rec run seen =
+            if walker.MoveNext() then
+                match step walker.Current with
+                | Ok() -> run (seen + 1)
+                | Error error -> Error error
+            else
+                Ok seen
+
+        run 0
+
+    let private unpackTarget (fs: IFileSystem) control (request: ExtractRequest) kind target =
+        ArchiveReader.items fs request.Password kind request.Archive
+        |> Seq.filter (under target)
+        |> walking (unpackEntry fs control request.Destination target)
+        |> Result.bind (function
+            | 0 -> Error(Operations.SourceNotFound(inArchive fs request.Archive target))
+            | _ -> Ok())
+
+    let private eachTarget (fs: IFileSystem) (control: Operations.BatchControl) (archive: FileSystemPath) unpack targets =
+        let named target =
+            ArchivePath.name target |> Option.defaultValue (FileSystemPath.name fs archive)
+
+        let rec run finished remaining =
+            match remaining with
+            | [] -> List.rev finished
+            | target :: rest ->
+                let item: Operations.ItemResult =
+                    { Name = named target
+                      Outcome = unpack target }
+
+                if control.IsCancelled() then
+                    List.rev (item :: finished)
+                else
+                    run (item :: finished) rest
+
+        run [] targets
+
+    let private locked (fs: IFileSystem) (request: ExtractRequest) kind =
+        request.Password.IsNone
+        && ArchiveKind.carriesPassword kind
+        && ArchiveReader.items fs None kind request.Archive |> Seq.exists _.IsEncrypted
+
+    let extract (fs: IFileSystem) control (request: ExtractRequest) (targets: ArchivePath list) =
+        match ArchiveReader.kindOf fs request.Archive with
+        | None -> Error(KindCannotBeRead request.Archive)
+        | Some kind ->
+            try
+                if locked fs request kind then
+                    Error(PasswordNeeded request.Archive)
+                else
+                    Ok(eachTarget fs control request.Archive (unpackTarget fs control request kind) targets)
+            with ex ->
+                Error(ArchiveReader.mapException request.Archive ex)
