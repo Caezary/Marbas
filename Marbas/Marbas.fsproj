@@ -24,8 +24,10 @@
         <Compile Include="FileSystem\Roots.fs" />
         <Compile Include="FileSystem\NamePattern.fs" />
         <Compile Include="FileSystem\ArchiveKind.fs" />
+        <Compile Include="FileSystem\ArchivePath.fs" />
         <Compile Include="FileSystem\ArchiveFormat.fs" />
         <Compile Include="FileSystem\ArchiveName.fs" />
+        <Compile Include="FileSystem\ArchiveListing.fs" />
         <Compile Include="FileSystem\Operations.fs" />
         <Compile Include="FileSystem\Archive.fs" />
         <Compile Include="FileSystem\EntryProperties.fs" />
@@ -123,6 +125,7 @@
 
     <ItemGroup>
       <PackageReference Include="FsToolkit.ErrorHandling" />
+      <PackageReference Include="SharpCompress" />
       <PackageReference Include="SharpZipLib" />
       <PackageReference Include="System.IO.Abstractions" />
       <PackageReference Include="Terminal.Gui" />

@@ -86,7 +86,8 @@ permanent delete is the same `Operations.delete` as before on either platform.
 | `Shift+F1` packs the targets into an archive in the other panel | same | same | suite |
 | The name is deduced from the targets, the root from the drive | `diskCcontents.zip` | `rootcontents.zip` | suite (one test per platform) |
 | Entry paths inside the archive are relative and separated by `/` | `docs\a.txt` is stored as `docs/a.txt` | already `/` | suite |
-| A backslash inside a Linux file name stays in the entry name | n/a | `a\b.txt` is one entry, not two levels | **manual** |
+| A backslash inside a Linux file name stays in the entry name | n/a | it does not: `SharpZipLib`'s `ZipEntry` cleans the name, so `a\b.txt` is written as `a/b.txt` and the archive gains a level the disk never had | **manual** (seen while writing P9.7, never run on Linux) |
+| A backslash in an entry another tool wrote is read as part of the name | same | same: `ArchiveListing` splits on `/` alone | suite |
 | The zip opens in the system's own tool | Explorer, *Extract All* | `unzip`, the desktop's archive manager | **manual** |
 | The tar.gz opens in the system's own tool | `tar -xzf` | `tar -xzf` | **manual** |
 | A password-protected zip asks for the password there | Explorer cannot open AES zips at all; 7-Zip can | `7z x` | **manual** |

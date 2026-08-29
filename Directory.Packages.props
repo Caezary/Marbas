@@ -7,6 +7,7 @@
 
   <ItemGroup Label="Application">
     <PackageVersion Include="FsToolkit.ErrorHandling" Version="5.2.0" />
+    <PackageVersion Include="SharpCompress" Version="0.50.4" />
     <PackageVersion Include="SharpZipLib" Version="1.4.2" />
     <PackageVersion Include="System.IO.Abstractions" Version="22.2.0" />
     <PackageVersion Include="Terminal.Gui" Version="2.4.17" />

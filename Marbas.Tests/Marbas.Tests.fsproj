@@ -32,8 +32,10 @@
     <Compile Include="FileSystem\SettingsTests.fs" />
     <Compile Include="FileSystem\EntryPropertiesTests.fs" />
     <Compile Include="FileSystem\ArchiveKindTests.fs" />
+    <Compile Include="FileSystem\ArchivePathTests.fs" />
     <Compile Include="FileSystem\ArchiveNameTests.fs" />
     <Compile Include="FileSystem\ArchiveTests.fs" />
+    <Compile Include="FileSystem\ArchiveListingTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
     <Compile Include="FileSystem\TrashTests.fs" />
   </ItemGroup>
@@ -172,6 +174,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="SharpCompress" />
     <PackageReference Include="SharpZipLib" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" />
     <PackageReference Include="xunit" />

@@ -1,8 +1,9 @@
 # Archives
 
 `Shift+F1` packs what the active panel points at into an archive in the other
-panel. Reading archives — unpacking one, walking into one — is the rest of
-phase 9 and is not built yet; what follows is about creating them.
+panel, and `ArchiveListing` reads one back level by level. Unpacking with
+`Shift+F2` and browsing an archive from a panel are the rest of phase 9 and are
+not built yet.
 
 ## The vocabulary
 
@@ -182,13 +183,72 @@ of what failed and the other one focused on the archive that just appeared. A
 target typed somewhere else simply finds no such entry there and the cursor
 falls to the top.
 
+## Reading
+
+**One level at a time, as the same entries a directory gives.**
+`ArchiveListing.read` takes the archive's path and an `ArchivePath` and answers
+the `Entry` list of that level — the very record `DirectoryListing.read` gives
+back — so sorting, hidden entries, marks, the search and the panel's rendering
+need no new code when a panel comes to stand inside an archive. Sizes and
+modification times come from the entries; a name is classified hidden by its
+leading dot and executable by its extension through the same two functions the
+disk listing uses, with no attributes and no unix mode to add, because an
+archive stores neither in a form every kind agrees on.
+
+**A place inside an archive is an `ArchivePath`.** It is `/`-separated, never
+rooted and never climbing: `ArchivePath.tryCreate` refuses a leading `/`, an
+empty segment and any `.` or `..`, so a path that walks out of the archive
+cannot be built in the first place. The root is the empty path, `child` walks
+in, `parent` walks out, and `segments` hands over `EntryName`s rather than
+strings, which is what makes a level inside an archive the same kind of thing
+as a directory on disk.
+
+**Directories are synthesised where the archive stores none.** Every entry key
+is flattened to segments and everything below the level being read is grouped
+by its next name. A group of one entry that sits exactly one level down and is
+not a directory is a file; anything else is a directory — whether the archive
+stored an entry for it or merely implied it by holding `docs/deep/leaf.txt`. A
+stored directory keeps its own modification time, a synthesised one takes the
+newest time below it, which is the only honest answer when the archive says
+nothing. A level that holds nothing lists nothing, and so does a level that is
+not in the archive at all: walking in is only ever offered for an entry that
+was listed. Only `/` separates a level from the next: a backslash is an
+ordinary character in a key, so an entry named `a\b.txt` is one entry and not
+two levels, which is what the format says whatever platform reads it.
+
+**Two openers, chosen by kind.** Zip, 7z and rar go through
+`ArchiveFactory.OpenArchive`, which seeks and reads the archive's own table of
+contents. The tar family goes through `ReaderFactory.OpenReader`, which
+streams: `ArchiveFactory` sees a `tar.gz` as a gzip holding one file and stops
+there, while the reader unwraps the compression and hands over the tar's own
+entries. Both read the stream `IFileSystem` opens, so listing is tested on
+`MockFileSystem` like everything else — the archives the tests read are the
+ones `Archive.write` wrote a line earlier.
+
+**A kind that cannot be read is refused before the file is opened.** `read`
+asks `ArchiveKind.recognise` and the capability table first, so `release.tar` —
+a kind whose reader arrives with P9.14 — and `notes.txt` both come back
+`KindCannotBeRead` without a byte being read. The rest of the failures are
+values as well: `ArchiveNotFound` for a file that is gone, `PasswordNeeded`
+when the library refuses the encryption, and `ArchiveDamaged` carrying the
+library's own reason for everything else, which is what a file that only looks
+like an archive produces.
+
+**A password hides content, not names.** An AES zip lists its entries without
+one — the names, sizes and times are in the clear, as the writing side already
+said — so `read` asks for no password. `PasswordNeeded` is there for the kinds
+that encrypt their headers, and a password reaches the reading side when P9.8
+extracts content that has to be decrypted.
+
 ## Libraries and licences
 
-`SharpZipLib` (MIT) today and, when 7z arrives, `SharpCompress` (MIT): both
-fully managed, so the single-file publish of P8.3 stays intact, and neither is
-copyleft. The wrappers around the native `7z.dll` were rejected on both counts —
-they are LGPL, they need a native library shipped per platform, and an LGPL
-assembly embedded in a single-file executable carries a relinking obligation.
-`SharpCompress` writes 7z in managed code (non-solid, LZMA/LZMA2), which is what
-makes it the obvious next step; what it cannot do is write an encrypted archive
-in any format, which is why zip goes through SharpZipLib even today.
+`SharpZipLib` (MIT) writes zip, `System.Formats.Tar` over a `GZipStream` writes
+tar.gz, and `SharpCompress` (MIT) reads every kind the table admits — and will
+write 7z when P9.14 arrives. All are fully managed, so the single-file publish
+of P8.3 stays intact, and none is copyleft. The wrappers around the native
+`7z.dll` were rejected on both counts — they are LGPL, they need a native
+library shipped per platform, and an LGPL assembly embedded in a single-file
+executable carries a relinking obligation. `SharpCompress` writes 7z in managed
+code (non-solid, LZMA/LZMA2), which is what makes it the obvious next step;
+what it cannot do is write an encrypted archive in any format, which is why zip
+goes through SharpZipLib for writing while SharpCompress reads it back.
