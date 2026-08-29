@@ -50,3 +50,16 @@ let read (fs: IFileSystem) (path: FileSystemPath) (level: ArchivePath) : Result<
             Ok(ArchiveReader.items fs None kind path |> List.ofSeq |> atLevel level)
         with ex ->
             Error(ArchiveReader.mapException path ex)
+
+let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
+    { Name = ParentName
+      Kind = Directory
+      Size = None
+      Modified = DateTimeOffset(fs.FileInfo.New(FileSystemPath.value path).LastWriteTime)
+      Visibility = Plain
+      Executability = NotExecutable }
+
+let listForDisplay (fs: IFileSystem) (sort: SortOrder) (hidden: HiddenEntries) path level =
+    read fs path level
+    |> Result.mapError ArchiveUnreadable
+    |> Result.map (fun entries -> order sort (parentEntry fs path :: shown hidden entries))

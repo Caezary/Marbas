@@ -21,6 +21,7 @@ type ListingError =
     | DirectoryNotFound of path: FileSystemPath
     | AccessDenied of path: FileSystemPath
     | ListingFailed of path: FileSystemPath * message: string
+    | ArchiveUnreadable of error: ArchiveError
 
 let mapException path (ex: exn) =
     match ex with

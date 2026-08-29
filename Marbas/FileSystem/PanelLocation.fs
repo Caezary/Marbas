@@ -21,10 +21,9 @@ module PanelLocation =
     let combine (fs: IFileSystem) location (name: string) =
         directory location |> Option.map (fun path -> FileSystemPath.combine fs path name)
 
-    let value (fs: IFileSystem) location =
+    let spelled (fs: IFileSystem) location =
         match location with
-        | OnDisk path -> FileSystemPath.value path
-        | InArchive(archive, level) ->
-            ArchivePath.segments level
-            |> List.fold (fun path name -> FileSystemPath.combine fs path (EntryName.value name)) archive
-            |> FileSystemPath.value
+        | OnDisk path -> path
+        | InArchive(archive, level) -> ArchivePath.spelled fs archive level
+
+    let value (fs: IFileSystem) location = spelled fs location |> FileSystemPath.value

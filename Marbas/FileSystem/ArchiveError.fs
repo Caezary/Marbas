@@ -1,0 +1,7 @@
+namespace Marbas.FileSystem
+
+type ArchiveError =
+    | KindCannotBeRead of path: FileSystemPath
+    | ArchiveNotFound of path: FileSystemPath
+    | PasswordNeeded of path: FileSystemPath
+    | ArchiveDamaged of path: FileSystemPath * message: string

@@ -147,3 +147,16 @@ before it raises an effect rather than after — `activeDirectory` and
 `targetDirectory` gate the dialogs of `F6`, `F7`, `Shift+F1` and `Shift+F4` and
 the target of `F5` and `Shift+F2` — so no popup opens on a question that cannot
 be answered. See [ARCHIVES.md](ARCHIVES.md), *Where a panel stands*.
+
+**A panel is loaded from a location, and `Enter` is where the two kinds of
+place meet.** `AppState.loadLocationFocusing` is the one loader — it reads a
+`PanelLocation` and fills the panel from whichever listing that location asks
+for — while `loadPanel` stays the disk-only convenience that `PathOpened` and
+the drive chooser use, since a root and a start path are always directories.
+`enter` matches on the panel's location first and the cursor entry second, so
+walking into a directory, into an archive, out of a level and out of an archive
+are four arms of one transition rather than four messages. `F3` is the one key
+whose effect changed shape: `ViewFile` carries a path on disk, `ViewArchiveEntry`
+carries the archive and the `ArchivePath` inside it, and `Shell` opens each
+through its own reader — the state never holds a stream. See
+[ARCHIVES.md](ARCHIVES.md), *Walking into an archive*.

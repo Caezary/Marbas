@@ -1,5 +1,6 @@
 module Marbas.Tests.FileSystem.ArchivePathTests
 
+open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
 open Marbas.Tests
@@ -9,6 +10,8 @@ let private created raw = ArchivePath.tryCreate raw |> Expect.some
 let private en = EntryName.create
 
 let private spelled path = ArchivePath.value path
+
+let private archive = FileSystemPath.create (Root.at "work/backup.zip")
 
 [<Fact>]
 let ``the root of an archive is spelled by nothing at all`` () =
@@ -61,3 +64,19 @@ let ``the parent of a path is the level above it`` () =
 [<Fact>]
 let ``the root has no level above it`` () =
     Assert.Equal(None, ArchivePath.parent ArchivePath.root)
+
+[<Fact>]
+let ``a place inside an archive is spelled below the archive`` () =
+    let fs = MockFileSystem()
+
+    let path = ArchivePath.spelled fs archive (created "docs/deep")
+
+    Assert.Equal(FileSystemPath.create (Root.at "work/backup.zip/docs/deep"), path)
+
+[<Fact>]
+let ``the root of an archive is spelled by the archive itself`` () =
+    let fs = MockFileSystem()
+
+    let path = ArchivePath.spelled fs archive ArchivePath.root
+
+    Assert.Equal(archive, path)

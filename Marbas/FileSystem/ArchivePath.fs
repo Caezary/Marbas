@@ -1,6 +1,7 @@
 namespace Marbas.FileSystem
 
 open System
+open System.IO.Abstractions
 
 type ArchivePath = private ArchivePath of EntryName list
 
@@ -42,3 +43,7 @@ module ArchivePath =
         match segments path |> List.rev with
         | [] -> None
         | _ :: above -> Some(ArchivePath(List.rev above))
+
+    let spelled (fs: IFileSystem) (archive: FileSystemPath) path =
+        segments path
+        |> List.fold (fun below name -> FileSystemPath.combine fs below (EntryName.value name)) archive

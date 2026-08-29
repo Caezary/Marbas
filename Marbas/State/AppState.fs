@@ -144,12 +144,17 @@ let backspaceSearch side state =
             | Some text -> searchFor (SearchText.backspace text) p)
         state
 
-let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state =
+let private listing (fs: IFileSystem) sort hidden location =
+    match location with
+    | OnDisk path -> DirectoryListing.listForDisplay fs sort hidden path
+    | InArchive(archive, level) -> ArchiveListing.listForDisplay fs sort hidden archive level
+
+let loadLocationFocusing (fs: IFileSystem) side (location: PanelLocation) focus state =
     let previous = panel side state
     let sort = previous.Sort
     let hidden = previous.Hidden
 
-    DirectoryListing.listForDisplay fs sort hidden path
+    listing fs sort hidden location
     |> Result.map (fun entries ->
         let cursor =
             match focus with
@@ -159,7 +164,7 @@ let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state 
         updatePanel
             side
             (fun _ ->
-                { Path = OnDisk path
+                { Path = location
                   Entries = entries
                   Cursor = cursor
                   Selected = Set.empty
@@ -167,6 +172,9 @@ let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state 
                   Hidden = hidden
                   Search = None })
             state)
+
+let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state =
+    loadLocationFocusing fs side (OnDisk path) focus state
 
 let loadPanel fs side (path: FileSystemPath) state =
     loadPanelFocusing fs side path Top state
@@ -277,6 +285,7 @@ let private asOperationError error =
     | DirectoryNotFound path -> Operations.SourceNotFound path
     | DirectoryListing.AccessDenied path -> Operations.AccessDenied path
     | ListingFailed(path, message) -> Operations.OperationFailed(path, message)
+    | ArchiveUnreadable error -> Operations.ArchiveFailed error
 
 let operationTargets panel =
     match selectedEntries panel with
@@ -305,6 +314,19 @@ let cursorExecutablePath (fs: IFileSystem) panel =
     |> Option.filter (fun entry -> entry.Kind = File && entry.Executability = Executable)
     |> Option.bind (entryPath fs panel)
 
+let private entryInArchive panel (entry: Entry) =
+    match panel.Path with
+    | OnDisk _ -> None
+    | InArchive(archive, level) -> Some(archive, ArchivePath.child level entry.Name)
+
+let cursorEntryInArchive panel =
+    cursorEntry panel |> Option.filter selectable |> Option.bind (entryInArchive panel)
+
+let cursorFileInArchive panel =
+    cursorEntry panel
+    |> Option.filter (fun entry -> entry.Kind = File)
+    |> Option.bind (entryInArchive panel)
+
 let cursorDirectoryPath (fs: IFileSystem) panel =
     cursorEntry panel
     |> Option.filter (fun entry -> entry.Kind = Directory && selectable entry)
@@ -322,12 +344,9 @@ let deleteScope (fs: IFileSystem) panel =
 let private reloadFocusing (fs: IFileSystem) side focus keep state =
     let previous = panel side state
 
-    match directoryOf previous with
-    | None -> Ok state
-    | Some path ->
-        loadPanelFocusing fs side path focus state
-        |> Result.mapError asOperationError
-        |> Result.map (updatePanel side (keep previous))
+    loadLocationFocusing fs side previous.Path focus state
+    |> Result.mapError asOperationError
+    |> Result.map (updatePanel side (keep previous))
 
 let private reload (fs: IFileSystem) side keep state =
     reloadFocusing fs side (cursorFocus (panel side state)) keep state
@@ -385,11 +404,8 @@ let makeFile (fs: IFileSystem) side directory name state : Result<AppState * Fil
 let refresh (fs: IFileSystem) state =
     let panel = activePanel state
 
-    match directoryOf panel with
-    | None -> Ok state
-    | Some path ->
-        loadPanelFocusing fs state.Active path (cursorFocus panel) state
-        |> Result.map (updatePanel state.Active (keepSurviving panel.Selected))
+    loadLocationFocusing fs state.Active panel.Path (cursorFocus panel) state
+    |> Result.map (updatePanel state.Active (keepSurviving panel.Selected))
 
 let applyProperties (fs: IFileSystem) (properties: EntryProperties) state =
     EntryProperties.write fs properties
@@ -398,13 +414,10 @@ let applyProperties (fs: IFileSystem) (properties: EntryProperties) state =
 let toggleHidden (fs: IFileSystem) side state =
     let previous = panel side state
 
-    match directoryOf previous with
-    | None -> Ok state
-    | Some path ->
-        state
-        |> updatePanel side (fun p -> { p with Hidden = HiddenEntries.toggle p.Hidden })
-        |> loadPanelFocusing fs side path (cursorFocus previous)
-        |> Result.map (updatePanel side (keepSurviving previous.Selected))
+    state
+    |> updatePanel side (fun p -> { p with Hidden = HiddenEntries.toggle p.Hidden })
+    |> loadLocationFocusing fs side previous.Path (cursorFocus previous)
+    |> Result.map (updatePanel side (keepSurviving previous.Selected))
 
 let private navigateUp (fs: IFileSystem) side (from: FileSystemPath) state =
     match FileSystemPath.parent fs from with
@@ -417,13 +430,38 @@ let private navigateInto (fs: IFileSystem) side (parentPath: FileSystemPath) nam
     let targetPath = FileSystemPath.combine fs parentPath (EntryName.value name)
     loadPanelFocusing fs side targetPath Top state
 
+let private openArchive (fs: IFileSystem) side (archive: FileSystemPath) state =
+    match ArchiveReader.kindOf fs archive with
+    | None -> Ok state
+    | Some _ -> loadLocationFocusing fs side (InArchive(archive, ArchivePath.root)) Top state
+
+let private leaveArchive (fs: IFileSystem) side (archive: FileSystemPath) state =
+    let focus = archive |> FileSystemPath.name fs |> ByName
+    loadPanelFocusing fs side (FileSystemPath.directory fs archive) focus state
+
+let private climbLevel (fs: IFileSystem) side archive level state =
+    match ArchivePath.parent level, ArchivePath.name level with
+    | Some above, Some left -> loadLocationFocusing fs side (InArchive(archive, above)) (ByName left) state
+    | _ -> leaveArchive fs side archive state
+
+let private enterOnDisk (fs: IFileSystem) side path (entry: Entry) state =
+    match entry.Kind with
+    | Directory when entry.Name = DirectoryListing.ParentName -> navigateUp fs side path state
+    | Directory -> navigateInto fs side path entry.Name state
+    | File -> openArchive fs side (FileSystemPath.combine fs path (EntryName.value entry.Name)) state
+
+let private enterInArchive (fs: IFileSystem) side archive level (entry: Entry) state =
+    match entry.Kind with
+    | Directory when entry.Name = DirectoryListing.ParentName -> climbLevel fs side archive level state
+    | Directory -> loadLocationFocusing fs side (InArchive(archive, ArchivePath.child level entry.Name)) Top state
+    | File -> Ok state
+
 let enter (fs: IFileSystem) state =
     let panel = activePanel state
 
-    match directoryOf panel, panel.Entries |> List.tryItem panel.Cursor with
-    | Some path, Some entry when entry.Kind = Directory ->
-        if entry.Name = DirectoryListing.ParentName then
-            navigateUp fs state.Active path state
-        else
-            navigateInto fs state.Active path entry.Name state
-    | _ -> Ok state
+    match cursorEntry panel with
+    | None -> Ok state
+    | Some entry ->
+        match panel.Path with
+        | OnDisk path -> enterOnDisk fs state.Active path entry state
+        | InArchive(archive, level) -> enterInArchive fs state.Active archive level entry state

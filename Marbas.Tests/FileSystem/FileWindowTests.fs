@@ -26,6 +26,31 @@ let private failedPath error =
     | ReadFailed(path, _) -> Some path
     | _ -> None
 
+let private archive = at "backup/data.zip"
+
+let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+
+let private request password =
+    { Path = fp archive
+      Format = ArchiveFormat.ofKind Zip |> Expect.some
+      Compression = Normal
+      Password = password }
+
+let private packedInto password =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "work/notes.txt", MockFileData "notes")
+    fs.AddFile(at "work/docs/inner.txt", MockFileData "inner")
+
+    Archive.write fs Operations.unattended (request password) [ fp (at "work/notes.txt"); fp (at "work/docs") ]
+    |> ignore
+
+    fs
+
+let private packedArchive () = packedInto None
+
+let private lockedArchive secret = packedInto (ArchivePassword.tryCreate secret)
+
 [<Fact>]
 let ``a source knows the path and length of its file`` () =
     let fs = withFile (MockFileData "first\nsecond")
@@ -122,3 +147,49 @@ let ``a file that cannot be opened is an error value, not an exception`` () =
     let failure = FileWindow.openFile fs (fp notes) |> Expect.error
 
     Assert.Equal(Some(fp notes), failedPath failure)
+
+[<Fact>]
+let ``an entry of an archive is opened under the name of its place in it`` () =
+    let fs = packedArchive ()
+
+    use source = FileWindow.openEntry fs None (fp archive) (inside "docs/inner.txt") |> Expect.ok
+
+    Assert.Equal(fp (at "backup/data.zip/docs/inner.txt"), source.Path)
+    Assert.Equal("inner", Encoding.ASCII.GetString(source.Read(0L, 5)))
+
+[<Fact>]
+let ``an entry at the top of an archive is opened as well`` () =
+    let fs = packedArchive ()
+
+    use source = FileWindow.openEntry fs None (fp archive) (inside "notes.txt") |> Expect.ok
+
+    Assert.Equal(5L, source.Length)
+    Assert.Equal("notes", Encoding.ASCII.GetString(source.Read(0L, 5)))
+
+[<Fact>]
+let ``an entry the archive does not hold is refused under its own name`` () =
+    let fs = packedArchive ()
+
+    let error = FileWindow.openEntry fs None (fp archive) (inside "gone.txt") |> Expect.error
+
+    Assert.Equal(ArchiveNotFound(fp (at "backup/data.zip/gone.txt")), error)
+
+[<Fact>]
+let ``an entry of a kind that cannot be read is refused before the file is opened`` () =
+    let fs = packedArchive ()
+    fs.AddFile(at "backup/data.tar", MockFileData "whatever")
+
+    let error =
+        FileWindow.openEntry fs None (fp (at "backup/data.tar")) (inside "notes.txt") |> Expect.error
+
+    Assert.Equal(KindCannotBeRead(fp (at "backup/data.tar")), error)
+
+[<Fact>]
+let ``an entry of a locked archive is opened with the password`` () =
+    let fs = lockedArchive "opensesame"
+
+    use source =
+        FileWindow.openEntry fs (ArchivePassword.tryCreate "opensesame") (fp archive) (inside "notes.txt")
+        |> Expect.ok
+
+    Assert.Equal("notes", Encoding.ASCII.GetString(source.Read(0L, 5)))

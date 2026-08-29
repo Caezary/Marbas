@@ -155,9 +155,6 @@ module Archive =
         sources
         |> List.exists (fun source -> source = target || within fs source target)
 
-    let private inArchive (fs: IFileSystem) (archive: FileSystemPath) (target: ArchivePath) =
-        FileSystemPath.combine fs archive (ArchivePath.value target)
-
     let private under (target: ArchivePath) (item: ArchiveItem) =
         let names = ArchivePath.segments target
 
@@ -220,7 +217,7 @@ module Archive =
         |> Seq.filter (under target)
         |> walking (unpackEntry fs control request.Destination target)
         |> Result.bind (function
-            | 0 -> Error(Operations.SourceNotFound(inArchive fs request.Archive target))
+            | 0 -> Error(Operations.SourceNotFound(ArchivePath.spelled fs request.Archive target))
             | _ -> Ok())
 
     let private eachTarget (fs: IFileSystem) (control: Operations.BatchControl) (archive: FileSystemPath) unpack targets =

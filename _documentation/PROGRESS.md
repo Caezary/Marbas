@@ -128,8 +128,22 @@ directory before they open a dialog, and a reload leaves such a panel as it
 stands. The panel title spells a place inside an archive
 `C:\work\backup.zip\docs`, and the session file keeps the directory *holding*
 the archive, so a restart lands somewhere that is certainly still there. On
-disk nothing changed. What is missing now is walking into an archive from a
-panel, and the operations that change one.
+disk nothing changed.
+
+**`Enter` now walks into an archive.** A readable archive under the cursor
+opens in the panel it was pressed in and lists its top level like a directory —
+`..` first, then what the archive holds, in the panel's own sort order and
+concealing what it conceals. Directories inside walk in, `..` walks back out a
+level with the cursor on the level just left, and `..` at the top leaves the
+archive with the cursor back on the archive file. The title says where the
+panel stands (`C:\work\backup.zip\docs`), `Ctrl+R` re-reads the archive,
+marking, the search, the colours and the footer work as they always did, and a
+damaged archive says so in a message box instead of opening. `F3` views a file
+inside an archive by streaming that entry into the viewer — asking for the
+password first when the archive carries one — while `F4` is the one key that
+refuses, because editing an entry in place would mean rewriting the archive
+when the editor returns. What is missing now is copying out of an archive and
+the operations that change one.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -154,7 +168,7 @@ written up as the checklist in
 | 6 — Viewing files | P6.1–P6.2 | done |
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
-| 9 — Archives | P9.1–P9.10 | `Shift+F1` packs, `Shift+F2` unpacks, a panel can say it stands inside an archive; browsing one to come |
+| 9 — Archives | P9.1–P9.11 | `Shift+F1` packs, `Shift+F2` unpacks, `Enter` browses an archive; copying out of one and changing one to come |
 
 ## What works today
 
@@ -211,6 +225,18 @@ written up as the checklist in
   has that marker turned off.
 - `Enter` descends into the directory under the cursor. `Enter` on `..` goes
   up and places the cursor on the directory just left.
+- `Enter` on an archive the capability table calls readable — zip and tar.gz
+  proven by the suite, 7z and rar through the very same reader — opens it in
+  the panel as though it were a directory, and the title says so
+  (`C:\work\backup.zip\docs`). Levels inside walk in and out the same way, `..`
+  at the top level leaves the archive with the cursor back on the archive file,
+  and `Ctrl+R` re-reads it. Sorting, hidden entries, marking, the search and
+  the colours work exactly as they do on disk, since what a level of an archive
+  answers with is the same list of entries a directory answers with. `F3` views
+  a file inside an archive, asking once for the password if the archive carries
+  one; `F4` refuses with a message, because an entry cannot be edited in place.
+  The operations that write — `F5`, `F6`, `F7`, `F8`, `Shift+F1` — do nothing
+  from inside an archive yet.
 - Unreadable or vanished directories raise a message box; the panel stays put.
 - `Ctrl+R` reloads the active panel, keeping the cursor on the same entry even
   when its position changed.

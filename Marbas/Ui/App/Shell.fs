@@ -102,6 +102,13 @@ let private unpackTargets (deps: Dependencies) targetDirectory (archive: FileSys
         |> fun candidates -> Operations.approve deps.FileSystem (askOverwrite deps) candidates targetDirectory
         |> List.map named
 
+let private showEntry (deps: Dependencies) archive password entry =
+    match FileWindow.openEntry deps.FileSystem password archive entry with
+    | Ok source ->
+        use source = source
+        deps.ShowFile source
+    | Error error -> deps.ReportError ArchiveErrorMessage.Title (ArchiveErrorMessage.describe error)
+
 let private unpackPlan (deps: Dependencies) targetDirectory archive =
     let planned password =
         match unpackTargets deps targetDirectory archive with
@@ -122,7 +129,7 @@ let private unpackPlan (deps: Dependencies) targetDirectory archive =
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
     | ReportListingError error ->
-        deps.ReportError ListingErrorMessage.Title (ListingErrorMessage.describe error)
+        deps.ReportError (ListingErrorMessage.title error) (ListingErrorMessage.describe error)
     | ReportOperationError error ->
         deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describe error)
     | ReportItemFailures failures ->
@@ -173,6 +180,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
             use source = source
             deps.ShowFile source
         | Error error -> deps.ReportError ContentErrorMessage.Title (ContentErrorMessage.describe error)
+    | ViewArchiveEntry(archive, entry) ->
+        match passwordFor deps archive with
+        | NotGiven -> ()
+        | NotNeeded -> showEntry deps archive None entry
+        | Given password -> showEntry deps archive (Some password) entry
     | EditFile(path, editor) -> deps.RunEditor editor path |> EditFinished |> dispatch
     | ShowProperties properties ->
         match deps.EditProperties properties with

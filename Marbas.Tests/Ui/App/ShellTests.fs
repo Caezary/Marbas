@@ -886,3 +886,112 @@ let ``a password prompt answered with nothing leaves the archive alone`` () =
 
     Assert.Empty sent
     Assert.Empty(fs.Directory.GetFiles(at "backup"))
+
+[<Fact>]
+let ``an entry of an archive is handed over under the name of its place in it`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "work/notes.txt", MockFileData "first\r\nsecond")
+
+    Archive.write
+        fs
+        Operations.unattended
+        { Path = fp (at "backup/data.zip")
+          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Compression = Normal
+          Password = None }
+        [ fp (at "work/notes.txt") ]
+    |> ignore
+
+    let mutable shown = ("", [])
+
+    let readOut (source: FileWindow.Source) =
+        let index = LineIndex.Index source
+        index.ScanAll()
+        let lines = [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
+        shown <- (FileSystemPath.value source.Path, lines)
+
+    let deps = { noDeps () with FileSystem = fs; ShowFile = readOut }
+    let entry = ArchivePath.tryCreate "notes.txt" |> Expect.some
+
+    Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/data.zip"), entry))
+
+    Assert.Equal(at "backup/data.zip/notes.txt", fst shown)
+    Assert.Equal<string list>([ "first"; "second" ], snd shown)
+
+[<Fact>]
+let ``an entry that cannot be read is reported under the archive title`` () =
+    let mutable shown = false
+    let mutable reported = ("", "")
+    let entry = ArchivePath.tryCreate "notes.txt" |> Expect.some
+
+    let deps =
+        { noDeps () with
+            ShowFile = fun _ -> shown <- true
+            ReportError = fun title message -> reported <- (title, message) }
+
+    Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/gone.zip"), entry))
+
+    Assert.False shown
+    Assert.Equal(ArchiveErrorMessage.Title, fst reported)
+    Assert.Contains("gone.zip", snd reported)
+
+[<Fact>]
+let ``a locked archive asks for its password before an entry is shown`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "work/notes.txt", MockFileData "secret text")
+
+    Archive.write
+        fs
+        Operations.unattended
+        { Path = fp (at "backup/locked.zip")
+          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Compression = Normal
+          Password = ArchivePassword.tryCreate "opensesame" }
+        [ fp (at "work/notes.txt") ]
+    |> ignore
+
+    let mutable asked = 0
+    let mutable shown = ""
+    let entry = ArchivePath.tryCreate "notes.txt" |> Expect.some
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            AskPassword = fun _ _ -> asked <- asked + 1; Some "opensesame"
+            ShowFile = fun source -> shown <- Text.Encoding.ASCII.GetString(source.Read(0L, 6)) }
+
+    Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/locked.zip"), entry))
+
+    Assert.Equal(1, asked)
+    Assert.Equal("secret", shown)
+
+[<Fact>]
+let ``a locked archive whose password is not given shows nothing`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "work/notes.txt", MockFileData "secret text")
+
+    Archive.write
+        fs
+        Operations.unattended
+        { Path = fp (at "backup/locked.zip")
+          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Compression = Normal
+          Password = ArchivePassword.tryCreate "opensesame" }
+        [ fp (at "work/notes.txt") ]
+    |> ignore
+
+    let mutable shown = false
+    let entry = ArchivePath.tryCreate "notes.txt" |> Expect.some
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            AskPassword = fun _ _ -> None
+            ShowFile = fun _ -> shown <- true }
+
+    Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/locked.zip"), entry))
+
+    Assert.False shown

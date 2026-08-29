@@ -14,12 +14,6 @@ type ArchiveItem =
       IsEncrypted: bool
       WriteTo: Stream -> unit }
 
-type ArchiveError =
-    | KindCannotBeRead of path: FileSystemPath
-    | ArchiveNotFound of path: FileSystemPath
-    | PasswordNeeded of path: FileSystemPath
-    | ArchiveDamaged of path: FileSystemPath * message: string
-
 module ArchiveReader =
 
     let mapException path (ex: exn) =

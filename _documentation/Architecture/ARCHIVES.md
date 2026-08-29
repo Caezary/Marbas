@@ -1,10 +1,9 @@
 # Archives
 
 `Shift+F1` packs what the active panel points at into an archive in the other
-panel, and `Shift+F2` empties an archive into it. A panel now says where it
-stands with a type that can name a place inside an archive as well as a
-directory on disk; walking into one, and the operations that change one, are
-the rest of phase 9 and are not built yet.
+panel, `Shift+F2` empties an archive into it, and `Enter` walks into one as
+though it were a directory. The operations that change an archive from a panel
+standing inside it are the rest of phase 9 and are not built yet.
 
 ## The vocabulary
 
@@ -392,6 +391,88 @@ that is what goes into the settings file when the app quits. An archive can be
 deleted, renamed or moved between two runs, so a panel that was inside
 `backup.zip` comes back in the directory that held it rather than failing to
 open something that is gone.
+
+**One place spells a place inside an archive.** `ArchivePath.spelled` folds the
+level's names onto the archive's own path with the platform's separator, so
+`C:\work\backup.zip\docs\deep` is written the same way by the panel title, by
+the viewer's header, by the failure of an extraction target and by the message
+that refuses `F4`. Before P9.11 the extraction spelled its own with the
+archive's `/`-separated value; now there is one function and one answer.
+
+## Walking into an archive
+
+**A panel is listed by asking its location, and both answers are the same
+list.** `AppState.loadLocationFocusing` takes a `PanelLocation` and reads it
+through `DirectoryListing.listForDisplay` or `ArchiveListing.listForDisplay`;
+everything after that — the cursor to focus, the marks cleared, the sort and
+the hidden setting carried over from what the panel was — is one code path for
+both. `ArchiveListing.listForDisplay` is the mirror of the directory one: it
+conceals what the panel conceals, orders by the panel's sort, and puts a `..`
+in front carrying the archive file's own modification time. That entry is
+always there — inside an archive there is always a way out, unlike a drive root
+on disk, which has none.
+
+**A listing that fails is one error type, whatever failed.**
+`ListingError` gained `ArchiveUnreadable`, which carries the `ArchiveError`
+whole rather than flattening it to a string, the way `Operations.ArchiveFailed`
+already did. `ListingErrorMessage` words it by delegating to
+`ArchiveErrorMessage`, and `ListingErrorMessage.title` picks the caption —
+"Cannot open directory" for a directory, "Archive" for an archive — so a
+damaged zip explains itself under the right heading and `AppState` still has
+one error to map. `ArchiveError` moved out of `ArchiveReader` into a file of
+its own for this: the type is a value like `ContentError`, and it has to be in
+scope before `DirectoryListing`.
+
+**`Enter` decides from where the panel stands and what the cursor is on.** On
+disk a directory is descended into and `..` climbs, as before; a *file* is now
+offered to `ArchiveReader.kindOf`, and a kind that can be read is opened as
+`InArchive(file, ArchivePath.root)`. A file that is no readable archive still
+does nothing at all — `Enter` on a text file is not an error. Inside an
+archive, a directory walks a level in, `..` walks a level out with the cursor
+on the level just left, and `..` at the top leaves the archive for the
+directory holding it with the cursor on the archive file — the same courtesy
+climbing out of a directory has always paid. A file inside an archive opens
+nothing: an archive inside an archive would have to be unpacked to be read, and
+that is not a promise this phase makes.
+
+**Everything the panel already did keeps working, because nothing else
+changed.** The entries are `Entry` values, so sorting, the hidden toggle,
+marking, the search, the colours, the footer and the status line need no
+archive-specific code. `Ctrl+R` re-reads the archive through the same reload as
+a directory, and `Alt+F1`/`Alt+F2` are the way out to a drive when the panel is
+inside one.
+
+**`F3` streams an entry into the viewer.** `ViewRequested` raises `ViewFile`
+for a file on disk and `ViewArchiveEntry` for one inside an archive;
+`FileWindow.openEntry` walks the archive to the entry, writes it into a
+`MemoryStream` and hands the viewer a `Source` labelled with the entry's
+spelled path, so the header names `C:\work\backup.zip\docs\notes.txt` and every
+viewer command works as it does on disk. The content is decompressed whole,
+which the windowed reading of a file on disk deliberately avoids: an archive
+entry has no random access to offer, so the choice is buffering it or not
+showing it. `Shell` asks for a password first when `Archive.needsPassword` says
+the archive carries one, exactly as `Shift+F2` does, and an entry the archive
+no longer holds comes back as `ArchiveNotFound` under its own spelled name.
+
+**`F4` is the one key that refuses.** Editing an entry in place would mean
+rewriting the archive when the editor returns — and knowing when it returned,
+which a detached editor does not promise. `EditRequested` therefore answers
+`ArchiveEntryNotEditable` for any entry inside an archive, an `OperationError`
+like every other, worded "cannot be edited inside the archive. Unpack it
+first." `..` refuses nothing, because it is not an entry to edit.
+
+**Which kinds are proven to browse, and which are taken on the reader's
+word.** The tests write a zip and a tar.gz on `MockFileSystem` and walk into
+both, which exercises each of the two openers `ArchiveReader` picks between —
+the seeking one and the streaming one. 7z and rar go through the seeking
+opener, the same one zip uses, and nothing above `ArchiveReader` asks what kind
+it is holding; what is missing is a checked-in archive to read, which is what
+P9.14 brings along with the rest of the readable set.
+
+**What the operations do inside an archive is still P9.12 and P9.13.** `F5`,
+`F6`, `F7`, `F8` and `Shift+F1` ask the location for a disk directory, find
+none, and do nothing — the gates P9.10 put in. Nothing is silently half-done;
+the keys simply have no work to offer yet.
 
 ## Libraries and licences
 

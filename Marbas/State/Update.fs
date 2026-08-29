@@ -64,6 +64,7 @@ type Effect =
     | ExtractTargets of archives: FileSystemPath list * targetDirectory: FileSystemPath
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
+    | ViewArchiveEntry of archive: FileSystemPath * entry: ArchivePath
     | EditFile of path: FileSystemPath * editor: EditorPath option
     | ShowProperties of EntryProperties
     | ShowSettings of EditorSettings * candidate: EditorPath option
@@ -200,19 +201,26 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | Error error -> request state (ReportOperationError error)
         | Ok() -> finishRename fs newName state |> applyOperation state
     | ViewRequested ->
-        match cursorFilePath fs (activePanel state) with
-        | None -> stay state
-        | Some path -> request state (ViewFile path)
+        let target = activePanel state
+
+        match cursorFilePath fs target, cursorFileInArchive target with
+        | Some path, _ -> request state (ViewFile path)
+        | _, Some(archive, entry) -> request state (ViewArchiveEntry(archive, entry))
+        | None, None -> stay state
     | EditRequested ->
         let target = activePanel state
 
-        match cursorFilePath fs target, cursorDirectoryPath fs target with
-        | Some path, _ -> request state (EditFile(path, editorFor (FileSystemPath.name fs path) state))
-        | _, Some path ->
-            match EntryProperties.read fs path with
-            | Ok properties -> request state (ShowProperties properties)
-            | Error error -> request state (ReportOperationError error)
-        | None, None -> stay state
+        match cursorEntryInArchive target with
+        | Some(archive, entry) ->
+            request state (ReportOperationError(Operations.ArchiveEntryNotEditable(ArchivePath.spelled fs archive entry)))
+        | None ->
+            match cursorFilePath fs target, cursorDirectoryPath fs target with
+            | Some path, _ -> request state (EditFile(path, editorFor (FileSystemPath.name fs path) state))
+            | _, Some path ->
+                match EntryProperties.read fs path with
+                | Ok properties -> request state (ShowProperties properties)
+                | Error error -> request state (ReportOperationError error)
+            | None, None -> stay state
     | NewFileRequested ->
         match activeDirectory state with
         | None -> stay state

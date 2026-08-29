@@ -79,6 +79,11 @@ let private names entries =
 let private named entries raw =
     entries |> List.find (fun entry -> entry.Name = en raw)
 
+let private unreadable error =
+    match error with
+    | ArchiveUnreadable inner -> Some inner
+    | _ -> None
+
 let private damagedPath error =
     match error with
     | ArchiveDamaged(path, _) -> Some path
@@ -263,3 +268,57 @@ let ``a file that only looks like an archive is damaged`` () =
     let error = refused fs (at "backup/broken.zip")
 
     Assert.Equal(Some(fp (at "backup/broken.zip")), damagedPath error)
+
+let private displayed (fs: IFileSystem) hidden path level =
+    ArchiveListing.listForDisplay fs SortOrder.byName hidden (fp path) level |> Expect.ok
+
+[<Fact>]
+let ``a level shown in a panel opens with the way out`` () =
+    let fs = packed ()
+
+    let entries = displayed fs Concealed target ArchivePath.root
+
+    Assert.Equal<string list>([ ".."; "docs"; "notes.txt" ], entries |> List.map (_.Name >> EntryName.value))
+
+[<Fact>]
+let ``a level below the top is shown with a way out of its own`` () =
+    let fs = packed ()
+
+    let entries = displayed fs Concealed target (inside "docs")
+
+    Assert.Equal<string list>(
+        [ ".."; "deep"; "empty"; "inner.txt" ],
+        entries |> List.map (_.Name >> EntryName.value)
+    )
+
+[<Fact>]
+let ``the way out of an archive is a directory carrying the archive's own time`` () =
+    let fs = packed ()
+
+    let parent = displayed fs Concealed target ArchivePath.root |> List.head
+
+    Assert.Equal(Directory, parent.Kind)
+    Assert.Equal(DateTimeOffset(fs.FileInfo.New(target).LastWriteTime), parent.Modified)
+
+[<Fact>]
+let ``a hidden entry inside an archive is concealed until it is asked for`` () =
+    let fs = tree ()
+    fs.AddFile(at "work/.secret", MockFileData "hidden")
+    Archive.write fs Operations.unattended (request zip target) [ fp (at "work/.secret") ] |> ignore
+
+    let concealed = displayed fs Concealed target ArchivePath.root
+    let shown = displayed fs Shown target ArchivePath.root
+
+    Assert.Equal<string list>([ ".." ], concealed |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<string list>([ ".."; ".secret" ], shown |> List.map (_.Name >> EntryName.value))
+
+[<Fact>]
+let ``a level of an archive that cannot be read fails the listing`` () =
+    let fs = tree ()
+    fs.AddFile(at "backup/broken.zip", MockFileData "not an archive at all")
+
+    let error =
+        ArchiveListing.listForDisplay fs SortOrder.byName Concealed (fp (at "backup/broken.zip")) ArchivePath.root
+        |> Expect.error
+
+    Assert.Equal(Some(fp (at "backup/broken.zip")), unreadable error |> Option.bind damagedPath)

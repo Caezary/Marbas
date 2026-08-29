@@ -33,6 +33,37 @@ let private probeOf (stream: Stream) =
     stream.ReadExactly(probe, 0, length)
     probe
 
+let private contentOf (fs: IFileSystem) password kind archive (wanted: EntryName list) =
+    let content = new MemoryStream()
+
+    let found =
+        ArchiveReader.items fs password kind archive
+        |> Seq.fold
+            (fun found (item: ArchiveItem) ->
+                if not found && not item.IsDirectory && item.Segments = wanted then
+                    item.WriteTo content
+                    true
+                else
+                    found)
+            false
+
+    if found then Some content else None
+
+let openEntry (fs: IFileSystem) password (archive: FileSystemPath) (entry: ArchivePath) : Result<Source, ArchiveError> =
+    let spelled = ArchivePath.spelled fs archive entry
+
+    match ArchiveReader.kindOf fs archive with
+    | None -> Error(KindCannotBeRead archive)
+    | Some kind ->
+        try
+            match contentOf fs password kind archive (ArchivePath.segments entry) with
+            | None -> Error(ArchiveNotFound spelled)
+            | Some content ->
+                content.Position <- 0L
+                Ok(new Source(spelled, content, TextEncoding.detect (probeOf content)))
+        with ex ->
+            Error(ArchiveReader.mapException archive ex)
+
 let openFile (fs: IFileSystem) path : Result<Source, ContentError> =
     match FileSystemPath.kind fs path with
     | FileEntry ->
