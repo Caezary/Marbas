@@ -33,6 +33,7 @@
     <Compile Include="FileSystem\EntryPropertiesTests.fs" />
     <Compile Include="FileSystem\ArchiveKindTests.fs" />
     <Compile Include="FileSystem\ArchivePathTests.fs" />
+    <Compile Include="FileSystem\PanelLocationTests.fs" />
     <Compile Include="FileSystem\ArchiveNameTests.fs" />
     <Compile Include="FileSystem\ArchiveTests.fs" />
     <Compile Include="FileSystem\ArchiveReaderTests.fs" />
@@ -51,6 +52,7 @@
     <Compile Include="State\SortTests.fs" />
     <Compile Include="State\HiddenTests.fs" />
     <Compile Include="State\SettingsTests.fs" />
+    <Compile Include="State\ArchivePanelTests.fs" />
     <Compile Include="State\SelectionPatternTests.fs" />
     <Compile Include="State\MkdirTests.fs" />
     <Compile Include="State\DeleteTests.fs" />

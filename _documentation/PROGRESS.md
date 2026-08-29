@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-08-28. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-29. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
@@ -116,8 +116,20 @@ typed, and every top-level entry already in the target directory asks the
 ordinary five-answer overwrite question. A target that is no archive Marbas can
 read — a plain file, or a `tar` whose reader has not landed yet — reports itself
 in the failures dialog instead of doing nothing, and both panels are read again
-afterwards. What is missing now is walking into an archive from a panel, and
-the operations that change one.
+afterwards.
+
+**A panel now says where it stands with a type, not with a path.** A
+`PanelLocation` is a directory on disk or a level inside an archive, and
+`PanelState.Path` is one of those. Nothing puts a panel inside an archive yet —
+that is the next task — but every operation had to stop assuming a disk path
+and ask the location for one instead: the operation paths of an archive panel
+are empty, `F5`, `F6`, `F7`, `Shift+F1`, `Shift+F2` and `Shift+F4` check for a
+directory before they open a dialog, and a reload leaves such a panel as it
+stands. The panel title spells a place inside an archive
+`C:\work\backup.zip\docs`, and the session file keeps the directory *holding*
+the archive, so a restart lands somewhere that is certainly still there. On
+disk nothing changed. What is missing now is walking into an archive from a
+panel, and the operations that change one.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -142,7 +154,7 @@ written up as the checklist in
 | 6 — Viewing files | P6.1–P6.2 | done |
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
-| 9 — Archives | P9.1–P9.9 | `Shift+F1` packs, `Shift+F2` unpacks; browsing an archive to come |
+| 9 — Archives | P9.1–P9.10 | `Shift+F1` packs, `Shift+F2` unpacks, a panel can say it stands inside an archive; browsing one to come |
 
 ## What works today
 

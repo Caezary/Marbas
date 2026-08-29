@@ -29,7 +29,7 @@ type DeleteMode =
     | Permanently
 
 type PanelState =
-    { Path: FileSystemPath
+    { Path: PanelLocation
       Entries: Entry list
       Cursor: int
       Selected: Set<EntryName>
@@ -49,7 +49,7 @@ type FocusTarget =
     | ByName of EntryName
 
 let private panelFrom (settings: PanelSettings) =
-    { Path = settings.Path
+    { Path = OnDisk settings.Path
       Entries = []
       Cursor = 0
       Selected = Set.empty
@@ -66,14 +66,14 @@ let fromSettings (settings: Settings) =
 
 let create (path: FileSystemPath) = fromSettings (Settings.forPath path)
 
-let private panelSettings (p: PanelState) : PanelSettings =
-    { Path = p.Path
+let private panelSettings (fs: IFileSystem) (p: PanelState) : PanelSettings =
+    { Path = PanelLocation.holding fs p.Path
       Sort = p.Sort
       Hidden = p.Hidden }
 
-let settings (state: AppState) : Settings =
-    { Left = panelSettings state.Left
-      Right = panelSettings state.Right
+let settings (fs: IFileSystem) (state: AppState) : Settings =
+    { Left = panelSettings fs state.Left
+      Right = panelSettings fs state.Right
       LastCreatedDirectory = state.LastCreatedDirectory
       Editors = state.Editors }
 
@@ -159,7 +159,7 @@ let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state 
         updatePanel
             side
             (fun _ ->
-                { Path = path
+                { Path = OnDisk path
                   Entries = entries
                   Cursor = cursor
                   Selected = Set.empty
@@ -283,31 +283,36 @@ let operationTargets panel =
     | [] -> cursorEntry panel |> Option.filter selectable |> Option.toList
     | marked -> marked
 
+let directoryOf panel = PanelLocation.directory panel.Path
+
+let activeDirectory state = directoryOf (activePanel state)
+
+let targetDirectory state = directoryOf (panel (opposite state.Active) state)
+
 let private entryPath (fs: IFileSystem) panel (entry: Entry) =
-    FileSystemPath.combine fs panel.Path (EntryName.value entry.Name)
+    PanelLocation.combine fs panel.Path (EntryName.value entry.Name)
 
 let operationPaths (fs: IFileSystem) panel =
-    operationTargets panel |> List.map (entryPath fs panel)
+    operationTargets panel |> List.choose (entryPath fs panel)
 
 let cursorFilePath (fs: IFileSystem) panel =
     cursorEntry panel
     |> Option.filter (fun entry -> entry.Kind = File)
-    |> Option.map (entryPath fs panel)
+    |> Option.bind (entryPath fs panel)
 
 let cursorExecutablePath (fs: IFileSystem) panel =
     cursorEntry panel
     |> Option.filter (fun entry -> entry.Kind = File && entry.Executability = Executable)
-    |> Option.map (entryPath fs panel)
+    |> Option.bind (entryPath fs panel)
 
 let cursorDirectoryPath (fs: IFileSystem) panel =
     cursorEntry panel
     |> Option.filter (fun entry -> entry.Kind = Directory && selectable entry)
-    |> Option.map (entryPath fs panel)
+    |> Option.bind (entryPath fs panel)
 
 let deleteScope (fs: IFileSystem) panel =
     let reachesContents =
-        operationTargets panel
-        |> List.exists (entryPath fs panel >> Operations.isNonEmptyDirectory fs)
+        operationPaths fs panel |> List.exists (Operations.isNonEmptyDirectory fs)
 
     if reachesContents then
         WithDirectoryContents
@@ -317,9 +322,12 @@ let deleteScope (fs: IFileSystem) panel =
 let private reloadFocusing (fs: IFileSystem) side focus keep state =
     let previous = panel side state
 
-    loadPanelFocusing fs side previous.Path focus state
-    |> Result.mapError asOperationError
-    |> Result.map (updatePanel side (keep previous))
+    match directoryOf previous with
+    | None -> Ok state
+    | Some path ->
+        loadPanelFocusing fs side path focus state
+        |> Result.mapError asOperationError
+        |> Result.map (updatePanel side (keep previous))
 
 let private reload (fs: IFileSystem) side keep state =
     reloadFocusing fs side (cursorFocus (panel side state)) keep state
@@ -335,13 +343,14 @@ let finishTransfer (fs: IFileSystem) results state =
 
 
 let archiveSuggestion (fs: IFileSystem) format state =
-    let source = activePanel state
+    let named directory =
+        operationTargets (activePanel state)
+        |> List.map _.Name
+        |> ArchiveName.suggest fs format directory
+        |> EntryName.value
 
-    operationTargets source
-    |> List.map _.Name
-    |> ArchiveName.suggest fs format source.Path
-    |> EntryName.value
-    |> FileSystemPath.combine fs (panel (opposite state.Active) state).Path
+    (activeDirectory state, targetDirectory state)
+    ||> Option.map2 (fun source target -> FileSystemPath.combine fs target (named source))
 
 let finishPack (fs: IFileSystem) (archive: EntryName) results state =
     reload fs state.Active (fun previous -> keepUnfinished results previous.Selected) state
@@ -351,24 +360,24 @@ let finishPack (fs: IFileSystem) (archive: EntryName) results state =
 let finishRename (fs: IFileSystem) newName state =
     reloadFocusing fs state.Active (ByName newName) (fun previous -> keepSurviving previous.Selected) state
 
-let makeDirectory (fs: IFileSystem) side name state : Result<AppState, Operations.OperationError> =
+let makeDirectory (fs: IFileSystem) side directory name state : Result<AppState, Operations.OperationError> =
     let previous = panel side state
 
-    Operations.makeDirectory fs previous.Path name
+    Operations.makeDirectory fs directory name
     |> Result.bind (fun () ->
-        loadPanelFocusing fs side previous.Path (ByName name) state
+        loadPanelFocusing fs side directory (ByName name) state
         |> Result.mapError asOperationError
         |> Result.map (updatePanel side (keepSurviving previous.Selected))
         |> Result.map (fun updated ->
             { updated with
                 LastCreatedDirectory = Some name }))
 
-let makeFile (fs: IFileSystem) side name state : Result<AppState * FileSystemPath, Operations.OperationError> =
+let makeFile (fs: IFileSystem) side directory name state : Result<AppState * FileSystemPath, Operations.OperationError> =
     let previous = panel side state
 
-    Operations.makeFile fs previous.Path name
+    Operations.makeFile fs directory name
     |> Result.bind (fun path ->
-        loadPanelFocusing fs side previous.Path (ByName name) state
+        loadPanelFocusing fs side directory (ByName name) state
         |> Result.mapError asOperationError
         |> Result.map (updatePanel side (keepSurviving previous.Selected))
         |> Result.map (fun updated -> updated, path))
@@ -376,8 +385,11 @@ let makeFile (fs: IFileSystem) side name state : Result<AppState * FileSystemPat
 let refresh (fs: IFileSystem) state =
     let panel = activePanel state
 
-    loadPanelFocusing fs state.Active panel.Path (cursorFocus panel) state
-    |> Result.map (updatePanel state.Active (keepSurviving panel.Selected))
+    match directoryOf panel with
+    | None -> Ok state
+    | Some path ->
+        loadPanelFocusing fs state.Active path (cursorFocus panel) state
+        |> Result.map (updatePanel state.Active (keepSurviving panel.Selected))
 
 let applyProperties (fs: IFileSystem) (properties: EntryProperties) state =
     EntryProperties.write fs properties
@@ -386,10 +398,13 @@ let applyProperties (fs: IFileSystem) (properties: EntryProperties) state =
 let toggleHidden (fs: IFileSystem) side state =
     let previous = panel side state
 
-    state
-    |> updatePanel side (fun p -> { p with Hidden = HiddenEntries.toggle p.Hidden })
-    |> loadPanelFocusing fs side previous.Path (cursorFocus previous)
-    |> Result.map (updatePanel side (keepSurviving previous.Selected))
+    match directoryOf previous with
+    | None -> Ok state
+    | Some path ->
+        state
+        |> updatePanel side (fun p -> { p with Hidden = HiddenEntries.toggle p.Hidden })
+        |> loadPanelFocusing fs side path (cursorFocus previous)
+        |> Result.map (updatePanel side (keepSurviving previous.Selected))
 
 let private navigateUp (fs: IFileSystem) side (from: FileSystemPath) state =
     match FileSystemPath.parent fs from with
@@ -405,10 +420,10 @@ let private navigateInto (fs: IFileSystem) side (parentPath: FileSystemPath) nam
 let enter (fs: IFileSystem) state =
     let panel = activePanel state
 
-    match panel.Entries |> List.tryItem panel.Cursor with
-    | Some entry when entry.Kind = Directory ->
+    match directoryOf panel, panel.Entries |> List.tryItem panel.Cursor with
+    | Some path, Some entry when entry.Kind = Directory ->
         if entry.Name = DirectoryListing.ParentName then
-            navigateUp fs state.Active panel.Path state
+            navigateUp fs state.Active path state
         else
-            navigateInto fs state.Active panel.Path entry.Name state
+            navigateInto fs state.Active path entry.Name state
     | _ -> Ok state

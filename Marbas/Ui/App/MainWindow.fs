@@ -19,8 +19,11 @@ let create (deps: Shell.Dependencies) =
 
     let appState = AppState.fromSettings settings
 
-    let runtime =
-        Runtime(appState, Update.step deps.FileSystem, Shell.interpret deps, AppView.render view)
+    let runtime = Runtime(
+        appState,
+        Update.step deps.FileSystem,
+        Shell.interpret deps,
+        AppView.render deps.FileSystem view)
 
     let dispatch = runtime.Dispatch
     let keyBar = FunctionKeyBar.create dispatch
@@ -28,7 +31,9 @@ let create (deps: Shell.Dependencies) =
     view.Window.Add keyBar |> ignore
 
     for side, _ in AppView.panels view do
-        dispatch (Update.PathOpened(side, (AppState.panel side appState).Path))
+        (AppState.panel side appState).Path
+        |> PanelLocation.directory
+        |> Option.iter (fun path -> dispatch (Update.PathOpened(side, path)))
 
     let host: PanelWiring.Host =
         { Dispatch = dispatch

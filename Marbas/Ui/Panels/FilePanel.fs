@@ -1,6 +1,7 @@
 module Marbas.Ui.Panels.FilePanel
 
 open System.Collections.ObjectModel
+open System.IO.Abstractions
 open Terminal.Gui.Drawing
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
@@ -73,8 +74,8 @@ let private focusable (panel: PanelView) =
 
     panel
 
-let render (state: AppState.PanelState) (panel: PanelView) =
-    panel.Title <- PanelTitle.describe state.Path state.Sort state.Hidden
+let render (fs: IFileSystem) (state: AppState.PanelState) (panel: PanelView) =
+    panel.Title <- PanelTitle.describe fs state.Path state.Sort state.Hidden
     let list = listView panel
     let width = list.Viewport.Width
 

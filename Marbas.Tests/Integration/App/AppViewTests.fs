@@ -50,9 +50,10 @@ let ``panels are paired with the side they show`` () =
 let ``rendering fills the panel of the side it belongs to`` () =
     let view = AppView.create ()
     use _window = view.Window
-    let state = loaded (mockFs ())
+    let fs = mockFs ()
+    let state = loaded fs
 
-    AppView.render view state
+    AppView.render fs view state
 
     let left = panel FilePanel.LeftId view.Window
     Assert.Equal(at "start", shownPath FilePanel.LeftId view.Window)
@@ -63,9 +64,10 @@ let ``rendering fills the panel of the side it belongs to`` () =
 let ``rendering describes the cursor entry of the active panel`` () =
     let view = AppView.create ()
     use _window = view.Window
-    let state = loaded (mockFs ()) |> setCursor Left 2
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
 
-    AppView.render view state
+    AppView.render fs view state
 
     let text = (panel StatusLine.Id view.Window).Text
     Assert.Contains("readme.txt", text)

@@ -39,8 +39,16 @@ the default start path when it is not, so a removed drive cannot greet a fresh
 start with an error dialog. Nothing else needs checking: a sort order and a
 hidden toggle cannot go stale.
 
+**A panel setting is a directory, whatever the panel is standing in.** Since
+P9.10 a panel says where it is with a `PanelLocation`, which can be a place
+inside an archive, but `PanelSettings.Path` stays a `FileSystemPath`:
+`AppState.settings` puts each panel through `PanelLocation.holding`, so a panel
+inside `backup.zip` is written as the directory holding that archive. A session
+is restored to a place that is certainly still there, and the file keeps the
+one shape it has always had.
+
 **Saving is an effect, so quitting stays a transition.** `QuitRequested` answers
-with two effects — `SaveSettings(settings state)` and then `Quit` — which keeps
+with two effects — `SaveSettings(settings fs state)` and then `Quit` — which keeps
 *what* is written a pure function of the state, asserted in `UpdateTests`, and
 keeps the writing itself in `Shell.interpret` with everything else that touches
 the world. A write that fails is swallowed: by then there is no screen left to

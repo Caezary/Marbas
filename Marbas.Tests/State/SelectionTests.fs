@@ -250,7 +250,7 @@ let ``entering a directory clears the selection`` () =
     let selected = state |> setCursor Left 2 |> toggleSelectionMoving Downward Left
     let updated = selected |> setCursor Left 1 |> enter fs |> Expect.ok
 
-    Assert.Equal(fp (at "start/docs"), updated.Left.Path)
+    Assert.Equal(OnDisk(fp (at "start/docs")), updated.Left.Path)
     Assert.Empty(selectedEntries updated.Left)
 
 [<Fact>]

@@ -39,10 +39,10 @@ let private stored: Settings =
 let ``a state built from settings gives each panel its own path, sort and hidden`` () =
     let state = fromSettings stored
 
-    Assert.Equal(fp (at "backup"), state.Left.Path)
+    Assert.Equal(OnDisk(fp (at "backup")), state.Left.Path)
     Assert.Equal(SortOrder.create BySize Descending, state.Left.Sort)
     Assert.Equal(Shown, state.Left.Hidden)
-    Assert.Equal(fp (at "start"), state.Right.Path)
+    Assert.Equal(OnDisk(fp (at "start")), state.Right.Path)
     Assert.Equal(SortOrder.create ByDate Ascending, state.Right.Sort)
     Assert.Equal(Concealed, state.Right.Hidden)
     Assert.Equal(Left, state.Active)
@@ -64,7 +64,7 @@ let ``the settings of a state are what its panels are set to`` () =
         |> loadPanel fs Right (fp (at "start"))
         |> Expect.ok
 
-    Assert.Equal(stored, settings state)
+    Assert.Equal(stored, settings fs state)
 
 [<Fact>]
 let ``a sorted panel says so in the settings`` () =
@@ -73,8 +73,8 @@ let ``a sorted panel says so in the settings`` () =
 
     let sorted = sortBy BySize Left state
 
-    Assert.Equal(SortOrder.create BySize Ascending, (settings sorted).Left.Sort)
-    Assert.Equal(SortOrder.byName, (settings sorted).Right.Sort)
+    Assert.Equal(SortOrder.create BySize Ascending, (settings fs sorted).Left.Sort)
+    Assert.Equal(SortOrder.byName, (settings fs sorted).Right.Sort)
 
 [<Fact>]
 let ``a panel showing its hidden entries says so in the settings`` () =
@@ -83,18 +83,29 @@ let ``a panel showing its hidden entries says so in the settings`` () =
 
     let toggled = toggleHidden fs Right state |> Expect.ok
 
-    Assert.Equal(Shown, (settings toggled).Right.Hidden)
-    Assert.Equal(Concealed, (settings toggled).Left.Hidden)
+    Assert.Equal(Shown, (settings fs toggled).Right.Hidden)
+    Assert.Equal(Concealed, (settings fs toggled).Left.Hidden)
 
 [<Fact>]
 let ``a panel that has been navigated says where it is in the settings`` () =
     let fs = mockFs ()
     let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start/docs")) |> Expect.ok
 
-    let current = settings state
+    let current = settings fs state
 
     Assert.Equal(fp (at "start/docs"), current.Left.Path)
     Assert.Equal(fp (at "start"), current.Right.Path)
+
+[<Fact>]
+let ``a panel inside an archive says the directory holding it in the settings`` () =
+    let fs = mockFs ()
+    let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
+
+    let inside =
+        { state with
+            AppState.Left.Path = InArchive(fp (at "start/backup.zip"), ArchivePath.root) }
+
+    Assert.Equal(fp (at "start"), (settings fs inside).Left.Path)
 
 [<Fact>]
 let ``a state built from settings remembers the name the last directory was given`` () =
@@ -110,12 +121,13 @@ let ``a state built from settings carries the editors it names`` () =
 
 [<Fact>]
 let ``editors that have been changed go into the settings`` () =
+    let fs = mockFs ()
     let state = create (fp (at "start"))
 
     let changed = withEditors stored.Editors state
 
-    Assert.Equal(stored.Editors, (settings changed).Editors)
-    Assert.Equal(EditorSettings.none, (settings state).Editors)
+    Assert.Equal(stored.Editors, (settings fs changed).Editors)
+    Assert.Equal(EditorSettings.none, (settings fs state).Editors)
 
 [<Fact>]
 let ``the editor a name is opened with comes from the state`` () =
@@ -129,7 +141,7 @@ let ``the name a new directory was given goes into the settings`` () =
     let fs = mockFs ()
     let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
-    let made = makeDirectory fs Left (en "reports") state |> Expect.ok
+    let made = makeDirectory fs Left (fp (at "start")) (en "reports") state |> Expect.ok
 
-    Assert.Equal(Some(en "reports"), (settings made).LastCreatedDirectory)
-    Assert.Equal(None, (settings state).LastCreatedDirectory)
+    Assert.Equal(Some(en "reports"), (settings fs made).LastCreatedDirectory)
+    Assert.Equal(None, (settings fs state).LastCreatedDirectory)

@@ -40,4 +40,4 @@ let ``failed navigation leaves the panel where it was`` () =
     let failure = enter fs state |> Expect.error
 
     Assert.Equal(DirectoryNotFound(fp (at "start/docs")), failure)
-    Assert.Equal(fp (at "start"), state.Left.Path)
+    Assert.Equal(OnDisk(fp (at "start")), state.Left.Path)

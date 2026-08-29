@@ -61,3 +61,14 @@ must not touch: `EntryProperties.write` folds the set back onto the attributes
 the entry already carries, so `Directory`, `ReparsePoint` and everything else
 survive a save. The flags are written last, after the timestamps, because a
 read-only bit set first would refuse them.
+
+**Where a panel stands is a type with two cases.** `PanelLocation` is `OnDisk`
+of a `FileSystemPath` or `InArchive` of the archive's path and an
+`ArchivePath`, and it is what `PanelState.Path` holds. A place inside an
+archive is not a path the operating system knows, so it cannot be a
+`FileSystemPath` without lying to every function that takes one; making it a
+case of its own turns "this panel has no directory to write into" from a
+runtime surprise into an `Option` the compiler asks about. `ArchivePath` is
+what the second case carries — `/`-separated, never rooted, never climbing —
+so the two halves of the location are each already a type that cannot hold
+nonsense. See [ARCHIVES.md](ARCHIVES.md), *Where a panel stands*.

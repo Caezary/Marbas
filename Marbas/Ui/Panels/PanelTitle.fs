@@ -1,5 +1,6 @@
 module Marbas.Ui.Panels.PanelTitle
 
+open System.IO.Abstractions
 open Marbas.FileSystem
 
 let private keyText key =
@@ -19,8 +20,8 @@ let private hiddenText hidden =
     | Shown -> [ "hidden" ]
     | Concealed -> []
 
-let describe (path: FileSystemPath) (sort: SortOrder) (hidden: HiddenEntries) =
+let describe (fs: IFileSystem) (location: PanelLocation) (sort: SortOrder) (hidden: HiddenEntries) =
     let marks =
         [ keyText sort.Key; directionText sort.Direction ] @ hiddenText hidden
 
-    $"""{FileSystemPath.value path} [{String.concat " " marks}]"""
+    $"""{PanelLocation.value fs location} [{String.concat " " marks}]"""

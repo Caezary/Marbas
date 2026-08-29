@@ -84,9 +84,6 @@ let private stay state = { State = state; Effects = [] }
 
 let private request state effect = { State = state; Effects = [ effect ] }
 
-let private otherPath state =
-    (panel (opposite state.Active) state).Path
-
 let private applyListing state result =
     match result with
     | Ok updated -> stay updated
@@ -120,14 +117,21 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | SearchCancelled -> stay (closeSearch state.Active state)
     | PatternRequested mode -> request state (PromptForPattern mode)
     | PatternEntered(mode, pattern) -> stay (applyPattern mode state.Active pattern state)
-    | MakeDirectoryRequested -> request state (PromptForName state.LastCreatedDirectory)
-    | NameEntered name -> makeDirectory fs state.Active name state |> applyOperation state
+    | MakeDirectoryRequested ->
+        match activeDirectory state with
+        | None -> stay state
+        | Some _ -> request state (PromptForName state.LastCreatedDirectory)
+    | NameEntered name ->
+        match activeDirectory state with
+        | None -> stay state
+        | Some directory -> makeDirectory fs state.Active directory name state |> applyOperation state
     | DeleteRequested mode ->
         let target = activePanel state
 
-        match operationTargets target with
-        | [] -> stay state
-        | targets ->
+        match activeDirectory state, operationTargets target with
+        | None, _
+        | _, [] -> stay state
+        | Some _, targets ->
             request
                 state
                 (ConfirmDelete
@@ -140,36 +144,37 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | paths -> request state (DeleteTargets(paths, mode))
     | DeleteFinished results -> finishDelete fs results state |> applyBatch state
     | CopyRequested ->
-        match operationPaths fs (activePanel state) with
-        | [] -> stay state
-        | paths -> request state (CopyTargets(paths, otherPath state))
+        match operationPaths fs (activePanel state), targetDirectory state with
+        | [], _
+        | _, None -> stay state
+        | paths, Some target -> request state (CopyTargets(paths, target))
     | CopyFinished results -> finishTransfer fs results state |> applyBatch state
     | MoveRequested ->
-        match operationPaths fs (activePanel state) with
-        | [] -> stay state
-        | _ -> request state (PromptForTarget(otherPath state))
+        match operationPaths fs (activePanel state), targetDirectory state with
+        | [], _
+        | _, None -> stay state
+        | _, Some target -> request state (PromptForTarget target)
     | TargetEntered text ->
-        let source = activePanel state
-
-        match text.Trim(), operationPaths fs source with
-        | "", _
-        | _, [] -> stay state
-        | trimmed, [ single ] when FileSystemPath.isBareName fs trimmed ->
+        match text.Trim(), operationPaths fs (activePanel state), activeDirectory state with
+        | "", _, _
+        | _, [], _
+        | _, _, None -> stay state
+        | trimmed, [ single ], _ when FileSystemPath.isBareName fs trimmed ->
             request state (RenameTarget(single, EntryName.create trimmed))
-        | trimmed, paths -> request state (MoveTargets(paths, FileSystemPath.combine fs source.Path trimmed))
+        | trimmed, paths, Some source -> request state (MoveTargets(paths, FileSystemPath.combine fs source trimmed))
     | MoveFinished results -> finishTransfer fs results state |> applyBatch state
     | PackRequested ->
-        match operationTargets (activePanel state) with
-        | [] -> stay state
-        | _ -> request state (PromptForArchive(archiveSuggestion fs ArchiveFormat.initial state))
+        match operationTargets (activePanel state), archiveSuggestion fs ArchiveFormat.initial state with
+        | [], _
+        | _, None -> stay state
+        | _, Some suggestion -> request state (PromptForArchive suggestion)
     | ArchiveEntered choice ->
-        let source = activePanel state
-
-        match choice.Target.Trim(), operationPaths fs source with
-        | "", _
-        | _, [] -> stay state
-        | trimmed, paths ->
-            let target = FileSystemPath.combine fs source.Path trimmed
+        match choice.Target.Trim(), operationPaths fs (activePanel state), activeDirectory state with
+        | "", _, _
+        | _, [], _
+        | _, _, None -> stay state
+        | trimmed, paths, Some source ->
+            let target = FileSystemPath.combine fs source trimmed
 
             if Archive.wouldPackItself fs target paths then
                 request state (ReportOperationError(Operations.TargetWithinSource target))
@@ -185,9 +190,10 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
                     ))
     | PackFinished(archive, results) -> finishPack fs archive results state |> applyBatch state
     | UnpackRequested ->
-        match operationPaths fs (activePanel state) with
-        | [] -> stay state
-        | paths -> request state (ExtractTargets(paths, otherPath state))
+        match operationPaths fs (activePanel state), targetDirectory state with
+        | [], _
+        | _, None -> stay state
+        | paths, Some target -> request state (ExtractTargets(paths, target))
     | UnpackFinished results -> finishTransfer fs results state |> applyBatch state
     | RenameFinished(newName, outcome) ->
         match outcome with
@@ -207,11 +213,17 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
             | Ok properties -> request state (ShowProperties properties)
             | Error error -> request state (ReportOperationError error)
         | None, None -> stay state
-    | NewFileRequested -> request state PromptForFileName
+    | NewFileRequested ->
+        match activeDirectory state with
+        | None -> stay state
+        | Some _ -> request state PromptForFileName
     | FileNameEntered name ->
-        match makeFile fs state.Active name state with
-        | Error error -> request state (ReportOperationError error)
-        | Ok(updated, path) -> request updated (EditFile(path, editorFor name updated))
+        match activeDirectory state with
+        | None -> stay state
+        | Some directory ->
+            match makeFile fs state.Active directory name state with
+            | Error error -> request state (ReportOperationError error)
+            | Ok(updated, path) -> request updated (EditFile(path, editorFor name updated))
     | PropertiesEntered properties -> applyProperties fs properties state |> applyOperation state
     | SettingsRequested ->
         let candidate =
@@ -228,7 +240,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
     | QuitRequested ->
         { State = state
-          Effects = [ SaveSettings(settings state); Quit ] }
+          Effects = [ SaveSettings(settings fs state); Quit ] }
 
 let step (fs: IFileSystem) (msg: Message) (state: AppState) =
     let result = update fs msg state

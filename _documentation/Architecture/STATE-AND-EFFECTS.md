@@ -134,3 +134,16 @@ there is one — the popup has no panel to look at, so what it can offer has to 
 read before it opens; `EditorsEntered` puts the answer back into the state
 and nothing else. It reaches the file the way every other setting does, when
 `QuitRequested` saves the session.
+
+**Where a panel stands is a location, not a path.** `PanelState.Path` is a
+`PanelLocation` — a directory on disk or a level inside an archive — so a
+transition that needs a `FileSystemPath` has to ask for one and answer for the
+case where there is none. `AppState` asks through `PanelLocation.directory` and
+`PanelLocation.combine`: `operationPaths` is empty inside an archive, the
+cursor paths are `None`, a reload leaves the panel as it stands, and
+`makeDirectory` and `makeFile` take the directory as an argument, because by
+then `Update` has already asked whether there is one. `Update` does the asking
+before it raises an effect rather than after — `activeDirectory` and
+`targetDirectory` gate the dialogs of `F6`, `F7`, `Shift+F1` and `Shift+F4` and
+the target of `F5` and `Shift+F2` — so no popup opens on a question that cannot
+be answered. See [ARCHIVES.md](ARCHIVES.md), *Where a panel stands*.

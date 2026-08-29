@@ -30,7 +30,7 @@ let private entries =
     [ directory ".."; directory "docs"; file "a.txt" 1000L; file "b.txt" 234L ]
 
 let private panel =
-    { Path = FileSystemPath.create (Root.at "start")
+    { Path = OnDisk(FileSystemPath.create (Root.at "start"))
       Entries = entries
       Cursor = 0
       Selected = Set.empty

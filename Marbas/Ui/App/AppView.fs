@@ -1,5 +1,6 @@
 module Marbas.Ui.App.AppView
 
+open System.IO.Abstractions
 open Terminal.Gui.Drawing
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
@@ -26,9 +27,9 @@ let create () =
 
 let panels (view: AppView) = FilePanel.pairs view.Panels
 
-let render (view: AppView) (state: AppState.AppState) =
+let render (fs: IFileSystem) (view: AppView) (state: AppState.AppState) =
     for side, panel in panels view do
-        FilePanel.render (AppState.panel side state) panel
+        FilePanel.render fs (AppState.panel side state) panel
 
     let entry = state |> AppState.activePanel |> AppState.cursorEntry
     view.StatusLine |> StatusLine.render entry

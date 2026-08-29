@@ -32,7 +32,7 @@ let ``making a directory adds it and lands the cursor on it`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let updated = makeDirectory fs Left (en "work") state |> Expect.ok
+    let updated = makeDirectory fs Left (fp (at "start")) (en "work") state |> Expect.ok
 
     Assert.True(fs.Directory.Exists(at "start/work"))
     Assert.Contains("work", names updated.Left)
@@ -43,7 +43,7 @@ let ``making a directory keeps the existing selection`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2 |> toggleSelectionMoving Downward Left
 
-    let updated = makeDirectory fs Left (en "work") state |> Expect.ok
+    let updated = makeDirectory fs Left (fp (at "start")) (en "work") state |> Expect.ok
 
     Assert.Equal<string list>([ "notes.txt" ], selectedNames state.Left)
     Assert.Equal<string list>([ "notes.txt" ], selectedNames updated.Left)
@@ -53,7 +53,7 @@ let ``an existing name is refused and leaves the panel unchanged`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let result = makeDirectory fs Left (en "docs") state
+    let result = makeDirectory fs Left (fp (at "start")) (en "docs") state
 
     Assert.Equal(Error(TargetExists(fp (at "start/docs"))), result)
 
@@ -62,16 +62,16 @@ let ``the name a directory was given is remembered`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let updated = makeDirectory fs Left (en "work") state |> Expect.ok
+    let updated = makeDirectory fs Left (fp (at "start")) (en "work") state |> Expect.ok
 
     Assert.Equal(Some(en "work"), updated.LastCreatedDirectory)
 
 [<Fact>]
 let ``a name that is refused leaves the remembered one alone`` () =
     let fs = mockFs ()
-    let state = loaded fs |> makeDirectory fs Left (en "work") |> Expect.ok
+    let state = loaded fs |> makeDirectory fs Left (fp (at "start")) (en "work") |> Expect.ok
 
-    let refused = makeDirectory fs Left (en "docs") state
+    let refused = makeDirectory fs Left (fp (at "start")) (en "docs") state
 
     Assert.Equal(Error(TargetExists(fp (at "start/docs"))), refused)
     Assert.Equal(Some(en "work"), state.LastCreatedDirectory)

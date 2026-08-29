@@ -21,8 +21,8 @@ let private mockFs () =
 let ``initial state points both panels at the start path with left active`` () =
     let state = create (fp (at "start"))
 
-    Assert.Equal(fp (at "start"), state.Left.Path)
-    Assert.Equal(fp (at "start"), state.Right.Path)
+    Assert.Equal(OnDisk(fp (at "start")), state.Left.Path)
+    Assert.Equal(OnDisk(fp (at "start")), state.Right.Path)
     Assert.Empty state.Left.Entries
     Assert.Empty state.Right.Entries
     Assert.Equal(Left, state.Active)

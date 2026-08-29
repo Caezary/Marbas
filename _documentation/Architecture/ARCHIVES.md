@@ -1,9 +1,10 @@
 # Archives
 
 `Shift+F1` packs what the active panel points at into an archive in the other
-panel, and `Shift+F2` empties an archive into it. Browsing an archive from a
-panel — walking into one as though it were a directory, and the operations that
-change one — is the rest of phase 9 and is not built yet.
+panel, and `Shift+F2` empties an archive into it. A panel now says where it
+stands with a type that can name a place inside an archive as well as a
+directory on disk; walking into one, and the operations that change one, are
+the rest of phase 9 and are not built yet.
 
 ## The vocabulary
 
@@ -348,6 +349,49 @@ the failures dialog words it through `ArchiveErrorMessage` and nothing in
 `finishTransfer` that `F5` and `F6` use: the active panel keeps the marks of
 what did not make it, and the other panel — where the entries landed — is read
 again from disk.
+
+## Where a panel stands
+
+**A panel stands at a location, and a location is one of two things.**
+`PanelLocation` is either `OnDisk` — a `FileSystemPath` naming a directory —
+or `InArchive`, the archive's own `FileSystemPath` together with the
+`ArchivePath` of the level being shown. `PanelState.Path` is one of those
+rather than a bare path, so a panel inside an archive is a state the type
+system admits instead of a disk path that happens to point at a file. Nothing
+builds an `InArchive` yet: `Enter` on an archive is P9.11. What this task
+bought is that every operation had to say out loud what it does with a place
+that is not a directory.
+
+**An operation asks the location for a disk path instead of assuming one.**
+`PanelLocation.directory` answers `Some` on disk and `None` inside an archive,
+and it is the only way to a `FileSystemPath` from a panel.
+`PanelLocation.combine` puts a name in the location the same way, so
+`operationPaths` answers the empty list inside an archive and every effect that
+needs paths — copy, move, delete, pack, unpack — falls to its own "nothing to
+do" case. Making a directory, making a file and typing a target are gated in
+`Update`, which asks for the directory before it opens a dialog rather than
+after it, so no popup can be answered into a place that cannot take the answer.
+Re-reading a panel — a refresh, a hidden toggle, the reload after a batch —
+leaves an archive panel as it stands, because the listing it would need is the
+one P9.11 brings.
+
+**The location is what the title spells.** `PanelLocation.value` gives a
+directory its own path, and a place inside an archive the archive's path with
+the level's names below it, separated the way the platform separates them:
+`C:\work\backup.zip\docs`. That is the same spelling `Archive.extract` already
+uses when a target inside an archive fails, so a place in an archive is written
+one way everywhere in the app. Spelling needs `IFileSystem` — the separator is
+the platform's, and only `IFileSystem` may be asked what it is — which is why
+`PanelTitle.describe`, `FilePanel.render` and `AppView.render` now take a file
+system: rendering a panel means rendering where it stands.
+
+**A session is restored to a place that is certainly there.**
+`PanelLocation.holding` answers the directory on disk that holds the location —
+itself when it is one, the directory holding the archive when it is not — and
+that is what goes into the settings file when the app quits. An archive can be
+deleted, renamed or moved between two runs, so a panel that was inside
+`backup.zip` comes back in the directory that held it rather than failing to
+open something that is gone.
 
 ## Libraries and licences
 

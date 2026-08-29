@@ -161,7 +161,7 @@ let ``opening a path loads it into the given side`` () =
 
     let result = update fs (PathOpened(Right, fp (at "start"))) state
 
-    Assert.Equal(fp (at "start"), result.State.Right.Path)
+    Assert.Equal(OnDisk(fp (at "start")), result.State.Right.Path)
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -181,7 +181,7 @@ let ``entering a directory navigates into it`` () =
 
     let result = update fs EntryOpened state
 
-    Assert.Equal(fp (at "start/docs"), result.State.Left.Path)
+    Assert.Equal(OnDisk(fp (at "start/docs")), result.State.Left.Path)
 
 [<Fact>]
 let ``toggling selection marks the entry under the cursor and advances`` () =
@@ -682,7 +682,7 @@ let ``quit requested saves what the panels are set to before it quits`` () =
 
     let result = update fs QuitRequested state
 
-    Assert.Equal<Effect list>([ SaveSettings(settings state); Quit ], result.Effects)
+    Assert.Equal<Effect list>([ SaveSettings(settings fs state); Quit ], result.Effects)
 
 [<Fact>]
 let ``step pairs the new state with its effects`` () =
@@ -692,7 +692,7 @@ let ``step pairs the new state with its effects`` () =
     let nextState, effects = step fs QuitRequested state
 
     Assert.Equal(state, nextState)
-    Assert.Equal<Effect list>([ SaveSettings(settings state); Quit ], effects)
+    Assert.Equal<Effect list>([ SaveSettings(settings fs state); Quit ], effects)
 
 [<Fact>]
 let ``the name prompt is asked for with the name of the last directory created`` () =

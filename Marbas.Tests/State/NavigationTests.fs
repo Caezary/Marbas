@@ -46,7 +46,7 @@ let ``enter descends into the directory under the cursor`` () =
 
     let updated = enter fs state |> Expect.ok
 
-    Assert.Equal(fp (at "start/docs"), updated.Left.Path)
+    Assert.Equal(OnDisk(fp (at "start/docs")), updated.Left.Path)
     Assert.Equal<string list>([ ".."; "inner" ], names updated.Left.Entries)
     Assert.Equal(0, updated.Left.Cursor)
 
@@ -60,7 +60,7 @@ let ``enter on the parent entry goes up with cursor on the directory left behind
 
     let updated = enter fs state |> Expect.ok
 
-    Assert.Equal(fp (at "start"), updated.Left.Path)
+    Assert.Equal(OnDisk(fp (at "start")), updated.Left.Path)
     Assert.Equal<string list>([ ".."; "docs"; "readme.txt" ], names updated.Left.Entries)
     Assert.Equal(1, updated.Left.Cursor)
 
@@ -88,5 +88,5 @@ let ``enter acts on the active panel only`` () =
 
     let updated = enter fs state |> Expect.ok
 
-    Assert.Equal(fp (at "start/docs"), updated.Right.Path)
-    Assert.Equal(fp (at "start"), updated.Left.Path)
+    Assert.Equal(OnDisk(fp (at "start/docs")), updated.Right.Path)
+    Assert.Equal(OnDisk(fp (at "start")), updated.Left.Path)
