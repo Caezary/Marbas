@@ -79,6 +79,28 @@ runtime ships with .NET, so nothing is added to the package list — and
 `IFileSystem` and therefore tested on `MockFileSystem` on both legs of CI. A
 permanent delete is the same `Operations.delete` as before on either platform.
 
+## Archives
+
+| Check | Windows | Linux | Evidence |
+|-------|---------|-------|----------|
+| `Shift+F1` packs the targets into an archive in the other panel | same | same | suite |
+| The name is deduced from the targets, the root from the drive | `diskCcontents.zip` | `rootcontents.zip` | suite (one test per platform) |
+| Entry paths inside the archive are relative and separated by `/` | `docs\a.txt` is stored as `docs/a.txt` | already `/` | suite |
+| A backslash inside a Linux file name stays in the entry name | n/a | `a\b.txt` is one entry, not two levels | **manual** |
+| The zip opens in the system's own tool | Explorer, *Extract All* | `unzip`, the desktop's archive manager | **manual** |
+| The tar.gz opens in the system's own tool | `tar -xzf` | `tar -xzf` | **manual** |
+| A password-protected zip asks for the password there | Explorer cannot open AES zips at all; 7-Zip can | `7z x` | **manual** |
+| Modification times survive the round trip | same | same | **manual** |
+
+Everything up to the bytes is tested on `MockFileSystem`, both writers being
+stream APIs, and one test reads a zip back with `System.IO.Compression` after
+`SharpZipLib` wrote it — so the two halves of the suite already disagree if the
+output is not a real zip. What no test can answer is whether the other side of
+the platform fence likes it, which is why the round trips are manual. The one to
+try first is the AES zip: Windows Explorer has never supported AES-encrypted
+entries and will report the archive as empty or damaged rather than asking for a
+password, which is a property of Explorer and not of the archive.
+
 ## Permissions
 
 | Check | Windows | Linux | Evidence |

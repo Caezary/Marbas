@@ -99,9 +99,10 @@ runs on its own:
 dotnet test --filter "FullyQualifiedName~Marbas.Tests.Integration"
 ```
 
-Five modules sit outside the folders because everything uses them: `Root` (the
-platform's root, and paths built on it), `WindowsFact` (the `Fact` that skips
-where drive letters do not exist), `Expect` (result unwrapping), `Fakes` (the
+Six modules sit outside the folders because everything uses them: `Root` (the
+platform's root, and paths built on it), `WindowsFact` and `UnixFact` (the `Fact`
+that skips where drive letters do not exist, and the one that skips where they
+do), `Expect` (result unwrapping), `Fakes` (the
 do-nothing `Shell.Dependencies`) and `AssemblyInfo`. `Integration/Gui.fs` adds the view helpers — `focusedWindow`,
 `leftList`, `rightList`, `press`, `panel`, `panelTitle`, `shownPath`, which
 is the path part of a panel title, so a navigation test says which directory a

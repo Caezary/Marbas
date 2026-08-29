@@ -707,7 +707,8 @@ let ``the name prompt is asked for with the name of the last directory created``
 let private packRequest path =
     { Path = fp path
       Format = Zip
-      Compression = Normal }
+      Compression = Normal
+      Password = None }
 
 let private chose target =
     { Target = target
@@ -827,3 +828,20 @@ let ``a finished pack keeps the marks of what did not make it`` () =
     let result = update fs (PackFinished(en "notes.zip", failed)) state
 
     Assert.Equal<string list>([ "notes.txt" ], selectedEntries result.State.Left |> List.map (_.Name >> EntryName.value))
+
+[<Fact>]
+let ``the password from the dialog rides into the request`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs |> setCursor Left 2
+    let secret = ArchivePassword.tryCreate "letmein"
+
+    let result =
+        update fs (ArchiveEntered { chose (at "backup/all.zip") with Password = secret }) state
+
+    Assert.Equal<Effect list>(
+        [ ArchiveTargets(
+              [ fp (at "start/notes.txt") ],
+              { packRequest (at "backup/all.zip") with Password = secret }
+          ) ],
+        result.Effects
+    )

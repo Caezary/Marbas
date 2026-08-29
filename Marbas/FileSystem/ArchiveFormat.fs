@@ -14,7 +14,8 @@ type ArchivePassword = private ArchivePassword of string
 type ArchiveRequest =
     { Path: FileSystemPath
       Format: ArchiveFormat
-      Compression: ArchiveCompression }
+      Compression: ArchiveCompression
+      Password: ArchivePassword option }
 
 type ArchiveChoice =
     { Target: string

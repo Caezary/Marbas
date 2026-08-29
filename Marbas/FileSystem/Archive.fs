@@ -10,6 +10,9 @@ open FsToolkit.ErrorHandling
 
 module Archive =
 
+    [<Literal>]
+    let private AesKeySize = 256
+
     type private Sink =
         { AddDirectory: string -> unit
           AddFile: string -> FileSystemPath -> unit }
@@ -45,9 +48,12 @@ module Archive =
         | Normal -> CompressionLevel.Optimal
         | Maximum -> CompressionLevel.SmallestSize
 
-    let private intoZip (fs: IFileSystem) compression (stream: Stream) pack =
+    let private intoZip (fs: IFileSystem) (request: ArchiveRequest) (stream: Stream) pack =
         use zip = new ZipOutputStream(stream)
-        zip.SetLevel(zipLevel compression)
+        zip.SetLevel(zipLevel request.Compression)
+
+        request.Password
+        |> Option.iter (fun password -> zip.Password <- ArchivePassword.value password)
 
         pack
             { AddDirectory =
@@ -63,11 +69,13 @@ module Archive =
                             Size = fs.FileInfo.New(FileSystemPath.value path).Length
                         )
 
+                    if request.Password.IsSome then
+                        entry.AESKeySize <- AesKeySize
+
                     zip.PutNextEntry entry
                     use content = reading fs path
                     content.CopyTo zip
                     zip.CloseEntry() }
-
     let private intoTarGz (fs: IFileSystem) compression (stream: Stream) pack =
         use compressed = new GZipStream(stream, gzipLevel compression)
         use tar = new TarWriter(compressed, TarEntryFormat.Pax, true)
@@ -117,7 +125,7 @@ module Archive =
 
     let private packInto fs control (request: ArchiveRequest) sources stream =
         match request.Format with
-        | Zip -> intoZip fs request.Compression stream (packAll fs control sources)
+        | Zip -> intoZip fs request stream (packAll fs control sources)
         | TarGz -> intoTarGz fs request.Compression stream (packAll fs control sources)
 
     let write (fs: IFileSystem) control (request: ArchiveRequest) sources =

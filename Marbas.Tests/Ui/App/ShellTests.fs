@@ -617,7 +617,8 @@ let private packReadyFs () =
 let private packing path =
     { Path = fp path
       Format = Zip
-      Compression = Normal }
+      Compression = Normal
+      Password = None }
 
 let private choice =
     { Target = at "backup/notes.zip"

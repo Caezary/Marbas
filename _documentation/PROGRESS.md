@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-08-26. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-08-28. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
@@ -82,6 +82,21 @@ carried as a value, and `Dependencies.create` is the single place where a
 Windows function or a Unix one is chosen per port. `Program.fs` is down to
 starting the application. Nothing the application does changed.
 
+**A ninth phase opened, and archives can now be created.** `Shift+F1` packs the
+operation targets of the active panel — the marks, or the entry under the
+cursor — into one archive in the other panel, the way copying works. A popup
+asks first: the target, offered as the other panel's path plus a name deduced
+from what is being packed, the format (zip or tar.gz), the compression level and
+a password. Choosing a format renames the extension in place; a password locks a
+zip with AES-256 and is greyed out for a format that cannot carry one. The
+writing itself streams every entry through `IFileSystem`, so it runs behind the
+progress window with `Esc` stopping it — and a stopped run deletes the
+half-written file and keeps every mark. An archive that already exists asks
+before it is replaced, one that would land inside what it packs is refused
+outright, and when the batch finishes the other panel is re-read with the cursor
+on the new archive. Reading archives is the rest of the phase and is not built
+yet: unpacking one, and walking into one as though it were a directory.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -105,6 +120,7 @@ written up as the checklist in
 | 6 — Viewing files | P6.1–P6.2 | done |
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
+| 9 — Archives | P9.1–P9.5 | packing done, reading to come |
 
 ## What works today
 
@@ -327,17 +343,40 @@ written up as the checklist in
   rather than raising an error at startup. A missing file is a first start. When
   the file cannot be written at all, the app quits without complaining.
 
+- `Shift+F1` packs what the active panel points at into an archive in the other
+  one. The popup opens on the other panel's path and a name deduced from the
+  targets — one entry gives its own name without its old extension, several give
+  the name of the directory holding them, a drive root gives `diskCcontents` —
+  and offers zip or tar.gz, three compression levels and a password. Switching
+  the format swaps the extension on whatever is in the box; a bare name typed
+  there puts the archive beside the entries instead. Zip with a password is
+  AES-256 (the names inside stay readable, only the content is locked), tar.gz
+  cannot carry one and greys the field out. Directories go in whole with their
+  empty subdirectories and modification times, the run shows its progress and
+  `Esc` stops it — leaving no half-written file and every mark in place — an
+  existing archive asks before it is replaced, and an archive that would land
+  inside what it packs is refused. When it is done the other panel is re-read
+  with the cursor on the new archive, and anything that failed keeps its mark
+  and its line in one dialog.
+
 ## Architecture
 
 Design decisions and their reasoning live in [_documentation/Architecture/](Architecture/OVERVIEW.md),
-one topic per file — domain types, state and effects, file operations, UI and
-input, settings persistence, testing, packaging and cross-platform behaviour.
+one topic per file — domain types, state and effects, file operations, archives,
+UI and input, settings persistence, testing, packaging and cross-platform
+behaviour.
 
 ## Next up
 
-**The plan is finished.** Every task from P1.1 to P8.3 is done, so what follows
-is no longer plan order but choice. Three things are waiting:
+**The first eight phases are finished**, and the ninth is half of one: P9.1 to
+P9.5 create archives, reading them is still open. What follows is only partly
+plan order, and mostly choice. Four things are waiting:
 
+- The rest of phase 9: unpacking the archive under the cursor into the other
+  panel, and walking into one as though it were a directory. Both read formats
+  that cannot be written — rar above all, whose compression is proprietary — so
+  the set of formats an archive can be created in stays smaller than the set
+  that can be opened. 7z joins the writing side with `SharpCompress`.
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
   with a full-screen console editor — want a person at a terminal on each
@@ -350,6 +389,18 @@ is no longer plan order but choice. Three things are waiting:
 
 ## Known rough edges
 
+- An archive is written whole or not at all only when it is cancelled. A single
+  unreadable file inside one source leaves the archive standing with everything
+  that did go in, which is deliberate — the failures are listed and the marks
+  survive — but it does mean a zip can be complete-looking and short of a file.
+- The refusal to pack an archive into itself compares paths case-insensitively
+  on both platforms, so on Unix two directories differing only in case can make
+  it refuse a target that would have been legal.
+- Nothing reads archives yet: the entry under the cursor is a file like any
+  other, `Enter` does not open it and there is no unpack key. Until that lands,
+  a zip made here has to be opened somewhere else.
+- A password only reaches zip. Tar.gz has no notion of one, and 7z — which can
+  encrypt its headers as well as its content — is not written yet.
 - The entry colours and the rule under the listing are drawn by a driver no test
   has, so what a test can say is which attribute `RowRender` hands back and
   where the `Line` sits — not what the screen looks like. Both belong on the

@@ -23,7 +23,8 @@ let private tarTarget = at "backup/data.tar.gz"
 let private requested format path =
     { Path = fp path
       Format = format
-      Compression = Normal }
+      Compression = Normal
+      Password = None }
 
 let private packed () =
     let fs = MockFileSystem()
@@ -231,3 +232,60 @@ let ``an archive that is one of the sources would pack itself`` () =
     let fs = packed ()
 
     Assert.True(Archive.wouldPackItself fs (fp (at "work/notes.txt")) [ fp (at "work/notes.txt") ])
+
+let private secured format path secret =
+    { requested format path with
+        Password = ArchivePassword.tryCreate secret }
+
+[<Fact>]
+let ``a zip given a password locks every entry with AES-256`` () =
+    let fs = packed ()
+
+    Archive.write fs unattended (secured Zip target "letmein") [ fp (at "work/docs") ]
+    |> ignore
+
+    use stream = opened fs target
+    use archive = new ZipFile(stream)
+    let entry = archive.GetEntry "docs/inner.txt"
+
+    Assert.True entry.IsCrypted
+    Assert.Equal(256, entry.AESKeySize)
+
+[<Fact>]
+let ``a protected zip refuses to open without the password`` () =
+    let fs = packed ()
+
+    Archive.write fs unattended (secured Zip target "letmein") [ fp (at "work/notes.txt") ]
+    |> ignore
+
+    use stream = opened fs target
+    use archive = new ZipFile(stream)
+
+    Assert.Throws<ZipException>(fun () -> archive.GetInputStream(archive.GetEntry "notes.txt") |> ignore)
+    |> ignore
+
+[<Fact>]
+let ``a protected zip opens with the password it was given`` () =
+    let fs = packed ()
+
+    Archive.write fs unattended (secured Zip target "letmein") [ fp (at "work/notes.txt") ]
+    |> ignore
+
+    use stream = opened fs target
+    use archive = new ZipFile(stream, false, StringCodec.Default)
+    archive.Password <- "letmein"
+    use content = archive.GetInputStream(archive.GetEntry "notes.txt")
+    use reader = new StreamReader(content)
+
+    Assert.Equal("notes", reader.ReadToEnd())
+
+[<Fact>]
+let ``a zip without a password is not encrypted`` () =
+    let fs = packed ()
+
+    Archive.write fs unattended (requested Zip target) [ fp (at "work/notes.txt") ] |> ignore
+
+    use stream = opened fs target
+    use archive = new ZipFile(stream)
+
+    Assert.False (archive.GetEntry "notes.txt").IsCrypted

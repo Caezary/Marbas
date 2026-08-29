@@ -43,6 +43,7 @@ root. `Program.fs` is left with the handful of lines that start the application.
 - [Domain types](DOMAIN-TYPES.md) — paths as a type, typed messages and effects
 - [State and effects](STATE-AND-EFFECTS.md) — the update loop, dependency injection, composition
 - [File operations](FILE-OPERATIONS.md) — copy/move/delete/rename, batches, viewer and editor
+- [Archives](ARCHIVES.md) — packing: formats, the deduced name, the writer, the libraries
 - [UI and input](UI-AND-INPUT.md) — colour, sorting, hidden entries, search, the key table
 - [Settings persistence](SETTINGS-PERSISTENCE.md) — the config file and what survives a restart
 - [Testing](TESTING.md) — suite layout, conventions, Terminal.Gui pitfalls
@@ -66,6 +67,9 @@ Marbas/
     Roots.fs              where a panel can be sent: drives, or root and home
     NamePattern.fs        wildcard matching for `+` / `-`
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
+    ArchiveFormat.fs      which archives can be created, and what each one carries
+    ArchiveName.fs        the name an archive is offered under, and its extension
+    Archive.fs            writing one: the walk, the entries, cancelling, the password
     Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     ContentError.fs       what can go wrong reading a file, as values
     TextEncoding.fs       which encoding a file carries, from its mark or its bytes
@@ -124,6 +128,7 @@ Marbas/
       AssociationRow.fs     one extension and its editor -> one row of the list
       PropertiesDialog.fs   what `F4` shows for a directory, and writes back
       SettingsDialog.fs     the default editor and the extension associations
+      PackDialog.fs         what `Shift+F1` asks before an archive is written
     App/                  the composition root, and the way out to the world
       CursorInfo.fs         cursor entry -> status line text
       StatusLine.fs         the status line view

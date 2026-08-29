@@ -209,8 +209,8 @@ wherever the terminal reports it, and promises nothing where it cannot.
 
 **Concealing an entry drops its mark.** The reload keeps the marks that survive
 it, exactly like `refresh`, and an entry that has just been hidden does not
-survive. That is deliberate: `F5`, `F6` and `F8` work on the marks, and a mark
-nobody can see is a file operated on by accident.
+survive. That is deliberate: `F5`, `F6`, `F8` and `Shift+F1` work on the marks,
+and a mark nobody can see is a file operated on by accident.
 
 ## Panel footer and search
 

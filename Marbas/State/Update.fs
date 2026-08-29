@@ -177,7 +177,8 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
                         paths,
                         { Path = target
                           Format = choice.Format
-                          Compression = choice.Compression }
+                          Compression = choice.Compression
+                          Password = choice.Password }
                     ))
     | PackFinished(archive, results) -> finishPack fs archive results state |> applyBatch state
     | RenameFinished(newName, outcome) ->
