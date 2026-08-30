@@ -859,15 +859,15 @@ let ``a dismissed password prompt leaves the archive alone`` () =
 let ``an archive that cannot be read answers for itself`` () =
     let sent, dispatch = capture ()
     let fs = unpackReadyFs None
-    fs.AddFile(at "start/data.tar", MockFileData "whatever")
+    fs.AddFile(at "start/data.bin", MockFileData "whatever")
     let deps = { noDeps () with FileSystem = fs }
 
-    Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.tar") ], fp (at "backup")))
+    Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.bin") ], fp (at "backup")))
 
     Assert.Equal<Message list>(
         [ UnpackFinished(
-              [ { Name = en "data.tar"
-                  Outcome = Error(ArchiveFailed(KindCannotBeRead(fp (at "start/data.tar")))) } ]
+              [ { Name = en "data.bin"
+                  Outcome = Error(ArchiveFailed(KindCannotBeRead(fp (at "start/data.bin")))) } ]
           ) ],
         List.ofSeq sent
     )

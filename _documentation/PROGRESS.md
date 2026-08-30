@@ -4,7 +4,7 @@ Status as of 2026-08-30. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**All eight phases are complete** (32 of 32 tasks). Marbas
+**All nine phases are complete** (46 of 46 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -86,7 +86,7 @@ starting the application. Nothing the application does changed.
 operation targets of the active panel — the marks, or the entry under the
 cursor — into one archive in the other panel, the way copying works. A popup
 asks first: the target, offered as the other panel's path plus a name deduced
-from what is being packed, the format (zip or tar.gz), the compression level and
+from what is being packed, the format (zip, tar.gz or 7z), the compression level and
 a password. Choosing a format renames the extension in place; a password locks a
 zip with AES-256 and is greyed out for a format that cannot carry one. The
 writing itself streams every entry through `IFileSystem`, so it runs behind the
@@ -167,8 +167,18 @@ A kind that cannot be changed refuses by name before anything runs — a tar.gz
 never opens the name prompt for `F7` nor the confirmation for `F8`, and moving
 out of a rar is refused where copying out of it works — and an archive locked
 with a password says so instead of quietly storing a new entry in the clear,
-because the library cannot write an encrypted entry. What is missing now is the
-remaining formats.
+because the library cannot write an encrypted entry.
+
+**The ninth phase closed with the remaining formats.** 7z can now be created —
+it stands beside zip and tar.gz in the pack dialog, written with LZMA2 and
+without a password, which the dialog's field already knew how to refuse — and
+its entries can be changed by the same keys a zip's can, an existing 7z being
+rewritten whole where a zip is updated where it lies. Tar, tar.bz2 and tar.xz
+joined the kinds that can be read and browsed, and rar stays readable and
+uncreatable for good. Every kind now does exactly what the capability table
+claims: a round trip for each creatable one, an add and a remove for each
+changeable one, and a listing and an extraction for each readable one — rar
+excepted, since nothing in the toolchain can create a rar to read back.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -193,7 +203,7 @@ written up as the checklist in
 | 6 — Viewing files | P6.1–P6.2 | done |
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
-| 9 — Archives | P9.1–P9.13 | `Shift+F1` packs, `Shift+F2` unpacks, `Enter` browses an archive, and the ordinary keys copy out of one and change it; the remaining formats to come |
+| 9 — Archives | P9.1–P9.14 | done |
 
 ## What works today
 
@@ -250,9 +260,9 @@ written up as the checklist in
   has that marker turned off.
 - `Enter` descends into the directory under the cursor. `Enter` on `..` goes
   up and places the cursor on the directory just left.
-- `Enter` on an archive the capability table calls readable — zip and tar.gz
-  proven by the suite, 7z and rar through the very same reader — opens it in
-  the panel as though it were a directory, and the title says so
+- `Enter` on an archive the capability table calls readable — zip, tar, tar.gz,
+  tar.bz2, tar.xz and 7z proven by the suite, rar through the very same reader —
+  opens it in the panel as though it were a directory, and the title says so
   (`C:\work\backup.zip\docs`). Levels inside walk in and out the same way, `..`
   at the top level leaves the archive with the cursor back on the archive file,
   and `Ctrl+R` re-reads it. Sorting, hidden entries, marking, the search and
@@ -264,14 +274,14 @@ written up as the checklist in
   the tree below it — behind the same progress window, with the same overwrite
   question and the same surviving marks as a copy between two directories, and
   the archive is left exactly as it was.
-- A zip can also be changed from the panel: `F5` from the other panel adds its
+- A zip or a 7z can also be changed from the panel: `F5` from the other panel adds its
   targets at the level shown, `F8` removes the targets of the archive panel
   (always for good, since a zip has no trash), `F7` makes a directory entry, and
   `F6` moves in either direction — out of an archive it extracts first and drops
   the entry only for what arrived, into one it deletes a source only once that
   source is in, so a moved entry is in exactly one of the two places. Every
   change runs behind the progress window and `Esc` leaves the archive as it was.
-  A kind that cannot be changed — a tar.gz, a rar — refuses by name before a
+  A kind that cannot be changed — a tar, a tar.gz, a rar — refuses by name before a
   prompt opens or a batch starts, and so does an archive locked with a password.
   `Shift+F1` and `Shift+F4` still do nothing from inside an archive.
 - Unreadable or vanished directories raise a message box; the panel stays put.
@@ -444,12 +454,12 @@ written up as the checklist in
   one. The popup opens on the other panel's path and a name deduced from the
   targets — one entry gives its own name without its old extension, several give
   the name of the directory holding them, a drive root gives `diskCcontents` —
-  and offers zip or tar.gz, three compression levels and a password. Switching
-  the format swaps the extension on whatever is in the box; a bare name typed
-  there puts the archive beside the entries instead. Zip with a password is
-  AES-256 (the names inside stay readable, only the content is locked), tar.gz
-  cannot carry one and greys the field out. Directories go in whole with their
-  empty subdirectories and modification times, the run shows its progress and
+  and offers zip, tar.gz or 7z, three compression levels and a password.
+  Switching the format swaps the extension on whatever is in the box; a bare
+  name typed there puts the archive beside the entries instead. Zip with a
+  password is AES-256 (the names inside stay readable, only the content is
+  locked); tar.gz and 7z cannot carry one and grey the field out. Directories
+  go in whole with their empty subdirectories and modification times, the run shows its progress and
   `Esc` stops it — leaving no half-written file and every mark in place — an
   existing archive asks before it is replaced, and an archive that would land
   inside what it packs is refused. When it is done the other panel is re-read

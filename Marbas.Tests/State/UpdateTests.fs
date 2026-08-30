@@ -884,8 +884,8 @@ let ``a finished unpack reports the archives that failed`` () =
     let state = loadedBoth fs
 
     let failed =
-        [ { Name = en "data.tar"
-            Outcome = Error(ArchiveFailed(KindCannotBeRead(fp (at "start/data.tar")))) } ]
+        [ { Name = en "data.bin"
+            Outcome = Error(ArchiveFailed(KindCannotBeRead(fp (at "start/data.bin")))) } ]
 
     let result = update fs (UnpackFinished failed) state
 

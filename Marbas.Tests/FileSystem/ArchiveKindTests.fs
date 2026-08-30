@@ -23,11 +23,6 @@ let private readAlone =
       CanCreate = false
       CanChange = false }
 
-let private nothingYet =
-    { CanRead = false
-      CanCreate = false
-      CanChange = false }
-
 [<Theory>]
 [<InlineData("backup.zip", "zip")>]
 [<InlineData("backup.tar", "tar")>]
@@ -63,18 +58,18 @@ let ``tar gz is written whole and never changed entry by entry`` () =
     Assert.Equal(readAndWrite, ArchiveKind.capabilities TarGz)
 
 [<Fact>]
-let ``7z is read until the format is written as well`` () =
-    Assert.Equal(readAlone, ArchiveKind.capabilities SevenZip)
+let ``7z is read, created and changed, like zip`` () =
+    Assert.Equal(readWriteChange, ArchiveKind.capabilities SevenZip)
 
 [<Fact>]
 let ``rar is read and nothing more, ever`` () =
     Assert.Equal(readAlone, ArchiveKind.capabilities Rar)
 
 [<Fact>]
-let ``the rest of the tar family waits for its reader`` () =
-    Assert.Equal(nothingYet, ArchiveKind.capabilities Tar)
-    Assert.Equal(nothingYet, ArchiveKind.capabilities TarBz2)
-    Assert.Equal(nothingYet, ArchiveKind.capabilities TarXz)
+let ``the rest of the tar family is read and nothing more`` () =
+    Assert.Equal(readAlone, ArchiveKind.capabilities Tar)
+    Assert.Equal(readAlone, ArchiveKind.capabilities TarBz2)
+    Assert.Equal(readAlone, ArchiveKind.capabilities TarXz)
 
 [<Fact>]
 let ``the kinds are the seven Marbas has a name for`` () =
@@ -102,14 +97,13 @@ let ``only zip carries a password`` () =
 
 [<Fact>]
 let ``the formats are the kinds that claim they can be created`` () =
-    Assert.Equal<ArchiveKind list>([ Zip; TarGz ], ArchiveFormat.all |> List.map ArchiveFormat.kind)
+    Assert.Equal<ArchiveKind list>([ Zip; TarGz; SevenZip ], ArchiveFormat.all |> List.map ArchiveFormat.kind)
 
 [<Fact>]
 let ``a kind that cannot be created is no format`` () =
     Assert.Equal(None, ArchiveFormat.ofKind Tar)
     Assert.Equal(None, ArchiveFormat.ofKind TarBz2)
     Assert.Equal(None, ArchiveFormat.ofKind TarXz)
-    Assert.Equal(None, ArchiveFormat.ofKind SevenZip)
     Assert.Equal(None, ArchiveFormat.ofKind Rar)
 
 [<Fact>]

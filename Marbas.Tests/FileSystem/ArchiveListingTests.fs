@@ -236,13 +236,13 @@ let ``a dotted name is hidden inside an archive as well`` () =
     Assert.Equal(Executable, tool.Executability)
 
 [<Fact>]
-let ``a kind that cannot be read is refused before it is opened`` () =
+let ``a name that is no archive is refused before it is opened`` () =
     let fs = tree ()
-    fs.AddFile(at "backup/data.tar", MockFileData "whatever")
+    fs.AddFile(at "backup/data.bin", MockFileData "whatever")
 
-    let error = refused fs (at "backup/data.tar")
+    let error = refused fs (at "backup/data.bin")
 
-    Assert.Equal(KindCannotBeRead(fp (at "backup/data.tar")), error)
+    Assert.Equal(KindCannotBeRead(fp (at "backup/data.bin")), error)
 
 [<Fact>]
 let ``a name that no kind owns is no archive to read`` () =

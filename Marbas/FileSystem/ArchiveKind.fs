@@ -32,7 +32,8 @@ module ArchiveKind =
 
     let capabilities kind =
         match kind with
-        | Zip ->
+        | Zip
+        | SevenZip ->
             { CanRead = true
               CanCreate = true
               CanChange = true }
@@ -40,15 +41,11 @@ module ArchiveKind =
             { CanRead = true
               CanCreate = true
               CanChange = false }
-        | SevenZip
-        | Rar ->
-            { CanRead = true
-              CanCreate = false
-              CanChange = false }
         | Tar
         | TarBz2
-        | TarXz ->
-            { CanRead = false
+        | TarXz
+        | Rar ->
+            { CanRead = true
               CanCreate = false
               CanChange = false }
 

@@ -6,12 +6,17 @@ open System.IO.Abstractions
 open System.IO.Compression
 open System.Formats.Tar
 open ICSharpCode.SharpZipLib.Zip
+open SharpCompress.Common
+open SharpCompress.Writers.SevenZip
 open FsToolkit.ErrorHandling
 
 module Archive =
 
     [<Literal>]
     let private AesKeySize = 256
+
+    [<Literal>]
+    let private RewriteSuffix = ".marbas-new"
 
     type private Sink =
         { AddDirectory: string -> unit
@@ -94,6 +99,33 @@ module Archive =
                     )
                     |> tar.WriteEntry }
 
+    let private keyIn (level: ArchivePath) (name: string) =
+        match ArchivePath.value level with
+        | "" -> name
+        | prefix -> $"{prefix}/{name}"
+
+    let private lzmaLevel compression =
+        match compression with
+        | Stored -> 0
+        | Normal -> 5
+        | Maximum -> 9
+
+    let private sevenZipSink (fs: IFileSystem) (writer: SevenZipWriter) (level: ArchivePath) =
+        { AddDirectory = fun name -> writer.WriteDirectory(keyIn level name, Nullable())
+          AddFile =
+            fun name path ->
+                use content = reading fs path
+                writer.Write(keyIn level name, content, Nullable (modifiedAt fs path).LocalDateTime) }
+
+    let private intoSevenZipStream (fs: IFileSystem) compression (stream: Stream) pack =
+        use writer =
+            new SevenZipWriter(
+                stream,
+                SevenZipWriterOptions(CompressionType.LZMA2, CompressionLevel = lzmaLevel compression, LeaveStreamOpen = true)
+            )
+
+        pack (sevenZipSink fs writer ArchivePath.root)
+
     let rec private add (fs: IFileSystem) (control: Operations.BatchControl) sink root source =
         if control.IsCancelled() then
             Error(Operations.Cancelled source)
@@ -127,6 +159,7 @@ module Archive =
         match ArchiveFormat.kind request.Format with
         | Zip -> intoZip fs request stream (packAll fs control sources)
         | TarGz -> intoTarGz fs request.Compression stream (packAll fs control sources)
+        | SevenZip -> intoSevenZipStream fs request.Compression stream (packAll fs control sources)
         | uncreatable -> invalidOp $"no writer for {ArchiveKind.extension uncreatable}"
 
     let write (fs: IFileSystem) control (request: ArchiveRequest) sources =
@@ -155,11 +188,12 @@ module Archive =
         sources
         |> List.exists (fun source -> source = target || within fs source target)
 
-    let private under (target: ArchivePath) (item: ArchiveItem) =
+    let private underPath (target: ArchivePath) (segments: EntryName list) =
         let names = ArchivePath.segments target
 
-        item.Segments.Length >= names.Length
-        && List.truncate names.Length item.Segments = names
+        segments.Length >= names.Length && List.truncate names.Length segments = names
+
+    let private under (target: ArchivePath) (item: ArchiveItem) = underPath target item.Segments
 
     let private beneath (target: ArchivePath) (item: ArchiveItem) =
         item.Segments
@@ -286,32 +320,9 @@ module Archive =
         | Commit of 'a
         | Abort of 'a
 
-    let private changing (fs: IFileSystem) (archive: FileSystemPath) (work: ZipFile -> Update<'a>) =
-        match changeRefusal fs archive with
-        | Some refusal -> Error refusal
-        | None ->
-            try
-                use stream =
-                    fs.File.Open(FileSystemPath.value archive, FileMode.Open, FileAccess.ReadWrite)
-
-                use zip = new ZipFile(stream)
-                zip.IsStreamOwner <- false
-                zip.BeginUpdate(MemoryArchiveStorage())
-
-                match work zip with
-                | Commit value ->
-                    zip.CommitUpdate()
-                    Ok value
-                | Abort value ->
-                    zip.AbortUpdate()
-                    Ok value
-            with ex ->
-                Error(ArchiveReader.mapException archive ex)
-
-    let private keyOf (level: ArchivePath) (name: string) =
-        match ArchivePath.value level with
-        | "" -> name
-        | prefix -> $"{prefix}/{name}"
+    type private Changing =
+        { Held: EntryName list list
+          Into: Sink }
 
     let private replacing (zip: ZipFile) (key: string) =
         match zip.GetEntry key with
@@ -325,18 +336,103 @@ module Archive =
     let private intoUpdate (fs: IFileSystem) (zip: ZipFile) (level: ArchivePath) =
         { AddDirectory =
             fun name ->
-                let key = keyOf level name
+                let key = keyIn level name
                 replacing zip (key + "/")
                 zip.AddDirectory(key + "/")
           AddFile =
             fun name path ->
-                let key = keyOf level name
+                let key = keyIn level name
                 replacing zip key
 
                 zip.Add(
                     staticSource fs path,
                     ZipEntry(key, DateTime = (modifiedAt fs path).LocalDateTime, Size = fs.FileInfo.New(FileSystemPath.value path).Length)
                 ) }
+
+    let private updatingZip (fs: IFileSystem) archive (dropped: ArchivePath list) level work =
+        use stream =
+            fs.File.Open(FileSystemPath.value archive, FileMode.Open, FileAccess.ReadWrite)
+
+        use zip = new ZipFile(stream)
+        zip.IsStreamOwner <- false
+        zip.BeginUpdate(MemoryArchiveStorage())
+
+        let held =
+            zip
+            |> Seq.cast<ZipEntry>
+            |> Seq.map (fun entry -> entry, ArchiveReader.segmentsOf entry.Name)
+            |> List.ofSeq
+
+        held
+        |> List.filter (fun (_, segments) -> dropped |> List.exists (fun target -> underPath target segments))
+        |> List.iter (fst >> zip.Delete)
+
+        match work { Held = held |> List.map snd; Into = intoUpdate fs zip level } with
+        | Commit value ->
+            zip.CommitUpdate()
+            Ok value
+        | Abort value ->
+            zip.AbortUpdate()
+            Ok value
+
+    let private storedTime (moment: DateTimeOffset) =
+        if moment = DateTimeOffset.MinValue then
+            Nullable()
+        else
+            Nullable moment.LocalDateTime
+
+    let private copyKept (fs: IFileSystem) archive (dropped: ArchivePath list) (control: Operations.BatchControl) (writer: SevenZipWriter) =
+        ArchiveReader.items fs None SevenZip archive
+        |> Seq.filter (fun item -> not (dropped |> List.exists (fun target -> under target item)))
+        |> Seq.iter (fun item ->
+            if not (control.IsCancelled()) then
+                let key = item.Segments |> List.map EntryName.value |> String.concat "/"
+
+                if item.IsDirectory then
+                    writer.WriteDirectory(key, storedTime item.Modified)
+                else
+                    use content = new MemoryStream()
+                    item.WriteTo content
+                    content.Position <- 0L
+                    writer.Write(key, content, storedTime item.Modified))
+
+    let private rewritingSevenZip (fs: IFileSystem) archive dropped level control work =
+        let fresh =
+            FileSystemPath.create (FileSystemPath.value archive + RewriteSuffix)
+
+        let held =
+            ArchiveReader.items fs None SevenZip archive
+            |> Seq.map _.Segments
+            |> List.ofSeq
+
+        let outcome =
+            use stream = fs.File.Create(FileSystemPath.value fresh)
+
+            use writer =
+                new SevenZipWriter(stream, SevenZipWriterOptions(CompressionType.LZMA2, LeaveStreamOpen = true))
+
+            copyKept fs archive dropped control writer
+            work { Held = held; Into = sevenZipSink fs writer level }
+
+        match outcome with
+        | Commit value ->
+            fs.File.Move(FileSystemPath.value fresh, FileSystemPath.value archive, true)
+            Ok value
+        | Abort value ->
+            fs.File.Delete(FileSystemPath.value fresh)
+            Ok value
+
+    let private changeWith (fs: IFileSystem) archive control dropped level (work: Changing -> Update<'a>) =
+        match changeRefusal fs archive with
+        | Some refusal -> Error refusal
+        | None ->
+            try
+                match changeableKind fs archive with
+                | Some Zip -> updatingZip fs archive dropped level work
+                | Some SevenZip -> rewritingSevenZip fs archive dropped level control work
+                | _ -> Error(KindCannotBeChanged archive)
+            with ex ->
+                Error(ArchiveReader.mapException archive ex)
 
     let private cancelledEntries (fs: IFileSystem) archive targets =
         targets
@@ -347,8 +443,12 @@ module Archive =
               Outcome = Error(Operations.Cancelled path) }: Operations.ItemResult)
 
     let addEntries (fs: IFileSystem) control (archive: FileSystemPath) (level: ArchivePath) sources =
-        changing fs archive (fun zip ->
-            let added = packAll fs control sources (intoUpdate fs zip level)
+        let replaced =
+            sources
+            |> List.map (fun source -> ArchivePath.child level (FileSystemPath.name fs source))
+
+        changeWith fs archive control replaced level (fun changing ->
+            let added = packAll fs control sources changing.Into
 
             if control.IsCancelled() then
                 Abort(
@@ -358,33 +458,17 @@ module Archive =
             else
                 Commit added)
 
-    let private droppingEntries (fs: IFileSystem) archive (zip: ZipFile) target =
-        let matching =
-            zip
-            |> Seq.cast<ZipEntry>
-            |> Seq.filter (fun entry ->
-                under
-                    target
-                    { Segments = ArchiveReader.segmentsOf entry.Name
-                      IsDirectory = entry.IsDirectory
-                      Size = entry.Size
-                      Modified = DateTimeOffset.MinValue
-                      IsEncrypted = false
-                      WriteTo = ignore })
-            |> List.ofSeq
-
-        match matching with
-        | [] -> Error(Operations.SourceNotFound(ArchivePath.spelled fs archive target))
-        | entries ->
-            attempt (ArchivePath.spelled fs archive target) (fun () -> entries |> List.iter zip.Delete)
-
     let removeEntries (fs: IFileSystem) (control: Operations.BatchControl) (archive: FileSystemPath) targets =
-        changing fs archive (fun zip ->
+        changeWith fs archive control targets ArchivePath.root (fun changing ->
             let dropped =
                 targets
                 |> eachTarget fs control archive (fun target ->
                     control.Report(ArchivePath.spelled fs archive target)
-                    droppingEntries fs archive zip target)
+
+                    if changing.Held |> List.exists (underPath target) then
+                        Ok()
+                    else
+                        Error(Operations.SourceNotFound(ArchivePath.spelled fs archive target)))
 
             if control.IsCancelled() then
                 Abort(cancelledEntries fs archive targets)
@@ -399,9 +483,8 @@ module Archive =
         | Ok entries when entries |> List.exists (fun entry -> entry.Name = name) ->
             Error(Operations.TargetExists target)
         | Ok _ ->
-            changing fs archive (fun zip ->
-                let key = keyOf level (EntryName.value name)
-                zip.AddDirectory(key + "/")
+            changeWith fs archive Operations.unattended [] level (fun changing ->
+                changing.Into.AddDirectory(EntryName.value name)
                 Commit())
             |> Result.mapError Operations.ArchiveFailed
 

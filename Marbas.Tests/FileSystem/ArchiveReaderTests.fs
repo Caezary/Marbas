@@ -45,10 +45,10 @@ let ``a kind that claims it can be read is the kind of the file`` () =
     Assert.Equal(Some Zip, kind)
 
 [<Theory>]
-[<InlineData("backup/data.tar")>]
+[<InlineData("backup/data.bin")>]
 [<InlineData("backup/data.rar.txt")>]
 [<InlineData("work/notes.txt")>]
-let ``a kind that cannot be read is no kind to open`` raw =
+let ``a name that is no archive is no kind to open`` raw =
     let kind = ArchiveReader.kindOf fs (fp (at raw))
 
     Assert.Equal(None, kind)

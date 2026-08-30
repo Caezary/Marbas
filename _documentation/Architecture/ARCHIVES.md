@@ -2,10 +2,10 @@
 
 `Shift+F1` packs what the active panel points at into an archive in the other
 panel, `Shift+F2` empties an archive into it, `Enter` walks into one as though
-it were a directory, and from a panel standing inside a zip the ordinary keys
-copy out of it, add to it, remove from it and move in either direction. What is
-left of phase 9 is the remaining formats: 7z on the writing side, the rest of
-the tar family on the reading side.
+it were a directory, and from a panel standing inside a zip or a 7z the
+ordinary keys copy out of it, add to it, remove from it and move in either
+direction. Zip, tar.gz and 7z can be created; zip and 7z can be changed; tar,
+tar.bz2, tar.xz and rar are read.
 
 ## The vocabulary
 
@@ -23,17 +23,18 @@ table adds a format to the popup.
 
 **One record says what can be done to a kind.** `ArchiveKind.capabilities`
 answers an `ArchiveCapabilities` — `CanRead`, `CanCreate`, `CanChange` — and
-every place that has to decide asks it rather than naming a format. Zip is all
-three: it is read, written and changed entry by entry. Tar.gz is read and
-written but never changed, because a gzip stream has no entry to replace
-without rewriting the file. 7z and rar are read alone today — 7z joins the
-written and the changed when P9.14 arrives, rar never does, since its
-compression is proprietary and the licence of the unrar sources forbids
-building a compressor from them. Tar, tar.bz2 and tar.xz claim nothing yet and
-join the readable set with the same task. The flags are what the readers and
-writers of P9.7 onwards are built against: reading is declared here before it
-is coded, and `CanRead` false is what keeps a kind out of everything until its
-reader lands.
+every place that has to decide asks it rather than naming a format. Zip and 7z
+are all three: read, written and changed. Tar.gz is read and written but never
+changed, because a gzip stream has no entry to replace without rewriting the
+file — and a whole rewrite would have to decompress and recompress the stream
+rather than the entry. Tar, tar.bz2, tar.xz and rar are read and nothing more:
+the first three have no writer here for the same reason tar.gz has no changer,
+and rar never gains one, since its compression is proprietary and the licence
+of the unrar sources forbids building a compressor from them. The flags are
+what every layer above is built against — the pack dialog offers the creatable
+half, `Update` refuses a key that would change an unchangeable kind, and
+`ArchiveReader` opens nothing whose `CanRead` is false — so a kind gains a
+feature by turning one flag on, once the code behind it exists.
 
 **Recognition reads a compound suffix whole.** `ArchiveKind.recognise` takes an
 `EntryName` and matches the longest suffix first, so `release.tar.gz` is a
@@ -52,8 +53,8 @@ rather than bending the existing type around one case.
 `true` for zip and `false` for everything else, and `ArchiveFormat` projects it
 the way it projects the extension: whether an archive can be locked belongs to
 what it is, not to the dialog that offers the field. 7z can carry one in the
-format but not through `SharpCompress`, which is why it says `false` and the
-field stays shut when P9.14 adds it.
+format but not through `SharpCompress`, whose writer takes no password at all,
+which is why 7z says `false` and the field sinks the moment it is chosen.
 
 **A password is a domain type that trims nothing.** `ArchivePassword.tryCreate`
 answers `None` only for the empty string: a password made of spaces is a
@@ -118,14 +119,16 @@ either: the cost is the compression, and memory stays flat whatever the file
 size.
 
 **One writer per format.** Zip goes through `SharpZipLib`'s `ZipOutputStream`,
-tar.gz through the BCL's `TarWriter` over a `GZipStream`. Both are streaming
-APIs over the stream the mock file system hands out, which is what keeps the
-whole feature testable without a disk. The split is not arbitrary: only
-SharpZipLib can encrypt a zip, and only `System.Formats.Tar` knows a directory
-entry and a modification time as first-class things rather than as a name
-ending in a slash. The choice is a match on `ArchiveFormat.kind`, so the two
-writers are picked out of the one kind vocabulary; a kind neither of them knows
-cannot reach it, because only a creatable kind is a format at all.
+tar.gz through the BCL's `TarWriter` over a `GZipStream`, and 7z through
+`SharpCompress`'s `SevenZipWriter`. All three are streaming APIs over the stream
+the mock file system hands out, which is what keeps the whole feature testable
+without a disk. The split is not arbitrary: only SharpZipLib can encrypt a zip,
+only `System.Formats.Tar` knows a directory entry and a modification time as
+first-class things rather than as a name ending in a slash, and only
+SharpCompress writes 7z in managed code at all. The choice is a match on
+`ArchiveFormat.kind`, so the three writers are picked out of the one kind
+vocabulary; a kind none of them knows cannot reach it, because only a creatable
+kind is a format at all.
 
 **Entry paths are relative to the source's own parent, and always use `/`.**
 Each top-level source contributes the tree below it named from the directory it
@@ -232,10 +235,10 @@ tested on `MockFileSystem` — the archives the tests read are the ones
 `Archive.write` wrote a line earlier. `WriteTo` is only good while the walk
 stands on its entry: the streaming reader has no way back.
 
-**A kind that cannot be read is refused before the file is opened.** `read`
-asks `ArchiveKind.recognise` and the capability table first, so `release.tar` —
-a kind whose reader arrives with P9.14 — and `notes.txt` both come back
-`KindCannotBeRead` without a byte being read. The rest of the failures are
+**A name no readable kind owns is refused before the file is opened.** `read`
+asks `ArchiveKind.recognise` and the capability table first, so `notes.txt` and
+`data.bin` come back `KindCannotBeRead` without a byte being read — and so
+would a kind whose reader had not landed yet, which is what the flag is for. The rest of the failures are
 values as well: `ArchiveNotFound` for a file that is gone, `PasswordNeeded`
 when the library refuses the encryption, and `ArchiveDamaged` carrying the
 library's own reason for everything else, which is what a file that only looks
@@ -466,10 +469,11 @@ first." `..` refuses nothing, because it is not an entry to edit.
 **Which kinds are proven to browse, and which are taken on the reader's
 word.** The tests write a zip and a tar.gz on `MockFileSystem` and walk into
 both, which exercises each of the two openers `ArchiveReader` picks between —
-the seeking one and the streaming one. 7z and rar go through the seeking
-opener, the same one zip uses, and nothing above `ArchiveReader` asks what kind
-it is holding; what is missing is a checked-in archive to read, which is what
-P9.14 brings along with the rest of the readable set.
+the seeking one and the streaming one. Every readable kind is listed and
+extracted by name in `EveryKindTests`, rar excepted: nothing on a developer's
+machine can create a rar, so that one is taken on the reader's word until a
+fixture is checked in. Nothing above `ArchiveReader` asks what kind it is
+holding, so browsing follows reading wherever reading goes.
 
 **`Shift+F1` and `Shift+F4` still do nothing from inside an archive.** Packing
 an entry that is already in an archive would have to unpack it first, and
@@ -607,15 +611,62 @@ cursor on the new entry, remember the name for the next prompt — because addin
 one directory entry is as quick on a zip as it is on a disk. A name the level
 already holds is `TargetExists`, spelled the archive way.
 
+
+## The remaining formats
+
+**7z is written by the same walk every other format is.** `Archive.write`
+matches the format onto a third `Sink`, over `SharpCompress`'s
+`SevenZipWriter` with LZMA2 and no password — the writer takes none, which is
+why `carriesPassword` says `false` and the dialog's field sinks when 7z is
+chosen. The compression levels map onto the encoder's own 0/5/9; `Stored` is
+LZMA2 at level 0 rather than a stored entry, because the writer accepts only
+LZMA and LZMA2 and refuses `CompressionType.None` outright. Cancelling deletes
+the half-written file, marks are kept and every source answers, exactly as zip
+and tar.gz do — none of that is per-format code.
+
+**A 7z is changed by being rewritten whole.** A zip is edited where it lies;
+7z has no update API, so `Archive` opens a second archive beside it
+(`<name>.marbas-new`), copies over every entry that is not being dropped,
+writes the new ones through the same `Sink` the packing walk uses, and moves
+the result over the original. Committing is that move; aborting — `Esc`, or a
+failure — deletes the new file and leaves the original untouched, which is the
+same promise the zip path makes by aborting its update. What it costs is a
+recompression of the whole archive per change, and the memory of the largest
+entry, since a survivor is buffered between the reader that pushes it and the
+writer that pulls it.
+
+**Both changers answer the same shape, so nothing above them knows which one
+ran.** `Archive.changeWith` takes the entries to drop, the level to write at
+and a piece of work, and hands that work what the archive holds and a `Sink` to
+write into; `addEntries`, `removeEntries` and `makeEntryDirectory` are written
+once against it. The kind picks the changer — zip updates, 7z rewrites — and
+`changeableKind` is what says a kind picks neither.
+
+**The tar family is read, not written.** Tar, tar.bz2 and tar.xz reach
+`ReaderFactory`, which sniffs the compression and hands over the tar's own
+entries, so turning `CanRead` on was the whole of the work; there is no writer
+for them because tar.gz already covers "a tar with compression" on the writing
+side, and a second one would be a format list, not a feature. The tests write a
+plain tar with `System.Formats.Tar` and a tar.bz2 with `SharpZipLib`'s
+`BZip2OutputStream`; xz has no managed writer anywhere in the dependencies, so
+a 224-byte `sample.tar.xz` is checked in as an embedded resource and read into
+the mock file system like any other archive.
+
+**Rar is the one kind no test creates.** Nothing in the toolchain writes rar —
+that is the point of the format's licence — so the read side rests on
+`SharpCompress` and on the capability table saying `CanRead` and nothing else.
+A small rar dropped into `Marbas.Tests/Fixtures` would close that gap with one
+test shaped like the tar.xz one; until then rar is declared, not demonstrated.
+
 ## Libraries and licences
 
-`SharpZipLib` (MIT) writes zip, `System.Formats.Tar` over a `GZipStream` writes
-tar.gz, and `SharpCompress` (MIT) reads every kind the table admits — and will
-write 7z when P9.14 arrives. All are fully managed, so the single-file publish
+`SharpZipLib` (MIT) writes and updates zip, `System.Formats.Tar` over a
+`GZipStream` writes tar.gz, and `SharpCompress` (MIT) reads every kind the
+table admits and writes 7z. All are fully managed, so the single-file publish
 of P8.3 stays intact, and none is copyleft. The wrappers around the native
 `7z.dll` were rejected on both counts — they are LGPL, they need a native
 library shipped per platform, and an LGPL assembly embedded in a single-file
-executable carries a relinking obligation. `SharpCompress` writes 7z in managed
-code (non-solid, LZMA/LZMA2), which is what makes it the obvious next step;
-what it cannot do is write an encrypted archive in any format, which is why zip
-goes through SharpZipLib for writing while SharpCompress reads it back.
+executable carries a relinking obligation. What SharpCompress cannot do is
+write an encrypted archive in any format, which is why zip goes through
+SharpZipLib for writing while SharpCompress reads it back, and why 7z carries
+no password.

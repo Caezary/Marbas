@@ -175,14 +175,14 @@ let ``an entry the archive does not hold is refused under its own name`` () =
     Assert.Equal(ArchiveNotFound(fp (at "backup/data.zip/gone.txt")), error)
 
 [<Fact>]
-let ``an entry of a kind that cannot be read is refused before the file is opened`` () =
+let ``an entry of a name that is no archive is refused before the file is opened`` () =
     let fs = packedArchive ()
-    fs.AddFile(at "backup/data.tar", MockFileData "whatever")
+    fs.AddFile(at "backup/data.bin", MockFileData "whatever")
 
     let error =
-        FileWindow.openEntry fs None (fp (at "backup/data.tar")) (inside "notes.txt") |> Expect.error
+        FileWindow.openEntry fs None (fp (at "backup/data.bin")) (inside "notes.txt") |> Expect.error
 
-    Assert.Equal(KindCannotBeRead(fp (at "backup/data.tar")), error)
+    Assert.Equal(KindCannotBeRead(fp (at "backup/data.bin")), error)
 
 [<Fact>]
 let ``an entry of a locked archive is opened with the password`` () =

@@ -232,15 +232,15 @@ let ``a tar gz is unpacked the same way`` () =
     Assert.Equal("leaf", fs.File.ReadAllText(at "out/docs/deep/leaf.txt"))
 
 [<Fact>]
-let ``a kind that cannot be read is refused before anything is written`` () =
+let ``a name that is no archive is refused before anything is written`` () =
     let fs = tree ()
-    fs.AddFile(at "backup/data.tar", MockFileData "whatever")
+    fs.AddFile(at "backup/data.bin", MockFileData "whatever")
 
     let error =
-        Archive.extract fs unattended (unpacking (at "backup/data.tar") None) [ inside "docs" ]
+        Archive.extract fs unattended (unpacking (at "backup/data.bin") None) [ inside "docs" ]
         |> Expect.error
 
-    Assert.Equal(KindCannotBeRead(fp (at "backup/data.tar")), error)
+    Assert.Equal(KindCannotBeRead(fp (at "backup/data.bin")), error)
 
 [<Fact>]
 let ``a damaged archive is refused as a whole`` () =
@@ -281,13 +281,13 @@ let ``several archives are emptied in one batch`` () =
 [<Fact>]
 let ``an archive that refuses as a whole answers for itself under its own name`` () =
     let fs = tree ()
-    fs.AddFile(at "backup/data.tar", MockFileData "whatever")
+    fs.AddFile(at "backup/data.bin", MockFileData "whatever")
 
     let results =
-        Archive.extractAll fs unattended [ plan (at "backup/data.tar") None [ ArchivePath.root ] ]
+        Archive.extractAll fs unattended [ plan (at "backup/data.bin") None [ ArchivePath.root ] ]
 
     Assert.Equal<(string * Result<unit, OperationError>) list>(
-        [ "data.tar", Error(ArchiveFailed(KindCannotBeRead(fp (at "backup/data.tar")))) ],
+        [ "data.bin", Error(ArchiveFailed(KindCannotBeRead(fp (at "backup/data.bin")))) ],
         outcomes results
     )
 

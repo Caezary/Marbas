@@ -44,7 +44,7 @@ let ``a fresh dialog offers every format and level, on zip and normal`` () =
     let formats = PackDialog.selector dialog PackDialog.FormatId
     let levels = PackDialog.selector dialog PackDialog.CompressionId
 
-    Assert.Equal<string list>([ "_Zip"; "_Tar.gz" ], List.ofSeq formats.Labels)
+    Assert.Equal<string list>([ "_Zip"; "_Tar.gz"; "_7z" ], List.ofSeq formats.Labels)
     Assert.Equal<string list>([ "_Store"; "_Normal"; "Ma_ximum" ], List.ofSeq levels.Labels)
     Assert.Equal(Some 0, formats.Value |> Option.ofNullable)
     Assert.Equal(Some 1, levels.Value |> Option.ofNullable)
@@ -73,6 +73,9 @@ let ``a format that carries no password closes the password field`` () =
     Assert.True((password dialog).Enabled)
 
     choose dialog PackDialog.FormatId 1
+    Assert.False((password dialog).Enabled)
+
+    choose dialog PackDialog.FormatId 2
     Assert.False((password dialog).Enabled)
 
     choose dialog PackDialog.FormatId 0
