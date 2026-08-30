@@ -45,3 +45,17 @@ let ``the password prompt names the archive it is for`` () =
 
     Assert.Contains("data.zip", label)
     Assert.Contains("Password", label)
+
+[<Fact>]
+let ``a kind that cannot be changed says so with its path`` () =
+    let message = ArchiveErrorMessage.describe (KindCannotBeChanged(fp archive))
+
+    Assert.Contains(archive, message)
+    Assert.Contains("can change", message)
+
+[<Fact>]
+let ``an archive behind a password says why it cannot be changed`` () =
+    let message = ArchiveErrorMessage.describe (ProtectedArchiveCannotBeChanged(fp archive))
+
+    Assert.Contains(archive, message)
+    Assert.Contains("password", message)

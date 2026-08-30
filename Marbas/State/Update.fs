@@ -63,6 +63,10 @@ type Effect =
     | ArchiveTargets of sources: FileSystemPath list * request: ArchiveRequest
     | ExtractTargets of archives: FileSystemPath list * targetDirectory: FileSystemPath
     | ExtractEntries of archive: FileSystemPath * entries: ArchivePath list * targetDirectory: FileSystemPath
+    | AddEntries of archive: FileSystemPath * level: ArchivePath * sources: FileSystemPath list
+    | MoveEntriesIn of archive: FileSystemPath * level: ArchivePath * sources: FileSystemPath list
+    | MoveEntriesOut of archive: FileSystemPath * entries: ArchivePath list * targetDirectory: FileSystemPath
+    | RemoveEntries of archive: FileSystemPath * entries: ArchivePath list
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
     | ViewArchiveEntry of archive: FileSystemPath * entry: ArchivePath
@@ -85,6 +89,11 @@ type UpdateResult =
 let private stay state = { State = state; Effects = [] }
 
 let private request state effect = { State = state; Effects = [ effect ] }
+
+let private changing (fs: IFileSystem) state archive effect =
+    match Archive.changeableKind fs archive with
+    | Some _ -> request state effect
+    | None -> request state (ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged archive)))
 
 let private applyListing state result =
     match result with
@@ -120,44 +129,52 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | PatternRequested mode -> request state (PromptForPattern mode)
     | PatternEntered(mode, pattern) -> stay (applyPattern mode state.Active pattern state)
     | MakeDirectoryRequested ->
-        match activeDirectory state with
-        | None -> stay state
-        | Some _ -> request state (PromptForName state.LastCreatedDirectory)
+        match (activePanel state).Path with
+        | OnDisk _ -> request state (PromptForName state.LastCreatedDirectory)
+        | InArchive(archive, _) -> changing fs state archive (PromptForName state.LastCreatedDirectory)
     | NameEntered name ->
-        match activeDirectory state with
-        | None -> stay state
-        | Some directory -> makeDirectory fs state.Active directory name state |> applyOperation state
+        match (activePanel state).Path with
+        | OnDisk directory -> makeDirectory fs state.Active directory name state |> applyOperation state
+        | InArchive(archive, level) ->
+            makeEntryDirectory fs state.Active archive level name state |> applyOperation state
     | DeleteRequested mode ->
         let target = activePanel state
 
-        match activeDirectory state, operationTargets target with
-        | None, _
+        let confirmed asked =
+            ConfirmDelete
+                { Targets = operationTargets target |> List.map _.Name
+                  Scope = deleteScope fs target
+                  Mode = asked }
+
+        match target.Path, operationTargets target with
         | _, [] -> stay state
-        | Some _, targets ->
-            request
-                state
-                (ConfirmDelete
-                    { Targets = targets |> List.map _.Name
-                      Scope = deleteScope fs target
-                      Mode = mode })
+        | OnDisk _, _ -> request state (confirmed mode)
+        | InArchive(archive, _), _ -> changing fs state archive (confirmed Permanently)
     | DeleteConfirmed mode ->
-        match operationPaths fs (activePanel state) with
-        | [] -> stay state
-        | paths -> request state (DeleteTargets(paths, mode))
+        match transferSource fs (activePanel state) with
+        | None -> stay state
+        | Some(FromDisk paths) -> request state (DeleteTargets(paths, mode))
+        | Some(FromArchive(archive, entries)) -> request state (RemoveEntries(archive, entries))
     | DeleteFinished results -> finishDelete fs results state |> applyBatch state
     | CopyRequested ->
-        match transferSource fs (activePanel state), targetDirectory state with
-        | None, _
-        | _, None -> stay state
-        | Some(FromDisk paths), Some target -> request state (CopyTargets(paths, target))
-        | Some(FromArchive(archive, entries)), Some target ->
+        match transferSource fs (activePanel state), transferTarget state with
+        | None, _ -> stay state
+        | Some(FromDisk paths), ToDirectory target -> request state (CopyTargets(paths, target))
+        | Some(FromArchive(archive, entries)), ToDirectory target ->
             request state (ExtractEntries(archive, entries, target))
+        | Some(FromDisk paths), ToArchive(archive, level) ->
+            changing fs state archive (AddEntries(archive, level, paths))
+        | Some(FromArchive _), ToArchive _ -> stay state
     | CopyFinished results -> finishTransfer fs results state |> applyBatch state
     | MoveRequested ->
-        match operationPaths fs (activePanel state), targetDirectory state with
-        | [], _
-        | _, None -> stay state
-        | _, Some target -> request state (PromptForTarget target)
+        match transferSource fs (activePanel state), transferTarget state with
+        | None, _ -> stay state
+        | Some(FromDisk _), ToDirectory target -> request state (PromptForTarget target)
+        | Some(FromArchive(archive, entries)), ToDirectory target ->
+            changing fs state archive (MoveEntriesOut(archive, entries, target))
+        | Some(FromDisk paths), ToArchive(archive, level) ->
+            changing fs state archive (MoveEntriesIn(archive, level, paths))
+        | Some(FromArchive _), ToArchive _ -> stay state
     | TargetEntered text ->
         match text.Trim(), operationPaths fs (activePanel state), activeDirectory state with
         | "", _, _

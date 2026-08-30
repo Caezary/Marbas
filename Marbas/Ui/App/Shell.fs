@@ -32,6 +32,9 @@ let CopyTitle = "Copying"
 let MoveTitle = "Moving"
 
 [<Literal>]
+let DeleteTitle = "Deleting"
+
+[<Literal>]
 let PackTitle = "Packing"
 
 [<Literal>]
@@ -116,6 +119,36 @@ let private showEntry (deps: Dependencies) archive password entry =
         deps.ShowFile source
     | Error error -> deps.ReportError ArchiveErrorMessage.Title (ArchiveErrorMessage.describe error)
 
+let private approvedInto (deps: Dependencies) archive level sources =
+    let taken =
+        ArchiveListing.read deps.FileSystem archive level
+        |> Result.map (List.map _.Name >> Set.ofList)
+        |> Result.defaultValue Set.empty
+
+    let landing source =
+        FileSystemPath.name deps.FileSystem source
+        |> ArchivePath.child level
+        |> ArchivePath.spelled deps.FileSystem archive
+
+    let occupied target =
+        taken.Contains(FileSystemPath.name deps.FileSystem target)
+
+    Operations.approveInto landing occupied (askOverwrite deps) sources
+
+let private refusedWhole (deps: Dependencies) archive error : Operations.ItemResult =
+    { Name = FileSystemPath.name deps.FileSystem archive
+      Outcome = Error(Operations.ArchiveFailed error) }
+
+let private itemsOf (deps: Dependencies) archive result =
+    match result with
+    | Ok items -> items
+    | Error error -> [ refusedWhole deps archive error ]
+
+let private changingArchive (deps: Dependencies) archive work =
+    match Archive.changeRefusal deps.FileSystem archive with
+    | Some refusal -> deps.ReportError ArchiveErrorMessage.Title (ArchiveErrorMessage.describe refusal)
+    | None -> work ()
+
 let private planFor (deps: Dependencies) targetDirectory archive (targets: unit -> ArchivePath list) =
     let planned password =
         match targets () with
@@ -183,6 +216,47 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
                 CopyTitle
                 (fun control -> Archive.extractAll deps.FileSystem control [ plan ])
                 (CopyFinished >> dispatch)
+    | AddEntries(archive, level, sources) ->
+        changingArchive deps archive (fun () ->
+            match approvedInto deps archive level sources with
+            | [] -> ()
+            | approved ->
+                deps.RunBatch
+                    CopyTitle
+                    (fun control ->
+                        Archive.addEntries deps.FileSystem control archive level approved
+                        |> itemsOf deps archive)
+                    (CopyFinished >> dispatch))
+    | MoveEntriesIn(archive, level, sources) ->
+        changingArchive deps archive (fun () ->
+            match approvedInto deps archive level sources with
+            | [] -> ()
+            | approved ->
+                deps.RunBatch
+                    MoveTitle
+                    (fun control ->
+                        Archive.moveIn deps.FileSystem control archive level approved
+                        |> itemsOf deps archive)
+                    (MoveFinished >> dispatch))
+    | MoveEntriesOut(archive, entries, targetDirectory) ->
+        changingArchive deps archive (fun () ->
+            match extractPlan deps targetDirectory archive entries with
+            | None -> ()
+            | Some plan ->
+                deps.RunBatch
+                    MoveTitle
+                    (fun control ->
+                        Archive.moveOut deps.FileSystem control plan.Request plan.Targets
+                        |> itemsOf deps archive)
+                    (MoveFinished >> dispatch))
+    | RemoveEntries(archive, entries) ->
+        changingArchive deps archive (fun () ->
+            deps.RunBatch
+                DeleteTitle
+                (fun control ->
+                    Archive.removeEntries deps.FileSystem control archive entries
+                    |> itemsOf deps archive)
+                (DeleteFinished >> dispatch))
     | ExtractTargets(archives, targetDirectory) ->
         match archives |> List.choose (unpackPlan deps targetDirectory) with
         | [] -> ()

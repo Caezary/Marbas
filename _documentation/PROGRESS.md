@@ -153,8 +153,22 @@ password once when there is one, asks the ordinary five-answer overwrite
 question for every entry that would land on something already there, and
 finishes by re-reading both panels with the marks of whatever did not make it
 still on — the same walk `F5` between two directories follows. The archive
-itself is only read: its bytes are the same afterwards. What is missing now is
-the operations that change an archive.
+itself is only read: its bytes are the same afterwards.
+
+**And now the ordinary keys change an archive.** From a panel standing inside a
+zip, `F5` from the other panel adds its targets at that level, `F8` removes the
+targets of the archive panel, `F7` makes a directory entry, and `F6` moves in
+either direction — out of an archive it extracts first and drops the entry only
+for what arrived, into an archive it deletes a source only once that source is
+in, so a failure loses nothing and a moved entry is in exactly one of the two
+places. The zip is updated where it lies rather than rewritten, every change
+runs behind the progress window and `Esc` leaves the archive exactly as it was.
+A kind that cannot be changed refuses by name before anything runs — a tar.gz
+never opens the name prompt for `F7` nor the confirmation for `F8`, and moving
+out of a rar is refused where copying out of it works — and an archive locked
+with a password says so instead of quietly storing a new entry in the clear,
+because the library cannot write an encrypted entry. What is missing now is the
+remaining formats.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -179,7 +193,7 @@ written up as the checklist in
 | 6 — Viewing files | P6.1–P6.2 | done |
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
-| 9 — Archives | P9.1–P9.12 | `Shift+F1` packs, `Shift+F2` unpacks, `Enter` browses an archive, `F5` copies out of one; changing one to come |
+| 9 — Archives | P9.1–P9.13 | `Shift+F1` packs, `Shift+F2` unpacks, `Enter` browses an archive, and the ordinary keys copy out of one and change it; the remaining formats to come |
 
 ## What works today
 
@@ -249,8 +263,17 @@ written up as the checklist in
   `F5` copies the targets out into the other panel — a marked directory with
   the tree below it — behind the same progress window, with the same overwrite
   question and the same surviving marks as a copy between two directories, and
-  the archive is left exactly as it was. The keys that would change an archive
-  — `F6`, `F7`, `F8`, `Shift+F1` — still do nothing from inside one.
+  the archive is left exactly as it was.
+- A zip can also be changed from the panel: `F5` from the other panel adds its
+  targets at the level shown, `F8` removes the targets of the archive panel
+  (always for good, since a zip has no trash), `F7` makes a directory entry, and
+  `F6` moves in either direction — out of an archive it extracts first and drops
+  the entry only for what arrived, into one it deletes a source only once that
+  source is in, so a moved entry is in exactly one of the two places. Every
+  change runs behind the progress window and `Esc` leaves the archive as it was.
+  A kind that cannot be changed — a tar.gz, a rar — refuses by name before a
+  prompt opens or a batch starts, and so does an archive locked with a password.
+  `Shift+F1` and `Shift+F4` still do nothing from inside an archive.
 - Unreadable or vanished directories raise a message box; the panel stays put.
 - `Ctrl+R` reloads the active panel, keeping the cursor on the same entry even
   when its position changed.

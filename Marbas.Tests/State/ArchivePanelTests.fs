@@ -25,33 +25,6 @@ let ``the targets of a panel inside an archive have no paths on disk`` () =
     Assert.Empty paths
 
 [<Fact>]
-let ``a copy into a panel inside an archive asks for nothing`` () =
-    let fs = mockFs ()
-    let state = standingInside fs Right |> setCursor Left 1
-
-    let result = update fs CopyRequested state
-
-    Assert.Empty result.Effects
-
-[<Fact>]
-let ``a delete inside an archive asks nothing to be confirmed`` () =
-    let fs = mockFs ()
-    let state = standingInside fs Left |> setCursor Left 2
-
-    let result = update fs (DeleteRequested ToTrash) state
-
-    Assert.Empty result.Effects
-
-[<Fact>]
-let ``a directory is not made inside an archive`` () =
-    let fs = mockFs ()
-    let state = standingInside fs Left
-
-    let result = update fs MakeDirectoryRequested state
-
-    Assert.Empty result.Effects
-
-[<Fact>]
 let ``a file is not made inside an archive`` () =
     let fs = mockFs ()
     let state = standingInside fs Left

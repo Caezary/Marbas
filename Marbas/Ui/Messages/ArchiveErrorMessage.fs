@@ -8,6 +8,9 @@ let Title = "Archive"
 let describe error =
     match error with
     | KindCannotBeRead path -> $"'{FileSystemPath.value path}' is not an archive Marbas can read."
+    | KindCannotBeChanged path -> $"'{FileSystemPath.value path}' is not an archive Marbas can change."
+    | ProtectedArchiveCannotBeChanged path ->
+        $"'{FileSystemPath.value path}' is protected by a password and cannot be changed."
     | ArchiveNotFound path -> $"'{FileSystemPath.value path}' no longer exists."
     | PasswordNeeded path -> $"'{FileSystemPath.value path}' needs a password."
     | ArchiveDamaged(path, reason) -> $"'{FileSystemPath.value path}' cannot be read: {reason}"

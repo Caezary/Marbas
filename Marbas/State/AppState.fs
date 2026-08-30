@@ -52,6 +52,10 @@ type TransferSource =
     | FromDisk of paths: FileSystemPath list
     | FromArchive of archive: FileSystemPath * entries: ArchivePath list
 
+type TransferTarget =
+    | ToDirectory of directory: FileSystemPath
+    | ToArchive of archive: FileSystemPath * level: ArchivePath
+
 let private panelFrom (settings: PanelSettings) =
     { Path = OnDisk settings.Path
       Entries = []
@@ -302,6 +306,11 @@ let activeDirectory state = directoryOf (activePanel state)
 
 let targetDirectory state = directoryOf (panel (opposite state.Active) state)
 
+let transferTarget state =
+    match (panel (opposite state.Active) state).Path with
+    | OnDisk directory -> ToDirectory directory
+    | InArchive(archive, level) -> ToArchive(archive, level)
+
 let private entryPath (fs: IFileSystem) panel (entry: Entry) =
     PanelLocation.combine fs panel.Path (EntryName.value entry.Name)
 
@@ -345,7 +354,9 @@ let cursorDirectoryPath (fs: IFileSystem) panel =
 
 let deleteScope (fs: IFileSystem) panel =
     let reachesContents =
-        operationPaths fs panel |> List.exists (Operations.isNonEmptyDirectory fs)
+        match panel.Path with
+        | OnDisk _ -> operationPaths fs panel |> List.exists (Operations.isNonEmptyDirectory fs)
+        | InArchive _ -> operationTargets panel |> List.exists (fun entry -> entry.Kind = Directory)
 
     if reachesContents then
         WithDirectoryContents
@@ -390,17 +401,23 @@ let finishPack (fs: IFileSystem) (archive: EntryName) results state =
 let finishRename (fs: IFileSystem) newName state =
     reloadFocusing fs state.Active (ByName newName) (fun previous -> keepSurviving previous.Selected) state
 
-let makeDirectory (fs: IFileSystem) side directory name state : Result<AppState, Operations.OperationError> =
+let private madeDirectory (fs: IFileSystem) side location name state =
     let previous = panel side state
 
+    loadLocationFocusing fs side location (ByName name) state
+    |> Result.mapError asOperationError
+    |> Result.map (updatePanel side (keepSurviving previous.Selected))
+    |> Result.map (fun updated ->
+        { updated with
+            LastCreatedDirectory = Some name })
+
+let makeDirectory (fs: IFileSystem) side directory name state : Result<AppState, Operations.OperationError> =
     Operations.makeDirectory fs directory name
-    |> Result.bind (fun () ->
-        loadPanelFocusing fs side directory (ByName name) state
-        |> Result.mapError asOperationError
-        |> Result.map (updatePanel side (keepSurviving previous.Selected))
-        |> Result.map (fun updated ->
-            { updated with
-                LastCreatedDirectory = Some name }))
+    |> Result.bind (fun () -> madeDirectory fs side (OnDisk directory) name state)
+
+let makeEntryDirectory (fs: IFileSystem) side archive level name state : Result<AppState, Operations.OperationError> =
+    Archive.makeEntryDirectory fs archive level name
+    |> Result.bind (fun () -> madeDirectory fs side (InArchive(archive, level)) name state)
 
 let makeFile (fs: IFileSystem) side directory name state : Result<AppState * FileSystemPath, Operations.OperationError> =
     let previous = panel side state

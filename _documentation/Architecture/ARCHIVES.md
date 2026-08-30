@@ -1,9 +1,11 @@
 # Archives
 
 `Shift+F1` packs what the active panel points at into an archive in the other
-panel, `Shift+F2` empties an archive into it, and `Enter` walks into one as
-though it were a directory. The operations that change an archive from a panel
-standing inside it are the rest of phase 9 and are not built yet.
+panel, `Shift+F2` empties an archive into it, `Enter` walks into one as though
+it were a directory, and from a panel standing inside a zip the ordinary keys
+copy out of it, add to it, remove from it and move in either direction. What is
+left of phase 9 is the remaining formats: 7z on the writing side, the rest of
+the tar family on the reading side.
 
 ## The vocabulary
 
@@ -469,10 +471,11 @@ opener, the same one zip uses, and nothing above `ArchiveReader` asks what kind
 it is holding; what is missing is a checked-in archive to read, which is what
 P9.14 brings along with the rest of the readable set.
 
-**What the operations that write do inside an archive is still P9.13.** `F6`,
-`F7`, `F8` and `Shift+F1` ask the location for a disk directory, find none, and
-do nothing — the gates P9.10 put in. Nothing is silently half-done; the keys
-simply have no work to offer yet.
+**`Shift+F1` and `Shift+F4` still do nothing from inside an archive.** Packing
+an entry that is already in an archive would have to unpack it first, and
+creating a file means handing a path to an editor; neither is a promise this
+phase makes. Both ask the location for a disk directory, find none, and stop —
+the gates P9.10 put in.
 
 ## Copying out of an archive
 
@@ -519,6 +522,90 @@ except that the source is read out of a file.
 the same after the batch as before it, which is asserted rather than assumed.
 An archive that cannot be read fails the whole plan as one `ItemResult` named
 after the archive, the way `Shift+F2` reports it.
+
+## Changing an archive
+
+**A zip is updated in place, not rewritten.** `SharpZipLib`'s `ZipFile` update
+API — `BeginUpdate`, `Add`, `Delete`, `AddDirectory`, `CommitUpdate` — runs over
+the very stream `IFileSystem` hands out, with `MemoryArchiveStorage` in its
+default direct mode, so the archive on disk is edited where it lies and the
+whole feature is tested on `MockFileSystem` like everything else. Adding an
+entry to a large archive therefore costs the entry, not the archive. `Archive`
+wraps it in one private `changing` helper that opens the file, hands the
+`ZipFile` to the work, and then either commits or aborts; nothing is written
+until the commit, which is what makes cancelling free.
+
+**Four operations, one shape.** `Archive.addEntries` puts disk sources at a
+level — reusing the very `Sink` and tree walk `Archive.write` packs with, so a
+directory brings everything below it and the entry names are relative to the
+source's own parent. `Archive.removeEntries` drops every entry under each
+target, so removing a directory takes its tree. `Archive.makeEntryDirectory`
+adds one directory entry. `Archive.moveIn` and `Archive.moveOut` are the two
+compositions: in is add-then-delete-the-source, out is extract-then-remove-the-
+entry. All of them answer one `ItemResult` per target the way copying does, and
+`Esc` stops them.
+
+**A move drops one side only once the other side has it.** `moveIn` deletes a
+source only for the results that came back `Ok`, and `moveOut` removes an entry
+only for the targets that actually landed on disk; a failure therefore loses
+nothing — the entry is in exactly one of the two places, never neither.
+Matching a removal failure back to the entry it belongs to goes by name, which
+is sound because a panel's targets all stand at one level and a level cannot
+hold two entries with the same name.
+
+**Cancelling leaves the archive exactly as it was.** `Esc` in the progress
+window makes the batch abort its update instead of committing it, and every
+target then answers `Cancelled` — the same answer `Archive.write` gives when the
+half-written file is deleted. There is no half-changed archive to explain.
+
+**Two refusals, in two layers, for two reasons.** Whether a *kind* can be
+changed is a question about the name, so `Update` asks `Archive.changeableKind`
+and answers `KindCannotBeChanged` before a dialog is opened or a batch is
+started: `F7` inside a tar.gz never prompts for a name, `F8` never asks for a
+confirmation. Whether *this archive* can be changed also depends on what is
+inside it — `SharpZipLib` cannot create an AES entry, so adding to a
+password-protected zip would either fail or quietly store the new entry in the
+clear — and that question needs the file read, so `Shell` asks
+`Archive.changeRefusal` before it starts a batch and reports
+`ProtectedArchiveCannotBeChanged` through the ordinary message box.
+`Archive.addEntries` and its siblings ask again themselves, so the rule holds
+whoever calls them.
+
+**The overwrite question is the same five answers, asked about a place inside
+an archive.** `Operations.approveInto` is the standing-answer walk lifted out of
+`Operations.approve`: it takes a function from a source to its landing place
+and a function that says whether that landing place is occupied, so the disk
+version passes `FileSystemPath.kind` and the archive version passes membership
+of the level's own names. What the user sees is `…\backup.zip\notes.txt`, the
+same spelling everything else uses.
+
+**Which key does what, from where.** `AppState.transferTarget` answers
+`ToDirectory` or `ToArchive` the way `transferSource` answers `FromDisk` or
+`FromArchive`, and `Update` matches the pair: `F5` copies, extracts or adds;
+`F6` moves, moves out or moves in; `F8` deletes paths or removes entries; `F7`
+makes a directory on disk or an entry in the archive. Two archives on both
+sides is the one pair that does nothing — copying between archives would mean
+unpacking into a temporary place, which this phase does not do.
+
+**`F6` skips its prompt when an archive is one of the two sides.** The prompt
+exists to let a target be typed or a single entry renamed, and neither is
+offered inside an archive, so there is nothing to type: the key goes straight
+to the batch with the other panel as the target, exactly as `F5` does. Moving
+*out* of an archive is gated on the source archive being changeable, which is
+why moving out of a rar is refused where copying out of it works.
+
+**Deleting inside an archive is always "for good".** A zip has no trash, so
+`F8` and `Shift+F8` both mean the same thing there, and the confirmation is the
+`Permanently` wording rather than the trash one. The scope warning still
+appears: a directory among the targets says that everything inside it goes with
+it. The removal runs as a batch of its own, under `Deleting`, because dropping
+an entry rewrites what follows it in the file.
+
+**`F7` stays one transition, not an effect.** `AppState.makeEntryDirectory`
+mirrors `AppState.makeDirectory` exactly — make it, re-read the panel with the
+cursor on the new entry, remember the name for the next prompt — because adding
+one directory entry is as quick on a zip as it is on a disk. A name the level
+already holds is `TargetExists`, spelled the archive way.
 
 ## Libraries and licences
 

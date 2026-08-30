@@ -168,3 +168,16 @@ the two cases onto `CopyTargets` and `ExtractEntries` in two arms and never
 asks a second time what kind of place the panel is standing in. The type is
 what `F6` will match on when moving out of an archive joins it in P9.13. See
 [ARCHIVES.md](ARCHIVES.md), *Copying out of an archive*.
+
+**Where a panel stands decides which key does what.** `AppState.transferSource`
+and `AppState.transferTarget` answer what the operation targets are and where
+they are going — `FromDisk`/`FromArchive`, `ToDirectory`/`ToArchive` — and
+`Update` matches the pair, so `F5`, `F6`, `F7` and `F8` stay one message each
+while gaining four destinations between them. A key that would change an
+archive of a kind that cannot be changed answers
+`ArchiveFailed(KindCannotBeChanged …)` before it raises any other effect, so no
+prompt opens and no batch starts; whether the archive is protected by a
+password is a question only the file can answer, and `Shell` asks it before it
+starts the batch. `F7` inside an archive stays a transition rather than an
+effect, because adding one directory entry is as quick as making one on disk.
+See [ARCHIVES.md](ARCHIVES.md), *Changing an archive*.

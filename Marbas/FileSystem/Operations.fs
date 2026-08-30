@@ -196,7 +196,12 @@ type private StandingAnswer =
     | OverwriteEverything
     | SkipEverything
 
-let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources targetDirectory =
+let approveInto
+    (landing: FileSystemPath -> FileSystemPath)
+    (occupied: FileSystemPath -> bool)
+    (ask: FileSystemPath -> OverwriteAnswer)
+    sources
+    =
     let answerFor standing target =
         match standing with
         | OverwriteEverything -> Yes
@@ -207,14 +212,10 @@ let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources t
         match remaining with
         | [] -> List.rev approved
         | source :: rest ->
-            let target = inDirectory fs targetDirectory source
-            let targetAlreadyExists = FileSystemPath.kind fs target <> NoEntry
+            let target = landing source
 
             let answer =
-                if targetAlreadyExists then
-                    answerFor standing target
-                else
-                    Yes
+                if occupied target then answerFor standing target else Yes
 
             match answer with
             | Cancel -> []
@@ -224,6 +225,9 @@ let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources t
             | YesToAll -> run OverwriteEverything (source :: approved) rest
 
     run AskEachTime [] sources
+
+let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources targetDirectory =
+    approveInto (inDirectory fs targetDirectory) (fun target -> FileSystemPath.kind fs target <> NoEntry) ask sources
 
 let allWatched (fs: IFileSystem) (control: BatchControl) apply sources =
     let rec run finished remaining =

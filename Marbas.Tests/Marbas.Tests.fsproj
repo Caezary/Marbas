@@ -39,6 +39,7 @@
     <Compile Include="FileSystem\ArchiveReaderTests.fs" />
     <Compile Include="FileSystem\ArchiveExtractTests.fs" />
     <Compile Include="FileSystem\ArchiveListingTests.fs" />
+    <Compile Include="FileSystem\ArchiveChangeTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
     <Compile Include="FileSystem\TrashTests.fs" />
   </ItemGroup>
@@ -56,6 +57,7 @@
     <Compile Include="State\ArchivePanelTests.fs" />
     <Compile Include="State\ArchiveNavigationTests.fs" />
     <Compile Include="State\ArchiveCopyTests.fs" />
+    <Compile Include="State\ArchiveWriteTests.fs" />
     <Compile Include="State\SelectionPatternTests.fs" />
     <Compile Include="State\MkdirTests.fs" />
     <Compile Include="State\DeleteTests.fs" />
@@ -177,6 +179,7 @@
     <Compile Include="Integration\App\PackKeyTests.fs" />
     <Compile Include="Integration\App\UnpackKeyTests.fs" />
     <Compile Include="Integration\App\ArchiveBrowseTests.fs" />
+    <Compile Include="Integration\App\ArchiveWriteKeyTests.fs" />
     <Compile Include="Integration\App\MoveKeyTests.fs" />
     <Compile Include="Integration\App\EditKeyTests.fs" />
   </ItemGroup>

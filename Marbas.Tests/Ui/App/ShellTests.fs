@@ -324,7 +324,7 @@ let ``a batch is handed to the runner under its own title`` () =
     let deps () =
         { noDeps () with
             FileSystem = copyReadyFs ()
-            RunBatch = fun title work finish -> titles.Add title; work Operations.unattended |> finish }
+            RunBatch = fun title work finish -> titles.Add title; work unattended |> finish }
 
     Shell.interpret (deps ()) dispatch (CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
     Shell.interpret (deps ()) dispatch (MoveTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
@@ -340,8 +340,8 @@ let ``nothing is run when every collision is refused`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskOverwrite = (fun _ _ -> Operations.No)
-            RunBatch = fun _ work finish -> started <- true; work Operations.unattended |> finish }
+            AskOverwrite = (fun _ _ -> No)
+            RunBatch = fun _ work finish -> started <- true; work unattended |> finish }
 
     Shell.interpret deps dispatch (CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
 
@@ -358,7 +358,7 @@ let ``a collision asks the overwrite question under its own title`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskOverwrite = fun title message -> asked <- (title, message); Operations.No }
+            AskOverwrite = fun title message -> asked <- (title, message); No }
 
     Shell.interpret deps dispatch (CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
 
@@ -679,7 +679,7 @@ let ``packing runs under its own title`` () =
             RunBatch =
                 fun title work finish ->
                     titles.Add title
-                    work Operations.unattended |> finish }
+                    work unattended |> finish }
 
     Shell.interpret deps dispatch (ArchiveTargets([ fp (at "start/notes.txt") ], packing (at "backup/notes.zip")))
 
@@ -779,7 +779,7 @@ let ``unpacking runs under its own title`` () =
             RunBatch =
                 fun title work finish ->
                     titles.Add title
-                    work Operations.unattended |> finish }
+                    work unattended |> finish }
 
     Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
 
@@ -895,7 +895,7 @@ let ``an entry of an archive is handed over under the name of its place in it`` 
 
     Archive.write
         fs
-        Operations.unattended
+        unattended
         { Path = fp (at "backup/data.zip")
           Format = ArchiveFormat.ofKind Zip |> Expect.some
           Compression = Normal
@@ -944,7 +944,7 @@ let ``a locked archive asks for its password before an entry is shown`` () =
 
     Archive.write
         fs
-        Operations.unattended
+        unattended
         { Path = fp (at "backup/locked.zip")
           Format = ArchiveFormat.ofKind Zip |> Expect.some
           Compression = Normal
@@ -975,7 +975,7 @@ let ``a locked archive whose password is not given shows nothing`` () =
 
     Archive.write
         fs
-        Operations.unattended
+        unattended
         { Path = fp (at "backup/locked.zip")
           Format = ArchiveFormat.ofKind Zip |> Expect.some
           Compression = Normal
@@ -1043,7 +1043,7 @@ let ``copying out of an archive runs under the copying title and leaves the arch
             RunBatch =
                 fun title work finish ->
                     titles.Add title
-                    work Operations.unattended |> finish }
+                    work unattended |> finish }
 
     Shell.interpret deps dispatch (ExtractEntries(fp (at "start/data.zip"), [ entry "notes.txt" ], fp (at "backup")))
 
@@ -1063,7 +1063,7 @@ let ``an entry copied over one already there is asked about by its landing place
             AskOverwrite =
                 fun _ message ->
                     asked.Add message
-                    Operations.No }
+                    No }
 
     Shell.interpret deps dispatch (ExtractEntries(fp (at "start/data.zip"), [ entry "notes.txt" ], fp (at "backup")))
 
@@ -1080,11 +1080,11 @@ let ``a refused overwrite copies nothing and starts no batch`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskOverwrite = fun _ _ -> Operations.No
+            AskOverwrite = fun _ _ -> No
             RunBatch =
                 fun title work finish ->
                     batches.Add title
-                    work Operations.unattended |> finish }
+                    work unattended |> finish }
 
     Shell.interpret deps dispatch (ExtractEntries(fp (at "start/data.zip"), [ entry "notes.txt" ], fp (at "backup")))
 
@@ -1120,3 +1120,147 @@ let ``copying out of a locked archive whose password is not given copies nothing
 
     Assert.False(fs.File.Exists(at "backup/notes.txt"))
     Assert.Empty sent
+
+let private zipAt = fp (at "start/data.zip")
+
+let private withLooseFile () =
+    let fs = unpackReadyFs None
+    fs.AddFile(at "backup/fresh.txt", MockFileData "fresh")
+    fs
+
+let private levelNames (fs: MockFileSystem) level =
+    ArchiveListing.read fs zipAt level
+    |> Expect.ok
+    |> List.map (_.Name >> EntryName.value)
+    |> List.sort
+
+[<Fact>]
+let ``sources added to an archive are in it and the outcome is dispatched back`` () =
+    let sent, dispatch = capture ()
+    let fs = withLooseFile ()
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret deps dispatch (AddEntries(zipAt, ArchivePath.root, [ fp (at "backup/fresh.txt") ]))
+
+    Assert.Equal<string list>([ "docs"; "fresh.txt"; "notes.txt" ], levelNames fs ArchivePath.root)
+    Assert.Equal<Message list>([ CopyFinished [ { Name = en "fresh.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+
+[<Fact>]
+let ``a name already at that level of the archive is asked about`` () =
+    let _, dispatch = capture ()
+    let fs = withLooseFile ()
+    fs.AddFile(at "backup/notes.txt", MockFileData "fresher")
+    let asked = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            AskOverwrite =
+                fun _ message ->
+                    asked.Add message
+                    No }
+
+    Shell.interpret deps dispatch (AddEntries(zipAt, ArchivePath.root, [ fp (at "backup/notes.txt") ]))
+
+    Assert.Contains(at "start/data.zip/notes.txt", Assert.Single asked)
+
+[<Fact>]
+let ``a kind that cannot be changed is reported and no batch runs`` () =
+    let sent, dispatch = capture ()
+    let fs = withLooseFile ()
+    fs.AddFile(at "start/data.tar.gz", MockFileData "whatever")
+    let batches = ResizeArray<string>()
+    let mutable reported = ("", "")
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            ReportError = fun title message -> reported <- (title, message)
+            RunBatch =
+                fun title work finish ->
+                    batches.Add title
+                    work unattended |> finish }
+
+    Shell.interpret
+        deps
+        dispatch
+        (AddEntries(fp (at "start/data.tar.gz"), ArchivePath.root, [ fp (at "backup/fresh.txt") ]))
+
+    Assert.Empty batches
+    Assert.Empty sent
+    Assert.Equal(ArchiveErrorMessage.Title, fst reported)
+    Assert.Contains("Marbas can change", snd reported)
+
+[<Fact>]
+let ``an archive behind a password is reported instead of changed`` () =
+    let sent, dispatch = capture ()
+    let fs = unpackReadyFs (ArchivePassword.tryCreate "opensesame")
+    fs.AddFile(at "backup/fresh.txt", MockFileData "fresh")
+    let mutable reported = ("", "")
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            ReportError = fun title message -> reported <- (title, message) }
+
+    Shell.interpret deps dispatch (AddEntries(zipAt, ArchivePath.root, [ fp (at "backup/fresh.txt") ]))
+
+    Assert.Empty sent
+    Assert.Equal(ArchiveErrorMessage.Title, fst reported)
+    Assert.Contains("password", snd reported)
+
+[<Fact>]
+let ``a source moved into an archive is gone from disk once it is in`` () =
+    let sent, dispatch = capture ()
+    let fs = withLooseFile ()
+    let titles = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            RunBatch =
+                fun title work finish ->
+                    titles.Add title
+                    work unattended |> finish }
+
+    Shell.interpret deps dispatch (MoveEntriesIn(zipAt, ArchivePath.root, [ fp (at "backup/fresh.txt") ]))
+
+    Assert.Equal<string list>([ "docs"; "fresh.txt"; "notes.txt" ], levelNames fs ArchivePath.root)
+    Assert.False(fs.File.Exists(at "backup/fresh.txt"))
+    Assert.Equal<string list>([ Shell.MoveTitle ], List.ofSeq titles)
+    Assert.Equal<Message list>([ MoveFinished [ { Name = en "fresh.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+
+[<Fact>]
+let ``an entry moved out of an archive is on disk and gone from the archive`` () =
+    let sent, dispatch = capture ()
+    let fs = unpackReadyFs None
+    let entry = ArchivePath.tryCreate "notes.txt" |> Expect.some
+
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret deps dispatch (MoveEntriesOut(zipAt, [ entry ], fp (at "backup")))
+
+    Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
+    Assert.Equal<string list>([ "docs" ], levelNames fs ArchivePath.root)
+    Assert.Equal<Message list>([ MoveFinished [ { Name = en "notes.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+
+[<Fact>]
+let ``entries removed from an archive are gone and the outcome is dispatched back`` () =
+    let sent, dispatch = capture ()
+    let fs = unpackReadyFs None
+    let entry = ArchivePath.tryCreate "notes.txt" |> Expect.some
+    let titles = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            RunBatch =
+                fun title work finish ->
+                    titles.Add title
+                    work unattended |> finish }
+
+    Shell.interpret deps dispatch (RemoveEntries(zipAt, [ entry ]))
+
+    Assert.Equal<string list>([ "docs" ], levelNames fs ArchivePath.root)
+    Assert.Equal<string list>([ Shell.DeleteTitle ], List.ofSeq titles)
+    Assert.Equal<Message list>([ DeleteFinished [ { Name = en "notes.txt"; Outcome = Ok() } ] ], List.ofSeq sent)

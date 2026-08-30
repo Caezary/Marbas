@@ -270,3 +270,178 @@ module Archive =
             match extract fs control plan.Request plan.Targets with
             | Ok results -> results
             | Error error -> [ refused plan.Request error ])
+
+    let changeableKind (fs: IFileSystem) (archive: FileSystemPath) =
+        FileSystemPath.name fs archive
+        |> ArchiveKind.recognise
+        |> Option.filter (ArchiveKind.capabilities >> _.CanChange)
+
+    let changeRefusal (fs: IFileSystem) (archive: FileSystemPath) =
+        match changeableKind fs archive with
+        | None -> Some(KindCannotBeChanged archive)
+        | Some _ when needsPassword fs archive -> Some(ProtectedArchiveCannotBeChanged archive)
+        | Some _ -> None
+
+    type private Update<'a> =
+        | Commit of 'a
+        | Abort of 'a
+
+    let private changing (fs: IFileSystem) (archive: FileSystemPath) (work: ZipFile -> Update<'a>) =
+        match changeRefusal fs archive with
+        | Some refusal -> Error refusal
+        | None ->
+            try
+                use stream =
+                    fs.File.Open(FileSystemPath.value archive, FileMode.Open, FileAccess.ReadWrite)
+
+                use zip = new ZipFile(stream)
+                zip.IsStreamOwner <- false
+                zip.BeginUpdate(MemoryArchiveStorage())
+
+                match work zip with
+                | Commit value ->
+                    zip.CommitUpdate()
+                    Ok value
+                | Abort value ->
+                    zip.AbortUpdate()
+                    Ok value
+            with ex ->
+                Error(ArchiveReader.mapException archive ex)
+
+    let private keyOf (level: ArchivePath) (name: string) =
+        match ArchivePath.value level with
+        | "" -> name
+        | prefix -> $"{prefix}/{name}"
+
+    let private replacing (zip: ZipFile) (key: string) =
+        match zip.GetEntry key with
+        | null -> ()
+        | existing -> zip.Delete existing
+
+    let private staticSource (fs: IFileSystem) (path: FileSystemPath) =
+        { new IStaticDataSource with
+            member _.GetSource() = reading fs path :> Stream }
+
+    let private intoUpdate (fs: IFileSystem) (zip: ZipFile) (level: ArchivePath) =
+        { AddDirectory =
+            fun name ->
+                let key = keyOf level name
+                replacing zip (key + "/")
+                zip.AddDirectory(key + "/")
+          AddFile =
+            fun name path ->
+                let key = keyOf level name
+                replacing zip key
+
+                zip.Add(
+                    staticSource fs path,
+                    ZipEntry(key, DateTime = (modifiedAt fs path).LocalDateTime, Size = fs.FileInfo.New(FileSystemPath.value path).Length)
+                ) }
+
+    let private cancelledEntries (fs: IFileSystem) archive targets =
+        targets
+        |> List.map (fun target ->
+            let path = ArchivePath.spelled fs archive target
+
+            { Name = ArchivePath.name target |> Option.defaultValue (FileSystemPath.name fs archive)
+              Outcome = Error(Operations.Cancelled path) }: Operations.ItemResult)
+
+    let addEntries (fs: IFileSystem) control (archive: FileSystemPath) (level: ArchivePath) sources =
+        changing fs archive (fun zip ->
+            let added = packAll fs control sources (intoUpdate fs zip level)
+
+            if control.IsCancelled() then
+                Abort(
+                    sources
+                    |> List.map (fun source -> Operations.itemResult fs source (Error(Operations.Cancelled source)))
+                )
+            else
+                Commit added)
+
+    let private droppingEntries (fs: IFileSystem) archive (zip: ZipFile) target =
+        let matching =
+            zip
+            |> Seq.cast<ZipEntry>
+            |> Seq.filter (fun entry ->
+                under
+                    target
+                    { Segments = ArchiveReader.segmentsOf entry.Name
+                      IsDirectory = entry.IsDirectory
+                      Size = entry.Size
+                      Modified = DateTimeOffset.MinValue
+                      IsEncrypted = false
+                      WriteTo = ignore })
+            |> List.ofSeq
+
+        match matching with
+        | [] -> Error(Operations.SourceNotFound(ArchivePath.spelled fs archive target))
+        | entries ->
+            attempt (ArchivePath.spelled fs archive target) (fun () -> entries |> List.iter zip.Delete)
+
+    let removeEntries (fs: IFileSystem) (control: Operations.BatchControl) (archive: FileSystemPath) targets =
+        changing fs archive (fun zip ->
+            let dropped =
+                targets
+                |> eachTarget fs control archive (fun target ->
+                    control.Report(ArchivePath.spelled fs archive target)
+                    droppingEntries fs archive zip target)
+
+            if control.IsCancelled() then
+                Abort(cancelledEntries fs archive targets)
+            else
+                Commit dropped)
+
+    let makeEntryDirectory (fs: IFileSystem) archive level (name: EntryName) =
+        let target = ArchivePath.spelled fs archive (ArchivePath.child level name)
+
+        match ArchiveListing.read fs archive level with
+        | Error error -> Error(Operations.ArchiveFailed error)
+        | Ok entries when entries |> List.exists (fun entry -> entry.Name = name) ->
+            Error(Operations.TargetExists target)
+        | Ok _ ->
+            changing fs archive (fun zip ->
+                let key = keyOf level (EntryName.value name)
+                zip.AddDirectory(key + "/")
+                Commit())
+            |> Result.mapError Operations.ArchiveFailed
+
+    let private droppingArrived (fs: IFileSystem) control archive arrived (results: Operations.ItemResult list) =
+        match arrived with
+        | [] -> Ok results
+        | targets ->
+            removeEntries fs control archive targets
+            |> Result.map (fun dropped ->
+                let refused =
+                    dropped
+                    |> List.choose (fun item ->
+                        match item.Outcome with
+                        | Error error -> Some(item.Name, error)
+                        | Ok() -> None)
+                    |> Map.ofList
+
+                results
+                |> List.map (fun item ->
+                    match item.Outcome, Map.tryFind item.Name refused with
+                    | Ok(), Some error -> { item with Outcome = Error error }
+                    | _ -> item))
+
+    let moveOut (fs: IFileSystem) control (request: ExtractRequest) (targets: ArchivePath list) =
+        extract fs control request targets
+        |> Result.bind (fun results ->
+            let arrived =
+                List.zip (List.truncate results.Length targets) results
+                |> List.filter (snd >> _.Outcome >> Result.isOk)
+                |> List.map fst
+
+            droppingArrived fs control request.Archive arrived results)
+
+    let moveIn (fs: IFileSystem) control archive level (sources: FileSystemPath list) =
+        addEntries fs control archive level sources
+        |> Result.map (fun results ->
+            List.zip (List.truncate results.Length sources) results
+            |> List.map (fun (source, item) ->
+                match item.Outcome with
+                | Error _ -> item
+                | Ok() ->
+                    { item with
+                        Outcome = Operations.delete fs source }))
