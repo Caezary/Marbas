@@ -1168,7 +1168,7 @@ let ``a name already at that level of the archive is asked about`` () =
 let ``a kind that cannot be changed is reported and no batch runs`` () =
     let sent, dispatch = capture ()
     let fs = withLooseFile ()
-    fs.AddFile(at "start/data.tar.gz", MockFileData "whatever")
+    fs.AddFile(at "start/data.rar", MockFileData "whatever")
     let batches = ResizeArray<string>()
     let mutable reported = ("", "")
 
@@ -1184,7 +1184,7 @@ let ``a kind that cannot be changed is reported and no batch runs`` () =
     Shell.interpret
         deps
         dispatch
-        (AddEntries(fp (at "start/data.tar.gz"), ArchivePath.root, [ fp (at "backup/fresh.txt") ]))
+        (AddEntries(fp (at "start/data.rar"), ArchivePath.root, [ fp (at "backup/fresh.txt") ]))
 
     Assert.Empty batches
     Assert.Empty sent

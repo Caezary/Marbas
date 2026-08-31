@@ -23,10 +23,10 @@ let private withLoose () =
     fs.AddFile(at "start/loose.txt", MockFileData "loose")
     fs
 
-let private tarball = fp (at "start/backup.tar.gz")
+let private tarball = fp (at "start/backup.tar")
 
 let private withTarball () =
-    let fs = packedAs TarGz (at "start/backup.tar.gz")
+    let fs = tarredAs (at "start/backup.tar")
     fs.AddFile(at "start/loose.txt", MockFileData "loose")
     fs
 

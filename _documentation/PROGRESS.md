@@ -163,7 +163,7 @@ for what arrived, into an archive it deletes a source only once that source is
 in, so a failure loses nothing and a moved entry is in exactly one of the two
 places. The zip is updated where it lies rather than rewritten, every change
 runs behind the progress window and `Esc` leaves the archive exactly as it was.
-A kind that cannot be changed refuses by name before anything runs — a tar.gz
+A kind that cannot be changed refuses by name before anything runs — a plain tar
 never opens the name prompt for `F7` nor the confirmation for `F8`, and moving
 out of a rar is refused where copying out of it works — and an archive locked
 with a password says so instead of quietly storing a new entry in the clear,
@@ -179,6 +179,18 @@ uncreatable for good. Every kind now does exactly what the capability table
 claims: a round trip for each creatable one, an add and a remove for each
 changeable one, and a listing and an extraction for each readable one — rar
 excepted, since nothing in the toolchain can create a rar to read back.
+
+**Tar.gz joined the kinds that can be changed.** What stood in the way
+was that nothing rewrote it, not that a gzip stream forbade it — and 7z had
+already shown the shape. `Archive.rewriting` now takes a kind, asks
+`ArchiveFormat` for it and writes the new archive through the same
+`intoArchive` the packing walk goes through, so the rule is one sentence: a kind
+that can be created can be changed, zip in place and everything else by being
+written again. `Sink` grew to carry a `Stored` — a size, a modification time
+that may be unknown, and a function that opens the content — which is what lets
+one writer take a file from disk and an entry buffered out of the old archive
+without knowing which it has. The price is a full recompression per change and
+the memory of the largest entry, the same 7z already paid.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -281,7 +293,7 @@ written up as the checklist in
   the entry only for what arrived, into one it deletes a source only once that
   source is in, so a moved entry is in exactly one of the two places. Every
   change runs behind the progress window and `Esc` leaves the archive as it was.
-  A kind that cannot be changed — a tar, a tar.gz, a rar — refuses by name before a
+  A kind that cannot be changed — a tar, a tar.bz2, a rar — refuses by name before a
   prompt opens or a batch starts, and so does an archive locked with a password.
   `Shift+F1` and `Shift+F4` still do nothing from inside an archive.
 - Unreadable or vanished directories raise a message box; the panel stays put.

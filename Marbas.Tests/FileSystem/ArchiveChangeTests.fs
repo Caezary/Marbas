@@ -235,14 +235,15 @@ let ``an entry that never arrived on disk stays in the archive`` () =
 
 [<Fact>]
 let ``a kind that cannot be changed refuses by name`` () =
-    let fs = packedInto TarGz (at "start/data.tar.gz") None
-    let tarball = fp (at "start/data.tar.gz")
+    let fs = packed ()
+    fs.AddFile(at "start/data.rar", MockFileData "not a rar at all")
+    let unchangeable = fp (at "start/data.rar")
 
     let refusal =
-        Archive.addEntries fs Operations.unattended tarball ArchivePath.root [ fp (at "loose/added.txt") ]
+        Archive.addEntries fs Operations.unattended unchangeable ArchivePath.root [ fp (at "loose/added.txt") ]
         |> Expect.error
 
-    Assert.Equal(KindCannotBeChanged tarball, refusal)
+    Assert.Equal(KindCannotBeChanged unchangeable, refusal)
 
 [<Fact>]
 let ``an archive behind a password refuses to be changed`` () =

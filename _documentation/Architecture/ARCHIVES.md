@@ -2,10 +2,10 @@
 
 `Shift+F1` packs what the active panel points at into an archive in the other
 panel, `Shift+F2` empties an archive into it, `Enter` walks into one as though
-it were a directory, and from a panel standing inside a zip or a 7z the
-ordinary keys copy out of it, add to it, remove from it and move in either
-direction. Zip, tar.gz and 7z can be created; zip and 7z can be changed; tar,
-tar.bz2, tar.xz and rar are read.
+it were a directory, and from a panel standing inside a kind that can be written
+the ordinary keys copy out of it, add to it, remove from it and move in either
+direction. Zip, tar.gz and 7z can be created and changed; tar, tar.bz2, tar.xz
+and rar are read.
 
 ## The vocabulary
 
@@ -23,14 +23,13 @@ table adds a format to the popup.
 
 **One record says what can be done to a kind.** `ArchiveKind.capabilities`
 answers an `ArchiveCapabilities` — `CanRead`, `CanCreate`, `CanChange` — and
-every place that has to decide asks it rather than naming a format. Zip and 7z
-are all three: read, written and changed. Tar.gz is read and written but never
-changed, because a gzip stream has no entry to replace without rewriting the
-file — and a whole rewrite would have to decompress and recompress the stream
-rather than the entry. Tar, tar.bz2, tar.xz and rar are read and nothing more:
-the first three have no writer here for the same reason tar.gz has no changer,
-and rar never gains one, since its compression is proprietary and the licence
-of the unrar sources forbids building a compressor from them. The flags are
+every place that has to decide asks it rather than naming a format. **A kind
+that can be created can be changed**: zip, tar.gz and 7z are all three, and what
+differs is only how — zip is edited where it lies, the other two are written
+again from what they held. Tar, tar.bz2 and tar.xz are read and nothing more,
+because nothing here writes them and a changer has nothing to write into; rar
+never gains one either, since its compression is proprietary and the licence of
+the unrar sources forbids building a compressor from them. The flags are
 what every layer above is built against — the pack dialog offers the creatable
 half, `Update` refuses a key that would change an unchangeable kind, and
 `ArchiveReader` opens nothing whose `CanRead` is false — so a kind gains a
@@ -605,7 +604,7 @@ half-written file is deleted. There is no half-changed archive to explain.
 **Two refusals, in two layers, for two reasons.** Whether a *kind* can be
 changed is a question about the name, so `Update` asks `Archive.changeableKind`
 and answers `KindCannotBeChanged` before a dialog is opened or a batch is
-started: `F7` inside a tar.gz never prompts for a name, `F8` never asks for a
+started: `F7` inside a plain tar never prompts for a name, `F8` never asks for a
 confirmation. Whether *this archive* can be changed also depends on what is
 inside it — `SharpZipLib` cannot create an AES entry, so adding to a
 password-protected zip would either fail or quietly store the new entry in the
@@ -664,23 +663,42 @@ LZMA and LZMA2 and refuses `CompressionType.None` outright. Cancelling deletes
 the half-written file, marks are kept and every source answers, exactly as zip
 and tar.gz do — none of that is per-format code.
 
-**A 7z is changed by being rewritten whole.** A zip is edited where it lies;
-7z has no update API, so `Archive` opens a second archive beside it
-(`<name>.marbas-new`), copies over every entry that is not being dropped,
-writes the new ones through the same `Sink` the packing walk uses, and moves
-the result over the original. Committing is that move; aborting — `Esc`, or a
-failure — deletes the new file and leaves the original untouched, which is the
-same promise the zip path makes by aborting its update. What it costs is a
-recompression of the whole archive per change, and the memory of the largest
-entry, since a survivor is buffered between the reader that pushes it and the
-writer that pulls it.
+**Everything but zip is changed by being written again.** A zip has an update
+API and is edited where it lies; nothing else here does, so `Archive.rewriting`
+opens a second archive beside the first (`<name>.marbas-new`), copies over every
+entry that is not being dropped, writes the new ones through the same `Sink` the
+packing walk uses, and moves the result over the original. Committing is that
+move; aborting — `Esc`, or a failure — deletes the new file and leaves the
+original untouched, which is the same promise the zip path makes by aborting its
+update. What it costs is a recompression of the whole archive per change, and
+the memory of the largest entry, since a survivor is buffered between the reader
+that pushes it and the writer that pulls it.
+
+**One rewriter serves every writable kind, because nothing in it is per-format
+but the writer it opens.** `rewriting` takes the kind, asks `ArchiveFormat` for
+it and hands the whole job to `intoArchive` — the very function packing goes
+through. That is what makes tar.gz changeable: it was never the gzip stream that
+stood in the way, only the absence of a rewriter, and 7z had already proved the
+shape. A kind that could be changed but not created would have nowhere to write
+and is refused where the format is looked up; the capability table is written so
+that cannot arise.
+
+**A sink writes an entry, wherever the entry comes from.** `Sink.AddFile` takes
+a `Stored` — a size, a modification time that may be unknown, and a function
+that opens the content — so the packing walk hands it a file on disk and the
+rewriter hands it an entry buffered out of the old archive, and neither writer
+knows the difference. `Sink.AddDirectory` takes the time the same way, which is
+how a rewritten archive keeps directory times a fresh one has none of. The keys
+a sink is given are the archive's own; `Archive.at` derives the level-scoped view
+that `F5` and `F7` write through, so one writer serves both the survivors,
+copied at their own keys, and the additions, prefixed with the level.
 
 **Both changers answer the same shape, so nothing above them knows which one
 ran.** `Archive.changeWith` takes the entries to drop, the level to write at
 and a piece of work, and hands that work what the archive holds and a `Sink` to
 write into; `addEntries`, `removeEntries` and `makeEntryDirectory` are written
-once against it. The kind picks the changer — zip updates, 7z rewrites — and
-`changeableKind` is what says a kind picks neither.
+once against it. The kind picks the changer — zip updates, everything else
+rewrites — and `changeableKind` is what says a kind picks neither.
 
 **The tar family is read, not written.** Tar, tar.bz2 and tar.xz reach
 `ReaderFactory`, which sniffs the compression and hands over the tar's own

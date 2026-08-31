@@ -13,11 +13,6 @@ let private readWriteChange =
       CanCreate = true
       CanChange = true }
 
-let private readAndWrite =
-    { CanRead = true
-      CanCreate = true
-      CanChange = false }
-
 let private readAlone =
     { CanRead = true
       CanCreate = false
@@ -54,8 +49,20 @@ let ``zip is read, created and changed`` () =
     Assert.Equal(readWriteChange, ArchiveKind.capabilities Zip)
 
 [<Fact>]
-let ``tar gz is written whole and never changed entry by entry`` () =
-    Assert.Equal(readAndWrite, ArchiveKind.capabilities TarGz)
+let ``tar gz is read, created and changed by being written again`` () =
+    Assert.Equal(readWriteChange, ArchiveKind.capabilities TarGz)
+
+[<Fact>]
+let ``a kind that can be created can be changed`` () =
+    let creatable =
+        ArchiveKind.all
+        |> List.filter (ArchiveKind.capabilities >> _.CanCreate)
+
+    let changeable =
+        ArchiveKind.all
+        |> List.filter (ArchiveKind.capabilities >> _.CanChange)
+
+    Assert.Equal<ArchiveKind list>(creatable, changeable)
 
 [<Fact>]
 let ``7z is read, created and changed, like zip`` () =

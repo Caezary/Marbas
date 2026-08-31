@@ -86,6 +86,7 @@ let ``a kind that can be created takes a tree and gives it back`` extension =
 
 [<Theory>]
 [<InlineData("zip")>]
+[<InlineData("tar.gz")>]
 [<InlineData("7z")>]
 let ``a kind that can be changed takes an entry and gives it up again`` extension =
     let fs = tree ()
@@ -107,6 +108,7 @@ let ``a kind that can be changed takes an entry and gives it up again`` extensio
 
 [<Theory>]
 [<InlineData("zip")>]
+[<InlineData("tar.gz")>]
 [<InlineData("7z")>]
 let ``a kind that can be changed keeps what it already held`` extension =
     let fs = tree ()
@@ -123,7 +125,6 @@ let ``a kind that can be changed keeps what it already held`` extension =
     Assert.Equal("inner", System.Text.Encoding.ASCII.GetString(source.Read(0L, 5)))
 
 [<Theory>]
-[<InlineData("tar.gz")>]
 [<InlineData("tar.bz2")>]
 [<InlineData("tar.xz")>]
 [<InlineData("tar")>]
@@ -187,3 +188,38 @@ let ``a tar xz lists and extracts like every other readable kind`` () =
     Assert.Equal("notes", fs.File.ReadAllText(at "out/notes.txt"))
     Assert.Equal("inner", fs.File.ReadAllText(at "out/docs/inner.txt"))
     Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "notes.txt", Ok(); "docs", Ok() ], results)
+
+[<Theory>]
+[<InlineData("zip")>]
+[<InlineData("tar.gz")>]
+[<InlineData("7z")>]
+let ``a cancelled change leaves the archive exactly as it was`` extension =
+    let fs = tree ()
+    let archive = fp (at $"start/data.{extension}")
+    packed fs archive
+    let before = fs.File.ReadAllBytes(FileSystemPath.value archive)
+
+    let stopped =
+        { Operations.unattended with
+            IsCancelled = fun () -> true }
+
+    Archive.addEntries fs stopped archive ArchivePath.root [ fp (at "loose/added.txt") ]
+    |> Expect.ok
+    |> ignore
+
+    Assert.Equal<byte array>(before, fs.File.ReadAllBytes(FileSystemPath.value archive))
+    Assert.Equal<string list>([ "docs"; "notes.txt" ], names fs archive ArchivePath.root)
+
+[<Theory>]
+[<InlineData("zip")>]
+[<InlineData("tar.gz")>]
+[<InlineData("7z")>]
+let ``a kind that can be changed takes a directory of its own`` extension =
+    let fs = tree ()
+    let archive = fp (at $"start/data.{extension}")
+    packed fs archive
+
+    Archive.makeEntryDirectory fs archive ArchivePath.root (en "fresh")
+    |> Expect.ok
+
+    Assert.Equal<string list>([ "docs"; "fresh"; "notes.txt" ], names fs archive ArchivePath.root)
