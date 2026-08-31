@@ -257,6 +257,33 @@ every layer above reads the wording: a read-only zip refusing `F5` into it, and
 a directory that will not take the rewritten 7z, both used to explain
 themselves as a broken file and sent the user looking for the wrong thing.
 
+**An entry name is read as UTF-8 unless the bytes say otherwise.** A zip says
+which of the two it used — general purpose bit 11 — and every other kind says
+nothing at all, so there is no one encoding to decode a name with.
+`ArchiveNames.decode` is the rule, installed on `ReaderOptions` as
+SharpCompress's `CustomDecoder`: an entry the archive *calls* UTF-8 is UTF-8,
+and for everything else the bytes decide — valid UTF-8 is UTF-8, anything else
+is the legacy code page. `SharpZipLib`'s `ZipFile` gets the same legacy encoding
+through `StringCodec.FromEncoding` when a zip is changed, so the name the panel
+shows is the name the update matches on; that codec is read-only in effect,
+since an entry added under a non-ASCII name still goes out flagged as UTF-8.
+
+**The legacy code page is the culture's, and validity is judged strictly.**
+`ArchiveNames.legacyCodePage` answers `TextInfo.OEMCodePage` — 852 for a Polish
+Windows, which is what the tools that wrote those archives used — and
+`legacyEncoding` falls back to Latin-1 when the culture names no code page, when
+it names UTF-8, or when nothing answers to it; Latin-1 because it maps every
+byte to a character and so loses nothing it cannot explain. The UTF-8 test is a
+strict `UTF8Encoding` rather than `TextEncoding.detect`, whose tolerance of a
+sequence cut short by the end of the probe is right for a file's first 8 KB and
+wrong for a name, where a cut sequence means the bytes are not UTF-8.
+
+Writing was never the problem: a zip Marbas writes carries bit 11 and UTF-8
+bytes, so other tools read it back intact. What this fixes is the other
+direction — a zip or a tar somebody else wrote with names in an OEM code page,
+which used to arrive as replacement characters, and a tar written in UTF-8 with
+no way to say so, which a plain "assume the code page" rule would have broken.
+
 **A password hides content, not names.** An AES zip lists its entries without
 one — the names, sizes and times are in the clear, as the writing side already
 said — so `read` asks for no password. `PasswordNeeded` is there for the kinds

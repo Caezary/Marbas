@@ -29,6 +29,7 @@
         <Compile Include="FileSystem\PanelLocation.fs" />
         <Compile Include="FileSystem\ArchiveFormat.fs" />
         <Compile Include="FileSystem\ArchiveName.fs" />
+        <Compile Include="FileSystem\ArchiveNames.fs" />
         <Compile Include="FileSystem\ArchiveReader.fs" />
         <Compile Include="FileSystem\ArchiveListing.fs" />
         <Compile Include="FileSystem\Operations.fs" />

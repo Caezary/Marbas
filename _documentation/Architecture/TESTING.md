@@ -20,10 +20,12 @@ letters.
 so `MockFileSystem` is handed paths its own platform understands. `Root.relative`
 does the same without a root, for the tests that care about a name carrying a
 directory — on Linux a backslash is an ordinary character in a file name, so
-`docs\notes.txt` there is one file and not a path. `[<WindowsFact>]` marks the
-three tests that assert on mounted drives; it sets `Skip` off Windows, because
-`MockFileSystem` emulates drives Windows-style and answers a duplicated `/:\`
-elsewhere. Nothing else in the suite knows which platform it is on.
+`docs\notes.txt` there is one file and not a path. `[<WindowsFact>]` sets `Skip`
+off Windows and carries the reason: bare, it says drive letters, which is what
+`MockFileSystem` emulates Windows-style while answering a duplicated `/:\`
+elsewhere; given a reason of its own, it marks the archive-name tests, whose
+subject is the OEM code page a culture answers with — a number Windows keeps and
+other platforms do not. Nothing else in the suite knows which platform it is on.
 
 Coverage comes from the collector the test project already references:
 

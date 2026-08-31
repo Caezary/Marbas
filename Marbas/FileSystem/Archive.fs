@@ -359,7 +359,9 @@ module Archive =
         use stream =
             fs.File.Open(FileSystemPath.value archive, FileMode.Open, FileAccess.ReadWrite)
 
-        use zip = new ZipFile(stream)
+        use zip =
+            new ZipFile(stream, true, StringCodec.FromEncoding(ArchiveNames.legacy ()))
+
         zip.IsStreamOwner <- false
         zip.BeginUpdate(MemoryArchiveStorage())
 

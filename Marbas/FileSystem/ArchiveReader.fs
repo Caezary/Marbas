@@ -39,6 +39,7 @@ module ArchiveReader =
     let private options (password: ArchivePassword option) =
         ReaderOptions(
             LeaveStreamOpen = true,
+            ArchiveEncoding = ArchiveNames.reading (),
             Password = (password |> Option.map ArchivePassword.value |> Option.toObj)
         )
 

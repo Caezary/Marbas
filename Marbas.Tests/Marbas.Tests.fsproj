@@ -40,7 +40,9 @@
     <Compile Include="FileSystem\PanelLocationTests.fs" />
     <Compile Include="FileSystem\ArchiveNameTests.fs" />
     <Compile Include="FileSystem\ArchiveTests.fs" />
+    <Compile Include="FileSystem\ArchiveNamesTests.fs" />
     <Compile Include="FileSystem\ArchiveReaderTests.fs" />
+    <Compile Include="FileSystem\ForeignArchiveTests.fs" />
     <Compile Include="FileSystem\ArchiveExtractTests.fs" />
     <Compile Include="FileSystem\ArchiveListingTests.fs" />
     <Compile Include="FileSystem\ArchiveChangeTests.fs" />
