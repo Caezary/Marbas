@@ -124,6 +124,26 @@ directory rather than renaming it across volumes — the whole thing is tested o
 `Trash.location` picks `$XDG_DATA_HOME/Trash` or falls back to
 `$HOME/.local/share/Trash`, mirroring `Settings.location`.
 
+**A session gets a directory to work in, and takes it with it when it goes.**
+Some operations need somewhere to put a file that belongs to neither panel — an
+entry on its way from one archive to another, above all. `Workspace.location`
+answers `<temporary root>\Marbas\<session>`, where the root is the platform's
+own (`%TEMP%`, `$TMPDIR`, `/tmp`, read once into `HostEnvironment`) and the
+session is a fresh id per run, so two Marbas processes never share a directory.
+`Workspace.ensure` makes it the first time something asks — answering an
+ordinary `OperationError` if it cannot, never an exception — and
+`Workspace.release` removes it whole.
+
+**The workspace is a path on `Dependencies`, not a port**, the same choice
+`SettingsPath` made and for the same reason: `Workspace` is ordinary
+`IFileSystem` code, so it runs against `MockFileSystem` in the tests, while an
+opaque function port would have left it untestable. `Shell.interpret` releases
+it on `Quit`, beside the settings write, which is what makes "gone after the
+application quits" a test rather than a claim. The one way out that skips it is
+`Ctrl+Q` pressed while a dialog holds focus, which does not pass through
+`Update` at all — the same hole that already loses the session file; the
+operating system sweeps its own temporary directory eventually.
+
 **Delete is an effect now, like copy and move.** It used to happen inside the
 `AppState` transition for `DeleteConfirmed`, which left no room for a port that
 the state layer must not know about. The walk is now `DeleteRequested mode` →

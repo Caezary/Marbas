@@ -49,6 +49,7 @@
     <Compile Include="FileSystem\EveryKindTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
     <Compile Include="FileSystem\TrashTests.fs" />
+    <Compile Include="FileSystem\WorkspaceTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

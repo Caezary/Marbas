@@ -589,6 +589,20 @@ let ``quit runs the quit port`` () =
     Assert.True quit
 
 [<Fact>]
+let ``quit takes the workspace of the session with it`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "temp/Marbas/session/left.txt", MockFileData "left")
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            WorkspacePath = fp (at "temp/Marbas/session") }
+
+    Shell.interpret deps ignore Quit
+
+    Assert.False(fs.Directory.Exists(at "temp/Marbas/session"))
+
+[<Fact>]
 let ``the name prompt offers the name that was remembered`` () =
     let _, dispatch = capture ()
     let mutable offered = ""

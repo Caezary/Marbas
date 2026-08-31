@@ -8,6 +8,8 @@ type HostEnvironment =
       UserProfile: string
       ApplicationData: string
       DataHome: string
+      TemporaryRoot: string
+      Session: string
       Editor: string option }
 
 module HostEnvironment =
@@ -23,4 +25,6 @@ module HostEnvironment =
           UserProfile = Environment.GetFolderPath Environment.SpecialFolder.UserProfile
           ApplicationData = Environment.GetFolderPath Environment.SpecialFolder.ApplicationData
           DataHome = Environment.GetEnvironmentVariable DataHomeVariable
+          TemporaryRoot = IO.Path.GetTempPath()
+          Session = Guid.NewGuid().ToString "N"
           Editor = Environment.GetEnvironmentVariable EditorVariable |> Option.ofObj }

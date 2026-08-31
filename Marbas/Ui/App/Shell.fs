@@ -44,6 +44,7 @@ type Dependencies =
     { FileSystem: IFileSystem
       StartPath: FileSystemPath
       SettingsPath: FileSystemPath
+      WorkspacePath: FileSystemPath
       Roots: RootChoice
       OnQuit: unit -> unit
       ReportError: string -> string -> unit
@@ -314,4 +315,6 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Some root -> dispatch (PathOpened(side, FileSystemPath.create root))
         | None -> ()
     | SaveSettings settings -> Settings.save deps.FileSystem deps.SettingsPath settings
-    | Quit -> deps.OnQuit()
+    | Quit ->
+        Workspace.release deps.FileSystem deps.WorkspacePath
+        deps.OnQuit()

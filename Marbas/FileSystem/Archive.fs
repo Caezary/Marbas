@@ -428,32 +428,48 @@ module Archive =
                 else
                     sink.AddFile key (buffered item))
 
+    let private workingFile (fs: IFileSystem) (archive: FileSystemPath) =
+        let candidate ordinal =
+            match ordinal with
+            | 1 -> FileSystemPath.value archive + RewriteSuffix
+            | taken -> $"{FileSystemPath.value archive}{RewriteSuffix}.{taken}"
+
+        let rec pick ordinal =
+            let path = FileSystemPath.create (candidate ordinal)
+
+            if FileSystemPath.kind fs path = NoEntry then
+                path
+            else
+                pick (ordinal + 1)
+
+        pick 1
+
     let private rewriting (fs: IFileSystem) archive kind dropped level control work =
         match ArchiveFormat.ofKind kind with
         | None -> Error(KindCannotBeChanged archive)
         | Some format ->
-            let fresh =
-                FileSystemPath.create (FileSystemPath.value archive + RewriteSuffix)
+            let fresh = workingFile fs archive
 
             let held =
                 ArchiveReader.items fs None kind archive
                 |> Seq.map _.Segments
                 |> List.ofSeq
 
-            let outcome =
-                use stream = fs.File.Create(FileSystemPath.value fresh)
+            try
+                let outcome =
+                    use stream = fs.File.Create(FileSystemPath.value fresh)
 
-                intoArchive format Normal None stream (fun sink ->
-                    copyKept fs archive kind dropped control sink
-                    work { Held = held; Into = at level sink })
+                    intoArchive format Normal None stream (fun sink ->
+                        copyKept fs archive kind dropped control sink
+                        work { Held = held; Into = at level sink })
 
-            match outcome with
-            | Commit value ->
-                fs.File.Move(FileSystemPath.value fresh, FileSystemPath.value archive, true)
-                Ok value
-            | Abort value ->
-                fs.File.Delete(FileSystemPath.value fresh)
-                Ok value
+                match outcome with
+                | Commit value ->
+                    fs.File.Move(FileSystemPath.value fresh, FileSystemPath.value archive, true)
+                    Ok value
+                | Abort value -> Ok value
+            finally
+                Operations.delete fs fresh |> ignore
 
     let private changeWith (fs: IFileSystem) archive control dropped level (work: Changing -> Update<'a>) =
         match changeRefusal fs archive with

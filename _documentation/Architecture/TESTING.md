@@ -185,7 +185,9 @@ a test points the path into its own `MockFileSystem` and the real config file is
 never touched. That is what lets `Integration/App/SettingsTests.fs` state the whole
 promise of P7.4 in one test: build a window, sort it, show its hidden entries,
 send another panel to a second drive, press `Ctrl+Q`, then build a second window
-over the *same* mock file system and read the titles back.
+over the *same* mock file system and read the titles back. `WorkspacePath` is
+the same arrangement for the session's working directory, which is why "quitting
+takes it with it" is an ordinary `ShellTests` assertion.
 
 **A failure is arranged on the file, not faked around it.** `MockFileData` is
 what makes the error paths testable: `Attributes <- FileAttributes.ReadOnly`
@@ -198,11 +200,13 @@ defaults" are ordinary tests rather than mocks of the file system interface.
 
 **What `MockFileData` cannot arrange is subclassed, not mocked.** Two failures
 have no representation on a file: a directory the operating system will not
-list, and a disk that refuses every write. `Fakes.UnreadableDirectory` and
-`Fakes.FullDisk` are `MockFileSystem` subclasses that override one member each
-— `MockDirectory.EnumerateFileSystemEntries` to raise
-`UnauthorizedAccessException` for one named path, and `MockFile.Create` to hand
-back a stream that raises `IOException` on every write — and are otherwise the
+list or will not let you make, and a disk that refuses every write.
+`Fakes.UnreadableDirectory`, `Fakes.UnwritableDirectory` and `Fakes.FullDisk`
+are `MockFileSystem` subclasses that override one member each —
+`MockDirectory.EnumerateFileSystemEntries` and `MockDirectory.CreateDirectory`
+to raise `UnauthorizedAccessException` for one named path, and `MockFile.Create`
+to hand back a stream that raises `IOException` on every write, for every file
+or for one named one — and are otherwise the
 mock file system the rest of the suite uses, so the arrange block still says
 `AddFile` and `AddDirectory`. They are what proves that a copy reports a
 directory it may not read instead of throwing past its batch, and that an

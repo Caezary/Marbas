@@ -674,6 +674,26 @@ update. What it costs is a recompression of the whole archive per change, and
 the memory of the largest entry, since a survivor is buffered between the reader
 that pushes it and the writer that pulls it.
 
+**The working file stays beside the archive, and it never lands on a name that
+is taken.** Committing a rewrite is `fs.File.Move` over the original, which is
+an atomic rename only while both paths sit on one volume — putting the working
+file in the system temporary directory would turn the commit into a copy of a
+whole freshly written archive, across a window in which the target is
+half-written. So it stays put, and `Archive.workingFile` walks
+`<archive>.marbas-new`, `<archive>.marbas-new.2` and on until it finds a name
+nothing answers to, the way `Trash.freeName` does. A file of the user's own
+carrying that name is therefore read, written and left exactly as it was; it
+used to be truncated on the way in and deleted on the way out.
+
+**The working file is removed on every way out, not only the two expected
+ones.** Committing moves it, aborting deletes it — and a writer that throws
+halfway used to leave it beside the archive for good, since neither branch was
+reached. The removal is a `finally` now, so the failing path cleans up too and
+the commit's own `delete` simply finds nothing there. What is *not* swept is a
+working file an earlier run left behind after a kill: nothing distinguishes it
+from a file the user owns, and another Marbas may be writing it this minute, so
+it is stepped over rather than deleted.
+
 **One rewriter serves every writable kind, because nothing in it is per-format
 but the writer it opens.** `rewriting` takes the kind, asks `ArchiveFormat` for
 it and hands the whole job to `intoArchive` — the very function packing goes

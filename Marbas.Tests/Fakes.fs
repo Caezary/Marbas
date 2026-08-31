@@ -33,6 +33,26 @@ type UnreadableDirectory(denied: string) =
 
         listing
 
+type private UncreatableDirectory(accessor: IMockFileDataAccessor, current: string, denied: string) =
+    inherit MockDirectory(accessor, current)
+
+    override this.CreateDirectory(path: string) =
+        if path = denied then
+            raise (UnauthorizedAccessException $"Access to the path '{path}' is denied.")
+        else
+            base.CreateDirectory path
+
+type UnwritableDirectory(denied: string) =
+    inherit MockFileSystem()
+
+    let mutable making: IDirectory = null
+
+    override this.Directory =
+        if isNull making then
+            making <- UncreatableDirectory(this, base.Directory.GetCurrentDirectory(), denied)
+
+        making
+
 type private RefusedStream(path: string) =
     inherit FileSystemStream(new MemoryStream(), path, false)
 
@@ -40,21 +60,28 @@ type private RefusedStream(path: string) =
 
     override _.Write(_: ReadOnlySpan<byte>) = raise (IOException DiskFullReason)
 
-type private RefusingFile(accessor: IMockFileDataAccessor) =
+type private RefusingFile(accessor: IMockFileDataAccessor, denied: string option) =
     inherit MockFile(accessor)
 
     override this.Create(path: string) =
-        (base.Create path).Dispose()
-        new RefusedStream(path)
+        if denied |> Option.forall ((=) path) then
+            (base.Create path).Dispose()
+            new RefusedStream(path)
+        else
+            base.Create path
 
-type FullDisk() =
+type FullDisk(denied: string option) =
     inherit MockFileSystem()
 
     let mutable writing: IFile = null
 
+    new() = FullDisk None
+
+    new(path: string) = FullDisk(Some path)
+
     override this.File =
         if isNull writing then
-            writing <- RefusingFile this
+            writing <- RefusingFile(this, denied)
 
         writing
 
@@ -62,6 +89,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
     { FileSystem = fs
       StartPath = FileSystemPath.create startPath
       SettingsPath = FileSystemPath.create (at "marbas.conf")
+      WorkspacePath = FileSystemPath.create (at "temp/Marbas/session")
       Roots = MountedDrives
       OnQuit = ignore
       ReportError = fun _ _ -> ()

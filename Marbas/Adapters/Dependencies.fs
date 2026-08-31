@@ -32,6 +32,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
     { FileSystem = fs
       StartPath = fs.Directory.GetCurrentDirectory() |> FileSystemPath.create
       SettingsPath = Settings.location fs env.ApplicationData env.UserProfile
+      WorkspacePath = Workspace.location fs env.TemporaryRoot env.Session
       Roots = roots env
       OnQuit = fun () -> app.RequestStop()
       ReportError = Prompts.reportError app

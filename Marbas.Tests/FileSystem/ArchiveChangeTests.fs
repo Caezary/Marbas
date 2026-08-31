@@ -260,3 +260,61 @@ let ``nothing refuses a plain zip`` () =
     let fs = packed ()
 
     Assert.Equal(None, Archive.changeRefusal fs archive)
+
+[<Theory>]
+[<InlineData("tar.gz")>]
+[<InlineData("7z")>]
+let ``a working file already beside the archive is left alone`` extension =
+    let target = at $"start/data.{extension}"
+    let fs = packedInto (ArchiveKind.recognise (en $"data.{extension}") |> Expect.some) target None
+    fs.AddFile(target + ".marbas-new", MockFileData "someone else's file")
+
+    Archive.addEntries fs Operations.unattended (fp target) ArchivePath.root [ fp (at "loose/added.txt") ]
+    |> Expect.ok
+    |> ignore
+
+    Assert.Equal("someone else's file", fs.File.ReadAllText(target + ".marbas-new"))
+
+[<Theory>]
+[<InlineData("tar.gz")>]
+[<InlineData("7z")>]
+let ``a change leaves no working file behind`` extension =
+    let target = at $"start/data.{extension}"
+    let fs = packedInto (ArchiveKind.recognise (en $"data.{extension}") |> Expect.some) target None
+
+    Archive.addEntries fs Operations.unattended (fp target) ArchivePath.root [ fp (at "loose/added.txt") ]
+    |> Expect.ok
+    |> ignore
+
+    Assert.Empty(fs.Directory.EnumerateFiles(at "start", "*.marbas-new*"))
+
+[<Theory>]
+[<InlineData("tar.gz")>]
+[<InlineData("7z")>]
+let ``a cancelled change leaves no working file behind`` extension =
+    let target = at $"start/data.{extension}"
+    let fs = packedInto (ArchiveKind.recognise (en $"data.{extension}") |> Expect.some) target None
+
+    Archive.addEntries fs (stopped ()) (fp target) ArchivePath.root [ fp (at "loose/added.txt") ]
+    |> Expect.ok
+    |> ignore
+
+    Assert.Empty(fs.Directory.EnumerateFiles(at "start", "*.marbas-new*"))
+
+[<Theory>]
+[<InlineData("tar.gz")>]
+[<InlineData("7z")>]
+let ``a change that cannot be written leaves no working file behind`` extension =
+    let target = at $"start/data.{extension}"
+    let kind = ArchiveKind.recognise (en $"data.{extension}") |> Expect.some
+    let source = packedInto kind target None
+
+    let fs = Fakes.FullDisk(target + ".marbas-new")
+    fs.AddFile(target, MockFileData(source.File.ReadAllBytes target))
+    fs.AddFile(at "loose/added.txt", MockFileData "added")
+
+    Archive.addEntries fs Operations.unattended (fp target) ArchivePath.root [ fp (at "loose/added.txt") ]
+    |> Expect.error
+    |> ignore
+
+    Assert.Empty(fs.Directory.EnumerateFiles(at "start", "*.marbas-new*"))
