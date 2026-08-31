@@ -78,3 +78,9 @@ let ``items that succeeded are left out`` () =
 
     Assert.DoesNotContain("a.txt", message)
     Assert.Contains("gone.txt", message)
+
+[<Fact>]
+let ``a batch that could not run carries the reason it gave`` () =
+    let message = OperationErrorMessage.describe (BatchFailed "no writer for tar")
+
+    Assert.Contains("no writer for tar", message)

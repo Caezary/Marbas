@@ -486,3 +486,45 @@ let ``unexpected failures map to an error value`` () =
     let operationError = mapException (fp (at "bad")) failure
 
     Assert.Equal(OperationFailed(fp (at "bad"), "boom"), operationError)
+
+[<Fact>]
+let ``copy reports a directory it may not read`` () =
+    let fs = Fakes.UnreadableDirectory(at "data/docs")
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "inner")
+    fs.AddDirectory(at "backup")
+
+    let failure = copy fs unattended (fp (at "backup")) (fp (at "data/docs")) |> Expect.error
+
+    Assert.Equal(AccessDenied(fp (at "data/docs")), failure)
+
+[<Fact>]
+let ``a directory that may not be read leaves the other sources to finish`` () =
+    let fs = Fakes.UnreadableDirectory(at "data/docs")
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "inner")
+    fs.AddFile(at "data/notes.txt", MockFileData "notes")
+    fs.AddDirectory(at "backup")
+
+    let copied =
+        copyAll fs unattended [ fp (at "data/docs"); fp (at "data/notes.txt") ] (fp (at "backup"))
+
+    Assert.Equal<string list>([ "docs"; "notes.txt" ], names copied)
+    Assert.Equal<string list>([ "docs" ], names (failures copied))
+    Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
+
+[<Fact>]
+let ``guarded answers what work that finishes answers`` () =
+    let work _ = [ { Name = en "notes.txt"; Outcome = Ok() } ]
+
+    let results = guarded "Copying" work unattended
+
+    Assert.Equal<string list>([ "notes.txt" ], names results)
+
+[<Fact>]
+let ``guarded turns work that throws into one failure named after the batch`` () =
+    let work _ : ItemResult list = raise (InvalidOperationException "no writer for tar")
+
+    let results = guarded "Copying" work unattended
+
+    let failure = List.exactlyOne results
+    Assert.Equal(en "Copying", failure.Name)
+    Assert.Equal(BatchFailed "no writer for tar", Expect.error failure.Outcome)

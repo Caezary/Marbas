@@ -13,6 +13,7 @@ type OperationError =
     | EntryOutsideTarget of path: FileSystemPath
     | ArchiveEntryNotEditable of path: FileSystemPath
     | ArchiveFailed of error: ArchiveError
+    | BatchFailed of message: string
     | OperationFailed of path: FileSystemPath * message: string
 
 type ItemResult =
@@ -41,12 +42,21 @@ let mapException (path: FileSystemPath) (ex: exn) =
     | :? UnauthorizedAccessException -> AccessDenied path
     | _ -> OperationFailed(path, ex.Message)
 
-let private attempt fs path (action: FileSystemAction) =
+let attempting (path: FileSystemPath) action =
     try
-        action fs path
-        Ok()
+        Ok(action ())
     with ex ->
         Error(mapException path ex)
+
+let guarded (title: string) (work: BatchControl -> ItemResult list) control =
+    try
+        work control
+    with ex ->
+        [ { Name = EntryName.create title
+            Outcome = Error(BatchFailed ex.Message) } ]
+
+let private attempt fs path (action: FileSystemAction) =
+    attempting path (fun () -> action fs path)
 
 let private createDirectory (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
@@ -118,9 +128,11 @@ let rec private copyTo (fs: IFileSystem) (control: BatchControl) (source: FileSy
             result {
                 do! attempt fs target createDirectory
 
+                let! children =
+                    attempting source (fun () -> getFileSystemEntries fs source |> List.ofSeq)
+
                 do!
-                    getFileSystemEntries fs source
-                    |> List.ofSeq
+                    children
                     |> List.traverseResultM (fun entry ->
                         entry
                         |> FileSystemPath.name fs

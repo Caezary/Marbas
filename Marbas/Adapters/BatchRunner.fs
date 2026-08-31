@@ -18,7 +18,7 @@ let run (app: IApplication) title work finish =
           IsCancelled = fun () -> cancellation.IsCancellationRequested }
 
     Task.Run(fun () ->
-        let results = work control
+        let results = Operations.guarded title work control
 
         app.Invoke(fun () ->
             if not cancellation.IsCancellationRequested then

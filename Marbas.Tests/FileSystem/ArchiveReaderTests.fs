@@ -63,3 +63,11 @@ let ``a key is read as the names it is made of`` key expected =
     let segments = ArchiveReader.segmentsOf key
 
     Assert.Equal(expected, segments |> List.map EntryName.value |> String.concat ",")
+
+[<Fact>]
+let ``a refused file maps to an archive that may not be touched`` () =
+    let failure = UnauthorizedAccessException "denied"
+
+    let error = ArchiveReader.mapException (fp archive) failure
+
+    Assert.Equal(ArchiveAccessDenied(fp archive), error)

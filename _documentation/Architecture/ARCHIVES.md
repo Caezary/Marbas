@@ -149,6 +149,15 @@ walk, and `write` then deletes the half-written file and answers `Cancelled` for
 *every* source rather than only for the ones it had not reached. Since the
 archive is gone nothing succeeded, and every mark stays where it was.
 
+**A write that cannot be finished leaves nothing behind either.** Closing a
+writer is where a zip's central directory is written, so a disk that fills up
+fails there rather than on any one entry — and the file left behind would not
+be a partial archive but an unreadable one. `write` therefore runs the whole
+packing through `Operations.attempting`, and a failure deletes the file and
+answers with that error for every source, exactly as cancelling does. A
+*source* that fails is the other story and still leaves a real archive holding
+what did get in.
+
 **A zip with a password is an AES-256 zip.** The password goes on the
 `ZipOutputStream` and every entry is given `AESKeySize = 256`; without one, no
 entry is encrypted at all. What this hides is the content: like every AES zip,
@@ -239,10 +248,14 @@ stands on its entry: the streaming reader has no way back.
 asks `ArchiveKind.recognise` and the capability table first, so `notes.txt` and
 `data.bin` come back `KindCannotBeRead` without a byte being read — and so
 would a kind whose reader had not landed yet, which is what the flag is for. The rest of the failures are
-values as well: `ArchiveNotFound` for a file that is gone, `PasswordNeeded`
+values as well: `ArchiveNotFound` for a file that is gone, `ArchiveAccessDenied`
+for one the operating system will not hand over, `PasswordNeeded`
 when the library refuses the encryption, and `ArchiveDamaged` carrying the
 library's own reason for everything else, which is what a file that only looks
-like an archive produces.
+like an archive produces. Access is its own case rather than damage because
+every layer above reads the wording: a read-only zip refusing `F5` into it, and
+a directory that will not take the rewritten 7z, both used to explain
+themselves as a broken file and sent the user looking for the wrong thing.
 
 **A password hides content, not names.** An AES zip lists its entries without
 one — the names, sizes and times are in the clear, as the writing side already

@@ -18,6 +18,7 @@ let describe error =
         $"An entry of the archive would land outside the target directory: '{FileSystemPath.value path}'."
     | ArchiveEntryNotEditable path ->
         $"'{FileSystemPath.value path}' cannot be edited inside the archive. Unpack it first."
+    | BatchFailed reason -> $"The operation could not be completed: {reason}"
     | OperationFailed(path, reason) -> $"Could not complete '{FileSystemPath.value path}': {reason}"
 
 let describeFailures (results: ItemResult list) =

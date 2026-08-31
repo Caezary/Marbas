@@ -14,6 +14,26 @@ input order, so the UI can report exactly which entries failed and why. A
 single-item failure inside one *tree* does abort that tree — a half-copied
 directory stops at the first error rather than pressing on blindly.
 
+**Nothing reaches the file system outside `attempting`.**
+`Operations.attempting` is the one place an exception becomes a value: it runs
+the work and maps whatever is raised through `mapException`, so
+`UnauthorizedAccessException` is an `AccessDenied` and everything else an
+`OperationFailed` carrying the reason. `attempt` is the same thing for work
+answering nothing, and `Archive` builds on the same function rather than
+keeping a copy. *Listing* a directory goes through it too, which is what makes
+a directory the user may not read fail its own item and leave the rest of the
+batch to run; before, it escaped the batch entirely.
+
+**A batch that raises anyway still closes its window.** `Operations.guarded`
+wraps the work a batch runs and turns anything that escapes into one
+`ItemResult` named after the batch, carrying `BatchFailed` with the reason.
+`BatchRunner` runs the work through it, so the promise that the progress window
+closes and `finish` is called holds whatever happens on the batch thread — an
+exception used to skip both, leaving a progress window that answered nothing
+and a failure nobody saw. It is a net, not the mechanism: every operation is
+expected to answer with `ItemResult`s, and a `BatchFailed` reaching the
+failures dialog means one of them did not.
+
 **Every question is answered before the batch starts.** `Operations.approve`
 walks the sources, asks Yes / No / Yes to all / No to all / Cancel about each
 one whose target already exists, and answers with the sources to actually work

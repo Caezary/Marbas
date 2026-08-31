@@ -59,3 +59,10 @@ let ``an archive behind a password says why it cannot be changed`` () =
 
     Assert.Contains(archive, message)
     Assert.Contains("password", message)
+
+[<Fact>]
+let ``an archive that refuses access says so with its path`` () =
+    let message = ArchiveErrorMessage.describe (ArchiveAccessDenied(fp archive))
+
+    Assert.Contains(archive, message)
+    Assert.Contains("Access denied", message)

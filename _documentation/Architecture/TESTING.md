@@ -193,7 +193,20 @@ throw `IOException`, which is the unexpected-failure case that carries the OS
 message. That is how "delete refuses a read-only file", "the viewer reports a
 file it cannot open" and "an unreadable settings file falls back to the
 defaults" are ordinary tests rather than mocks of the file system interface.
-Directories have no equivalent — see *Running the suite*.
+
+**What `MockFileData` cannot arrange is subclassed, not mocked.** Two failures
+have no representation on a file: a directory the operating system will not
+list, and a disk that refuses every write. `Fakes.UnreadableDirectory` and
+`Fakes.FullDisk` are `MockFileSystem` subclasses that override one member each
+— `MockDirectory.EnumerateFileSystemEntries` to raise
+`UnauthorizedAccessException` for one named path, and `MockFile.Create` to hand
+back a stream that raises `IOException` on every write — and are otherwise the
+mock file system the rest of the suite uses, so the arrange block still says
+`AddFile` and `AddDirectory`. They are what proves that a copy reports a
+directory it may not read instead of throwing past its batch, and that an
+archive that cannot be finished is deleted rather than left unreadable. Anything
+`MockFileData` *can* express belongs on the file: these two exist because
+nothing else reaches those code paths.
 
 A UI test that needs the two panels on *different* directories gets there the
 way a user would: `press list KeyMap.rightRootKey` with a `ChooseOption`

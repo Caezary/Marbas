@@ -22,13 +22,8 @@ module Archive =
         { AddDirectory: string -> unit
           AddFile: string -> FileSystemPath -> unit }
 
-    let private attempting (path: FileSystemPath) action =
-        try
-            Ok(action ())
-        with ex ->
-            Error(Operations.mapException path ex)
-
-    let private attempt path action = attempting path action |> Result.ignore
+    let private attempt path action =
+        Operations.attempting path action |> Result.ignore
 
     let private entryName (fs: IFileSystem) (root: FileSystemPath) (path: FileSystemPath) =
         fs.Path
@@ -137,7 +132,7 @@ module Archive =
                     do! attempt source (fun () -> sink.AddDirectory(entryName fs root source))
 
                     let! children =
-                        attempting source (fun () ->
+                        Operations.attempting source (fun () ->
                             fs.Directory.EnumerateFileSystemEntries(FileSystemPath.value source)
                             |> Seq.map FileSystemPath.create
                             |> List.ofSeq)
@@ -162,21 +157,32 @@ module Archive =
         | SevenZip -> intoSevenZipStream fs request.Compression stream (packAll fs control sources)
         | uncreatable -> invalidOp $"no writer for {ArchiveKind.extension uncreatable}"
 
+    let private failingEvery (fs: IFileSystem) sources error =
+        sources
+        |> List.map (fun source -> Operations.itemResult fs source (Error error))
+
     let write (fs: IFileSystem) control (request: ArchiveRequest) sources =
-        match attempting request.Path (fun () -> fs.File.Create(FileSystemPath.value request.Path)) with
-        | Error error -> sources |> List.map (fun source -> Operations.itemResult fs source (Error error))
+        match Operations.attempting request.Path (fun () -> fs.File.Create(FileSystemPath.value request.Path)) with
+        | Error error -> failingEvery fs sources error
         | Ok created ->
             let packed =
-                use stream = created
-                packInto fs control request sources stream
+                Operations.attempting request.Path (fun () ->
+                    use stream = created
+                    packInto fs control request sources stream)
+
+            let discard () = Operations.delete fs request.Path |> ignore
 
             if control.IsCancelled() then
-                Operations.delete fs request.Path |> ignore
+                discard ()
 
                 sources
                 |> List.map (fun source -> Operations.itemResult fs source (Error(Operations.Cancelled source)))
             else
-                packed
+                match packed with
+                | Ok results -> results
+                | Error error ->
+                    discard ()
+                    failingEvery fs sources error
 
     let private within (fs: IFileSystem) (directory: FileSystemPath) (path: FileSystemPath) =
         let inside =

@@ -293,3 +293,27 @@ let ``a zip without a password is not encrypted`` () =
     use archive = new ZipFile(stream)
 
     Assert.False (archive.GetEntry "notes.txt").IsCrypted
+
+[<Fact>]
+let ``a disk that refuses every write fails each source instead of throwing`` () =
+    let fs = Fakes.FullDisk()
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "work/notes.txt", MockFileData "notes")
+
+    let written =
+        Archive.write fs unattended (requested zip target) [ fp (at "work/notes.txt") ]
+
+    let failure = List.exactlyOne written
+    Assert.Equal(EntryName.create "notes.txt", failure.Name)
+    Assert.Equal(OperationFailed(fp target, Fakes.DiskFullReason), Expect.error failure.Outcome)
+
+[<Fact>]
+let ``an archive that cannot be finished is not left behind`` () =
+    let fs = Fakes.FullDisk()
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "work/notes.txt", MockFileData "notes")
+
+    Archive.write fs unattended (requested zip target) [ fp (at "work/notes.txt") ]
+    |> ignore
+
+    Assert.False(fs.File.Exists target)

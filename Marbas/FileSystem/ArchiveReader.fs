@@ -20,6 +20,7 @@ module ArchiveReader =
         match ex with
         | :? FileNotFoundException
         | :? DirectoryNotFoundException -> ArchiveNotFound path
+        | :? UnauthorizedAccessException -> ArchiveAccessDenied path
         | :? SharpCompress.Common.CryptographicException
         | :? Security.Cryptography.CryptographicException -> PasswordNeeded path
         | _ -> ArchiveDamaged(path, ex.Message)
