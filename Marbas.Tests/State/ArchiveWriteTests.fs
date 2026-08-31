@@ -146,21 +146,67 @@ let ``a name already in the archive is refused`` () =
         result.Effects
     )
 
+let private other = fp (at "start/other.zip")
+
+let private beside (fs: MockFileSystem) =
+    Archive.write fs Operations.unattended (request Zip (at "start/other.zip")) [ fp (at "work/notes.txt") ]
+    |> ignore
+
+    fs
+
+let private standingInBoth (fs: MockFileSystem) =
+    loaded fs
+    |> activate Right
+    |> setCursor Right 2
+    |> enter fs
+    |> Expect.ok
+    |> activate Left
+    |> setCursor Left 1
+    |> enter fs
+    |> Expect.ok
+    |> activate Left
+    |> setCursor Left 2
+
 [<Fact>]
-let ``a copy between two archives asks for nothing`` () =
-    let fs = packed ()
+let ``a copy between two archives carries the entry across`` () =
+    let fs = packed () |> beside
 
-    let state =
-        standingInside fs Right
-        |> activate Left
-        |> setCursor Left 1
-        |> enter fs
-        |> Expect.ok
-        |> setCursor Left 2
+    let result = update fs CopyRequested (standingInBoth fs)
 
-    let result = update fs CopyRequested state
+    Assert.Equal<Effect list>(
+        [ CopyEntriesAcross(archive, [ inside "notes.txt" ], other, ArchivePath.root) ],
+        result.Effects
+    )
 
-    Assert.Empty result.Effects
+[<Fact>]
+let ``a move between two archives carries the entry across`` () =
+    let fs = packed () |> beside
+
+    let result = update fs MoveRequested (standingInBoth fs)
+
+    Assert.Equal<Effect list>(
+        [ MoveEntriesAcross(archive, [ inside "notes.txt" ], other, ArchivePath.root) ],
+        result.Effects
+    )
+
+[<Fact>]
+let ``a move between archives needs the one it takes from to be changeable`` () =
+    let fs = beside (tarredAs (at "start/backup.tar"))
+    let unchangeable = fp (at "start/backup.tar")
+    let state = standingInBoth fs
+
+    let moved = update fs MoveRequested state
+    let copied = update fs CopyRequested state
+
+    Assert.Equal<Effect list>(
+        [ ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged unchangeable)) ],
+        moved.Effects
+    )
+
+    Assert.Equal<Effect list>(
+        [ CopyEntriesAcross(unchangeable, [ inside "notes.txt" ], other, ArchivePath.root) ],
+        copied.Effects
+    )
 
 let private refusal = ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged tarball))
 

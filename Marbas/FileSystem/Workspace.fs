@@ -23,6 +23,19 @@ let ensure (fs: IFileSystem) (path: FileSystemPath) =
         attempting path (fun () -> fs.Directory.CreateDirectory(FileSystemPath.value path))
         |> Result.map (fun _ -> path)
 
+let scratch (fs: IFileSystem) (workspace: FileSystemPath) =
+    let rec free root ordinal =
+        let path = FileSystemPath.combine fs root (string (ordinal: int))
+
+        if FileSystemPath.kind fs path = NoEntry then path else free root (ordinal + 1)
+
+    ensure fs workspace
+    |> Result.bind (fun root ->
+        let path = free root 1
+
+        attempting path (fun () -> fs.Directory.CreateDirectory(FileSystemPath.value path))
+        |> Result.map (fun _ -> path))
+
 let release (fs: IFileSystem) (path: FileSystemPath) =
     match FileSystemPath.kind fs path with
     | DirectoryEntry -> delete fs path |> ignore

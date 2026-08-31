@@ -33,10 +33,10 @@
         <Compile Include="FileSystem\ArchiveReader.fs" />
         <Compile Include="FileSystem\ArchiveListing.fs" />
         <Compile Include="FileSystem\Operations.fs" />
+        <Compile Include="FileSystem\Workspace.fs" />
         <Compile Include="FileSystem\Archive.fs" />
         <Compile Include="FileSystem\EntryProperties.fs" />
         <Compile Include="FileSystem\Trash.fs" />
-        <Compile Include="FileSystem\Workspace.fs" />
         <Compile Include="FileSystem\FileWindow.fs" />
         <Compile Include="FileSystem\LineIndex.fs" />
     </ItemGroup>

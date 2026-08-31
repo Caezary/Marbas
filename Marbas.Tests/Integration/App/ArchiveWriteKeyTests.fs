@@ -133,3 +133,62 @@ let ``F7 inside an archive makes a directory entry in it`` () =
 
     Assert.Equal<string list>([ "docs"; "fresh"; "notes.txt" ], entries fs)
     Assert.Equal<string list>([ ".."; "docs"; "fresh"; "notes.txt" ], named left)
+
+let private other = fp (at "start/other.zip")
+
+let private twoArchives () =
+    let fs = mockFs ()
+
+    Archive.write
+        fs
+        Operations.unattended
+        { Path = other
+          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Compression = Normal
+          Password = None }
+        [ fp (at "start/loose.txt") ]
+    |> ignore
+
+    fs
+
+let private otherEntries (fs: MockFileSystem) =
+    ArchiveListing.read fs other ArchivePath.root
+    |> Expect.ok
+    |> List.map (_.Name >> EntryName.value)
+    |> List.sort
+
+let private bothInsideArchives window =
+    advanceFocus window
+    let right = rightList window
+    right.SelectedItem <- 3
+    press right Key.Enter
+    advanceFocus window
+    let left = leftList window
+    left.SelectedItem <- 1
+    press left Key.Enter
+    left.SelectedItem <- 2
+    left
+
+[<Fact>]
+let ``F5 between two panels inside archives carries the entry across`` () =
+    let fs = twoArchives ()
+    use window = windowOn fs
+    let left = bothInsideArchives window
+
+    press left Key.F5
+
+    Assert.Equal<string list>([ "loose.txt"; "notes.txt" ], otherEntries fs)
+    Assert.Equal<string list>([ "docs"; "notes.txt" ], entries fs)
+    Assert.Equal<string list>([ ".."; "loose.txt"; "notes.txt" ], named (rightList window))
+
+[<Fact>]
+let ``F6 between two panels inside archives leaves the entry in one place only`` () =
+    let fs = twoArchives ()
+    use window = windowOn fs
+    let left = bothInsideArchives window
+
+    press left Key.F6
+
+    Assert.Equal<string list>([ "loose.txt"; "notes.txt" ], otherEntries fs)
+    Assert.Equal<string list>([ "docs" ], entries fs)
+    Assert.Equal<string list>([ ".."; "docs" ], named left)

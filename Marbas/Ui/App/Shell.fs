@@ -136,6 +136,30 @@ let private approvedInto (deps: Dependencies) archive level sources =
 
     Operations.approveInto landing occupied (askOverwrite deps) sources
 
+let private approvedAcross (deps: Dependencies) source target level entries =
+    let taken =
+        ArchiveListing.read deps.FileSystem target level
+        |> Result.map (List.map _.Name >> Set.ofList)
+        |> Result.defaultValue Set.empty
+
+    let spelled =
+        entries
+        |> List.map (fun entry -> ArchivePath.spelled deps.FileSystem source entry, entry)
+
+    let landing entry =
+        FileSystemPath.name deps.FileSystem entry
+        |> ArchivePath.child level
+        |> ArchivePath.spelled deps.FileSystem target
+
+    let occupied landed =
+        taken.Contains(FileSystemPath.name deps.FileSystem landed)
+
+    let allowed =
+        Operations.approveInto landing occupied (askOverwrite deps) (List.map fst spelled)
+        |> Set.ofList
+
+    spelled |> List.filter (fst >> allowed.Contains) |> List.map snd
+
 let private refusedWhole (deps: Dependencies) archive error : Operations.ItemResult =
     { Name = FileSystemPath.name deps.FileSystem archive
       Outcome = Error(Operations.ArchiveFailed error) }
@@ -172,6 +196,21 @@ let private unpackPlan (deps: Dependencies) targetDirectory archive =
 
 let private extractPlan (deps: Dependencies) targetDirectory archive entries =
     planFor deps targetDirectory archive (fun () -> approvedEntries deps targetDirectory archive entries)
+
+let private acrossPlan (deps: Dependencies) source target level entries =
+    planFor deps deps.WorkspacePath source (fun () -> approvedAcross deps source target level entries)
+
+let private crossing (deps: Dependencies) dispatch title carry finished source entries target level =
+    changingArchive deps target (fun () ->
+        match acrossPlan deps source target level entries with
+        | None -> ()
+        | Some plan ->
+            deps.RunBatch
+                title
+                (fun control ->
+                    carry deps.FileSystem control plan.Request plan.Targets target level
+                    |> itemsOf deps source)
+                (finished >> dispatch))
 
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
@@ -250,6 +289,10 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
                         Archive.moveOut deps.FileSystem control plan.Request plan.Targets
                         |> itemsOf deps archive)
                     (MoveFinished >> dispatch))
+    | CopyEntriesAcross(source, entries, target, level) ->
+        crossing deps dispatch CopyTitle Archive.copyAcross CopyFinished source entries target level
+    | MoveEntriesAcross(source, entries, target, level) ->
+        crossing deps dispatch MoveTitle Archive.moveAcross MoveFinished source entries target level
     | RemoveEntries(archive, entries) ->
         changingArchive deps archive (fun () ->
             deps.RunBatch

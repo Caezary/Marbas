@@ -1278,3 +1278,122 @@ let ``entries removed from an archive are gone and the outcome is dispatched bac
     Assert.Equal<string list>([ "docs" ], levelNames fs ArchivePath.root)
     Assert.Equal<string list>([ Shell.DeleteTitle ], List.ofSeq titles)
     Assert.Equal<Message list>([ DeleteFinished [ { Name = en "notes.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+
+let private otherAt = fp (at "start/other.zip")
+
+let private twoArchives () =
+    let fs = unpackReadyFs None
+
+    Archive.write
+        fs
+        unattended
+        { Path = otherAt
+          Format = zipFormat
+          Compression = Normal
+          Password = None }
+        [ fp (at "start/work/notes.txt") ]
+    |> ignore
+
+    fs
+
+let private namesIn (fs: MockFileSystem) archive level =
+    ArchiveListing.read fs archive level
+    |> Expect.ok
+    |> List.map (_.Name >> EntryName.value)
+    |> List.sort
+
+[<Fact>]
+let ``an entry copied across archives lands in the other and stays in its own`` () =
+    let sent, dispatch = capture ()
+    let fs = twoArchives ()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            WorkspacePath = fp (at "temp/Marbas/session") }
+
+    Shell.interpret deps dispatch (CopyEntriesAcross(zipAt, [ entry "docs" ], otherAt, ArchivePath.root))
+
+    Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs otherAt ArchivePath.root)
+    Assert.Equal<string list>([ "inner.txt" ], namesIn fs otherAt (entry "docs"))
+    Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs zipAt ArchivePath.root)
+    Assert.Equal<Message list>([ CopyFinished [ { Name = en "docs"; Outcome = Ok() } ] ], List.ofSeq sent)
+
+[<Fact>]
+let ``an entry moved across archives leaves the one it came from`` () =
+    let _, dispatch = capture ()
+    let fs = twoArchives ()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            WorkspacePath = fp (at "temp/Marbas/session") }
+
+    Shell.interpret deps dispatch (MoveEntriesAcross(zipAt, [ entry "docs" ], otherAt, ArchivePath.root))
+
+    Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs otherAt ArchivePath.root)
+    Assert.Equal<string list>([ "notes.txt" ], namesIn fs zipAt ArchivePath.root)
+
+[<Fact>]
+let ``a name already at the target level of the other archive is asked about`` () =
+    let _, dispatch = capture ()
+    let fs = twoArchives ()
+    let asked = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            WorkspacePath = fp (at "temp/Marbas/session")
+            AskOverwrite =
+                fun _ message ->
+                    asked.Add message
+                    No }
+
+    Shell.interpret deps dispatch (CopyEntriesAcross(zipAt, [ entry "notes.txt" ], otherAt, ArchivePath.root))
+
+    Assert.Contains(at "start/other.zip/notes.txt", Assert.Single asked)
+
+[<Fact>]
+let ``the workspace is empty once a crossing has finished`` () =
+    let _, dispatch = capture ()
+    let fs = twoArchives ()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            WorkspacePath = fp (at "temp/Marbas/session") }
+
+    Shell.interpret deps dispatch (CopyEntriesAcross(zipAt, [ entry "docs" ], otherAt, ArchivePath.root))
+
+    Assert.Empty(fs.Directory.EnumerateFileSystemEntries(at "temp/Marbas/session"))
+
+[<Fact>]
+let ``a crossing out of a locked archive asks for its password once`` () =
+    let _, dispatch = capture ()
+    let fs = unpackReadyFs (ArchivePassword.tryCreate "opensesame")
+
+    Archive.write
+        fs
+        unattended
+        { Path = otherAt
+          Format = zipFormat
+          Compression = Normal
+          Password = None }
+        [ fp (at "start/work/notes.txt") ]
+    |> ignore
+
+    let asked = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            WorkspacePath = fp (at "temp/Marbas/session")
+            AskPassword =
+                fun _ message ->
+                    asked.Add message
+                    Some "opensesame" }
+
+    Shell.interpret deps dispatch (CopyEntriesAcross(zipAt, [ entry "docs" ], otherAt, ArchivePath.root))
+
+    Assert.Single asked |> ignore
+    Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs otherAt ArchivePath.root)

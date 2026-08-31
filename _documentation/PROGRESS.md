@@ -192,6 +192,19 @@ one writer take a file from disk and an entry buffered out of the old archive
 without knowing which it has. The price is a full recompression per change and
 the memory of the largest entry, the same 7z already paid.
 
+**`F5` and `F6` now cross between two archives (TD-016).** Standing inside an
+archive on both sides used to be the one pairing of the two panels that
+silently did nothing. An entry now goes through the session working directory of
+TD-015: extracted into a scratch directory with the same `Archive.extract` that
+copies out of an archive, added to the other one with the same
+`Archive.addEntries` that copies into one, and the scratch directory removed
+whole afterwards — whether the batch finished, was cancelled or threw. Nothing
+about it is per-kind, so a zip entry lands in a tar.gz as readily as in a zip.
+`F6` drops the entry from the archive it came from only once the other one holds
+it, and needs *both* archives changeable where `F5` needs only the target, which
+is why the gate in `Update` now takes a list of archives and names the first
+that refuses.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -286,7 +299,8 @@ written up as the checklist in
   the tree below it — behind the same progress window, with the same overwrite
   question and the same surviving marks as a copy between two directories, and
   the archive is left exactly as it was.
-- A zip or a 7z can also be changed from the panel: `F5` from the other panel adds its
+- A kind that can be created can also be changed from the panel — zip, tar.gz
+  and 7z: `F5` from the other panel adds its
   targets at the level shown, `F8` removes the targets of the archive panel
   (always for good, since a zip has no trash), `F7` makes a directory entry, and
   `F6` moves in either direction — out of an archive it extracts first and drops
@@ -295,6 +309,9 @@ written up as the checklist in
   change runs behind the progress window and `Esc` leaves the archive as it was.
   A kind that cannot be changed — a tar, a tar.bz2, a rar — refuses by name before a
   prompt opens or a batch starts, and so does an archive locked with a password.
+  With an archive under both panels, `F5` and `F6` carry entries from one to the
+  other through the session's own working directory, `F6` needing both archives
+  changeable where `F5` needs only the one being written.
   `Shift+F1` and `Shift+F4` still do nothing from inside an archive.
 - Unreadable or vanished directories raise a message box; the panel stays put.
 - `Ctrl+R` reloads the active panel, keeping the cursor on the same entry even

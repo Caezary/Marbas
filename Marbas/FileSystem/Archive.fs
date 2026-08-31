@@ -557,15 +557,55 @@ module Archive =
                     | Ok(), Some error -> { item with Outcome = Error error }
                     | _ -> item))
 
+    let private arrivedOf (targets: ArchivePath list) (results: Operations.ItemResult list) =
+        List.zip (List.truncate results.Length targets) results
+        |> List.filter (snd >> _.Outcome >> Result.isOk)
+        |> List.map fst
+
     let moveOut (fs: IFileSystem) control (request: ExtractRequest) (targets: ArchivePath list) =
         extract fs control request targets
-        |> Result.bind (fun results ->
-            let arrived =
-                List.zip (List.truncate results.Length targets) results
-                |> List.filter (snd >> _.Outcome >> Result.isOk)
-                |> List.map fst
+        |> Result.bind (fun results -> droppingArrived fs control request.Archive (arrivedOf targets results) results)
 
-            droppingArrived fs control request.Archive arrived results)
+    let private landedAs (fs: IFileSystem) archive scratch target =
+        ArchivePath.name target
+        |> Option.defaultValue (FileSystemPath.name fs archive)
+        |> EntryName.value
+        |> FileSystemPath.combine fs scratch
+
+    let private carryingOver (added: Operations.ItemResult list) (taken: Operations.ItemResult list) =
+        let landed = added |> List.map (fun item -> item.Name, item.Outcome) |> Map.ofList
+
+        taken
+        |> List.map (fun item ->
+            match item.Outcome, Map.tryFind item.Name landed with
+            | Ok(), Some outcome -> { item with Outcome = outcome }
+            | _ -> item)
+
+    let copyAcross (fs: IFileSystem) control (request: ExtractRequest) targets (target: FileSystemPath) level =
+        match changeRefusal fs target with
+        | Some refusal -> Error refusal
+        | None ->
+            match Workspace.scratch fs request.Destination with
+            | Error error ->
+                targets
+                |> List.map (fun entry ->
+                    { Name = ArchivePath.name entry |> Option.defaultValue (FileSystemPath.name fs request.Archive)
+                      Outcome = Error error }: Operations.ItemResult)
+                |> Ok
+            | Ok scratch ->
+                try
+                    extract fs control { request with Destination = scratch } targets
+                    |> Result.bind (fun taken ->
+                        arrivedOf targets taken
+                        |> List.map (landedAs fs request.Archive scratch)
+                        |> addEntries fs control target level
+                        |> Result.map (fun added -> carryingOver added taken))
+                finally
+                    Operations.delete fs scratch |> ignore
+
+    let moveAcross (fs: IFileSystem) control (request: ExtractRequest) targets target level =
+        copyAcross fs control request targets target level
+        |> Result.bind (fun results -> droppingArrived fs control request.Archive (arrivedOf targets results) results)
 
     let moveIn (fs: IFileSystem) control archive level (sources: FileSystemPath list) =
         addEntries fs control archive level sources

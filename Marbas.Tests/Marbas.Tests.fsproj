@@ -46,6 +46,7 @@
     <Compile Include="FileSystem\ArchiveExtractTests.fs" />
     <Compile Include="FileSystem\ArchiveListingTests.fs" />
     <Compile Include="FileSystem\ArchiveChangeTests.fs" />
+    <Compile Include="FileSystem\ArchiveAcrossTests.fs" />
     <Compile Include="FileSystem\EveryKindTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
     <Compile Include="FileSystem\TrashTests.fs" />

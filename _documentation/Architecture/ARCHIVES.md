@@ -626,9 +626,38 @@ same spelling everything else uses.
 `ToDirectory` or `ToArchive` the way `transferSource` answers `FromDisk` or
 `FromArchive`, and `Update` matches the pair: `F5` copies, extracts or adds;
 `F6` moves, moves out or moves in; `F8` deletes paths or removes entries; `F7`
-makes a directory on disk or an entry in the archive. Two archives on both
-sides is the one pair that does nothing — copying between archives would mean
-unpacking into a temporary place, which this phase does not do.
+makes a directory on disk or an entry in the archive. Every pair now answers,
+the two archives included: there is no combination of the two panels that
+silently does nothing.
+
+## Crossing between two archives
+
+**An entry crosses through the workspace, because neither library hands one
+archive to another.** `Archive.copyAcross` takes a scratch directory out of the
+session workspace, extracts the targets into it with the very
+`Archive.extract` that `F5` out of an archive uses, adds what arrived to the
+other archive with the very `Archive.addEntries` that `F5` into one uses, and
+removes the scratch directory whole in a `finally` — so the workspace is empty
+afterwards whether the batch finished, was cancelled or threw. Nothing about
+the crossing is per-kind: a zip entry lands in a tar.gz and a 7z entry in a zip,
+because both halves were already written against the capability table.
+
+**A target that did not arrive is never dropped from the source.**
+`Archive.moveAcross` is `copyAcross` followed by the same `droppingArrived`
+that `moveOut` uses, so an entry is removed from the archive it came from only
+once the other archive holds it — the rule every move in Marbas follows. What
+failed on the way out keeps that failure; what failed on the way in replaces
+it, which is what `carryingOver` is for: the two halves answer one
+`ItemResult` per target, matched by name, the way a level cannot hold two
+entries with the same name.
+
+**Both archives are gated, and each for its own reason.** `F5` needs only the
+*target* to be changeable — copying out of a rar into a zip is fine. `F6` needs
+the source as well, since it removes from it, which is why `Update.changing`
+now takes a list of archives and names the first that refuses. `Shell` asks the
+source archive for its password once before the batch and puts the target
+level's own names through the same five-answer overwrite question, spelled
+`…\into.zip\notes.txt` like every other place inside an archive.
 
 **`F6` skips its prompt when an archive is one of the two sides.** The prompt
 exists to let a target be typed or a single entry renamed, and neither is

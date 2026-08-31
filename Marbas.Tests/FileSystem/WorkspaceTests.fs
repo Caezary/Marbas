@@ -76,3 +76,31 @@ let ``releasing a workspace that was never made does nothing`` () =
     Workspace.release fs (fp (at "temp/Marbas/session"))
 
     Assert.True(fs.Directory.Exists(at "temp"))
+
+[<Fact>]
+let ``a scratch directory is made empty inside the workspace`` () =
+    let fs = MockFileSystem()
+
+    let scratch = Workspace.scratch fs (fp (at "temp/Marbas/session")) |> Expect.ok
+
+    Assert.StartsWith(at "temp/Marbas/session", FileSystemPath.value scratch)
+    Assert.True(fs.Directory.Exists(FileSystemPath.value scratch))
+    Assert.Empty(fs.Directory.EnumerateFileSystemEntries(FileSystemPath.value scratch))
+
+[<Fact>]
+let ``two scratch directories never share a name`` () =
+    let fs = MockFileSystem()
+    let workspace = fp (at "temp/Marbas/session")
+
+    let first = Workspace.scratch fs workspace |> Expect.ok
+    let second = Workspace.scratch fs workspace |> Expect.ok
+
+    Assert.NotEqual(first, second)
+
+[<Fact>]
+let ``a scratch directory the workspace cannot hold is an operation failure`` () =
+    let fs = Fakes.UnwritableDirectory(at "temp/Marbas/session")
+
+    let failure = Workspace.scratch fs (fp (at "temp/Marbas/session")) |> Expect.error
+
+    Assert.Equal(Operations.AccessDenied(fp (at "temp/Marbas/session")), failure)
