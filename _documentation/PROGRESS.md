@@ -1,10 +1,11 @@
 # Progress
 
-Status as of 2026-08-30. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-09-02. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**All nine phases are complete** (46 of 46 tasks). Marbas
+**The first nine phases are complete** (46 of 46 tasks) **and phase 10 has
+started** (1 of 7). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -205,6 +206,22 @@ it, and needs *both* archives changeable where `F5` needs only the target, which
 is why the gate in `Update` now takes a list of archives and names the first
 that refuses.
 
+**P10.1 gave the association table a role, which is what phase 10 will run
+programs from.** `F4` kept a table of extension → editor and `Enter` will need
+one of extension → program; they are now one table with an `AssociationRole` —
+`ForEditing` or `ForOpening` — on every row. `EditorPath` became `ProgramPath`
+because "editor" had started to lie about half of its uses, and with it
+`EditorSettings` became `ProgramSettings` and `AppState.Editors` became
+`Programs`; `associate`, `forget`, `associated` and the lookup all take the role
+first. Only editing falls back to the default editor: a file no `ForOpening` row
+names is one the system should be handed, so the lookup answers nothing rather
+than guessing. The settings file spells the role in its keys —
+`program.editing.fs=…`, `program.opening.html=…` — and still reads the
+role-less `editor.extension.<ext>` a version before this wrote, as a `ForEditing`
+row, so an existing config survives the change. The `F12` popup grew a `Used
+for` choice and a second list, `Opened with:` beneath `Edited with:`, and `F4`
+behaves exactly as it did.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -229,6 +246,8 @@ written up as the checklist in
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
 | 9 — Archives | P9.1–P9.14 | done |
+| 10 — Running a file | P10.1 | done |
+| | P10.2–P10.7 | to do |
 
 ## What works today
 
@@ -430,20 +449,23 @@ written up as the checklist in
   already answers to is opened as it stands rather than emptied; a name a
   directory answers to is refused in a dialog; a blank name or a cancelled
   prompt does nothing.
-- `F12` opens the settings popup, which is where the editors are chosen: one
+- `F12` opens the settings popup, which is where the programs are chosen: one
   field for the default editor — the path to an executable, left blank to fall
-  back the way the app always did — and, beneath it, an extension and an editor
-  with `Add` and `Remove` beside a list of what is already associated. Moving
-  the cursor over a row fills both fields from it, so `Add` re-typed over a
-  known extension replaces it and `Remove` takes it out; `Enter` in either
-  field does what `Add` does rather than closing the popup. Extensions are
-  matched without their dot and without regard to case, so `.TXT` and `txt` are
-  one entry. What the popup returns is kept with the rest of the session and
-  written to the settings file on quit.
-- `Alt+U` (the `Under cursor` button) in that popup fills the editor field being
-  typed in — the default one, or the one beside the extension — with the path of
-  the executable the panel cursor was standing on when `F12` was pressed, so an
-  editor can be pointed at by walking to it instead of by typing its path. An
+  back the way the app always did — and, beneath it, an extension and a program
+  with `Add` and `Remove` beside the lists of what is already associated.
+  `Used for` says which role the pair is for, `Edit` or `Open`, and the popup
+  keeps a list per role: `Edited with:` is what `F4` reaches and `Opened with:`
+  what phase 10 will run. Moving the cursor over a row fills both fields from it
+  and moves the role to that row's, so `Add` re-typed over a known extension
+  replaces it and `Remove` takes it out; `Enter` in either field does what `Add`
+  does rather than closing the popup. Extensions are matched without their dot
+  and without regard to case, so `.TXT` and `txt` are one entry. What the popup
+  returns is kept with the rest of the session and written to the settings file
+  on quit.
+- `Alt+U` (the `Under cursor` button) in that popup fills the program field being
+  typed in — the default editor, or the one beside the extension — with the path of
+  the executable the panel cursor was standing on when `F12` was pressed, so a
+  program can be pointed at by walking to it instead of by typing its path. An
   executable is what the panel already colours as one: `.exe`, `.com`, `.bat`,
   `.cmd` or `.msi` on Windows, the exec bit on Unix. The button is disabled when
   the cursor was not on one.
@@ -470,8 +492,11 @@ written up as the checklist in
 - Quitting writes the session to `%APPDATA%\Marbas\settings.conf` (on Unix,
   `~/.config/Marbas/settings.conf`): where each panel stands, which key it sorts
   by and in which direction, whether it conceals the hidden entries, and which
-  editors `F4` reaches — `editor.default` and one `editor.extension.<ext>` line
-  per association. The next start reads it back, so both panels come up on the directories they were
+  programs the extensions are associated with — `editor.default` and one
+  `program.<role>.<ext>` line per association, the role being `editing` or
+  `opening`. A `editor.extension.<ext>` line written before the role existed is
+  still read, as one for editing.
+  The next start reads it back, so both panels come up on the directories they were
   left on, sorted the way they were sorted. The file is `key=value` lines meant
   to be readable and editable by hand; anything it does not say, says wrongly or
   spells in a way that means nothing falls back to what a first start would use,
@@ -504,17 +529,16 @@ behaviour.
 
 ## Next up
 
-**The first eight phases are finished**, and the ninth is two thirds of one:
-P9.1 to P9.9 pack on `Shift+F1` and unpack on `Shift+F2`, with every archive
-kind named and one read back level by level. What follows is only partly plan
-order, and mostly choice. Four things are waiting:
+**The first nine phases are finished**, and the tenth has begun: P10.1 turned
+the editor associations into one table of extension, role and program. What
+follows is only partly plan order, and mostly choice. Four things are waiting:
 
-- The rest of phase 9, P9.10 to P9.14: a panel located inside an archive,
-  `Enter` walking into one, `F5` copying out of one, and `F5`, `F6`, `F7` and
-  `F8` changing one where the kind allows it — a move out of an archive dropping
-  the entry only once the extraction is in. Then the formats that are left: 7z
-  on the writing side, tar.bz2, tar.xz and rar on the reading one. Rar is
-  readable and uncreatable for good: its compression is proprietary.
+- The rest of phase 10, P10.2 to P10.7: a `Launch` port and a `LaunchRequest`
+  that starts a program without the loop waiting for it, `Enter` running the
+  entry under the cursor, the handlers the system knows for an extension,
+  `Shift+Enter` opening with one of them, `Ctrl+Alt+Enter` running elevated, and
+  a second binding per command for the terminals that swallow a modified
+  `Enter`. The `ForOpening` half of the table P10.1 built is what P10.3 reads.
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
   with a full-screen console editor — want a person at a terminal on each
@@ -583,10 +607,13 @@ order, and mostly choice. Four things are waiting:
 - `F1`, `F2`, `F9` and `F11` have slots and no commands, which is what the
   reserved space is for — `F1` help and `F2` a user menu are the classic
   fillers.
-- The settings popup covers the editors and nothing else. Everything else the
+- The settings popup covers the programs and nothing else. Everything else the
   settings file holds — where each panel stands, how it sorts, whether it
   conceals — is still written on quit and editable only by hand. Adding those
   rows is a matter of more fields on the same popup whenever it is wanted.
+- The `Opened with:` rows can be entered and are saved, but nothing reads them
+  yet: `Enter` starts running files in P10.3. Until then they are a table the
+  popup keeps and the settings file carries.
 - Nothing checks that a configured editor exists before `F4` starts it. A path
   that names nothing is reported the way any other failed start is, after the
   key was pressed, rather than when it was typed into the popup.

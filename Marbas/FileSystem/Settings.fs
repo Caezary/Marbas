@@ -12,7 +12,7 @@ type Settings =
     { Left: PanelSettings
       Right: PanelSettings
       LastCreatedDirectory: EntryName option
-      Editors: EditorSettings }
+      Programs: ProgramSettings }
 
 module Settings =
 
@@ -53,7 +53,10 @@ module Settings =
     let private DefaultSetting = "default"
 
     [<Literal>]
-    let private ExtensionPrefix = "editor.extension."
+    let private ProgramPrefix = "program."
+
+    [<Literal>]
+    let private RolelessPrefix = "editor.extension."
 
     [<Literal>]
     let private NameSetting = "name"
@@ -95,6 +98,17 @@ module Settings =
         | "concealed" -> Some Concealed
         | _ -> None
 
+    let private roleText role =
+        match role with
+        | ForEditing -> "editing"
+        | ForOpening -> "opening"
+
+    let private roleOf text =
+        match text with
+        | "editing" -> Some ForEditing
+        | "opening" -> Some ForOpening
+        | _ -> None
+
     let private panelOn path =
         { Path = path
           Sort = SortOrder.byName
@@ -104,7 +118,7 @@ module Settings =
         { Left = panelOn path
           Right = panelOn path
           LastCreatedDirectory = None
-          Editors = EditorSettings.none }
+          Programs = ProgramSettings.none }
 
     let location (fs: IFileSystem) (applicationData: string) (userProfile: string) =
         let home =
@@ -128,19 +142,22 @@ module Settings =
         |> Option.map (EntryName.value >> line DirectoryPrefix NameSetting)
         |> Option.toList
 
-    let private editorLines (editors: EditorSettings) =
-        (editors.DefaultEditor
-         |> Option.map (EditorPath.value >> line EditorPrefix DefaultSetting)
+    let private roleSetting (association: ProgramAssociation) =
+        $"{roleText association.Role}.{FileExtension.value association.Extension}"
+
+    let private programLines (programs: ProgramSettings) =
+        (programs.DefaultEditor
+         |> Option.map (ProgramPath.value >> line EditorPrefix DefaultSetting)
          |> Option.toList)
-        @ (editors.Associations
+        @ (programs.Associations
            |> List.map (fun association ->
-               line ExtensionPrefix (FileExtension.value association.Extension) (EditorPath.value association.Editor)))
+               line ProgramPrefix (roleSetting association) (ProgramPath.value association.Program)))
 
     let format (settings: Settings) =
         panelLines LeftPrefix settings.Left
         @ panelLines RightPrefix settings.Right
         @ directoryLines settings.LastCreatedDirectory
-        @ editorLines settings.Editors
+        @ programLines settings.Programs
 
     let private entry (text: string) =
         match text.Split('=', 2) with
@@ -169,20 +186,37 @@ module Settings =
                 |> Option.defaultValue fallback.Sort.Direction }
           Hidden = token HiddenSetting |> Option.bind hiddenOf |> Option.defaultValue fallback.Hidden }
 
+    let private association role extension (value: string) =
+        match FileExtension.tryCreate extension, ProgramPath.tryCreate value with
+        | Some extension, Some program ->
+            Some
+                { Extension = extension
+                  Role = role
+                  Program = program }
+        | _ -> None
+
     let private associationFrom (key: string) (value: string) =
-        if key.StartsWith ExtensionPrefix then
-            match FileExtension.tryCreate (key.Substring ExtensionPrefix.Length), EditorPath.tryCreate value with
-            | Some extension, Some editor -> Some { Extension = extension; Editor = editor }
+        if key.StartsWith ProgramPrefix then
+            match key.Substring(ProgramPrefix.Length).Split('.', 2) with
+            | [| role; extension |] -> roleOf role |> Option.bind (fun role -> association role extension value)
             | _ -> None
+        elif key.StartsWith RolelessPrefix then
+            association ForEditing (key.Substring RolelessPrefix.Length) value
         else
             None
 
-    let private editorsFrom (read: Map<string, string>) (fallback: EditorSettings) =
-        let editors =
-            { DefaultEditor = Map.tryFind (EditorPrefix + DefaultSetting) read |> Option.bind EditorPath.tryCreate
-              Associations = read |> Map.toList |> List.choose (fun (key, value) -> associationFrom key value) }
+    let private programsFrom (read: Map<string, string>) (fallback: ProgramSettings) =
+        let named =
+            { ProgramSettings.none with
+                DefaultEditor = Map.tryFind (EditorPrefix + DefaultSetting) read |> Option.bind ProgramPath.tryCreate }
 
-        if editors = EditorSettings.none then fallback else editors
+        let programs =
+            read
+            |> Map.toList
+            |> List.choose (fun (key, value) -> associationFrom key value)
+            |> List.fold (fun settings association -> ProgramSettings.remember association settings) named
+
+        if programs = ProgramSettings.none then fallback else programs
 
     let parse (defaults: Settings) (lines: string list) : Settings =
         let read = entries lines
@@ -193,7 +227,7 @@ module Settings =
             Map.tryFind (DirectoryPrefix + NameSetting) read
             |> Option.bind EntryName.tryCreate
             |> Option.orElse defaults.LastCreatedDirectory
-          Editors = editorsFrom read defaults.Editors }
+          Programs = programsFrom read defaults.Programs }
 
     let private stored (fs: IFileSystem) defaults path =
         try

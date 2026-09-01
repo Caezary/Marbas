@@ -55,9 +55,9 @@ type Dependencies =
       Confirm: string -> string -> bool
       SendToTrash: FileSystemPath -> Result<unit, Operations.OperationError>
       ShowFile: FileWindow.Source -> unit
-      RunEditor: EditorPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
+      RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       EditProperties: EntryProperties -> EntryProperties option
-      EditEditors: EditorSettings -> EditorPath option -> EditorSettings option
+      EditPrograms: ProgramSettings -> ProgramPath option -> ProgramSettings option
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
       AskArchive: string -> ArchiveChoice option
       AskPassword: string -> string -> string option
@@ -329,9 +329,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.EditProperties properties with
         | Some changed -> dispatch (PropertiesEntered changed)
         | None -> ()
-    | ShowSettings(editors, candidate) ->
-        match deps.EditEditors editors candidate with
-        | Some changed -> dispatch (EditorsEntered changed)
+    | ShowSettings(programs, candidate) ->
+        match deps.EditPrograms programs candidate with
+        | Some changed -> dispatch (ProgramsEntered changed)
         | None -> ()
     | PromptForTarget suggestion ->
         match deps.AskTarget MovePrompt (FileSystemPath.value suggestion) with

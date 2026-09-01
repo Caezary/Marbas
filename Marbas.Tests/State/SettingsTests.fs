@@ -29,11 +29,12 @@ let private stored: Settings =
           Sort = SortOrder.create ByDate Ascending
           Hidden = Concealed }
       LastCreatedDirectory = Some(en "work")
-      Editors =
-        { DefaultEditor = EditorPath.tryCreate "code.exe"
+      Programs =
+        { DefaultEditor = ProgramPath.tryCreate "code.exe"
           Associations =
             [ { Extension = Expect.some (FileExtension.tryCreate "txt")
-                Editor = Expect.some (EditorPath.tryCreate "notepad.exe") } ] } }
+                Role = ForEditing
+                Program = Expect.some (ProgramPath.tryCreate "notepad.exe") } ] } }
 
 [<Fact>]
 let ``a state built from settings gives each panel its own path, sort and hidden`` () =
@@ -114,27 +115,27 @@ let ``a state built from settings remembers the name the last directory was give
     Assert.Equal(Some(en "work"), state.LastCreatedDirectory)
 
 [<Fact>]
-let ``a state built from settings carries the editors it names`` () =
+let ``a state built from settings carries the programs it names`` () =
     let state = fromSettings stored
 
-    Assert.Equal(stored.Editors, state.Editors)
+    Assert.Equal(stored.Programs, state.Programs)
 
 [<Fact>]
-let ``editors that have been changed go into the settings`` () =
+let ``programs that have been changed go into the settings`` () =
     let fs = mockFs ()
     let state = create (fp (at "start"))
 
-    let changed = withEditors stored.Editors state
+    let changed = withPrograms stored.Programs state
 
-    Assert.Equal(stored.Editors, (settings fs changed).Editors)
-    Assert.Equal(EditorSettings.none, (settings fs state).Editors)
+    Assert.Equal(stored.Programs, (settings fs changed).Programs)
+    Assert.Equal(ProgramSettings.none, (settings fs state).Programs)
 
 [<Fact>]
 let ``the editor a name is opened with comes from the state`` () =
     let state = fromSettings stored
 
-    Assert.Equal(EditorPath.tryCreate "notepad.exe", editorFor (en "notes.txt") state)
-    Assert.Equal(EditorPath.tryCreate "code.exe", editorFor (en "Program.fs") state)
+    Assert.Equal(ProgramPath.tryCreate "notepad.exe", programFor ForEditing (en "notes.txt") state)
+    Assert.Equal(ProgramPath.tryCreate "code.exe", programFor ForEditing (en "Program.fs") state)
 
 [<Fact>]
 let ``the name a new directory was given goes into the settings`` () =

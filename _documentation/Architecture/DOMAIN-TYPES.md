@@ -33,16 +33,27 @@ footer of the panel being searched is the one that changes, and
 listing it was run against. `activate` clears both panels' searches, which is
 what closes one when `Tab` moves on.
 
-**An editor is named by a path, and an extension is what picks it.**
-`EditorPath` and `FileExtension` are single-case unions with `tryCreate` only,
-because both come from a text field: an editor left blank is *no editor*, not
+**A program is named by a path, and an extension and a role are what pick it.**
+`ProgramPath` and `FileExtension` are single-case unions with `tryCreate` only,
+because both come from a text field: a program left blank is *no program*, not
 an empty command line, and an extension is normalised as it is created —
 trimmed, stripped of leading dots and lowercased — so `.TXT`, `txt` and `  .txt`
 are one key. `FileExtension.ofName` reads one off an `EntryName`, which is what
-makes the lookup `EditorSettings.editorFor name` rather than a string compare
-at the call site. `EditorSettings` is the pair of them: a default editor and an
-ordered list of `EditorAssociation`, kept sorted by extension so the file it is
-written to and the list a popup shows are in the same order every time.
+makes the lookup `ProgramSettings.programFor role name` rather than a string
+compare at the call site. `AssociationRole` is the third part of the key:
+`ForEditing` is the program `F4` starts and `ForOpening` the one `Enter` will,
+so one extension can name a different program for each without two tables to
+keep in step. `ProgramSettings` is the pair of them: a default editor and an
+ordered list of `ProgramAssociation`, kept sorted by role and then extension so
+the file it is written to and the lists a popup shows are in the same order
+every time.
+
+**Only editing has a default.** `ProgramSettings.programFor` falls back to
+`DefaultEditor` in `ForEditing` and to nothing in `ForOpening`, because the
+system already is the default opener: a file no `ForOpening` row names is one
+the system should be handed, not one Marbas should guess a program for. That
+makes "there is no default opener" a value the lookup returns rather than a
+rule every caller has to remember.
 
 **A moment in time is a `DateTimeOffset`, never a `DateTime`.** Every timestamp
 Marbas holds — `Entry.Modified`, the three on `EntryProperties`, the deletion

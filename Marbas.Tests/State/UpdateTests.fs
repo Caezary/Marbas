@@ -493,12 +493,12 @@ let ``edit requested aims at the file under the cursor`` () =
 [<Fact>]
 let ``edit requested names the editor the extension is associated with`` () =
     let fs = mockFs ()
-    let chosen = Expect.some (EditorPath.tryCreate "rider.exe")
+    let chosen = Expect.some (ProgramPath.tryCreate "rider.exe")
 
-    let editors =
-        EditorSettings.associate (Expect.some (FileExtension.tryCreate "fs")) chosen EditorSettings.none
+    let programs =
+        ProgramSettings.associate ForEditing (Expect.some (FileExtension.tryCreate "fs")) chosen ProgramSettings.none
 
-    let state = loaded fs |> withEditors editors |> setCursor Left 3
+    let state = loaded fs |> withPrograms programs |> setCursor Left 3
 
     let result = update fs EditRequested state
 
@@ -562,10 +562,10 @@ let ``a new file is asked for by name`` () =
 [<Fact>]
 let ``a named new file is created and handed to its editor`` () =
     let fs = mockFs ()
-    let chosen = Expect.some (EditorPath.tryCreate "code.exe")
-    let editors =
-        EditorSettings.associate (Expect.some (FileExtension.tryCreate "md")) chosen EditorSettings.none
-    let state = loaded fs |> withEditors editors
+    let chosen = Expect.some (ProgramPath.tryCreate "code.exe")
+    let programs =
+        ProgramSettings.associate ForEditing (Expect.some (FileExtension.tryCreate "md")) chosen ProgramSettings.none
+    let state = loaded fs |> withPrograms programs
     
     let result = update fs (FileNameEntered(en "draft.md")) state
 
@@ -584,16 +584,16 @@ let ``a new file a directory already answers to is reported`` () =
     Assert.Equal<Effect list>([ ReportOperationError(TargetExists(fp (at "start/docs"))) ], result.Effects)
 
 [<Fact>]
-let ``a settings request hands over the editors in force`` () =
+let ``a settings request hands over the programs in force`` () =
     let fs = mockFs ()
-    let editors =
-        { EditorSettings.none with
-            DefaultEditor = EditorPath.tryCreate "code.exe" }
-    let state = loaded fs |> withEditors editors
+    let programs =
+        { ProgramSettings.none with
+            DefaultEditor = ProgramPath.tryCreate "code.exe" }
+    let state = loaded fs |> withPrograms programs
 
     let result = update fs SettingsRequested state
 
-    Assert.Equal<Effect list>([ ShowSettings(editors, None) ], result.Effects)
+    Assert.Equal<Effect list>([ ShowSettings(programs, None) ], result.Effects)
 
 [<Fact>]
 let ``a settings request offers the executable under the cursor`` () =
@@ -604,7 +604,7 @@ let ``a settings request offers the executable under the cursor`` () =
     let result = update fs SettingsRequested state
 
     Assert.Equal<Effect list>(
-        [ ShowSettings(EditorSettings.none, EditorPath.tryCreate (at "start/rider64.exe")) ],
+        [ ShowSettings(ProgramSettings.none, ProgramPath.tryCreate (at "start/rider64.exe")) ],
         result.Effects
     )
 
@@ -615,18 +615,18 @@ let ``a settings request offers nothing when the cursor is not on an executable`
 
     let result = update fs SettingsRequested state
 
-    Assert.Equal<Effect list>([ ShowSettings(EditorSettings.none, None) ], result.Effects)
+    Assert.Equal<Effect list>([ ShowSettings(ProgramSettings.none, None) ], result.Effects)
 
 [<Fact>]
-let ``editors that come back take the place of the ones in force`` () =
+let ``programs that come back take the place of the ones in force`` () =
     let fs = mockFs ()
-    let editors =
-        { EditorSettings.none with
-            DefaultEditor = EditorPath.tryCreate "code.exe" }
+    let programs =
+        { ProgramSettings.none with
+            DefaultEditor = ProgramPath.tryCreate "code.exe" }
 
-    let result = update fs (EditorsEntered editors) (loaded fs)
+    let result = update fs (ProgramsEntered programs) (loaded fs)
 
-    Assert.Equal(editors, result.State.Editors)
+    Assert.Equal(programs, result.State.Programs)
     Assert.Empty result.Effects
 
 [<Fact>]

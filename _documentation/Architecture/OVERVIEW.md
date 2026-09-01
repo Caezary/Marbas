@@ -62,6 +62,7 @@ Marbas/
     HiddenEntries.fs      what makes an entry hidden, and whether a panel lists it
     Executability.fs      what makes an entry a program, by name and by mode bit
     SearchText.fs         the text a panel is being searched for, and what it matches
+    ProgramSettings.fs    extension and role -> the program that edits or opens it
     Settings.fs           the session both panels carry, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Roots.fs              where a panel can be sent: drives, or root and home
@@ -131,9 +132,9 @@ Marbas/
       PromptDialog.fs       single-field text prompt (label + default), plain or secret
       PatternDialog.fs      the `+` / `-` pattern prompt, over PromptDialog
       ProgressDialog.fs     the window shown while a batch runs
-      AssociationRow.fs     one extension and its editor -> one row of the list
+      AssociationRow.fs     one extension and its program -> one row of the list
       PropertiesDialog.fs   what `F4` shows for a directory, and writes back
-      SettingsDialog.fs     the default editor and the extension associations
+      SettingsDialog.fs     the default editor and the associations, one list per role
       PackDialog.fs         what `Shift+F1` asks before an archive is written
     App/                  the composition root, and the way out to the world
       CursorInfo.fs         cursor entry -> status line text

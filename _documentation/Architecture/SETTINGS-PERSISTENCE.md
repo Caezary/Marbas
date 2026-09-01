@@ -75,19 +75,28 @@ one, `$HOME/.config` otherwise — and it takes both values as arguments, so it 
 tested on both platforms while `HostEnvironment` keeps only the two
 environment reads.
 
-**The editors are session settings too, under one prefix.** `editor.default`
-names the editor `F4` starts when nothing more specific applies, and
-`editor.extension.<ext>` names one per extension — `editor.extension.fs=…`,
-`editor.extension.txt=…`. A file that names no editor at all keeps the
-defaults; a key with a blank extension or a blank editor is passed over the way
-every other unreadable line is, so one mistyped association cannot cost the
-rest. The associations come back out of the `key=value` map in key order, which
-is extension order, so the file, the popup and `EditorSettings.associate` all
-agree without anyone sorting twice.
+**The programs are session settings too, and the key spells the role.**
+`editor.default` names the editor `F4` starts when nothing more specific
+applies, and `program.<role>.<ext>` names one program per extension per role —
+`program.editing.fs=…`, `program.opening.html=…`. A file that names no program
+at all keeps the defaults; a key with a blank extension, a blank program or a
+role that is neither `editing` nor `opening` is passed over the way every other
+unreadable line is, so one mistyped association cannot cost the rest. The
+associations come back out of the `key=value` map in key order, which is role
+and then extension order, and every one of them is folded back through
+`ProgramSettings.remember`, so the file, the popup and the table itself agree
+however the lines were written.
+
+**A line written before the role existed is one for editing.** Versions before
+P10.1 wrote `editor.extension.<ext>=…`, which is still read — as a `ForEditing`
+row, since editing was all the table could mean then. That keeps a settings
+file written by an older Marbas working, and because the new keys carry the
+role there is nothing to migrate: the first save rewrites the file in the new
+spelling and the old prefix simply stops appearing.
 
 **An empty default editor still means what it always meant.** `EditorCommand`
 was written around one `$EDITOR` and it still is: `EditorProcess.run` resolves
-an editor by asking the state first (`EditorSettings.editorFor`, which tries
-the extension and falls back to the default), then `$EDITOR`, then `notepad`
-on Windows and `vi` elsewhere. Leaving the field blank in the settings popup
-therefore restores exactly the behaviour of the version before it existed.
+an editor by asking the state first (`ProgramSettings.programFor ForEditing`,
+which tries the extension and falls back to the default), then `$EDITOR`, then
+`notepad` on Windows and `vi` elsewhere. Leaving the field blank in the settings
+popup therefore restores exactly the behaviour of the version before it existed.

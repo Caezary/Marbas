@@ -463,9 +463,9 @@ let ``an edited file is handed to the editor and its outcome dispatched back`` (
 [<Fact>]
 let ``the editor the effect names is the one that is started`` () =
     let _, dispatch = capture ()
-    let started = ResizeArray<EditorPath option>()
+    let started = ResizeArray<ProgramPath option>()
     let deps = { noDeps () with RunEditor = fun chosen _ -> started.Add chosen; Ok() }
-    let chosen = EditorPath.tryCreate "code.exe"
+    let chosen = ProgramPath.tryCreate "code.exe"
 
     Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), chosen))
 
@@ -539,24 +539,24 @@ let ``a dismissed properties dialog dispatches nothing`` () =
     Assert.Empty sent
 
 [<Fact>]
-let ``changed editors are dispatched back`` () =
+let ``changed programs are dispatched back`` () =
     let sent, dispatch = capture ()
     let changed =
-        { EditorSettings.none with
-            DefaultEditor = EditorPath.tryCreate "code.exe" }
-    let deps = { noDeps () with EditEditors = fun _ _ -> Some changed }
+        { ProgramSettings.none with
+            DefaultEditor = ProgramPath.tryCreate "code.exe" }
+    let deps = { noDeps () with EditPrograms = fun _ _ -> Some changed }
 
-    Shell.interpret deps dispatch (ShowSettings(EditorSettings.none, None))
+    Shell.interpret deps dispatch (ShowSettings(ProgramSettings.none, None))
 
-    Assert.Equal<Message list>([ EditorsEntered changed ], List.ofSeq sent)
+    Assert.Equal<Message list>([ ProgramsEntered changed ], List.ofSeq sent)
 
 [<Fact>]
 let ``the executable the effect names is offered to the settings popup`` () =
-    let offered = ResizeArray<EditorPath option>()
-    let deps = { noDeps () with EditEditors = fun _ candidate -> offered.Add candidate; None }
-    let candidate = EditorPath.tryCreate (at "start/rider64.exe")
+    let offered = ResizeArray<ProgramPath option>()
+    let deps = { noDeps () with EditPrograms = fun _ candidate -> offered.Add candidate; None }
+    let candidate = ProgramPath.tryCreate (at "start/rider64.exe")
 
-    Shell.interpret deps ignore (ShowSettings(EditorSettings.none, candidate))
+    Shell.interpret deps ignore (ShowSettings(ProgramSettings.none, candidate))
 
     Assert.Equal(candidate, Assert.Single offered)
 
@@ -564,7 +564,7 @@ let ``the executable the effect names is offered to the settings popup`` () =
 let ``a dismissed settings dialog dispatches nothing`` () =
     let sent, dispatch = capture ()
 
-    Shell.interpret (noDeps ()) dispatch (ShowSettings(EditorSettings.none, None))
+    Shell.interpret (noDeps ()) dispatch (ShowSettings(ProgramSettings.none, None))
 
     Assert.Empty sent
 

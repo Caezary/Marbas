@@ -332,11 +332,11 @@ and a middle dot — both CP437 — so a checked flag reads at a glance and an
 unchecked one still shows where the box is.
 
 **The settings popup keeps its own working copy, so it needs no nested modal.**
-`SettingsDialog.SettingsView` holds an `EditorSettings` in a field and edits it
-in place: the extension and editor fields plus `Add` make one association
-(`EditorSettings.associate`, which replaces an extension already known),
-`Remove` takes the extension in the field back out, and moving the cursor in the
-list fills both fields from the row under it. A second dialog for adding a row
+`SettingsDialog.SettingsView` holds a `ProgramSettings` in a field and edits it
+in place: the extension and program fields plus `Add` make one association
+(`ProgramSettings.associate`, which replaces an extension already known in that
+role), `Remove` takes the extension in the field back out, and moving the cursor
+in either list fills both fields from the row under it. A second dialog for adding a row
 would have needed `app.Run` from inside a dialog, which only `Prompts` may do;
 this way the whole popup is one view and every one of those steps is a test
 that never runs an application loop. `Enter` in either of the two fields does
@@ -344,11 +344,23 @@ what `Add` does and is marked handled there, because the alternative is what
 Terminal.Gui does by default — bubble to the dialog's last button, which is
 `Ok`, closing the popup and throwing the association away.
 
-**`Under cursor` saves retyping the path of an editor the panel is already
+**The role is a choice on the popup, and each role has a list of its own.**
+`Used for` is an `OptionSelector` of `Edit` and `Open`, and `Add` and `Remove`
+both act in the role it names, so one pair of fields serves both halves of the
+table. Below them the popup shows `Edited with:` and `Opened with:` as two
+lists, because a row belongs to exactly one role and a single list would have
+had to spell that out on every line. Picking a row out of either list fills the
+fields *and* moves the role selector to that list's role, so the row a cursor
+stands on is the row `Add` and `Remove` would change. Re-reading the lists after
+a change raises `ValueChanged` on both, which would otherwise scribble over the
+fields, so the view sets a `refreshing` flag over the reload and the handlers
+stand down while it is up.
+
+**`Under cursor` saves retyping the path of a program the panel is already
 standing on.** `SettingsRequested` reads the entry under the cursor and, when it
 is an executable (`Executability.Executable`, which is the extension on Windows
 and the exec bit on Unix), hands its path to the popup as a candidate; `Alt+U`
-puts it into whichever editor field was last focused, the default one until
+puts it into whichever program field was last focused, the default editor until
 another has been typed in. With no executable under the cursor there is no
 candidate and the button is disabled, which says so on the screen rather than
 answering a keystroke with nothing. Making it a button rather than a bare

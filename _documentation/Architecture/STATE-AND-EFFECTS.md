@@ -106,7 +106,7 @@ cursor stands on a file or on a directory and raises `EditFile` or
 `ShowProperties`. `..` answers neither, so it still starts nothing. That keeps
 the key binding one line in `KeyMap` and the decision where the state is, which
 is also the only place that knows which editor an extension is associated with:
-`EditFile` carries the resolved `EditorPath option` beside the path, so
+`EditFile` carries the resolved `ProgramPath option` beside the path, so
 `Shell` and the adapters never look a setting up.
 
 **Reading and writing properties happen inside a transition, like making a
@@ -128,10 +128,10 @@ truncated — the point of the key is to reach an editor, not to erase anything 
 while a name a *directory* answers to is a `TargetExists` failure.
 
 **The settings popup is a port too, and what it returns is state.**
-`SettingsRequested` hands `state.Editors` to `Dependencies.EditEditors` through
+`SettingsRequested` hands `state.Programs` to `Dependencies.EditPrograms` through
 the `ShowSettings` effect, along with the executable under the panel cursor if
 there is one — the popup has no panel to look at, so what it can offer has to be
-read before it opens; `EditorsEntered` puts the answer back into the state
+read before it opens; `ProgramsEntered` puts the answer back into the state
 and nothing else. It reaches the file the way every other setting does, when
 `QuitRequested` saves the session.
 

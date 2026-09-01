@@ -32,7 +32,7 @@
     <Compile Include="FileSystem\HiddenEntriesTests.fs" />
     <Compile Include="FileSystem\ExecutabilityTests.fs" />
     <Compile Include="FileSystem\SearchTextTests.fs" />
-    <Compile Include="FileSystem\EditorSettingsTests.fs" />
+    <Compile Include="FileSystem\ProgramSettingsTests.fs" />
     <Compile Include="FileSystem\SettingsTests.fs" />
     <Compile Include="FileSystem\EntryPropertiesTests.fs" />
     <Compile Include="FileSystem\ArchiveKindTests.fs" />

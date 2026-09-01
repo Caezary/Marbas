@@ -31,13 +31,18 @@ let private stored: Settings =
           Sort = SortOrder.create ByDate Ascending
           Hidden = Concealed }
       LastCreatedDirectory = Some(en "work")
-      Editors =
-        { DefaultEditor = EditorPath.tryCreate "code.exe"
+      Programs =
+        { DefaultEditor = ProgramPath.tryCreate "code.exe"
           Associations =
             [ { Extension = Expect.some (FileExtension.tryCreate "fs")
-                Editor = Expect.some (EditorPath.tryCreate "rider.exe") }
+                Role = ForEditing
+                Program = Expect.some (ProgramPath.tryCreate "rider.exe") }
               { Extension = Expect.some (FileExtension.tryCreate "txt")
-                Editor = Expect.some (EditorPath.tryCreate "notepad.exe") } ] } }
+                Role = ForEditing
+                Program = Expect.some (ProgramPath.tryCreate "notepad.exe") }
+              { Extension = Expect.some (FileExtension.tryCreate "html")
+                Role = ForOpening
+                Program = Expect.some (ProgramPath.tryCreate "firefox.exe") } ] } }
 
 let private write (fs: MockFileSystem) lines =
     fs.AddFile(FileSystemPath.value settingsPath, MockFileData(String.concat "\n" lines))
@@ -91,31 +96,66 @@ let ``every sort key is written under a name that is read back as itself`` () =
     )
 
 [<Fact>]
-let ``the editors are written under their own names`` () =
+let ``the programs are written under their own names, the role among them`` () =
     let lines = Settings.format stored
 
     Assert.Contains("editor.default=code.exe", lines)
-    Assert.Contains("editor.extension.fs=rider.exe", lines)
-    Assert.Contains("editor.extension.txt=notepad.exe", lines)
+    Assert.Contains("program.editing.fs=rider.exe", lines)
+    Assert.Contains("program.editing.txt=notepad.exe", lines)
+    Assert.Contains("program.opening.html=firefox.exe", lines)
 
 [<Fact>]
-let ``a file that names no editor keeps the default editors`` () =
+let ``the programs that were written are the ones read back`` () =
+    let parsed = Settings.parse defaults (Settings.format stored)
+
+    Assert.Equal(stored.Programs, parsed.Programs)
+
+[<Fact>]
+let ``a file that names no program keeps the default programs`` () =
     let parsed = Settings.parse defaults [ "left.sort=size" ]
 
-    Assert.Equal(EditorSettings.none, parsed.Editors)
+    Assert.Equal(ProgramSettings.none, parsed.Programs)
 
 [<Fact>]
 let ``an association is read whatever the case its extension was written in`` () =
-    let parsed = Settings.parse defaults [ "editor.extension.TXT=notepad.exe" ]
+    let parsed = Settings.parse defaults [ "program.editing.TXT=notepad.exe" ]
 
-    Assert.Equal(EditorPath.tryCreate "notepad.exe", EditorSettings.editorFor (en "notes.txt") parsed.Editors)
+    Assert.Equal(
+        ProgramPath.tryCreate "notepad.exe",
+        ProgramSettings.programFor ForEditing (en "notes.txt") parsed.Programs
+    )
+
+[<Fact>]
+let ``an association written before the role existed is one for editing`` () =
+    let parsed = Settings.parse defaults [ "editor.extension.txt=notepad.exe"; "editor.default=code.exe" ]
+
+    Assert.Equal(
+        ProgramPath.tryCreate "notepad.exe",
+        ProgramSettings.programFor ForEditing (en "notes.txt") parsed.Programs
+    )
+
+    let txt = Expect.some (FileExtension.tryCreate "txt")
+
+    Assert.Equal(None, ProgramSettings.associated ForOpening txt parsed.Programs)
+    Assert.Equal(ProgramPath.tryCreate "code.exe", parsed.Programs.DefaultEditor)
+
+[<Fact>]
+let ``an association whose role is not one of the two is passed over`` () =
+    let parsed = Settings.parse defaults [ "program.printing.txt=notepad.exe" ]
+
+    Assert.Equal(ProgramSettings.none, parsed.Programs)
 
 [<Fact>]
 let ``an association with nothing on either side is passed over`` () =
     let parsed =
-        Settings.parse defaults [ "editor.extension.=notepad.exe"; "editor.extension.md=  "; "editor.default=   " ]
+        Settings.parse
+            defaults
+            [ "program.editing.=notepad.exe"
+              "program.opening.md=  "
+              "editor.extension.=notepad.exe"
+              "editor.default=   " ]
 
-    Assert.Equal(EditorSettings.none, parsed.Editors)
+    Assert.Equal(ProgramSettings.none, parsed.Programs)
 
 [<Fact>]
 let ``a setting the file does not carry keeps its default`` () =

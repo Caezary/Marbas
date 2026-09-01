@@ -42,7 +42,7 @@ type Message =
     | FileNameEntered of name: EntryName
     | PropertiesEntered of EntryProperties
     | SettingsRequested
-    | EditorsEntered of EditorSettings
+    | ProgramsEntered of ProgramSettings
     | RootRequested of PanelSide
     | PathOpened of PanelSide * FileSystemPath
     | QuitRequested
@@ -80,9 +80,9 @@ type Effect =
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
     | ViewArchiveEntry of archive: FileSystemPath * entry: ArchivePath
-    | EditFile of path: FileSystemPath * editor: EditorPath option
+    | EditFile of path: FileSystemPath * editor: ProgramPath option
     | ShowProperties of EntryProperties
-    | ShowSettings of EditorSettings * candidate: EditorPath option
+    | ShowSettings of ProgramSettings * candidate: ProgramPath option
     | PromptForTarget of suggestion: FileSystemPath
     | PromptForArchive of suggestion: FileSystemPath
     | PromptForName of suggestion: EntryName option
@@ -247,7 +247,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
             request state (ReportOperationError(Operations.ArchiveEntryNotEditable(ArchivePath.spelled fs archive entry)))
         | None ->
             match cursorFilePath fs target, cursorDirectoryPath fs target with
-            | Some path, _ -> request state (EditFile(path, editorFor (FileSystemPath.name fs path) state))
+            | Some path, _ -> request state (EditFile(path, programFor ForEditing (FileSystemPath.name fs path) state))
             | _, Some path ->
                 match EntryProperties.read fs path with
                 | Ok properties -> request state (ShowProperties properties)
@@ -263,15 +263,15 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | Some directory ->
             match makeFile fs state.Active directory name state with
             | Error error -> request state (ReportOperationError error)
-            | Ok(updated, path) -> request updated (EditFile(path, editorFor name updated))
+            | Ok(updated, path) -> request updated (EditFile(path, programFor ForEditing name updated))
     | PropertiesEntered properties -> applyProperties fs properties state |> applyOperation state
     | SettingsRequested ->
         let candidate =
             cursorExecutablePath fs (activePanel state)
-            |> Option.bind (FileSystemPath.value >> EditorPath.tryCreate)
+            |> Option.bind (FileSystemPath.value >> ProgramPath.tryCreate)
 
-        request state (ShowSettings(state.Editors, candidate))
-    | EditorsEntered editors -> stay (withEditors editors state)
+        request state (ShowSettings(state.Programs, candidate))
+    | ProgramsEntered programs -> stay (withPrograms programs state)
     | EditFinished outcome ->
         match outcome with
         | Error error -> request state (ReportOperationError error)

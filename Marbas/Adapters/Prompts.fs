@@ -62,7 +62,7 @@ let askArchive (app: IApplication) retarget suggestion =
     app.Run dialog |> ignore
     PackDialog.choice dialog
 
-let editEditors (app: IApplication) editors candidate =
-    use dialog = SettingsDialog.create editors candidate
+let editPrograms (app: IApplication) programs candidate =
+    use dialog = SettingsDialog.create programs candidate
     app.Run dialog |> ignore
-    SettingsDialog.editors dialog
+    SettingsDialog.programs dialog

@@ -42,7 +42,7 @@ type AppState =
       Right: PanelState
       Active: PanelSide
       LastCreatedDirectory: EntryName option
-      Editors: EditorSettings }
+      Programs: ProgramSettings }
 
 type FocusTarget =
     | Top
@@ -70,7 +70,7 @@ let fromSettings (settings: Settings) =
       Right = panelFrom settings.Right
       Active = Left
       LastCreatedDirectory = settings.LastCreatedDirectory
-      Editors = settings.Editors }
+      Programs = settings.Programs }
 
 let create (path: FileSystemPath) = fromSettings (Settings.forPath path)
 
@@ -83,12 +83,12 @@ let settings (fs: IFileSystem) (state: AppState) : Settings =
     { Left = panelSettings fs state.Left
       Right = panelSettings fs state.Right
       LastCreatedDirectory = state.LastCreatedDirectory
-      Editors = state.Editors }
+      Programs = state.Programs }
 
-let withEditors (editors: EditorSettings) (state: AppState) = { state with Editors = editors }
+let withPrograms (programs: ProgramSettings) (state: AppState) = { state with Programs = programs }
 
-let editorFor (name: EntryName) (state: AppState) =
-    EditorSettings.editorFor name state.Editors
+let programFor role (name: EntryName) (state: AppState) =
+    ProgramSettings.programFor role name state.Programs
 
 let panel side state =
     match side with

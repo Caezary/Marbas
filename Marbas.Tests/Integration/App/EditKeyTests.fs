@@ -81,16 +81,16 @@ let ``properties that come back from the popup reach the directory`` () =
 
 [<Fact>]
 let ``F4 opens the editor its extension is associated with`` () =
-    let started = ResizeArray<EditorPath option>()
+    let started = ResizeArray<ProgramPath option>()
     let fs = mockFs ()
-    let chosen = Expect.some (EditorPath.tryCreate "notepad++.exe")
+    let chosen = Expect.some (ProgramPath.tryCreate "notepad++.exe")
 
-    let editors =
-        EditorSettings.associate (Expect.some (FileExtension.tryCreate "txt")) chosen EditorSettings.none
+    let programs =
+        ProgramSettings.associate ForEditing (Expect.some (FileExtension.tryCreate "txt")) chosen ProgramSettings.none
 
     fs.AddFile(
         at "marbas.conf",
-        MockFileData(String.concat "\n" (Settings.format { Settings.forPath (FileSystemPath.create (at "start")) with Editors = editors }))
+        MockFileData(String.concat "\n" (Settings.format { Settings.forPath (FileSystemPath.create (at "start")) with Programs = programs }))
     )
 
     use window =
@@ -103,6 +103,33 @@ let ``F4 opens the editor its extension is associated with`` () =
     pressKey window Key.F4
 
     Assert.Equal(Some chosen, Assert.Single started)
+
+[<Fact>]
+let ``F4 opens the editor a settings file written before the role named`` () =
+    let started = ResizeArray<ProgramPath option>()
+    let fs = mockFs ()
+
+    fs.AddFile(
+        at "marbas.conf",
+        MockFileData(
+            String.concat
+                "\n"
+                [ "left.path=" + at "start"
+                  "right.path=" + at "start"
+                  "editor.extension.txt=notepad++.exe" ]
+        )
+    )
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                RunEditor = fun editor _ -> started.Add editor; Ok() }
+
+    (leftList window).SelectedItem <- 2
+
+    pressKey window Key.F4
+
+    Assert.Equal(ProgramPath.tryCreate "notepad++.exe", Assert.Single started)
 
 [<Fact>]
 let ``what the editor left behind shows up when it returns`` () =
@@ -156,54 +183,54 @@ let ``a cancelled Shift+F4 creates nothing`` () =
     Assert.Equal(3, (leftList window).Source.Count)
 
 [<Fact>]
-let ``F12 hands the editors in force to the settings popup and takes back what it returns`` () =
+let ``F12 hands the programs in force to the settings popup and takes back what it returns`` () =
     let fs = mockFs ()
-    let shown = ResizeArray<EditorSettings>()
-    let started = ResizeArray<EditorPath option>()
-    let chosen = Expect.some (EditorPath.tryCreate "code.exe")
+    let shown = ResizeArray<ProgramSettings>()
+    let started = ResizeArray<ProgramPath option>()
+    let chosen = Expect.some (ProgramPath.tryCreate "code.exe")
 
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                EditEditors =
-                    fun editors _ ->
-                        shown.Add editors
-                        Some { editors with DefaultEditor = Some chosen }
+                EditPrograms =
+                    fun programs _ ->
+                        shown.Add programs
+                        Some { programs with DefaultEditor = Some chosen }
                 RunEditor = fun editor _ -> started.Add editor; Ok() }
 
     pressKey window KeyMap.settingsKey
     (leftList window).SelectedItem <- 2
     pressKey window Key.F4
 
-    Assert.Equal(EditorSettings.none, Assert.Single shown)
+    Assert.Equal(ProgramSettings.none, Assert.Single shown)
     Assert.Equal(Some chosen, Assert.Single started)
 
 [<Fact>]
 let ``F12 offers the executable under the cursor to the settings popup`` () =
     let fs = mockFs ()
     fs.AddFile(at "start/rider64.exe", MockFileData "mz")
-    let offered = ResizeArray<EditorPath option>()
+    let offered = ResizeArray<ProgramPath option>()
 
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                EditEditors = fun _ candidate -> offered.Add candidate; None }
+                EditPrograms = fun _ candidate -> offered.Add candidate; None }
 
     (leftList window).SelectedItem <- 3
 
     pressKey window KeyMap.settingsKey
 
-    Assert.Equal(EditorPath.tryCreate (at "start/rider64.exe"), Assert.Single offered)
+    Assert.Equal(ProgramPath.tryCreate (at "start/rider64.exe"), Assert.Single offered)
 
 [<Fact>]
 let ``F12 offers nothing when the cursor is not on an executable`` () =
     let fs = mockFs ()
-    let offered = ResizeArray<EditorPath option>()
+    let offered = ResizeArray<ProgramPath option>()
 
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                EditEditors = fun _ candidate -> offered.Add candidate; None }
+                EditPrograms = fun _ candidate -> offered.Add candidate; None }
 
     (leftList window).SelectedItem <- 2
 

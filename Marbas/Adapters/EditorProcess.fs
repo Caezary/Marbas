@@ -4,10 +4,10 @@ open System.Diagnostics
 open Marbas.FileSystem
 open Marbas.Ui.App
 
-let run (repaint: unit -> unit) (configured: string option) platform (chosen: EditorPath option) path =
+let run (repaint: unit -> unit) (configured: string option) platform (chosen: ProgramPath option) path =
     let editorCommand =
         chosen
-        |> Option.map EditorPath.value
+        |> Option.map ProgramPath.value
         |> Option.orElse configured
         |> fun editor -> EditorCommand.choose editor platform
 

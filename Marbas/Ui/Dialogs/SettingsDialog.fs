@@ -1,5 +1,6 @@
 module Marbas.Ui.Dialogs.SettingsDialog
 
+open System
 open System.Collections.ObjectModel
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
@@ -17,7 +18,7 @@ let DefaultEditorId = "defaultEditor"
 let ExtensionId = "extension"
 
 [<Literal>]
-let EditorId = "editor"
+let ProgramId = "program"
 
 [<Literal>]
 let AddId = "add"
@@ -29,12 +30,33 @@ let RemoveId = "remove"
 let CandidateId = "candidate"
 
 [<Literal>]
+let RoleId = "role"
+
+[<Literal>]
 let CandidateLabel = "_Under cursor"
 
-type SettingsView(editors: EditorSettings, candidate: EditorPath option) as this =
+let roleLabel role =
+    match role with
+    | ForEditing -> "_Edit"
+    | ForOpening -> "_Open"
+
+let sectionLabel role =
+    match role with
+    | ForEditing -> "Edited with:"
+    | ForOpening -> "Opened with:"
+
+let listId role =
+    match role with
+    | ForEditing -> "editing"
+    | ForOpening -> "opening"
+
+let private SectionHeight = 4
+
+type SettingsView(programs: ProgramSettings, candidate: ProgramPath option) as this =
     inherit Dialog()
 
-    let mutable associated = editors
+    let mutable associated = programs
+    let mutable refreshing = false
 
     let defaultEditor =
         new TextField(
@@ -43,17 +65,32 @@ type SettingsView(editors: EditorSettings, candidate: EditorPath option) as this
             Width = Dim.Fill 1,
             Height = 1,
             Id = DefaultEditorId,
-            Text = (editors.DefaultEditor |> Option.map EditorPath.value |> Option.defaultValue "")
+            Text = (programs.DefaultEditor |> Option.map ProgramPath.value |> Option.defaultValue "")
         )
         |> DialogStyle.typedInto
 
     let extension =
         new TextField(X = 12, Y = 3, Width = 10, Height = 1, Id = ExtensionId) |> DialogStyle.typedInto
 
-    let editor =
-        new TextField(X = 32, Y = 3, Width = Dim.Fill 1, Height = 1, Id = EditorId) |> DialogStyle.typedInto
+    let program =
+        new TextField(X = 32, Y = 3, Width = Dim.Fill 1, Height = 1, Id = ProgramId) |> DialogStyle.typedInto
 
-    let known = new ListView(X = 1, Y = 6, Width = Dim.Fill 1, Height = Dim.Fill())
+    let role =
+        new OptionSelector(
+            X = 12,
+            Y = 4,
+            Height = 1,
+            Id = RoleId,
+            Orientation = Orientation.Horizontal,
+            Labels = [| roleLabel ForEditing; roleLabel ForOpening |],
+            Value = Nullable 0
+        )
+
+    let editing =
+        new ListView(X = 1, Y = 8, Width = Dim.Fill 1, Height = SectionHeight, Id = listId ForEditing)
+
+    let opening =
+        new ListView(X = 1, Y = 13, Width = Dim.Fill 1, Height = SectionHeight, Id = listId ForOpening)
 
     let add = DialogStyle.button "_Add"
 
@@ -63,27 +100,58 @@ type SettingsView(editors: EditorSettings, candidate: EditorPath option) as this
 
     let mutable target = defaultEditor
 
-    let show () =
-        associated.Associations
+    let listing section =
+        match section with
+        | ForEditing -> editing
+        | ForOpening -> opening
+
+    let position section =
+        match section with
+        | ForEditing -> 0
+        | ForOpening -> 1
+
+    let chosen () =
+        if role.Value.GetValueOrDefault 0 = position ForEditing then
+            ForEditing
+        else
+            ForOpening
+
+    let showing section =
+        ProgramSettings.inRole section associated
         |> List.map AssociationRow.describe
         |> ObservableCollection
-        |> known.SetSource
+        |> (listing section).SetSource
+
+    let show () =
+        refreshing <- true
+        showing ForEditing
+        showing ForOpening
+        refreshing <- false
+
+    let fill section index =
+        match ProgramSettings.inRole section associated |> List.tryItem index with
+        | Some association ->
+            extension.Text <- FileExtension.value association.Extension
+            program.Text <- ProgramPath.value association.Program
+            role.Value <- Nullable(position section)
+        | None -> ()
 
     do
         this.Title <- Title
         this.Width <- Dim.Absolute 70
-        this.Height <- Dim.Absolute 17
+        this.Height <- Dim.Absolute 21
         DialogStyle.dress this |> ignore
 
-        known.KeystrokeNavigator <- null
+        editing.KeystrokeNavigator <- null
+        opening.KeystrokeNavigator <- null
         add.X <- 12
-        add.Y <- 4
+        add.Y <- 5
         add.Id <- AddId
         remove.X <- Pos.Right add + Pos.Absolute 2
-        remove.Y <- 4
+        remove.Y <- 5
         remove.Id <- RemoveId
         fromCursor.X <- Pos.Right remove + Pos.Absolute 2
-        fromCursor.Y <- 4
+        fromCursor.Y <- 5
         fromCursor.Id <- CandidateId
         fromCursor.Enabled <- candidate.IsSome
 
@@ -92,62 +160,64 @@ type SettingsView(editors: EditorSettings, candidate: EditorPath option) as this
             defaultEditor,
             new Label(X = 1, Y = 3, Height = 1, Text = "Extension:"),
             extension,
-            new Label(X = 24, Y = 3, Height = 1, Text = "Editor:"),
-            editor,
+            new Label(X = 24, Y = 3, Height = 1, Text = "Program:"),
+            program,
+            new Label(X = 1, Y = 4, Height = 1, Text = "Used for:"),
+            role,
             add,
             remove,
             fromCursor,
-            new Label(X = 1, Y = 5, Height = 1, Text = "Editor by extension:"),
-            known
+            new Label(X = 1, Y = 7, Height = 1, Text = sectionLabel ForEditing),
+            editing,
+            new Label(X = 1, Y = 12, Height = 1, Text = sectionLabel ForOpening),
+            opening
         )
         |> ignore
 
         let associating (args: CommandEventArgs) =
             args.Handled <- true
 
-            match FileExtension.tryCreate extension.Text, EditorPath.tryCreate editor.Text with
-            | Some named, Some chosen ->
-                associated <- EditorSettings.associate named chosen associated
+            match FileExtension.tryCreate extension.Text, ProgramPath.tryCreate program.Text with
+            | Some named, Some picked ->
+                associated <- ProgramSettings.associate (chosen ()) named picked associated
                 show ()
             | _ -> ()
 
         add.Accepting.Add associating
         extension.Accepting.Add associating
-        editor.Accepting.Add associating
+        program.Accepting.Add associating
 
         remove.Accepting.Add(fun args ->
             args.Handled <- true
 
             match FileExtension.tryCreate extension.Text with
             | Some named ->
-                associated <- EditorSettings.forget named associated
+                associated <- ProgramSettings.forget (chosen ()) named associated
                 show ()
             | None -> ())
 
-        for field in [ defaultEditor; editor ] do
+        for field in [ defaultEditor; program ] do
             field.HasFocusChanged.Add(fun _ -> if field.HasFocus then target <- field)
 
         fromCursor.Accepting.Add(fun args ->
             args.Handled <- true
-            candidate |> Option.iter (fun chosen -> target.Text <- EditorPath.value chosen))
+            candidate |> Option.iter (fun picked -> target.Text <- ProgramPath.value picked))
 
-        known.ValueChanged.Add(fun args ->
-            match associated.Associations |> List.tryItem (args.NewValue.GetValueOrDefault 0) with
-            | Some association ->
-                extension.Text <- FileExtension.value association.Extension
-                editor.Text <- EditorPath.value association.Editor
-            | None -> ())
+        for section in [ ForEditing; ForOpening ] do
+            (listing section).ValueChanged.Add(fun args ->
+                if not refreshing then
+                    fill section (args.NewValue.GetValueOrDefault 0))
 
         show ()
 
         this.AddButton(DialogStyle.button "_Cancel")
         this.AddButton(DialogStyle.button "_Ok")
 
-    member _.Editors =
+    member _.Programs =
         { associated with
-            DefaultEditor = EditorPath.tryCreate defaultEditor.Text }
+            DefaultEditor = ProgramPath.tryCreate defaultEditor.Text }
 
-let create (editors: EditorSettings) (candidate: EditorPath option) = new SettingsView(editors, candidate)
+let create (programs: ProgramSettings) (candidate: ProgramPath option) = new SettingsView(programs, candidate)
 
 let field (dialog: Dialog) id =
     dialog.SubViews
@@ -161,11 +231,17 @@ let button (dialog: Dialog) id =
         | :? Button as pressed when pressed.Id = id -> Some pressed
         | _ -> None)
 
-let known (dialog: Dialog) =
+let selector (dialog: Dialog) =
     dialog.SubViews
     |> Seq.pick (function
-        | :? ListView as list -> Some list
+        | :? OptionSelector as chooser when chooser.Id = RoleId -> Some chooser
         | _ -> None)
 
-let editors (dialog: SettingsView) =
-    if dialog.Canceled then None else Some dialog.Editors
+let known (dialog: Dialog) role =
+    dialog.SubViews
+    |> Seq.pick (function
+        | :? ListView as list when list.Id = listId role -> Some list
+        | _ -> None)
+
+let programs (dialog: SettingsView) =
+    if dialog.Canceled then None else Some dialog.Programs

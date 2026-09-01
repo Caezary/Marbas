@@ -10,31 +10,48 @@ open Marbas.Tests
 
 let private ext raw = Expect.some (FileExtension.tryCreate raw)
 
-let private editor raw = Expect.some (EditorPath.tryCreate raw)
+let private program raw = Expect.some (ProgramPath.tryCreate raw)
 
 let private stored =
-    { DefaultEditor = Some(editor "code.exe")
+    { DefaultEditor = Some(program "code.exe")
       Associations =
-        [ { Extension = ext "fs"; Editor = editor "rider.exe" }
-          { Extension = ext "txt"; Editor = editor "notepad.exe" } ] }
+        [ { Extension = ext "fs"
+            Role = ForEditing
+            Program = program "rider.exe" }
+          { Extension = ext "txt"
+            Role = ForEditing
+            Program = program "notepad.exe" }
+          { Extension = ext "html"
+            Role = ForOpening
+            Program = program "firefox.exe" } ] }
 
-let private laidOutWith editors candidate =
+let private laidOutWith programs candidate =
     DialogStyle.apply ()
-    let dialog = SettingsDialog.create editors candidate
+    let dialog = SettingsDialog.create programs candidate
     dialog.BeginInit()
     dialog.EndInit()
-    dialog.Layout(Size(80, 24)) |> ignore
+    dialog.Layout(Size(80, 25)) |> ignore
     dialog
 
-let private laidOut editors = laidOutWith editors None
+let private laidOut programs = laidOutWith programs None
 
 let private press (dialog: SettingsDialog.SettingsView) id =
     (SettingsDialog.button dialog id).InvokeCommand Command.Accept |> ignore
 
-let private rows (dialog: SettingsDialog.SettingsView) =
-    let list = SettingsDialog.known dialog
+let private rowsOf (dialog: SettingsDialog.SettingsView) role =
+    let list = SettingsDialog.known dialog role
     let source = list.Source.ToList()
     [ for index in 0 .. list.Source.Count - 1 -> source[index].ToString() ]
+
+let private rows (dialog: SettingsDialog.SettingsView) = rowsOf dialog ForEditing
+
+let private choose (dialog: SettingsDialog.SettingsView) role =
+    (SettingsDialog.selector dialog).Value <-
+        System.Nullable(
+            match role with
+            | ForEditing -> 0
+            | ForOpening -> 1
+        )
 
 [<Fact>]
 let ``the default editor is offered ready to be edited`` () =
@@ -44,28 +61,34 @@ let ``the default editor is offered ready to be edited`` () =
 
 [<Fact>]
 let ``a settings dialog with no default editor opens empty`` () =
-    use dialog = laidOut EditorSettings.none
+    use dialog = laidOut ProgramSettings.none
 
     Assert.Equal("", (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).Text)
-    Assert.Empty(rows dialog)
+    Assert.Empty(rowsOf dialog ForEditing)
+    Assert.Empty(rowsOf dialog ForOpening)
 
 [<Fact>]
-let ``every association is listed`` () =
+let ``every association is listed under the role it was made in`` () =
     use dialog = laidOut stored
 
-    let listed = rows dialog
+    let edited = rowsOf dialog ForEditing
 
-    Assert.Equal(2, listed.Length)
-    Assert.StartsWith("fs", listed[0])
-    Assert.Contains("rider.exe", listed[0])
-    Assert.StartsWith("txt", listed[1])
-    Assert.Contains("notepad.exe", listed[1])
+    Assert.Equal(2, edited.Length)
+    Assert.StartsWith("fs", edited[0])
+    Assert.Contains("rider.exe", edited[0])
+    Assert.StartsWith("txt", edited[1])
+    Assert.Contains("notepad.exe", edited[1])
+
+    let opened = Assert.Single(rowsOf dialog ForOpening)
+
+    Assert.StartsWith("html", opened)
+    Assert.Contains("firefox.exe", opened)
 
 [<Fact>]
-let ``a dismissed dialog yields no editors`` () =
+let ``a dismissed dialog yields no programs`` () =
     use dialog = laidOut stored
 
-    Assert.Equal(None, SettingsDialog.editors dialog)
+    Assert.Equal(None, SettingsDialog.programs dialog)
 
 [<Fact>]
 let ``the default editor that was typed comes back`` () =
@@ -73,9 +96,9 @@ let ``the default editor that was typed comes back`` () =
     (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).Text <- "vim"
     dialog.Result <- 1
 
-    let answered = SettingsDialog.editors dialog |> Expect.some
+    let answered = SettingsDialog.programs dialog |> Expect.some
 
-    Assert.Equal(Some(editor "vim"), answered.DefaultEditor)
+    Assert.Equal(Some(program "vim"), answered.DefaultEditor)
 
 [<Fact>]
 let ``a default editor left blank names no editor`` () =
@@ -83,44 +106,65 @@ let ``a default editor left blank names no editor`` () =
     (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).Text <- "   "
     dialog.Result <- 1
 
-    let answered = SettingsDialog.editors dialog |> Expect.some
+    let answered = SettingsDialog.programs dialog |> Expect.some
 
     Assert.Equal(None, answered.DefaultEditor)
 
 [<Fact>]
-let ``an extension and an editor that are added join the list`` () =
+let ``an extension and a program that are added join the list`` () =
     use dialog = laidOut stored
     (SettingsDialog.field dialog SettingsDialog.ExtensionId).Text <- "md"
-    (SettingsDialog.field dialog SettingsDialog.EditorId).Text <- "typora.exe"
+    (SettingsDialog.field dialog SettingsDialog.ProgramId).Text <- "typora.exe"
 
     press dialog SettingsDialog.AddId
     dialog.Result <- 1
 
-    let answered = SettingsDialog.editors dialog |> Expect.some
+    let answered = SettingsDialog.programs dialog |> Expect.some
 
     Assert.Equal(3, (rows dialog).Length)
-    Assert.Equal(Some(editor "typora.exe"), EditorSettings.editorFor (EntryName.create "notes.md") answered)
+
+    Assert.Equal(
+        Some(program "typora.exe"),
+        ProgramSettings.programFor ForEditing (EntryName.create "notes.md") answered
+    )
 
 [<Fact>]
-let ``adding an extension that is already known replaces its editor`` () =
+let ``the role that is chosen is the one the association is made in`` () =
     use dialog = laidOut stored
-    (SettingsDialog.field dialog SettingsDialog.ExtensionId).Text <- "txt"
-    (SettingsDialog.field dialog SettingsDialog.EditorId).Text <- "vim"
+    choose dialog ForOpening
+    (SettingsDialog.field dialog SettingsDialog.ExtensionId).Text <- "pdf"
+    (SettingsDialog.field dialog SettingsDialog.ProgramId).Text <- "acrobat.exe"
 
     press dialog SettingsDialog.AddId
     dialog.Result <- 1
 
-    let answered = SettingsDialog.editors dialog |> Expect.some
+    let answered = SettingsDialog.programs dialog |> Expect.some
+
+    Assert.Equal(2, (rowsOf dialog ForOpening).Length)
+    Assert.Equal(2, (rowsOf dialog ForEditing).Length)
+    Assert.Equal(Some(program "acrobat.exe"), ProgramSettings.associated ForOpening (ext "pdf") answered)
+    Assert.Equal(None, ProgramSettings.associated ForEditing (ext "pdf") answered)
+
+[<Fact>]
+let ``adding an extension that is already known replaces its program`` () =
+    use dialog = laidOut stored
+    (SettingsDialog.field dialog SettingsDialog.ExtensionId).Text <- "txt"
+    (SettingsDialog.field dialog SettingsDialog.ProgramId).Text <- "vim"
+
+    press dialog SettingsDialog.AddId
+    dialog.Result <- 1
+
+    let answered = SettingsDialog.programs dialog |> Expect.some
 
     Assert.Equal(2, (rows dialog).Length)
-    Assert.Equal(Some(editor "vim"), EditorSettings.editorFor (EntryName.create "notes.txt") answered)
+    Assert.Equal(Some(program "vim"), ProgramSettings.programFor ForEditing (EntryName.create "notes.txt") answered)
 
 [<Fact>]
 let ``Enter in either field adds the association instead of closing the popup`` () =
-    for id in [ SettingsDialog.ExtensionId; SettingsDialog.EditorId ] do
+    for id in [ SettingsDialog.ExtensionId; SettingsDialog.ProgramId ] do
         use dialog = laidOut stored
         (SettingsDialog.field dialog SettingsDialog.ExtensionId).Text <- "md"
-        (SettingsDialog.field dialog SettingsDialog.EditorId).Text <- "typora.exe"
+        (SettingsDialog.field dialog SettingsDialog.ProgramId).Text <- "typora.exe"
 
         (SettingsDialog.field dialog id).InvokeCommand Command.Accept |> ignore
 
@@ -131,7 +175,7 @@ let ``Enter in either field adds the association instead of closing the popup`` 
 let ``an association with nothing on either side is not added`` () =
     use dialog = laidOut stored
     (SettingsDialog.field dialog SettingsDialog.ExtensionId).Text <- "md"
-    (SettingsDialog.field dialog SettingsDialog.EditorId).Text <- "   "
+    (SettingsDialog.field dialog SettingsDialog.ProgramId).Text <- "   "
 
     press dialog SettingsDialog.AddId
 
@@ -145,23 +189,48 @@ let ``the extension in the field is the one removed`` () =
     press dialog SettingsDialog.RemoveId
     dialog.Result <- 1
 
-    let answered = SettingsDialog.editors dialog |> Expect.some
+    let answered = SettingsDialog.programs dialog |> Expect.some
 
     Assert.Equal(1, (rows dialog).Length)
-    Assert.Equal(None, EditorSettings.associated (ext "txt") answered)
+    Assert.Equal(None, ProgramSettings.associated ForEditing (ext "txt") answered)
+
+[<Fact>]
+let ``removing takes the row out of the chosen role alone`` () =
+    use dialog = laidOut stored
+    choose dialog ForOpening
+    (SettingsDialog.field dialog SettingsDialog.ExtensionId).Text <- "html"
+
+    press dialog SettingsDialog.RemoveId
+    dialog.Result <- 1
+
+    let answered = SettingsDialog.programs dialog |> Expect.some
+
+    Assert.Empty(rowsOf dialog ForOpening)
+    Assert.Equal(2, (rowsOf dialog ForEditing).Length)
+    Assert.Equal(None, ProgramSettings.associated ForOpening (ext "html") answered)
 
 [<Fact>]
 let ``the association under the cursor fills the fields`` () =
     use dialog = laidOut stored
 
-    (SettingsDialog.known dialog).SelectedItem <- 1
+    (SettingsDialog.known dialog ForEditing).SelectedItem <- 1
 
     Assert.Equal("txt", (SettingsDialog.field dialog SettingsDialog.ExtensionId).Text)
-    Assert.Equal("notepad.exe", (SettingsDialog.field dialog SettingsDialog.EditorId).Text)
+    Assert.Equal("notepad.exe", (SettingsDialog.field dialog SettingsDialog.ProgramId).Text)
+
+[<Fact>]
+let ``an association picked out of the opening list chooses its role too`` () =
+    use dialog = laidOut stored
+
+    (SettingsDialog.known dialog ForOpening).SelectedItem <- 0
+
+    Assert.Equal("html", (SettingsDialog.field dialog SettingsDialog.ExtensionId).Text)
+    Assert.Equal("firefox.exe", (SettingsDialog.field dialog SettingsDialog.ProgramId).Text)
+    Assert.Equal(System.Nullable 1, (SettingsDialog.selector dialog).Value)
 
 [<Fact>]
 let ``the executable under the panel cursor fills the default editor`` () =
-    use dialog = laidOutWith stored (Some(editor "C:/tools/notepad++.exe"))
+    use dialog = laidOutWith stored (Some(program "C:/tools/notepad++.exe"))
     (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).SetFocus() |> ignore
 
     press dialog SettingsDialog.CandidateId
@@ -169,18 +238,18 @@ let ``the executable under the panel cursor fills the default editor`` () =
     Assert.Equal("C:/tools/notepad++.exe", (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).Text)
 
 [<Fact>]
-let ``the executable under the panel cursor fills the editor being associated`` () =
-    use dialog = laidOutWith stored (Some(editor "C:/tools/notepad++.exe"))
-    (SettingsDialog.field dialog SettingsDialog.EditorId).SetFocus() |> ignore
+let ``the executable under the panel cursor fills the program being associated`` () =
+    use dialog = laidOutWith stored (Some(program "C:/tools/notepad++.exe"))
+    (SettingsDialog.field dialog SettingsDialog.ProgramId).SetFocus() |> ignore
 
     press dialog SettingsDialog.CandidateId
 
-    Assert.Equal("C:/tools/notepad++.exe", (SettingsDialog.field dialog SettingsDialog.EditorId).Text)
+    Assert.Equal("C:/tools/notepad++.exe", (SettingsDialog.field dialog SettingsDialog.ProgramId).Text)
     Assert.Equal("code.exe", (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).Text)
 
 [<Fact>]
 let ``the default editor is the field filled before any has been typed in`` () =
-    use dialog = laidOutWith stored (Some(editor "C:/tools/notepad++.exe"))
+    use dialog = laidOutWith stored (Some(program "C:/tools/notepad++.exe"))
 
     press dialog SettingsDialog.CandidateId
 
@@ -194,13 +263,13 @@ let ``with no executable under the cursor the button cannot be reached`` () =
 
 [<Fact>]
 let ``an executable under the cursor makes the button reachable`` () =
-    use dialog = laidOutWith stored (Some(editor "C:/tools/notepad++.exe"))
+    use dialog = laidOutWith stored (Some(program "C:/tools/notepad++.exe"))
 
     Assert.True((SettingsDialog.button dialog SettingsDialog.CandidateId).Enabled)
 
 [<Fact>]
 let ``every button fits inside the dialog`` () =
-    use dialog = laidOutWith stored (Some(editor "C:/tools/notepad++.exe"))
+    use dialog = laidOutWith stored (Some(program "C:/tools/notepad++.exe"))
 
     for id in [ SettingsDialog.AddId; SettingsDialog.RemoveId; SettingsDialog.CandidateId ] do
         let frame = (SettingsDialog.button dialog id).Frame
@@ -210,11 +279,17 @@ let ``every button fits inside the dialog`` () =
 let ``every field fits inside the dialog`` () =
     use dialog = laidOut stored
 
-    for id in [ SettingsDialog.DefaultEditorId; SettingsDialog.ExtensionId; SettingsDialog.EditorId ] do
+    for id in [ SettingsDialog.DefaultEditorId; SettingsDialog.ExtensionId; SettingsDialog.ProgramId ] do
         let frame = (SettingsDialog.field dialog id).Frame
         Assert.True(frame.Width > 0, $"the field {id} must be wide enough to type into")
         Assert.True(frame.Bottom <= dialog.Viewport.Height, $"the field {id} at %A{frame} is clipped")
 
-    let list = (SettingsDialog.known dialog).Frame
-    Assert.True(list.Height > 0, "the association list must have room for a row")
-    Assert.True(list.Bottom <= dialog.Viewport.Height, $"the list at %A{list} is clipped")
+[<Fact>]
+let ``every list fits inside the dialog`` () =
+    use dialog = laidOut stored
+
+    for role in [ ForEditing; ForOpening ] do
+        let named = SettingsDialog.listId role
+        let frame = (SettingsDialog.known dialog role).Frame
+        Assert.True(frame.Height > 0, $"the {named} list must have room for a row")
+        Assert.True(frame.Bottom <= dialog.Viewport.Height, $"the {named} list at %A{frame} is clipped")

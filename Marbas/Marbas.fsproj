@@ -19,7 +19,7 @@
         <Compile Include="FileSystem\HiddenEntries.fs" />
         <Compile Include="FileSystem\Executability.fs" />
         <Compile Include="FileSystem\SearchText.fs" />
-        <Compile Include="FileSystem\EditorSettings.fs" />
+        <Compile Include="FileSystem\ProgramSettings.fs" />
         <Compile Include="FileSystem\Settings.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="FileSystem\Roots.fs" />
