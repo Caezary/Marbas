@@ -64,6 +64,11 @@ Marbas/
     SearchText.fs         the text a panel is being searched for, and what it matches
     ProgramSettings.fs    extension and role -> the program that edits or opens it
     LaunchRequest.fs      what to start, with what, where, and with which rights
+    Handler.fs            a program the system offers for a name, and its display name
+    ProgramCommand.fs     a command line -> the program it starts
+    DesktopEntry.fs       one .desktop file -> the handler it describes
+    MimeDatabase.fs       globs -> mime types, mimeapps.list -> desktop entries
+    DesktopHandlers.fs    the XDG directories -> the handlers a name has
     Settings.fs           the session both panels carry, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Roots.fs              where a panel can be sent: drives, or root and home
@@ -152,6 +157,7 @@ Marbas/
     RecycleBin.fs         the Windows recycle bin, through the VB runtime
     EditorProcess.fs      the editor started as a child process, and waited on
     LaunchProcess.fs      a program handed to the system, and never waited on
+    RegistryHandlers.fs   the Windows registry -> the handlers a name has
     BatchRunner.fs        a batch on a background task under the progress dialog
     ModifierWatch.fs      held Ctrl / Alt / Shift, polled on Windows, absent elsewhere
     Dependencies.fs       every port bound to one implementation, platform picked here

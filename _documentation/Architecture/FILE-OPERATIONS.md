@@ -268,6 +268,30 @@ Which of the two an entry is comes from `Executability.ofMode` — the execute
 bit and nothing else, because a name that looks like a Windows program is not
 one a Linux kernel will run.
 
+**What the system already knows is a port too, and the parsing is not.**
+`Dependencies.HandlersFor` takes an `EntryName` and answers a `Handler list` —
+never an error, because "this platform knows nothing about `.zzq`" and "there is
+no registry here at all" are the same answer to the caller: an empty list. What
+sits behind it is deliberately split. The *reading* is platform code and lives in
+`Adapters`: `RegistryHandlers` opens registry keys, and the Unix side hands
+`DesktopHandlers.read` an `IFileSystem` and the resolved XDG directories. The
+*parsing* is pure and lives in `FileSystem`, where the suite can reach it —
+`ProgramCommand.programOf` for a command line, `DesktopEntry.parse` for one
+`.desktop` file, `MimeDatabase` for `globs` and `mimeapps.list`. That is why the
+Unix half is covered end to end over a `MockFileSystem` while the Windows half
+is covered only as far as its parsing goes: the registry is the one source that
+cannot be handed in.
+
+**One command-line parser serves both systems.** A `shell\open\command` value
+and a `.desktop` `Exec=` line are the same shape — a program, then arguments —
+so `ProgramCommand.programOf` reads both. Quoted, it is what stands between the
+quotes. Unquoted, it grows word by word until the text ends in something
+`Executability` calls a program, which is what pulls `C:\Program Files\App\
+app.exe %1` out whole, and falls back to the first word, which is what leaves
+`firefox %u` as `firefox`. Environment variables are expanded by the Windows
+adapter before the parse, because `%SystemRoot%` is the environment's word and
+not the parser's.
+
 **A launch failure is read off the exception, because that is the only place it
 is written.** `Process.Start` reports a refusal as a `Win32Exception` and
 nothing else, so `LaunchProcess` maps three native codes — 1155 (no

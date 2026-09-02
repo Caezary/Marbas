@@ -60,6 +60,16 @@ out — `NothingAssociated`, `ProgramNotFound`, `LaunchRefused` and
 does different things with them: three reach a dialog and the fourth is
 silence.
 
+**A handler is a program with a name a person can read.** `Handler` is a display
+name and the `ProgramPath` behind it, and nothing else: what the two systems
+answer with — a registry ProgId, a `.desktop` file — is theirs to know and not
+worth carrying inland. `Handler.tryCreate` takes the name the system gave and
+the program it resolved to, and a blank name falls back to the program's file
+name, so a row in the popup always says *something*. `Handler.distinct` keeps
+the first name a program was given: the same executable is reached twice on both
+platforms (a ProgId and an open-with entry, a default and an added association),
+and the list a person reads should say it once.
+
 **Only editing has a default.** `ProgramSettings.programFor` falls back to
 `DefaultEditor` in `ForEditing` and to nothing in `ForOpening`, because the
 system already is the default opener: a file no `ForOpening` row names is one

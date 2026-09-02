@@ -25,6 +25,13 @@ let private watchModifiers (app: IApplication) (env: HostEnvironment) =
     | Windows -> ModifierWatch.poll app
     | Unix -> ModifierWatch.unsupported
 
+let private handlersFor (fs: IFileSystem) (env: HostEnvironment) =
+    match env.Platform with
+    | Windows -> RegistryHandlers.read
+    | Unix ->
+        XdgDirectories.resolve fs env.UserProfile env.DataHome env.DataDirectories env.ConfigHome env.ConfigDirectories
+        |> DesktopHandlers.read fs
+
 let private runEditor (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) =
     EditorProcess.run fs (fun () -> app.ClearScreenNextIteration <- true) env.Editor env.Platform
 
@@ -45,6 +52,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
       ShowFile = Prompts.showFile app
       RunEditor = runEditor app fs env
       Launch = LaunchProcess.start fs env.Platform
+      HandlersFor = handlersFor fs env
       EditProperties = Prompts.editProperties app
       EditPrograms = Prompts.editPrograms app
       AskArchive = Prompts.askArchive app (ArchiveName.retarget fs)

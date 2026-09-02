@@ -21,6 +21,11 @@
         <Compile Include="FileSystem\SearchText.fs" />
         <Compile Include="FileSystem\ProgramSettings.fs" />
         <Compile Include="FileSystem\LaunchRequest.fs" />
+        <Compile Include="FileSystem\Handler.fs" />
+        <Compile Include="FileSystem\ProgramCommand.fs" />
+        <Compile Include="FileSystem\DesktopEntry.fs" />
+        <Compile Include="FileSystem\MimeDatabase.fs" />
+        <Compile Include="FileSystem\DesktopHandlers.fs" />
         <Compile Include="FileSystem\Settings.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="FileSystem\Roots.fs" />
@@ -124,6 +129,7 @@
         <Compile Include="Adapters\RecycleBin.fs" />
         <Compile Include="Adapters\EditorProcess.fs" />
         <Compile Include="Adapters\LaunchProcess.fs" />
+        <Compile Include="Adapters\RegistryHandlers.fs" />
         <Compile Include="Adapters\BatchRunner.fs" />
         <Compile Include="Adapters\ModifierWatch.fs" />
         <Compile Include="Adapters\Dependencies.fs" />

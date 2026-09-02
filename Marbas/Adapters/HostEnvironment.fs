@@ -8,6 +8,9 @@ type HostEnvironment =
       UserProfile: string
       ApplicationData: string
       DataHome: string
+      DataDirectories: string
+      ConfigHome: string
+      ConfigDirectories: string
       TemporaryRoot: string
       Session: string
       Editor: string option }
@@ -18,6 +21,15 @@ module HostEnvironment =
     let DataHomeVariable = "XDG_DATA_HOME"
 
     [<Literal>]
+    let DataDirectoriesVariable = "XDG_DATA_DIRS"
+
+    [<Literal>]
+    let ConfigHomeVariable = "XDG_CONFIG_HOME"
+
+    [<Literal>]
+    let ConfigDirectoriesVariable = "XDG_CONFIG_DIRS"
+
+    [<Literal>]
     let EditorVariable = "EDITOR"
 
     let current () =
@@ -25,6 +37,9 @@ module HostEnvironment =
           UserProfile = Environment.GetFolderPath Environment.SpecialFolder.UserProfile
           ApplicationData = Environment.GetFolderPath Environment.SpecialFolder.ApplicationData
           DataHome = Environment.GetEnvironmentVariable DataHomeVariable
+          DataDirectories = Environment.GetEnvironmentVariable DataDirectoriesVariable
+          ConfigHome = Environment.GetEnvironmentVariable ConfigHomeVariable
+          ConfigDirectories = Environment.GetEnvironmentVariable ConfigDirectoriesVariable
           TemporaryRoot = IO.Path.GetTempPath()
           Session = Guid.NewGuid().ToString "N"
           Editor = Environment.GetEnvironmentVariable EditorVariable |> Option.ofObj }

@@ -57,6 +57,7 @@ type Dependencies =
       ShowFile: FileWindow.Source -> unit
       RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       Launch: LaunchRequest -> Result<unit, LaunchError>
+      HandlersFor: EntryName -> Handler list
       EditProperties: EntryProperties -> EntryProperties option
       EditPrograms: ProgramSettings -> ProgramPath option -> ProgramSettings option
       AskOverwrite: string -> string -> Operations.OverwriteAnswer

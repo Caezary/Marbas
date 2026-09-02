@@ -33,6 +33,12 @@
     <Compile Include="FileSystem\ExecutabilityTests.fs" />
     <Compile Include="FileSystem\SearchTextTests.fs" />
     <Compile Include="FileSystem\ProgramSettingsTests.fs" />
+    <Compile Include="FileSystem\HandlerTests.fs" />
+    <Compile Include="FileSystem\ProgramCommandTests.fs" />
+    <Compile Include="FileSystem\DesktopEntryTests.fs" />
+    <Compile Include="FileSystem\MimeDatabaseTests.fs" />
+    <Compile Include="FileSystem\XdgDirectoriesTests.fs" />
+    <Compile Include="FileSystem\DesktopHandlersTests.fs" />
     <Compile Include="FileSystem\SettingsTests.fs" />
     <Compile Include="FileSystem\EntryPropertiesTests.fs" />
     <Compile Include="FileSystem\ArchiveKindTests.fs" />

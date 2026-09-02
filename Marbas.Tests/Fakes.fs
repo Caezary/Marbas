@@ -102,6 +102,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       ShowFile = ignore
       RunEditor = fun _ _ -> Ok()
       Launch = fun _ -> Ok()
+      HandlersFor = fun _ -> []
       EditProperties = fun _ -> None
       EditPrograms = fun _ _ -> None
       AskArchive = (fun _ -> None)

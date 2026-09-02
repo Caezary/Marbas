@@ -5,7 +5,7 @@ Status as of 2026-09-02. Phases and task numbers refer to [PLAN.md](PLAN.md).
 ## Where we are
 
 **The first nine phases are complete** (46 of 46 tasks) **and phase 10 has
-started** (3 of 7). Marbas
+started** (4 of 7). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -252,6 +252,23 @@ the one that runs. `Executability` grew from five extensions to twelve, Windows'
 own `PATHEXT` plus `msi`, `scr` and `cpl`, and learned to answer from the mode
 bit alone, which is what the Unix launcher needs.
 
+**P10.4 asked both systems which programs they already know.**
+`Dependencies.HandlersFor` takes a name and answers a list of `Handler` — a
+display name and the `ProgramPath` behind it — or an empty list, never an error.
+Windows reads the registry: the user's choice, the extension's default ProgId,
+the `OpenWithProgids` under both roots and the per-user `OpenWithList`, each
+resolved through its `shell\open\command` and named by the executable's own file
+description where it carries one. Unix reads the XDG mime database: `mime/globs`
+turns the extension into a MIME type, `mimeapps.list` turns that into `.desktop`
+identifiers, and the `.desktop` files say what each is called and what it runs.
+The reading is platform code in `Adapters`; the parsing is pure and sits in
+`FileSystem`, so `ProgramCommand`, `DesktopEntry` and `MimeDatabase` are covered
+by tests over their own text and the whole Unix side is covered end to end over
+a `MockFileSystem`. The Windows side was proved by hand against this machine —
+`.html` listed Firefox, Internet Explorer, Edge, Chrome and VS Code, and a name
+with no extension listed nothing. `Microsoft.Win32.Registry` turned out to need
+no package: the types are in the shared framework on a plain `net10.0` target.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -276,8 +293,8 @@ written up as the checklist in
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
 | 9 — Archives | P9.1–P9.14 | done |
-| 10 — Running a file | P10.1–P10.3 | done |
-| | P10.4–P10.7 | to do |
+| 10 — Running a file | P10.1–P10.4 | done |
+| | P10.5–P10.7 | to do |
 
 ## What works today
 
@@ -572,17 +589,17 @@ behaviour.
 
 ## Next up
 
-**The first nine phases are finished**, and the tenth is half of one: P10.1 to
-P10.3 made one association table with a role, the port that starts a program,
-and `Enter` that reaches both. What follows is only partly plan order, and
-mostly choice. Four things are waiting:
+**The first nine phases are finished**, and the tenth is most of the way: P10.1
+to P10.4 made one association table with a role, the port that starts a program,
+`Enter` that reaches both, and the list of programs each system already knows.
+What follows is only partly plan order, and mostly choice. Four things are
+waiting:
 
-- The rest of phase 10, P10.4 to P10.7: the handlers the system already knows
-  for an extension, read out of the Windows registry and the XDG mime database;
-  `Shift+Enter` opening with one of them and remembering the choice;
-  `Ctrl+Alt+Enter` running elevated; and a second binding per command for the
-  terminals that swallow a modified `Enter` — which is also where `Ctrl+PgDn`
-  finds out whether it arrives at all.
+- The rest of phase 10, P10.5 to P10.7: `Shift+Enter` showing what P10.4 found
+  and remembering the choice as a `ForOpening` row; `Ctrl+Alt+Enter` running
+  elevated; and a second binding per command for the terminals that swallow a
+  modified `Enter` — which is also where `Ctrl+PgDn` finds out whether it
+  arrives at all.
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
   with a full-screen console editor — want a person at a terminal on each
@@ -655,6 +672,14 @@ mostly choice. Four things are waiting:
   settings file holds — where each panel stands, how it sorts, whether it
   conceals — is still written on quit and editable only by hand. Adding those
   rows is a matter of more fields on the same popup whenever it is wanted.
+- Nothing shows the handlers `HandlersFor` finds: the port answers and no key
+  asks yet. `Shift+Enter` is what reaches it in P10.5.
+- The Windows handler list is only as good as the registry: an app registered
+  through a `rundll32` stub or a packaged app with no `shell\open\command` is
+  simply missing from it, and a program whose executable carries no file
+  description shows as its file name (`devenv.exe`) rather than a title.
+- Neither adapter follows the `.desktop` legacy dash convention (`foo-bar.desktop`
+  under `foo/bar.desktop`), so a handler filed that way is passed over.
 - Whether `Ctrl+PgDn` reaches the panel at all depends on the terminal. The
   suite proves the binding and the transition, not the encoding; P10.7 gives
   every key this phase adds a second binding for that reason.

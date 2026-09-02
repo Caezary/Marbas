@@ -186,6 +186,8 @@ disagrees.
 | A started program leaves the panels un-scribbled | own console, shell verb | streams drained | **manual** |
 | A started program does not hold the loop up | same | same | **manual** |
 | A program that is not there is named, not thrown | `Win32Exception` 2 | `Win32Exception` 2 | **manual** |
+| The handlers of a common extension are listed | registry | XDG mime database | Windows: **manual**; Unix: suite |
+| An extension the system knows nothing about lists nothing | same | same | Windows: **manual**; Unix: suite |
 
 **The known one.** `F4` starts the editor as a child process sharing this
 terminal, and Terminal.Gui's driver keeps reading input while it runs. A
@@ -207,6 +209,25 @@ all — outside the kitty keyboard protocol many send a bare `PgDn`, and Windows
 Terminal has its own claim on some `Ctrl` combinations. P10.7 is where every
 key this phase adds gets a second binding for exactly this reason, and where
 this row is answered rather than listed.
+
+**Which programs open a file is a question with two entirely different
+answers.** Windows keeps them in the registry: `HKCU\…\FileExts\.ext\UserChoice`
+is what the user picked, `HKCR\.ext` its default ProgId, `OpenWithProgids` under
+both roots the rest, and `OpenWithList` the per-user open-with names — every one
+of them resolved through a `shell\open\command` value. Unix keeps them in files:
+`mime/globs` under the XDG data directories turns the extension into a MIME
+type, `mimeapps.list` under the config directories turns that into `.desktop`
+identifiers, and the `.desktop` files under `<data>/applications` say what each
+one is called and what it runs. The two adapters therefore share only the type
+they answer with and the command-line parser at the bottom, and neither reports
+a failure: a platform that knows nothing answers an empty list.
+
+**`Microsoft.Win32.Registry` needed no package after all.** The registry types
+are in the shared framework on a plain `net10.0` target — they compile and load
+on Linux and throw there if called, which nothing does, because
+`Dependencies.handlersFor` picks the adapter by platform. The project therefore
+still builds on one framework for both systems with no Windows-flavoured target
+and no extra dependency in the single-file publish.
 
 **Starting a program is where the two systems differ most.** Windows has one
 answer for everything — `ShellExecuteEx`, which `UseShellExecute` reaches — and
