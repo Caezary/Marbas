@@ -77,6 +77,13 @@ let ``the refresh key requests a refresh`` () =
     Assert.Equal(Some RefreshRequested, message)
 
 [<Fact>]
+let ``the walk-in key asks for the walk Enter no longer always makes`` () =
+    let message = KeyMap.messageFor KeyMap.walkIntoKey
+
+    Assert.Equal(Some WalkIntoRequested, message)
+    Assert.Equal(Key.PageDown.WithCtrl, KeyMap.walkIntoKey)
+
+[<Fact>]
 let ``every selection key toggles the selection and moves on down`` () =
     for key in KeyMap.selectionKeys do
         let message = KeyMap.messageFor key

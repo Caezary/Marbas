@@ -9,7 +9,19 @@ type Executability =
 module Executability =
 
     let private extensions =
-        set [ "exe"; "com"; "bat"; "cmd"; "msi" ]
+        set
+            [ "bat"
+              "cmd"
+              "com"
+              "cpl"
+              "exe"
+              "msc"
+              "msi"
+              "scr"
+              "vbe"
+              "vbs"
+              "wsf"
+              "wsh" ]
 
     let private namedExecutable (name: EntryName) =
         extensions.Contains((EntryName.extension name).ToLowerInvariant())
@@ -19,8 +31,8 @@ module Executability =
         || mode.HasFlag UnixFileMode.GroupExecute
         || mode.HasFlag UnixFileMode.OtherExecute
 
+    let ofMode (mode: UnixFileMode) =
+        if markedExecutable mode then Executable else NotExecutable
+
     let classify (name: EntryName) (mode: UnixFileMode) =
-        if namedExecutable name || markedExecutable mode then
-            Executable
-        else
-            NotExecutable
+        if namedExecutable name then Executable else ofMode mode

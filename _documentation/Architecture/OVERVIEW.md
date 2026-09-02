@@ -60,7 +60,7 @@ Marbas/
     FileSystemPath.fs     single-case path type wrapping a raw string
     SortOrder.fs          which key a panel sorts by, in which direction
     HiddenEntries.fs      what makes an entry hidden, and whether a panel lists it
-    Executability.fs      what makes an entry a program, by name and by mode bit
+    Executability.fs      what makes an entry a program, by name or by mode bit alone
     SearchText.fs         the text a panel is being searched for, and what it matches
     ProgramSettings.fs    extension and role -> the program that edits or opens it
     LaunchRequest.fs      what to start, with what, where, and with which rights

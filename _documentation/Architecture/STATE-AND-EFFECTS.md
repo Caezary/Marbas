@@ -127,6 +127,23 @@ typed. A name a file already answers to is opened as it stands rather than
 truncated — the point of the key is to reach an editor, not to erase anything —
 while a name a *directory* answers to is a `TargetExists` failure.
 
+**`Enter` is one message with four answers, and the order is the whole rule.**
+`EntryOpened` asks, in this order: is the cursor on a file inside an archive
+(refuse, `ArchiveEntryNotRunnable`); is it on a file on disk whose extension
+carries a `ForOpening` row (run that program); is that file a readable archive
+(walk into it); otherwise hand it to the system. Everything that is not a file
+on disk — a directory, `..`, a directory inside an archive — falls through to
+`AppState.enter`, which is exactly what it always did. The order matters twice
+over: the association beats the archive walk, which is why `WalkIntoRequested`
+exists on `Ctrl+PgDn`, and the in-archive refusal comes first so that a `.zip`
+inside a `.zip` is refused rather than run out of nowhere.
+
+**The cursor is what runs, not the marks.** `EntryOpened` reads
+`cursorFilePath` and `cursorFileInArchive`, never `operationTargets`. Every
+other command in the app works on the marked entries and falls back to the
+cursor; `Enter` is the one that does not, because "run these six files" is not
+what pressing it means anywhere else in the world either.
+
 **Starting a program is an effect that changes no state.** `RunProgram` carries
 a `LaunchRequest` and `LaunchFinished` brings the answer back, and the
 transition for it does nothing to the panels either way: unlike `EditFinished`,

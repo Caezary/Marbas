@@ -5,7 +5,7 @@ Status as of 2026-09-02. Phases and task numbers refer to [PLAN.md](PLAN.md).
 ## Where we are
 
 **The first nine phases are complete** (46 of 46 tasks) **and phase 10 has
-started** (2 of 7). Marbas
+started** (3 of 7). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -234,9 +234,23 @@ knows how: on Windows everything goes through the shell verb, so a console
 program gets a console of its own and `runas` is one field more; on Unix an
 executable entry is started directly with its streams drained into nothing —
 the terminal belongs to the panels — and anything else goes to `xdg-open`.
-Nothing is bound to it yet: `Enter` reaches it in P10.3. The same task gave both
-starters the working directory they should always have had, the directory the
-panel stands in.
+The same task gave both starters the working directory they should always have
+had, the directory the panel stands in.
+
+**P10.3 gave `Enter` the meaning it was missing, and gave the archive walk a key
+of its own.** `Enter` now asks four questions in order: a file inside an archive
+refuses (`ArchiveEntryNotRunnable`, the way `F4` refuses to edit one); a file on
+disk whose extension carries a `ForOpening` row runs that program; a file with
+no row that is a readable archive opens as a location, as it always did; and
+anything else — an executable, a document, a shortcut — is handed to the system,
+which follows a `.lnk` rather than making Marbas read one. Everything that is
+not a file on disk falls through to the navigation that was there before, so a
+directory and `..` behave exactly as they did. Because an association now beats
+the archive walk, `Ctrl+PgDn` carries that walk on its own: it is the old
+meaning of `Enter`, unconditional. The marks are ignored — the cursor entry is
+the one that runs. `Executability` grew from five extensions to twelve, Windows'
+own `PATHEXT` plus `msi`, `scr` and `cpl`, and learned to answer from the mode
+bit alone, which is what the Unix launcher needs.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -262,8 +276,8 @@ written up as the checklist in
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
 | 9 — Archives | P9.1–P9.14 | done |
-| 10 — Running a file | P10.1–P10.2 | done |
-| | P10.3–P10.7 | to do |
+| 10 — Running a file | P10.1–P10.3 | done |
+| | P10.4–P10.7 | to do |
 
 ## What works today
 
@@ -320,6 +334,19 @@ written up as the checklist in
   has that marker turned off.
 - `Enter` descends into the directory under the cursor. `Enter` on `..` goes
   up and places the cursor on the directory just left.
+- `Enter` on a file runs it. A file whose extension has an `Opened with:` row
+  in the `F12` popup is started with that program; anything else is handed to
+  the system, which covers an executable, a document and a shortcut alike —
+  Windows through the shell verb, so a console program gets a console of its
+  own, and Linux through `xdg-open` unless the entry carries an execute bit.
+  Marbas does not wait for what it started, and the program begins in the
+  directory the panel is standing in. Whatever is marked is ignored: the entry
+  under the cursor is the one that runs.
+- `Ctrl+PgDn` walks into whatever the cursor stands on, which is what `Enter`
+  did before an association could outrank it — the way to browse a `.zip` after
+  naming a program for `zip` in the popup.
+- A file inside an archive says why it will not run, the way `F4` says why it
+  will not be edited: the archive would have to be unpacked first.
 - `Enter` on an archive the capability table calls readable — zip, tar, tar.gz,
   tar.bz2, tar.xz and 7z proven by the suite, rar through the very same reader —
   opens it in the panel as though it were a directory, and the title says so
@@ -545,17 +572,17 @@ behaviour.
 
 ## Next up
 
-**The first nine phases are finished**, and the tenth has begun: P10.1 turned
-the editor associations into one table of extension, role and program, and
-P10.2 built the port that starts one. What follows is only partly plan order,
-and mostly choice. Four things are waiting:
+**The first nine phases are finished**, and the tenth is half of one: P10.1 to
+P10.3 made one association table with a role, the port that starts a program,
+and `Enter` that reaches both. What follows is only partly plan order, and
+mostly choice. Four things are waiting:
 
-- The rest of phase 10, P10.3 to P10.7: `Enter` running the entry under the
-  cursor — which is what first reaches the `Launch` port and the `ForOpening`
-  half of the table — the handlers the system knows for an extension,
-  `Shift+Enter` opening with one of them, `Ctrl+Alt+Enter` running elevated, and
-  a second binding per command for the terminals that swallow a modified
-  `Enter`.
+- The rest of phase 10, P10.4 to P10.7: the handlers the system already knows
+  for an extension, read out of the Windows registry and the XDG mime database;
+  `Shift+Enter` opening with one of them and remembering the choice;
+  `Ctrl+Alt+Enter` running elevated; and a second binding per command for the
+  terminals that swallow a modified `Enter` — which is also where `Ctrl+PgDn`
+  finds out whether it arrives at all.
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
   with a full-screen console editor — want a person at a terminal on each
@@ -628,13 +655,12 @@ and mostly choice. Four things are waiting:
   settings file holds — where each panel stands, how it sorts, whether it
   conceals — is still written on quit and editable only by hand. Adding those
   rows is a matter of more fields on the same popup whenever it is wanted.
-- The `Opened with:` rows can be entered and are saved, but nothing reads them
-  yet: `Enter` starts running files in P10.3. Until then they are a table the
-  popup keeps and the settings file carries.
-- The `Launch` port exists and works, but no key reaches it yet, so the whole
-  path — the adapter, the error mapping, the wording — is proven by a probe run
-  by hand rather than by anything a user can press. P10.3 is what makes it
-  reachable.
+- Whether `Ctrl+PgDn` reaches the panel at all depends on the terminal. The
+  suite proves the binding and the transition, not the encoding; P10.7 gives
+  every key this phase adds a second binding for that reason.
+- Nothing warns that naming a program for an archive extension takes `Enter`
+  away from the archive browser. `Ctrl+PgDn` is the way back in, and the only
+  place that says so is this file.
 - Nothing on Unix asks for administrator rights: `LaunchProcess` refuses an
   `AsAdministrator` request by platform, because there is no way to raise them
   that does not put a password prompt on the screen the panels own. P10.6 is

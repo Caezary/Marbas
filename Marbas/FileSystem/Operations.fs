@@ -12,6 +12,7 @@ type OperationError =
     | TargetWithinSource of path: FileSystemPath
     | EntryOutsideTarget of path: FileSystemPath
     | ArchiveEntryNotEditable of path: FileSystemPath
+    | ArchiveEntryNotRunnable of path: FileSystemPath
     | ArchiveFailed of error: ArchiveError
     | BatchFailed of message: string
     | OperationFailed of path: FileSystemPath * message: string

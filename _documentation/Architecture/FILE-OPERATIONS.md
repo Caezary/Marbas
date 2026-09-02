@@ -264,8 +264,9 @@ instead of letting it write over the panels, and `runas` is the same call with
 one field set. On Unix there is no shell verb: an executable entry is started
 directly with both its streams redirected and drained into `Stream.Null` — the
 terminal belongs to the panels — and anything else is handed to `xdg-open`.
-Which of the two an entry is comes from `Executability.classify`, the same
-answer the panel colours it by.
+Which of the two an entry is comes from `Executability.ofMode` — the execute
+bit and nothing else, because a name that looks like a Windows program is not
+one a Linux kernel will run.
 
 **A launch failure is read off the exception, because that is the only place it
 is written.** `Process.Start` reports a refusal as a `Win32Exception` and

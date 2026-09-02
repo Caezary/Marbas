@@ -73,6 +73,7 @@
     <Compile Include="State\TransferTests.fs" />
     <Compile Include="State\SearchTests.fs" />
     <Compile Include="State\NewFileTests.fs" />
+    <Compile Include="State\RunTests.fs" />
     <Compile Include="State\PropertiesTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
@@ -192,6 +193,7 @@
     <Compile Include="Integration\App\ArchiveWriteKeyTests.fs" />
     <Compile Include="Integration\App\MoveKeyTests.fs" />
     <Compile Include="Integration\App\EditKeyTests.fs" />
+    <Compile Include="Integration\App\EnterKeyTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

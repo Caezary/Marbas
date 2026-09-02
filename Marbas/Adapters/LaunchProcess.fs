@@ -60,9 +60,7 @@ let private ofItsOwn (fs: IFileSystem) (request: LaunchRequest) =
     match request.Program with
     | Some program -> detached (ProgramPath.value program) [ target ]
     | None ->
-        let name = FileSystemPath.name fs request.Target
-
-        match Executability.classify name (fs.FileInfo.New target).UnixFileMode with
+        match Executability.ofMode (fs.FileInfo.New target).UnixFileMode with
         | Executable -> detached target []
         | NotExecutable -> detached DesktopOpener [ target ]
 

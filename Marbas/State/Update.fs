@@ -9,6 +9,7 @@ type Message =
     | CursorMoved of PanelCursor
     | PanelFocused of PanelSide
     | EntryOpened
+    | WalkIntoRequested
     | RefreshRequested
     | SelectionToggled of CursorDirection
     | SelectionToggledTo of PanelCursor
@@ -126,11 +127,40 @@ let private applyBatch state result =
         | [] -> stay updated
         | failed -> request updated (ReportItemFailures failed)
 
+let private running state directory program target =
+    request
+        state
+        (RunProgram
+            { Target = target
+              Program = program
+              WorkingDirectory = directory
+              Elevation = AsUser })
+
+let private opening (fs: IFileSystem) state directory path =
+    match programFor ForOpening (FileSystemPath.name fs path) state with
+    | Some program -> running state directory (Some program) path
+    | None ->
+        match ArchiveReader.kindOf fs path with
+        | Some _ -> enter fs state |> applyListing state
+        | None -> running state directory None path
+
+let private opened (fs: IFileSystem) state =
+    let panel = activePanel state
+
+    match cursorFileInArchive panel with
+    | Some(archive, entry) ->
+        request state (ReportOperationError(Operations.ArchiveEntryNotRunnable(ArchivePath.spelled fs archive entry)))
+    | None ->
+        match cursorFilePath fs panel, activeDirectory state with
+        | Some path, Some directory -> opening fs state directory path
+        | _ -> enter fs state |> applyListing state
+
 let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     match msg with
     | CursorMoved cursor -> stay (setCursor cursor.Side cursor.Index state)
     | PanelFocused side -> stay (activate side state)
-    | EntryOpened -> enter fs state |> applyListing state
+    | EntryOpened -> opened fs state
+    | WalkIntoRequested -> enter fs state |> applyListing state
     | RefreshRequested -> refresh fs state |> applyListing state
     | SelectionToggled direction -> stay (toggleSelectionMoving direction state.Active state)
     | SelectionToggledTo cursor -> stay (toggleSelectionThrough cursor.Side cursor.Index state)

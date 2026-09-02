@@ -468,16 +468,26 @@ its own for this: the type is a value like `ContentError`, and it has to be in
 scope before `DirectoryListing`.
 
 **`Enter` decides from where the panel stands and what the cursor is on.** On
-disk a directory is descended into and `..` climbs, as before; a *file* is now
+disk a directory is descended into and `..` climbs, as before; a *file* is
 offered to `ArchiveReader.kindOf`, and a kind that can be read is opened as
-`InArchive(file, ArchivePath.root)`. A file that is no readable archive still
-does nothing at all — `Enter` on a text file is not an error. Inside an
-archive, a directory walks a level in, `..` walks a level out with the cursor
-on the level just left, and `..` at the top leaves the archive for the
-directory holding it with the cursor on the archive file — the same courtesy
-climbing out of a directory has always paid. A file inside an archive opens
-nothing: an archive inside an archive would have to be unpacked to be read, and
-that is not a promise this phase makes.
+`InArchive(file, ArchivePath.root)`. Inside an archive, a directory walks a
+level in, `..` walks a level out with the cursor on the level just left, and
+`..` at the top leaves the archive for the directory holding it with the cursor
+on the archive file — the same courtesy climbing out of a directory has always
+paid. A file inside an archive opens nothing: an archive inside an archive would
+have to be unpacked to be read, and that is not a promise this phase makes.
+
+**Since P10.3 a `ForOpening` row wins over the walk, and `Ctrl+PgDn` is how to
+walk anyway.** An archive whose extension names a program in the association
+table is *run*, not opened as a location — the point of naming a program for
+`zip` is to reach it. That would otherwise have made the archive browser
+unreachable for whoever does so, which is why `Ctrl+PgDn` carries the walk on
+its own: `WalkIntoRequested` is the old meaning of `Enter`, unchanged and
+unconditional. A file inside an archive no longer merely does nothing when
+`Enter` is pressed on it; it refuses with `ArchiveEntryNotRunnable` under its
+spelled name, the way `F4` refuses with `ArchiveEntryNotEditable`, because
+running a copy out of the workspace would promise a round trip back into the
+archive that nothing here makes.
 
 **Everything the panel already did keeps working, because nothing else
 changed.** The entries are `Entry` values, so sorting, the hidden toggle,

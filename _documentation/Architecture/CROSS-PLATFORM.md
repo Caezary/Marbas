@@ -180,6 +180,9 @@ disagrees.
 | `Shift+F4` creates a file and opens it | same | same | suite |
 | `F12` opens the settings popup | same | same | suite |
 | The screen is whole again after the editor exits | windowed editors: yes | **manual, and see below** | manual |
+| `Enter` walks into a directory and an archive | same | same | suite |
+| `Enter` runs a document, an executable and an associated file | same | same | suite |
+| `Ctrl+PgDn` reaches the panel as a key at all | **manual** | **manual** | **manual** |
 | A started program leaves the panels un-scribbled | own console, shell verb | streams drained | **manual** |
 | A started program does not hold the loop up | same | same | **manual** |
 | A program that is not there is named, not thrown | `Win32Exception` 2 | `Win32Exception` 2 | **manual** |
@@ -196,6 +199,14 @@ would be dead weight on Windows, so it wants a switch of its own rather than an
 unconditional detour.
 Until then, `EDITOR=code -w`, a default editor named in the settings popup, or
 any windowed editor is the way to use `F4` on Linux.
+
+**`Ctrl+PgDn` is a binding whose delivery is not yet proved.** The suite sends
+it straight to the panel's `KeyDown` handler, which proves the binding and the
+transition but says nothing about whether a terminal encodes the modifier at
+all — outside the kitty keyboard protocol many send a bare `PgDn`, and Windows
+Terminal has its own claim on some `Ctrl` combinations. P10.7 is where every
+key this phase adds gets a second binding for exactly this reason, and where
+this row is answered rather than listed.
 
 **Starting a program is where the two systems differ most.** Windows has one
 answer for everything — `ShellExecuteEx`, which `UseShellExecute` reaches — and

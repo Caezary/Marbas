@@ -133,6 +133,24 @@ half testable from a Windows machine. Which colour an entry then gets is
 and it is `Ui`'s alone, because an archive is a display grouping and not a fact
 about the file.
 
+**The extension list is `PATHEXT` minus the two that are source files first.**
+P10.3 widened it from five names to twelve: Windows' own `PATHEXT` — `com`,
+`exe`, `bat`, `cmd`, `vbs`, `vbe`, `wsf`, `wsh`, `msc` — plus `msi`, `scr` and
+`cpl`, which the shell runs on opening without being on that list. `js` and
+`jse` are deliberately left out although Windows does run them: a `.js` in a
+tree is a file somebody reads and edits far more often than one they mean to
+start, and colouring every one of them as a program costs more attention than
+the rare double click it would serve. `ps1` is out for the opposite reason —
+Windows opens it in an editor rather than running it.
+
+**Asking about a mode bit is a separate question from asking about a name.**
+`Executability.ofMode` answers from the `UnixFileMode` alone and `classify` is
+the name-or-mode pair built on it. The split exists because `LaunchProcess`
+needs the Unix half by itself: a `setup.exe` sitting on a Linux disk without an
+execute bit is worth colouring as a program and is *not* worth handing to
+`exec`, and one function answering both questions could only be wrong about one
+of them.
+
 ## Sorting and hidden entries
 
 **One comparison, three layers.** `DirectoryListing.order` compares a group
@@ -377,6 +395,14 @@ command is one line, and a command cannot be on the bar under one name and do
 something else when its key is pressed, because both come from the same row.
 There was a `PanelInput` module holding the panel half of this; P7.5 merged it
 into `KeyMap` and deleted it.
+
+**`Enter` is the one key that is not in that table.** It arrives as the list's
+`Accepting` command rather than as a key, because that is what a `ListView`
+raises when a row is chosen — by `Enter` or by a double click — and both should
+mean the same thing. `PanelWiring` marks it handled and dispatches
+`EntryOpened`; there is no row in `bindings` for it, and so no bar label either.
+`Ctrl+PgDn` is an ordinary row (`walkIntoKey` → `WalkIntoRequested`) and gets
+the walk `Enter` gave up when P10.3 let an association beat it.
 
 **The bar is twelve slots, not a list of what happens to be bound.**
 `KeyMap.bar` walks `KeyMap.functionKeys` — `F1` … `F12`, in order — applies the
