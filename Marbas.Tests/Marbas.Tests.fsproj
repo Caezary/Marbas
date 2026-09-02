@@ -80,6 +80,7 @@
     <Compile Include="State\SearchTests.fs" />
     <Compile Include="State\NewFileTests.fs" />
     <Compile Include="State\RunTests.fs" />
+    <Compile Include="State\OpenWithTests.fs" />
     <Compile Include="State\PropertiesTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
@@ -130,6 +131,7 @@
 
   <ItemGroup>
     <Compile Include="Ui\Dialogs\AssociationRowTests.fs" />
+    <Compile Include="Ui\Dialogs\HandlerRowTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -182,6 +184,7 @@
     <Compile Include="Integration\Dialogs\PropertiesDialogTests.fs" />
     <Compile Include="Integration\Dialogs\SettingsDialogTests.fs" />
     <Compile Include="Integration\Dialogs\PackDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\OpenWithDialogTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

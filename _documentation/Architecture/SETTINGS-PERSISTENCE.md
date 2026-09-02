@@ -87,6 +87,12 @@ and then extension order, and every one of them is folded back through
 `ProgramSettings.remember`, so the file, the popup and the table itself agree
 however the lines were written.
 
+**Two keys write into that table now.** `F12` edits it as a table, and
+`Shift+Enter` adds one row to it when the box that remembers is ticked — the
+same `ProgramSettings.associate ForOpening`, reached from a different question.
+Both land in `state.Programs` and are written on quit like every other setting,
+so "open with this from now on" survives a restart without a save of its own.
+
 **A line written before the role existed is one for editing.** Versions before
 P10.1 wrote `editor.extension.<ext>=…`, which is still read — as a `ForEditing`
 row, since editing was all the table could mean then. That keeps a settings

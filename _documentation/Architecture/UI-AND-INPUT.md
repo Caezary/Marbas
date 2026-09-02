@@ -396,13 +396,34 @@ something else when its key is pressed, because both come from the same row.
 There was a `PanelInput` module holding the panel half of this; P7.5 merged it
 into `KeyMap` and deleted it.
 
+**The open-with popup is a list and a field that agree.** `OpenWithDialog` shows
+what `HandlersFor` found, one `HandlerRow` per program — the display name in a
+column, the path after it — and a field below holding the answer. Moving over a
+row writes its program into the field, and the field is what `Ok` reads, so a
+program the list does not offer can simply be typed. The field opens on the
+`ForOpening` row the extension already has, and on the first handler when there
+is none, so pressing `Enter` straight away does the obvious thing rather than
+nothing. Unlike `SettingsDialog`, `Enter` in the field is *not* intercepted:
+bubbling to `Ok` is the right answer here, because there is only one thing to
+say.
+
+**The box that remembers is disabled when there is nothing to remember
+against.** "Always open `.html` this way" writes a `ForOpening` row for the
+extension, so a name with no extension has no key to file it under and the box
+is disabled rather than silently doing nothing. The label spells the extension
+out, because "remember this" is ambiguous about *what* — this file, this
+program, this kind of file — and the whole point is that it is the kind.
+
 **`Enter` is the one key that is not in that table.** It arrives as the list's
 `Accepting` command rather than as a key, because that is what a `ListView`
 raises when a row is chosen — by `Enter` or by a double click — and both should
 mean the same thing. `PanelWiring` marks it handled and dispatches
 `EntryOpened`; there is no row in `bindings` for it, and so no bar label either.
 `Ctrl+PgDn` is an ordinary row (`walkIntoKey` → `WalkIntoRequested`) and gets
-the walk `Enter` gave up when P10.3 let an association beat it.
+the walk `Enter` gave up when P10.3 let an association beat it, and `Shift+Enter`
+is another (`openWithKey` → `OpenWithRequested`) — a modified `Enter` does reach
+`KeyDown` rather than the list's `Accepting`, which is what makes the pair
+possible at all.
 
 **The bar is twelve slots, not a list of what happens to be bound.**
 `KeyMap.bar` walks `KeyMap.functionKeys` — `F1` … `F12`, in order — applies the

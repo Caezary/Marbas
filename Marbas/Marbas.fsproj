@@ -109,6 +109,8 @@
         <Compile Include="Ui\Dialogs\PatternDialog.fs" />
         <Compile Include="Ui\Dialogs\ProgressDialog.fs" />
         <Compile Include="Ui\Dialogs\AssociationRow.fs" />
+        <Compile Include="Ui\Dialogs\HandlerRow.fs" />
+        <Compile Include="Ui\Dialogs\OpenWithDialog.fs" />
         <Compile Include="Ui\Dialogs\PropertiesDialog.fs" />
         <Compile Include="Ui\Dialogs\SettingsDialog.fs" />
         <Compile Include="Ui\Dialogs\PackDialog.fs" />

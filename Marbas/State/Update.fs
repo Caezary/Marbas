@@ -40,6 +40,8 @@ type Message =
     | EditRequested
     | EditFinished of outcome: Result<unit, Operations.OperationError>
     | LaunchFinished of outcome: Result<unit, LaunchError>
+    | OpenWithRequested
+    | HandlerChosen of path: FileSystemPath * choice: OpenWithChoice
     | NewFileRequested
     | FileNameEntered of name: EntryName
     | PropertiesEntered of EntryProperties
@@ -85,6 +87,7 @@ type Effect =
     | ViewArchiveEntry of archive: FileSystemPath * entry: ArchivePath
     | EditFile of path: FileSystemPath * editor: ProgramPath option
     | RunProgram of LaunchRequest
+    | ShowHandlers of path: FileSystemPath * chosen: ProgramPath option
     | ShowProperties of EntryProperties
     | ShowSettings of ProgramSettings * candidate: ProgramPath option
     | PromptForTarget of suggestion: FileSystemPath
@@ -154,6 +157,41 @@ let private opened (fs: IFileSystem) state =
         match cursorFilePath fs panel, activeDirectory state with
         | Some path, Some directory -> opening fs state directory path
         | _ -> enter fs state |> applyListing state
+
+let private revealed (fs: IFileSystem) panel directory =
+    match cursorEntry panel with
+    | Some entry when entry.Name = DirectoryListing.ParentName -> FileSystemPath.parent fs directory
+    | _ -> cursorDirectoryPath fs panel
+
+let private openedWith (fs: IFileSystem) state =
+    let panel = activePanel state
+
+    match panel.Path with
+    | InArchive(archive, level) ->
+        let named =
+            cursorEntryInArchive panel
+            |> Option.map snd
+            |> Option.defaultValue level
+
+        request state (ReportOperationError(Operations.ArchiveEntryNotRunnable(ArchivePath.spelled fs archive named)))
+    | OnDisk directory ->
+        match cursorFilePath fs panel with
+        | Some path -> request state (ShowHandlers(path, programFor ForOpening (FileSystemPath.name fs path) state))
+        | None ->
+            match revealed fs panel directory with
+            | Some target -> running state directory None target
+            | None -> stay state
+
+let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
+    let remembered =
+        match FileExtension.ofName (FileSystemPath.name fs path) with
+        | Some extension when choice.Remember ->
+            withPrograms (ProgramSettings.associate ForOpening extension choice.Program state.Programs) state
+        | _ -> state
+
+    match activeDirectory remembered with
+    | Some directory -> running remembered directory (Some choice.Program) path
+    | None -> stay remembered
 
 let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     match msg with
@@ -314,6 +352,8 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | Error(ElevationDeclined _) -> stay state
         | Error error -> request state (ReportLaunchError error)
         | Ok() -> stay state
+    | OpenWithRequested -> openedWith fs state
+    | HandlerChosen(path, choice) -> chosen fs state path choice
     | RootRequested side -> request state (PromptForRoot side)
     | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
     | QuitRequested ->

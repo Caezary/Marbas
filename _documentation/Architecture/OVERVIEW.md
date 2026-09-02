@@ -140,8 +140,10 @@ Marbas/
       PatternDialog.fs      the `+` / `-` pattern prompt, over PromptDialog
       ProgressDialog.fs     the window shown while a batch runs
       AssociationRow.fs     one extension and its program -> one row of the list
+      HandlerRow.fs         one program the system knows -> one row of the list
       PropertiesDialog.fs   what `F4` shows for a directory, and writes back
       SettingsDialog.fs     the default editor and the associations, one list per role
+      OpenWithDialog.fs     which program opens this file, and whether to remember it
       PackDialog.fs         what `Shift+F1` asks before an archive is written
     App/                  the composition root, and the way out to the world
       CursorInfo.fs         cursor entry -> status line text

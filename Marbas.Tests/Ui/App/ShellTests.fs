@@ -576,6 +576,46 @@ let ``a launch failure is reported under its own title`` () =
     Assert.Contains("notes.odd", snd reported)
 
 [<Fact>]
+let ``the handlers of the file the effect names are the ones offered`` () =
+    let asked = ResizeArray<EntryName * Handler list * ProgramPath option>()
+    let firefox = Handler.tryCreate "Firefox" (ProgramPath.tryCreate "firefox.exe") |> Expect.some
+
+    let deps =
+        { noDeps () with
+            HandlersFor = fun _ -> [ firefox ]
+            AskHandler = fun name handlers chosen -> asked.Add(name, handlers, chosen); None }
+
+    Shell.interpret deps ignore (ShowHandlers(fp (at "start/page.html"), ProgramPath.tryCreate "code.exe"))
+
+    let name, handlers, chosen = Assert.Single asked
+
+    Assert.Equal(en "page.html", name)
+    Assert.Equal(firefox, Assert.Single handlers)
+    Assert.Equal(ProgramPath.tryCreate "code.exe", chosen)
+
+[<Fact>]
+let ``a program picked out of the popup is dispatched back with the file it opens`` () =
+    let sent, dispatch = capture ()
+
+    let choice =
+        { Program = Expect.some (ProgramPath.tryCreate "firefox.exe")
+          Remember = true }
+
+    let deps = { noDeps () with AskHandler = fun _ _ _ -> Some choice }
+
+    Shell.interpret deps dispatch (ShowHandlers(fp (at "start/page.html"), None))
+
+    Assert.Equal<Message list>([ HandlerChosen(fp (at "start/page.html"), choice) ], List.ofSeq sent)
+
+[<Fact>]
+let ``a dismissed open-with popup dispatches nothing`` () =
+    let sent, dispatch = capture ()
+
+    Shell.interpret (noDeps ()) dispatch (ShowHandlers(fp (at "start/page.html"), None))
+
+    Assert.Empty sent
+
+[<Fact>]
 let ``changed programs are dispatched back`` () =
     let sent, dispatch = capture ()
     let changed =

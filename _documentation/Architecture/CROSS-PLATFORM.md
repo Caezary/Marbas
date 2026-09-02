@@ -186,6 +186,8 @@ disagrees.
 | A started program leaves the panels un-scribbled | own console, shell verb | streams drained | **manual** |
 | A started program does not hold the loop up | same | same | **manual** |
 | A program that is not there is named, not thrown | `Win32Exception` 2 | `Win32Exception` 2 | **manual** |
+| `Shift+Enter` reaches the panel as a key at all | **manual** | **manual** | **manual** |
+| `Shift+Enter` on a directory opens the file manager | Explorer | the desktop's own | **manual** |
 | The handlers of a common extension are listed | registry | XDG mime database | Windows: **manual**; Unix: suite |
 | An extension the system knows nothing about lists nothing | same | same | Windows: **manual**; Unix: suite |
 
@@ -202,13 +204,15 @@ unconditional detour.
 Until then, `EDITOR=code -w`, a default editor named in the settings popup, or
 any windowed editor is the way to use `F4` on Linux.
 
-**`Ctrl+PgDn` is a binding whose delivery is not yet proved.** The suite sends
-it straight to the panel's `KeyDown` handler, which proves the binding and the
-transition but says nothing about whether a terminal encodes the modifier at
-all — outside the kitty keyboard protocol many send a bare `PgDn`, and Windows
-Terminal has its own claim on some `Ctrl` combinations. P10.7 is where every
-key this phase adds gets a second binding for exactly this reason, and where
-this row is answered rather than listed.
+**`Ctrl+PgDn` and `Shift+Enter` are bindings whose delivery is not yet proved.**
+The suite sends them straight to the panel's `KeyDown` handler, which proves the
+binding and the transition but says nothing about whether a terminal encodes the
+modifier at all — outside the kitty keyboard protocol many send a bare `PgDn`
+or a bare carriage return, and Windows Terminal has its own claim on some `Ctrl`
+combinations. `Shift+Enter` is the more doubtful of the two: a modified `Enter`
+is exactly what the plan calls the least portable thing this phase asks for.
+P10.7 is where every key this phase adds gets a second binding for that reason,
+and where these rows are answered rather than listed.
 
 **Which programs open a file is a question with two entirely different
 answers.** Windows keeps them in the registry: `HKCU\…\FileExts\.ext\UserChoice`

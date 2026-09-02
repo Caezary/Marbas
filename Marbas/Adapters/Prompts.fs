@@ -62,6 +62,11 @@ let askArchive (app: IApplication) retarget suggestion =
     app.Run dialog |> ignore
     PackDialog.choice dialog
 
+let askHandler (app: IApplication) name handlers chosen =
+    use dialog = OpenWithDialog.create name handlers chosen
+    app.Run dialog |> ignore
+    OpenWithDialog.choice dialog
+
 let editPrograms (app: IApplication) programs candidate =
     use dialog = SettingsDialog.create programs candidate
     app.Run dialog |> ignore

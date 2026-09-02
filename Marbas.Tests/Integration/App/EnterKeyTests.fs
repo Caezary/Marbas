@@ -93,6 +93,44 @@ let ``the walk-in key walks into a directory the way Enter used to`` () =
     Assert.Equal(1, (leftList window).Source.Count)
 
 [<Fact>]
+let ``Shift+Enter offers the programs the system knows and starts the one picked`` () =
+    let started = ResizeArray<LaunchRequest>()
+    let offered = ResizeArray<EntryName>()
+    let chosen = Expect.some (ProgramPath.tryCreate "firefox.exe")
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies (mockFs ()) (at "start") with
+                Launch = fun request -> started.Add request; Ok()
+                HandlersFor = fun name -> offered.Add name; []
+                AskHandler = fun _ _ _ -> Some { Program = chosen; Remember = false } }
+
+    (leftList window).SelectedItem <- Page
+
+    pressKey window KeyMap.openWithKey
+
+    Assert.Equal(EntryName.create "page.html", Assert.Single offered)
+    Assert.Equal(Some chosen, (Assert.Single started).Program)
+
+[<Fact>]
+let ``Shift+Enter on a directory reaches the desktop without asking`` () =
+    let started = ResizeArray<LaunchRequest>()
+    let asked = ResizeArray<EntryName>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies (mockFs ()) (at "start") with
+                Launch = fun request -> started.Add request; Ok()
+                AskHandler = fun name _ _ -> asked.Add name; None }
+
+    (leftList window).SelectedItem <- 1
+
+    pressKey window KeyMap.openWithKey
+
+    Assert.Empty asked
+    Assert.Equal(fp (at "start/docs"), (Assert.Single started).Target)
+
+[<Fact>]
 let ``a launch that fails is reported`` () =
     let reported = ResizeArray<string>()
     let fs = mockFs ()

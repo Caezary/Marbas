@@ -76,6 +76,8 @@ let permanentDeleteKey = Key.Delete.WithShift
 
 let walkIntoKey = Key.PageDown.WithCtrl
 
+let openWithKey = Key.Enter.WithShift
+
 let quitKey = Key.Q.WithCtrl
 
 let cancelKey = Key.Esc
@@ -121,6 +123,7 @@ let bindings =
       offBar classicHiddenKey HiddenToggled
       offBar refreshKey RefreshRequested
       offBar walkIntoKey WalkIntoRequested
+      offBar openWithKey OpenWithRequested
       offBar selectPatternKey (PatternRequested Select)
       offBar deselectPatternKey (PatternRequested Deselect)
       offBar insertKey (SelectionToggled Downward)

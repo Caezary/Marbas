@@ -1,5 +1,9 @@
 namespace Marbas.FileSystem
 
+type OpenWithChoice =
+    { Program: ProgramPath
+      Remember: bool }
+
 type Handler =
     { Name: string
       Program: ProgramPath }
@@ -16,7 +20,7 @@ module Handler =
     let tryCreate raw program =
         program |> Option.map (fun path -> { Name = named raw path; Program = path })
 
-    let distinct handlers =
+    let distinct (handlers: Handler list) =
         handlers
         |> List.fold
             (fun kept handler ->

@@ -58,6 +58,7 @@ type Dependencies =
       RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       Launch: LaunchRequest -> Result<unit, LaunchError>
       HandlersFor: EntryName -> Handler list
+      AskHandler: EntryName -> Handler list -> ProgramPath option -> OpenWithChoice option
       EditProperties: EntryProperties -> EntryProperties option
       EditPrograms: ProgramSettings -> ProgramPath option -> ProgramSettings option
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
@@ -329,6 +330,12 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Given password -> showEntry deps archive (Some password) entry
     | EditFile(path, editor) -> deps.RunEditor editor path |> EditFinished |> dispatch
     | RunProgram request -> deps.Launch request |> LaunchFinished |> dispatch
+    | ShowHandlers(path, chosen) ->
+        let name = FileSystemPath.name deps.FileSystem path
+
+        match deps.AskHandler name (deps.HandlersFor name) chosen with
+        | Some choice -> dispatch (HandlerChosen(path, choice))
+        | None -> ()
     | ShowProperties properties ->
         match deps.EditProperties properties with
         | Some changed -> dispatch (PropertiesEntered changed)

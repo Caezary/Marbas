@@ -84,6 +84,13 @@ let ``the walk-in key asks for the walk Enter no longer always makes`` () =
     Assert.Equal(Key.PageDown.WithCtrl, KeyMap.walkIntoKey)
 
 [<Fact>]
+let ``the open-with key asks which program should open the entry`` () =
+    let message = KeyMap.messageFor KeyMap.openWithKey
+
+    Assert.Equal(Some OpenWithRequested, message)
+    Assert.Equal(Key.Enter.WithShift, KeyMap.openWithKey)
+
+[<Fact>]
 let ``every selection key toggles the selection and moves on down`` () =
     for key in KeyMap.selectionKeys do
         let message = KeyMap.messageFor key
