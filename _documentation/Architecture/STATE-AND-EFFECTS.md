@@ -127,6 +127,13 @@ typed. A name a file already answers to is opened as it stands rather than
 truncated — the point of the key is to reach an editor, not to erase anything —
 while a name a *directory* answers to is a `TargetExists` failure.
 
+**Starting a program is an effect that changes no state.** `RunProgram` carries
+a `LaunchRequest` and `LaunchFinished` brings the answer back, and the
+transition for it does nothing to the panels either way: unlike `EditFinished`,
+which re-reads the directory the editor was pointed into, nothing here says when
+the program is done — or that it ever will be. A failure becomes
+`ReportLaunchError`, except `ElevationDeclined`, which becomes nothing at all.
+
 **The settings popup is a port too, and what it returns is state.**
 `SettingsRequested` hands `state.Programs` to `Dependencies.EditPrograms` through
 the `ShowSettings` effect, along with the executable under the panel cursor if

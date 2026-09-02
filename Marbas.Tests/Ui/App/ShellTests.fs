@@ -19,6 +19,12 @@ let private en = EntryName.create
 
 let private noDeps () = Fakes.dependencies (MockFileSystem()) (at "start")
 
+let private launching target =
+    { Target = fp target
+      Program = None
+      WorkingDirectory = fp (at "start")
+      Elevation = AsUser }
+
 let private deleteRequest names scope =
     { Targets = names
       Scope = scope
@@ -537,6 +543,37 @@ let ``a dismissed properties dialog dispatches nothing`` () =
     Shell.interpret (noDeps ()) dispatch (ShowProperties shown)
 
     Assert.Empty sent
+
+[<Fact>]
+let ``a program the effect names is handed to the launcher and its outcome dispatched back`` () =
+    let sent, dispatch = capture ()
+    let asked = ResizeArray<LaunchRequest>()
+    let deps = { noDeps () with Launch = fun request -> asked.Add request; Ok() }
+
+    Shell.interpret deps dispatch (RunProgram(launching (at "start/notes.txt")))
+
+    Assert.Equal(launching (at "start/notes.txt"), Assert.Single asked)
+    Assert.Equal<Message list>([ LaunchFinished(Ok()) ], List.ofSeq sent)
+
+[<Fact>]
+let ``a launch that fails dispatches its failure back`` () =
+    let sent, dispatch = capture ()
+    let failure = NothingAssociated(fp (at "start/notes.odd"))
+    let deps = { noDeps () with Launch = fun _ -> Error failure }
+
+    Shell.interpret deps dispatch (RunProgram(launching (at "start/notes.odd")))
+
+    Assert.Equal<Message list>([ LaunchFinished(Error failure) ], List.ofSeq sent)
+
+[<Fact>]
+let ``a launch failure is reported under its own title`` () =
+    let mutable reported = ("", "")
+    let deps = { noDeps () with ReportError = fun title text -> reported <- (title, text) }
+
+    Shell.interpret deps ignore (ReportLaunchError(NothingAssociated(fp (at "start/notes.odd"))))
+
+    Assert.Equal(LaunchErrorMessage.Title, fst reported)
+    Assert.Contains("notes.odd", snd reported)
 
 [<Fact>]
 let ``changed programs are dispatched back`` () =

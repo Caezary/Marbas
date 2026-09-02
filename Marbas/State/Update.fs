@@ -38,6 +38,7 @@ type Message =
     | ViewRequested
     | EditRequested
     | EditFinished of outcome: Result<unit, Operations.OperationError>
+    | LaunchFinished of outcome: Result<unit, LaunchError>
     | NewFileRequested
     | FileNameEntered of name: EntryName
     | PropertiesEntered of EntryProperties
@@ -55,6 +56,7 @@ type DeleteRequest =
 type Effect =
     | ReportListingError of ListingError
     | ReportOperationError of Operations.OperationError
+    | ReportLaunchError of LaunchError
     | ReportItemFailures of Operations.ItemResult list
     | ConfirmDelete of DeleteRequest
     | DeleteTargets of sources: FileSystemPath list * mode: DeleteMode
@@ -81,6 +83,7 @@ type Effect =
     | ViewFile of path: FileSystemPath
     | ViewArchiveEntry of archive: FileSystemPath * entry: ArchivePath
     | EditFile of path: FileSystemPath * editor: ProgramPath option
+    | RunProgram of LaunchRequest
     | ShowProperties of EntryProperties
     | ShowSettings of ProgramSettings * candidate: ProgramPath option
     | PromptForTarget of suggestion: FileSystemPath
@@ -276,6 +279,11 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         match outcome with
         | Error error -> request state (ReportOperationError error)
         | Ok() -> refresh fs state |> applyListing state
+    | LaunchFinished outcome ->
+        match outcome with
+        | Error(ElevationDeclined _) -> stay state
+        | Error error -> request state (ReportLaunchError error)
+        | Ok() -> stay state
     | RootRequested side -> request state (PromptForRoot side)
     | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
     | QuitRequested ->

@@ -25,8 +25,8 @@ let private watchModifiers (app: IApplication) (env: HostEnvironment) =
     | Windows -> ModifierWatch.poll app
     | Unix -> ModifierWatch.unsupported
 
-let private runEditor (app: IApplication) (env: HostEnvironment) =
-    EditorProcess.run (fun () -> app.ClearScreenNextIteration <- true) env.Editor env.Platform
+let private runEditor (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) =
+    EditorProcess.run fs (fun () -> app.ClearScreenNextIteration <- true) env.Editor env.Platform
 
 let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.Dependencies =
     { FileSystem = fs
@@ -43,7 +43,8 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
       Confirm = Prompts.confirm app
       SendToTrash = sendToTrash fs env
       ShowFile = Prompts.showFile app
-      RunEditor = runEditor app env
+      RunEditor = runEditor app fs env
+      Launch = LaunchProcess.start fs env.Platform
       EditProperties = Prompts.editProperties app
       EditPrograms = Prompts.editPrograms app
       AskArchive = Prompts.askArchive app (ArchiveName.retarget fs)

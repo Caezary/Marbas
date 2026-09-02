@@ -180,6 +180,9 @@ disagrees.
 | `Shift+F4` creates a file and opens it | same | same | suite |
 | `F12` opens the settings popup | same | same | suite |
 | The screen is whole again after the editor exits | windowed editors: yes | **manual, and see below** | manual |
+| A started program leaves the panels un-scribbled | own console, shell verb | streams drained | **manual** |
+| A started program does not hold the loop up | same | same | **manual** |
+| A program that is not there is named, not thrown | `Win32Exception` 2 | `Win32Exception` 2 | **manual** |
 
 **The known one.** `F4` starts the editor as a child process sharing this
 terminal, and Terminal.Gui's driver keeps reading input while it runs. A
@@ -193,6 +196,18 @@ would be dead weight on Windows, so it wants a switch of its own rather than an
 unconditional detour.
 Until then, `EDITOR=code -w`, a default editor named in the settings popup, or
 any windowed editor is the way to use `F4` on Linux.
+
+**Starting a program is where the two systems differ most.** Windows has one
+answer for everything — `ShellExecuteEx`, which `UseShellExecute` reaches — and
+it gives a console program a console of its own, so nothing it prints can reach
+the panels; `runas` is the same call with the verb set, and it is the only way
+a terminal application asks for administrator rights without a password prompt
+on a screen it does not own. Unix has no such verb. An executable entry is
+started directly with both of its streams redirected and drained, because it
+would otherwise inherit the terminal the panels are drawn on, and anything else
+goes to `xdg-open`, which is the desktop's own idea of what opens a file. The
+first launch on either system is what the three rows above check by hand; the
+adapter itself is out of the suite's reach, like every other one.
 
 **Attributes are not the same bits everywhere.** The properties popup offers
 read-only, hidden, system and archive because that is what `FileAttributes`

@@ -227,6 +227,13 @@ on a path, like every other operation error. The tests pass a `RunEditor` that
 records the path and can write to the mock file system, which is what makes
 "the panel shows what the editor left behind" an ordinary test.
 
+**Both start in the directory the panel stands in.** A `LaunchRequest` carries
+its `WorkingDirectory` as a field, and `EditorProcess` derives one from the path
+it was handed. Neither used to set it, so a program inherited whatever directory
+Marbas itself was started from — a relative path typed into an editor's own
+dialog, or written by a program started with `Enter`, would have landed
+somewhere the user was never looking.
+
 **Which editor to start is a pure choice.** `EditorCommand.choose` takes
 `$EDITOR` as an option and a `Platform` (`Windows`/`Unix`) and answers with the
 command: what was configured, trimmed, or `notepad`/`vi`. `Adapters` only
@@ -236,3 +243,35 @@ reads the environment and asks. A blank `$EDITOR` counts as unset.
 the same `AppState.refresh` that `Ctrl+R` does, so the cursor stays on the file
 and the marks survive; only the active panel is re-read, because that is the
 directory the editor was pointed into.
+
+**Running a program is a second port, and its failures are their own
+vocabulary.** `Dependencies.Launch` takes a `LaunchRequest` and answers
+`Result<unit, LaunchError>`. It is not `RunEditor` and it does not reuse
+`OperationError`, because nothing here is an operation on a file: the four ways
+it fails — nothing associated with the name, the named program missing, the
+system refusing, the elevation prompt turned down — say something about
+*starting a program*, and three of them have no path-shaped answer at all. The
+effect is `RunProgram`, the message back is `LaunchFinished`, and the wording
+lives in `LaunchErrorMessage` beside every other message module.
+
+**The launcher never waits, and that is the whole point of it.** `EditorProcess`
+blocks on `WaitForExit` because `F4` promises the panel is re-read when the
+editor closes; `LaunchProcess` promises nothing of the kind, so it starts the
+program and returns. Nothing re-reads a panel afterwards either — there is no
+"afterwards" to hook. On Windows every launch goes through the shell verb
+(`UseShellExecute`), which is what gives a console program a console of its own
+instead of letting it write over the panels, and `runas` is the same call with
+one field set. On Unix there is no shell verb: an executable entry is started
+directly with both its streams redirected and drained into `Stream.Null` — the
+terminal belongs to the panels — and anything else is handed to `xdg-open`.
+Which of the two an entry is comes from `Executability.classify`, the same
+answer the panel colours it by.
+
+**A launch failure is read off the exception, because that is the only place it
+is written.** `Process.Start` reports a refusal as a `Win32Exception` and
+nothing else, so `LaunchProcess` maps three native codes — 1155 (no
+association), 1223 (a prompt the user cancelled) and 2 (not found, which is the
+named program when one was named) — and calls everything else `LaunchRefused`
+with the message the system gave. `Update` turns `ElevationDeclined` into
+silence rather than a dialog: refusing an elevation prompt is an answer, not a
+failure.

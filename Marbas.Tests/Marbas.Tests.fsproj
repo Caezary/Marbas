@@ -99,6 +99,7 @@
     <Compile Include="Ui\Messages\ContentErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\ArchiveErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\OperationErrorMessageTests.fs" />
+    <Compile Include="Ui\Messages\LaunchErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\DeleteConfirmationTests.fs" />
     <Compile Include="Ui\Messages\OverwriteQuestionTests.fs" />
   </ItemGroup>

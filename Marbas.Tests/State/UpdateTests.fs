@@ -653,6 +653,37 @@ let ``an editor that could not be started is reported`` () =
     Assert.Equal<Effect list>([ ReportOperationError failure ], result.Effects)
 
 [<Fact>]
+let ``a program that started leaves the state alone and asks for nothing`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+
+    let result = update fs (LaunchFinished(Ok())) state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a program that could not be started is reported`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+    let failure = NothingAssociated(fp (at "start/notes.txt"))
+
+    let result = update fs (LaunchFinished(Error failure)) state
+
+    Assert.Equal(state, result.State)
+    Assert.Equal<Effect list>([ ReportLaunchError failure ], result.Effects)
+
+[<Fact>]
+let ``an elevation the user turned down is silence, not a dialog`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+
+    let result = update fs (LaunchFinished(Error(ElevationDeclined(fp (at "start/notes.txt"))))) state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
 let ``a hidden toggle re-reads the active panel with its hidden entries`` () =
     let fs = mockFs ()
     fs.AddFile(at "start/.profile", MockFileData "hi")

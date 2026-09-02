@@ -48,6 +48,18 @@ ordered list of `ProgramAssociation`, kept sorted by role and then extension so
 the file it is written to and the lists a popup shows are in the same order
 every time.
 
+**Starting a program is a request, not four arguments.** `LaunchRequest` carries
+the target, the program to use or `None` for the system's own choice, the
+working directory and an `Elevation` of `AsUser` or `AsAdministrator`. Making it
+one value is what keeps the port's signature stable while phase 10 fills the
+fields in from three different keys, and it makes an illegal call hard to
+write: there is no argument order to get wrong and no boolean that has to be
+read back to the word it stands for. `LaunchError` is its counterpart on the way
+out — `NothingAssociated`, `ProgramNotFound`, `LaunchRefused` and
+`ElevationDeclined` — four values rather than one string, because the caller
+does different things with them: three reach a dialog and the fourth is
+silence.
+
 **Only editing has a default.** `ProgramSettings.programFor` falls back to
 `DefaultEditor` in `ForEditing` and to nothing in `ForOpening`, because the
 system already is the default opener: a file no `ForOpening` row names is one

@@ -63,6 +63,7 @@ Marbas/
     Executability.fs      what makes an entry a program, by name and by mode bit
     SearchText.fs         the text a panel is being searched for, and what it matches
     ProgramSettings.fs    extension and role -> the program that edits or opens it
+    LaunchRequest.fs      what to start, with what, where, and with which rights
     Settings.fs           the session both panels carry, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Roots.fs              where a panel can be sent: drives, or root and home
@@ -108,6 +109,7 @@ Marbas/
       ContentErrorMessage.fs    ContentError -> user-facing text
       ArchiveErrorMessage.fs    ArchiveError -> user-facing text
       OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
+      LaunchErrorMessage.fs     LaunchError -> user-facing text
       DeleteConfirmation.fs     delete targets -> confirmation question
       OverwriteQuestion.fs      collision -> question text, answer buttons and mapping
       PasswordQuestion.fs       protected archive -> the words of the password prompt
@@ -149,6 +151,7 @@ Marbas/
     Prompts.fs            the message boxes and popups the application runs
     RecycleBin.fs         the Windows recycle bin, through the VB runtime
     EditorProcess.fs      the editor started as a child process, and waited on
+    LaunchProcess.fs      a program handed to the system, and never waited on
     BatchRunner.fs        a batch on a background task under the progress dialog
     ModifierWatch.fs      held Ctrl / Alt / Shift, polled on Windows, absent elsewhere
     Dependencies.fs       every port bound to one implementation, platform picked here

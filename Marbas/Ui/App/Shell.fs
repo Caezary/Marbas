@@ -56,6 +56,7 @@ type Dependencies =
       SendToTrash: FileSystemPath -> Result<unit, Operations.OperationError>
       ShowFile: FileWindow.Source -> unit
       RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
+      Launch: LaunchRequest -> Result<unit, LaunchError>
       EditProperties: EntryProperties -> EntryProperties option
       EditPrograms: ProgramSettings -> ProgramPath option -> ProgramSettings option
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
@@ -218,6 +219,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         deps.ReportError (ListingErrorMessage.title error) (ListingErrorMessage.describe error)
     | ReportOperationError error ->
         deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describe error)
+    | ReportLaunchError error -> deps.ReportError LaunchErrorMessage.Title (LaunchErrorMessage.describe error)
     | ReportItemFailures failures ->
         deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describeFailures failures)
     | ConfirmDelete request ->
@@ -325,6 +327,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | NotNeeded -> showEntry deps archive None entry
         | Given password -> showEntry deps archive (Some password) entry
     | EditFile(path, editor) -> deps.RunEditor editor path |> EditFinished |> dispatch
+    | RunProgram request -> deps.Launch request |> LaunchFinished |> dispatch
     | ShowProperties properties ->
         match deps.EditProperties properties with
         | Some changed -> dispatch (PropertiesEntered changed)

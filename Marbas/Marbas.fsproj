@@ -20,6 +20,7 @@
         <Compile Include="FileSystem\Executability.fs" />
         <Compile Include="FileSystem\SearchText.fs" />
         <Compile Include="FileSystem\ProgramSettings.fs" />
+        <Compile Include="FileSystem\LaunchRequest.fs" />
         <Compile Include="FileSystem\Settings.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="FileSystem\Roots.fs" />
@@ -71,6 +72,7 @@
         <Compile Include="Ui\Messages\ListingErrorMessage.fs" />
         <Compile Include="Ui\Messages\ContentErrorMessage.fs" />
         <Compile Include="Ui\Messages\OperationErrorMessage.fs" />
+        <Compile Include="Ui\Messages\LaunchErrorMessage.fs" />
         <Compile Include="Ui\Messages\DeleteConfirmation.fs" />
         <Compile Include="Ui\Messages\OverwriteQuestion.fs" />
         <Compile Include="Ui\Messages\PasswordQuestion.fs" />
@@ -121,6 +123,7 @@
         <Compile Include="Adapters\Prompts.fs" />
         <Compile Include="Adapters\RecycleBin.fs" />
         <Compile Include="Adapters\EditorProcess.fs" />
+        <Compile Include="Adapters\LaunchProcess.fs" />
         <Compile Include="Adapters\BatchRunner.fs" />
         <Compile Include="Adapters\ModifierWatch.fs" />
         <Compile Include="Adapters\Dependencies.fs" />

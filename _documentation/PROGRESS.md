@@ -5,7 +5,7 @@ Status as of 2026-09-02. Phases and task numbers refer to [PLAN.md](PLAN.md).
 ## Where we are
 
 **The first nine phases are complete** (46 of 46 tasks) **and phase 10 has
-started** (1 of 7). Marbas
+started** (2 of 7). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -222,6 +222,22 @@ row, so an existing config survives the change. The `F12` popup grew a `Used
 for` choice and a second list, `Opened with:` beneath `Edited with:`, and `F4`
 behaves exactly as it did.
 
+**P10.2 built the way out to a program, and it never waits.** `LaunchRequest`
+says what to start, with which program or none for the system's own choice, in
+which directory and with which rights (`AsUser` or `AsAdministrator`);
+`Dependencies.Launch` is the port, `RunProgram` the effect and `LaunchFinished`
+the answer, and `LaunchError` names the four ways it fails as values instead of
+one string — nothing associated, the named program missing, the system refusing,
+and an elevation prompt the user turned down, which `Update` answers with
+silence rather than a dialog. `Adapters/LaunchProcess.fs` is the only place that
+knows how: on Windows everything goes through the shell verb, so a console
+program gets a console of its own and `runas` is one field more; on Unix an
+executable entry is started directly with its streams drained into nothing —
+the terminal belongs to the panels — and anything else goes to `xdg-open`.
+Nothing is bound to it yet: `Enter` reaches it in P10.3. The same task gave both
+starters the working directory they should always have had, the directory the
+panel stands in.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -246,8 +262,8 @@ written up as the checklist in
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
 | 9 — Archives | P9.1–P9.14 | done |
-| 10 — Running a file | P10.1 | done |
-| | P10.2–P10.7 | to do |
+| 10 — Running a file | P10.1–P10.2 | done |
+| | P10.3–P10.7 | to do |
 
 ## What works today
 
@@ -530,15 +546,16 @@ behaviour.
 ## Next up
 
 **The first nine phases are finished**, and the tenth has begun: P10.1 turned
-the editor associations into one table of extension, role and program. What
-follows is only partly plan order, and mostly choice. Four things are waiting:
+the editor associations into one table of extension, role and program, and
+P10.2 built the port that starts one. What follows is only partly plan order,
+and mostly choice. Four things are waiting:
 
-- The rest of phase 10, P10.2 to P10.7: a `Launch` port and a `LaunchRequest`
-  that starts a program without the loop waiting for it, `Enter` running the
-  entry under the cursor, the handlers the system knows for an extension,
+- The rest of phase 10, P10.3 to P10.7: `Enter` running the entry under the
+  cursor — which is what first reaches the `Launch` port and the `ForOpening`
+  half of the table — the handlers the system knows for an extension,
   `Shift+Enter` opening with one of them, `Ctrl+Alt+Enter` running elevated, and
   a second binding per command for the terminals that swallow a modified
-  `Enter`. The `ForOpening` half of the table P10.1 built is what P10.3 reads.
+  `Enter`.
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
   with a full-screen console editor — want a person at a terminal on each
@@ -614,6 +631,14 @@ follows is only partly plan order, and mostly choice. Four things are waiting:
 - The `Opened with:` rows can be entered and are saved, but nothing reads them
   yet: `Enter` starts running files in P10.3. Until then they are a table the
   popup keeps and the settings file carries.
+- The `Launch` port exists and works, but no key reaches it yet, so the whole
+  path — the adapter, the error mapping, the wording — is proven by a probe run
+  by hand rather than by anything a user can press. P10.3 is what makes it
+  reachable.
+- Nothing on Unix asks for administrator rights: `LaunchProcess` refuses an
+  `AsAdministrator` request by platform, because there is no way to raise them
+  that does not put a password prompt on the screen the panels own. P10.6 is
+  where that refusal gets its wording on the way to the user.
 - Nothing checks that a configured editor exists before `F4` starts it. A path
   that names nothing is reported the way any other failed start is, after the
   key was pressed, rather than when it was typed into the popup.
