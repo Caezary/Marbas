@@ -75,13 +75,13 @@ let ``a directory under the cursor reaches the desktop instead of a popup`` () =
     Assert.Equal(fp (at "start"), request.WorkingDirectory)
 
 [<Fact>]
-let ``the parent entry reaches the directory above`` () =
+let ``the parent entry reaches the directory the panel stands in`` () =
     let fs = tree ()
     let state = loaded fs |> setCursor Left Parent
 
     let request = update fs OpenWithRequested state |> launched
 
-    Assert.Equal(fp (at ""), request.Target)
+    Assert.Equal(fp (at "start"), request.Target)
 
 [<Fact>]
 let ``an archive under the cursor is a file like any other`` () =

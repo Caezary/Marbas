@@ -160,7 +160,7 @@ let private opened (fs: IFileSystem) state =
 
 let private revealed (fs: IFileSystem) panel directory =
     match cursorEntry panel with
-    | Some entry when entry.Name = DirectoryListing.ParentName -> FileSystemPath.parent fs directory
+    | Some entry when entry.Name = DirectoryListing.ParentName -> Some directory
     | _ -> cursorDirectoryPath fs panel
 
 let private openedWith (fs: IFileSystem) state =

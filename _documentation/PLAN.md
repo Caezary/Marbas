@@ -348,7 +348,7 @@ handed to the system and Marbas goes back to listing directories.
   found, with room to type a path of one's own and a box that remembers the
   choice as a `ForOpening` row, so the answer to "open with" can become the
   answer to the next `Enter`. On a directory it opens the system's own file
-  manager there, and on `..` the directory above. A panel standing inside an
+  manager there, and on `..` the current directory. A panel standing inside an
   archive refuses. *Done when:* a file opens in a program picked from the list,
   the remembered choice survives a restart, and a directory reaches the
   desktop.

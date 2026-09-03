@@ -269,7 +269,7 @@ a `MockFileSystem`. The Windows side was proved by hand against this machine —
 with no extension listed nothing. `Microsoft.Win32.Registry` turned out to need
 no package: the types are in the shared framework on a plain `net10.0` target.
 
-**P10.5 put that list in front of the user on `Shift+Enter`.** On a file the
+**P10.5 put that list in front of the user on `Alt+R`.** On a file the
 popup shows what the system knows — the display name in a column, the path after
 it — over a field holding the answer, so a program the list does not offer can
 be typed instead. The field opens on the `ForOpening` row the extension already
@@ -280,9 +280,14 @@ settings file on quit, so the answer to "open with" is the answer to the next
 `Enter`. It is disabled for a name with no extension, which has no key to file
 the row under. On a directory nothing is asked at all — the directory is handed
 to the system, which is Explorer on Windows and the desktop's own manager on
-Unix — and `..` is the directory above. A panel standing inside an archive
+Unix — and `..` is the directory the panel stands in rather than the one above
+it, because a cursor resting on the way out is not a request to reveal somewhere
+else. A panel standing inside an archive
 refuses, whatever the cursor is on, because a level of an archive is not a place
-the desktop can be sent to.
+the desktop can be sent to. The plan asked for `Shift+Enter`, and that is bound
+too, but Windows Terminal drops the modifier and hands the panel a bare `Enter`,
+which *runs* the entry instead — so `Alt+R` was added beside it, the way `Alt+H`
+sits beside `Ctrl+H`, and it is the binding the documentation names.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -377,11 +382,14 @@ written up as the checklist in
 - `Ctrl+PgDn` walks into whatever the cursor stands on, which is what `Enter`
   did before an association could outrank it — the way to browse a `.zip` after
   naming a program for `zip` in the popup.
-- `Shift+Enter` on a file opens a popup listing the programs the system already
+- `Alt+R` on a file opens a popup listing the programs the system already
   knows for that extension — read from the registry on Windows, from the XDG
   mime database on Linux — with a field for a path of one's own and a box that
   keeps the choice as an `Opened with:` row for good. On a directory it opens
-  the system's own file manager there, and on `..` the directory above.
+  the system's own file manager there, and on `..` the directory the panel is
+  standing in.
+  `Shift+Enter` is bound to the same command, but Windows Terminal drops the
+  modifier and sends a bare `Enter`, so `Alt+R` is the one to press.
 - A file inside an archive says why it will not run, the way `F4` says why it
   will not be edited: the archive would have to be unpacked first.
 - `Enter` on an archive the capability table calls readable — zip, tar, tar.gz,
@@ -617,8 +625,8 @@ waiting:
 
 - The rest of phase 10, P10.6 and P10.7: `Ctrl+Alt+Enter` running elevated, and
   a second binding per command for the terminals that swallow a modified
-  `Enter` — which is also where `Ctrl+PgDn` and `Shift+Enter` find out whether
-  they arrive at all.
+  `Enter` — the open-with pair already has one in `Alt+R`, and `Ctrl+PgDn` still
+  has to find out whether it arrives at all.
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
   with a full-screen console editor — want a person at a terminal on each
@@ -701,10 +709,14 @@ waiting:
   description shows as its file name (`devenv.exe`) rather than a title.
 - Neither adapter follows the `.desktop` legacy dash convention (`foo-bar.desktop`
   under `foo/bar.desktop`), so a handler filed that way is passed over.
-- Whether `Ctrl+PgDn` and `Shift+Enter` reach the panel at all depends on the
-  terminal. The suite proves the binding and the transition, not the encoding;
-  P10.7 gives every key this phase adds a second binding for that reason, and a
-  modified `Enter` is the least portable of them.
+- `Shift+Enter` does not reach the panel under Windows Terminal: the modifier is
+  dropped and the bare `Enter` *runs* the entry instead of asking what should
+  open it. `Alt+R` was added beside it and is the binding to use; the dead one
+  is kept because it is the traditional name and costs nothing where a terminal
+  does deliver it.
+- Whether `Ctrl+PgDn` reaches the panel is still untested by hand. The suite
+  proves the binding and the transition, not the encoding, and `Shift+Enter` is
+  the warning about trusting that.
 - Nothing warns that naming a program for an archive extension takes `Enter`
   away from the archive browser. `Ctrl+PgDn` is the way back in, and the only
   place that says so is this file.

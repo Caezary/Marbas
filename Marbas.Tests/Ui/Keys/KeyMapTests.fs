@@ -84,11 +84,14 @@ let ``the walk-in key asks for the walk Enter no longer always makes`` () =
     Assert.Equal(Key.PageDown.WithCtrl, KeyMap.walkIntoKey)
 
 [<Fact>]
-let ``the open-with key asks which program should open the entry`` () =
-    let message = KeyMap.messageFor KeyMap.openWithKey
+let ``Alt+R asks which program should open the entry`` () =
+    Assert.Equal(Key.R.WithAlt, KeyMap.openWithKey)
+    Assert.Equal(Some OpenWithRequested, KeyMap.messageFor KeyMap.openWithKey)
 
-    Assert.Equal(Some OpenWithRequested, message)
-    Assert.Equal(Key.Enter.WithShift, KeyMap.openWithKey)
+[<Fact>]
+let ``Shift+Enter asks the same, where a terminal delivers it`` () =
+    Assert.Equal(Key.Enter.WithShift, KeyMap.classicOpenWithKey)
+    Assert.Equal(Some OpenWithRequested, KeyMap.messageFor KeyMap.classicOpenWithKey)
 
 [<Fact>]
 let ``every selection key toggles the selection and moves on down`` () =

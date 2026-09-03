@@ -420,10 +420,16 @@ raises when a row is chosen — by `Enter` or by a double click — and both sho
 mean the same thing. `PanelWiring` marks it handled and dispatches
 `EntryOpened`; there is no row in `bindings` for it, and so no bar label either.
 `Ctrl+PgDn` is an ordinary row (`walkIntoKey` → `WalkIntoRequested`) and gets
-the walk `Enter` gave up when P10.3 let an association beat it, and `Shift+Enter`
-is another (`openWithKey` → `OpenWithRequested`) — a modified `Enter` does reach
-`KeyDown` rather than the list's `Accepting`, which is what makes the pair
-possible at all.
+the walk `Enter` gave up when P10.3 let an association beat it.
+
+**`Alt+R` is the open-with key, and `Shift+Enter` is only its second name.**
+`openWithKeys` holds both, the way `hiddenKeys` holds `Alt+H` and `Ctrl+H`, and
+for the same reason: the traditional binding is not one a terminal reliably
+delivers. `Shift+Enter` arrives as a bare carriage return under Windows
+Terminal, which the list reads as `Accepting` — so pressing it *runs* the entry
+instead of asking what should open it. That is a silent wrong answer rather than
+a dead key, which is exactly why the letter binding is the one the
+documentation names and the one the tests press.
 
 **The bar is twelve slots, not a list of what happens to be bound.**
 `KeyMap.bar` walks `KeyMap.functionKeys` — `F1` … `F12`, in order — applies the

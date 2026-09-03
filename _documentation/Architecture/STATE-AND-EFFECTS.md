@@ -138,8 +138,8 @@ over: the association beats the archive walk, which is why `WalkIntoRequested`
 exists on `Ctrl+PgDn`, and the in-archive refusal comes first so that a `.zip`
 inside a `.zip` is refused rather than run out of nowhere.
 
-**`Shift+Enter` asks the same question of a different thing at every place the
-cursor can stand.** `OpenWithRequested` refuses outright when the panel is
+**The open-with key asks the same question of a different thing at every place
+the cursor can stand.** `OpenWithRequested` refuses outright when the panel is
 *inside an archive* — not only on a file, the way `Enter` does, because there is
 nothing there to open with anything: a directory inside an archive is a level,
 not a place the desktop can be sent to. On disk it raises `ShowHandlers` for a
@@ -147,14 +147,17 @@ file, carrying the `ForOpening` row the extension already has so the popup can
 open on it, and for a directory it raises `RunProgram` with the *directory* as
 the target and no program — which is how the system's own file manager is
 reached, since that is what shell-executing a directory and `xdg-open` both do.
-`..` is the directory above, resolved before the effect, so the popup and the
-launcher never have to know about it.
+`..` is the directory the panel *stands in*, not the one above it: the cursor
+sitting on the way out is not a request to reveal somewhere else, it is the
+resting place of a cursor in a panel someone wants opened. Both are resolved
+before the effect, so the popup and the launcher never have to know about `..`
+at all.
 
 **Remembering happens in the transition, not in the popup.** `HandlerChosen`
 carries the file and an `OpenWithChoice` — a program and whether to keep it —
 and `Update` writes the `ForOpening` row into `state.Programs` before raising
 `RunProgram`. The popup never touches the table, which is what lets the same
-`ProgramSettings.associate` serve `F12` and `Shift+Enter`, and what puts the
+`ProgramSettings.associate` serve `F12` and the open-with key, and what puts the
 remembered choice into the file the session is saved to without a second path
 through the settings.
 

@@ -285,11 +285,13 @@ let ``every field fits inside the dialog`` () =
         Assert.True(frame.Bottom <= dialog.Viewport.Height, $"the field {id} at %A{frame} is clipped")
 
 [<Fact>]
-let ``every list fits inside the dialog`` () =
+let ``both lists fit inside the dialog`` () =
     use dialog = laidOut stored
 
-    for role in [ ForEditing; ForOpening ] do
-        let named = SettingsDialog.listId role
-        let frame = (SettingsDialog.known dialog role).Frame
-        Assert.True(frame.Height > 0, $"the {named} list must have room for a row")
-        Assert.True(frame.Bottom <= dialog.Viewport.Height, $"the {named} list at %A{frame} is clipped")
+    let editing = (SettingsDialog.known dialog ForEditing).Frame
+    let opening = (SettingsDialog.known dialog ForOpening).Frame
+
+    Assert.True(editing.Height > 0, "the editing list must have room for a row")
+    Assert.True(opening.Height > 0, "the opening list must have room for a row")
+    Assert.True(editing.Bottom <= dialog.Viewport.Height, $"the editing list at %A{editing} is clipped")
+    Assert.True(opening.Bottom <= dialog.Viewport.Height, $"the opening list at %A{opening} is clipped")

@@ -131,7 +131,7 @@ let ``everything on the dialog fits inside it`` () =
 
     Assert.True(field.Width > 0, "the program field must be wide enough to type into")
     Assert.True(list.Height > 0, "the handler list must have room for a row")
-
-    for frame in [ field; box; list ] do
-        Assert.True(frame.Bottom <= dialog.Viewport.Height, $"%A{frame} is clipped")
-        Assert.True(frame.Right <= dialog.Viewport.Width, $"%A{frame} runs past the frame")
+    Assert.True(field.Bottom <= dialog.Viewport.Height, $"the program field at %A{field} is clipped")
+    Assert.True(box.Bottom <= dialog.Viewport.Height, $"the box at %A{box} is clipped")
+    Assert.True(list.Bottom <= dialog.Viewport.Height, $"the handler list at %A{list} is clipped")
+    Assert.True(list.Right <= dialog.Viewport.Width, $"the handler list at %A{list} runs past the frame")

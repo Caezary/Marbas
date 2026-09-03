@@ -92,8 +92,30 @@ let ``the walk-in key walks into a directory the way Enter used to`` () =
     Assert.Empty started
     Assert.Equal(1, (leftList window).Source.Count)
 
+let private askedThrough key =
+    let asked = ResizeArray<EntryName>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies (mockFs ()) (at "start") with
+                AskHandler = fun name _ _ -> asked.Add name; None }
+
+    (leftList window).SelectedItem <- Page
+
+    pressKey window key
+
+    List.ofSeq asked
+
 [<Fact>]
-let ``Shift+Enter offers the programs the system knows and starts the one picked`` () =
+let ``Alt+R reaches the popup`` () =
+    Assert.Equal<EntryName list>([ EntryName.create "page.html" ], askedThrough KeyMap.openWithKey)
+
+[<Fact>]
+let ``Shift+Enter reaches the popup, where a terminal delivers it`` () =
+    Assert.Equal<EntryName list>([ EntryName.create "page.html" ], askedThrough KeyMap.classicOpenWithKey)
+
+[<Fact>]
+let ``the open-with key offers the programs the system knows and starts the one picked`` () =
     let started = ResizeArray<LaunchRequest>()
     let offered = ResizeArray<EntryName>()
     let chosen = Expect.some (ProgramPath.tryCreate "firefox.exe")
@@ -113,7 +135,7 @@ let ``Shift+Enter offers the programs the system knows and starts the one picked
     Assert.Equal(Some chosen, (Assert.Single started).Program)
 
 [<Fact>]
-let ``Shift+Enter on a directory reaches the desktop without asking`` () =
+let ``the open-with key on a directory reaches the desktop without asking`` () =
     let started = ResizeArray<LaunchRequest>()
     let asked = ResizeArray<EntryName>()
 
