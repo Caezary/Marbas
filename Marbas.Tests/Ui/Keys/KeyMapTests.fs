@@ -94,6 +94,11 @@ let ``Shift+Enter asks the same, where a terminal delivers it`` () =
     Assert.Equal(Some OpenWithRequested, KeyMap.messageFor KeyMap.classicOpenWithKey)
 
 [<Fact>]
+let ``Ctrl+Alt+Enter runs the entry with administrator rights`` () =
+    Assert.Equal(Key.Enter.WithCtrl.WithAlt, KeyMap.elevatedRunKey)
+    Assert.Equal(Some ElevatedRunRequested, KeyMap.messageFor KeyMap.elevatedRunKey)
+
+[<Fact>]
 let ``every selection key toggles the selection and moves on down`` () =
     for key in KeyMap.selectionKeys do
         let message = KeyMap.messageFor key

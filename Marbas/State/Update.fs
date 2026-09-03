@@ -42,6 +42,7 @@ type Message =
     | LaunchFinished of outcome: Result<unit, LaunchError>
     | OpenWithRequested
     | HandlerChosen of path: FileSystemPath * choice: OpenWithChoice
+    | ElevatedRunRequested
     | NewFileRequested
     | FileNameEntered of name: EntryName
     | PropertiesEntered of EntryProperties
@@ -130,14 +131,17 @@ let private applyBatch state result =
         | [] -> stay updated
         | failed -> request updated (ReportItemFailures failed)
 
-let private running state directory program target =
+let private startingAs elevation state directory program target =
     request
         state
         (RunProgram
             { Target = target
               Program = program
               WorkingDirectory = directory
-              Elevation = AsUser })
+              Elevation = elevation })
+
+let private running state directory program target =
+    startingAs AsUser state directory program target
 
 let private opening (fs: IFileSystem) state directory path =
     match programFor ForOpening (FileSystemPath.name fs path) state with
@@ -163,23 +167,38 @@ let private revealed (fs: IFileSystem) panel directory =
     | Some entry when entry.Name = DirectoryListing.ParentName -> Some directory
     | _ -> cursorDirectoryPath fs panel
 
+let private refusingInArchive (fs: IFileSystem) state panel archive level =
+    let named =
+        cursorEntryInArchive panel
+        |> Option.map snd
+        |> Option.defaultValue level
+
+    request state (ReportOperationError(Operations.ArchiveEntryNotRunnable(ArchivePath.spelled fs archive named)))
+
 let private openedWith (fs: IFileSystem) state =
     let panel = activePanel state
 
     match panel.Path with
-    | InArchive(archive, level) ->
-        let named =
-            cursorEntryInArchive panel
-            |> Option.map snd
-            |> Option.defaultValue level
-
-        request state (ReportOperationError(Operations.ArchiveEntryNotRunnable(ArchivePath.spelled fs archive named)))
+    | InArchive(archive, level) -> refusingInArchive fs state panel archive level
     | OnDisk directory ->
         match cursorFilePath fs panel with
         | Some path -> request state (ShowHandlers(path, programFor ForOpening (FileSystemPath.name fs path) state))
         | None ->
             match revealed fs panel directory with
             | Some target -> running state directory None target
+            | None -> stay state
+
+let private runElevated (fs: IFileSystem) state =
+    let panel = activePanel state
+
+    match panel.Path with
+    | InArchive(archive, level) -> refusingInArchive fs state panel archive level
+    | OnDisk directory ->
+        match cursorExecutablePath fs panel with
+        | Some path -> startingAs AsAdministrator state directory None path
+        | None ->
+            match cursorFilePath fs panel |> Option.orElseWith (fun () -> cursorDirectoryPath fs panel) with
+            | Some path -> request state (ReportLaunchError(NotAProgram path))
             | None -> stay state
 
 let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
@@ -354,6 +373,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | Ok() -> stay state
     | OpenWithRequested -> openedWith fs state
     | HandlerChosen(path, choice) -> chosen fs state path choice
+    | ElevatedRunRequested -> runElevated fs state
     | RootRequested side -> request state (PromptForRoot side)
     | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
     | QuitRequested ->

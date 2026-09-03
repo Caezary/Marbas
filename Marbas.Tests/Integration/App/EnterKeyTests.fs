@@ -17,6 +17,7 @@ let private mockFs () =
     fs.AddDirectory(at "start/docs")
     fs.AddFile(at "start/notes.txt", MockFileData "hi")
     fs.AddFile(at "start/page.html", MockFileData "hi")
+    fs.AddFile(at "start/tool.exe", MockFileData "hi")
     fs
 
 let private windowWith (fs: MockFileSystem) launch =
@@ -28,6 +29,8 @@ let private windowWith (fs: MockFileSystem) launch =
 let private Notes = 2
 
 let private Page = 3
+
+let private Tool = 4
 
 [<Fact>]
 let ``Enter hands the document under the cursor to the system`` () =
@@ -168,3 +171,50 @@ let ``a launch that fails is reported`` () =
     pressKey window Key.Enter
 
     Assert.Contains("notes.txt", Assert.Single reported)
+
+[<Fact>]
+let ``the elevated key hands an executable to the system with its rights raised`` () =
+    let started = ResizeArray<LaunchRequest>()
+    use window = windowWith (mockFs ()) (fun request -> started.Add request; Ok())
+    (leftList window).SelectedItem <- Tool
+
+    pressKey window KeyMap.elevatedRunKey
+
+    let request = Assert.Single started
+
+    Assert.Equal(fp (at "start/tool.exe"), request.Target)
+    Assert.Equal(AsAdministrator, request.Elevation)
+
+[<Fact>]
+let ``the elevated key on a document starts nothing and says why`` () =
+    let started = ResizeArray<LaunchRequest>()
+    let reported = ResizeArray<string>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies (mockFs ()) (at "start") with
+                Launch = fun request -> started.Add request; Ok()
+                ReportError = fun _ -> reported.Add }
+
+    (leftList window).SelectedItem <- Notes
+
+    pressKey window KeyMap.elevatedRunKey
+
+    Assert.Empty started
+    Assert.Contains("notes.txt", Assert.Single reported)
+
+[<Fact>]
+let ``an elevation the user turns down leaves no trace on the screen`` () =
+    let reported = ResizeArray<string>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies (mockFs ()) (at "start") with
+                Launch = fun request -> Error(ElevationDeclined request.Target)
+                ReportError = fun _ -> reported.Add }
+
+    (leftList window).SelectedItem <- Tool
+
+    pressKey window KeyMap.elevatedRunKey
+
+    Assert.Empty reported

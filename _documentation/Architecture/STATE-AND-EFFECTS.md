@@ -161,6 +161,20 @@ and `Update` writes the `ForOpening` row into `state.Programs` before raising
 remembered choice into the file the session is saved to without a second path
 through the settings.
 
+**The elevated run is `Enter`'s run with one field changed, and it reads no
+table.** `ElevatedRunRequested` raises the same `RunProgram` effect with
+`Elevation = AsAdministrator` and no program at all: what is being raised is the
+rights of the entry under the cursor, so a `ForOpening` row — which would make
+`Enter` start something else entirely — has no business here. Only
+`cursorExecutablePath` answers it. Anything else on disk that has a path, a
+document or a directory, becomes `ReportLaunchError(NotAProgram …)`, which is a
+`LaunchError` no adapter ever returns: refusing before the port is the same kind
+of answer as refusing inside it, and putting it in the same type means it is
+worded in the same place. `..` has no path of its own to run and raises nothing.
+A panel *inside an archive* refuses exactly as the open-with key does, through
+the one `refusingInArchive` both share, and the `ElevationDeclined` a real
+prompt turns down was already silence rather than a dialog.
+
 **The cursor is what runs, not the marks.** `EntryOpened` reads
 `cursorFilePath` and `cursorFileInArchive`, never `operationTargets`. Every
 other command in the app works on the marked entries and falls back to the

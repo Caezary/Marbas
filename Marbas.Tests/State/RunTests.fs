@@ -191,3 +191,66 @@ let ``a directory inside an archive is still walked into`` () =
 
     Assert.Equal(InArchive(archive, Expect.some (ArchivePath.tryCreate "docs")), result.State.Left.Path)
     Assert.Empty result.Effects
+
+[<Fact>]
+let ``an executable under the cursor is started with administrator rights`` () =
+    let fs = tree ()
+    let state = loaded fs |> setCursor Left Tool
+
+    let request = update fs ElevatedRunRequested state |> launched
+
+    Assert.Equal(fp (at "start/tool.exe"), request.Target)
+    Assert.Equal(None, request.Program)
+    Assert.Equal(fp (at "start"), request.WorkingDirectory)
+    Assert.Equal(AsAdministrator, request.Elevation)
+
+[<Fact>]
+let ``the rights raised are the executable's own, not an associated program's`` () =
+    let fs = tree ()
+    let state = loaded fs |> withPrograms (opening "exe" "sandbox.exe") |> setCursor Left Tool
+
+    let request = update fs ElevatedRunRequested state |> launched
+
+    Assert.Equal(fp (at "start/tool.exe"), request.Target)
+    Assert.Equal(None, request.Program)
+
+[<Fact>]
+let ``a document has no rights of its own to raise`` () =
+    let fs = tree ()
+    let state = loaded fs |> setCursor Left Notes
+
+    let result = update fs ElevatedRunRequested state
+
+    Assert.Equal<Effect list>([ ReportLaunchError(NotAProgram(fp (at "start/notes.txt"))) ], result.Effects)
+
+[<Fact>]
+let ``a directory is no more a program than a document is`` () =
+    let fs = tree ()
+    let state = loaded fs |> setCursor Left Docs
+
+    let result = update fs ElevatedRunRequested state
+
+    Assert.Equal(OnDisk(fp (at "start")), result.State.Left.Path)
+    Assert.Equal<Effect list>([ ReportLaunchError(NotAProgram(fp (at "start/docs"))) ], result.Effects)
+
+[<Fact>]
+let ``the parent entry is nothing to raise the rights of`` () =
+    let fs = tree ()
+    let state = loaded fs |> setCursor Left Parent
+
+    let result = update fs ElevatedRunRequested state
+
+    Assert.Equal(OnDisk(fp (at "start")), result.State.Left.Path)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``an entry inside an archive says why it will not run elevated either`` () =
+    let fs = packed ()
+    let state = standingInside fs Left |> setCursor Left 2
+
+    let result = update fs ElevatedRunRequested state
+
+    Assert.Equal<Effect list>(
+        [ ReportOperationError(Operations.ArchiveEntryNotRunnable(fp (at "start/backup.zip/notes.txt"))) ],
+        result.Effects
+    )

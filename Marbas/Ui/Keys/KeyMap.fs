@@ -80,6 +80,8 @@ let openWithKey = Key.R.WithAlt
 
 let classicOpenWithKey = Key.Enter.WithShift
 
+let elevatedRunKey = Key.Enter.WithCtrl.WithAlt
+
 let quitKey = Key.Q.WithCtrl
 
 let cancelKey = Key.Esc
@@ -127,6 +129,7 @@ let bindings =
       offBar walkIntoKey WalkIntoRequested
       offBar openWithKey OpenWithRequested
       offBar classicOpenWithKey OpenWithRequested
+      offBar elevatedRunKey ElevatedRunRequested
       offBar selectPatternKey (PatternRequested Select)
       offBar deselectPatternKey (PatternRequested Deselect)
       offBar insertKey (SelectionToggled Downward)

@@ -431,6 +431,16 @@ instead of asking what should open it. That is a silent wrong answer rather than
 a dead key, which is exactly why the letter binding is the one the
 documentation names and the one the tests press.
 
+**`Ctrl+Alt+Enter` is an ordinary row, and that is the whole of its UI.**
+`elevatedRunKey` → `ElevatedRunRequested` sits in `bindings` beside the
+open-with pair, off the bar because it is not a function key, and the panel's
+one `KeyDown` handler dispatches it like any other. The list's `Accepting`
+command answers to a bare `Enter` only, so a modified `Enter` reaches the
+handler rather than running the entry — which is what makes the binding possible
+at all, and also what makes a terminal that *drops* the modifier dangerous
+rather than merely useless. It has no second name yet; P10.7 is where it gets
+one.
+
 **The bar is twelve slots, not a list of what happens to be bound.**
 `KeyMap.bar` walks `KeyMap.functionKeys` — `F1` … `F12`, in order — applies the
 held modifiers to each with `Modifiers.apply` and looks the result up in

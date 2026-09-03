@@ -36,3 +36,10 @@ let ``a declined elevation is explained with its path`` () =
 
     Assert.Contains(at "start/tool.exe", message)
     Assert.Contains("administrator", message)
+
+[<Fact>]
+let ``an entry that is not a program is told what administrator rights are for`` () =
+    let message = LaunchErrorMessage.describe (NotAProgram(fp (at "start/notes.txt")))
+
+    Assert.Contains(at "start/notes.txt", message)
+    Assert.Contains("administrator", message)

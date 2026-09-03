@@ -35,8 +35,9 @@ dotnet test Marbas.slnx --settings coverlet.runsettings
 
 `coverlet.runsettings` asks for Cobertura and excludes `Program.fs` and
 `Adapters/`, the composition root — they are the files that wire the real file
-system, the real dialogs and the real process, so there is nothing in them a
-test can reach. Everything else is measured, and coverage stays close to
+system, the real dialogs and the real process, so almost nothing in them is
+reachable from a test (the one exception is under *Layout* below, and it is
+still not counted). Everything else is measured, and coverage stays close to
 complete.
 
 **Coverage is a reading, not a target.** P8.1 measured the suite rather than
@@ -90,6 +91,14 @@ side of the fence from the pure ones. It carries the same subfolders as
 `Marbas/Ui` — all but `Messages/`, whose modules are pure text and never build a
 view — so a feature's unit tests and its Terminal.Gui tests sit at matching
 paths on either side.
+
+`Adapters/` is the exception the rule needs. Almost nothing there can be
+reached without starting the real thing, which is why the folder is excluded
+from coverage — but a branch that refuses *before* it starts anything is
+reachable, and P10.6 made one: `LaunchProcess.start` takes the platform as an
+argument, so `Adapters/LaunchProcessTests.fs` can ask a Unix system for
+administrator rights on a Windows machine and read the refusal back. Only that
+shape of test belongs there: no process, no registry, no real disk.
 
 The split is what makes a file like `State/DeleteTests.fs` (does the panel come
 back right once the entries are gone?) readable next to

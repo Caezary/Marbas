@@ -189,6 +189,10 @@ disagrees.
 | `Alt+R` asks which program opens the entry | same | same | suite |
 | `Shift+Enter` reaches the panel as a key at all | **no**, arrives as `Enter` | **manual** | manual (Windows Terminal) |
 | `Alt+R` on a directory opens the file manager | Explorer | the desktop's own | **manual** |
+| `Ctrl+Alt+Enter` reaches the panel as a key at all | **manual** | **manual** | **manual** |
+| An executable starts with administrator rights | `runas`, the system prompts | refused by platform | **manual** |
+| A prompt the user turns down leaves no trace | `Win32Exception` 1223, silence | n/a | **manual** |
+| A document refuses to be run elevated | same | same | suite |
 | The handlers of a common extension are listed | registry | XDG mime database | Windows: **manual**; Unix: suite |
 | An extension the system knows nothing about lists nothing | same | same | Windows: **manual**; Unix: suite |
 
@@ -215,11 +219,26 @@ plan foresaw this — a modified `Enter` is what it calls the least portable thi
 phase 10 asks for — and P10.7 is where the remaining two commands get the same
 treatment.
 
-**`Ctrl+PgDn` has not been tried yet.** The suite sends it straight to the
-panel's `KeyDown` handler, which proves the binding and the transition but says
-nothing about whether the terminal encodes the modifier. Given what
-`Shift+Enter` turned out to do, that row is worth answering by hand before it is
-believed.
+**`Ctrl+PgDn` and `Ctrl+Alt+Enter` have not been tried yet.** The suite sends
+each straight to the panel's `KeyDown` handler, which proves the binding and the
+transition but says nothing about whether the terminal encodes the modifiers.
+Given what `Shift+Enter` turned out to do — and that `Alt+Enter` is the full
+screen toggle of the Windows terminals — those rows are worth answering by hand
+before they are believed.
+
+**Administrator rights are a Windows-only answer, and Unix says so rather than
+pretending.** On Windows `AsAdministrator` is one field — the `runas` verb on
+the same shell execute every other start goes through — and the system, not
+Marbas, does the asking; a prompt the user turns down comes back as
+`Win32Exception` 1223 and becomes nothing at all on the screen, because refusing
+is an answer and not a failure. Unix has no equivalent a full-screen terminal
+application can ask for: `sudo`, `pkexec` and their kin either want a password
+on the tty the panels are drawn on or want a desktop agent Marbas cannot count
+on. `LaunchProcess` therefore refuses an `AsAdministrator` request before it
+reaches a process and hands back the reason, which the same message box that
+reports every other launch failure puts in front of the user. That refusal is
+the one part of the elevated run the suite can prove on either platform, since
+the platform is an argument rather than something read at the call.
 
 **Which programs open a file is a question with two entirely different
 answers.** Windows keeps them in the registry: `HKCU\…\FileExts\.ext\UserChoice`

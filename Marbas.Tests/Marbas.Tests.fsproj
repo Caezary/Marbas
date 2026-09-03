@@ -141,6 +141,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Adapters\LaunchProcessTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Integration\Gui.fs" />
   </ItemGroup>
 

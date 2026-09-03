@@ -1,11 +1,11 @@
 # Progress
 
-Status as of 2026-09-02. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-09-04. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
 **The first nine phases are complete** (46 of 46 tasks) **and phase 10 has
-started** (5 of 7). Marbas
+started** (6 of 7). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -289,6 +289,24 @@ too, but Windows Terminal drops the modifier and hands the panel a bare `Enter`,
 which *runs* the entry instead — so `Alt+R` was added beside it, the way `Alt+H`
 sits beside `Ctrl+H`, and it is the binding the documentation names.
 
+**P10.6 raised the rights of an executable on `Ctrl+Alt+Enter`.** It is the run
+`Enter` makes, with `AsAdministrator` instead of `AsUser`, which on Windows is
+the `runas` verb the shell already knows — and it is the entry's own rights that
+are raised, so the association table is not read at all: a `ForOpening` row on
+`.exe` changes what `Enter` starts and not what this key does. Only an
+executable takes it. A document has no rights of its own to raise and is told
+so, `NotAProgram` naming it beside the one sentence that says what elevation is
+for; a directory is told the same; `..` says nothing, because there is nothing
+there to run. A panel standing inside an archive refuses the way the open-with
+key refuses, whatever the cursor is on. A prompt the user turns down was already
+silence rather than a dialog — `ElevationDeclined` is the one `LaunchError` that
+becomes no effect at all — and on Unix the request never reaches a process:
+`LaunchProcess` refuses it by platform and names the reason, because there is no
+way to ask for administrator rights that does not put a password prompt on the
+screen the panels own. The plan's `Ctrl+Alt+Enter` is the only binding so far;
+whether a terminal delivers it is P10.7's question, along with the second
+binding every command of this phase is getting.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -313,8 +331,8 @@ written up as the checklist in
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
 | 9 — Archives | P9.1–P9.14 | done |
-| 10 — Running a file | P10.1–P10.5 | done |
-| | P10.6–P10.7 | to do |
+| 10 — Running a file | P10.1–P10.6 | done |
+| | P10.7 | to do |
 
 ## What works today
 
@@ -390,6 +408,13 @@ written up as the checklist in
   standing in.
   `Shift+Enter` is bound to the same command, but Windows Terminal drops the
   modifier and sends a bare `Enter`, so `Alt+R` is the one to press.
+- `Ctrl+Alt+Enter` runs the executable under the cursor with administrator
+  rights — on Windows the `runas` verb, so the system asks before it starts
+  anything, and a prompt turned down leaves nothing on the screen. It is the
+  entry's own rights that are raised, so an `Opened with:` row does not change
+  what it starts. A document or a directory is not a program and is told so, and
+  on Linux the key explains that a terminal application cannot ask this system
+  for administrator rights at all.
 - A file inside an archive says why it will not run, the way `F4` says why it
   will not be edited: the archive would have to be unpacked first.
 - `Enter` on an archive the capability table calls readable — zip, tar, tar.gz,
@@ -617,16 +642,16 @@ behaviour.
 
 ## Next up
 
-**The first nine phases are finished**, and the tenth is most of the way: P10.1
-to P10.4 made one association table with a role, the port that starts a program,
-`Enter` that reaches both, and the list of programs each system already knows.
-What follows is only partly plan order, and mostly choice. Four things are
-waiting:
+**The first nine phases are finished**, and the tenth has one task left: P10.1
+to P10.6 made one association table with a role, the port that starts a program,
+`Enter` that reaches both, the list of programs each system already knows, the
+popup that offers it and the elevated run. What follows is only partly plan
+order, and mostly choice. Four things are waiting:
 
-- The rest of phase 10, P10.6 and P10.7: `Ctrl+Alt+Enter` running elevated, and
-  a second binding per command for the terminals that swallow a modified
-  `Enter` — the open-with pair already has one in `Alt+R`, and `Ctrl+PgDn` still
-  has to find out whether it arrives at all.
+- The last of phase 10, P10.7: a second binding per command for the terminals
+  that swallow a modified `Enter` — the open-with pair already has one in
+  `Alt+R`, `Ctrl+Alt+Enter` has none yet, and `Ctrl+PgDn` still has to find out
+  whether it arrives at all.
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
   with a full-screen console editor — want a person at a terminal on each
@@ -722,8 +747,9 @@ waiting:
   place that says so is this file.
 - Nothing on Unix asks for administrator rights: `LaunchProcess` refuses an
   `AsAdministrator` request by platform, because there is no way to raise them
-  that does not put a password prompt on the screen the panels own. P10.6 is
-  where that refusal gets its wording on the way to the user.
+  that does not put a password prompt on the screen the panels own. The refusal
+  reaches the user as the reason it carries, so `Ctrl+Alt+Enter` there is a key
+  that explains itself rather than one that works.
 - Nothing checks that a configured editor exists before `F4` starts it. A path
   that names nothing is reported the way any other failed start is, after the
   key was pressed, rather than when it was typed into the popup.
