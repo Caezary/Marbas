@@ -135,8 +135,8 @@ carries a `ForOpening` row (run that program); is that file a readable archive
 on disk — a directory, `..`, a directory inside an archive — falls through to
 `AppState.enter`, which is exactly what it always did. The order matters twice
 over: the association beats the archive walk, which is why `WalkIntoRequested`
-exists on `Ctrl+PgDn`, and the in-archive refusal comes first so that a `.zip`
-inside a `.zip` is refused rather than run out of nowhere.
+exists on `Alt+W` and `Ctrl+PgDn`, and the in-archive refusal comes first so
+that a `.zip` inside a `.zip` is refused rather than run out of nowhere.
 
 **The open-with key asks the same question of a different thing at every place
 the cursor can stand.** `OpenWithRequested` refuses outright when the panel is
@@ -187,6 +187,11 @@ transition for it does nothing to the panels either way: unlike `EditFinished`,
 which re-reads the directory the editor was pointed into, nothing here says when
 the program is done — or that it ever will be. A failure becomes
 `ReportLaunchError`, except `ElevationDeclined`, which becomes nothing at all.
+`EditFinished` answers `Operations.StartDeclined` the same way, so a prompt the
+user turns down is silence whichever key started the program: `mapException`
+turns the Windows code for it into that value before the transition ever sees
+it, the way it turns the code for "nothing is associated" into
+`NoProgramAssociated` rather than into a sentence the system wrote.
 
 **The settings popup is a port too, and what it returns is state.**
 `SettingsRequested` hands `state.Programs` to `Dependencies.EditPrograms` through

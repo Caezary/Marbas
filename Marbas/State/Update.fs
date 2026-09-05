@@ -364,6 +364,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | ProgramsEntered programs -> stay (withPrograms programs state)
     | EditFinished outcome ->
         match outcome with
+        | Error(Operations.StartDeclined _) -> stay state
         | Error error -> request state (ReportOperationError error)
         | Ok() -> refresh fs state |> applyListing state
     | LaunchFinished outcome ->

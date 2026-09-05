@@ -84,3 +84,17 @@ let ``a batch that could not run carries the reason it gave`` () =
     let message = OperationErrorMessage.describe (BatchFailed "no writer for tar")
 
     Assert.Contains("no writer for tar", message)
+
+[<Fact>]
+let ``a name no program on this system opens is explained with its path`` () =
+    let message = OperationErrorMessage.describe (NoProgramAssociated(fp (at "start/notes.odd")))
+
+    Assert.Contains(at "start/notes.odd", message)
+    Assert.Contains("Nothing", message)
+
+[<Fact>]
+let ``a start the user turned down is explained with its path`` () =
+    let message = OperationErrorMessage.describe (StartDeclined(fp (at "start/tool.exe")))
+
+    Assert.Contains(at "start/tool.exe", message)
+    Assert.Contains("administrator", message)

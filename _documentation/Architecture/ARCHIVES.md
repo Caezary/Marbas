@@ -477,13 +477,13 @@ on the archive file — the same courtesy climbing out of a directory has always
 paid. A file inside an archive opens nothing: an archive inside an archive would
 have to be unpacked to be read, and that is not a promise this phase makes.
 
-**Since P10.3 a `ForOpening` row wins over the walk, and `Ctrl+PgDn` is how to
+**Since P10.3 a `ForOpening` row wins over the walk, and `Alt+W` is how to
 walk anyway.** An archive whose extension names a program in the association
 table is *run*, not opened as a location — the point of naming a program for
 `zip` is to reach it. That would otherwise have made the archive browser
-unreachable for whoever does so, which is why `Ctrl+PgDn` carries the walk on
-its own: `WalkIntoRequested` is the old meaning of `Enter`, unchanged and
-unconditional. A file inside an archive no longer merely does nothing when
+unreachable for whoever does so, which is why `Alt+W` — and `Ctrl+PgDn` beside
+it, since P10.7 — carries the walk on its own: `WalkIntoRequested` is the old
+meaning of `Enter`, unchanged and unconditional. A file inside an archive no longer merely does nothing when
 `Enter` is pressed on it; it refuses with `ArchiveEntryNotRunnable` under its
 spelled name, the way `F4` refuses with `ArchiveEntryNotEditable`, because
 running a copy out of the workspace would promise a round trip back into the

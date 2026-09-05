@@ -4,8 +4,7 @@ Status as of 2026-09-04. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**The first nine phases are complete** (46 of 46 tasks) **and phase 10 has
-started** (6 of 7). Marbas
+**Ten phases are complete** (53 of 53 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -246,8 +245,8 @@ anything else — an executable, a document, a shortcut — is handed to the sys
 which follows a `.lnk` rather than making Marbas read one. Everything that is
 not a file on disk falls through to the navigation that was there before, so a
 directory and `..` behave exactly as they did. Because an association now beats
-the archive walk, `Ctrl+PgDn` carries that walk on its own: it is the old
-meaning of `Enter`, unconditional. The marks are ignored — the cursor entry is
+the archive walk, `Alt+W` — `Ctrl+PgDn` when P10.3 wrote it — carries that walk
+on its own: it is the old meaning of `Enter`, unconditional. The marks are ignored — the cursor entry is
 the one that runs. `Executability` grew from five extensions to twelve, Windows'
 own `PATHEXT` plus `msi`, `scr` and `cpl`, and learned to answer from the mode
 bit alone, which is what the Unix launcher needs.
@@ -303,9 +302,37 @@ silence rather than a dialog — `ElevationDeclined` is the one `LaunchError` th
 becomes no effect at all — and on Unix the request never reaches a process:
 `LaunchProcess` refuses it by platform and names the reason, because there is no
 way to ask for administrator rights that does not put a password prompt on the
-screen the panels own. The plan's `Ctrl+Alt+Enter` is the only binding so far;
-whether a terminal delivers it is P10.7's question, along with the second
-binding every command of this phase is getting.
+screen the panels own. The plan's `Ctrl+Alt+Enter` was the binding it arrived
+with; P10.7 found that no terminal delivers it and gave the command a letter.
+
+**P10.7 closed the phase by answering what the terminals actually deliver.**
+Two of the three keys the plan named turned out to be fiction. `Shift+Enter`
+was already known to arrive as a bare `Enter`, which *runs* the entry;
+`Ctrl+Alt+Enter` was tried by hand and arrives as nothing at all, `Alt+Enter`
+being the full-screen toggle of the Windows terminals. `Ctrl+PgDn` does arrive.
+So each of the three commands now carries two rows in the one `KeyMap` table,
+the way `Alt+H` and `Ctrl+H` have always shared `HiddenToggled`: `Alt+W` beside
+`Ctrl+PgDn` for the walk, `Alt+R` beside `Shift+Enter` for the open-with popup,
+and `Alt+Shift+R` beside `Ctrl+Alt+Enter` for the elevated run. The letters are
+what the documentation names and what the tests press; `Alt` with a letter is
+the one shape of modified key every terminal in the checklist has been seen to
+deliver, and the elevated run is deliberately the open-with key with one more
+modifier — one key to remember rather than two. What each terminal really does
+with each of them is a row of its own in
+[Cross-platform](Architecture/CROSS-PLATFORM.md), and the one doubt a letter
+raises — a driver that reports a shifted letter without its shift flag would
+turn `Alt+Shift+R` into `Alt+R` and open the popup instead — was settled by
+asking Terminal.Gui's own key converters, both of which keep the flag.
+
+**The same task taught `Operations.mapException` the two Windows codes that had
+been reaching it as sentences the system wrote.** 1155, no application
+associated, becomes `NoProgramAssociated`; 1223, a prompt the user turned down,
+becomes `StartDeclined` — and `EditFinished` answers that one with silence, the
+way `LaunchFinished` has always answered `ElevationDeclined`, so a refused
+elevation is an answer rather than a dialog whichever key started the program.
+`LaunchProcess` has read both codes since P10.2 for the launcher's own errors;
+this is the same reading for the editor start, which is the other place a
+program is started from and the one that goes through `Operations`.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -331,8 +358,7 @@ written up as the checklist in
 | 7 — Polish & configuration | P7.1–P7.5 | done |
 | 8 — Quality & release | P8.1–P8.3 | done |
 | 9 — Archives | P9.1–P9.14 | done |
-| 10 — Running a file | P10.1–P10.6 | done |
-| | P10.7 | to do |
+| 10 — Running a file | P10.1–P10.7 | done |
 
 ## What works today
 
@@ -397,9 +423,11 @@ written up as the checklist in
   Marbas does not wait for what it started, and the program begins in the
   directory the panel is standing in. Whatever is marked is ignored: the entry
   under the cursor is the one that runs.
-- `Ctrl+PgDn` walks into whatever the cursor stands on, which is what `Enter`
+- `Alt+W` walks into whatever the cursor stands on, which is what `Enter`
   did before an association could outrank it — the way to browse a `.zip` after
-  naming a program for `zip` in the popup.
+  naming a program for `zip` in the popup. `Ctrl+PgDn` is bound to the same
+  command and does arrive under Windows Terminal; the letter is there for the
+  terminals that swallow it.
 - `Alt+R` on a file opens a popup listing the programs the system already
   knows for that extension — read from the registry on Windows, from the XDG
   mime database on Linux — with a field for a path of one's own and a box that
@@ -408,13 +436,15 @@ written up as the checklist in
   standing in.
   `Shift+Enter` is bound to the same command, but Windows Terminal drops the
   modifier and sends a bare `Enter`, so `Alt+R` is the one to press.
-- `Ctrl+Alt+Enter` runs the executable under the cursor with administrator
-  rights — on Windows the `runas` verb, so the system asks before it starts
-  anything, and a prompt turned down leaves nothing on the screen. It is the
-  entry's own rights that are raised, so an `Opened with:` row does not change
-  what it starts. A document or a directory is not a program and is told so, and
-  on Linux the key explains that a terminal application cannot ask this system
-  for administrator rights at all.
+- `Alt+Shift+R` — the open-with key with one more modifier — runs the executable
+  under the cursor with administrator rights: on Windows the `runas` verb, so
+  the system asks before it starts anything, and a prompt turned down leaves
+  nothing on the screen. It is the entry's own rights that are raised, so an
+  `Opened with:` row does not change what it starts. A document or a directory
+  is not a program and is told so, and on Linux the key explains that a terminal
+  application cannot ask this system for administrator rights at all.
+  `Ctrl+Alt+Enter` is bound to the same command, but no terminal tried so far
+  delivers it.
 - A file inside an archive says why it will not run, the way `F4` says why it
   will not be edited: the archive would have to be unpacked first.
 - `Enter` on an archive the capability table calls readable — zip, tar, tar.gz,
@@ -642,16 +672,13 @@ behaviour.
 
 ## Next up
 
-**The first nine phases are finished**, and the tenth has one task left: P10.1
-to P10.6 made one association table with a role, the port that starts a program,
-`Enter` that reaches both, the list of programs each system already knows, the
-popup that offers it and the elevated run. What follows is only partly plan
-order, and mostly choice. Four things are waiting:
+**The plan is finished.** Ten phases, 53 tasks: the tenth made one association
+table with a role, the port that starts a program, `Enter` that reaches both,
+the list of programs each system already knows, the popup that offers it, the
+elevated run, and a binding per command that a terminal actually delivers. What
+follows is no longer plan order at all, and mostly choice. Three things are
+waiting:
 
-- The last of phase 10, P10.7: a second binding per command for the terminals
-  that swallow a modified `Enter` — the open-with pair already has one in
-  `Alt+R`, `Ctrl+Alt+Enter` has none yet, and `Ctrl+PgDn` still has to find out
-  whether it arrives at all.
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
   with a full-screen console editor — want a person at a terminal on each
@@ -739,16 +766,22 @@ order, and mostly choice. Four things are waiting:
   open it. `Alt+R` was added beside it and is the binding to use; the dead one
   is kept because it is the traditional name and costs nothing where a terminal
   does deliver it.
-- Whether `Ctrl+PgDn` reaches the panel is still untested by hand. The suite
-  proves the binding and the transition, not the encoding, and `Shift+Enter` is
-  the warning about trusting that.
+- `Ctrl+Alt+Enter` reaches the panel as nothing at all under Windows Terminal:
+  `Alt+Enter` is its own full-screen toggle, and adding `Ctrl` does not get the
+  combination past it. `Alt+Shift+R` is the binding to use; the dead one is kept
+  for the same reason `Shift+Enter` is.
+- `Alt+W` and `Alt+Shift+R` have not been pressed on Linux yet. Both of
+  Terminal.Gui's key converters were asked by reflection and spell them the way
+  `KeyMap` does — the shift flag survives, so `Alt+Shift+R` cannot quietly
+  become `Alt+R` — but whether a given terminal hands the driver those
+  modifiers at all is still a manual row.
 - Nothing warns that naming a program for an archive extension takes `Enter`
-  away from the archive browser. `Ctrl+PgDn` is the way back in, and the only
+  away from the archive browser. `Alt+W` is the way back in, and the only
   place that says so is this file.
 - Nothing on Unix asks for administrator rights: `LaunchProcess` refuses an
   `AsAdministrator` request by platform, because there is no way to raise them
   that does not put a password prompt on the screen the panels own. The refusal
-  reaches the user as the reason it carries, so `Ctrl+Alt+Enter` there is a key
+  reaches the user as the reason it carries, so `Alt+Shift+R` there is a key
   that explains itself rather than one that works.
 - Nothing checks that a configured editor exists before `F4` starts it. A path
   that names nothing is reported the way any other failed start is, after the

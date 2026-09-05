@@ -488,6 +488,30 @@ let ``unexpected failures map to an error value`` () =
     Assert.Equal(OperationFailed(fp (at "bad"), "boom"), operationError)
 
 [<Fact>]
+let ``a name Windows has no application for maps to an error value`` () =
+    let refusal = ComponentModel.Win32Exception 1155
+
+    let operationError = mapException (fp (at "notes.odd")) refusal
+
+    Assert.Equal(NoProgramAssociated(fp (at "notes.odd")), operationError)
+
+[<Fact>]
+let ``an elevation prompt the user turned down maps to an error value`` () =
+    let refusal = ComponentModel.Win32Exception 1223
+
+    let operationError = mapException (fp (at "tool.exe")) refusal
+
+    Assert.Equal(StartDeclined(fp (at "tool.exe")), operationError)
+
+[<Fact>]
+let ``a Windows failure of any other code keeps the words the system gave`` () =
+    let refusal = ComponentModel.Win32Exception 2
+
+    let operationError = mapException (fp (at "gone.exe")) refusal
+
+    Assert.Equal(OperationFailed(fp (at "gone.exe"), refusal.Message), operationError)
+
+[<Fact>]
 let ``copy reports a directory it may not read`` () =
     let fs = Fakes.UnreadableDirectory(at "data/docs")
     fs.AddFile(at "data/docs/inner.txt", MockFileData "inner")

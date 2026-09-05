@@ -74,13 +74,17 @@ let trashKey = Key.Delete
 
 let permanentDeleteKey = Key.Delete.WithShift
 
-let walkIntoKey = Key.PageDown.WithCtrl
+let walkIntoKey = Key.W.WithAlt
+
+let classicWalkIntoKey = Key.PageDown.WithCtrl
 
 let openWithKey = Key.R.WithAlt
 
 let classicOpenWithKey = Key.Enter.WithShift
 
-let elevatedRunKey = Key.Enter.WithCtrl.WithAlt
+let elevatedRunKey = Key.R.WithAlt.WithShift
+
+let classicElevatedRunKey = Key.Enter.WithCtrl.WithAlt
 
 let quitKey = Key.Q.WithCtrl
 
@@ -127,9 +131,11 @@ let bindings =
       offBar classicHiddenKey HiddenToggled
       offBar refreshKey RefreshRequested
       offBar walkIntoKey WalkIntoRequested
+      offBar classicWalkIntoKey WalkIntoRequested
       offBar openWithKey OpenWithRequested
       offBar classicOpenWithKey OpenWithRequested
       offBar elevatedRunKey ElevatedRunRequested
+      offBar classicElevatedRunKey ElevatedRunRequested
       offBar selectPatternKey (PatternRequested Select)
       offBar deselectPatternKey (PatternRequested Deselect)
       offBar insertKey (SelectionToggled Downward)

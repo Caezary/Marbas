@@ -1,6 +1,7 @@
 module Marbas.FileSystem.Operations
 
 open System
+open System.ComponentModel
 open System.IO.Abstractions
 open FsToolkit.ErrorHandling
 
@@ -13,6 +14,8 @@ type OperationError =
     | EntryOutsideTarget of path: FileSystemPath
     | ArchiveEntryNotEditable of path: FileSystemPath
     | ArchiveEntryNotRunnable of path: FileSystemPath
+    | NoProgramAssociated of path: FileSystemPath
+    | StartDeclined of path: FileSystemPath
     | ArchiveFailed of error: ArchiveError
     | BatchFailed of message: string
     | OperationFailed of path: FileSystemPath * message: string
@@ -38,9 +41,20 @@ let unattended =
 
 type FileSystemAction = IFileSystem -> FileSystemPath -> unit
 
+[<Literal>]
+let private NoAssociation = 1155
+
+[<Literal>]
+let private PromptCancelled = 1223
+
 let mapException (path: FileSystemPath) (ex: exn) =
     match ex with
     | :? UnauthorizedAccessException -> AccessDenied path
+    | :? Win32Exception as refusal ->
+        match refusal.NativeErrorCode with
+        | NoAssociation -> NoProgramAssociated path
+        | PromptCancelled -> StartDeclined path
+        | _ -> OperationFailed(path, refusal.Message)
     | _ -> OperationFailed(path, ex.Message)
 
 let attempting (path: FileSystemPath) action =

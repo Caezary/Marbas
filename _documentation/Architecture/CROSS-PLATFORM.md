@@ -182,14 +182,16 @@ disagrees.
 | The screen is whole again after the editor exits | windowed editors: yes | **manual, and see below** | manual |
 | `Enter` walks into a directory and an archive | same | same | suite |
 | `Enter` runs a document, an executable and an associated file | same | same | suite |
-| `Ctrl+PgDn` reaches the panel as a key at all | **manual** | **manual** | **manual** |
+| `Alt+W` walks into the entry under the cursor | same | same | suite |
+| `Ctrl+PgDn` reaches the panel as a key at all | **yes** | **manual** | manual (Windows Terminal) |
 | A started program leaves the panels un-scribbled | own console, shell verb | streams drained | **manual** |
 | A started program does not hold the loop up | same | same | **manual** |
 | A program that is not there is named, not thrown | `Win32Exception` 2 | `Win32Exception` 2 | **manual** |
 | `Alt+R` asks which program opens the entry | same | same | suite |
 | `Shift+Enter` reaches the panel as a key at all | **no**, arrives as `Enter` | **manual** | manual (Windows Terminal) |
 | `Alt+R` on a directory opens the file manager | Explorer | the desktop's own | **manual** |
-| `Ctrl+Alt+Enter` reaches the panel as a key at all | **manual** | **manual** | **manual** |
+| `Alt+Shift+R` runs the entry elevated | same | same | suite |
+| `Ctrl+Alt+Enter` reaches the panel as a key at all | **no** | **manual** | manual (Windows Terminal) |
 | An executable starts with administrator rights | `runas`, the system prompts | refused by platform | **manual** |
 | A prompt the user turns down leaves no trace | `Win32Exception` 1223, silence | n/a | **manual** |
 | A document refuses to be run elevated | same | same | suite |
@@ -219,12 +221,28 @@ plan foresaw this — a modified `Enter` is what it calls the least portable thi
 phase 10 asks for — and P10.7 is where the remaining two commands get the same
 treatment.
 
-**`Ctrl+PgDn` and `Ctrl+Alt+Enter` have not been tried yet.** The suite sends
-each straight to the panel's `KeyDown` handler, which proves the binding and the
-transition but says nothing about whether the terminal encodes the modifiers.
-Given what `Shift+Enter` turned out to do — and that `Alt+Enter` is the full
-screen toggle of the Windows terminals — those rows are worth answering by hand
-before they are believed.
+**`Ctrl+PgDn` arrives, `Ctrl+Alt+Enter` does not.** Both were tried by hand
+under Windows Terminal on 2026-09-04: the walk into a directory or an archive
+answers to `Ctrl+PgDn`, and nothing at all happens on `Ctrl+Alt+Enter` —
+`Alt+Enter` is the terminal's own full-screen toggle, and the combination with
+`Ctrl` does not reach the application either. That is why P10.7 gave both
+commands a letter of their own, `Alt+W` and `Alt+Shift+R`, and left the older
+names bound beside them: a letter with `Alt` is the one shape of modified key
+every terminal in the checklist has been seen to deliver.
+
+**The shifted letter was checked against the drivers, not only against the
+suite.** `Alt+Shift+R` asks for a letter *and* a shift, and a driver that
+reported the uppercase rune without the shift flag would hand the panel `Alt+R`
+instead — the open-with popup rather than any rights raised, the same shape of
+silent wrong answer `Shift+Enter` turned out to be. Terminal.Gui's two key
+converters were asked directly, by reflection, outside any terminal: the
+Windows one, which reads a console input record, and the net one, which reads a
+`ConsoleKeyInfo`. Both spell `Alt+Shift+R` as the uppercase `R` with the shift
+flag set and read it back as the same key, and both round-trip `Alt+W`, `Alt+R`
+and `Alt+H` the same way. What is left manual is one step further out: whether
+the terminal hands the driver those modifiers at all. `Alt+H` and `Alt+R` have
+been doing so under Windows Terminal since P7.3 and P10.5, which is the whole
+reason the letters were chosen.
 
 **Administrator rights are a Windows-only answer, and Unix says so rather than
 pretending.** On Windows `AsAdministrator` is one field — the `runas` verb on

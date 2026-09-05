@@ -419,27 +419,32 @@ program, this kind of file — and the whole point is that it is the kind.
 raises when a row is chosen — by `Enter` or by a double click — and both should
 mean the same thing. `PanelWiring` marks it handled and dispatches
 `EntryOpened`; there is no row in `bindings` for it, and so no bar label either.
-`Ctrl+PgDn` is an ordinary row (`walkIntoKey` → `WalkIntoRequested`) and gets
-the walk `Enter` gave up when P10.3 let an association beat it.
+The walk `Enter` gave up when P10.3 let an association beat it is an ordinary
+row instead — two of them, since P10.7.
 
-**`Alt+R` is the open-with key, and `Shift+Enter` is only its second name.**
-`openWithKeys` holds both, the way `hiddenKeys` holds `Alt+H` and `Ctrl+H`, and
-for the same reason: the traditional binding is not one a terminal reliably
-delivers. `Shift+Enter` arrives as a bare carriage return under Windows
-Terminal, which the list reads as `Accepting` — so pressing it *runs* the entry
-instead of asking what should open it. That is a silent wrong answer rather than
-a dead key, which is exactly why the letter binding is the one the
-documentation names and the one the tests press.
+**Every command of phase 10 has two names, and the letter is the one that
+counts.** `walkIntoKey`/`classicWalkIntoKey`, `openWithKey`/`classicOpenWithKey`
+and `elevatedRunKey`/`classicElevatedRunKey` each put two rows in `bindings`
+carrying the same `Message`, exactly as `hiddenKey` and `classicHiddenKey` do.
+The `classic` half is the binding the plan and the other file managers name —
+`Ctrl+PgDn`, `Shift+Enter`, `Ctrl+Alt+Enter`; the other half is `Alt+W`,
+`Alt+R` and `Alt+Shift+R`, because `Alt` with a letter is the one shape of
+modified key every terminal tried so far actually delivers. A modified `Enter`
+is the worst of them: the list's `Accepting` command answers to a bare `Enter`,
+so a terminal that drops the modifier does not produce a dead key, it produces
+the *wrong command* — `Shift+Enter` runs the entry instead of asking what should
+open it. The letters are what the documentation names and what the tests press;
+the classic names cost one row each and are kept for the terminals that do
+deliver them.
 
-**`Ctrl+Alt+Enter` is an ordinary row, and that is the whole of its UI.**
-`elevatedRunKey` → `ElevatedRunRequested` sits in `bindings` beside the
-open-with pair, off the bar because it is not a function key, and the panel's
-one `KeyDown` handler dispatches it like any other. The list's `Accepting`
-command answers to a bare `Enter` only, so a modified `Enter` reaches the
-handler rather than running the entry — which is what makes the binding possible
-at all, and also what makes a terminal that *drops* the modifier dangerous
-rather than merely useless. It has no second name yet; P10.7 is where it gets
-one.
+**The elevated run is the open-with key with one more modifier.** `Alt+R` asks
+which program should open the entry, `Alt+Shift+R` runs it as administrator —
+one key to remember rather than two, and the shift reads as "and with more than
+the usual rights". The pairing has a price, and it was paid before it was
+chosen: a driver that reported the shifted letter without its shift flag would
+turn `Alt+Shift+R` into `Alt+R` and open the popup instead, so both of
+Terminal.Gui's key converters were asked outright — see
+[Cross-platform](CROSS-PLATFORM.md) — and both keep the flag.
 
 **The bar is twelve slots, not a list of what happens to be bound.**
 `KeyMap.bar` walks `KeyMap.functionKeys` — `F1` … `F12`, in order — applies the

@@ -18,6 +18,9 @@ let describe error =
         $"An entry of the archive would land outside the target directory: '{FileSystemPath.value path}'."
     | ArchiveEntryNotEditable path ->
         $"'{FileSystemPath.value path}' cannot be edited inside the archive. Unpack it first."
+    | NoProgramAssociated path -> $"Nothing on this system opens '{FileSystemPath.value path}'."
+    | StartDeclined path ->
+        $"'{FileSystemPath.value path}' was not started: the request for administrator rights was turned down."
     | ArchiveEntryNotRunnable path ->
         $"'{FileSystemPath.value path}' cannot be run inside the archive. Unpack it first."
     | BatchFailed reason -> $"The operation could not be completed: {reason}"

@@ -218,3 +218,24 @@ let ``an elevation the user turns down leaves no trace on the screen`` () =
     pressKey window KeyMap.elevatedRunKey
 
     Assert.Empty reported
+
+[<Fact>]
+let ``Ctrl+PgDn walks in as well, where a terminal delivers it`` () =
+    let started = ResizeArray<LaunchRequest>()
+    use window = windowWith (mockFs ()) (fun request -> started.Add request; Ok())
+    (leftList window).SelectedItem <- 1
+
+    pressKey window KeyMap.classicWalkIntoKey
+
+    Assert.Empty started
+    Assert.Equal(1, (leftList window).Source.Count)
+
+[<Fact>]
+let ``Ctrl+Alt+Enter raises the rights as well, where a terminal delivers it`` () =
+    let started = ResizeArray<LaunchRequest>()
+    use window = windowWith (mockFs ()) (fun request -> started.Add request; Ok())
+    (leftList window).SelectedItem <- Tool
+
+    pressKey window KeyMap.classicElevatedRunKey
+
+    Assert.Equal(AsAdministrator, (Assert.Single started).Elevation)

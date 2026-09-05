@@ -653,6 +653,16 @@ let ``an editor that could not be started is reported`` () =
     Assert.Equal<Effect list>([ ReportOperationError failure ], result.Effects)
 
 [<Fact>]
+let ``an editor start the user turned down is silence, not a dialog`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+
+    let result = update fs (EditFinished(Error(StartDeclined(fp (at "start/notes.txt"))))) state
+
+    Assert.Equal(state, result.State)
+    Assert.Empty result.Effects
+
+[<Fact>]
 let ``a program that started leaves the state alone and asks for nothing`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2

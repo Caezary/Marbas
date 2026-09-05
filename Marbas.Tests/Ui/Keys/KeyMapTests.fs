@@ -77,11 +77,14 @@ let ``the refresh key requests a refresh`` () =
     Assert.Equal(Some RefreshRequested, message)
 
 [<Fact>]
-let ``the walk-in key asks for the walk Enter no longer always makes`` () =
-    let message = KeyMap.messageFor KeyMap.walkIntoKey
+let ``Alt+W asks for the walk Enter no longer always makes`` () =
+    Assert.Equal(Key.W.WithAlt, KeyMap.walkIntoKey)
+    Assert.Equal(Some WalkIntoRequested, KeyMap.messageFor KeyMap.walkIntoKey)
 
-    Assert.Equal(Some WalkIntoRequested, message)
-    Assert.Equal(Key.PageDown.WithCtrl, KeyMap.walkIntoKey)
+[<Fact>]
+let ``Ctrl+PgDn asks for the same walk, where a terminal delivers it`` () =
+    Assert.Equal(Key.PageDown.WithCtrl, KeyMap.classicWalkIntoKey)
+    Assert.Equal(Some WalkIntoRequested, KeyMap.messageFor KeyMap.classicWalkIntoKey)
 
 [<Fact>]
 let ``Alt+R asks which program should open the entry`` () =
@@ -94,9 +97,18 @@ let ``Shift+Enter asks the same, where a terminal delivers it`` () =
     Assert.Equal(Some OpenWithRequested, KeyMap.messageFor KeyMap.classicOpenWithKey)
 
 [<Fact>]
-let ``Ctrl+Alt+Enter runs the entry with administrator rights`` () =
-    Assert.Equal(Key.Enter.WithCtrl.WithAlt, KeyMap.elevatedRunKey)
+let ``Alt+Shift+R runs the entry with administrator rights`` () =
+    Assert.Equal(Key.R.WithAlt.WithShift, KeyMap.elevatedRunKey)
     Assert.Equal(Some ElevatedRunRequested, KeyMap.messageFor KeyMap.elevatedRunKey)
+
+[<Fact>]
+let ``Ctrl+Alt+Enter raises the same rights, where a terminal delivers it`` () =
+    Assert.Equal(Key.Enter.WithCtrl.WithAlt, KeyMap.classicElevatedRunKey)
+    Assert.Equal(Some ElevatedRunRequested, KeyMap.messageFor KeyMap.classicElevatedRunKey)
+
+[<Fact>]
+let ``the elevated run is the open-with key with one more modifier`` () =
+    Assert.Equal(KeyMap.openWithKey.WithShift, KeyMap.elevatedRunKey)
 
 [<Fact>]
 let ``every selection key toggles the selection and moves on down`` () =
