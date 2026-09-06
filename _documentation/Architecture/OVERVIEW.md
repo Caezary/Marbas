@@ -187,3 +187,14 @@ coverlet.runsettings      what coverage measures and what it leaves out
   ci.yml                  restore, build and test on Windows and Linux
   release.yml             publish both profiles on a tag, attach them to a release
 ```
+
+## Explicit dependencies
+
+**FSharp.Core**: Central package management switches the
+SDK's implicit reference off (`DisableImplicitFSharpCoreReference` becomes
+true), so a project that pulls in no other F# package — a probe, say — compiles
+against the SDK's `FSharp.Core` and ships none, and falls over on its first line
+with a `FileNotFoundException`. The `PackageVersion` pins the version the tree
+already resolved through `FsToolkit.ErrorHandling`, and a project that needs it
+asks for it by name like any other package.
+
