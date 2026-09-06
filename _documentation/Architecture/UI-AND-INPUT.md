@@ -558,3 +558,24 @@ rows, but the top of the screen is always the start of a line — a page down
 advances by however many lines the screen held (`ViewerScroll.filling`), not by
 a row count. That keeps the line index the one measure of position, and it is
 what a wrapped page up and a percentage in the header are both counted from.
+
+## Measuring what a terminal delivers
+
+A key binding is worth nothing if the terminal keeps the key for itself: `F11`
+is the full-screen toggle almost everywhere, `Alt+Enter` belongs to the Windows
+terminals, and outside the kitty keyboard protocol a Unix terminal drops
+modifiers it has no escape sequence for. `_probes/KeyProbe` answers what
+actually arrives, through the same Terminal.Gui version Marbas uses:
+
+```
+dotnet run --project _probes/KeyProbe
+```
+
+It ticks off the keys a planned phase needs, lists the candidates that could
+replace one that never arrives, logs every key that reaches the application
+with its code and modifiers, and prints the whole summary to the terminal after
+`Ctrl+Q` quits it, alongside a `keyprobe-<timestamp>.txt` in the directory it
+was started from — so the run can be repeated in Windows Terminal, in the
+Windows console and under WSL, and the three answers compared. It is not part
+of `Marbas.slnx`, so it is built and run on its own; the list of keys it asks
+about is edited for whatever is being measured.

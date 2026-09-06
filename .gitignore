@@ -431,3 +431,6 @@ FodyWeavers.xsd
 
 # Tech Debt is temporary for the time being
 _documentation/TECH-DEBT.md
+
+# Key probe reports
+keyprobe-*.txt

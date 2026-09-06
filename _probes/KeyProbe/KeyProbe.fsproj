@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+    <PackageReference Include="FSharp.Core" />
+    <PackageReference Include="Terminal.Gui" />
+  </ItemGroup>
+
+</Project>
