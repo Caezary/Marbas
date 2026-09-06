@@ -27,7 +27,7 @@ let private started () =
     let fs = mockFs ()
     fs, loaded fs
 
-let private targetNames state = operationTargets state.Left |> List.map (_.Name >> EntryName.value)
+let private targetNames (state: AppState) = operationTargets state.Left |> List.map (_.Name >> EntryName.value)
 
 let private deleted (fs: IFileSystem) state =
     let results = operationPaths fs (panel Left state) |> deleteAll fs

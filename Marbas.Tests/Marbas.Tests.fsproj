@@ -60,7 +60,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="State\ZipperTests.fs" />
     <Compile Include="State\AppStateTests.fs" />
+    <Compile Include="State\TabTests.fs" />
     <Compile Include="State\NavigationTests.fs" />
     <Compile Include="State\NavigationErrorTests.fs" />
     <Compile Include="State\RefreshTests.fs" />

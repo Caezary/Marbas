@@ -37,12 +37,23 @@ type PanelState =
       Hidden: HiddenEntries
       Search: SearchText option }
 
-type AppState =
+type Tab =
     { Left: PanelState
       Right: PanelState
-      Active: PanelSide
+      Active: PanelSide }
+
+type AppState =
+    { Tabs: Zipper<Tab>
       LastCreatedDirectory: EntryName option
       Programs: ProgramSettings }
+
+    member private this.Focused = this.Tabs |> Zipper.current
+
+    member this.Left = this.Focused.Left
+
+    member this.Right = this.Focused.Right
+
+    member this.Active = this.Focused.Active
 
 type FocusTarget =
     | Top
@@ -66,9 +77,11 @@ let private panelFrom (settings: PanelSettings) =
       Search = None }
 
 let fromSettings (settings: Settings) =
-    { Left = panelFrom settings.Left
-      Right = panelFrom settings.Right
-      Active = Left
+    { Tabs =
+        Zipper.single
+            { Left = panelFrom settings.Left
+              Right = panelFrom settings.Right
+              Active = Left }
       LastCreatedDirectory = settings.LastCreatedDirectory
       Programs = settings.Programs }
 
@@ -90,31 +103,63 @@ let withPrograms (programs: ProgramSettings) (state: AppState) = { state with Pr
 let programFor role (name: EntryName) (state: AppState) =
     ProgramSettings.programFor role name state.Programs
 
-let panel side state =
+let panel side (state: AppState) =
     match side with
     | Left -> state.Left
     | Right -> state.Right
 
-let activePanel state = panel state.Active state
+let activePanel (state: AppState) = panel state.Active state
+
+let private updateTab f (state: AppState) =
+    { state with Tabs = state.Tabs |> Zipper.update f }
 
 let private updatePanel side f (state: AppState) =
-    match side with
-    | Left -> { state with Left = f state.Left }
-    | Right -> { state with Right = f state.Right }
+    updateTab
+        (fun tab ->
+            match side with
+            | Left -> { tab with Left = f tab.Left }
+            | Right -> { tab with Right = f tab.Right })
+        state
 
 let private withoutSearch (p: PanelState) = { p with Search = None }
 
 let closeSearch side state = updatePanel side withoutSearch state
 
 let activate side state =
-    { state with Active = side } |> closeSearch Left |> closeSearch Right
+    state
+    |> updateTab (fun tab -> { tab with Active = side })
+    |> closeSearch Left
+    |> closeSearch Right
+
+let private cleared (p: PanelState) =
+    { p with
+        Selected = Set.empty
+        Search = None }
+
+let openTab (state: AppState) =
+    let clone (tab: Tab) =
+        { tab with
+            Left = cleared tab.Left
+            Right = cleared tab.Right }
+    
+    let cloned = state.Tabs |> Zipper.current |> clone
+
+    { state with Tabs = state.Tabs |> Zipper.insert cloned }
+
+let closeTab state =
+    { state with Tabs = state.Tabs |> Zipper.remove }
+
+let switchTab position state =
+    let leaving = state |> closeSearch Left |> closeSearch Right
+
+    { leaving with Tabs = leaving.Tabs |> Zipper.at position }
 
 let opposite side =
     match side with
     | Left -> Right
     | Right -> Left
 
-let toggleActive state = activate (opposite state.Active) state
+let toggleActive (state: AppState) = activate (opposite state.Active) state
 
 let private withCursor index (p: PanelState) = { p with Cursor = index }
 
@@ -304,9 +349,9 @@ let directoryOf panel = PanelLocation.directory panel.Path
 
 let activeDirectory state = directoryOf (activePanel state)
 
-let targetDirectory state = directoryOf (panel (opposite state.Active) state)
+let targetDirectory (state: AppState) = directoryOf (panel (opposite state.Active) state)
 
-let transferTarget state =
+let transferTarget (state: AppState) =
     match (panel (opposite state.Active) state).Path with
     | OnDisk directory -> ToDirectory directory
     | InArchive(archive, level) -> ToArchive(archive, level)
@@ -373,11 +418,11 @@ let private reloadFocusing (fs: IFileSystem) side focus keep state =
 let private reload (fs: IFileSystem) side keep state =
     reloadFocusing fs side (cursorFocus (panel side state)) keep state
 
-let finishDelete (fs: IFileSystem) results state =
+let finishDelete (fs: IFileSystem) results (state: AppState) =
     reload fs state.Active (fun previous -> keepUnfinished results previous.Selected) state
     |> Result.map (fun updated -> updated, results)
 
-let finishTransfer (fs: IFileSystem) results state =
+let finishTransfer (fs: IFileSystem) results (state: AppState) =
     reload fs state.Active (fun previous -> keepUnfinished results previous.Selected) state
     |> Result.bind (reload fs (opposite state.Active) (fun previous -> keepSurviving previous.Selected))
     |> Result.map (fun updated -> updated, results)
@@ -393,12 +438,12 @@ let archiveSuggestion (fs: IFileSystem) format state =
     (activeDirectory state, targetDirectory state)
     ||> Option.map2 (fun source target -> FileSystemPath.combine fs target (named source))
 
-let finishPack (fs: IFileSystem) (archive: EntryName) results state =
+let finishPack (fs: IFileSystem) (archive: EntryName) results (state: AppState) =
     reload fs state.Active (fun previous -> keepUnfinished results previous.Selected) state
     |> Result.bind (reloadFocusing fs (opposite state.Active) (ByName archive) (fun previous -> keepSurviving previous.Selected))
     |> Result.map (fun updated -> updated, results)
 
-let finishRename (fs: IFileSystem) newName state =
+let finishRename (fs: IFileSystem) newName (state: AppState) =
     reloadFocusing fs state.Active (ByName newName) (fun previous -> keepSurviving previous.Selected) state
 
 let private madeDirectory (fs: IFileSystem) side location name state =

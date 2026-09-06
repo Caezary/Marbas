@@ -48,6 +48,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="State\Zipper.fs" />
         <Compile Include="State\AppState.fs" />
         <Compile Include="State\Update.fs" />
         <Compile Include="State\Runtime.fs" />

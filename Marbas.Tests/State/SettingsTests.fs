@@ -3,6 +3,7 @@ module Marbas.Tests.State.SettingsTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -18,6 +19,10 @@ let private mockFs () =
     fs.AddFile(at "start/notes.txt", MockFileData "hi")
     fs.AddDirectory(at "backup")
     fs
+
+let private standingIn location (state: AppState) =
+    { state with
+        Tabs = state.Tabs |> Zipper.update (fun tab -> { tab with Tab.Left.Path = location }) }
 
 let private stored: Settings =
     { Left =
@@ -102,9 +107,7 @@ let ``a panel inside an archive says the directory holding it in the settings`` 
     let fs = mockFs ()
     let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
-    let inside =
-        { state with
-            AppState.Left.Path = InArchive(fp (at "start/backup.zip"), ArchivePath.root) }
+    let inside = state |> standingIn (InArchive(fp (at "start/backup.zip"), ArchivePath.root))
 
     Assert.Equal(fp (at "start"), (settings fs inside).Left.Path)
 
