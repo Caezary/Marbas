@@ -10,6 +10,14 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="Collections\Zipper.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Domain\PanelSide.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Compile Include="FileSystem\EntryName.fs" />
         <Compile Include="FileSystem\FileSystemPath.fs" />
         <Compile Include="FileSystem\ContentError.fs" />
@@ -48,7 +56,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Include="State\Zipper.fs" />
         <Compile Include="State\AppState.fs" />
         <Compile Include="State\Update.fs" />
         <Compile Include="State\Runtime.fs" />

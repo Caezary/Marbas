@@ -3,8 +3,9 @@ module Marbas.Tests.State.TabTests
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Collections
+open Marbas.Domain
 open Marbas.FileSystem
-open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 

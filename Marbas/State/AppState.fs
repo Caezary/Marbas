@@ -1,12 +1,10 @@
 module Marbas.State.AppState
 
 open System.IO.Abstractions
+open Marbas.Collections
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
-
-type PanelSide =
-    | Left
-    | Right
 
 type PanelCursor =
     { Side: PanelSide
@@ -76,12 +74,13 @@ let private panelFrom (settings: PanelSettings) =
       Hidden = settings.Hidden
       Search = None }
 
+let private tabFrom (tab: TabSettings) =
+    { Left = panelFrom tab.Left
+      Right = panelFrom tab.Right
+      Active = tab.Active }
+
 let fromSettings (settings: Settings) =
-    { Tabs =
-        Zipper.single
-            { Left = panelFrom settings.Left
-              Right = panelFrom settings.Right
-              Active = Left }
+    { Tabs = settings.Tabs |> Zipper.map tabFrom
       LastCreatedDirectory = settings.LastCreatedDirectory
       Programs = settings.Programs }
 
@@ -92,9 +91,13 @@ let private panelSettings (fs: IFileSystem) (p: PanelState) : PanelSettings =
       Sort = p.Sort
       Hidden = p.Hidden }
 
+let private tabSettings (fs: IFileSystem) (tab: Tab) : TabSettings =
+    { Left = panelSettings fs tab.Left
+      Right = panelSettings fs tab.Right
+      Active = tab.Active }
+
 let settings (fs: IFileSystem) (state: AppState) : Settings =
-    { Left = panelSettings fs state.Left
-      Right = panelSettings fs state.Right
+    { Tabs = state.Tabs |> Zipper.map (tabSettings fs)
       LastCreatedDirectory = state.LastCreatedDirectory
       Programs = state.Programs }
 
@@ -146,10 +149,10 @@ let openTab (state: AppState) =
 
     { state with Tabs = state.Tabs |> Zipper.insert cloned }
 
-let closeTab state =
+let closeTab (state: AppState) =
     { state with Tabs = state.Tabs |> Zipper.remove }
 
-let switchTab position state =
+let switchTab position (state: AppState) =
     let leaving = state |> closeSearch Left |> closeSearch Right
 
     { leaving with Tabs = leaving.Tabs |> Zipper.at position }

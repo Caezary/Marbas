@@ -2,6 +2,8 @@ module Marbas.Tests.FileSystem.SettingsTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Collections
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Tests
 
@@ -17,19 +19,35 @@ let private mockFs () =
     let fs = MockFileSystem()
     fs.AddDirectory(at "start")
     fs.AddDirectory(at "backup")
+    fs.AddDirectory(at "notes")
     fs
 
 let private defaults = Settings.forPath (fp (at "start"))
 
+let private panelOn path sort hidden =
+    { Path = fp (at path)
+      Sort = sort
+      Hidden = hidden }
+
+let private tabOn left right active =
+    { Left = left
+      Right = right
+      Active = active }
+
+let private firstTab =
+    tabOn
+        (panelOn "backup" (SortOrder.create BySize Descending) Shown)
+        (panelOn "start" (SortOrder.create ByDate Ascending) Concealed)
+        Left
+
+let private secondTab =
+    tabOn
+        (panelOn "start" SortOrder.byName Concealed)
+        (panelOn "notes" (SortOrder.create ByExtension Ascending) Shown)
+        Right
+
 let private stored: Settings =
-    { Left =
-        { Path = fp (at "backup")
-          Sort = SortOrder.create BySize Descending
-          Hidden = Shown }
-      Right =
-        { Path = fp (at "start")
-          Sort = SortOrder.create ByDate Ascending
-          Hidden = Concealed }
+    { Tabs = Zipper.ofNonEmpty firstTab [ secondTab ] |> Zipper.at 1
       LastCreatedDirectory = Some(en "work")
       Programs =
         { DefaultEditor = ProgramPath.tryCreate "code.exe"
@@ -48,14 +66,16 @@ let private write (fs: MockFileSystem) lines =
     fs.AddFile(FileSystemPath.value settingsPath, MockFileData(String.concat "\n" lines))
 
 [<Fact>]
-let ``the defaults put both panels on one path, sorted by name, hidden concealed`` () =
+let ``the defaults are one tab with both panels on one path, sorted by name, hidden concealed`` () =
     let settings = Settings.forPath (fp (at "start"))
 
+    Assert.Equal(1, Zipper.count settings.Tabs)
     Assert.Equal(fp (at "start"), settings.Left.Path)
     Assert.Equal(fp (at "start"), settings.Right.Path)
     Assert.Equal(SortOrder.byName, settings.Left.Sort)
     Assert.Equal(Concealed, settings.Left.Hidden)
     Assert.Equal(settings.Left, settings.Right)
+    Assert.Equal(Left, settings.Active)
 
 [<Fact>]
 let ``what is formatted is what is parsed back`` () =
@@ -64,17 +84,27 @@ let ``what is formatted is what is parsed back`` () =
     Assert.Equal(stored, parsed)
 
 [<Fact>]
-let ``each panel is written under its own name`` () =
+let ``each panel is written under the number of its tab`` () =
     let lines = Settings.format stored
 
-    Assert.Contains("left.path=" + at "backup", lines)
-    Assert.Contains("left.sort=size", lines)
-    Assert.Contains("left.direction=descending", lines)
-    Assert.Contains("left.hidden=shown", lines)
-    Assert.Contains("right.path=" + at "start", lines)
-    Assert.Contains("right.sort=date", lines)
-    Assert.Contains("right.direction=ascending", lines)
-    Assert.Contains("right.hidden=concealed", lines)
+    Assert.Contains("tab.1.left.path=" + at "backup", lines)
+    Assert.Contains("tab.1.left.sort=size", lines)
+    Assert.Contains("tab.1.left.direction=descending", lines)
+    Assert.Contains("tab.1.left.hidden=shown", lines)
+    Assert.Contains("tab.1.right.path=" + at "start", lines)
+    Assert.Contains("tab.1.right.sort=date", lines)
+    Assert.Contains("tab.1.right.direction=ascending", lines)
+    Assert.Contains("tab.1.right.hidden=concealed", lines)
+    Assert.Contains("tab.2.right.path=" + at "notes", lines)
+    Assert.Contains("tab.2.right.sort=extension", lines)
+
+[<Fact>]
+let ``the active side of each tab and the tab in front are written too`` () =
+    let lines = Settings.format stored
+
+    Assert.Contains("tab.1.active=left", lines)
+    Assert.Contains("tab.2.active=right", lines)
+    Assert.Contains("tabs.current=2", lines)
 
 [<Fact>]
 let ``every sort key is written under a name that is read back as itself`` () =
@@ -83,7 +113,9 @@ let ``every sort key is written under a name that is read back as itself`` () =
             { defaults.Left with
                 Sort = SortOrder.create key Descending }
 
-        (Settings.format { defaults with Left = panel } |> Settings.parse defaults).Left.Sort
+        let tabs = defaults.Tabs |> Zipper.update (fun tab -> { tab with Left = panel })
+
+        (Settings.format { defaults with Tabs = tabs } |> Settings.parse defaults).Left.Sort
 
     let parsed = [ ByName; ByExtension; ByDate; BySize ] |> List.map roundTrip
 
@@ -199,6 +231,89 @@ let ``a path keeps the case it was written in`` () =
     let parsed = Settings.parse defaults [ "left.path=" + at "Backup" ]
 
     Assert.Equal(fp (at "Backup"), parsed.Left.Path)
+
+let private twoTabLines =
+    [ "tab.1.left.path=" + at "backup"; "tab.2.left.path=" + at "notes" ]
+
+let private leftPaths (settings: Settings) =
+    settings.Tabs |> Zipper.items |> List.map (fun tab -> FileSystemPath.value tab.Left.Path)
+
+[<Fact>]
+let ``three tabs are written and read back in the order they were in`` () =
+    let third = tabOn (panelOn "notes" SortOrder.byName Shown) (panelOn "backup" SortOrder.byName Concealed) Left
+
+    let parsed =
+        { stored with
+            Tabs = Zipper.ofNonEmpty firstTab [ secondTab; third ] }
+        |> Settings.format
+        |> Settings.parse defaults
+
+    Assert.Equal<string list>([ at "backup"; at "start"; at "notes" ], leftPaths parsed)
+    Assert.Equal(0, Zipper.position parsed.Tabs)
+
+[<Fact>]
+let ``a file written before tabs existed is read as one tab`` () =
+    let parsed =
+        Settings.parse defaults [ "left.path=" + at "backup"; "left.sort=size"; "right.path=" + at "notes" ]
+
+    Assert.Equal(1, Zipper.count parsed.Tabs)
+    Assert.Equal(fp (at "backup"), parsed.Left.Path)
+    Assert.Equal(BySize, parsed.Left.Sort.Key)
+    Assert.Equal(fp (at "notes"), parsed.Right.Path)
+    Assert.Equal(Left, parsed.Active)
+
+[<Fact>]
+let ``a file written before tabs existed is written back in the new spelling`` () =
+    let lines =
+        Settings.parse defaults [ "left.path=" + at "backup"; "right.path=" + at "notes" ]
+        |> Settings.format
+
+    Assert.Contains("tab.1.left.path=" + at "backup", lines)
+    Assert.Contains("tab.1.right.path=" + at "notes", lines)
+    Assert.DoesNotContain(lines, fun (line: string) -> line.StartsWith "left." || line.StartsWith "right.")
+
+[<Fact>]
+let ``tab numbers need not start at one nor run without gaps`` () =
+    let parsed =
+        Settings.parse defaults [ "tab.5.left.path=" + at "notes"; "tab.2.left.path=" + at "backup" ]
+
+    Assert.Equal<string list>([ at "backup"; at "notes" ], leftPaths parsed)
+
+[<Theory>]
+[<InlineData("1", 0)>]
+[<InlineData("2", 1)>]
+[<InlineData("0", 0)>]
+[<InlineData("9", 1)>]
+[<InlineData("later", 0)>]
+let ``the tab in front is the one the file names, or the nearest to it`` (current: string) (expected: int) =
+    let parsed = Settings.parse defaults (twoTabLines @ [ "tabs.current=" + current ])
+
+    Assert.Equal(expected, Zipper.position parsed.Tabs)
+
+[<Fact>]
+let ``a tab the file says nothing more about keeps the defaults`` () =
+    let parsed = Settings.parse defaults twoTabLines
+
+    Assert.Equal(defaults.Right, parsed.Right)
+    Assert.Equal(SortOrder.byName, parsed.Left.Sort)
+    Assert.Equal(Concealed, parsed.Left.Hidden)
+    Assert.Equal(Left, parsed.Active)
+
+[<Fact>]
+let ``the active side is read whatever the case, and a word that names no side keeps the default`` () =
+    let parsed = Settings.parse defaults [ "tab.1.active=RIGHT"; "tab.2.active=sideways" ]
+
+    Assert.Equal(Right, parsed.Active)
+    Assert.Equal(Left, (Zipper.items parsed.Tabs |> List.item 1).Active)
+
+[<Fact>]
+let ``a stored path that is no longer a directory falls back in the tab it stands in`` () =
+    let fs = mockFs ()
+    write fs [ "tab.1.left.path=" + at "backup"; "tab.2.left.path=" + at "gone" ]
+
+    let loaded = Settings.load fs defaults settingsPath
+
+    Assert.Equal<string list>([ at "backup"; at "start" ], leftPaths loaded)
 
 [<Fact>]
 let ``the settings file sits in the directory the platform keeps application data in`` () =

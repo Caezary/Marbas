@@ -1,7 +1,7 @@
-module Marbas.Tests.State.ZipperTests
+module Marbas.Tests.Collections.ZipperTests
 
 open Xunit
-open Marbas.State
+open Marbas.Collections
 
 let private three () =
     Zipper.single 1 |> Zipper.insert 2 |> Zipper.insert 3
@@ -98,3 +98,21 @@ let ``update replaces the current item and leaves the rest`` () =
 
     Assert.Equal<int list>([ 1; 20; 3 ], Zipper.items updated)
     Assert.Equal(1, Zipper.position updated)
+
+[<Fact>]
+let ``a zipper is made of one item and the rest`` () =
+    let zipper = Zipper.ofNonEmpty 1 [ 2; 3 ]
+
+    Assert.Equal<int list>([ 1; 2; 3 ], Zipper.items zipper)
+    Assert.Equal(1, Zipper.current zipper)
+    Assert.Equal(0, Zipper.position zipper)
+
+[<Fact>]
+let ``map carries every item over and leaves the position where it was`` () =
+    let zipper = three () |> Zipper.at 1
+
+    let mapped = zipper |> Zipper.map string
+
+    Assert.Equal<string list>([ "1"; "2"; "3" ], Zipper.items mapped)
+    Assert.Equal("2", Zipper.current mapped)
+    Assert.Equal(1, Zipper.position mapped)

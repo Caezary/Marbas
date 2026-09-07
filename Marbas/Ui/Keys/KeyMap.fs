@@ -1,6 +1,7 @@
 module Marbas.Ui.Keys.KeyMap
 
 open Terminal.Gui.Input
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.State.AppState
 open Marbas.State.Update

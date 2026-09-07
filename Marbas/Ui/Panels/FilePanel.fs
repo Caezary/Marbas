@@ -5,6 +5,7 @@ open System.IO.Abstractions
 open Terminal.Gui.Drawing
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.State
 open Marbas.Ui.Theme
@@ -103,7 +104,7 @@ let render (fs: IFileSystem) (state: AppState.PanelState) (panel: PanelView) =
 type Panels = { Left: PanelView; Right: PanelView }
 
 let pairs (panels: Panels) =
-    [ AppState.Left, panels.Left; AppState.Right, panels.Right ]
+    [ Left, panels.Left; Right, panels.Right ]
 
 let createPair () =
     let left =

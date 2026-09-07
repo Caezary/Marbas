@@ -1,4 +1,4 @@
-namespace Marbas.State
+namespace Marbas.Collections
 
 type Zipper<'a> =
     { Before: 'a list
@@ -54,3 +54,13 @@ module Zipper =
 
     let backward (zipper: Zipper<'a>) =
         at ((position zipper - 1 + count zipper) % count zipper) zipper
+
+    let ofNonEmpty first rest =
+        { Before = []
+          Current = first
+          After = rest }
+
+    let map f (zipper: Zipper<'a>) =
+        { Before = List.map f zipper.Before
+          Current = f zipper.Current
+          After = List.map f zipper.After }

@@ -2,17 +2,31 @@ namespace Marbas.FileSystem
 
 open System
 open System.IO.Abstractions
+open Marbas.Collections
+open Marbas.Domain
 
 type PanelSettings =
     { Path: FileSystemPath
       Sort: SortOrder
       Hidden: HiddenEntries }
 
-type Settings =
+type TabSettings =
     { Left: PanelSettings
       Right: PanelSettings
+      Active: PanelSide }
+
+type Settings =
+    { Tabs: Zipper<TabSettings>
       LastCreatedDirectory: EntryName option
       Programs: ProgramSettings }
+
+    member private this.Focused = Zipper.current this.Tabs
+
+    member this.Left = this.Focused.Left
+
+    member this.Right = this.Focused.Right
+
+    member this.Active = this.Focused.Active
 
 module Settings =
 
@@ -30,6 +44,15 @@ module Settings =
 
     [<Literal>]
     let private RightPrefix = "right."
+
+    [<Literal>]
+    let private TabPrefix = "tab."
+
+    [<Literal>]
+    let private CurrentSetting = "tabs.current"
+
+    [<Literal>]
+    let private ActiveSetting = "active"
 
     [<Literal>]
     let private PathSetting = "path"
@@ -109,14 +132,28 @@ module Settings =
         | "opening" -> Some ForOpening
         | _ -> None
 
+    let private sideText side =
+        match side with
+        | Left -> "left"
+        | Right -> "right"
+
+    let private sideOf text =
+        match text with
+        | "left" -> Some Left
+        | "right" -> Some Right
+        | _ -> None
+
     let private panelOn path =
         { Path = path
           Sort = SortOrder.byName
           Hidden = Concealed }
 
     let forPath path : Settings =
-        { Left = panelOn path
-          Right = panelOn path
+        { Tabs =
+            Zipper.single
+                { Left = panelOn path
+                  Right = panelOn path
+                  Active = Left }
           LastCreatedDirectory = None
           Programs = ProgramSettings.none }
 
@@ -153,9 +190,21 @@ module Settings =
            |> List.map (fun association ->
                line ProgramPrefix (roleSetting association) (ProgramPath.value association.Program)))
 
+    let private tabPrefix number = $"{TabPrefix}{number}."
+
+    let private tabLines number (tab: TabSettings) =
+        let prefix = tabPrefix number
+
+        panelLines (prefix + LeftPrefix) tab.Left
+        @ panelLines (prefix + RightPrefix) tab.Right
+        @ [ line prefix ActiveSetting (sideText tab.Active) ]
+
     let format (settings: Settings) =
-        panelLines LeftPrefix settings.Left
-        @ panelLines RightPrefix settings.Right
+        (settings.Tabs
+         |> Zipper.items
+         |> List.mapi (fun index -> tabLines (index + 1))
+         |> List.concat)
+        @ [ $"{CurrentSetting}={Zipper.position settings.Tabs + 1}" ]
         @ directoryLines settings.LastCreatedDirectory
         @ programLines settings.Programs
 
@@ -185,6 +234,45 @@ module Settings =
                 |> Option.bind directionOf
                 |> Option.defaultValue fallback.Sort.Direction }
           Hidden = token HiddenSetting |> Option.bind hiddenOf |> Option.defaultValue fallback.Hidden }
+
+    let private numberIn (key: string) =
+        match Int32.TryParse((key.Substring TabPrefix.Length).Split('.')[0]) with
+        | true, number -> Some number
+        | _ -> None
+
+    let private tabNumbers (read: Map<string, string>) =
+        read
+        |> Map.toList
+        |> List.map fst
+        |> List.filter _.StartsWith(TabPrefix)
+        |> List.choose numberIn
+        |> List.distinct
+        |> List.sort
+
+    let private tabFrom (read: Map<string, string>) prefix (fallback: TabSettings) =
+        { Left = panelFrom read (prefix + LeftPrefix) fallback.Left
+          Right = panelFrom read (prefix + RightPrefix) fallback.Right
+          Active =
+            Map.tryFind (prefix + ActiveSetting) read
+            |> Option.map _.ToLowerInvariant()
+            |> Option.bind sideOf
+            |> Option.defaultValue fallback.Active }
+
+    let private tabsFrom (read: Map<string, string>) (fallback: TabSettings) =
+        let numbered =
+            tabNumbers read |> List.map (fun number -> tabFrom read (tabPrefix number) fallback)
+
+        let tabs =
+            match numbered with
+            | head :: rest -> Zipper.ofNonEmpty head rest
+            | [] -> Zipper.single (tabFrom read "" fallback)
+
+        let current =
+            match Map.tryFind CurrentSetting read |> Option.map Int32.TryParse with
+            | Some(true, number) -> number
+            | _ -> 1
+
+        tabs |> Zipper.at (current - 1)
 
     let private association role extension (value: string) =
         match FileExtension.tryCreate extension, ProgramPath.tryCreate value with
@@ -221,8 +309,7 @@ module Settings =
     let parse (defaults: Settings) (lines: string list) : Settings =
         let read = entries lines
 
-        { Left = panelFrom read LeftPrefix defaults.Left
-          Right = panelFrom read RightPrefix defaults.Right
+        { Tabs = defaults.Tabs |> Zipper.current |> tabsFrom read
           LastCreatedDirectory =
             Map.tryFind (DirectoryPrefix + NameSetting) read
             |> Option.bind EntryName.tryCreate
@@ -247,10 +334,15 @@ module Settings =
 
     let load (fs: IFileSystem) (defaults: Settings) (path: FileSystemPath) : Settings =
         let settings = stored fs defaults path
+        let fallback = Zipper.current defaults.Tabs
 
         { settings with
-            Left = reachable fs defaults.Left settings.Left
-            Right = reachable fs defaults.Right settings.Right }
+            Tabs =
+                settings.Tabs
+                |> Zipper.map (fun tab ->
+                    { tab with
+                        Left = reachable fs fallback.Left tab.Left
+                        Right = reachable fs fallback.Right tab.Right }) }
 
     let save (fs: IFileSystem) (path: FileSystemPath) (settings: Settings) =
         try

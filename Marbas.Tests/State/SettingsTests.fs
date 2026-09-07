@@ -3,7 +3,8 @@ module Marbas.Tests.State.SettingsTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
-open Marbas.State
+open Marbas.Collections
+open Marbas.Domain
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -24,7 +25,7 @@ let private standingIn location (state: AppState) =
     { state with
         Tabs = state.Tabs |> Zipper.update (fun tab -> { tab with Tab.Left.Path = location }) }
 
-let private stored: Settings =
+let private storedTab: TabSettings =
     { Left =
         { Path = fp (at "backup")
           Sort = SortOrder.create BySize Descending
@@ -33,6 +34,10 @@ let private stored: Settings =
         { Path = fp (at "start")
           Sort = SortOrder.create ByDate Ascending
           Hidden = Concealed }
+      Active = Left }
+
+let private stored: Settings =
+    { Tabs = Zipper.single storedTab
       LastCreatedDirectory = Some(en "work")
       Programs =
         { DefaultEditor = ProgramPath.tryCreate "code.exe"
@@ -52,6 +57,44 @@ let ``a state built from settings gives each panel its own path, sort and hidden
     Assert.Equal(SortOrder.create ByDate Ascending, state.Right.Sort)
     Assert.Equal(Concealed, state.Right.Hidden)
     Assert.Equal(Left, state.Active)
+
+[<Fact>]
+let ``a state built from settings has one tab for every stored tab`` () =
+    let second =
+        { storedTab with
+            Left = { storedTab.Left with Path = fp (at "start") }
+            Active = Right }
+
+    let state =
+        fromSettings
+            { stored with
+                Tabs = Zipper.ofNonEmpty storedTab [ second ] |> Zipper.at 1 }
+
+    Assert.Equal(2, Zipper.count state.Tabs)
+    Assert.Equal(1, Zipper.position state.Tabs)
+    Assert.Equal(OnDisk(fp (at "start")), state.Left.Path)
+    Assert.Equal(Right, state.Active)
+
+[<Fact>]
+let ``the settings of a state name every tab it holds`` () =
+    let fs = mockFs ()
+
+    let state =
+        create (fp (at "start"))
+        |> loadPanel fs Left (fp (at "start"))
+        |> Expect.ok
+        |> openTab
+        |> loadPanel fs Left (fp (at "backup"))
+        |> Expect.ok
+
+    let written = settings fs state
+
+    Assert.Equal<string list>(
+        [ at "start"; at "backup" ],
+        written.Tabs |> Zipper.items |> List.map (fun tab -> FileSystemPath.value tab.Left.Path)
+    )
+
+    Assert.Equal(1, Zipper.position written.Tabs)
 
 [<Fact>]
 let ``an initial state is the default settings for the start path`` () =

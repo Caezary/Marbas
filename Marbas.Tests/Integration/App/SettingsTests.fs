@@ -2,6 +2,8 @@ module Marbas.Tests.Integration.App.SettingsTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Collections
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Keys
 open Marbas.Ui.Panels
@@ -26,6 +28,15 @@ let private deps fs =
         SettingsPath = settingsPath }
 
 let private store fs settings = Settings.save fs settingsPath settings
+
+let private session left right : Settings =
+    { Tabs =
+        Zipper.single
+            { Left = left
+              Right = right
+              Active = Left }
+      LastCreatedDirectory = None
+      Programs = ProgramSettings.none }
 
 [<Fact>]
 let ``what a session was set to is what the next one starts with`` () =
@@ -56,21 +67,44 @@ let ``the panels start on the start path when nothing was ever saved`` () =
     Assert.Equal(at "start" + " [name ↑]", panelTitle FilePanel.RightId window)
 
 [<Fact>]
+let ``a stored session of several tabs opens on the one it was left on`` () =
+    let fs = mockFs ()
+
+    let panelOn path =
+        { Path = fp (at path)
+          Sort = SortOrder.byName
+          Hidden = Concealed }
+
+    store
+        fs
+        { session (panelOn "start") (panelOn "start") with
+            Tabs =
+                Zipper.ofNonEmpty
+                    { Left = panelOn "start"
+                      Right = panelOn "start"
+                      Active = Left }
+                    [ { Left = panelOn "backup"
+                        Right = panelOn "start"
+                        Active = Left } ]
+                |> Zipper.at 1 }
+
+    use window = focusedWindow (deps fs)
+
+    Assert.Equal(at "backup" + " [name ↑]", panelTitle FilePanel.LeftId window)
+
+[<Fact>]
 let ``a stored session puts each panel where it says`` () =
     let fs = mockFs ()
 
     store
         fs
-        { Left =
+        (session
             { Path = fp (at "backup")
               Sort = SortOrder.create ByDate Descending
               Hidden = Concealed }
-          Right =
             { Path = fp (at "start")
               Sort = SortOrder.byName
-              Hidden = Shown }
-          LastCreatedDirectory = None
-          Programs = ProgramSettings.none }
+              Hidden = Shown })
 
     use window = focusedWindow (deps fs)
 
@@ -84,13 +118,13 @@ let ``a stored directory that is gone starts the panel on the start path without
 
     store
         fs
-        { Left =
+        (session
             { Path = fp (at "gone")
               Sort = SortOrder.create BySize Ascending
               Hidden = Concealed }
-          Right = { Path = fp (at "start"); Sort = SortOrder.byName; Hidden = Concealed }
-          LastCreatedDirectory = None
-          Programs = ProgramSettings.none }
+            { Path = fp (at "start")
+              Sort = SortOrder.byName
+              Hidden = Concealed })
 
     use window =
         focusedWindow

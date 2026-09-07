@@ -4,6 +4,7 @@ open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.Domain
 open Marbas.State.AppState
 open Marbas.Tests
 

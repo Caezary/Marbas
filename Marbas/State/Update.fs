@@ -1,6 +1,7 @@
 module Marbas.State.Update
 
 open System.IO.Abstractions
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.State.AppState
