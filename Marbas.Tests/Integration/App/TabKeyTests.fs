@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Collections
 open Marbas.Ui.Keys
+open Marbas.Ui.App
 open Marbas.Ui.Panels
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
@@ -102,3 +103,24 @@ let ``a tab is read again when it is stood on`` () =
     let rows = [ for index in 0 .. source.Count - 1 -> string source[index] ]
 
     Assert.Contains(rows, fun (row: string) -> row.StartsWith "added.txt")
+
+[<Fact>]
+let ``the corner says which tab is in front and how many there are`` () =
+    let fs = mockFs ()
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
+    let counter () = (panel TabCounter.Id window).Text
+
+    Assert.Equal("[1/1]", counter ())
+
+    press (leftList window) KeyMap.newTabKey
+    press (leftList window) KeyMap.newTabKey
+
+    Assert.Equal("[3/3]", counter ())
+
+    press (leftList window) KeyMap.previousTabKey
+
+    Assert.Equal("[2/3]", counter ())
+
+    press (leftList window) KeyMap.closeTabKey
+
+    Assert.Equal("[2/2]", counter ())

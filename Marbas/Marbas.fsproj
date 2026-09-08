@@ -71,6 +71,7 @@
         <Compile Include="Ui\Format\EntrySize.fs" />
         <Compile Include="Ui\Format\EntryFormat.fs" />
         <Compile Include="Ui\Format\TimestampText.fs" />
+        <Compile Include="Ui\Format\PathText.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -129,6 +130,7 @@
     <ItemGroup>
         <Compile Include="Ui\App\CursorInfo.fs" />
         <Compile Include="Ui\App\StatusLine.fs" />
+        <Compile Include="Ui\App\TabCounter.fs" />
         <Compile Include="Ui\App\AppView.fs" />
         <Compile Include="Ui\App\Shell.fs" />
         <Compile Include="Ui\App\EditorCommand.fs" />

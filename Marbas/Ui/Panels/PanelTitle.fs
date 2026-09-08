@@ -2,6 +2,7 @@ module Marbas.Ui.Panels.PanelTitle
 
 open System.IO.Abstractions
 open Marbas.FileSystem
+open Marbas.Ui.Format
 
 let private keyText key =
     match key with
@@ -20,8 +21,13 @@ let private hiddenText hidden =
     | Shown -> [ "hidden" ]
     | Concealed -> []
 
-let describe (fs: IFileSystem) (location: PanelLocation) (sort: SortOrder) (hidden: HiddenEntries) =
+let describe (fs: IFileSystem) (width: int) (location: PanelLocation) (sort: SortOrder) (hidden: HiddenEntries) =
     let marks =
         [ keyText sort.Key; directionText sort.Direction ] @ hiddenText hidden
+        |> String.concat " "
 
-    $"""{PanelLocation.value fs location} [{String.concat " " marks}]"""
+    let where =
+        PanelLocation.value fs location
+        |> PathText.shorten fs.Path.DirectorySeparatorChar (width - marks.Length - 3)
+
+    $"{where} [{marks}]"

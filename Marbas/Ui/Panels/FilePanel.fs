@@ -75,8 +75,19 @@ let private focusable (panel: PanelView) =
 
     panel
 
-let render (fs: IFileSystem) (state: AppState.PanelState) (panel: PanelView) =
-    panel.Title <- PanelTitle.describe fs state.Path state.Sort state.Hidden
+[<Literal>]
+let private FrameAndCorners = 4
+
+[<Literal>]
+let private Unmeasured = System.Int32.MaxValue
+
+let private roomForTitle (panel: PanelView) taken =
+    match panel.Frame.Width with
+    | 0 -> Unmeasured
+    | width -> width - FrameAndCorners - taken
+
+let render (fs: IFileSystem) (taken: int) (state: AppState.PanelState) (panel: PanelView) =
+    panel.Title <- PanelTitle.describe fs (roomForTitle panel taken) state.Path state.Sort state.Hidden
     let list = listView panel
     let width = list.Viewport.Width
 
