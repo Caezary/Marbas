@@ -4,13 +4,18 @@ P8.2. What has to hold on Windows and on Linux, how to check it, and what is
 known to differ. Run it before a release and after anything that touches
 `Adapters/`, `Roots`, `Settings` or a key binding.
 
-Three kinds of evidence appear below:
+Four kinds of evidence appear below:
 
 - **suite** — an automated test asserts it; `dotnet test` on both platforms is
   the whole check, and `.github/workflows/ci.yml` runs both legs on every push.
 - **WSL** — verified by running the built application under WSL (Ubuntu 24.04,
   .NET 10.0.110) on 2026-08-18, driving it through a pseudo-terminal and
   reading the screen back.
+- **probe** — measured with `_probes/KeyProbe`, which reports what a terminal
+  really hands to Terminal.Gui rather than what a binding says it should. The
+  rows marked so were measured on 2026-09-05 in cmder, Windows Terminal and the
+  Windows console, and under WSL started from cmder and from the console. See
+  [Development](../DEVELOPMENT.md), *Measuring what a terminal delivers*.
 - **manual** — needs a person at a real terminal. These are the items where the
   answer is "does it *look* right", which nothing here can assert.
 
@@ -127,6 +132,9 @@ person with a `sudo`-owned file to hand.
 | Starting restores both panel paths, sorts and toggles | same | same | suite, WSL |
 | Starting from a different working directory still restores | same | same | WSL |
 | A stored path that no longer exists falls back to the working directory | same | same | suite |
+| Starting restores every tab, and opens on the one it was left on | same | same | suite |
+| Each tab comes back with both cursors where they stood | same | same | suite |
+| A session written before tabs existed still opens, as one tab | same | same | suite |
 
 `Settings.location` is what makes the Linux column true: .NET answers
 `SpecialFolder.ApplicationData` with an **empty string** on a machine whose
@@ -157,12 +165,38 @@ tested and was confirmed by running the app.
 | `←` / `→` jump by the page on screen | **manual** | **manual** | suite, manual |
 | Typing opens the search bar and moves the cursor | **manual** | **manual** | suite, manual |
 | The mouse selects an entry and clicks the key bar | **manual** | **manual** | manual |
+| `F11` lists the tabs | **only under cmder** — Windows Terminal and the console keep it for full screen | the terminal hosting the session decides, not the platform | probe |
+| `Alt+T` lists them where `F11` is eaten | yes | yes | probe |
+| `Alt+F11` opens a tab, `Alt+Shift+F11` closes it | yes | yes | probe |
+| `Shift+F9` writes the session | yes | yes | probe |
+| `Alt+←` / `Alt+→` walk from tab to tab | yes | yes | probe |
+| `Ctrl+T`, the other candidate for listing tabs | **no under cmder**, which opens its own console tab | yes | probe |
+| The tab counter is legible in the top right corner | **manual** | **manual** | manual |
 
 `Ctrl+Q` deserves a note: it is `0x11`, which is also `XON`, so a terminal doing
 software flow control could in principle eat it. Terminal.Gui puts the terminal
 into raw mode, and the WSL run confirmed the key arrives and the session is
 written — but `F10` is the binding to reach for if a particular terminal
 disagrees.
+
+**`F11` is the one key of phase 11 an application cannot count on, and the
+terminal decides, not the platform.** Five runs of `_probes/KeyProbe` on
+2026-09-05 agree on everything but two keys. `F11` never reaches the
+application under Windows Terminal or under the Windows console, which both
+keep it for full screen; cmder passes it through. A WSL session inherits
+whatever hosts it — the same Linux build answers `F11` when started from cmder
+and never sees it when started from the console — so the Linux column of that
+row is not a property of Linux at all. `Ctrl+T`, the obvious spare key, is the
+one cmder keeps for its own new-console popup, which is why the second binding
+is `Alt+T`: a letter with `Alt` is the shape every terminal in this checklist
+has been seen to deliver, the same reasoning that gave P10.7 `Alt+W` and
+`Alt+Shift+R`. Everything else phase 11 asks for — `Alt+F11`, `Alt+Shift+F11`,
+`Shift+F9`, `Alt+←` and `Alt+→` — arrived in all five runs and needs no spare.
+
+`F11` keeps the label on the bar all the same. It is the key the phase was
+asked for, it works where the terminal lets it, and the bar has no way to know
+which terminal it is drawn in; `Alt+T` is named in the user guide beside it for
+the terminals that eat it.
 
 ## Viewing and editing
 

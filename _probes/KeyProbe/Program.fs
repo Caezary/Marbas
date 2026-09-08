@@ -20,17 +20,17 @@ let private literal (view: #View) =
 let private quitKey = Key.Q.WithCtrl
 
 let private wanted =
-    [ "F11", Key.F11
-      "Alt+F11", Key.F11.WithAlt
-      "Alt+Shift+F11", Key.F11.WithAlt.WithShift
-      "Shift+F9", Key.F9.WithShift
-      "Alt+Left", Key.CursorLeft.WithAlt
-      "Alt+Right", Key.CursorRight.WithAlt ]
+    [ "F11 tabs", Key.F11
+      "Alt+T tabs", Key.T.WithAlt
+      "Alt+F11 new", Key.F11.WithAlt
+      "Alt+Shift+F11 shut", Key.F11.WithAlt.WithShift
+      "Shift+F9 save", Key.F9.WithShift
+      "Alt+Left back", Key.CursorLeft.WithAlt
+      "Alt+Right on", Key.CursorRight.WithAlt ]
 
 let private candidates =
     [ "Ctrl+F11", Key.F11.WithCtrl
       "Ctrl+Shift+F11", Key.F11.WithCtrl.WithShift
-      "Alt+T", Key.T.WithAlt
       "Alt+Shift+T", Key.T.WithAlt.WithShift
       "Ctrl+T", Key.T.WithCtrl ]
 
@@ -62,8 +62,8 @@ let private checklist () =
         :: (keys
             |> List.map (fun (name, _) ->
                 match Map.tryFind name seen with
-                | Some arrival -> $"  [x] %-14s{name} %s{arrival}"
-                | None -> $"  [ ] %-14s{name}"))
+                | Some arrival -> $"  [x] %-20s{name} %s{arrival}"
+                | None -> $"  [ ] %-20s{name}"))
 
     rows "Wanted:" wanted @ [ "" ] @ rows "Candidates:" candidates
 
