@@ -1,8 +1,11 @@
 module Marbas.Adapters.Prompts
 
+open System.IO.Abstractions
 open Terminal.Gui.App
 open Terminal.Gui.Views
+open Marbas.Collections
 open Marbas.FileSystem
+open Marbas.State.AppState
 open Marbas.Ui.Messages
 open Marbas.Ui.Viewer
 open Marbas.Ui.Dialogs
@@ -71,3 +74,11 @@ let editPrograms (app: IApplication) programs candidate =
     use dialog = SettingsDialog.create programs candidate
     app.Run dialog |> ignore
     SettingsDialog.programs dialog
+
+let chooseTab (app: IApplication) (fs: IFileSystem) (tabs: Zipper<Tab>) =
+    let rows =
+        tabs |> Zipper.items |> List.mapi (fun index -> TabRow.describe fs (index + 1))
+
+    use dialog = TabDialog.create rows (Zipper.position tabs)
+    app.Run dialog |> ignore
+    TabDialog.choice dialog

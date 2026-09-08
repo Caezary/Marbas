@@ -134,6 +134,7 @@
   <ItemGroup>
     <Compile Include="Ui\Dialogs\AssociationRowTests.fs" />
     <Compile Include="Ui\Dialogs\HandlerRowTests.fs" />
+    <Compile Include="Ui\Dialogs\TabRowTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -189,6 +190,7 @@
     <Compile Include="Integration\Dialogs\ProgressDialogTests.fs" />
     <Compile Include="Integration\Dialogs\PropertiesDialogTests.fs" />
     <Compile Include="Integration\Dialogs\SettingsDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\TabDialogTests.fs" />
     <Compile Include="Integration\Dialogs\PackDialogTests.fs" />
     <Compile Include="Integration\Dialogs\OpenWithDialogTests.fs" />
   </ItemGroup>
@@ -199,6 +201,7 @@
     <Compile Include="Integration\App\StatusLineTests.fs" />
     <Compile Include="Integration\App\ListingErrorTests.fs" />
     <Compile Include="Integration\App\SettingsTests.fs" />
+    <Compile Include="Integration\App\TabKeyTests.fs" />
     <Compile Include="Integration\App\MkdirKeyTests.fs" />
     <Compile Include="Integration\App\DeleteKeyTests.fs" />
     <Compile Include="Integration\App\CopyKeyTests.fs" />

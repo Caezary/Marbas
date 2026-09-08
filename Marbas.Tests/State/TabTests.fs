@@ -144,3 +144,36 @@ let ``switching away closes a search left open`` () =
     let back = state |> switchTab 1 |> switchTab 0
 
     Assert.Equal(None, back.Left.Search)
+
+[<Theory>]
+[<InlineData(0, "start/docs")>]
+[<InlineData(1, "notes")>]
+[<InlineData(2, "start")>]
+let ``cycling forward walks on and wraps round to the first`` (position: int) (expected: string) =
+    let fs = mockFs ()
+    let state = threeTabs fs |> switchTab position
+
+    let cycled = cycleTab Forward state
+
+    Assert.Equal(OnDisk(fp (at expected)), leftPath cycled)
+
+[<Theory>]
+[<InlineData(0, "notes")>]
+[<InlineData(1, "start")>]
+[<InlineData(2, "start/docs")>]
+let ``cycling back walks back and wraps round to the last`` (position: int) (expected: string) =
+    let fs = mockFs ()
+    let state = threeTabs fs |> switchTab position
+
+    let cycled = cycleTab Backward state
+
+    Assert.Equal(OnDisk(fp (at expected)), leftPath cycled)
+
+[<Fact>]
+let ``cycling away closes a search left open`` () =
+    let fs = mockFs ()
+    let state = threeTabs fs |> typeIntoSearch Left 'n'
+
+    let back = state |> cycleTab Forward |> cycleTab Backward
+
+    Assert.Equal(None, back.Left.Search)

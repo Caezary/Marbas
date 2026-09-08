@@ -2,7 +2,6 @@ module Marbas.Tests.Ui.Keys.KeyMapTests
 
 open Xunit
 open Terminal.Gui.Input
-open Marbas.FileSystem
 open Marbas.Domain
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -24,7 +23,7 @@ let ``the bar of no modifier carries the classic commands`` () =
     let commands = commandsOn Modifiers.none
 
     Assert.Equal<string list>(
-        [ ""; ""; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; ""; "Setup" ],
+        [ ""; ""; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; "Tabs"; "Setup" ],
         commands
     )
 
@@ -266,3 +265,20 @@ let ``closing a tab is opening one with one more modifier`` () =
 let ``Shift+F9 writes the session without being asked to quit`` () =
     Assert.Equal(Key.F9.WithShift, KeyMap.saveSessionKey)
     Assert.Equal(Some SessionSaveRequested, KeyMap.messageFor KeyMap.saveSessionKey)
+
+[<Fact>]
+let ``F11 asks which tab to stand on`` () =
+    Assert.Equal(Key.F11, KeyMap.tabsKey)
+    Assert.Equal(Some TabsRequested, KeyMap.messageFor KeyMap.tabsKey)
+
+[<Fact>]
+let ``Alt+T asks the same, where a terminal keeps F11 for itself`` () =
+    Assert.Equal(Key.T.WithAlt, KeyMap.spareTabsKey)
+    Assert.Equal(Some TabsRequested, KeyMap.messageFor KeyMap.spareTabsKey)
+
+[<Fact>]
+let ``Alt and an arrow walk from tab to tab`` () =
+    Assert.Equal(Key.CursorRight.WithAlt, KeyMap.nextTabKey)
+    Assert.Equal(Key.CursorLeft.WithAlt, KeyMap.previousTabKey)
+    Assert.Equal(Some(TabCycled Forward), KeyMap.messageFor KeyMap.nextTabKey)
+    Assert.Equal(Some(TabCycled Backward), KeyMap.messageFor KeyMap.previousTabKey)

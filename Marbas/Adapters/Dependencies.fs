@@ -54,6 +54,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
       Launch = LaunchProcess.start fs env.Platform
       HandlersFor = handlersFor fs env
       AskHandler = Prompts.askHandler app
+      ChooseTab = Prompts.chooseTab app fs
       EditProperties = Prompts.editProperties app
       EditPrograms = Prompts.editPrograms app
       AskArchive = Prompts.askArchive app (ArchiveName.retarget fs)

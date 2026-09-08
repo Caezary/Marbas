@@ -1,6 +1,7 @@
 module Marbas.Ui.App.Shell
 
 open System.IO.Abstractions
+open Marbas.Collections
 open Marbas.FileSystem
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -59,6 +60,7 @@ type Dependencies =
       Launch: LaunchRequest -> Result<unit, LaunchError>
       HandlersFor: EntryName -> Handler list
       AskHandler: EntryName -> Handler list -> ProgramPath option -> OpenWithChoice option
+      ChooseTab: Zipper<Tab> -> int option
       EditProperties: EntryProperties -> EntryProperties option
       EditPrograms: ProgramSettings -> ProgramPath option -> ProgramSettings option
       AskOverwrite: string -> string -> Operations.OverwriteAnswer
@@ -335,6 +337,10 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
 
         match deps.AskHandler name (deps.HandlersFor name) chosen with
         | Some choice -> dispatch (HandlerChosen(path, choice))
+        | None -> ()
+    | ShowTabs tabs ->
+        match deps.ChooseTab tabs with
+        | Some position -> dispatch (TabSwitched position)
         | None -> ()
     | ShowProperties properties ->
         match deps.EditProperties properties with

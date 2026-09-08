@@ -984,3 +984,56 @@ let ``asking for a save writes the session and changes nothing`` () =
 
     Assert.Equal(state, result.State)
     Assert.Equal<Effect list>([ SaveSettings(settings fs state) ], result.Effects)
+
+[<Fact>]
+let ``the tabs key asks the popup which tab to stand on`` () =
+    let fs = mockFs ()
+    let state = (update fs TabOpened (loadedBoth fs)).State
+
+    let result = update fs TabsRequested state
+
+    Assert.Equal(state, result.State)
+    Assert.Equal<Effect list>([ ShowTabs state.Tabs ], result.Effects)
+
+[<Fact>]
+let ``switching to a tab stands on it and writes the session`` () =
+    let fs = mockFs ()
+    let state = (update fs TabOpened (loadedBoth fs)).State
+
+    let result = update fs (TabSwitched 0) state
+
+    Assert.Equal(0, Zipper.position result.State.Tabs)
+    Assert.Equal<Effect list>([ SaveSettings(settings fs result.State) ], result.Effects)
+
+[<Fact>]
+let ``the tab that was switched to is read again`` () =
+    let fs = mockFs ()
+    let state = (update fs TabOpened (loadedBoth fs)).State
+    fs.AddFile(at "start/added.txt", MockFileData "new")
+
+    let result = update fs (TabSwitched 0) state
+
+    Assert.Contains("added.txt", names result.State.Left.Entries)
+
+[<Fact>]
+let ``cycling walks to the next tab and writes the session`` () =
+    let fs = mockFs ()
+    let state = (update fs TabOpened (loadedBoth fs)).State
+
+    let result = update fs (TabCycled Forward) state
+
+    Assert.Equal(0, Zipper.position result.State.Tabs)
+    Assert.Equal<Effect list>([ SaveSettings(settings fs result.State) ], result.Effects)
+
+[<Fact>]
+let ``a tab whose directory is gone is stood on all the same, and the loss reported`` () =
+    let fs = mockFs ()
+    let state = (update fs TabOpened (loadedBoth fs)).State
+    fs.Directory.Delete(at "start", true)
+
+    let result = update fs (TabSwitched 0) state
+
+    Assert.Equal(0, Zipper.position result.State.Tabs)
+    Assert.Equal(2, List.length result.Effects)
+    Assert.Contains(result.Effects, fun effect -> effect = SaveSettings(settings fs result.State))
+    Assert.Contains(result.Effects, (fun effect -> match effect with ReportListingError _ -> true | _ -> false))

@@ -26,6 +26,10 @@ type DeleteMode =
     | ToTrash
     | Permanently
 
+type TabStep =
+    | Forward
+    | Backward
+
 type PanelState =
     { Path: PanelLocation
       Entries: Entry list
@@ -156,6 +160,16 @@ let switchTab position (state: AppState) =
     let leaving = state |> closeSearch Left |> closeSearch Right
 
     { leaving with Tabs = leaving.Tabs |> Zipper.at position }
+
+let cycleTab step (state: AppState) =
+    let leaving = state |> closeSearch Left |> closeSearch Right
+
+    let walk =
+        match step with
+        | Forward -> Zipper.forward
+        | Backward -> Zipper.backward
+
+    { leaving with Tabs = leaving.Tabs |> walk }
 
 let opposite side =
     match side with
@@ -477,11 +491,16 @@ let makeFile (fs: IFileSystem) side directory name state : Result<AppState * Fil
         |> Result.map (updatePanel side (keepSurviving previous.Selected))
         |> Result.map (fun updated -> updated, path))
 
-let refresh (fs: IFileSystem) state =
-    let panel = activePanel state
+let private readAgain (fs: IFileSystem) side state =
+    let panel = panel side state
 
-    loadLocationFocusing fs state.Active panel.Path (cursorFocus panel) state
-    |> Result.map (updatePanel state.Active (keepSurviving panel.Selected))
+    loadLocationFocusing fs side panel.Path (cursorFocus panel) state
+    |> Result.map (updatePanel side (keepSurviving panel.Selected))
+
+let refresh (fs: IFileSystem) (state: AppState) = readAgain fs state.Active state
+
+let readTabAgain (fs: IFileSystem) state =
+    readAgain fs Left state |> Result.bind (readAgain fs Right)
 
 let applyProperties (fs: IFileSystem) (properties: EntryProperties) state =
     EntryProperties.write fs properties

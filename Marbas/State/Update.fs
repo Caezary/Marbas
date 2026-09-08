@@ -1,6 +1,7 @@
 module Marbas.State.Update
 
 open System.IO.Abstractions
+open Marbas.Collections
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
@@ -53,6 +54,9 @@ type Message =
     | PathOpened of PanelSide * FileSystemPath
     | TabOpened
     | TabClosed
+    | TabsRequested
+    | TabSwitched of position: int
+    | TabCycled of TabStep
     | SessionSaveRequested
     | QuitRequested
 
@@ -101,6 +105,7 @@ type Effect =
     | PromptForFileName
     | PromptForPattern of SelectionMode
     | PromptForRoot of PanelSide
+    | ShowTabs of Zipper<Tab>
     | SaveSettings of Settings
     | Quit
 
@@ -119,6 +124,13 @@ let private changing (fs: IFileSystem) state archives effect =
 
 let private saving (fs: IFileSystem) state =
     request state (SaveSettings(settings fs state))
+
+let private standingOn (fs: IFileSystem) state =
+    match readTabAgain fs state with
+    | Ok updated -> saving fs updated
+    | Error error ->
+        { State = state
+          Effects = [ SaveSettings(settings fs state); ReportListingError error ] }
 
 let private applyListing state result =
     match result with
@@ -386,6 +398,9 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
     | TabOpened -> openTab state |> saving fs
     | TabClosed -> closeTab state |> saving fs
+    | TabsRequested -> state.Tabs |> ShowTabs |> request state
+    | TabSwitched position -> switchTab position state |> standingOn fs
+    | TabCycled step -> cycleTab step state |> standingOn fs
     | SessionSaveRequested -> state |> saving fs
     | QuitRequested ->
         { State = state

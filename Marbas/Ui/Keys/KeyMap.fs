@@ -87,6 +87,14 @@ let elevatedRunKey = Key.R.WithAlt.WithShift
 
 let classicElevatedRunKey = Key.Enter.WithCtrl.WithAlt
 
+let tabsKey = Key.F11
+
+let spareTabsKey = Key.T.WithAlt
+
+let nextTabKey = Key.CursorRight.WithAlt
+
+let previousTabKey = Key.CursorLeft.WithAlt
+
 let newTabKey = Key.F11.WithAlt
 
 let closeTabKey = Key.F11.WithAlt.WithShift
@@ -123,6 +131,7 @@ let bindings =
       onBar unpackKey "Unpack" UnpackRequested
       onBar newFileKey "NewFile" NewFileRequested
       onBar Key.F8.WithShift "Erase" (DeleteRequested Permanently)
+      onBar tabsKey "Tabs" TabsRequested
       onBar newTabKey "NewTab" TabOpened
       onBar closeTabKey "ShutTab" TabClosed
       onBar saveSessionKey "Save" SessionSaveRequested
@@ -140,6 +149,9 @@ let bindings =
       offBar quitKey QuitRequested
       offBar classicHiddenKey HiddenToggled
       offBar refreshKey RefreshRequested
+      offBar spareTabsKey TabsRequested
+      offBar nextTabKey (TabCycled Forward)
+      offBar previousTabKey (TabCycled Backward)
       offBar walkIntoKey WalkIntoRequested
       offBar classicWalkIntoKey WalkIntoRequested
       offBar openWithKey OpenWithRequested
