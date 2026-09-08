@@ -34,6 +34,7 @@ type PanelState =
     { Path: PanelLocation
       Entries: Entry list
       Cursor: int
+      Remembered: EntryName option
       Selected: Set<EntryName>
       Sort: SortOrder
       Hidden: HiddenEntries
@@ -73,6 +74,7 @@ let private panelFrom (settings: PanelSettings) =
     { Path = OnDisk settings.Path
       Entries = []
       Cursor = 0
+      Remembered = settings.Cursor
       Selected = Set.empty
       Sort = settings.Sort
       Hidden = settings.Hidden
@@ -93,7 +95,13 @@ let create (path: FileSystemPath) = fromSettings (Settings.forPath path)
 let private panelSettings (fs: IFileSystem) (p: PanelState) : PanelSettings =
     { Path = PanelLocation.holding fs p.Path
       Sort = p.Sort
-      Hidden = p.Hidden }
+      Hidden = p.Hidden
+      Cursor =
+        p.Entries
+        |> List.tryItem p.Cursor
+        |> Option.filter (fun entry -> entry.Name <> DirectoryListing.ParentName)
+        |> Option.map _.Name
+        |> Option.orElse p.Remembered }
 
 let private tabSettings (fs: IFileSystem) (tab: Tab) : TabSettings =
     { Left = panelSettings fs tab.Left
@@ -237,6 +245,7 @@ let loadLocationFocusing (fs: IFileSystem) side (location: PanelLocation) focus 
                 { Path = location
                   Entries = entries
                   Cursor = cursor
+                  Remembered = None
                   Selected = Set.empty
                   Sort = sort
                   Hidden = hidden
@@ -246,15 +255,20 @@ let loadLocationFocusing (fs: IFileSystem) side (location: PanelLocation) focus 
 let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state =
     loadLocationFocusing fs side (OnDisk path) focus state
 
-let loadPanel fs side (path: FileSystemPath) state =
-    loadPanelFocusing fs side path Top state
-
 let cursorEntry panel = panel.Entries |> List.tryItem panel.Cursor
+
+let private rememberedFocus (p: PanelState) =
+    match p.Remembered with
+    | Some name -> ByName name
+    | None -> Top
+
+let loadPanel fs side (path: FileSystemPath) state =
+    loadPanelFocusing fs side path (rememberedFocus (panel side state)) state
 
 let private cursorFocus panel =
     match cursorEntry panel with
     | Some entry -> ByName entry.Name
-    | None -> Top
+    | None -> rememberedFocus panel
 
 let private reorder (p: PanelState) =
     let entries = DirectoryListing.order p.Sort p.Entries

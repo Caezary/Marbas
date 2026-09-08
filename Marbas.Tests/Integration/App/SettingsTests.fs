@@ -118,7 +118,8 @@ let ``a stored session of several tabs opens on the one it was left on`` () =
     let panelOn path =
         { Path = fp (at path)
           Sort = SortOrder.byName
-          Hidden = Concealed }
+          Hidden = Concealed
+          Cursor = None }
 
     store
         fs
@@ -146,10 +147,12 @@ let ``a stored session puts each panel where it says`` () =
         (session
             { Path = fp (at "backup")
               Sort = SortOrder.create ByDate Descending
-              Hidden = Concealed }
+              Hidden = Concealed
+              Cursor = None }
             { Path = fp (at "start")
               Sort = SortOrder.byName
-              Hidden = Shown })
+              Hidden = Shown
+              Cursor = None })
 
     use window = focusedWindow (deps fs)
 
@@ -166,10 +169,12 @@ let ``a stored directory that is gone starts the panel on the start path without
         (session
             { Path = fp (at "gone")
               Sort = SortOrder.create BySize Ascending
-              Hidden = Concealed }
+              Hidden = Concealed
+              Cursor = None }
             { Path = fp (at "start")
               Sort = SortOrder.byName
-              Hidden = Concealed })
+              Hidden = Concealed
+              Cursor = None })
 
     use window =
         focusedWindow
@@ -188,3 +193,44 @@ let ``a hand written settings file is read as far as it makes sense`` () =
 
     Assert.Equal(at "start" + " [size ↑]", panelTitle FilePanel.LeftId window)
     Assert.Equal(at "start" + " [name ↑]", panelTitle FilePanel.RightId window)
+
+[<Fact>]
+let ``a session remembers where each cursor stood`` () =
+    let fs = mockFs ()
+
+    use first = focusedWindow (deps fs)
+    press (leftList first) Terminal.Gui.Input.Key.CursorDown
+    press (leftList first) KeyMap.quitKey
+
+    use second = focusedWindow (deps fs)
+
+    Assert.Equal(1, (leftList second).SelectedItem.GetValueOrDefault -1)
+    Assert.Equal(0, (rightList second).SelectedItem.GetValueOrDefault -1)
+
+[<Fact>]
+let ``a tab that has not been read yet still comes back to its cursor`` () =
+    let fs = mockFs ()
+
+    let panelOn cursor =
+        { Path = fp (at "start")
+          Sort = SortOrder.byName
+          Hidden = Concealed
+          Cursor = cursor }
+
+    let tabOn cursor =
+        { Left = panelOn cursor
+          Right = panelOn None
+          Active = Left }
+
+    store
+        fs
+        { session (panelOn None) (panelOn None) with
+            Tabs = Zipper.ofNonEmpty (tabOn None) [ tabOn (Some(EntryName.create "notes.txt")) ] }
+
+    use window = focusedWindow (deps fs)
+
+    Assert.Equal(0, (leftList window).SelectedItem.GetValueOrDefault -1)
+
+    press (leftList window) KeyMap.nextTabKey
+
+    Assert.Equal(1, (leftList window).SelectedItem.GetValueOrDefault -1)

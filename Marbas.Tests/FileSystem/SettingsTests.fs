@@ -27,7 +27,8 @@ let private defaults = Settings.forPath (fp (at "start"))
 let private panelOn path sort hidden =
     { Path = fp (at path)
       Sort = sort
-      Hidden = hidden }
+      Hidden = hidden
+      Cursor = None }
 
 let private tabOn left right active =
     { Left = left
@@ -453,3 +454,37 @@ let ``a blank remembered name is read as none`` () =
     let parsed = Settings.parse defaults [ "mkdir.name=   " ]
 
     Assert.Equal(None, parsed.LastCreatedDirectory)
+
+[<Fact>]
+let ``the entry each cursor stood on is written under its own key`` () =
+    let withCursors =
+        { stored with
+            Tabs =
+                stored.Tabs
+                |> Zipper.map (fun tab ->
+                    { tab with
+                        TabSettings.Left.Cursor = Some(en "notes.txt")
+                        TabSettings.Right.Cursor = None }) }
+
+    let lines = Settings.format withCursors
+
+    Assert.Contains("tab.1.left.cursor=notes.txt", lines)
+    Assert.DoesNotContain(lines, fun (line: string) -> line.StartsWith "tab.1.right.cursor")
+
+[<Fact>]
+let ``a remembered cursor survives being written and read back`` () =
+    let parsed = Settings.parse defaults [ "tab.1.left.cursor=Work Files" ]
+
+    Assert.Equal(Some(en "Work Files"), parsed.Left.Cursor)
+
+[<Fact>]
+let ``a blank cursor is read as none`` () =
+    let parsed = Settings.parse defaults [ "tab.1.left.cursor=   " ]
+
+    Assert.Equal(None, parsed.Left.Cursor)
+
+[<Fact>]
+let ``a file that names no cursor remembers none`` () =
+    let parsed = Settings.parse defaults [ "tab.1.left.path=" + at "backup" ]
+
+    Assert.Equal(None, parsed.Left.Cursor)

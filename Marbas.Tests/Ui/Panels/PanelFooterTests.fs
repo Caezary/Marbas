@@ -33,6 +33,7 @@ let private panel =
     { Path = OnDisk(FileSystemPath.create (Root.at "start"))
       Entries = entries
       Cursor = 0
+      Remembered = None
       Selected = Set.empty
       Sort = SortOrder.byName
       Hidden = Shown

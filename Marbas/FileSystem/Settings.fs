@@ -8,7 +8,8 @@ open Marbas.Domain
 type PanelSettings =
     { Path: FileSystemPath
       Sort: SortOrder
-      Hidden: HiddenEntries }
+      Hidden: HiddenEntries
+      Cursor: EntryName option }
 
 type TabSettings =
     { Left: PanelSettings
@@ -65,6 +66,9 @@ module Settings =
 
     [<Literal>]
     let private HiddenSetting = "hidden"
+
+    [<Literal>]
+    let private CursorSetting = "cursor"
 
     [<Literal>]
     let private DirectoryPrefix = "mkdir."
@@ -146,7 +150,8 @@ module Settings =
     let private panelOn path =
         { Path = path
           Sort = SortOrder.byName
-          Hidden = Concealed }
+          Hidden = Concealed
+          Cursor = None }
 
     let forPath path : Settings =
         { Tabs =
@@ -173,6 +178,7 @@ module Settings =
           line prefix SortSetting (sortText panel.Sort.Key)
           line prefix DirectionSetting (directionText panel.Sort.Direction)
           line prefix HiddenSetting (hiddenText panel.Hidden) ]
+        @ (panel.Cursor |> Option.map (EntryName.value >> line prefix CursorSetting) |> Option.toList)
 
     let private directoryLines (name: EntryName option) =
         name
@@ -233,7 +239,8 @@ module Settings =
                 token DirectionSetting
                 |> Option.bind directionOf
                 |> Option.defaultValue fallback.Sort.Direction }
-          Hidden = token HiddenSetting |> Option.bind hiddenOf |> Option.defaultValue fallback.Hidden }
+          Hidden = token HiddenSetting |> Option.bind hiddenOf |> Option.defaultValue fallback.Hidden
+          Cursor = lookup CursorSetting |> Option.bind EntryName.tryCreate }
 
     let private numberIn (key: string) =
         match Int32.TryParse((key.Substring TabPrefix.Length).Split('.')[0]) with

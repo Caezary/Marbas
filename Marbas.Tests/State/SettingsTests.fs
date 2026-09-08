@@ -29,11 +29,13 @@ let private storedTab: TabSettings =
     { Left =
         { Path = fp (at "backup")
           Sort = SortOrder.create BySize Descending
-          Hidden = Shown }
+          Hidden = Shown
+          Cursor = None }
       Right =
         { Path = fp (at "start")
           Sort = SortOrder.create ByDate Ascending
-          Hidden = Concealed }
+          Hidden = Concealed
+          Cursor = None }
       Active = Left }
 
 let private stored: Settings =
@@ -192,3 +194,99 @@ let ``the name a new directory was given goes into the settings`` () =
 
     Assert.Equal(Some(en "reports"), (settings fs made).LastCreatedDirectory)
     Assert.Equal(None, (settings fs state).LastCreatedDirectory)
+
+[<Fact>]
+let ``the entry under each cursor goes into the settings`` () =
+    let fs = mockFs ()
+
+    let state =
+        create (fp (at "start"))
+        |> loadPanel fs Left (fp (at "start"))
+        |> Expect.ok
+        |> setCursor Left 2
+
+    let written = settings fs state
+
+    Assert.Equal(Some(en "notes.txt"), written.Left.Cursor)
+    Assert.Equal(None, written.Right.Cursor)
+
+[<Fact>]
+let ``a tab that was never read keeps the cursor the file remembered`` () =
+    let fs = mockFs ()
+
+    let remembered =
+        { stored with
+            Tabs =
+                Zipper.ofNonEmpty
+                    { storedTab with
+                        TabSettings.Left.Cursor = Some(en "notes.txt") }
+                    [ { storedTab with
+                          TabSettings.Left.Cursor = Some(en "docs") } ] }
+
+    let written = fromSettings remembered |> settings fs
+
+    Assert.Equal<EntryName option list>(
+        [ Some(en "notes.txt"); Some(en "docs") ],
+        written.Tabs |> Zipper.items |> List.map _.Left.Cursor
+    )
+
+[<Fact>]
+let ``a panel opens on the entry the session remembered`` () =
+    let fs = mockFs ()
+
+    let state =
+        fromSettings
+            { stored with
+                Tabs =
+                    stored.Tabs
+                    |> Zipper.map (fun tab ->
+                        { tab with
+                            Left = { tab.Left with Path = fp (at "start"); Cursor = Some(en "notes.txt") } }) }
+        |> loadPanel fs Left (fp (at "start"))
+        |> Expect.ok
+
+    Assert.Equal(Some(en "notes.txt"), cursorEntry state.Left |> Option.map _.Name)
+
+[<Fact>]
+let ``a remembered entry that is gone leaves the cursor at the top`` () =
+    let fs = mockFs ()
+
+    let state =
+        fromSettings
+            { stored with
+                Tabs =
+                    stored.Tabs
+                    |> Zipper.map (fun tab ->
+                        { tab with
+                            Left = { tab.Left with Path = fp (at "start"); Cursor = Some(en "renamed.txt") } }) }
+        |> loadPanel fs Left (fp (at "start"))
+        |> Expect.ok
+
+    Assert.Equal(0, state.Left.Cursor)
+
+[<Fact>]
+let ``once a panel has been read it remembers its own cursor`` () =
+    let fs = mockFs ()
+
+    let state =
+        fromSettings
+            { stored with
+                Tabs =
+                    stored.Tabs
+                    |> Zipper.map (fun tab ->
+                        { tab with
+                            Left = { tab.Left with Path = fp (at "start"); Cursor = Some(en "notes.txt") } }) }
+        |> loadPanel fs Left (fp (at "start"))
+        |> Expect.ok
+        |> setCursor Left 1
+
+    Assert.Equal(Some(en "docs"), (settings fs state).Left.Cursor)
+
+[<Fact>]
+let ``a cursor resting on the way out remembers nothing`` () =
+    let fs = mockFs ()
+
+    let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
+
+    Assert.Equal(Some "..", cursorEntry state.Left |> Option.map (_.Name >> EntryName.value))
+    Assert.Equal(None, (settings fs state).Left.Cursor)
