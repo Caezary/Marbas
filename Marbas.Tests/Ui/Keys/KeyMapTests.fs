@@ -38,13 +38,19 @@ let ``holding Ctrl puts the sort commands on the same slots`` () =
 let ``holding Alt puts the drive choosers on the first two slots`` () =
     let commands = commandsOn (Modifiers.held [ Alt ])
 
-    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; ""; ""; ""; ""; ""; ""; "" ], commands)
+    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; ""; ""; ""; ""; ""; "NewTab"; "" ], commands)
+
+[<Fact>]
+let ``holding Alt and Shift puts closing a tab where opening one is`` () =
+    let commands = commandsOn (Modifiers.held [ Alt; Shift ])
+
+    Assert.Equal<string list>([ ""; ""; ""; ""; ""; ""; ""; ""; ""; ""; "ShutTab"; "" ], commands)
 
 [<Fact>]
 let ``holding Shift puts the permanent delete on the delete slot`` () =
     let commands = commandsOn (Modifiers.held [ Shift ])
 
-    Assert.Equal<string list>([ "Pack"; "Unpack"; ""; "NewFile"; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands)
+    Assert.Equal<string list>([ "Pack"; "Unpack"; ""; "NewFile"; ""; ""; ""; "Erase"; "Save"; ""; ""; "" ], commands)
 
 [<Fact>]
 let ``a slot carries the key the modifiers held make of its function key`` () =
@@ -241,3 +247,22 @@ let ``unpacking takes the second slot of the shift row`` () =
     Assert.Equal("F2", slot.Name)
     Assert.Equal("Unpack", slot.Label)
     Assert.Equal(Some UnpackRequested, slot.Message)
+
+[<Fact>]
+let ``Alt+F11 opens a tab on the directories already on screen`` () =
+    Assert.Equal(Key.F11.WithAlt, KeyMap.newTabKey)
+    Assert.Equal(Some TabOpened, KeyMap.messageFor KeyMap.newTabKey)
+
+[<Fact>]
+let ``Alt+Shift+F11 closes the tab in front`` () =
+    Assert.Equal(Key.F11.WithAlt.WithShift, KeyMap.closeTabKey)
+    Assert.Equal(Some TabClosed, KeyMap.messageFor KeyMap.closeTabKey)
+
+[<Fact>]
+let ``closing a tab is opening one with one more modifier`` () =
+    Assert.Equal(KeyMap.newTabKey.WithShift, KeyMap.closeTabKey)
+
+[<Fact>]
+let ``Shift+F9 writes the session without being asked to quit`` () =
+    Assert.Equal(Key.F9.WithShift, KeyMap.saveSessionKey)
+    Assert.Equal(Some SessionSaveRequested, KeyMap.messageFor KeyMap.saveSessionKey)

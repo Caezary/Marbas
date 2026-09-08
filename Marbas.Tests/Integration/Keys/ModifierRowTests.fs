@@ -73,7 +73,7 @@ let ``holding Alt shows the drive choosers`` () =
 
     hold (Modifiers.held [ Alt ])
 
-    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; ""; ""; ""; ""; ""; ""; "" ], commands window)
+    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; ""; ""; ""; ""; ""; "NewTab"; "" ], commands window)
 
 [<Fact>]
 let ``holding Shift shows the permanent delete on the delete slot`` () =
@@ -82,7 +82,7 @@ let ``holding Shift shows the permanent delete on the delete slot`` () =
 
     hold (Modifiers.held [ Shift ])
 
-    Assert.Equal<string list>([ "Pack"; "Unpack"; ""; "NewFile"; ""; ""; ""; "Erase"; ""; ""; ""; "" ], commands window)
+    Assert.Equal<string list>([ "Pack"; "Unpack"; ""; "NewFile"; ""; ""; ""; "Erase"; "Save"; ""; ""; "" ], commands window)
 
 [<Fact>]
 let ``a key keeps its name whatever modifier is held`` () =

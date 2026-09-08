@@ -3,6 +3,7 @@ module Marbas.Tests.State.UpdateTests
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Collections
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Domain
@@ -932,3 +933,54 @@ let ``a finished unpack reports the archives that failed`` () =
     let result = update fs (UnpackFinished failed) state
 
     Assert.Equal<Effect list>([ ReportItemFailures failed ], result.Effects)
+
+[<Fact>]
+let ``opening a tab adds one to the session and writes it`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs
+
+    let result = update fs TabOpened state
+
+    Assert.Equal(2, Zipper.count result.State.Tabs)
+    Assert.Equal(1, Zipper.position result.State.Tabs)
+    Assert.Equal<Effect list>([ SaveSettings(settings fs result.State) ], result.Effects)
+
+[<Fact>]
+let ``the tab that was opened stands where the one it came from stands`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs
+
+    let result = update fs TabOpened state
+
+    Assert.Equal(state.Left.Path, result.State.Left.Path)
+    Assert.Equal(state.Right.Path, result.State.Right.Path)
+
+[<Fact>]
+let ``closing a tab takes it out of the session and writes what is left`` () =
+    let fs = mockFs ()
+    let state = (update fs TabOpened (loadedBoth fs)).State
+
+    let result = update fs TabClosed state
+
+    Assert.Equal(1, Zipper.count result.State.Tabs)
+    Assert.Equal<Effect list>([ SaveSettings(settings fs result.State) ], result.Effects)
+
+[<Fact>]
+let ``the last tab stays whatever the key says`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs
+
+    let result = update fs TabClosed state
+
+    Assert.Equal(1, Zipper.count result.State.Tabs)
+    Assert.Equal(state, result.State)
+
+[<Fact>]
+let ``asking for a save writes the session and changes nothing`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs |> sortBy SortKey.BySize Left
+
+    let result = update fs SessionSaveRequested state
+
+    Assert.Equal(state, result.State)
+    Assert.Equal<Effect list>([ SaveSettings(settings fs state) ], result.Effects)

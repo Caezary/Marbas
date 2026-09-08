@@ -51,6 +51,9 @@ type Message =
     | ProgramsEntered of ProgramSettings
     | RootRequested of PanelSide
     | PathOpened of PanelSide * FileSystemPath
+    | TabOpened
+    | TabClosed
+    | SessionSaveRequested
     | QuitRequested
 
 type DeleteRequest =
@@ -113,6 +116,9 @@ let private changing (fs: IFileSystem) state archives effect =
     match archives |> List.tryFind (Archive.changeableKind fs >> Option.isNone) with
     | None -> request state effect
     | Some unchangeable -> request state (ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged unchangeable)))
+
+let private saving (fs: IFileSystem) state =
+    request state (SaveSettings(settings fs state))
 
 let private applyListing state result =
     match result with
@@ -378,6 +384,9 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | ElevatedRunRequested -> runElevated fs state
     | RootRequested side -> request state (PromptForRoot side)
     | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
+    | TabOpened -> openTab state |> saving fs
+    | TabClosed -> closeTab state |> saving fs
+    | SessionSaveRequested -> state |> saving fs
     | QuitRequested ->
         { State = state
           Effects = [ SaveSettings(settings fs state); Quit ] }

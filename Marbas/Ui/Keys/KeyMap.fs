@@ -87,6 +87,12 @@ let elevatedRunKey = Key.R.WithAlt.WithShift
 
 let classicElevatedRunKey = Key.Enter.WithCtrl.WithAlt
 
+let newTabKey = Key.F11.WithAlt
+
+let closeTabKey = Key.F11.WithAlt.WithShift
+
+let saveSessionKey = Key.F9.WithShift
+
 let quitKey = Key.Q.WithCtrl
 
 let cancelKey = Key.Esc
@@ -117,6 +123,9 @@ let bindings =
       onBar unpackKey "Unpack" UnpackRequested
       onBar newFileKey "NewFile" NewFileRequested
       onBar Key.F8.WithShift "Erase" (DeleteRequested Permanently)
+      onBar newTabKey "NewTab" TabOpened
+      onBar closeTabKey "ShutTab" TabClosed
+      onBar saveSessionKey "Save" SessionSaveRequested
       onBar Key.F10 "Quit" QuitRequested
       onBar settingsKey "Setup" SettingsRequested
       onBar nameSortKey "Name" (SortRequested SortKey.ByName)

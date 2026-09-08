@@ -66,6 +66,51 @@ let ``the panels start on the start path when nothing was ever saved`` () =
     Assert.Equal(at "start" + " [name ↑]", panelTitle FilePanel.LeftId window)
     Assert.Equal(at "start" + " [name ↑]", panelTitle FilePanel.RightId window)
 
+let private savedTabs fs =
+    Settings.load fs (Settings.forPath (fp (at "start"))) settingsPath
+    |> _.Tabs
+    |> Zipper.items
+
+[<Fact>]
+let ``opening a tab writes the session as it stands`` () =
+    let fs = mockFs ()
+
+    use window = focusedWindow (deps fs)
+    press (leftList window) KeyMap.newTabKey
+
+    Assert.Equal(2, List.length (savedTabs fs))
+
+[<Fact>]
+let ``closing a tab writes what is left of the session`` () =
+    let fs = mockFs ()
+
+    use window = focusedWindow (deps fs)
+    press (leftList window) KeyMap.newTabKey
+    press (leftList window) KeyMap.closeTabKey
+
+    Assert.Equal(1, List.length (savedTabs fs))
+
+[<Fact>]
+let ``the last tab cannot be closed away`` () =
+    let fs = mockFs ()
+
+    use window = focusedWindow (deps fs)
+    press (leftList window) KeyMap.closeTabKey
+
+    Assert.Equal(1, List.length (savedTabs fs))
+    Assert.Equal(at "start" + " [name ↑]", panelTitle FilePanel.LeftId window)
+
+[<Fact>]
+let ``the save key writes the session without quitting`` () =
+    let fs = mockFs ()
+
+    use window = focusedWindow (deps fs)
+    press (leftList window) KeyMap.sizeSortKey
+    press (leftList window) KeyMap.saveSessionKey
+
+    Assert.Equal(BySize, (List.head (savedTabs fs)).Left.Sort.Key)
+    Assert.Equal(at "start" + " [size ↑]", panelTitle FilePanel.LeftId window)
+
 [<Fact>]
 let ``a stored session of several tabs opens on the one it was left on`` () =
     let fs = mockFs ()
