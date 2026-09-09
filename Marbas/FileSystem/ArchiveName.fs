@@ -2,6 +2,7 @@ namespace Marbas.FileSystem
 
 open System
 open System.IO.Abstractions
+open Marbas.Domain
 
 module ArchiveName =
 

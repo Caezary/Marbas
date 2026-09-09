@@ -2,6 +2,7 @@ module Marbas.FileSystem.DirectoryListing
 
 open System
 open System.IO.Abstractions
+open Marbas.Domain
 
 type EntryKind =
     | File

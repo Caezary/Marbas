@@ -1,4 +1,4 @@
-namespace Marbas.FileSystem
+namespace Marbas.Domain
 
 type FileExtension = private FileExtension of string
 

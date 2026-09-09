@@ -6,7 +6,6 @@ open Terminal.Gui.Drawing
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
-open Marbas.FileSystem
 open Marbas.State
 open Marbas.Ui.Theme
 open Marbas.Ui.Format

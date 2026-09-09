@@ -1,7 +1,7 @@
 module Marbas.Tests.Ui.Dialogs.AssociationRowTests
 
 open Xunit
-open Marbas.FileSystem
+open Marbas.Domain
 open Marbas.Ui.Dialogs
 open Marbas.Tests
 

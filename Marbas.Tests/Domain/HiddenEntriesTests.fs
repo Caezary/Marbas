@@ -1,8 +1,9 @@
-module Marbas.Tests.FileSystem.HiddenEntriesTests
+module Marbas.Tests.Domain.HiddenEntriesTests
 
 open System.IO
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Tests

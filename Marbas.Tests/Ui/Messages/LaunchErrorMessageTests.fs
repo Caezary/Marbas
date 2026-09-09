@@ -1,6 +1,7 @@
 module Marbas.Tests.Ui.Messages.LaunchErrorMessageTests
 
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Messages
 open Marbas.Tests

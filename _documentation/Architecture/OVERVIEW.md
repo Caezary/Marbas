@@ -1,11 +1,12 @@
 # Architecture overview
 
-Dependencies flow downward only: `Adapters` → `Ui` → `State` → `FileSystem`.
-`AppState` transitions are pure; the generic `State/Runtime.fs` host holds the
-only mutable cell and drives the update/render/effect loop. The outside world
-(file system, dialogs, quit) is injected through `Shell.Dependencies` and run
-by `Shell.interpret`; `Adapters/` holds the real implementations of those ports
-and `Adapters/Dependencies.fs` is the one place that wires them.
+Dependencies flow downward only: `Adapters` → `Ui` → `State` → `FileSystem` →
+`Domain`. `AppState` transitions are pure; the generic `State/Runtime.fs` host
+holds the only mutable cell and drives the update/render/effect loop. The
+outside world (file system, dialogs, quit) is injected through
+`Shell.Dependencies` and run by `Shell.interpret`; `Adapters/` holds the real
+implementations of those ports and `Adapters/Dependencies.fs` is the one place
+that wires them.
 
 **Terminal.Gui 2.4 over Spectre.Console and Consolonia.** Only Terminal.Gui is
 a full TUI framework (windows, focus, event loop) with a large, active
@@ -25,7 +26,8 @@ composition root — and each folder is a namespace: `Marbas.Ui.Panels.FilePanel
 The folder order in the code map below is also the compile order, and every
 dependency inside `Ui` points at a folder listed above it, which is what keeps
 the layer acyclic without any tooling. `Ui` is still one layer of `Adapters` →
-`Ui` → `State` → `FileSystem`; the folders divide it by subject, not by rank.
+`Ui` → `State` → `FileSystem` → `Domain`; the folders divide it by subject, not
+by rank.
 
 **`Adapters` is where the operating system is allowed in.** `Shell.Dependencies`
 declares the ports; every real implementation of one lives in `Adapters/`, and
@@ -60,14 +62,21 @@ Marbas/
     Zipper.fs             a non-empty list with one item in front: the tabs
   Domain/                 the words the whole application speaks
     PanelSide.fs          left or right, needed as low as the settings file
-  FileSystem/
+    PanelCursor.fs        a side and the row it points at, as one value
+    TabStep.fs            forward or backward, for the key that walks the tabs
     EntryName.fs          single-case type for the name of one entry
-    FileSystemPath.fs     single-case path type wrapping a raw string
     SortOrder.fs          which key a panel sorts by, in which direction
     HiddenEntries.fs      what makes an entry hidden, and whether a panel lists it
     Executability.fs      what makes an entry a program, by name or by mode bit alone
     SearchText.fs         the text a panel is being searched for, and what it matches
+    NamePattern.fs        wildcard matching for `+` / `-`
+    SelectionMode.fs      marking or unmarking, instead of a boolean
+    CursorDirection.fs    up or down, for a mark that moves the cursor with it
+    DeleteScope.fs        whether a delete reaches into a directory's contents
+    DeleteMode.fs         to the trash, or past it
     ProgramSettings.fs    extension and role -> the program that edits or opens it
+  FileSystem/
+    FileSystemPath.fs     single-case path type wrapping a raw string
     LaunchRequest.fs      what to start, with what, where, and with which rights
     Handler.fs            a program the system offers for a name, and its display name
     ProgramCommand.fs     a command line -> the program it starts
@@ -77,7 +86,6 @@ Marbas/
     Settings.fs           the session every tab carries, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Roots.fs              where a panel can be sent: drives, or root and home
-    NamePattern.fs        wildcard matching for `+` / `-`
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     ArchiveKind.fs        the archive kinds, their extensions and what can be done to each
     ArchivePath.fs        a place inside an archive: never rooted, never climbing

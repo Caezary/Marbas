@@ -3,6 +3,7 @@ module Marbas.Tests.FileSystem.DirectoryOrderingTests
 open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Tests

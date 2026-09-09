@@ -139,7 +139,7 @@ let ``clicking a slot dispatches the command the modifiers put there`` () =
 
     click (FunctionKeyBar.slots bar |> List.item 4)
 
-    Assert.Contains(SortRequested Marbas.FileSystem.SortKey.ByDate, messages)
+    Assert.Contains(SortRequested Marbas.Domain.SortKey.ByDate, messages)
 
 [<Fact>]
 let ``clicking a slot with no command dispatches nothing`` () =

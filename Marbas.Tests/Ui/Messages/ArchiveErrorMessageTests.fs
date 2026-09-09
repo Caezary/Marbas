@@ -1,6 +1,7 @@
 module Marbas.Tests.Ui.Messages.ArchiveErrorMessageTests
 
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Messages
 open Marbas.Tests

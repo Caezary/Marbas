@@ -1,7 +1,6 @@
 module Marbas.Ui.Messages.DeleteConfirmation
 
-open Marbas.FileSystem
-open Marbas.State.AppState
+open Marbas.Domain
 open Marbas.State.Update
 
 [<Literal>]

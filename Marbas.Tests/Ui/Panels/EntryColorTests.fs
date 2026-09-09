@@ -2,6 +2,7 @@ module Marbas.Tests.Ui.Panels.EntryColorTests
 
 open System
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Ui.Panels.EntryColor

@@ -3,6 +3,7 @@ module Marbas.Tests.FileSystem.OperationsTests
 open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Tests

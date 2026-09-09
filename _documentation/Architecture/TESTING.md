@@ -1,8 +1,9 @@
 # Testing notes
 
-Tests live in `Marbas.Tests` (xUnit). Logic modules (`FileSystem`, `State`) are
-covered directly; UI behaviour is covered by driving real Terminal.Gui views
-with an in-memory file system (`MockFileSystem`), so no test touches the disk.
+Tests live in `Marbas.Tests` (xUnit). Logic modules (`Domain`, `FileSystem`,
+`State`) are covered directly; UI behaviour is covered by driving real
+Terminal.Gui views with an in-memory file system (`MockFileSystem`), so no test
+touches the disk.
 
 ## Running the suite
 
@@ -76,12 +77,12 @@ listed with one.
 
 ## Layout
 
-`FileSystem/`, `State/` and `Ui/` mirror the source folders they cover, one test
-module per module under test, and namespaces follow: `Marbas.Tests.State.
-UpdateTests` covers `Marbas.State.Update`. `Ui/` mirrors the source down to the
-subfolder, so `Ui/Panels/PanelTitleTests.fs` covers `Ui/Panels/PanelTitle.fs` as
-`Marbas.Tests.Ui.Panels.PanelTitleTests`. Everything in them is a unit test —
-pure, fast, no Terminal.Gui.
+`Domain/`, `FileSystem/`, `State/` and `Ui/` mirror the source folders they
+cover, one test module per module under test, and namespaces follow:
+`Marbas.Tests.State.UpdateTests` covers `Marbas.State.Update`. `Ui/` mirrors the
+source down to the subfolder, so `Ui/Panels/PanelTitleTests.fs` covers
+`Ui/Panels/PanelTitle.fs` as `Marbas.Tests.Ui.Panels.PanelTitleTests`.
+Everything in them is a unit test — pure, fast, no Terminal.Gui.
 
 `Integration/` holds every test that constructs a Terminal.Gui view, from a lone
 dialog up to a whole `MainWindow` driven by keystrokes. That is the line: a test

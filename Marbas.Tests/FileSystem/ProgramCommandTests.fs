@@ -1,6 +1,7 @@
 module Marbas.Tests.FileSystem.ProgramCommandTests
 
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 
 let private programOf command =

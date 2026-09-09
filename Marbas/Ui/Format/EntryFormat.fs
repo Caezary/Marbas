@@ -1,7 +1,7 @@
 module Marbas.Ui.Format.EntryFormat
 
 open System.Globalization
-open Marbas.FileSystem
+open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
 
 [<Literal>]

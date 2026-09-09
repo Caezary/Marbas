@@ -9,6 +9,7 @@ open ICSharpCode.SharpZipLib.Zip
 open SharpCompress.Common
 open SharpCompress.Writers.SevenZip
 open FsToolkit.ErrorHandling
+open Marbas.Domain
 
 module Archive =
 

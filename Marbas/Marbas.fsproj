@@ -15,19 +15,26 @@
 
     <ItemGroup>
         <Compile Include="Domain\PanelSide.fs" />
+        <Compile Include="Domain\PanelCursor.fs" />
+        <Compile Include="Domain\TabStep.fs" />
+        <Compile Include="Domain\EntryName.fs" />
+        <Compile Include="Domain\SortOrder.fs" />
+        <Compile Include="Domain\HiddenEntries.fs" />
+        <Compile Include="Domain\Executability.fs" />
+        <Compile Include="Domain\SearchText.fs" />
+        <Compile Include="Domain\NamePattern.fs" />
+        <Compile Include="Domain\SelectionMode.fs" />
+        <Compile Include="Domain\CursorDirection.fs" />
+        <Compile Include="Domain\DeleteScope.fs" />
+        <Compile Include="Domain\DeleteMode.fs" />
+        <Compile Include="Domain\ProgramSettings.fs" />
     </ItemGroup>
 
     <ItemGroup>
-        <Compile Include="FileSystem\EntryName.fs" />
         <Compile Include="FileSystem\FileSystemPath.fs" />
         <Compile Include="FileSystem\ContentError.fs" />
         <Compile Include="FileSystem\ArchiveError.fs" />
         <Compile Include="FileSystem\TextEncoding.fs" />
-        <Compile Include="FileSystem\SortOrder.fs" />
-        <Compile Include="FileSystem\HiddenEntries.fs" />
-        <Compile Include="FileSystem\Executability.fs" />
-        <Compile Include="FileSystem\SearchText.fs" />
-        <Compile Include="FileSystem\ProgramSettings.fs" />
         <Compile Include="FileSystem\LaunchRequest.fs" />
         <Compile Include="FileSystem\Handler.fs" />
         <Compile Include="FileSystem\ProgramCommand.fs" />
@@ -37,7 +44,6 @@
         <Compile Include="FileSystem\Settings.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="FileSystem\Roots.fs" />
-        <Compile Include="FileSystem\NamePattern.fs" />
         <Compile Include="FileSystem\ArchiveKind.fs" />
         <Compile Include="FileSystem\ArchivePath.fs" />
         <Compile Include="FileSystem\PanelLocation.fs" />

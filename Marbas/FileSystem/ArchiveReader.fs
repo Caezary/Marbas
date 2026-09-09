@@ -5,6 +5,7 @@ open System.IO
 open System.IO.Abstractions
 open SharpCompress.Archives
 open SharpCompress.Readers
+open Marbas.Domain
 
 type ArchiveItem =
     { Segments: EntryName list

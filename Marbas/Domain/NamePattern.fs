@@ -1,4 +1,4 @@
-namespace Marbas.FileSystem
+namespace Marbas.Domain
 
 open System
 open System.IO.Enumeration

@@ -1,5 +1,7 @@
 namespace Marbas.FileSystem
 
+open Marbas.Domain
+
 type OpenWithChoice =
     { Program: ProgramPath
       Remember: bool }

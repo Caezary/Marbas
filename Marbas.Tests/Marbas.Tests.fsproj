@@ -19,21 +19,24 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="FileSystem\EntryNameTests.fs" />
+    <Compile Include="Domain\EntryNameTests.fs" />
+    <Compile Include="Domain\SortOrderTests.fs" />
+    <Compile Include="Domain\HiddenEntriesTests.fs" />
+    <Compile Include="Domain\ExecutabilityTests.fs" />
+    <Compile Include="Domain\SearchTextTests.fs" />
+    <Compile Include="Domain\NamePatternTests.fs" />
+    <Compile Include="Domain\ProgramSettingsTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="FileSystem\FileSystemPathTests.fs" />
     <Compile Include="FileSystem\ContentErrorTests.fs" />
     <Compile Include="FileSystem\TextEncodingTests.fs" />
     <Compile Include="FileSystem\FileWindowTests.fs" />
     <Compile Include="FileSystem\LineIndexTests.fs" />
-    <Compile Include="FileSystem\SortOrderTests.fs" />
-    <Compile Include="FileSystem\NamePatternTests.fs" />
     <Compile Include="FileSystem\RootsTests.fs" />
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
-    <Compile Include="FileSystem\HiddenEntriesTests.fs" />
-    <Compile Include="FileSystem\ExecutabilityTests.fs" />
-    <Compile Include="FileSystem\SearchTextTests.fs" />
-    <Compile Include="FileSystem\ProgramSettingsTests.fs" />
     <Compile Include="FileSystem\HandlerTests.fs" />
     <Compile Include="FileSystem\ProgramCommandTests.fs" />
     <Compile Include="FileSystem\DesktopEntryTests.fs" />

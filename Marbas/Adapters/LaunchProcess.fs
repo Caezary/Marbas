@@ -5,6 +5,7 @@ open System.Diagnostics
 open System.IO
 open System.IO.Abstractions
 open Marbas
+open Marbas.Domain
 open Marbas.FileSystem
 
 [<Literal>]

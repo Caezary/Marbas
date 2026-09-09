@@ -1,6 +1,7 @@
 namespace Marbas.FileSystem
 
 open System
+open Marbas.Domain
 
 type ArchiveKind =
     | Zip

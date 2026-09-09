@@ -1,5 +1,7 @@
 module Marbas.FileSystem.MimeDatabase
 
+open Marbas.Domain
+
 [<Literal>]
 let GlobsFile = "globs"
 

@@ -3,6 +3,7 @@ module Marbas.FileSystem.ArchiveListing
 open System
 open System.IO
 open System.IO.Abstractions
+open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
 
 let private below (level: EntryName list) (item: ArchiveItem) =

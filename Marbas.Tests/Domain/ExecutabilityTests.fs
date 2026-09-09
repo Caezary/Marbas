@@ -1,8 +1,8 @@
-module Marbas.Tests.FileSystem.ExecutabilityTests
+module Marbas.Tests.Domain.ExecutabilityTests
 
 open System.IO
 open Xunit
-open Marbas.FileSystem
+open Marbas.Domain
 
 let private classify name mode =
     Executability.classify (EntryName.create name) mode

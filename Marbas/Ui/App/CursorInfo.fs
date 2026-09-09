@@ -1,6 +1,6 @@
 module Marbas.Ui.App.CursorInfo
 
-open Marbas.FileSystem
+open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Ui.Format
 

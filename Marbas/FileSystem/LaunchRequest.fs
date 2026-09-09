@@ -1,5 +1,7 @@
 namespace Marbas.FileSystem
 
+open Marbas.Domain
+
 type Elevation =
     | AsUser
     | AsAdministrator

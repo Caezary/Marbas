@@ -1,5 +1,6 @@
 module Marbas.Ui.Messages.OperationErrorMessage
 
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 

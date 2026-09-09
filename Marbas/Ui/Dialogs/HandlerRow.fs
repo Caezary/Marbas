@@ -1,5 +1,6 @@
 module Marbas.Ui.Dialogs.HandlerRow
 
+open Marbas.Domain
 open Marbas.FileSystem
 
 [<Literal>]

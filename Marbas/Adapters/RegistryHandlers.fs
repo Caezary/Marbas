@@ -3,6 +3,7 @@ module Marbas.Adapters.RegistryHandlers
 open System
 open System.Diagnostics
 open Microsoft.Win32
+open Marbas.Domain
 open Marbas.FileSystem
 
 [<Literal>]

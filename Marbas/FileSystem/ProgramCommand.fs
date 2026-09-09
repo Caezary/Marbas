@@ -2,6 +2,7 @@ module Marbas.FileSystem.ProgramCommand
 
 open System
 open System.IO
+open Marbas.Domain
 
 [<Literal>]
 let private Quote = '"'

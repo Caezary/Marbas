@@ -1,7 +1,7 @@
-module Marbas.Tests.FileSystem.EntryNameTests
+module Marbas.Tests.Domain.EntryNameTests
 
 open Xunit
-open Marbas.FileSystem
+open Marbas.Domain
 
 let private en = EntryName.create
 

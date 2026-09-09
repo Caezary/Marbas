@@ -1,6 +1,7 @@
 module Marbas.Tests.FileSystem.HandlerTests
 
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Tests
 

@@ -1,6 +1,6 @@
 module Marbas.Ui.Dialogs.AssociationRow
 
-open Marbas.FileSystem
+open Marbas.Domain
 
 [<Literal>]
 let ExtensionWidth = 12

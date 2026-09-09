@@ -2,7 +2,6 @@ module Marbas.Ui.App.MainWindow
 
 open Terminal.Gui.App
 open Terminal.Gui.Input
-open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.State
 open Marbas.State.Runtime

@@ -3,6 +3,7 @@ module Marbas.FileSystem.FileWindow
 open System
 open System.IO
 open System.IO.Abstractions
+open Marbas.Domain
 
 type Source(path: FileSystemPath, stream: Stream, encoding: TextEncoding) =
 

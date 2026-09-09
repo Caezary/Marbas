@@ -4,6 +4,7 @@ open System
 open System.ComponentModel
 open System.IO.Abstractions
 open FsToolkit.ErrorHandling
+open Marbas.Domain
 
 type OperationError =
     | SourceNotFound of path: FileSystemPath

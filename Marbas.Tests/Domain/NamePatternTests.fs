@@ -1,7 +1,7 @@
-module Marbas.Tests.FileSystem.NamePatternTests
+module Marbas.Tests.Domain.NamePatternTests
 
 open Xunit
-open Marbas.FileSystem
+open Marbas.Domain
 open Marbas.Tests
 
 let private pattern raw = NamePattern.tryCreate raw |> Expect.some

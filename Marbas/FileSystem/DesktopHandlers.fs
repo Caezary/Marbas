@@ -2,6 +2,7 @@ namespace Marbas.FileSystem
 
 open System
 open System.IO.Abstractions
+open Marbas.Domain
 
 type XdgDirectories =
     { Data: string list

@@ -3,6 +3,7 @@ module Marbas.Ui.Dialogs.OpenWithDialog
 open System.Collections.ObjectModel
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Theme
 

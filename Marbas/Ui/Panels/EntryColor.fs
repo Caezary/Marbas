@@ -1,6 +1,6 @@
 module Marbas.Ui.Panels.EntryColor
 
-open Marbas.FileSystem
+open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Ui.Theme
 

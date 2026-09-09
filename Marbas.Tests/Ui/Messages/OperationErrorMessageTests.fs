@@ -1,6 +1,7 @@
 module Marbas.Tests.Ui.Messages.OperationErrorMessageTests
 
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Ui.Messages

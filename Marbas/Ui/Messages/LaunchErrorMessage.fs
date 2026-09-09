@@ -1,5 +1,6 @@
 module Marbas.Ui.Messages.LaunchErrorMessage
 
+open Marbas.Domain
 open Marbas.FileSystem
 
 [<Literal>]

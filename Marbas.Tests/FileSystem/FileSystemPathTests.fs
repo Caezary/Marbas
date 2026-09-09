@@ -2,6 +2,7 @@ module Marbas.Tests.FileSystem.FileSystemPathTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Tests
 

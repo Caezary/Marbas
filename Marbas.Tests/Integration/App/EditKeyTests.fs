@@ -3,6 +3,7 @@ module Marbas.Tests.Integration.App.EditKeyTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Ui.Keys

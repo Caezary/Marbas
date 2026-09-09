@@ -1,7 +1,7 @@
-module Marbas.Tests.FileSystem.SearchTextTests
+module Marbas.Tests.Domain.SearchTextTests
 
 open Xunit
-open Marbas.FileSystem
+open Marbas.Domain
 
 let private text (raw: string) =
     raw

@@ -6,30 +6,6 @@ open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 
-type PanelCursor =
-    { Side: PanelSide
-      Index: int }
-
-type SelectionMode =
-    | Select
-    | Deselect
-
-type CursorDirection =
-    | Upward
-    | Downward
-
-type DeleteScope =
-    | NamedEntriesOnly
-    | WithDirectoryContents
-
-type DeleteMode =
-    | ToTrash
-    | Permanently
-
-type TabStep =
-    | Forward
-    | Backward
-
 type PanelState =
     { Path: PanelLocation
       Entries: Entry list

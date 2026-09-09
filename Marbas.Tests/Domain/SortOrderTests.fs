@@ -1,7 +1,7 @@
-module Marbas.Tests.FileSystem.SortOrderTests
+module Marbas.Tests.Domain.SortOrderTests
 
 open Xunit
-open Marbas.FileSystem
+open Marbas.Domain
 
 [<Fact>]
 let ``a panel starts sorted by name ascending`` () =

@@ -7,6 +7,7 @@ open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open ICSharpCode.SharpZipLib.BZip2
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Tests
 

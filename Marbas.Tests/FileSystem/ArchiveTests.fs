@@ -8,6 +8,7 @@ open System.IO.Compression
 open System.Formats.Tar
 open ICSharpCode.SharpZipLib.Zip
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Tests

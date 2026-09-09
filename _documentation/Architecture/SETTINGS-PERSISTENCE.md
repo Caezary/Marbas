@@ -128,9 +128,10 @@ survive having a block cut out of it.
 
 **`PanelSide` had to move down for this.** The file names the active panel, and
 `FileSystem` cannot reach `State`, so `PanelSide` left `AppState` for
-`Marbas.Domain` — a namespace for the words the whole application speaks, which
-is where more of them belong and where they will land in one pass rather than
-one type at a time.
+`Marbas.Domain` — a namespace for the words the whole application speaks. The
+rest of them followed in one pass rather than one type at a time; see
+[DOMAIN-TYPES.md](DOMAIN-TYPES.md), *The vocabulary sits below every layer that
+speaks it*.
 
 **The cursor is a name, and only a name.** `tab.1.left.cursor=notes.txt` is
 resolved on load the way `FocusTarget.ByName` resolves any focus request: an

@@ -1,6 +1,6 @@
 module Marbas.Ui.Messages.PasswordQuestion
 
-open Marbas.FileSystem
+open Marbas.Domain
 
 [<Literal>]
 let Title = "Password"

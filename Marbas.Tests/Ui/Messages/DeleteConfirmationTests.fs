@@ -1,6 +1,7 @@
 module Marbas.Tests.Ui.Messages.DeleteConfirmationTests
 
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.State.AppState
 open Marbas.State.Update

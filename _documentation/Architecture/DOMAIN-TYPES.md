@@ -1,5 +1,23 @@
 # Domain types
 
+**The vocabulary sits below every layer that speaks it.** `Marbas.Domain` is
+the bottom of the stack above `Collections/`, and it holds the words rather
+than the machinery: `PanelSide`, `PanelCursor` and `TabStep`, `EntryName`,
+`SortOrder`, `HiddenEntries`, `Executability`, `SearchText`, `NamePattern`,
+`SelectionMode`, `CursorDirection`, `DeleteScope`, `DeleteMode` and
+`ProgramSettings` with the `FileExtension`, `ProgramPath` and `AssociationRole`
+that key it. `PanelSide` went first because the settings file names the active
+panel and `FileSystem` cannot reach `State`; the rest followed for the same
+reason read the other way round. A type that describes *how a panel shows a
+directory* is not a fact about the directory, and a type that names *what a
+command means* is not state — so neither belongs to the layer that happened to
+need it first. `FileSystem` and `State` are left with what they are for:
+reading and writing the disk, and holding what the application currently is.
+The line that decides a case is `IFileSystem`: nothing in `Domain` takes one or
+knows a view exists, which is what keeps the dependency arrows pointing one
+way, and it is why `FileSystemPath` stays where it is — its type is a bare
+string, but `combine`/`name`/`directory`/`parent` are not.
+
 **Paths are a type, not a string**. `FileSystemPath` is a
 single-case union with a private constructor and a companion module; the
 fs-dependent helpers (`combine`/`name`/`directory`/`parent`) take `IFileSystem`

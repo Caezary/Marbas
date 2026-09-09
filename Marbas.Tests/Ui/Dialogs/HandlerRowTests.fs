@@ -1,6 +1,7 @@
 module Marbas.Tests.Ui.Dialogs.HandlerRowTests
 
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Dialogs
 open Marbas.Tests

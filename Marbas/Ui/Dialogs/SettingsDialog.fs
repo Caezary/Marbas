@@ -5,7 +5,7 @@ open System.Collections.ObjectModel
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
-open Marbas.FileSystem
+open Marbas.Domain
 open Marbas.Ui.Theme
 
 [<Literal>]

@@ -192,10 +192,10 @@ one writer take a file from disk and an entry buffered out of the old archive
 without knowing which it has. The price is a full recompression per change and
 the memory of the largest entry, the same 7z already paid.
 
-**`F5` and `F6` now cross between two archives (TD-016).** Standing inside an
+**`F5` and `F6` now cross between two archives.** Standing inside an
 archive on both sides used to be the one pairing of the two panels that
-silently did nothing. An entry now goes through the session working directory of
-TD-015: extracted into a scratch directory with the same `Archive.extract` that
+silently did nothing. An entry now goes through the session working directory:
+extracted into a scratch directory with the same `Archive.extract` that
 copies out of an archive, added to the other one with the same
 `Archive.addEntries` that copies into one, and the scratch directory removed
 whole afterwards — whether the batch finished, was cancelled or threw. Nothing
@@ -353,6 +353,25 @@ gives way to it: a path that no longer fits is shortened to
 terminal argues about — Windows Terminal and the Windows console keep it for
 full screen — so `Alt+T` is bound beside it, which is what the key probe in
 `_probes/KeyProbe` was written to settle.
+
+**The shared vocabulary moved down to where it is spoken.** P11.2 had sent
+`PanelSide` alone to `Marbas.Domain`, because the session file names the active
+panel and `FileSystem` cannot reach `State`; the rest of the words followed in
+one pass. `EntryName`, `SortOrder`, `HiddenEntries`, `Executability`,
+`SearchText`, `NamePattern` and `ProgramSettings` left `FileSystem/`, and
+`PanelCursor`, `TabStep`, `SelectionMode`, `CursorDirection`, `DeleteScope` and
+`DeleteMode` left `State/AppState.fs`. None of them takes an `IFileSystem` or
+knows a view exists: they are the words the layers above speak, and holding
+them below both is what stops a type living wherever it was first needed.
+`NamePattern` was the plainest case — nothing in `FileSystem` used it at all,
+only `State` and `Ui` did. `ProgramSettings` went whole rather than split:
+`FileExtension`, `ProgramPath` and `AssociationRole` are the words, the
+association list is the table they key, and separating them would have bought
+nothing. `FileSystemPath` is the type that could not follow: its type is a bare
+string, but `combine`, `name`, `directory` and `parent` all take an
+`IFileSystem`, which is the line `Domain` is on the other side of. The change
+is one `open` per consumer and no behaviour — four files under `Ui/` stopped
+depending on `FileSystem` altogether, and the whole suite passes unchanged.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit

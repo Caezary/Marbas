@@ -3,6 +3,7 @@ module Marbas.Tests.Ui.Format.EntrySizeTests
 open System
 open System.Globalization
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Ui.Format

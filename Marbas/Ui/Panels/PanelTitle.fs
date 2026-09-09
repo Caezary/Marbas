@@ -1,6 +1,7 @@
 module Marbas.Ui.Panels.PanelTitle
 
 open System.IO.Abstractions
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Format
 

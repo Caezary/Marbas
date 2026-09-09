@@ -3,6 +3,7 @@ module Marbas.Tests.Integration.Dialogs.OpenWithDialogTests
 open System.Drawing
 open Xunit
 open Terminal.Gui.Views
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs

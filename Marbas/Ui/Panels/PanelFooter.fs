@@ -1,6 +1,6 @@
 module Marbas.Ui.Panels.PanelFooter
 
-open Marbas.FileSystem
+open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
 open Marbas.State
 open Marbas.Ui.Format

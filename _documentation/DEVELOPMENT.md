@@ -44,7 +44,7 @@ attaches them to a release; see [Packaging](Architecture/PACKAGING.md).
   `MockFileSystem` and never touch the disk.
 - No code comments — names and tests carry the intent; anything that needs
   explaining goes into `_documentation/*.md`.
-- Dependencies flow downward only: `Ui` → `State` → `FileSystem`.
+- Dependencies flow downward only: `Ui` → `State` → `FileSystem` → `Domain`.
 
 ## Documentation map
 

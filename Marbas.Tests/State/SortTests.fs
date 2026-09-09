@@ -1,6 +1,5 @@
 module Marbas.Tests.State.SortTests
 
-open System
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
