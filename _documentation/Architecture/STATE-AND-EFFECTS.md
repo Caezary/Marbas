@@ -247,3 +247,38 @@ password is a question only the file can answer, and `Shell` asks it before it
 starts the batch. `F7` inside an archive stays a transition rather than an
 effect, because adding one directory entry is as quick as making one on disk.
 See [ARCHIVES.md](ARCHIVES.md), *Changing an archive*.
+
+**The state holds tabs, and the tab in front is what the outside sees.**
+`AppState.Tabs` is a `Zipper<Tab>` and `Left`, `Right` and `Active` are members
+reading the current tab, so `Update` never mentions tabs to move a cursor or
+sort a panel — `panel`, `updatePanel` and `activate` funnel through
+`Zipper.update` and every transition written before P11.1 kept working
+unchanged. What the zipper buys is the invariant: there is always exactly one
+current tab, and closing the only one is a key that does nothing rather than a
+guard someone has to remember. See [Tabs](TABS.md).
+
+**A tab command is a transition plus a save.** `TabOpened`, `TabClosed`,
+`TabSwitched`, `TabCycled` and `SessionSaveRequested` all end in
+`SaveSettings(settings fs state)` — the effect `QuitRequested` has always
+raised — so what is written stays a pure function of the state and the writing
+stays in `Shell.interpret`. `TabSwitched` and `TabCycled` do one thing more:
+`AppState.readTabAgain` re-reads both panels of the tab they land on, since a
+tab that has been in the background may be standing in a directory that is
+gone. A listing that fails there does not undo the switch — the state is the
+tab that was asked for, and the effects are the save *and* a
+`ReportListingError` beside it.
+
+**The tab popup is a port like every other dialog.** `ShowTabs` carries the
+`Zipper<Tab>` — the rows and which one is current in one value — and
+`Dependencies.ChooseTab` answers with a position or with nothing, which
+`Shell.interpret` turns into `TabSwitched`. `Adapters/Prompts.chooseTab` is the
+only place that builds the dialog, and it needs the file system for one reason:
+`TabRow.describe` spells a `PanelLocation` with `PanelLocation.value`.
+
+**Rendering asks the state how many tabs there are, and the right panel pays for
+the answer.** `AppView.render` draws the counter first, then hands each panel
+the number of columns the counter took — zero on the left, the counter's width
+on the right — so `FilePanel.render` can work out how much room the title has
+before `PanelTitle.describe` shortens the path into it. The counter is a label
+added to the window after the panels, which is what puts it over the right
+panel's top border rather than beside it.

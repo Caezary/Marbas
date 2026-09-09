@@ -1,10 +1,10 @@
 # Progress
 
-Status as of 2026-09-04. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-09-09. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Ten phases are complete** (53 of 53 tasks). Marbas
+**Eleven phases are complete** (61 of 61 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -334,6 +334,26 @@ elevation is an answer rather than a dialog whichever key started the program.
 this is the same reading for the editor start, which is the other place a
 program is started from and the one that goes through `Operations`.
 
+**An eleventh phase opened, and one Marbas now holds several pairs of panels.**
+A tab is the pair — the left panel, the right one and which of them is active —
+so switching a tab changes both sides at once. `Alt+F11` opens one on the
+directories already on screen, `Alt+Shift+F11` closes it, the last one cannot be
+closed, `F11` lists them in a popup and `Alt+←` / `Alt+→` walk between them.
+`AppState` holds the tabs in a zipper, which is what makes "there is always
+exactly one tab in front" a fact of the type rather than a check: closing the
+only tab is a key that does nothing, because the type cannot express what it
+would produce. The session file grew from one pair of panels into numbered
+blocks — `tab.1.left.path`, `tab.1.active`, `tabs.current` — reading a file
+written before tabs as a single tab and rewriting it in the new spelling; since
+P11.6 it also carries the entry each cursor stood on, so every tab comes back
+where it was left. Every tab command writes the session, and `Shift+F9` writes
+it on demand. The top right corner counts the tabs, and the right panel's title
+gives way to it: a path that no longer fits is shortened to
+`C:\...\parent\current` rather than clipped. `F11` is the one key of the phase a
+terminal argues about — Windows Terminal and the Windows console keep it for
+full screen — so `Alt+T` is bound beside it, which is what the key probe in
+`_probes/KeyProbe` was written to settle.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -359,6 +379,7 @@ written up as the checklist in
 | 8 — Quality & release | P8.1–P8.3 | done |
 | 9 — Archives | P9.1–P9.14 | done |
 | 10 — Running a file | P10.1–P10.7 | done |
+| 11 — Tabs | P11.1–P11.8 | done |
 
 ## What works today
 
@@ -663,21 +684,35 @@ written up as the checklist in
   with the cursor on the new archive, and anything that failed keeps its mark
   and its line in one dialog.
 
+- `Alt+F11` opens a tab, `Alt+Shift+F11` closes it and the last one stays,
+  `F11` (or `Alt+T`, where a terminal keeps `F11` for full screen) lists them
+  in a popup, and `Alt+←` / `Alt+→` walk between them and wrap round. A tab is
+  the whole pair of panels plus the side that is active, so switching one moves
+  both panels at once; a new tab is a clone of the one it was opened from,
+  cursors and all, without its marks. Coming back to a tab re-reads both of its
+  panels, so a directory that changed while you were elsewhere is shown as it
+  is; a directory that has gone is reported and the tab is still the one you
+  asked for. The top right corner says which tab is in front and of how many —
+  `[2/3]` — sharing the line with the right panel's title, which shortens a path
+  that no longer fits to `C:\...\parent\current` rather than losing its sort
+  marks. Every one of those commands writes the session, and `Shift+F9` writes
+  it whenever asked without quitting.
+
 ## Architecture
 
 Design decisions and their reasoning live in [_documentation/Architecture/](Architecture/OVERVIEW.md),
 one topic per file — domain types, state and effects, file operations, archives,
-UI and input, settings persistence, testing, packaging and cross-platform
+UI and input, settings persistence, tabs, testing, packaging and cross-platform
 behaviour.
 
 ## Next up
 
-**The plan is finished.** Ten phases, 53 tasks: the tenth made one association
-table with a role, the port that starts a program, `Enter` that reaches both,
-the list of programs each system already knows, the popup that offers it, the
-elevated run, and a binding per command that a terminal actually delivers. What
-follows is no longer plan order at all, and mostly choice. Three things are
-waiting:
+**Phase 11 is finished.** Eleven phases, 61 tasks: the eleventh made a tab of
+each pair of panels, put them in a zipper so the last one cannot be closed, grew
+the session file into numbered blocks that also remember the cursors, gave the
+keys their popup and their counter, and settled with a probe which of them a
+terminal actually delivers. What follows is choice rather than plan order.
+Three things are waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
@@ -864,17 +899,18 @@ waiting:
 - Nothing in Marbas browses or empties the trash; that is the desktop's job.
   A `Trash.restore` reading the `.trashinfo` files back would be the obvious
   next step if it is ever wanted.
-- The session is written only on quit, so a crash or a closed terminal loses it.
-  Writing after every navigation would keep it current at the cost of a file
-  write per keystroke; a write on a timer is the middle road if it ever matters.
+- The session is written on quit, on every tab command and on `Shift+F9`, but
+  not after ordinary navigation — so a crash still loses whatever changed since
+  the last of those. Writing after every step would cost a file write per
+  keystroke; a write on a timer is the middle road if it ever matters.
 - `Ctrl+Q` pressed while a dialog holds focus still quits through the
   application binding, which does not go through `Update` and therefore does not
   save. Unbinding `Command.Quit` is not the way out: `Esc` answers to that same
   command on purpose, since that is what closes a popup.
-- Which panel is active, where the cursors stand and what is marked are not
-  saved — P7.4 asked for paths, sort orders and toggles. The cursor would be the
-  obvious next one, and it fits the file as `left.cursor=<name>`, resolved the
-  way `FocusTarget.ByName` already resolves.
+- What is marked is not saved, and is not meant to be: a mark belongs to an
+  operation, and an operation does not survive a restart. Since P11.2 and P11.6
+  the file carries every tab, which side of each is active and where both of its
+  cursors stood, so marks are the only thing on screen the session forgets.
 - The settings file is read and written through the same `IFileSystem` the
   panels browse. That is what makes it testable, but it also means a future
   read-only or sandboxed file system would silently take the config with it.

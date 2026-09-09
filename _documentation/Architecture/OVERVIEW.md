@@ -46,6 +46,7 @@ root. `Program.fs` is left with the handful of lines that start the application.
 - [Archives](ARCHIVES.md) — kinds and formats, the deduced name, writing, reading, extracting, the libraries
 - [UI and input](UI-AND-INPUT.md) — colour, sorting, hidden entries, search, the key table
 - [Settings persistence](SETTINGS-PERSISTENCE.md) — the config file and what survives a restart
+- [Tabs](TABS.md) — a tab as a pair of panels, the zipper, switching, the counter
 - [Testing](TESTING.md) — suite layout, conventions, Terminal.Gui pitfalls
 - [Packaging](PACKAGING.md) — publish profiles and the release pipeline
 - [Cross-platform](CROSS-PLATFORM.md) — what has to hold on Windows and Linux, and why
@@ -55,6 +56,10 @@ root. `Program.fs` is left with the handful of lines that start the application.
 ```
 Marbas/
   Platform.fs             which operating system this is, as a value
+  Collections/            data structures below every layer, tied to nothing
+    Zipper.fs             a non-empty list with one item in front: the tabs
+  Domain/                 the words the whole application speaks
+    PanelSide.fs          left or right, needed as low as the settings file
   FileSystem/
     EntryName.fs          single-case type for the name of one entry
     FileSystemPath.fs     single-case path type wrapping a raw string
@@ -69,7 +74,7 @@ Marbas/
     DesktopEntry.fs       one .desktop file -> the handler it describes
     MimeDatabase.fs       globs -> mime types, mimeapps.list -> desktop entries
     DesktopHandlers.fs    the XDG directories -> the handlers a name has
-    Settings.fs           the session both panels carry, and its config file
+    Settings.fs           the session every tab carries, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Roots.fs              where a panel can be sent: drives, or root and home
     NamePattern.fs        wildcard matching for `+` / `-`
@@ -87,7 +92,7 @@ Marbas/
     FileWindow.fs         a file held open, read one byte range at a time
     LineIndex.fs          line starts scanned forward on demand, and the line at one
   State/
-    AppState.fs           immutable panel/app state and its transitions,
+    AppState.fs           immutable panel, tab and app state and its transitions,
                           built from and read back as Settings
     Update.fs             messages and effects: message + state -> state + effects
     Runtime.fs            generic host: the single mutable cell, dispatch, render
@@ -101,6 +106,7 @@ Marbas/
       EntrySize.fs          size column text, byte format injected per view
       EntryFormat.fs        one entry -> one fixed-width row
       TimestampText.fs      one moment <-> the text a dialog reads and writes back
+      PathText.fs           a path too long for the room -> C:\...\parent\current
     Keys/                 what a keystroke means, and the bar that names them
       Modifiers.fs          Ctrl / Alt / Shift as a set, the set a key carries,
                             and the key a set makes of a plain one
@@ -123,7 +129,8 @@ Marbas/
       PageJump.fs           where a page key lands, from the page on screen
       SelectionSummary.fs   marked entries -> panel summary text
       PanelFooter.fs        panel state -> the one line under the rule
-      PanelTitle.fs         path and sort order -> the panel frame's title
+      PanelTitle.fs         path and sort order -> the panel frame's title,
+                            shortened to the width it may use
       FilePanel.fs          panel views, render state -> view
       PanelWiring.fs        one panel's list bound to keys, cursor and search
     Viewer/               the full-screen viewer behind `F3`
@@ -145,10 +152,13 @@ Marbas/
       SettingsDialog.fs     the default editor and the associations, one list per role
       OpenWithDialog.fs     which program opens this file, and whether to remember it
       PackDialog.fs         what `Shift+F1` asks before an archive is written
+      TabRow.fs             one tab -> its number and where both its panels stand
+      TabDialog.fs          the list `F11` opens, and the tab it answers with
     App/                  the composition root, and the way out to the world
       CursorInfo.fs         cursor entry -> status line text
       StatusLine.fs         the status line view
-      AppView.fs            window, both panels and the status line in one record
+      TabCounter.fs         which tab is in front, of how many, in the corner
+      AppView.fs            window, both panels, the status line and the counter
       Shell.fs              Dependencies and the effect interpreter
       EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
       MainWindow.fs         composition: views, runtime, event wiring

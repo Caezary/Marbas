@@ -106,3 +106,52 @@ an editor by asking the state first (`ProgramSettings.programFor ForEditing`,
 which tries the extension and falls back to the default), then `$EDITOR`, then
 `notepad` on Windows and `vi` elsewhere. Leaving the field blank in the settings
 popup therefore restores exactly the behaviour of the version before it existed.
+
+**The file describes tabs now, and a numbered block is one tab.** P11.2 turned
+`Settings` from one pair of panels into a `Zipper<TabSettings>`: the keys are
+`tab.1.left.path`, `tab.1.left.sort`, `tab.1.left.direction`,
+`tab.1.left.hidden`, `tab.1.left.cursor`, the same six for the right, one
+`tab.1.active` naming the side the tab was left on, and one `tabs.current`
+saying which tab was in front, 1-based like the block numbers. The zipper is
+what makes "the file describes at least one tab" true by construction, so
+`parse` has no empty case to answer and a `tabs.current` outside the range
+simply lands on the nearest tab.
+
+**A file with no `tab.` key is a file from before tabs, and is read as one.**
+The old `left.`/`right.` keys are still understood — as a single tab, active
+side `Left` — exactly the way a role-less `editor.extension.` line is read as an
+editing row. The first save rewrites the file in the new spelling, so there is
+nothing to migrate and nothing to keep in step: the old keys are read and never
+written again. Tab numbers need not start at one or run without gaps either; the
+blocks are taken in ascending order, which is what makes a hand-edited file
+survive having a block cut out of it.
+
+**`PanelSide` had to move down for this.** The file names the active panel, and
+`FileSystem` cannot reach `State`, so `PanelSide` left `AppState` for
+`Marbas.Domain` — a namespace for the words the whole application speaks, which
+is where more of them belong and where they will land in one pass rather than
+one type at a time.
+
+**The cursor is a name, and only a name.** `tab.1.left.cursor=notes.txt` is
+resolved on load the way `FocusTarget.ByName` resolves any focus request: an
+entry that is no longer there costs the position and nothing else, and the
+cursor rests at the top. A cursor sitting on `..` writes no key at all —
+restoring the way out is restoring the top of the list, and a line saying so
+would be noise in every fresh panel. Marks are still not written: a mark belongs
+to an operation, and an operation does not survive a restart.
+
+**A tab nobody has opened keeps the cursor the file gave it.** Only the tab in
+front is read at startup, so the panels of the others have no entries and
+therefore no cursor entry to write back. `PanelState.Remembered` carries the
+name the file supplied until that panel is first read — `loadPanel` and the
+reload behind a tab switch focus it, `loadLocationFocusing` clears it once the
+panel has real entries, and `AppState.settings` falls back to it when there is
+no cursor entry yet. Without it the first save after a restart would wipe the
+cursors of every tab except the one on screen.
+
+**The session is written on every tab command, not only on quit.** `TabOpened`,
+`TabClosed`, `TabSwitched` and `TabCycled` each answer with `SaveSettings`
+beside their new state, and `Shift+F9` is that effect with no state change at
+all — a save that succeeded says nothing, because there is nothing to say. The
+old complaint that a crash loses the session is therefore smaller than it was:
+anything that touches the tabs has already written the file.

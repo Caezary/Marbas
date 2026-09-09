@@ -56,6 +56,7 @@ attaches them to a release; see [Packaging](Architecture/PACKAGING.md).
   - [File operations](Architecture/FILE-OPERATIONS.md)
   - [UI and input](Architecture/UI-AND-INPUT.md)
   - [Settings persistence](Architecture/SETTINGS-PERSISTENCE.md)
+  - [Tabs](Architecture/TABS.md)
   - [Testing](Architecture/TESTING.md)
   - [Packaging](Architecture/PACKAGING.md)
   - [Cross-platform](Architecture/CROSS-PLATFORM.md)

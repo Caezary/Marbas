@@ -66,6 +66,32 @@ stops the batch at the next file.
 Both settings, and the panel's path, are shown in its title bar and are
 remembered per panel.
 
+## Tabs
+
+A tab is a whole pair of panels, not one panel: switching one changes the left
+and the right side at once, along with which of them is active.
+
+- `F11` (or `Alt+T`) lists the open tabs — one row per tab with its number and
+  where both its panels stand. `Enter` goes to the one under the cursor, `Esc`
+  changes nothing.
+- `Alt+F11` opens a new tab on the directories already on screen. Its cursors
+  come along; the marks do not.
+- `Alt+Shift+F11` closes the tab you are on. The last one cannot be closed.
+- `Alt+←` / `Alt+→` walk to the previous / next tab without the popup, wrapping
+  round at the ends.
+
+The top right corner says which tab is in front and how many there are —
+`[2/3]`. It shares the line with the right panel's title, so a path that no
+longer fits is shortened to `C:\...\parent\current`; the sort marks stay put.
+
+Coming back to a tab re-reads both of its panels, so a directory that changed
+while you were elsewhere is shown as it is now. Opening, switching and closing a
+tab each write the session, and `Shift+F9` writes it at any time without
+quitting.
+
+Use `Alt+T` if `F11` does nothing: Windows Terminal and the Windows console keep
+that key for their own full-screen toggle and never pass it on.
+
 ## The function-key bar
 
 The bottom bar has one slot per function key, `F1` … `F12`, sharing the width
@@ -90,9 +116,10 @@ Twelve slots want room: below about 90 columns the longer commands
 
 ## Settings
 
-Quitting writes the current session — where each panel stands, its sort
-order and whether it shows hidden entries — to a config file, restored on the
-next start:
+Quitting writes the current session — every tab, where each of its panels
+stands, its sort order, whether it shows hidden entries and the entry its cursor
+rested on — to a config file, restored on the next start. Opening, switching or
+closing a tab writes it too, and `Shift+F9` writes it on demand:
 
 | Platform | Location |
 |----------|----------|
@@ -101,7 +128,10 @@ next start:
 
 The file is `key=value` lines meant to be readable and editable by hand; a
 missing or partly unreadable file just falls back to defaults for whatever it
-could not read, rather than refusing to start.
+could not read, rather than refusing to start. Each tab is a numbered block
+(`tab.1.left.path`, `tab.1.active`, …) and `tabs.current` says which one to open
+on; a file written by a version from before tabs opens as a single tab and is
+rewritten in the new spelling the next time the session is saved.
 
 ## Things that differ by platform
 
@@ -109,6 +139,10 @@ could not read, rather than refusing to start.
   file-system root and your home directory.
 - **`Ctrl+H`** does not toggle hidden entries on most terminals — it arrives
   as the byte `0x08`, indistinguishable from `Backspace`. Use `Alt+H`.
+- **`F11`** never reaches Marbas under Windows Terminal or the Windows console,
+  which keep it for full screen; cmder passes it through. Use `Alt+T` to list
+  the tabs. A WSL session inherits whatever terminal it was started from, so the
+  same Linux build answers `F11` under one and not under the other.
 - **The modifier-aware function-key bar is Windows-only** — no Unix terminal
   driver Marbas relies on reports a held `Ctrl`/`Alt` on its own.
 - **`F4` with a full-screen console editor** (`vi`, `nano`) does not work

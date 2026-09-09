@@ -198,6 +198,12 @@ asked for, it works where the terminal lets it, and the bar has no way to know
 which terminal it is drawn in; `Alt+T` is named in the user guide beside it for
 the terminals that eat it.
 
+The five keys were then pressed in Marbas itself, under Windows Terminal, on
+2026-09-09: `Alt+T` opens the popup, `Alt+F11` adds a tab and the counter
+follows, `Alt+←` / `Alt+→` walk between them, `Alt+Shift+F11` closes one, and
+`Shift+F9` writes `%APPDATA%\Marbas\settings.conf` without quitting. The probe
+says a key arrives; that pass says the application answers it.
+
 ## Viewing and editing
 
 | Check | Windows | Linux | Evidence |
