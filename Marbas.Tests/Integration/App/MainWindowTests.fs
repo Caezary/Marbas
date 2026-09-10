@@ -1,10 +1,12 @@
 module Marbas.Tests.Integration.App.MainWindowTests
 
 open System.Drawing
+open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.App
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
+open Marbas.FileSystem
 open Marbas.Ui.Keys
 open Marbas.Ui.Panels
 open Marbas.Ui.App
@@ -63,3 +65,16 @@ let ``Esc closes whatever popup is open`` () =
     let keys = Application.GetDefaultKeys Command.Quit
 
     Assert.Contains(KeyMap.cancelKey, keys)
+
+[<Fact>]
+let ``the directories the panels start in are put under watch`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(Root.at "start")
+    let watched = ResizeArray<FileSystemPath list>()
+
+    use _ =
+        MainWindow.create
+            { Fakes.dependencies fs (Root.at "start") with
+                WatchLocations = fun paths _ -> watched.Add paths }
+
+    Assert.Equal<FileSystemPath list list>([ [ FileSystemPath.create (Root.at "start") ] ], List.ofSeq watched)

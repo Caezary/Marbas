@@ -35,6 +35,11 @@ let create (deps: Shell.Dependencies) =
         |> PanelLocation.directory
         |> Option.iter (fun path -> dispatch (Update.PathOpened(side, path)))
 
+    runtime.State
+    |> AppState.watchedLocations
+    |> Update.WatchLocations
+    |> Shell.interpret deps dispatch
+
     let host: PanelWiring.Host =
         { Dispatch = dispatch
           Refresh = fun () -> runtime.Refresh()

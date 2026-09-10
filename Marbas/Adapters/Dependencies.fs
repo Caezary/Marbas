@@ -61,4 +61,5 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
       AskPassword = Prompts.askPassword app
       AskOverwrite = Prompts.askOverwrite app
       WatchModifiers = watchModifiers app env
+      WatchLocations = DirectoryWatch.watching app fs
       RunBatch = BatchRunner.run app }

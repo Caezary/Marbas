@@ -6,7 +6,6 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Domain
-open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Ui.Messages
 open Marbas.Ui.App
@@ -1475,3 +1474,30 @@ let ``a crossing out of a locked archive asks for its password once`` () =
 
     Assert.Single asked |> ignore
     Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs otherAt ArchivePath.root)
+
+[<Fact>]
+let ``the paths under watch are handed to the watch`` () =
+    let _, dispatch = capture ()
+    let mutable watched = []
+
+    let deps =
+        { noDeps () with
+            WatchLocations = fun paths _ -> watched <- paths }
+
+    Shell.interpret deps dispatch (WatchLocations [ fp (at "start"); fp (at "backup") ])
+
+    Assert.Equal<FileSystemPath list>([ fp (at "start"); fp (at "backup") ], watched)
+
+[<Fact>]
+let ``what the watch reports is dispatched as an external change`` () =
+    let sent, dispatch = capture ()
+    let mutable report = ignore
+
+    let deps =
+        { noDeps () with
+            WatchLocations = fun _ reported -> report <- reported }
+
+    Shell.interpret deps dispatch (WatchLocations [ fp (at "start") ])
+    report ()
+
+    Assert.Equal<Message list>([ ExternalChangeDetected ], List.ofSeq sent)
