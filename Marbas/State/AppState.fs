@@ -101,6 +101,11 @@ let panel side (state: AppState) =
 
 let activePanel (state: AppState) = panel state.Active state
 
+let watchedLocations (state: AppState) =
+    [ state.Left.Path; state.Right.Path ]
+    |> List.map PanelLocation.watched
+    |> List.distinct
+
 let private updateTab f (state: AppState) =
     { state with Tabs = state.Tabs |> Zipper.update f }
 

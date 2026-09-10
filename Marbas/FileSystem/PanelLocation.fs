@@ -18,6 +18,11 @@ module PanelLocation =
         | OnDisk path -> path
         | InArchive(archive, _) -> FileSystemPath.directory fs archive
 
+    let watched location =
+        match location with
+        | OnDisk path -> path
+        | InArchive(archive, _) -> archive
+
     let combine (fs: IFileSystem) location (name: string) =
         directory location |> Option.map (fun path -> FileSystemPath.combine fs path name)
 

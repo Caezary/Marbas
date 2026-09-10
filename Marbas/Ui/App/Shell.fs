@@ -375,6 +375,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.ChooseOption RootPrompt roots with
         | Some root -> dispatch (PathOpened(side, FileSystemPath.create root))
         | None -> ()
+    | WatchLocations _ -> ()
     | SaveSettings settings -> Settings.save deps.FileSystem deps.SettingsPath settings
     | Quit ->
         Workspace.release deps.FileSystem deps.WorkspacePath

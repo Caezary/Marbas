@@ -107,6 +107,7 @@ type Effect =
     | PromptForPattern of SelectionMode
     | PromptForRoot of PanelSide
     | ShowTabs of Zipper<Tab>
+    | WatchLocations of paths: FileSystemPath list
     | SaveSettings of Settings
     | Quit
 
@@ -232,7 +233,7 @@ let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
     | Some directory -> running remembered directory (Some choice.Program) path
     | None -> stay remembered
 
-let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
+let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     let applyListing' = applyListing state
     let applyOperation' = applyOperation state
     let applyBatch' = applyBatch state
@@ -443,6 +444,16 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | QuitRequested ->
         { State = state
           Effects = [ SaveSettings(settings' state); Quit ] }
+
+let private watching before result =
+    match watchedLocations result.State with
+    | after when after = watchedLocations before -> result
+    | after ->
+        { result with
+            Effects = result.Effects @ [ WatchLocations after ] }
+
+let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
+    transition fs msg state |> watching state
 
 let step (fs: IFileSystem) (msg: Message) (state: AppState) =
     let result = update fs msg state

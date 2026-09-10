@@ -48,6 +48,9 @@ let private ran effect =
 let private launched (result: UpdateResult) =
     Assert.Single result.Effects |> ran |> Expect.some
 
+let private nothingRan (result: UpdateResult) =
+    Assert.Empty(result.Effects |> List.choose ran)
+
 [<Fact>]
 let ``a document under the cursor is handed to the system`` () =
     let fs = tree ()
@@ -105,7 +108,7 @@ let ``a directory under the cursor is walked into, not run`` () =
     let result = update fs EntryOpened state
 
     Assert.Equal(OnDisk(fp (at "start/docs")), result.State.Left.Path)
-    Assert.Empty result.Effects
+    nothingRan result
 
 [<Fact>]
 let ``the parent entry is still the way up`` () =
@@ -115,7 +118,7 @@ let ``the parent entry is still the way up`` () =
     let result = update fs EntryOpened state
 
     Assert.Equal(OnDisk(fp (at "")), result.State.Left.Path)
-    Assert.Empty result.Effects
+    nothingRan result
 
 [<Fact>]
 let ``an archive nothing is associated with opens as a location`` () =
@@ -125,7 +128,7 @@ let ``an archive nothing is associated with opens as a location`` () =
     let result = update fs EntryOpened state
 
     Assert.Equal(InArchive(fp (at "start/backup.zip"), ArchivePath.root), result.State.Left.Path)
-    Assert.Empty result.Effects
+    nothingRan result
 
 [<Fact>]
 let ``an archive whose extension names a program runs it instead of opening`` () =
@@ -145,7 +148,7 @@ let ``walking in is what reaches an archive its extension would run`` () =
     let result = update fs WalkIntoRequested state
 
     Assert.Equal(InArchive(fp (at "start/backup.zip"), ArchivePath.root), result.State.Left.Path)
-    Assert.Empty result.Effects
+    nothingRan result
 
 [<Fact>]
 let ``the entry under the cursor runs, whatever is marked`` () =
@@ -181,7 +184,7 @@ let ``the way out of an archive is still the way out`` () =
     let result = update fs EntryOpened state
 
     Assert.Equal(OnDisk(fp (at "start")), result.State.Left.Path)
-    Assert.Empty result.Effects
+    nothingRan result
 
 [<Fact>]
 let ``a directory inside an archive is still walked into`` () =

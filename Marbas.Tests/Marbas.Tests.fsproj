@@ -70,11 +70,12 @@
     <Compile Include="State\NavigationErrorTests.fs" />
     <Compile Include="State\RefreshTests.fs" />
     <Compile Include="State\AutoRefreshTests.fs" />
+    <Compile Include="State\ArchiveFixture.fs" />
+    <Compile Include="State\WatchTests.fs" />
     <Compile Include="State\SelectionTests.fs" />
     <Compile Include="State\SortTests.fs" />
     <Compile Include="State\HiddenTests.fs" />
     <Compile Include="State\SettingsTests.fs" />
-    <Compile Include="State\ArchiveFixture.fs" />
     <Compile Include="State\ArchivePanelTests.fs" />
     <Compile Include="State\ArchiveNavigationTests.fs" />
     <Compile Include="State\ArchiveCopyTests.fs" />
