@@ -69,6 +69,7 @@
     <Compile Include="State\NavigationTests.fs" />
     <Compile Include="State\NavigationErrorTests.fs" />
     <Compile Include="State\RefreshTests.fs" />
+    <Compile Include="State\AutoRefreshTests.fs" />
     <Compile Include="State\SelectionTests.fs" />
     <Compile Include="State\SortTests.fs" />
     <Compile Include="State\HiddenTests.fs" />

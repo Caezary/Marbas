@@ -492,6 +492,12 @@ let refresh (fs: IFileSystem) (state: AppState) = readAgain fs state.Active stat
 let readTabAgain (fs: IFileSystem) state =
     readAgain fs Left state |> Result.bind (readAgain fs Right)
 
+let readTabQuietly (fs: IFileSystem) state =
+    let keeping side state =
+        readAgain fs side state |> Result.defaultValue state
+
+    state |> keeping Left |> keeping Right
+
 let applyProperties (fs: IFileSystem) (properties: EntryProperties) state =
     EntryProperties.write fs properties
     |> Result.bind (fun () -> refresh fs state |> Result.mapError asOperationError)

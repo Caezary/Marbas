@@ -13,6 +13,7 @@ type Message =
     | EntryOpened
     | WalkIntoRequested
     | RefreshRequested
+    | ExternalChangeDetected
     | SelectionToggled of CursorDirection
     | SelectionToggledTo of PanelCursor
     | SortRequested of SortKey
@@ -245,6 +246,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     let settings' = settings fs
     let enter' = enter fs
     let refresh' = refresh fs
+    let readTabQuietly' = readTabQuietly fs
     let toggleHidden' = toggleHidden fs
     let loadPanel' = loadPanel fs
     let makeDirectory' = makeDirectory fs
@@ -275,6 +277,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | EntryOpened -> opened' state
     | WalkIntoRequested -> enter' state |> applyListing'
     | RefreshRequested -> refresh' state |> applyListing'
+    | ExternalChangeDetected -> state |> readTabQuietly' |> stay
     | SelectionToggled direction -> stay (toggleSelectionMoving direction state.Active state)
     | SelectionToggledTo cursor -> stay (toggleSelectionThrough cursor.Side cursor.Index state)
     | SortRequested key -> stay (sortBy key state.Active state)
