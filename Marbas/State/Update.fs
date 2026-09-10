@@ -232,16 +232,53 @@ let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
     | None -> stay remembered
 
 let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
+    let applyListing' = applyListing state
+    let applyOperation' = applyOperation state
+    let applyBatch' = applyBatch state
+    let changing' = changing fs state
+    let saving' = saving fs
+    let standingOn' = standingOn fs
+    let opened' = opened fs
+    let openedWith' = openedWith fs
+    let runElevated' = runElevated fs
+    let chosen' = chosen fs state
+    let settings' = settings fs
+    let enter' = enter fs
+    let refresh' = refresh fs
+    let toggleHidden' = toggleHidden fs
+    let loadPanel' = loadPanel fs
+    let makeDirectory' = makeDirectory fs
+    let makeEntryDirectory' = makeEntryDirectory fs
+    let makeFile' = makeFile fs
+    let deleteScope' = deleteScope fs
+    let transferSource' = transferSource fs
+    let operationPaths' = operationPaths fs
+    let cursorFilePath' = cursorFilePath fs
+    let cursorDirectoryPath' = cursorDirectoryPath fs
+    let cursorExecutablePath' = cursorExecutablePath fs
+    let archiveSuggestion' = archiveSuggestion fs
+    let applyProperties' = applyProperties fs
+    let finishDelete' = finishDelete fs
+    let finishTransfer' = finishTransfer fs
+    let finishPack' = finishPack fs
+    let finishRename' = finishRename fs
+    let isBareName' = FileSystemPath.isBareName fs
+    let combine' = FileSystemPath.combine fs
+    let nameOf' = FileSystemPath.name fs
+    let spelled' = ArchivePath.spelled fs
+    let readProperties' = EntryProperties.read fs
+    let wouldPackItself' = Archive.wouldPackItself fs
+
     match msg with
     | CursorMoved cursor -> stay (setCursor cursor.Side cursor.Index state)
     | PanelFocused side -> stay (activate side state)
-    | EntryOpened -> opened fs state
-    | WalkIntoRequested -> enter fs state |> applyListing state
-    | RefreshRequested -> refresh fs state |> applyListing state
+    | EntryOpened -> opened' state
+    | WalkIntoRequested -> enter' state |> applyListing'
+    | RefreshRequested -> refresh' state |> applyListing'
     | SelectionToggled direction -> stay (toggleSelectionMoving direction state.Active state)
     | SelectionToggledTo cursor -> stay (toggleSelectionThrough cursor.Side cursor.Index state)
     | SortRequested key -> stay (sortBy key state.Active state)
-    | HiddenToggled -> toggleHidden fs state.Active state |> applyListing state
+    | HiddenToggled -> toggleHidden' state.Active state |> applyListing'
     | SearchTyped character -> stay (typeIntoSearch state.Active character state)
     | SearchBackspaced -> stay (backspaceSearch state.Active state)
     | SearchCancelled -> stay (closeSearch state.Active state)
@@ -250,75 +287,73 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     | MakeDirectoryRequested ->
         match (activePanel state).Path with
         | OnDisk _ -> request state (PromptForName state.LastCreatedDirectory)
-        | InArchive(archive, _) -> changing fs state [ archive ] (PromptForName state.LastCreatedDirectory)
+        | InArchive(archive, _) -> changing' [ archive ] (PromptForName state.LastCreatedDirectory)
     | NameEntered name ->
         match (activePanel state).Path with
-        | OnDisk directory -> makeDirectory fs state.Active directory name state |> applyOperation state
-        | InArchive(archive, level) ->
-            makeEntryDirectory fs state.Active archive level name state |> applyOperation state
+        | OnDisk directory -> makeDirectory' state.Active directory name state |> applyOperation'
+        | InArchive(archive, level) -> makeEntryDirectory' state.Active archive level name state |> applyOperation'
     | DeleteRequested mode ->
         let target = activePanel state
 
         let confirmed asked =
             ConfirmDelete
                 { Targets = operationTargets target |> List.map _.Name
-                  Scope = deleteScope fs target
+                  Scope = deleteScope' target
                   Mode = asked }
 
         match target.Path, operationTargets target with
         | _, [] -> stay state
         | OnDisk _, _ -> request state (confirmed mode)
-        | InArchive(archive, _), _ -> changing fs state [ archive ] (confirmed Permanently)
+        | InArchive(archive, _), _ -> changing' [ archive ] (confirmed Permanently)
     | DeleteConfirmed mode ->
-        match transferSource fs (activePanel state) with
+        match transferSource' (activePanel state) with
         | None -> stay state
         | Some(FromDisk paths) -> request state (DeleteTargets(paths, mode))
         | Some(FromArchive(archive, entries)) -> request state (RemoveEntries(archive, entries))
-    | DeleteFinished results -> finishDelete fs results state |> applyBatch state
+    | DeleteFinished results -> finishDelete' results state |> applyBatch'
     | CopyRequested ->
-        match transferSource fs (activePanel state), transferTarget state with
+        match transferSource' (activePanel state), transferTarget state with
         | None, _ -> stay state
         | Some(FromDisk paths), ToDirectory target -> request state (CopyTargets(paths, target))
         | Some(FromArchive(archive, entries)), ToDirectory target ->
             request state (ExtractEntries(archive, entries, target))
-        | Some(FromDisk paths), ToArchive(archive, level) ->
-            changing fs state [ archive ] (AddEntries(archive, level, paths))
+        | Some(FromDisk paths), ToArchive(archive, level) -> changing' [ archive ] (AddEntries(archive, level, paths))
         | Some(FromArchive(source, entries)), ToArchive(target, level) ->
-            changing fs state [ target ] (CopyEntriesAcross(source, entries, target, level))
-    | CopyFinished results -> finishTransfer fs results state |> applyBatch state
+            changing' [ target ] (CopyEntriesAcross(source, entries, target, level))
+    | CopyFinished results -> finishTransfer' results state |> applyBatch'
     | MoveRequested ->
-        match transferSource fs (activePanel state), transferTarget state with
+        match transferSource' (activePanel state), transferTarget state with
         | None, _ -> stay state
         | Some(FromDisk _), ToDirectory target -> request state (PromptForTarget target)
         | Some(FromArchive(archive, entries)), ToDirectory target ->
-            changing fs state [ archive ] (MoveEntriesOut(archive, entries, target))
+            changing' [ archive ] (MoveEntriesOut(archive, entries, target))
         | Some(FromDisk paths), ToArchive(archive, level) ->
-            changing fs state [ archive ] (MoveEntriesIn(archive, level, paths))
+            changing' [ archive ] (MoveEntriesIn(archive, level, paths))
         | Some(FromArchive(source, entries)), ToArchive(target, level) ->
-            changing fs state [ target; source ] (MoveEntriesAcross(source, entries, target, level))
+            changing' [ target; source ] (MoveEntriesAcross(source, entries, target, level))
     | TargetEntered text ->
-        match text.Trim(), operationPaths fs (activePanel state), activeDirectory state with
+        match text.Trim(), operationPaths' (activePanel state), activeDirectory state with
         | "", _, _
         | _, [], _
         | _, _, None -> stay state
-        | trimmed, [ single ], _ when FileSystemPath.isBareName fs trimmed ->
+        | trimmed, [ single ], _ when isBareName' trimmed ->
             request state (RenameTarget(single, EntryName.create trimmed))
-        | trimmed, paths, Some source -> request state (MoveTargets(paths, FileSystemPath.combine fs source trimmed))
-    | MoveFinished results -> finishTransfer fs results state |> applyBatch state
+        | trimmed, paths, Some source -> request state (MoveTargets(paths, combine' source trimmed))
+    | MoveFinished results -> finishTransfer' results state |> applyBatch'
     | PackRequested ->
-        match operationTargets (activePanel state), archiveSuggestion fs ArchiveFormat.initial state with
+        match operationTargets (activePanel state), archiveSuggestion' ArchiveFormat.initial state with
         | [], _
         | _, None -> stay state
         | _, Some suggestion -> request state (PromptForArchive suggestion)
     | ArchiveEntered choice ->
-        match choice.Target.Trim(), operationPaths fs (activePanel state), activeDirectory state with
+        match choice.Target.Trim(), operationPaths' (activePanel state), activeDirectory state with
         | "", _, _
         | _, [], _
         | _, _, None -> stay state
         | trimmed, paths, Some source ->
-            let target = FileSystemPath.combine fs source trimmed
+            let target = combine' source trimmed
 
-            if Archive.wouldPackItself fs target paths then
+            if wouldPackItself' target paths then
                 request state (ReportOperationError(Operations.TargetWithinSource target))
             else
                 request
@@ -330,21 +365,21 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
                           Compression = choice.Compression
                           Password = choice.Password }
                     ))
-    | PackFinished(archive, results) -> finishPack fs archive results state |> applyBatch state
+    | PackFinished(archive, results) -> finishPack' archive results state |> applyBatch'
     | UnpackRequested ->
-        match operationPaths fs (activePanel state), targetDirectory state with
+        match operationPaths' (activePanel state), targetDirectory state with
         | [], _
         | _, None -> stay state
         | paths, Some target -> request state (ExtractTargets(paths, target))
-    | UnpackFinished results -> finishTransfer fs results state |> applyBatch state
+    | UnpackFinished results -> finishTransfer' results state |> applyBatch'
     | RenameFinished(newName, outcome) ->
         match outcome with
         | Error error -> request state (ReportOperationError error)
-        | Ok() -> finishRename fs newName state |> applyOperation state
+        | Ok() -> finishRename' newName state |> applyOperation'
     | ViewRequested ->
         let target = activePanel state
 
-        match cursorFilePath fs target, cursorFileInArchive target with
+        match cursorFilePath' target, cursorFileInArchive target with
         | Some path, _ -> request state (ViewFile path)
         | _, Some(archive, entry) -> request state (ViewArchiveEntry(archive, entry))
         | None, None -> stay state
@@ -353,12 +388,12 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
 
         match cursorEntryInArchive target with
         | Some(archive, entry) ->
-            request state (ReportOperationError(Operations.ArchiveEntryNotEditable(ArchivePath.spelled fs archive entry)))
+            request state (ReportOperationError(Operations.ArchiveEntryNotEditable(spelled' archive entry)))
         | None ->
-            match cursorFilePath fs target, cursorDirectoryPath fs target with
-            | Some path, _ -> request state (EditFile(path, programFor ForEditing (FileSystemPath.name fs path) state))
+            match cursorFilePath' target, cursorDirectoryPath' target with
+            | Some path, _ -> request state (EditFile(path, programFor ForEditing (nameOf' path) state))
             | _, Some path ->
-                match EntryProperties.read fs path with
+                match readProperties' path with
                 | Ok properties -> request state (ShowProperties properties)
                 | Error error -> request state (ReportOperationError error)
             | None, None -> stay state
@@ -370,13 +405,13 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         match activeDirectory state with
         | None -> stay state
         | Some directory ->
-            match makeFile fs state.Active directory name state with
+            match makeFile' state.Active directory name state with
             | Error error -> request state (ReportOperationError error)
             | Ok(updated, path) -> request updated (EditFile(path, programFor ForEditing name updated))
-    | PropertiesEntered properties -> applyProperties fs properties state |> applyOperation state
+    | PropertiesEntered properties -> applyProperties' properties state |> applyOperation'
     | SettingsRequested ->
         let candidate =
-            cursorExecutablePath fs (activePanel state)
+            cursorExecutablePath' (activePanel state)
             |> Option.bind (FileSystemPath.value >> ProgramPath.tryCreate)
 
         request state (ShowSettings(state.Programs, candidate))
@@ -385,26 +420,26 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         match outcome with
         | Error(Operations.StartDeclined _) -> stay state
         | Error error -> request state (ReportOperationError error)
-        | Ok() -> refresh fs state |> applyListing state
+        | Ok() -> refresh' state |> applyListing'
     | LaunchFinished outcome ->
         match outcome with
         | Error(ElevationDeclined _) -> stay state
         | Error error -> request state (ReportLaunchError error)
         | Ok() -> stay state
-    | OpenWithRequested -> openedWith fs state
-    | HandlerChosen(path, choice) -> chosen fs state path choice
-    | ElevatedRunRequested -> runElevated fs state
+    | OpenWithRequested -> openedWith' state
+    | HandlerChosen(path, choice) -> chosen' path choice
+    | ElevatedRunRequested -> runElevated' state
     | RootRequested side -> request state (PromptForRoot side)
-    | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
-    | TabOpened -> openTab state |> saving fs
-    | TabClosed -> closeTab state |> saving fs
+    | PathOpened(side, path) -> loadPanel' side path state |> applyListing'
+    | TabOpened -> openTab state |> saving'
+    | TabClosed -> closeTab state |> saving'
     | TabsRequested -> state.Tabs |> ShowTabs |> request state
-    | TabSwitched position -> switchTab position state |> standingOn fs
-    | TabCycled step -> cycleTab step state |> standingOn fs
-    | SessionSaveRequested -> state |> saving fs
+    | TabSwitched position -> switchTab position state |> standingOn'
+    | TabCycled step -> cycleTab step state |> standingOn'
+    | SessionSaveRequested -> state |> saving'
     | QuitRequested ->
         { State = state
-          Effects = [ SaveSettings(settings fs state); Quit ] }
+          Effects = [ SaveSettings(settings' state); Quit ] }
 
 let step (fs: IFileSystem) (msg: Message) (state: AppState) =
     let result = update fs msg state
