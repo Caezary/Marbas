@@ -37,6 +37,41 @@ machine it is copied onto needs nothing installed. Either can be built from
 either operating system. Tagging `v*` builds both on GitHub Actions and
 attaches them to a release; see [Packaging](Architecture/PACKAGING.md).
 
+## Probes
+
+Two things the suite cannot reach are measured with throwaway programs instead
+of asserted.
+
+**Measuring what a terminal delivers.** `_probes/KeyProbe` prints what a
+terminal really hands to Terminal.Gui for a key, which is not always what the
+binding says it should be. Run it in every terminal that matters and compare;
+the rows marked *probe* in [Cross-platform](Architecture/CROSS-PLATFORM.md) come
+from it.
+
+**Driving the real window over a real file system.** The `render-tui-screen`
+skill's probe template takes a `ProjectReference` on `Marbas.fsproj`, forces a
+screen size by reflection and reads `app.Driver.ToString()` back from inside a
+timeout, so a scene can build `MainWindow`, change the disk behind its back, type
+a key and print the screen. That is how the auto-refresh rows of the checklist
+were measured — a file written from outside, the directory a panel stands in
+deleted, a `subst` drive pulled out, a burst of two hundred files, and a prompt
+held open while the disk changes. Build it in the scratchpad, never in the tree,
+and give it `FSharp.Core` explicitly; see
+[Auto-refresh](Architecture/AUTO-REFRESH.md) and the note on explicit
+dependencies in [the overview](Architecture/OVERVIEW.md).
+
+Under WSL the same scenes need a pseudo-terminal and an answer to the queries
+Terminal.Gui sends on startup, exactly as the WSL rows of the checklist describe:
+
+```sh
+script -qec "stty rows 24 cols 100; dotnet run --no-build -- vanish" /dev/null \
+  < <(sleep 2; printf '\033[8;24;100t\033[24;100R\033[?1;2c'; sleep 40) > vanish.log
+```
+
+Keep the build outputs apart from the Windows ones with
+`-p:ArtifactsPath=/tmp/marbas`, and strip the escapes from the log with
+`sed -r 's/\x1b\[[0-9;?]*[a-zA-Z]//g'`.
+
 ## Working rules
 
 - Talk to the user in Polish; write everything in the repository in English.
@@ -56,7 +91,9 @@ attaches them to a release; see [Packaging](Architecture/PACKAGING.md).
   - [File operations](Architecture/FILE-OPERATIONS.md)
   - [UI and input](Architecture/UI-AND-INPUT.md)
   - [Settings persistence](Architecture/SETTINGS-PERSISTENCE.md)
+  - [Archives](Architecture/ARCHIVES.md)
   - [Tabs](Architecture/TABS.md)
+  - [Auto-refresh](Architecture/AUTO-REFRESH.md)
   - [Testing](Architecture/TESTING.md)
   - [Packaging](Architecture/PACKAGING.md)
   - [Cross-platform](Architecture/CROSS-PLATFORM.md)

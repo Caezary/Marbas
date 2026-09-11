@@ -11,11 +11,15 @@ Four kinds of evidence appear below:
 - **WSL** — verified by running the built application under WSL (Ubuntu 24.04,
   .NET 10.0.110) on 2026-08-18, driving it through a pseudo-terminal and
   reading the screen back.
-- **probe** — measured with `_probes/KeyProbe`, which reports what a terminal
-  really hands to Terminal.Gui rather than what a binding says it should. The
-  rows marked so were measured on 2026-09-05 in cmder, Windows Terminal and the
-  Windows console, and under WSL started from cmder and from the console. See
-  [Development](../DEVELOPMENT.md), *Measuring what a terminal delivers*.
+- **probe** — measured by a throwaway program rather than asserted, in two
+  flavours. `_probes/KeyProbe` reports what a terminal really hands to
+  Terminal.Gui rather than what a binding says it should; the rows marked so
+  under *Keyboard and terminal* were measured with it on 2026-09-05 in cmder,
+  Windows Terminal and the Windows console, and under WSL started from cmder and
+  from the console. The rows under *Watching the directories on screen* were
+  measured on 2026-09-11 with a probe that builds the real `MainWindow` over a
+  real file system and changes the disk behind its back. See
+  [Development](../DEVELOPMENT.md), *Probes*.
 - **manual** — needs a person at a real terminal. These are the items where the
   answer is "does it *look* right", which nothing here can assert.
 
@@ -203,6 +207,52 @@ The five keys were then pressed in Marbas itself, under Windows Terminal, on
 follows, `Alt+←` / `Alt+→` walk between them, `Alt+Shift+F11` closes one, and
 `Shift+F9` writes `%APPDATA%\Marbas\settings.conf` without quitting. The probe
 says a key arrives; that pass says the application answers it.
+
+## Watching the directories on screen
+
+| Check | Windows | Linux | Evidence |
+|-------|---------|-------|----------|
+| A file written by another program appears, a deleted one goes | same | same | probe |
+| A directory made outside the application shows up | same | same | probe |
+| Two hundred files written in one burst cost one listing, not two hundred | one or two, the burst outran the window | one | probe |
+| Deleting the directory a panel stands in leaves it in the parent, no dialog | same | same | probe |
+| Pulling out the drive a panel stands on leaves it on a root that exists | `subst Y: /D`, panel lands on `C:\` | n/a, no drive letters | probe (Windows), suite |
+| A change made while a prompt is up waits for it to close | same | same | probe |
+| Only the tab in front is watched | same | same | suite |
+| Entries added inside a share the watcher says nothing about | **not seen until `Ctrl+R`** | **not seen until `Ctrl+R`** | known limit |
+
+The **probe** rows were measured on 2026-09-11 with the scenes described under
+[Development](../DEVELOPMENT.md): the real `MainWindow` over a real file system in
+a temporary directory, changed from outside while the loop runs, the screen read
+back afterwards. On Linux the same four scenes ran under WSL (Ubuntu 24.04,
+.NET 10.0.110) through a pseudo-terminal, which is also where the dialog and the
+panel underneath it were seen in one picture.
+
+**The two systems do the same thing through entirely different machinery, and
+`FileSystemWatcher` hides it.** On Windows it is `ReadDirectoryChangesW`, a
+directory handle and a completion buffer; on Linux it is `inotify`, a per-user
+instance with one watch per directory. Both report a directory and not a tree
+here — `IncludeSubdirectories` is off — and both are given the same
+`NotifyFilters`, though what each one maps those onto differs: the Linux driver
+translates them onto the inotify masks it has, which is why the debounce matters
+more there than the filter does.
+
+**The inotify limits are two, and Marbas is nowhere near either.** Each
+`FileSystemWatcher` takes one inotify *instance*
+(`fs.inotify.max_user_instances`, 128 on a default Ubuntu) and one *watch* per
+directory it is given (`fs.inotify.max_user_watches`, 8192 on older kernels,
+65536 or more now). One tab watches at most two paths, and the previous pair is
+disposed before the next is opened, so the count is two per application and not
+two per directory ever visited. An application that watched a tree recursively
+would have to care; this one does not.
+
+**A file system that reports nothing is the other reason the poll exists.** SMB
+and NFS shares deliver change notifications unreliably or not at all — the
+server decides, not .NET — and so do some virtual file systems. The two-second
+poll of P12.4 notices a watched path that went or came back on any of them,
+because it asks `Directory.Exists` rather than the watcher. What it cannot
+notice is a file added *inside* such a share, since it reads no listing: that is
+the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 
 ## Viewing and editing
 

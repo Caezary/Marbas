@@ -1,10 +1,10 @@
 # Progress
 
-Status as of 2026-09-09. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-09-11. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Eleven phases are complete** (61 of 61 tasks). Marbas
+**Twelve phases are complete** (67 of 67 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -372,6 +372,25 @@ string, but `combine`, `name`, `directory` and `parent` all take an
 `IFileSystem`, which is the line `Domain` is on the other side of. The change
 is one `open` per consumer and no behaviour — four files under `Ui/` stopped
 depending on `FileSystem` altogether, and the whole suite passes unchanged.
+**A twelfth phase made the panels follow the disk.** What they show is now what
+the disk holds: a file written by another program, a directory removed from a
+shell, the whole directory a panel stands in deleted, a memory stick pulled out
+— each of them reaches the screen on its own, without `Ctrl+R`. The watch
+follows the tab in front and no other, since switching to a tab already re-reads
+it; an archive is watched by its file, because that is what the operating system
+can report on; and the effect that arms it is raised by comparing where the
+panels stood before and after a message, so no transition has to remember to ask
+for it. A burst is collapsed: two hundred files written in one go cost one
+listing, not two hundred. What the watcher cannot say — its own directory
+deleted, its buffer overflowing, a drive removed, which no console application
+can hear at all — is read as a reason to look again rather than as something to
+report, with a two-second poll as the net underneath; a panel whose place is gone
+steps up to the nearest directory that is still there, or onto a root that
+exists, and says nothing, because the user did nothing to move it. Nothing is
+re-read while a popup, the viewer or a batch's progress window is in front: that
+wait is the same mechanism as the burst, so whatever happened underneath becomes
+a single listing once the screen is the panels' own again.
+
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -399,6 +418,7 @@ written up as the checklist in
 | 9 — Archives | P9.1–P9.14 | done |
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
+| 12 — Watching the directories on screen | P12.1–P12.6 | done |
 
 ## What works today
 
@@ -515,9 +535,19 @@ written up as the checklist in
   other through the session's own working directory, `F6` needing both archives
   changeable where `F5` needs only the one being written.
   `Shift+F1` and `Shift+F4` still do nothing from inside an archive.
-- Unreadable or vanished directories raise a message box; the panel stays put.
+- Unreadable or vanished directories raise a message box and the panel stays put
+  whenever a command found them — `Ctrl+R`, walking in, switching a tab. The
+  watch of the directories on screen is the one path that says nothing and moves
+  the panel instead, since nobody asked it for anything.
 - `Ctrl+R` reloads the active panel, keeping the cursor on the same entry even
   when its position changed.
+- Both panels of the tab in front follow the disk on their own: an entry another
+  program adds, renames or removes appears or goes within a fraction of a second,
+  with no key pressed, each cursor kept on its entry and the marks that survived.
+  A burst of changes costs one listing, nothing is re-read while a popup or the
+  progress window is in front, and a panel whose directory — or whose whole drive
+  — is gone steps onto the nearest place that is still there without a dialog.
+  Tabs in the background are left alone, since switching to one re-reads it.
 - `Alt+F1` / `Alt+F2` open a root chooser for the left / right panel — the ready
   drives on Windows, the file-system root and the home directory on Unix.
 - `Insert`, `Space` and `Shift+↓` mark the entry under the cursor and move one
@@ -721,16 +751,18 @@ written up as the checklist in
 
 Design decisions and their reasoning live in [_documentation/Architecture/](Architecture/OVERVIEW.md),
 one topic per file — domain types, state and effects, file operations, archives,
-UI and input, settings persistence, tabs, testing, packaging and cross-platform
-behaviour.
+UI and input, settings persistence, tabs, auto-refresh, testing, packaging and
+cross-platform behaviour.
 
 ## Next up
 
-**Phase 11 is finished.** Eleven phases, 61 tasks: the eleventh made a tab of
-each pair of panels, put them in a zipper so the last one cannot be closed, grew
-the session file into numbered blocks that also remember the cursors, gave the
-keys their popup and their counter, and settled with a probe which of them a
-terminal actually delivers. What follows is choice rather than plan order.
+**Phase 12 is finished.** Twelve phases, 67 tasks: the twelfth put the
+directories on screen under a watch, so the panels follow the disk without a key
+— one `FileSystemWatcher` per path behind a port, a burst collapsed into one
+listing, the errors a watcher raises read as a reason to look again, a poll
+underneath for the drive no console application can hear leave, a panel stepped
+up to the nearest place that is still there rather than a dialog, and nothing
+re-read while a popup is in front. What follows is choice rather than plan order.
 Three things are waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
@@ -933,3 +965,16 @@ Three things are waiting:
 - The settings file is read and written through the same `IFileSystem` the
   panels browse. That is what makes it testable, but it also means a future
   read-only or sandboxed file system would silently take the config with it.
+- The watch notices what a `FileSystemWatcher` reports, and the poll underneath
+  it only asks whether the watched paths still exist. On a file system that
+  reports nothing — an SMB or NFS share is the usual one — an entry added inside
+  the directory is therefore still invisible until `Ctrl+R`. Polling the listing
+  itself instead would mean reading two directories every couple of seconds for
+  every session left open.
+- A removed drive shows up within the poll interval, two seconds, rather than at
+  once. The device notification Windows offers wants a window handle, which a
+  console application does not have.
+- An operation that finishes with a listing of its own — a copy, a delete — pays
+  one extra listing if the disk also changed while its progress window was up:
+  the held re-read arrives just after. It keeps the cursor and the marks, so it
+  costs a directory read and nothing else.

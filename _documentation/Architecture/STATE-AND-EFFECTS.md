@@ -282,3 +282,18 @@ on the right — so `FilePanel.render` can work out how much room the title has
 before `PanelTitle.describe` shortens the path into it. The counter is a label
 added to the window after the panels, which is what puts it over the right
 panel's top border rather than beside it.
+
+**A watch is an effect, and the state never knows what a watcher is.**
+`ExternalChangeDetected` re-reads both panels of the tab in front and raises
+nothing, because a change nobody asked for must not answer with a dialog;
+`WatchLocations` carries the paths that should be under watch, and
+`Shell.Dependencies.WatchLocations` is the port `Adapters/DirectoryWatch` fills.
+What is unusual is how the effect is raised: `update` is the former body, now
+`transition`, followed by `watching`, which compares `AppState.watchedLocations`
+before and after the message and appends the effect only when the pair moved.
+Raising it arm by arm would have meant seven places to keep in step — and
+`EntryOpened` alone moves a panel four ways — while the comparison also keeps
+every other transition silent. The first watch of a session is not a transition
+at all: at startup the panels already stand where the settings put them, so
+`MainWindow` arms it by interpreting one `WatchLocations` itself, next to the
+`WatchModifiers` it already wires. See [Auto-refresh](AUTO-REFRESH.md).

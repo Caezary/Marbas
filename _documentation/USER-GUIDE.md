@@ -17,7 +17,14 @@ needs to be installed. On Linux and macOS, mark the file executable first
 - `↑`/`↓`, `PgUp`/`PgDn`, `Home`/`End` move the cursor; `←`/`→` jump a page at
   a time without changing panels.
 - `Enter` opens the directory (or file's parent, via `..`) under the cursor.
-- `Ctrl+R` reloads the active panel.
+- The panels follow the disk on their own: a file or directory another program
+  adds, renames or removes shows up in whichever panels are on screen, without a
+  key. Only the tab in front is watched — the others are re-read when you switch
+  to them. If the directory a panel stands in is deleted, that panel steps up to
+  the nearest one that is still there; if the drive it stands on is pulled out,
+  it lands on a root that exists.
+- `Ctrl+R` reloads the active panel, which is what to reach for on a network
+  share: those do not always report their own changes.
 - `Alt+F1` / `Alt+F2` open a root chooser for the left / right panel — the
   ready drives on Windows, the file-system root and your home directory on
   Unix.

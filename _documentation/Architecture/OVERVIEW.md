@@ -49,6 +49,7 @@ root. `Program.fs` is left with the handful of lines that start the application.
 - [UI and input](UI-AND-INPUT.md) — colour, sorting, hidden entries, search, the key table
 - [Settings persistence](SETTINGS-PERSISTENCE.md) — the config file and what survives a restart
 - [Tabs](TABS.md) — a tab as a pair of panels, the zipper, switching, the counter
+- [Auto-refresh](AUTO-REFRESH.md) — watching the directories on screen, the burst, what the watcher cannot say
 - [Testing](TESTING.md) — suite layout, conventions, Terminal.Gui pitfalls
 - [Packaging](PACKAGING.md) — publish profiles and the release pipeline
 - [Cross-platform](CROSS-PLATFORM.md) — what has to hold on Windows and Linux, and why
@@ -180,6 +181,8 @@ Marbas/
     RegistryHandlers.fs   the Windows registry -> the handlers a name has
     BatchRunner.fs        a batch on a background task under the progress dialog
     ModifierWatch.fs      held Ctrl / Alt / Shift, polled on Windows, absent elsewhere
+    DirectoryWatch.fs     the directories on screen watched, bursts collapsed,
+                          what the watcher cannot say polled for
     Dependencies.fs       every port bound to one implementation, platform picked here
   Program.fs              quit key, application, theme, dependencies, window
   Properties/PublishProfiles/
