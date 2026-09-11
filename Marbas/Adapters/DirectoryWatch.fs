@@ -39,12 +39,12 @@ let standing (fs: IFileSystem) paths =
     |> List.filter (fun path -> FileSystemPath.kind fs path <> NoEntry)
     |> Set.ofList
 
-let collapsing (now: unit -> DateTimeOffset) (quiet: TimeSpan) (arm: (unit -> bool) -> unit) report =
+let collapsing (now: unit -> DateTimeOffset) (quiet: TimeSpan) (arm: (unit -> bool) -> unit) ready report =
     let last = ref (now ())
     let armed = ref false
 
     let settled () =
-        if now () - last.Value < quiet then
+        if now () - last.Value < quiet || not (ready ()) then
             true
         else
             armed.Value <- false
@@ -87,6 +87,8 @@ let watching (app: IApplication) (fs: IFileSystem) =
     let broken = ref false
     let collapse = ref ignore
 
+    let panelsInFront () = Seq.length app.SessionStack <= 1
+
     let scheduling settled =
         app.AddTimeout(quiet, fun () -> settled ()) |> ignore
 
@@ -110,7 +112,7 @@ let watching (app: IApplication) (fs: IFileSystem) =
     app.AddTimeout(poll, looking) |> ignore
 
     fun (wanted: FileSystemPath list) report ->
-        collapse.Value <- collapsing (fun () -> DateTimeOffset.Now) quiet scheduling report
+        collapse.Value <- collapsing (fun () -> DateTimeOffset.Now) quiet scheduling panelsInFront report
         paths.Value <- wanted
         broken.Value <- false
         opening ()

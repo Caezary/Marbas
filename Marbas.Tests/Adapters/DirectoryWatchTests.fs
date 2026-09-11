@@ -26,6 +26,7 @@ type private Watch() =
     let armed = ResizeArray<unit -> bool>()
     let reports = ResizeArray<int>()
     let mutable now = DateTimeOffset(2026, 9, 11, 12, 0, 0, TimeSpan.Zero)
+    let mutable inFront = false
 
     member _.Armed = armed
 
@@ -33,8 +34,12 @@ type private Watch() =
 
     member _.Pass(span: TimeSpan) = now <- now + span
 
+    member _.Cover() = inFront <- true
+
+    member _.Uncover() = inFront <- false
+
     member _.Collapsing() =
-        DirectoryWatch.collapsing (fun () -> now) quiet armed.Add (fun () -> reports.Add 1)
+        DirectoryWatch.collapsing (fun () -> now) quiet armed.Add (fun () -> not inFront) (fun () -> reports.Add 1)
 
 [<Fact>]
 let ``a directory is watched whole`` () =
@@ -128,3 +133,32 @@ let ``a path that is gone is not standing`` () =
     let standing = DirectoryWatch.standing fs [ fp (at "start/docs"); fp (at "start/gone") ]
 
     Assert.Equal<Set<FileSystemPath>>(Set.singleton (fp (at "start/docs")), standing)
+
+[<Fact>]
+let ``a change while something is in front is held back`` () =
+    let watch = Watch()
+    let touched = watch.Collapsing()
+    watch.Cover()
+    touched ()
+    watch.Pass quiet
+
+    let again = watch.Armed[0] ()
+
+    Assert.Empty watch.Reports
+    Assert.True again
+
+[<Fact>]
+let ``what was held becomes one re-read once the screen is the panels' own`` () =
+    let watch = Watch()
+    let touched = watch.Collapsing()
+    watch.Cover()
+    touched ()
+    touched ()
+    watch.Pass quiet
+    watch.Armed[0] () |> ignore
+    watch.Uncover()
+
+    let again = watch.Armed[0] ()
+
+    Assert.Single watch.Reports |> ignore
+    Assert.False again
