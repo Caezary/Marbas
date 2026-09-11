@@ -10,7 +10,12 @@ open Marbas.FileSystem
 [<Literal>]
 let QuietMilliseconds = 200.0
 
+[<Literal>]
+let PollMilliseconds = 2000.0
+
 let quiet = TimeSpan.FromMilliseconds QuietMilliseconds
+
+let poll = TimeSpan.FromMilliseconds PollMilliseconds
 
 type Target =
     | EveryEntryIn of directory: FileSystemPath
@@ -28,6 +33,11 @@ let target (fs: IFileSystem) (path: FileSystemPath) =
     | DirectoryEntry -> EveryEntryIn path
     | FileEntry
     | NoEntry -> OneEntryIn(FileSystemPath.directory fs path, FileSystemPath.name fs path)
+
+let standing (fs: IFileSystem) paths =
+    paths
+    |> List.filter (fun path -> FileSystemPath.kind fs path <> NoEntry)
+    |> Set.ofList
 
 let collapsing (now: unit -> DateTimeOffset) (quiet: TimeSpan) (arm: (unit -> bool) -> unit) report =
     let last = ref (now ())
@@ -53,7 +63,7 @@ let private filter target =
     | EveryEntryIn directory -> FileSystemPath.value directory, "*"
     | OneEntryIn(directory, name) -> FileSystemPath.value directory, EntryName.value name
 
-let private opened (fs: IFileSystem) touched target =
+let private opened (fs: IFileSystem) touched failed target =
     let directory, name = filter target
 
     try
@@ -64,21 +74,43 @@ let private opened (fs: IFileSystem) touched target =
         watcher.Deleted.Add(fun _ -> touched ())
         watcher.Changed.Add(fun _ -> touched ())
         watcher.Renamed.Add(fun _ -> touched ())
+        watcher.Error.Add(fun _ -> failed ())
         watcher.EnableRaisingEvents <- true
         Some watcher
     with _ ->
         None
 
 let watching (app: IApplication) (fs: IFileSystem) =
-    let current = ref List.empty<IFileSystemWatcher>
+    let watchers = ref List.empty<IFileSystemWatcher>
+    let paths = ref List.empty<FileSystemPath>
+    let seen = ref Set.empty
+    let broken = ref false
+    let collapse = ref ignore
 
-    let arm (app: IApplication) settled =
+    let scheduling settled =
         app.AddTimeout(quiet, fun () -> settled ()) |> ignore
 
-    fun (paths: FileSystemPath list) report ->
-        current.Value |> List.iter _.Dispose()
+    let touched () = app.Invoke(fun () -> collapse.Value ())
 
-        let collapse = collapsing (fun () -> DateTimeOffset.Now) quiet (arm app) report
-        let touched () = app.Invoke(fun () -> collapse ())
+    let failed () = app.Invoke(fun () -> broken.Value <- true)
 
-        current.Value <- paths |> List.map (target fs) |> List.choose (opened fs touched)
+    let opening () =
+        watchers.Value |> List.iter _.Dispose()
+        watchers.Value <- paths.Value |> List.map (target fs) |> List.choose (opened fs touched failed)
+        seen.Value <- standing fs paths.Value
+
+    let looking () =
+        if broken.Value || standing fs paths.Value <> seen.Value then
+            broken.Value <- false
+            opening ()
+            touched ()
+
+        true
+
+    app.AddTimeout(poll, looking) |> ignore
+
+    fun (wanted: FileSystemPath list) report ->
+        collapse.Value <- collapsing (fun () -> DateTimeOffset.Now) quiet scheduling report
+        paths.Value <- wanted
+        broken.Value <- false
+        opening ()

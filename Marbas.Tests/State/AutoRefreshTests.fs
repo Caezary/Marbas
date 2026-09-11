@@ -88,15 +88,36 @@ let ``an external change keeps the marks that survived it`` () =
     Assert.Equal<Set<EntryName>>(Set.singleton (en "notes.txt"), result.State.Left.Selected)
 
 [<Fact>]
-let ``a panel whose directory vanished is left as it was, and nothing is reported`` () =
+let ``a panel whose directory vanished stands in the nearest one still there`` () =
     let fs = mockFs ()
     let state = loadedBoth fs
     fs.Directory.Delete(at "start", true)
 
     let result = update fs ExternalChangeDetected state
 
-    Assert.Equal<string list>(names state.Left.Entries, names result.State.Left.Entries)
-    Assert.Empty result.Effects
+    Assert.Equal(OnDisk(fp (at "")), result.State.Left.Path)
+    Assert.Equal(0, result.State.Left.Cursor)
+
+[<Fact>]
+let ``a panel walked out of a vanished directory reports nothing and moves the watch`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs
+    fs.Directory.Delete(at "start", true)
+
+    let result = update fs ExternalChangeDetected state
+
+    Assert.Equal<Effect list>([ WatchLocations [ fp (at ""); fp (at "backup") ] ], result.Effects)
+
+[<WindowsFact>]
+let ``a panel whose drive is gone stands on a root that is there`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory @"C:\start"
+    let state = create (fp @"D:\work")
+
+    let result = update fs ExternalChangeDetected state
+
+    Assert.Equal(OnDisk(fp @"C:\"), result.State.Left.Path)
+    Assert.Equal(OnDisk(fp @"C:\"), result.State.Right.Path)
 
 [<Fact>]
 let ``a panel whose directory vanished does not stop the other from being read`` () =

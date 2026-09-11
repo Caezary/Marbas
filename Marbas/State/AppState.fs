@@ -497,9 +497,22 @@ let refresh (fs: IFileSystem) (state: AppState) = readAgain fs state.Active stat
 let readTabAgain (fs: IFileSystem) state =
     readAgain fs Left state |> Result.bind (readAgain fs Right)
 
+let private ground (fs: IFileSystem) (location: PanelLocation) =
+    location
+    |> PanelLocation.watched
+    |> FileSystemPath.nearest fs
+    |> Option.orElseWith (fun () -> Roots.mounted fs |> List.tryHead)
+
+let private replanted (fs: IFileSystem) side state =
+    match ground fs (panel side state).Path with
+    | Some path -> loadPanelFocusing fs side path Top state |> Result.defaultValue state
+    | None -> state
+
 let readTabQuietly (fs: IFileSystem) state =
     let keeping side state =
-        readAgain fs side state |> Result.defaultValue state
+        match readAgain fs side state with
+        | Ok updated -> updated
+        | Error _ -> replanted fs side state
 
     state |> keeping Left |> keeping Right
 

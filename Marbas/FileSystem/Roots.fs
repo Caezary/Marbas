@@ -9,7 +9,7 @@ type RootChoice =
 
 module Roots =
 
-    let private mountedDrives (fs: IFileSystem) =
+    let mounted (fs: IFileSystem) =
         fs.DriveInfo.GetDrives()
         |> Seq.filter _.IsReady
         |> Seq.map _.Name
@@ -24,5 +24,5 @@ module Roots =
 
     let list (fs: IFileSystem) choice =
         match choice with
-        | MountedDrives -> mountedDrives fs
+        | MountedDrives -> mounted fs
         | RootAndHome home -> rootAndHome fs home

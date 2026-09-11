@@ -80,6 +80,42 @@ let ``parent of a root is None`` () =
     Assert.Equal(None, parent)
 
 [<Fact>]
+let ``the nearest directory to one that is there is itself`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "data/docs")
+
+    let nearest = FileSystemPath.nearest fs (FileSystemPath.create (at "data/docs"))
+
+    Assert.Equal(Some(at "data/docs"), nearest |> Option.map FileSystemPath.value)
+
+[<Fact>]
+let ``the nearest directory to one that is gone is the first ancestor still there`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "data")
+
+    let nearest = FileSystemPath.nearest fs (FileSystemPath.create (at "data/docs/deep"))
+
+    Assert.Equal(Some(at "data"), nearest |> Option.map FileSystemPath.value)
+
+[<Fact>]
+let ``the nearest directory to a file is the directory holding it`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "data/notes.txt", MockFileData "hi")
+
+    let nearest = FileSystemPath.nearest fs (FileSystemPath.create (at "data/notes.txt"))
+
+    Assert.Equal(Some(at "data"), nearest |> Option.map FileSystemPath.value)
+
+[<WindowsFact>]
+let ``a path whose whole chain is gone has no nearest directory`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory @"C:\data"
+
+    let nearest = FileSystemPath.nearest fs (FileSystemPath.create @"D:\work\docs")
+
+    Assert.Equal(None, nearest)
+
+[<Fact>]
 let ``a name without a directory part is a bare name`` () =
     let fs = MockFileSystem()
 

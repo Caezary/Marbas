@@ -108,3 +108,23 @@ let ``a change after a report arms the watch again`` () =
     touched ()
 
     Assert.Equal(2, watch.Armed.Count)
+
+[<Fact>]
+let ``the paths that are there are the ones standing`` () =
+    let fs = mockFs ()
+
+    let standing =
+        DirectoryWatch.standing fs [ fp (at "start/docs"); fp (at "start/backup.zip") ]
+
+    Assert.Equal<Set<FileSystemPath>>(
+        Set.ofList [ fp (at "start/docs"); fp (at "start/backup.zip") ],
+        standing
+    )
+
+[<Fact>]
+let ``a path that is gone is not standing`` () =
+    let fs = mockFs ()
+
+    let standing = DirectoryWatch.standing fs [ fp (at "start/docs"); fp (at "start/gone") ]
+
+    Assert.Equal<Set<FileSystemPath>>(Set.singleton (fp (at "start/docs")), standing)

@@ -38,3 +38,9 @@ module FileSystemPath =
         match fs.DirectoryInfo.New(path).Parent with
         | null -> None
         | parent -> Some(FileSystemPath parent.FullName)
+
+    let rec nearest (fs: IFileSystem) (path: FileSystemPath) =
+        match kind fs path with
+        | DirectoryEntry -> Some path
+        | FileEntry
+        | NoEntry -> parent fs path |> Option.bind (nearest fs)
