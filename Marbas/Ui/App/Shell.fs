@@ -37,6 +37,9 @@ let MoveTitle = "Moving"
 let DeleteTitle = "Deleting"
 
 [<Literal>]
+let MeasureTitle = "Measuring"
+
+[<Literal>]
 let PackTitle = "Packing"
 
 [<Literal>]
@@ -70,7 +73,8 @@ type Dependencies =
       WatchModifiers: (Set<Modifier> -> unit) -> unit
       WatchLocations: FileSystemPath list -> (unit -> unit) -> unit
       RunBatch:
-          string -> (Operations.BatchControl -> Operations.ItemResult list) -> (Operations.ItemResult list -> unit) -> unit }
+          string -> (Operations.BatchControl -> Operations.ItemResult list) -> (Operations.ItemResult list -> unit) -> unit
+      RunMeasure: string -> (Operations.BatchControl -> Measurement list) -> (Measurement list -> unit) -> unit }
 
 let private patternPrompt mode =
     match mode with
@@ -321,6 +325,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         Operations.rename deps.FileSystem source newName
         |> fun outcome -> RenameFinished(newName, outcome)
         |> dispatch
+    | MeasureTargets targets ->
+        deps.RunMeasure
+            MeasureTitle
+            (fun control -> DirectoryMeasure.measureAll deps.FileSystem control targets)
+            (MeasureFinished >> dispatch)
     | ViewFile path ->
         match FileWindow.openFile deps.FileSystem path with
         | Ok source ->

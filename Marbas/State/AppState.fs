@@ -409,6 +409,52 @@ let cursorDirectoryPath (fs: IFileSystem) panel =
     |> Option.filter (fun entry -> entry.Kind = Directory && selectable entry)
     |> Option.bind (entryPath fs panel)
 
+let private locationAbove (fs: IFileSystem) panel =
+    match panel.Path with
+    | OnDisk path -> FileSystemPath.parent fs path |> Option.map OnDisk
+    | InArchive(archive, level) ->
+        match ArchivePath.parent level with
+        | Some above -> InArchive(archive, above) |> Some
+        | None -> OnDisk(FileSystemPath.directory fs archive) |> Some
+
+let private locationOf (fs: IFileSystem) panel (entry: Entry) =
+    if entry.Name = ParentName then
+        locationAbove fs panel
+    else
+        match panel.Path with
+        | OnDisk path ->
+            (EntryName.value entry.Name)
+            |> (FileSystemPath.combine fs path)
+            |> OnDisk
+            |> Some
+        | InArchive(archive, level) -> InArchive(archive, ArchivePath.child level entry.Name) |> Some
+
+let measureTargets (fs: IFileSystem) panel =
+    let considered =
+        match selectedEntries panel with
+        | [] -> cursorEntry panel |> Option.toList
+        | marked -> marked
+
+    considered
+    |> List.filter (fun entry -> entry.Kind = Directory)
+    |> List.choose (fun entry ->
+        locationOf fs panel entry
+        |> Option.map (fun location ->
+            { Name = entry.Name
+              Location = location }))
+
+let applyMeasurements side (measured: Measurement list) state =
+    let sizes = measured |> List.map (fun one -> one.Name, one.Size) |> Map.ofList
+    let measuredEntry  entry =
+        match Map.tryFind entry.Name sizes with
+        | Some size -> { entry with Measured = Some size }
+        | None -> entry
+
+    updatePanel
+        side
+        (fun p -> { p with Entries = p.Entries |> List.map measuredEntry })
+        state
+
 let deleteScope (fs: IFileSystem) panel =
     let reachesContents =
         match panel.Path with

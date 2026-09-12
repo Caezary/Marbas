@@ -12,6 +12,7 @@ type Entry =
     { Name: EntryName
       Kind: EntryKind
       Size: int64 option
+      Measured: DirectorySize option
       Modified: DateTimeOffset
       Visibility: EntryVisibility
       Executability: Executability }
@@ -35,6 +36,7 @@ let private directoryEntry (info: IDirectoryInfo) =
     { Name = name
       Kind = Directory
       Size = None
+      Measured = None
       Modified = DateTimeOffset info.LastWriteTime
       Visibility = EntryVisibility.classify name info.Attributes
       Executability = NotExecutable }
@@ -45,6 +47,7 @@ let private fileEntry (info: IFileInfo) =
     { Name = name
       Kind = File
       Size = Some info.Length
+      Measured = None
       Modified = DateTimeOffset info.LastWriteTime
       Visibility = EntryVisibility.classify name info.Attributes
       Executability = Executability.classify name info.UnixFileMode }
@@ -111,6 +114,7 @@ let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
             { Name = ParentName
               Kind = Directory
               Size = None
+              Measured = None
               Modified = DateTimeOffset parent.LastWriteTime
               Visibility = Plain
               Executability = NotExecutable }

@@ -6,7 +6,7 @@ open Terminal.Gui.App
 open Marbas.FileSystem
 open Marbas.Ui.Dialogs
 
-let run (app: IApplication) title work finish =
+let private drive (app: IApplication) title (work: Operations.BatchControl -> 'a) (finish: 'a -> unit) =
     let cancellation = new CancellationTokenSource()
     let dialog = ProgressDialog.create title
 
@@ -18,7 +18,7 @@ let run (app: IApplication) title work finish =
           IsCancelled = fun () -> cancellation.IsCancellationRequested }
 
     Task.Run(fun () ->
-        let results = Operations.guarded title work control
+        let results = work control
 
         app.Invoke(fun () ->
             if not cancellation.IsCancellationRequested then
@@ -29,3 +29,9 @@ let run (app: IApplication) title work finish =
 
     app.Run dialog |> ignore
     cancellation.Cancel()
+
+let run app title work finish =
+    drive app title (Operations.guarded title work) finish
+
+let runMeasuring app title work finish =
+    drive app title (fun control -> try work control with _ -> []) finish

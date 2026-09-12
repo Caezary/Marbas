@@ -18,6 +18,7 @@ let private entry name kind =
       Size = (match kind with
               | File -> Some 1L
               | Directory -> None)
+      Measured = None
       Modified = DateTimeOffset(DateTime(2026, 1, 1))
       Visibility = Plain
       Executability = NotExecutable }

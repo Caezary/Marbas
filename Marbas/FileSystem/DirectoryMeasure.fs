@@ -1,33 +1,24 @@
 namespace Marbas.FileSystem
 
 open System.IO.Abstractions
+open Marbas.Domain
 open Marbas.FileSystem.Operations
 
-type DirectorySize =
-    | Exact of bytes: int64
-    | AtLeast of bytes: int64
+type MeasureTarget =
+    { Name: EntryName
+      Location: PanelLocation }
 
-module DirectorySize =
+type Measurement =
+    { Name: EntryName
+      Size: DirectorySize }
 
-    let bytes size =
-        match size with
-        | Exact counted
-        | AtLeast counted -> counted
-
-    let private nothingCounted = Exact 0L
-
-    let private add left right =
-        match left, right with
-        | Exact counted, Exact more -> Exact(counted + more)
-        | _ -> AtLeast(bytes left + bytes right)
-
-    let private total sizes = sizes |> List.fold add nothingCounted
+module DirectoryMeasure =
 
     let private lengthOf (fs: IFileSystem) (path: FileSystemPath) =
-        fs.FileInfo.New(FileSystemPath.value path).Length
+        (fs.FileInfo.New(FileSystemPath.value path)).Length
 
     let private isLink (fs: IFileSystem) (path: FileSystemPath) =
-        fs.DirectoryInfo.New(FileSystemPath.value path).LinkTarget |> isNull |> not
+        (fs.DirectoryInfo.New(FileSystemPath.value path)).LinkTarget |> isNull |> not
 
     let private entriesUnder (fs: IFileSystem) (path: FileSystemPath) =
         fs.Directory.EnumerateFileSystemEntries(FileSystemPath.value path)
@@ -41,16 +32,16 @@ module DirectorySize =
             control.Report path
 
             try
-                entriesUnder fs path |> List.map (sized fs control) |> total
+                entriesUnder fs path |> List.map (sized fs control) |> DirectorySize.total
             with _ ->
                 AtLeast 0L
 
     and private sized (fs: IFileSystem) control (path: FileSystemPath) =
         match FileSystemPath.kind fs path with
         | FileEntry -> Exact(lengthOf fs path)
-        | DirectoryEntry when isLink fs path -> nothingCounted
+        | DirectoryEntry when isLink fs path -> DirectorySize.nothingCounted
         | DirectoryEntry -> walk fs control path
-        | NoEntry -> nothingCounted
+        | NoEntry -> DirectorySize.nothingCounted
 
     let private below (level: ArchivePath) (item: ArchiveItem) =
         let names = ArchivePath.segments level
@@ -106,3 +97,12 @@ module DirectorySize =
         match location with
         | OnDisk path -> walk fs control path
         | InArchive(archive, level) -> measureArchive fs control archive level
+
+    let measureAll (fs: IFileSystem) (control: BatchControl) (targets: MeasureTarget list) =
+        let measured =
+            targets
+            |> List.map (fun target ->
+                { Name = target.Name
+                  Size = measure fs control target.Location })
+
+        if control.IsCancelled() then [] else measured

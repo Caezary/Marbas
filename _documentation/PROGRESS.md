@@ -431,7 +431,25 @@ link is a leaf: the link is counted as nothing and never walked into, which is
 what keeps a link pointing at its own ancestor from spinning — P13.8 will make
 the same rule hold for every other walk in the app. An archive is measured from
 its index, read once and summed below the level asked for; reading it level by
-level would re-open the file once per directory in it.
+level would re-open the file once per directory in it. The value it answers is a
+`Domain` type, because P13.4 needs it on a listing entry, which is read long
+before anything can be measured; the walk itself stays in `FileSystem` as
+`DirectoryMeasure`.
+
+**P13.4 put the measurement on the screen, on the key that had nothing to say.**
+`F3` viewed a file and did nothing at all on a directory; it now measures the
+operation targets every other key takes — the marks, or the entry under the
+cursor — and the answer lands in two places: the size column, in place of the
+`<DIR>` the row wore, and the status line under the panels. A lower bound wears
+a `≥` in both. The walk runs behind the progress window through a port of its
+own, since the batch runner speaks in the item results copying and deleting
+answer with, and measuring answers with sizes; `Esc` leaves the panel exactly as
+it was, because a measurement stopped half way is worth less than the `<DIR>`
+it would overwrite. `..` measures the directory it leads to, which inside an
+archive at its root is the directory holding the archive. A measurement belongs
+to the listing it was taken over: any re-read — `Ctrl+R`, an operation that
+finishes, the watch of P12 — forgets it, which falls out of the listing being
+read afresh rather than being a rule of its own.
 
 
 **The suite passes on both operating systems** — a handful of tests skip on
@@ -461,7 +479,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.3 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.4 done |
 
 ## What works today
 
@@ -593,6 +611,11 @@ written up as the checklist in
   Tabs in the background are left alone, since switching to one re-reads it.
 - `Alt+F1` / `Alt+F2` open a root chooser for the left / right panel — the ready
   drives on Windows, the file-system root and the home directory on Unix.
+- `F3` on a directory measures it — the marks, or the entry under the cursor —
+  behind the progress window that `Esc` stops, and writes the total into the
+  size column in place of `<DIR>` and into the status line. A total that had to
+  skip something unreadable, or that was stopped part way, is marked `≥`. It
+  holds until the panel is read again. `..` measures the directory it leads to.
 - `Ctrl+\` sends the active panel to the root of the volume it stands on, in one
   key rather than a walk up the tree; a panel standing inside an archive leaves
   it, and one already on a root stays as it is. The key reaches the application
@@ -815,9 +838,9 @@ shown as drives behind `Alt+F1` and `Alt+F2`, the root of the volume on `Ctrl+\`
 `F3` measuring a directory, `Alt+F6` making a link in each of the three kinds the
 systems carry, and `Alt+Del` wiping what it deletes. P13.1 has measured what the
 terminals hand over, which settles two of those bindings, and P13.2 has put the
-root of the volume on the key they deliver, and P13.3 can measure a directory.
-P13.4, `F3` putting that measurement on the screen, is next. Three things are
-waiting beside it:
+root of the volume on the key they deliver, P13.3 can measure a directory and
+P13.4 shows what it measured. P13.5, sorting by a size that was measured, is
+next. Three things are waiting beside it:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

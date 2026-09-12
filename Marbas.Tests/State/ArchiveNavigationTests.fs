@@ -143,13 +143,18 @@ let ``the file under the cursor inside an archive is viewed out of it`` () =
     Assert.Equal<Effect list>([ ViewArchiveEntry(archive, inside "notes.txt") ], result.Effects)
 
 [<Fact>]
-let ``a directory inside an archive has nothing to view`` () =
+let ``a directory inside an archive is measured rather than viewed`` () =
     let fs = packed ()
     let state = standingInside fs Left |> setCursor Left 1
 
     let result = update fs ViewRequested state
 
-    Assert.Empty result.Effects
+    Assert.Equal<Effect list>(
+        [ MeasureTargets
+              [ { Name = en "docs"
+                  Location = InArchive(archive, inside "docs") } ] ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a marked entry inside an archive keeps its mark through a re-read`` () =

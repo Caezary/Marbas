@@ -37,7 +37,7 @@
     <Compile Include="FileSystem\RootsTests.fs" />
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
-    <Compile Include="FileSystem\DirectorySizeTests.fs" />
+    <Compile Include="FileSystem\DirectoryMeasureTests.fs" />
     <Compile Include="FileSystem\HandlerTests.fs" />
     <Compile Include="FileSystem\ProgramCommandTests.fs" />
     <Compile Include="FileSystem\DesktopEntryTests.fs" />
@@ -91,6 +91,7 @@
     <Compile Include="State\RunTests.fs" />
     <Compile Include="State\OpenWithTests.fs" />
     <Compile Include="State\PropertiesTests.fs" />
+    <Compile Include="State\MeasureTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
   </ItemGroup>
@@ -213,6 +214,7 @@
     <Compile Include="Integration\App\SettingsTests.fs" />
     <Compile Include="Integration\App\TabKeyTests.fs" />
     <Compile Include="Integration\App\VolumeRootKeyTests.fs" />
+    <Compile Include="Integration\App\MeasureKeyTests.fs" />
     <Compile Include="Integration\App\MkdirKeyTests.fs" />
     <Compile Include="Integration\App\DeleteKeyTests.fs" />
     <Compile Include="Integration\App\CopyKeyTests.fs" />

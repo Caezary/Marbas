@@ -455,24 +455,20 @@ let ``view requested aims at the file under the cursor`` () =
     Assert.Equal<Effect list>([ ViewFile(fp (at "start/notes.txt")) ], result.Effects)
 
 [<Fact>]
-let ``view requested on a directory raises no effect`` () =
+let ``view requested on a directory leaves the panel until the measurement is in`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 1
 
     let result = update fs ViewRequested state
 
     Assert.Equal(state, result.State)
-    Assert.Empty result.Effects
 
-[<Fact>]
-let ``view requested on the parent entry raises no effect`` () =
-    let fs = mockFs ()
-    let state = loaded fs
-
-    let result = update fs ViewRequested state
-
-    Assert.Equal(state, result.State)
-    Assert.Empty result.Effects
+    Assert.Equal<Effect list>(
+        [ MeasureTargets
+              [ { Name = en "docs"
+                  Location = OnDisk(fp (at "start/docs")) } ] ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``view requested ignores what is marked and takes the cursor entry`` () =

@@ -14,9 +14,13 @@ let private entry kind size =
     { Name = EntryName.create "entry"
       Kind = kind
       Size = size
+      Measured = None
       Modified = modified
       Visibility = Plain
       Executability = NotExecutable }
+
+let private measured size =
+    { entry Directory None with Measured = Some size }
 
 [<Fact>]
 let ``a file size is rendered by the given format`` () =
@@ -39,3 +43,15 @@ let ``a file of unknown size shows nothing`` () =
     let text = EntrySize.describe string (entry File None)
 
     Assert.Equal("", text)
+
+[<Fact>]
+let ``a measured directory shows what it holds instead of the marker`` () =
+    let text = EntrySize.describe string (measured (Exact 12345L))
+
+    Assert.Equal("12345", text)
+
+[<Fact>]
+let ``a directory measured only in part shows a lower bound`` () =
+    let text = EntrySize.describe string (measured (AtLeast 12345L))
+
+    Assert.Equal(EntrySize.AtLeastMark + "12345", text)

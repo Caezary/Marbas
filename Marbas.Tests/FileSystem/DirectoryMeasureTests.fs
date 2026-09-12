@@ -1,8 +1,9 @@
-module Marbas.Tests.FileSystem.DirectorySizeTests
+module Marbas.Tests.FileSystem.DirectoryMeasureTests
 
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Tests
 
@@ -39,7 +40,7 @@ let private packed () =
     fs
 
 let private measured (fs: IFileSystem) location =
-    DirectorySize.measure fs Operations.unattended location
+    DirectoryMeasure.measure fs Operations.unattended location
 
 let private recording (reported: ResizeArray<FileSystemPath>) : Operations.BatchControl =
     { Report = reported.Add
@@ -73,7 +74,7 @@ let ``every directory below is reported as it is entered`` () =
     let fs = tree ()
     let reported = ResizeArray<FileSystemPath>()
 
-    DirectorySize.measure fs (recording reported) (OnDisk(fp (at "data"))) |> ignore
+    DirectoryMeasure.measure fs (recording reported) (OnDisk(fp (at "data"))) |> ignore
 
     Assert.Equal<string list>(
         [ at "data"; at "data/docs"; at "data/docs/deep"; at "data/docs/empty" ],
@@ -96,7 +97,7 @@ let ``a walk stopped part way answers what it had counted`` () =
     let reported = ResizeArray<FileSystemPath>()
 
     let size =
-        DirectorySize.measure fs (stoppingAfter 1 reported) (OnDisk(fp (at "data")))
+        DirectoryMeasure.measure fs (stoppingAfter 1 reported) (OnDisk(fp (at "data")))
 
     Assert.Equal(AtLeast 5L, size)
 
@@ -106,7 +107,7 @@ let ``a directory link is a leaf rather than a way in`` () =
     fs.Directory.CreateSymbolicLink(at "data/twin", at "data/docs") |> ignore
     let reported = ResizeArray<FileSystemPath>()
 
-    let size = DirectorySize.measure fs (recording reported) (OnDisk(fp (at "data")))
+    let size = DirectoryMeasure.measure fs (recording reported) (OnDisk(fp (at "data")))
 
     Assert.Equal(Exact 18L, size)
     Assert.DoesNotContain(at "data/twin", paths reported)
@@ -140,7 +141,7 @@ let ``every level of an archive is reported as it is entered`` () =
     let fs = packed ()
     let reported = ResizeArray<FileSystemPath>()
 
-    DirectorySize.measure fs (recording reported) (InArchive(fp archive, ArchivePath.root))
+    DirectoryMeasure.measure fs (recording reported) (InArchive(fp archive, ArchivePath.root))
     |> ignore
 
     Assert.Equal<string list>(

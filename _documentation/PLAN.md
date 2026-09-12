@@ -604,7 +604,7 @@ key P13.15 takes.
   update. *Done when:* a panel nested three directories deep, one on the root,
   one inside an archive and one on `/` are each covered, and the effect the
   watch needs is raised.
-- **P13.3 Measuring a directory** — `DirectorySize.measure` walks everything
+- **P13.3 Measuring a directory** — `DirectoryMeasure.measure` walks everything
   below a directory through `IFileSystem`, summing the lengths of the files,
   reporting each directory it enters through the `BatchControl` the batches
   already carry and stopping when that control is cancelled. A subdirectory it

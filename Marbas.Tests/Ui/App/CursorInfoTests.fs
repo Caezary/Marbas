@@ -13,6 +13,7 @@ let private file name size =
     { Name = EntryName.create name
       Kind = File
       Size = Some size
+      Measured = None
       Modified = modified
       Visibility = Plain
       Executability = NotExecutable }
@@ -21,6 +22,7 @@ let private directory name =
     { Name = EntryName.create name
       Kind = Directory
       Size = None
+      Measured = None
       Modified = modified
       Visibility = Plain
       Executability = NotExecutable }
@@ -53,3 +55,24 @@ let ``no entry under the cursor is described as empty text`` () =
     let text = CursorInfo.describe None
 
     Assert.Equal("", text)
+
+[<Fact>]
+let ``a measured directory is described by what it holds`` () =
+    let measured =
+        { directory "docs" with
+            Measured = Some(Exact 12345L) }
+
+    let text = CursorInfo.describe (Some measured)
+
+    Assert.Contains("12,345 bytes", text)
+    Assert.DoesNotContain("<DIR>", text)
+
+[<Fact>]
+let ``a directory measured only in part says so`` () =
+    let measured =
+        { directory "docs" with
+            Measured = Some(AtLeast 12345L) }
+
+    let text = CursorInfo.describe (Some measured)
+
+    Assert.Contains("≥12,345 bytes", text)

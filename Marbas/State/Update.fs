@@ -40,6 +40,7 @@ type Message =
     | UnpackFinished of results: Operations.ItemResult list
     | RenameFinished of newName: EntryName * outcome: Result<unit, Operations.OperationError>
     | ViewRequested
+    | MeasureFinished of measured: Measurement list
     | EditRequested
     | EditFinished of outcome: Result<unit, Operations.OperationError>
     | LaunchFinished of outcome: Result<unit, LaunchError>
@@ -95,6 +96,7 @@ type Effect =
         level: ArchivePath
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
+    | MeasureTargets of targets: MeasureTarget list
     | ViewArchiveEntry of archive: FileSystemPath * entry: ArchivePath
     | EditFile of path: FileSystemPath * editor: ProgramPath option
     | RunProgram of LaunchRequest
@@ -269,6 +271,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     let transferSource' = transferSource fs
     let operationPaths' = operationPaths fs
     let cursorFilePath' = cursorFilePath fs
+    let measureTargets' = measureTargets fs
     let cursorDirectoryPath' = cursorDirectoryPath fs
     let cursorExecutablePath' = cursorExecutablePath fs
     let archiveSuggestion' = archiveSuggestion fs
@@ -398,7 +401,11 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         match cursorFilePath' target, cursorFileInArchive target with
         | Some path, _ -> request state (ViewFile path)
         | _, Some(archive, entry) -> request state (ViewArchiveEntry(archive, entry))
-        | None, None -> stay state
+        | None, None ->
+            match measureTargets' target with
+            | [] -> stay state
+            | targets -> request state (MeasureTargets targets)
+    | MeasureFinished measured -> stay (applyMeasurements state.Active measured state)
     | EditRequested ->
         let target = activePanel state
 

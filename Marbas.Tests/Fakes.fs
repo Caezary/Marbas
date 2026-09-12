@@ -112,4 +112,5 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       AskOverwrite = (fun _ _ -> Operations.No)
       WatchModifiers = ignore
       WatchLocations = fun _ _ -> ()
-      RunBatch = fun _ work finish -> work Operations.unattended |> finish }
+      RunBatch = fun _ work finish -> work Operations.unattended |> finish
+      RunMeasure = fun _ work finish -> work Operations.unattended |> finish }
