@@ -81,13 +81,22 @@ let private compareNames a b =
 let private compareExtensions a b =
     compareText (EntryName.extension a.Name) (EntryName.extension b.Name)
 
+let private sizeToSortBy entry =
+    match entry.Kind with
+    | Directory ->
+        entry.Measured
+        |> Option.map DirectorySize.bytes
+        |> Option.defaultValue 0L
+        |> Some
+    | File -> entry.Size
+
 let private compareByKey key a b =
     let primary =
         match key with
         | ByName -> 0
         | ByExtension -> compareExtensions a b
         | ByDate -> compare a.Modified b.Modified
-        | BySize -> compare a.Size b.Size
+        | BySize -> compare (sizeToSortBy a) (sizeToSortBy b)
 
     if primary = 0 then compareNames a b else primary
 

@@ -451,6 +451,17 @@ to the listing it was taken over: any re-read — `Ctrl+R`, an operation that
 finishes, the watch of P12 — forgets it, which falls out of the listing being
 read afresh rather than being a rule of its own.
 
+**P13.5 let the size sort see what had been measured.** Sorting by size compared
+two directories by `Size`, which is `None` for both, so they fell back on their
+names; it now compares them by what was measured, and a directory nobody
+measured counts as nothing and therefore keeps that name order. Files still
+compare by their own length, and the two never meet in one comparison, because
+the group rank of P2 has always put every directory above every file. A
+measurement arriving into a panel that sorts by size moves the row where it
+belongs straight away, through the same `reorder` the sort keys use, which keeps
+the cursor on the entry it was on — so the row the user just measured travels
+under their cursor rather than away from it.
+
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -479,7 +490,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.4 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.5 done |
 
 ## What works today
 
@@ -611,6 +622,10 @@ written up as the checklist in
   Tabs in the background are left alone, since switching to one re-reads it.
 - `Alt+F1` / `Alt+F2` open a root chooser for the left / right panel — the ready
   drives on Windows, the file-system root and the home directory on Unix.
+- Sorting by size compares directories by what `F3` measured, files by their own
+  length, and a directory nobody measured counts as nothing, so it keeps the
+  name order it had. A measurement that arrives while the panel sorts that way
+  moves the row into place under the cursor.
 - `F3` on a directory measures it — the marks, or the entry under the cursor —
   behind the progress window that `Esc` stops, and writes the total into the
   size column in place of `<DIR>` and into the status line. A total that had to
@@ -838,9 +853,9 @@ shown as drives behind `Alt+F1` and `Alt+F2`, the root of the volume on `Ctrl+\`
 `F3` measuring a directory, `Alt+F6` making a link in each of the three kinds the
 systems carry, and `Alt+Del` wiping what it deletes. P13.1 has measured what the
 terminals hand over, which settles two of those bindings, and P13.2 has put the
-root of the volume on the key they deliver, P13.3 can measure a directory and
-P13.4 shows what it measured. P13.5, sorting by a size that was measured, is
-next. Three things are waiting beside it:
+root of the volume on the key they deliver, P13.3 can measure a directory, P13.4
+shows what it measured and P13.5 sorts by it. P13.6, wiping a file rather than
+unlinking it, is next. Three things are waiting beside it:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

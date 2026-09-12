@@ -168,6 +168,34 @@ let ``a measurement stopped part way is kept as the lower bound it is`` () =
     Assert.Equal(Some(AtLeast 5L), measurementOf "docs" result.State.Left)
 
 [<Fact>]
+let ``a measurement taken while the panel sorts by size moves the row into place`` () =
+    let fs = mockFs ()
+
+    let state =
+        loaded fs |> sortBy SortKey.BySize Left |> setCursor Left 1
+
+    let result =
+        update fs (MeasureFinished [ { Name = en "docs"; Size = Exact 5L } ]) state
+
+    let order = result.State.Left.Entries |> List.map (_.Name >> EntryName.value)
+
+    Assert.Equal<string list>([ ".."; "empty"; "docs"; "notes.txt" ], order)
+    Assert.Equal(2, result.State.Left.Cursor)
+
+[<Fact>]
+let ``a measurement changes no order in a panel sorted by name`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 1
+
+    let result =
+        update fs (MeasureFinished [ { Name = en "docs"; Size = Exact 5L } ]) state
+
+    let order = result.State.Left.Entries |> List.map (_.Name >> EntryName.value)
+
+    Assert.Equal<string list>([ ".."; "docs"; "empty"; "notes.txt" ], order)
+    Assert.Equal(1, result.State.Left.Cursor)
+
+[<Fact>]
 let ``a re-read of the panel forgets what was measured`` () =
     let fs = mockFs ()
 

@@ -445,15 +445,13 @@ let measureTargets (fs: IFileSystem) panel =
 
 let applyMeasurements side (measured: Measurement list) state =
     let sizes = measured |> List.map (fun one -> one.Name, one.Size) |> Map.ofList
-    let measuredEntry  entry =
+
+    let measuredEntry entry =
         match Map.tryFind entry.Name sizes with
         | Some size -> { entry with Measured = Some size }
         | None -> entry
 
-    updatePanel
-        side
-        (fun p -> { p with Entries = p.Entries |> List.map measuredEntry })
-        state
+    updatePanel side (fun p -> reorder { p with Entries = p.Entries |> List.map measuredEntry }) state
 
 let deleteScope (fs: IFileSystem) panel =
     let reachesContents =

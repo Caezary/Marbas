@@ -29,6 +29,9 @@ let private sized name size =
 let private dated name day =
     { entry name File with Modified = DateTimeOffset(DateTime(2026, 1, day)) }
 
+let private measured name size =
+    { entry name Directory with Measured = Some size }
+
 let private names entries = entries |> List.map (_.Name >> EntryName.value)
 
 let private byName = SortOrder.byName
@@ -140,6 +143,64 @@ let ``sorting by size puts the smallest entry first`` () =
     let ordered = order (ascending SortKey.BySize) unordered
 
     Assert.Equal<string list>([ "small.txt"; "medium.txt"; "big.txt" ], names ordered)
+
+[<Fact>]
+let ``directories are sorted by what was measured`` () =
+    let unordered =
+        [ measured "middle" (Exact 500L)
+          measured "biggest" (Exact 9000L)
+          measured "smallest" (Exact 10L) ]
+
+    let ordered = order (ascending SortKey.BySize) unordered
+
+    Assert.Equal<string list>([ "smallest"; "middle"; "biggest" ], names ordered)
+
+[<Fact>]
+let ``a directory measured only in part is sorted by what was counted`` () =
+    let unordered =
+        [ measured "partly" (AtLeast 9000L)
+          measured "whole" (Exact 500L) ]
+
+    let ordered = order (ascending SortKey.BySize) unordered
+
+    Assert.Equal<string list>([ "whole"; "partly" ], names ordered)
+
+[<Fact>]
+let ``a directory nobody measured counts as nothing`` () =
+    let unordered =
+        [ measured "counted" (Exact 10L)
+          entry "unknown" Directory ]
+
+    let ordered = order (ascending SortKey.BySize) unordered
+
+    Assert.Equal<string list>([ "unknown"; "counted" ], names ordered)
+
+[<Fact>]
+let ``directories nobody measured keep the order of their names`` () =
+    let unordered = [ entry "zulu" Directory; entry "alpha" Directory ]
+
+    let ordered = order (ascending SortKey.BySize) unordered
+
+    Assert.Equal<string list>([ "alpha"; "zulu" ], names ordered)
+
+[<Fact>]
+let ``the measured directories turn around with the direction`` () =
+    let unordered =
+        [ measured "middle" (Exact 500L)
+          measured "biggest" (Exact 9000L)
+          measured "smallest" (Exact 10L) ]
+
+    let ordered = order (descending SortKey.BySize) unordered
+
+    Assert.Equal<string list>([ "biggest"; "middle"; "smallest" ], names ordered)
+
+[<Fact>]
+let ``a measured directory still comes before every file`` () =
+    let unordered = [ sized "tiny.txt" 1L; measured "huge" (Exact 9000L) ]
+
+    let ordered = order (descending SortKey.BySize) unordered
+
+    Assert.Equal<string list>([ "huge"; "tiny.txt" ], names ordered)
 
 [<Fact>]
 let ``entries of the same size are sorted by name`` () =
