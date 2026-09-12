@@ -176,6 +176,12 @@ tested and was confirmed by running the app.
 | `Alt+←` / `Alt+→` walk from tab to tab | yes | yes | probe |
 | `Ctrl+T`, the other candidate for listing tabs | **no under cmder**, which opens its own console tab | yes | probe |
 | The tab counter is legible in the top right corner | **manual** | **manual** | manual |
+| `Alt+Del`, the key phase 13 wipes with | yes | yes | probe |
+| `Alt+Shift+Del`, the stand-in it turned out not to need | yes | yes | probe |
+| `Ctrl+\` reaches the application as a backslash | **no**, arrives as `Ctrl+4` | **no**, the same | probe |
+| `Alt+\` reaches the application at all | **no** | **no** | probe |
+| `Shift+Enter` reaches a popup that is up | **no**, arrives as `Enter` | **no**, the same | probe |
+| `Alt+R` reaches a popup that is up | yes | yes | probe |
 
 `Ctrl+Q` deserves a note: it is `0x11`, which is also `XON`, so a terminal doing
 software flow control could in principle eat it. Terminal.Gui puts the terminal
@@ -207,6 +213,29 @@ The five keys were then pressed in Marbas itself, under Windows Terminal, on
 follows, `Alt+←` / `Alt+→` walk between them, `Alt+Shift+F11` closes one, and
 `Shift+F9` writes `%APPDATA%\Marbas\settings.conf` without quitting. The probe
 says a key arrives; that pass says the application answers it.
+
+**`Ctrl+\` never arrives as a backslash, and the five runs of P13.1 agree on
+why.** The terminal does not send a key there at all: it sends the control byte
+`0x1C`, which is what `Ctrl` with a backslash has meant since the teletype, and
+the driver decodes that byte back into the key that also produces it — `Ctrl+4`,
+`code=0x40000034`. The same thing one place over: `Ctrl+/` is `0x1F` and arrives
+as `Ctrl+7`. `0x1C`–`0x1F` are the four bytes the digits `4`–`7` share with the
+punctuation beside them, and nothing downstream can tell which of the two was
+pressed. So the command reads `Ctrl+4` and keeps `Ctrl+\` bound beside it — the
+shape `hiddenKeys` and `openWithKeys` already have — and the second binding is
+there for a driver that one day resolves the byte differently, not for a
+terminal seen in this checklist. `Alt+\` was measured as the way out and is
+worse: it arrives as nothing at all, in every one of the five.
+
+**`Shift+Enter` is no better inside a popup than it was in the panel.** P10.7
+found it arriving as a bare `Enter` and called that worse than a dead key; on a
+popup it is worse still, because a bare `Enter` there is the default button, so
+a drive the user meant to reveal would be opened in the panel instead — the
+silent wrong answer again. The probe asked this of a real modal `Dialog` rather
+than of the panel: `Alt+R` arrives inside one in all five terminals, and it is
+the only binding P13.15 takes. `Alt+Del` and `Alt+Shift+Del` arrive everywhere
+too, so wiping needs no spare at all — a letter or a named key with `Alt` is
+once more the one shape that travels.
 
 ## Watching the directories on screen
 

@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-09-11. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-09-12. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
@@ -391,6 +391,23 @@ re-read while a popup, the viewer or a batch's progress window is in front: that
 wait is the same mechanism as the burst, so whatever happened underneath becomes
 a single listing once the screen is the panels' own again.
 
+**A thirteenth phase opened with a measurement.** P13.1 asked the terminals what
+they deliver before anything was bound to them, and the five runs — cmder,
+Windows Terminal, the console, and a WSL session started from the first and from
+the third — agree on all of it. `Alt+Del` arrives everywhere, and so does
+`Alt+Shift+Del`, the stand-in it turned out not to need. `Ctrl+\` never arrives
+as a backslash: the terminal sends the control byte `0x1C`, which is what `Ctrl`
+with a backslash has meant since the teletype, and the driver decodes it into the
+other key that produces the same byte, `Ctrl+4`. `Ctrl+/` is `0x1F` and comes
+through as `Ctrl+7` for the same reason, so nothing downstream can tell the
+punctuation from the digit. The root of the volume will therefore read `Ctrl+4`
+and keep `Ctrl+\` bound beside it, while `Alt+\`, the spare the phase had
+planned, arrives as nothing at all. The probe also grew a real modal dialog,
+since P13.15 needed to know whether a key reaches a popup rather than the panel
+behind it: `Alt+R` does, in all five, and `Shift+Enter` does not — it is the bare
+`Enter` P10.7 already found in the panel, which on a popup means the default
+button, so the drive popup binds `Alt+R` alone.
+
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -419,6 +436,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1 done |
 
 ## What works today
 
@@ -762,8 +780,12 @@ directories on screen under a watch, so the panels follow the disk without a key
 listing, the errors a watcher raises read as a reason to look again, a poll
 underneath for the drive no console application can hear leave, a panel stepped
 up to the nearest place that is still there rather than a dialog, and nothing
-re-read while a popup is in front. What follows is choice rather than plan order.
-Three things are waiting:
+re-read while a popup is in front. **A thirteenth phase has opened** — the drives
+shown as drives behind `Alt+F1` and `Alt+F2`, the root of the volume on `Ctrl+\`,
+`F3` measuring a directory, `Alt+F6` making a link in each of the three kinds the
+systems carry, and `Alt+Del` wiping what it deletes. P13.1 has measured what the
+terminals hand over, which settles two of those bindings; P13.2, the root of the
+volume, is next. Three things are waiting beside it:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
