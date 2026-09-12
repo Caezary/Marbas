@@ -52,6 +52,7 @@ type Message =
     | SettingsRequested
     | ProgramsEntered of ProgramSettings
     | RootRequested of PanelSide
+    | VolumeRootRequested
     | PathOpened of PanelSide * FileSystemPath
     | TabOpened
     | TabClosed
@@ -152,6 +153,16 @@ let private applyBatch state result =
         | [] -> stay updated
         | failed -> request updated (ReportItemFailures failed)
 
+let private sentToRoot (fs: IFileSystem) (state: AppState) =
+    let getRoot = FileSystemPath.root fs
+    let loadPanel' root = loadPanel fs state.Active root state
+    let panel = activePanel state
+    let watchedPath = PanelLocation.watched panel.Path
+    
+    match watchedPath |> getRoot with
+    | Some root when OnDisk root <> panel.Path -> loadPanel' root |> applyListing state
+    | _ -> stay state
+
 let private startingAs elevation state directory program target =
     request
         state
@@ -250,6 +261,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     let readTabQuietly' = readTabQuietly fs
     let toggleHidden' = toggleHidden fs
     let loadPanel' = loadPanel fs
+    let sentToRoot' = sentToRoot fs
     let makeDirectory' = makeDirectory fs
     let makeEntryDirectory' = makeEntryDirectory fs
     let makeFile' = makeFile fs
@@ -434,6 +446,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | HandlerChosen(path, choice) -> chosen' path choice
     | ElevatedRunRequested -> runElevated' state
     | RootRequested side -> request state (PromptForRoot side)
+    | VolumeRootRequested -> sentToRoot' state
     | PathOpened(side, path) -> loadPanel' side path state |> applyListing'
     | TabOpened -> openTab state |> saving'
     | TabClosed -> closeTab state |> saving'

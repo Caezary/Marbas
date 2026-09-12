@@ -80,6 +80,17 @@ let ``a panel sent to a root is watched where it lands`` () =
     Assert.Equal<Effect list>([ WatchLocations [ fp (at "start"); fp (at "start/docs") ] ], result.Effects)
 
 [<Fact>]
+let ``a panel sent to the root of its volume is watched where it lands`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs
+                |> loadPanel fs Left (fp (at "start/docs"))
+                |> Expect.ok
+
+    let result = update fs VolumeRootRequested state
+
+    Assert.Equal<Effect list>([ WatchLocations [ fp (at ""); fp (at "backup") ] ], result.Effects)
+
+[<Fact>]
 let ``a re-read of the same directories asks for no watch`` () =
     let fs = mockFs ()
     let state = loadedBoth fs

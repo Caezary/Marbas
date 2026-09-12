@@ -169,6 +169,17 @@ let ``a drive key targets its own side`` () =
     Assert.Equal(Some(RootRequested Right), right)
 
 [<Fact>]
+let ``the key a terminal makes of Ctrl and a backslash walks to the root`` () =
+    Assert.Equal(Key.D4.WithCtrl, KeyMap.volumeRootKey)
+    Assert.Equal(0x40000034, int KeyMap.volumeRootKey.KeyCode)
+    Assert.Equal(Some VolumeRootRequested, KeyMap.messageFor KeyMap.volumeRootKey)
+
+[<Fact>]
+let ``the backslash itself asks the same, where a driver spells it out`` () =
+    Assert.Equal((Key '\\').WithCtrl, KeyMap.classicVolumeRootKey)
+    Assert.Equal(Some VolumeRootRequested, KeyMap.messageFor KeyMap.classicVolumeRootKey)
+
+[<Fact>]
 let ``every hidden key toggles the hidden entries`` () =
     for key in KeyMap.hiddenKeys do
         let message = KeyMap.messageFor key

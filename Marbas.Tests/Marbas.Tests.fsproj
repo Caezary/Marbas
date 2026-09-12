@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
@@ -78,6 +78,7 @@
     <Compile Include="State\SettingsTests.fs" />
     <Compile Include="State\ArchivePanelTests.fs" />
     <Compile Include="State\ArchiveNavigationTests.fs" />
+    <Compile Include="State\VolumeRootTests.fs" />
     <Compile Include="State\ArchiveCopyTests.fs" />
     <Compile Include="State\ArchiveWriteTests.fs" />
     <Compile Include="State\SelectionPatternTests.fs" />
@@ -210,6 +211,7 @@
     <Compile Include="Integration\App\ListingErrorTests.fs" />
     <Compile Include="Integration\App\SettingsTests.fs" />
     <Compile Include="Integration\App\TabKeyTests.fs" />
+    <Compile Include="Integration\App\VolumeRootKeyTests.fs" />
     <Compile Include="Integration\App\MkdirKeyTests.fs" />
     <Compile Include="Integration\App\DeleteKeyTests.fs" />
     <Compile Include="Integration\App\CopyKeyTests.fs" />

@@ -34,6 +34,12 @@ module FileSystemPath =
     let directory (fs: IFileSystem) (FileSystemPath path) =
         FileSystemPath(fs.Path.GetDirectoryName path)
 
+    let root (fs: IFileSystem) (FileSystemPath path) =
+        match fs.Path.GetPathRoot path with
+        | null
+        | "" -> None
+        | found -> Some(FileSystemPath found)
+
     let parent (fs: IFileSystem) (FileSystemPath path) =
         match fs.DirectoryInfo.New(path).Parent with
         | null -> None

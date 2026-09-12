@@ -47,6 +47,10 @@ let leftRootKey = Key.F1.WithAlt
 
 let rightRootKey = Key.F2.WithAlt
 
+let volumeRootKey = Key.D4.WithCtrl
+
+let classicVolumeRootKey = (Key '\\').WithCtrl
+
 let nameSortKey = Key.F3.WithCtrl
 
 let extensionSortKey = Key.F4.WithCtrl
@@ -147,6 +151,8 @@ let bindings =
       offBar quitKey QuitRequested
       offBar classicHiddenKey HiddenToggled
       offBar refreshKey RefreshRequested
+      offBar volumeRootKey VolumeRootRequested
+      offBar classicVolumeRootKey VolumeRootRequested
       offBar spareTabsKey TabsRequested
       offBar nextTabKey (TabCycled Forward)
       offBar previousTabKey (TabCycled Backward)

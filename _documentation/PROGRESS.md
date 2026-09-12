@@ -408,6 +408,17 @@ behind it: `Alt+R` does, in all five, and `Shift+Enter` does not — it is the b
 `Enter` P10.7 already found in the panel, which on a popup means the default
 button, so the drive popup binds `Alt+R` alone.
 
+**P13.2 put the root of the volume one key away.** `VolumeRootRequested` sends
+the active panel to the root of whatever it is standing on, through the same
+transition a path opened from the root chooser goes through, so the cursor rules
+and the watch of P12.2 hold without a second way in. Where a panel stands is
+read as the location the operating system can report on — which is the archive
+file when a panel is inside an archive, so `Ctrl+\` leaves the archive for the
+root of the disk holding it — and a panel already on a root answers by staying,
+rather than re-listing the directory it is already in and losing the cursor. The
+key is `Ctrl+4`, the one the terminals deliver, with `Ctrl+\` bound beside it
+for a driver that ever spells it out.
+
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -436,7 +447,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.2 done |
 
 ## What works today
 
@@ -568,6 +579,11 @@ written up as the checklist in
   Tabs in the background are left alone, since switching to one re-reads it.
 - `Alt+F1` / `Alt+F2` open a root chooser for the left / right panel — the ready
   drives on Windows, the file-system root and the home directory on Unix.
+- `Ctrl+\` sends the active panel to the root of the volume it stands on, in one
+  key rather than a walk up the tree; a panel standing inside an archive leaves
+  it, and one already on a root stays as it is. The key reaches the application
+  as `Ctrl+4`, which is what the terminals make of it, and both spellings are
+  bound.
 - `Insert`, `Space` and `Shift+↓` mark the entry under the cursor and move one
   entry down; `Shift+↑` marks it and moves one entry up. Every one of them
   toggles, so holding `Shift` and running an arrow over a marked stretch clears
@@ -784,8 +800,9 @@ re-read while a popup is in front. **A thirteenth phase has opened** — the dri
 shown as drives behind `Alt+F1` and `Alt+F2`, the root of the volume on `Ctrl+\`,
 `F3` measuring a directory, `Alt+F6` making a link in each of the three kinds the
 systems carry, and `Alt+Del` wiping what it deletes. P13.1 has measured what the
-terminals hand over, which settles two of those bindings; P13.2, the root of the
-volume, is next. Three things are waiting beside it:
+terminals hand over, which settles two of those bindings, and P13.2 has put the
+root of the volume on the key they deliver. P13.3, measuring a directory, is
+next. Three things are waiting beside it:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
