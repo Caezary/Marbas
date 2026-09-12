@@ -60,6 +60,7 @@
     <Compile Include="FileSystem\ArchiveAcrossTests.fs" />
     <Compile Include="FileSystem\EveryKindTests.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
+    <Compile Include="FileSystem\WipeTests.fs" />
     <Compile Include="FileSystem\TrashTests.fs" />
     <Compile Include="FileSystem\WorkspaceTests.fs" />
   </ItemGroup>

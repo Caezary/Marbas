@@ -135,6 +135,90 @@ let delete (fs: IFileSystem) (path: FileSystemPath) =
     | FileEntry -> attempt fs path deleteFile
     | NoEntry -> Error(SourceNotFound path)
 
+[<Literal>]
+let WipeBufferLength = 65536
+
+let private isLink (fs: IFileSystem) (path: FileSystemPath) =
+    fs.FileInfo.New(FileSystemPath.value path).LinkTarget |> isNull |> not
+
+let private clearReadOnly (fs: IFileSystem) (path: FileSystemPath) =
+    let raw = FileSystemPath.value path
+    fs.File.SetAttributes(raw, fs.File.GetAttributes raw &&& ~~~IO.FileAttributes.ReadOnly)
+
+let private overwrite (fs: IFileSystem) (control: BatchControl) (path: FileSystemPath) =
+    use stream =
+        fs.File.Open(FileSystemPath.value path, IO.FileMode.Open, IO.FileAccess.Write, IO.FileShare.None)
+
+    let buffer = Array.zeroCreate<byte> WipeBufferLength
+
+    let rec pass (remaining: int64) =
+        if remaining <= 0L then
+            Ok()
+        else
+            let chunk = int (min remaining (int64 WipeBufferLength))
+            Security.Cryptography.RandomNumberGenerator.Fill(Span(buffer, 0, chunk))
+            stream.Write(buffer, 0, chunk)
+            control.Report path
+
+            if control.IsCancelled() then
+                stream.Flush true
+                Error(Cancelled path)
+            else
+                pass (remaining - int64 chunk)
+
+    pass stream.Length
+    |> Result.map (fun () ->
+        stream.Flush true
+        stream.SetLength 0L
+        stream.Flush true)
+
+let private anonymousName (fs: IFileSystem) (path: FileSystemPath) =
+    let directory = FileSystemPath.directory fs path
+    let length = (FileSystemPath.name fs path |> EntryName.value).Length
+
+    let candidate () =
+        Security.Cryptography.RandomNumberGenerator.GetHexString(length, true)
+        |> FileSystemPath.combine fs directory
+
+    Seq.init 100 (fun _ -> candidate ())
+    |> Seq.tryFind (fun target -> FileSystemPath.kind fs target = NoEntry)
+
+let private anonymize (fs: IFileSystem) (path: FileSystemPath) =
+    match anonymousName fs path with
+    | Some target ->
+        attempt fs path (fun fs' source -> moveFile fs' false source target)
+        |> Result.map (fun () -> target)
+    | None -> Ok path
+
+let private wipeFile (fs: IFileSystem) (control: BatchControl) (path: FileSystemPath) =
+    result {
+        do! attempt fs path clearReadOnly
+        do! attempting path (fun () -> overwrite fs control path) |> Result.bind id
+        let! anonymous = anonymize fs path
+        do! attempt fs anonymous deleteFile
+    }
+
+let private deleteEmptyDirectory (fs: IFileSystem) (path: FileSystemPath) =
+    let raw = FileSystemPath.value path
+    fs.Directory.Delete raw
+
+let rec wipe (fs: IFileSystem) (control: BatchControl) (path: FileSystemPath) =
+    if control.IsCancelled() then
+        Error(Cancelled path)
+    else
+        match FileSystemPath.kind fs path with
+        | NoEntry -> Error(SourceNotFound path)
+        | DirectoryEntry when isLink fs path -> attempt fs path deleteEmptyDirectory
+        | FileEntry when isLink fs path -> attempt fs path deleteFile
+        | FileEntry -> wipeFile fs control path
+        | DirectoryEntry ->
+            result {
+                let! children = attempting path (fun () -> getFileSystemEntries fs path |> List.ofSeq)
+                do! children |> List.traverseResultM (wipe fs control) |> Result.ignore
+                do! attempt fs path clearReadOnly
+                do! attempt fs path deleteEmptyDirectory
+            }
+
 let rec private copyTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
     if control.IsCancelled() then
         Error(Cancelled source)
@@ -276,3 +360,6 @@ let copyAll (fs: IFileSystem) control sources targetDirectory =
 
 let moveAll (fs: IFileSystem) control sources targetDirectory =
     allWatched fs control (move fs control targetDirectory) sources
+
+let wipeAll (fs: IFileSystem) control sources =
+    allWatched fs control (wipe fs control) sources

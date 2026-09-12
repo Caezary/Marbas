@@ -462,6 +462,24 @@ belongs straight away, through the same `reorder` the sort keys use, which keeps
 the cursor on the entry it was on — so the row the user just measured travels
 under their cursor rather than away from it.
 
+**P13.6 taught `Operations` to wipe.** `Operations.wipe` clears the read-only
+attribute, overwrites the whole length of a file with one pass of random bytes
+in buffers of 64 KiB, reporting and asking about cancellation after each of
+them, flushes, truncates the file to nothing, renames it to a random name of
+the same length in the same directory and only then deletes it. The name is
+drawn from lowercase hexadecimal digits, which can never spell a device name
+Windows reserves; should a hundred draws all collide, the file keeps its name
+rather than failing. A directory is walked depth-first and removed after what
+was in it, and `wipeAll` runs a batch the way `copyAll` does. A run stopped
+inside a file answers `Cancelled` with that file's path and leaves it in place,
+already overwritten, because its contents are gone whatever `Esc` says. A link,
+to a file or to a directory, is removed and never written through: overwriting
+it would destroy what it points at, which is a worse outcome than P13.8
+arriving a few tasks late, so the rule that walks stop at a link holds for
+wiping from the start. Nothing is bound to a key yet — that is P13.7. The tests
+watch the mock through `Fakes.WipeWitness`, which records what the file held at
+each flush and every rename, so the order is proved rather than inferred.
+
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -490,7 +508,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.5 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.6 done |
 
 ## What works today
 
@@ -854,8 +872,9 @@ shown as drives behind `Alt+F1` and `Alt+F2`, the root of the volume on `Ctrl+\`
 systems carry, and `Alt+Del` wiping what it deletes. P13.1 has measured what the
 terminals hand over, which settles two of those bindings, and P13.2 has put the
 root of the volume on the key they deliver, P13.3 can measure a directory, P13.4
-shows what it measured and P13.5 sorts by it. P13.6, wiping a file rather than
-unlinking it, is next. Three things are waiting beside it:
+shows what it measured, P13.5 sorts by it and P13.6 can wipe a file rather than
+unlink it. P13.7, putting wiping on `Alt+Del` behind a confirmation of its own,
+is next. Three things are waiting beside it:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

@@ -85,6 +85,48 @@ type FullDisk(denied: string option) =
 
         writing
 
+type private WitnessedStream(inner: FileSystemStream, path: string, witness: unit -> unit) =
+    inherit FileSystemStream(inner, path, false)
+
+    override _.Flush() =
+        inner.Flush()
+        witness ()
+
+    override _.Flush(flushToDisk: bool) =
+        inner.Flush flushToDisk
+        witness ()
+
+type private WitnessedFile
+    (accessor: IMockFileDataAccessor, flushed: ResizeArray<byte array>, renamed: ResizeArray<string * string>) =
+    inherit MockFile(accessor)
+
+    override this.Open(path: string, mode: FileMode, access: FileAccess, share: FileShare) =
+        let witness () =
+            flushed.Add(Array.copy (accessor.GetFile(path).Contents))
+
+        new WitnessedStream(base.Open(path, mode, access, share), path, witness)
+
+    override this.Move(source: string, target: string, overwrite: bool) =
+        renamed.Add((source, target))
+        base.Move(source, target, overwrite)
+
+type WipeWitness() =
+    inherit MockFileSystem()
+
+    let flushed = ResizeArray<byte array>()
+    let renamed = ResizeArray<string * string>()
+    let mutable writing: IFile = null
+
+    member _.Flushed = List.ofSeq flushed
+
+    member _.Renamed = List.ofSeq renamed
+
+    override this.File =
+        if isNull writing then
+            writing <- WitnessedFile(this, flushed, renamed)
+
+        writing
+
 let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
     { FileSystem = fs
       StartPath = FileSystemPath.create startPath
