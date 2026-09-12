@@ -612,9 +612,12 @@ key P13.15 takes.
   one, so the answer is a value that says which it is — an exact total or a
   lower bound. A directory link is a leaf here as everywhere else (P13.8), so a
   link pointing at its own ancestor cannot spin. A directory inside an archive is
-  measured over `ArchiveListing` instead, level by level and through the same
-  control, and what it answers is what its entries say they hold unpacked rather
-  than what they cost packed. *Done when:* a nested tree on `MockFileSystem`
+  measured from the archive's index instead: read once through `ArchiveReader`,
+  summed below the level asked for, every level under it reported through the same
+  control. Level by level through `ArchiveListing` would re-open and re-scan the
+  whole archive once per directory, which a packed source tree would pay for a
+  few hundred times over. What it answers is what the entries say they hold
+  unpacked, not what they cost packed. *Done when:* a nested tree on `MockFileSystem`
   measures to the byte, an unreadable subdirectory answers a lower bound, a level
   inside an archive answers the unpacked size of everything under it, and a
   cancelled walk answers what it had counted.

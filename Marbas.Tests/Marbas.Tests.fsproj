@@ -37,6 +37,7 @@
     <Compile Include="FileSystem\RootsTests.fs" />
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
+    <Compile Include="FileSystem\DirectorySizeTests.fs" />
     <Compile Include="FileSystem\HandlerTests.fs" />
     <Compile Include="FileSystem\ProgramCommandTests.fs" />
     <Compile Include="FileSystem\DesktopEntryTests.fs" />

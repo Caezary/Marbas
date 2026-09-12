@@ -419,6 +419,20 @@ rather than re-listing the directory it is already in and losing the cursor. The
 key is `Ctrl+4`, the one the terminals deliver, with `Ctrl+\` bound beside it
 for a driver that ever spells it out.
 
+**P13.3 put a number on a directory.** `DirectorySize.measure` walks everything
+below one place — a directory on disk or a level inside an archive, since
+`PanelLocation` already says which — and answers a value that knows what it is:
+an exact total, or a lower bound where something was skipped. Three things make
+it a lower bound rather than a lie: a subdirectory that refuses to be read, a
+walk the batch control stopped part way, and an archive that cannot be opened at
+all. Each directory entered is reported through the same `BatchControl` copying
+uses, so P13.4 has a progress window to fill and an `Esc` to answer. A directory
+link is a leaf: the link is counted as nothing and never walked into, which is
+what keeps a link pointing at its own ancestor from spinning — P13.8 will make
+the same rule hold for every other walk in the app. An archive is measured from
+its index, read once and summed below the level asked for; reading it level by
+level would re-open the file once per directory in it.
+
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -447,7 +461,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.2 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.3 done |
 
 ## What works today
 
@@ -801,8 +815,9 @@ shown as drives behind `Alt+F1` and `Alt+F2`, the root of the volume on `Ctrl+\`
 `F3` measuring a directory, `Alt+F6` making a link in each of the three kinds the
 systems carry, and `Alt+Del` wiping what it deletes. P13.1 has measured what the
 terminals hand over, which settles two of those bindings, and P13.2 has put the
-root of the volume on the key they deliver. P13.3, measuring a directory, is
-next. Three things are waiting beside it:
+root of the volume on the key they deliver, and P13.3 can measure a directory.
+P13.4, `F3` putting that measurement on the screen, is next. Three things are
+waiting beside it:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
