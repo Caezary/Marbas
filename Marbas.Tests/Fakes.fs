@@ -184,6 +184,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       ShowFile = ignore
       RunEditor = fun _ _ -> Ok()
       Launch = fun _ -> Ok()
+      MakeLink = fun _ -> Ok()
       HandlersFor = fun _ -> []
       AskHandler = fun _ _ _ -> None
       ChooseTab = fun _ -> None

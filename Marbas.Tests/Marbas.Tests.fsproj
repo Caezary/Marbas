@@ -120,6 +120,7 @@
     <Compile Include="Ui\Messages\ListingErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\ContentErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\ArchiveErrorMessageTests.fs" />
+    <Compile Include="Ui\Messages\LinkRefusalMessageTests.fs" />
     <Compile Include="Ui\Messages\OperationErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\LaunchErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\DeleteConfirmationTests.fs" />
@@ -166,7 +167,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Integration\Disk\Scratch.fs" />
     <Compile Include="Integration\Disk\LinkWalkTests.fs" />
+    <Compile Include="Integration\Disk\NativeLinkTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

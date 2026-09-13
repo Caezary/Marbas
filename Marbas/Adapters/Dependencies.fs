@@ -52,6 +52,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
       ShowFile = Prompts.showFile app
       RunEditor = runEditor app fs env
       Launch = LaunchProcess.start fs env.Platform
+      MakeLink = Links.create (NativeLinks.forPlatform env.Platform) env.Platform fs
       HandlersFor = handlersFor fs env
       AskHandler = Prompts.askHandler app
       ChooseTab = Prompts.chooseTab app fs

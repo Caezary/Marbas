@@ -32,11 +32,24 @@ a stop at the link. The logic tests of the rule stay on a mock:
 throws once a path has grown deeper than any walk in a test could reach, so a
 walk that goes round a link fails instead of hanging. What only the disk can
 answer — that .NET itself walks into a link, and that `Directory.Delete` with
-`recursive` does not — is `Integration/Disk/LinkWalkTests.fs`, run on a scratch
-directory under the system temp folder, together with one walk of each kind over
-a real cycle. `[<SymbolicLinkFact>]` tries to create a link once and skips those
-tests where the system refuses — Windows without developer mode or
-administrator rights; Linux and the CI runners allow it.
+`recursive` does not — is `Integration/Disk/LinkWalkTests.fs`, together with one
+walk of each kind over a real cycle. `[<SymbolicLinkFact>]` tries to create a
+link once and skips those tests where the system refuses — Windows without
+developer mode or administrator rights; Linux and the CI runners allow it.
+
+The hard link and the junction were the second case: they are made by calling
+into `kernel32` and `libc`, which no mock reaches, so
+`Integration/Disk/NativeLinkTests.fs` makes each kind once through
+`Links.create` over the real adapter. Every refusal that can be answered without
+the system is tested on the mock instead, with the native calls replaced by a
+recorder that proves they were not reached. The Unix volume check is the one
+refusal the mock cannot hold: `MockFileSystem` names every drive `/:\` on Linux,
+so a second mount cannot be arranged.
+
+Every test there works inside a `Scratch`, a fresh directory under the system
+temp folder that is removed with `Operations.delete` when the test ends — not
+with `Directory.Delete`, which stumbles on a junction inside the tree on
+Windows, as one of the tests there records.
 
 **One suite, two platforms.** Every path in an arrange block is built with
 `Root.at`, which answers `C:\start\docs` on Windows and `/start/docs` on Linux,

@@ -18,7 +18,7 @@ type OperationError =
     | NoProgramAssociated of path: FileSystemPath
     | StartDeclined of path: FileSystemPath
     | SymbolicLinkNotPermitted of path: FileSystemPath
-    | LinkKindUnavailable of kind: LinkKind * path: FileSystemPath
+    | LinkRefused of refusal: LinkRefusal * path: FileSystemPath
     | ArchiveFailed of error: ArchiveError
     | BatchFailed of message: string
     | OperationFailed of path: FileSystemPath * message: string
@@ -84,10 +84,6 @@ let private createDirectory (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
     fs.Directory.CreateDirectory raw |> ignore
 
-let private deleteDirectory (fs: IFileSystem) (path: FileSystemPath) =
-    let raw = FileSystemPath.value path
-    fs.Directory.Delete(raw, true)
-
 let private deleteEmptyDirectory (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
     fs.Directory.Delete raw
@@ -140,10 +136,21 @@ let makeFile (fs: IFileSystem) (parent: FileSystemPath) (name: EntryName) =
     | FileEntry -> Ok path
     | NoEntry -> attempt fs path createFile |> Result.map (fun () -> path)
 
+let rec private deleteTree (fs: IFileSystem) (path: FileSystemPath) =
+    getFileSystemEntries fs path
+    |> List.ofSeq
+    |> List.iter (fun child ->
+        match FileSystemPath.kind fs child with
+        | DirectoryEntry when FileSystemPath.isLink fs child -> deleteEmptyDirectory fs child
+        | DirectoryEntry -> deleteTree fs child
+        | _ -> deleteFile fs child)
+
+    deleteEmptyDirectory fs path
+
 let delete (fs: IFileSystem) (path: FileSystemPath) =
     match FileSystemPath.kind fs path with
     | DirectoryEntry when FileSystemPath.isLink fs path -> attempt fs path deleteEmptyDirectory
-    | DirectoryEntry -> attempt fs path deleteDirectory
+    | DirectoryEntry -> attempt fs path deleteTree
     | FileEntry -> attempt fs path deleteFile
     | NoEntry -> Error(SourceNotFound path)
 

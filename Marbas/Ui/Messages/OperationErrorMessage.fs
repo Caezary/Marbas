@@ -11,12 +11,6 @@ let Title = "Operation failed"
 let SymbolicLinkRight =
     "Windows makes a symbolic link only for an administrator\nor for a user with Developer Mode on. Turn it on in Settings,\nor run Marbas as administrator."
 
-let private kindName kind =
-    match kind with
-    | Symbolic -> "symbolic link"
-    | Hard -> "hard link"
-    | Junction -> "junction"
-
 let describe error =
     match error with
     | SourceNotFound path -> $"'{FileSystemPath.value path}' no longer exists."
@@ -36,7 +30,8 @@ let describe error =
         $"'{FileSystemPath.value path}' cannot be run inside the archive. Unpack it first."
     | SymbolicLinkNotPermitted path ->
         $"'{FileSystemPath.value path}' was not made.\n{SymbolicLinkRight}"
-    | LinkKindUnavailable(kind, path) -> $"A {kindName kind} cannot be made here: '{FileSystemPath.value path}'."
+    | LinkRefused(refusal, path) ->
+        $"'{FileSystemPath.value path}' was not made. {LinkRefusalMessage.describe refusal}"
     | BatchFailed reason -> $"The operation could not be completed: {reason}"
     | OperationFailed(path, reason) -> $"Could not complete '{FileSystemPath.value path}': {reason}"
 

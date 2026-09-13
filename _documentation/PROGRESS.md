@@ -514,8 +514,8 @@ touch. A file link is still copied and packed by its contents, since following
 it cannot spin. What .NET does on its own was measured on a real disk rather
 than assumed: enumerating a directory link walks into what it points at, which
 is why the walks must stop, and `Directory.Delete` with `recursive` removes a
-link inside a tree without following it, which is why deleting a whole tree
-needs no walk of its own. `MockFileSystem` follows neither, so the logic tests
+symbolic link inside a tree without following it — though P13.10 found it
+stumbling on a junction and gave deleting a walk of its own. `MockFileSystem` follows neither, so the logic tests
 run on `Fakes.LinkFollowing`, a mock that walks through a link the way a real
 system does and throws once a walk has gone round one; the disk tests are in
 `Integration/Disk/LinkWalkTests.fs` and skip where the system refuses the user a symbolic
@@ -534,8 +534,7 @@ way `F6` reads a bare name. A symbolic link goes through
 `fs.Directory.CreateSymbolicLink` or `fs.File.CreateSymbolicLink`, chosen by
 what the target is, so it is made and read back on `MockFileSystem`. A hard link
 and a junction have no managed API; until P13.10 puts them behind a port they
-answer `LinkKindUnavailable`, the refusal P13.10 will also give a junction on
-Unix. Windows' refusal was measured rather than taken from the plan: it is not
+answered a refusal of their own, which P13.10 replaced. Windows' refusal was measured rather than taken from the plan: it is not
 an access refusal at all but an `IOException` carrying `0x80070522`,
 `ERROR_PRIVILEGE_NOT_HELD`, whose message the system writes in its own language.
 `Operations.mapException` reads that code into `SymbolicLinkNotPermitted`, the
@@ -544,6 +543,42 @@ making one: that Windows makes a symbolic link only for an administrator or for
 a user with Developer Mode on, and where to turn it on. The sentence is broken
 by hand so the failures dialog stays inside 80 columns. Run against this
 machine, which has neither, `Links.create` answered exactly that.
+
+**P13.10 made the two kinds the framework does not give.** What a kind can point
+at is a fact of the kind, so `Links.refusal` answers it from the platform and the
+file system before the system is asked, as a `LinkRefusal` in `Domain`: a hard
+link to a directory, a hard link onto another volume, a junction to a file, and a
+junction anywhere but Windows. The volume is the longest drive root holding the
+path — a drive letter compared without regard to case on Windows, a mount point
+on Unix — which is why the dialog of P13.11 can grey a kind out without making
+anything. `MockFileSystem` names every drive `/:\` on Linux and so cannot model a
+second mount; the Unix half of that check is left to the real system, whose
+refusal still arrives mapped. A refused kind becomes `LinkRefused`, and its
+reason is one sentence in `LinkRefusalMessage`, so the failures dialog and the
+dialog to come say the same thing. What passes the refusals goes through
+`NativeLinks` — two functions `Links.create` is handed — and
+`Adapters/NativeLinks.fs` supplies them: `CreateHardLinkW` from `kernel32` and
+`link` from `libc` for the hard link, and for the junction a directory created
+and then turned into a mount point with `DeviceIoControl` and
+`FSCTL_SET_REPARSE_POINT`, removed again if that fails. A Windows failure becomes
+the exception its error code stands for, and a Unix `errno` is an access refusal
+for `EPERM` and `EACCES` and an `IOException` with the system's own words
+otherwise, so both reach `mapException` as every other failure does.
+`Shell.Dependencies` has the port, `MakeLink`, and `Dependencies.create` wires it
+to `Links.create` over the real adapter; nothing calls it until `Alt+F6`. Each
+kind was made once on the real disk in `Integration/Disk/NativeLinkTests.fs` —
+the hard link on both systems, the junction on Windows, the symbolic link where
+the system allows it.
+
+Making a junction on the disk turned up a hole in P13.8. `Directory.Delete` with
+`recursive`, which deleting a tree had relied on, removes a junction inside the
+tree and then throws an access refusal, leaving the tree behind: it asks
+`DeleteVolumeMountPoint` about every mount point it meets, and a junction is one
+that is no volume. So `Operations.delete` now walks a tree itself, the way
+wiping always has: a directory link is removed on its own, a directory is
+emptied and then removed, and nothing is followed. The disk tests hold both
+halves — what .NET does, and that deleting a tree with a junction in it now
+succeeds and leaves what the junction points at.
 
 
 **The suite passes on both operating systems** — a handful of tests skip on
@@ -573,7 +608,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.9 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.10 done |
 
 ## What works today
 

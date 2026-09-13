@@ -65,6 +65,7 @@ type Dependencies =
       ShowFile: FileWindow.Source -> unit
       RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       Launch: LaunchRequest -> Result<unit, LaunchError>
+      MakeLink: LinkRequest -> Result<unit, Operations.OperationError>
       HandlersFor: EntryName -> Handler list
       AskHandler: EntryName -> Handler list -> ProgramPath option -> OpenWithChoice option
       ChooseTab: Zipper<Tab> -> int option

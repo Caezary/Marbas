@@ -109,15 +109,9 @@ let ``a symbolic link Windows refuses names the two ways to be allowed one`` () 
     Assert.Contains("administrator", message)
 
 [<Fact>]
-let ``a hard link that cannot be made here is named as one`` () =
-    let message = OperationErrorMessage.describe (LinkKindUnavailable(Hard, fp (at "data/twin.txt")))
-
-    Assert.Contains(at "data/twin.txt", message)
-    Assert.Contains("hard link", message)
-
-[<Fact>]
-let ``a junction that cannot be made here is named as one`` () =
-    let message = OperationErrorMessage.describe (LinkKindUnavailable(Junction, fp (at "data/twin")))
+let ``a link refused by its kind is explained with its path and the reason`` () =
+    let message =
+        OperationErrorMessage.describe (LinkRefused(JunctionOffWindows, fp (at "data/twin")))
 
     Assert.Contains(at "data/twin", message)
-    Assert.Contains("junction", message)
+    Assert.Contains(LinkRefusalMessage.describe JunctionOffWindows, message)

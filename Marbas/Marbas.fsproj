@@ -95,6 +95,7 @@
         <Compile Include="Ui\Messages\ArchiveErrorMessage.fs" />
         <Compile Include="Ui\Messages\ListingErrorMessage.fs" />
         <Compile Include="Ui\Messages\ContentErrorMessage.fs" />
+        <Compile Include="Ui\Messages\LinkRefusalMessage.fs" />
         <Compile Include="Ui\Messages\OperationErrorMessage.fs" />
         <Compile Include="Ui\Messages\LaunchErrorMessage.fs" />
         <Compile Include="Ui\Messages\DeleteConfirmation.fs" />
@@ -157,6 +158,7 @@
         <Compile Include="Adapters\BatchRunner.fs" />
         <Compile Include="Adapters\DirectoryWatch.fs" />
         <Compile Include="Adapters\ModifierWatch.fs" />
+        <Compile Include="Adapters\NativeLinks.fs" />
         <Compile Include="Adapters\Dependencies.fs" />
     </ItemGroup>
 

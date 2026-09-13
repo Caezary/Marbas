@@ -1,7 +1,9 @@
 module Marbas.Tests.FileSystem.LinksTests
 
+open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
@@ -17,10 +19,27 @@ let private data () =
     fs.AddFile(at "data/notes.txt", MockFileData "notes")
     fs
 
-let private symbolic target location =
-    { Kind = Symbolic
+let private requested kind target location =
+    { Kind = kind
       Target = fp target
       Location = fp location }
+
+let private symbolic = requested Symbolic
+
+type private Native() =
+    let made = ResizeArray<LinkKind * FileSystemPath * FileSystemPath>()
+
+    member _.Made = List.ofSeq made
+
+    member _.Links: NativeLinks =
+        { MakeHard = fun target location -> made.Add((Hard, target, location))
+          MakeJunction = fun target location -> made.Add((Junction, target, location)) }
+
+let private refusing (ex: exn) : NativeLinks =
+    { MakeHard = fun _ _ -> raise ex
+      MakeJunction = fun _ _ -> raise ex }
+
+let private noNative = Native().Links
 
 [<Theory>]
 [<InlineData("data/docs", "data/twin")>]
@@ -28,7 +47,7 @@ let private symbolic target location =
 let ``a symbolic link is made and resolves to what it points at`` target location =
     let fs = data ()
 
-    Links.create fs (symbolic (at target) (at location)) |> Expect.ok
+    Links.create noNative Windows fs (symbolic (at target) (at location)) |> Expect.ok
 
     Assert.Equal(Some(fp (at target)), FileSystemPath.linkTarget fs (fp (at location)))
 
@@ -36,7 +55,7 @@ let ``a symbolic link is made and resolves to what it points at`` target locatio
 let ``a symbolic link to a directory is a directory`` () =
     let fs = data ()
 
-    Links.create fs (symbolic (at "data/docs") (at "data/twin")) |> Expect.ok
+    Links.create noNative Unix fs (symbolic (at "data/docs") (at "data/twin")) |> Expect.ok
 
     Assert.Equal(DirectoryEntry, FileSystemPath.kind fs (fp (at "data/twin")))
 
@@ -44,7 +63,7 @@ let ``a symbolic link to a directory is a directory`` () =
 let ``a target given relative is written absolute, from where the link stands`` () =
     let fs = data ()
 
-    Links.create fs (symbolic "docs" (at "data/twin")) |> Expect.ok
+    Links.create noNative Windows fs (symbolic "docs" (at "data/twin")) |> Expect.ok
 
     Assert.Equal(Some(fp (at "data/docs")), FileSystemPath.linkTarget fs (fp (at "data/twin")))
 
@@ -53,7 +72,8 @@ let ``a link is not made over an entry that is already there`` () =
     let fs = data ()
 
     let failure =
-        Links.create fs (symbolic (at "data/docs") (at "data/notes.txt")) |> Expect.error
+        Links.create noNative Windows fs (symbolic (at "data/docs") (at "data/notes.txt"))
+        |> Expect.error
 
     Assert.Equal(TargetExists(fp (at "data/notes.txt")), failure)
 
@@ -61,7 +81,9 @@ let ``a link is not made over an entry that is already there`` () =
 let ``a link is not made to nothing`` () =
     let fs = data ()
 
-    let failure = Links.create fs (symbolic (at "data/gone") (at "data/twin")) |> Expect.error
+    let failure =
+        Links.create noNative Windows fs (symbolic (at "data/gone") (at "data/twin"))
+        |> Expect.error
 
     Assert.Equal(SourceNotFound(fp (at "data/gone")), failure)
 
@@ -73,26 +95,120 @@ let ``a symbolic link the system refuses for want of the right says so`` target 
     fs.AddFile(at "data/docs/inner.txt", MockFileData "inner")
     fs.AddFile(at "data/notes.txt", MockFileData "notes")
 
-    let failure = Links.create fs (symbolic (at target) (at location)) |> Expect.error
+    let failure =
+        Links.create noNative Windows fs (symbolic (at target) (at location))
+        |> Expect.error
 
     Assert.Equal(SymbolicLinkNotPermitted(fp (at location)), failure)
 
 [<Fact>]
-let ``a hard link has no managed way to be made and is refused by name`` () =
+let ``a hard link to a file on the same volume is left to the system with both paths absolute`` () =
     let fs = data ()
-    let request = { symbolic (at "data/notes.txt") (at "data/twin.txt") with Kind = Hard }
+    let native = Native()
 
-    let failure = Links.create fs request |> Expect.error
+    Links.create native.Links Unix fs (requested Hard "notes.txt" (at "data/twin.txt"))
+    |> Expect.ok
 
-    Assert.Equal(LinkKindUnavailable(Hard, fp (at "data/twin.txt")), failure)
-    Assert.False(fs.File.Exists(at "data/twin.txt"))
+    Assert.Equal<(LinkKind * FileSystemPath * FileSystemPath) list>(
+        [ Hard, fp (at "data/notes.txt"), fp (at "data/twin.txt") ],
+        native.Made
+    )
 
 [<Fact>]
-let ``a junction has no managed way to be made and is refused by name`` () =
+let ``a junction to a directory on Windows is left to the system`` () =
     let fs = data ()
-    let request = { symbolic (at "data/docs") (at "data/twin") with Kind = Junction }
+    let native = Native()
 
-    let failure = Links.create fs request |> Expect.error
+    Links.create native.Links Windows fs (requested Junction (at "data/docs") (at "data/twin"))
+    |> Expect.ok
 
-    Assert.Equal(LinkKindUnavailable(Junction, fp (at "data/twin")), failure)
-    Assert.False(fs.Directory.Exists(at "data/twin"))
+    Assert.Equal<(LinkKind * FileSystemPath * FileSystemPath) list>(
+        [ Junction, fp (at "data/docs"), fp (at "data/twin") ],
+        native.Made
+    )
+
+[<Fact>]
+let ``a hard link to a directory is refused without asking the system`` () =
+    let fs = data ()
+    let native = Native()
+
+    let failure =
+        Links.create native.Links Windows fs (requested Hard (at "data/docs") (at "data/twin"))
+        |> Expect.error
+
+    Assert.Equal(LinkRefused(HardLinkToDirectory, fp (at "data/twin")), failure)
+    Assert.Empty native.Made
+
+[<WindowsFact>]
+let ``a hard link to another drive is refused without asking the system`` () =
+    let fs = data ()
+    fs.AddDirectory(@"D:\backup")
+    let native = Native()
+
+    let failure =
+        Links.create native.Links Windows fs (requested Hard (at "data/notes.txt") @"D:\backup\twin.txt")
+        |> Expect.error
+
+    Assert.Equal(LinkRefused(HardLinkAcrossVolumes, fp @"D:\backup\twin.txt"), failure)
+    Assert.Empty native.Made
+
+[<WindowsFact>]
+let ``a drive letter is the same volume whatever its case`` () =
+    let fs = data ()
+    let native = Native()
+
+    Links.create native.Links Windows fs (requested Hard (at "data/notes.txt") @"c:\data\twin.txt")
+    |> Expect.ok
+
+    Assert.Single native.Made |> ignore
+
+[<Fact>]
+let ``a junction to a file is refused without asking the system`` () =
+    let fs = data ()
+    let native = Native()
+
+    let failure =
+        Links.create native.Links Windows fs (requested Junction (at "data/notes.txt") (at "data/twin"))
+        |> Expect.error
+
+    Assert.Equal(LinkRefused(JunctionToFile, fp (at "data/twin")), failure)
+    Assert.Empty native.Made
+
+[<Fact>]
+let ``a junction off Windows is refused without asking the system`` () =
+    let fs = data ()
+    let native = Native()
+
+    let failure =
+        Links.create native.Links Unix fs (requested Junction (at "data/docs") (at "data/twin"))
+        |> Expect.error
+
+    Assert.Equal(LinkRefused(JunctionOffWindows, fp (at "data/twin")), failure)
+    Assert.Empty native.Made
+
+[<Fact>]
+let ``a native link the system refuses is mapped the way every operation maps it`` () =
+    let fs = data ()
+    let native = refusing (UnauthorizedAccessException "denied")
+
+    let failure =
+        Links.create native Windows fs (requested Hard (at "data/notes.txt") (at "data/twin.txt"))
+        |> Expect.error
+
+    Assert.Equal(AccessDenied(fp (at "data/twin.txt")), failure)
+
+[<Fact>]
+let ``a symbolic link carries no refusal of its kind`` () =
+    let fs = data ()
+
+    let refusal = Links.refusal Unix fs (symbolic (at "data/notes.txt") (at "data/twin.txt"))
+
+    Assert.Equal(None, refusal)
+
+[<Fact>]
+let ``the refusal of a kind can be asked before anything is made`` () =
+    let fs = data ()
+
+    let refusal = Links.refusal Unix fs (requested Junction (at "data/docs") (at "data/twin"))
+
+    Assert.Equal(Some JunctionOffWindows, refusal)
