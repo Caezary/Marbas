@@ -27,7 +27,7 @@ let private windowWith (fs: MockFileSystem) askLink reportError =
     let window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseOption = (fun _ _ -> Some(at "backup"))
+                ChooseDrive = Fakes.choosingDrive (at "backup")
                 AskLink = askLink
                 RefuseLink = Links.refusal Windows fs
                 MakeLink = Links.create unreachable Windows fs

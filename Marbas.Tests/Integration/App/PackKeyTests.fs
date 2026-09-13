@@ -20,7 +20,7 @@ let private windowWith (fs: MockFileSystem) askArchive =
     let window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseOption = (fun _ _ -> Some(at "backup"))
+                ChooseDrive = Fakes.choosingDrive (at "backup")
                 AskArchive = askArchive }
 
     press (leftList window) KeyMap.rightRootKey

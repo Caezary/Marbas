@@ -114,6 +114,7 @@ Marbas/
     Format/               the text more than one feature formats with
       LiteralText.fs        turns a view's hot key specifier off, so `_` is shown
       EntrySize.fs          size column text, byte format injected per view
+      CompactSize.fs        bytes -> one decimal in the largest unit reached, 931.5 GB
       EntryFormat.fs        one entry -> one fixed-width row
       TimestampText.fs      one moment <-> the text a dialog reads and writes back
       PathText.fs           a path too long for the room -> C:\...\parent\current
@@ -164,6 +165,8 @@ Marbas/
       PackDialog.fs         what `Shift+F1` asks before an archive is written
       TabRow.fs             one tab -> its number and where both its panels stand
       TabDialog.fs          the list `F11` opens, and the tab it answers with
+      DriveLine.fs          drive rows -> lines whose root, label, kind and sizes line up
+      DriveDialog.fs        the list `Alt+F1` / `Alt+F2` open, and the row it answers with
     App/                  the composition root, and the way out to the world
       CursorInfo.fs         cursor entry -> status line text
       StatusLine.fs         the status line view

@@ -106,6 +106,7 @@
 
   <ItemGroup>
     <Compile Include="Ui\Format\EntrySizeTests.fs" />
+    <Compile Include="Ui\Format\CompactSizeTests.fs" />
     <Compile Include="Ui\Format\EntryFormatTests.fs" />
     <Compile Include="Ui\Format\TimestampTextTests.fs" />
     <Compile Include="Ui\Format\PathTextTests.fs" />
@@ -149,6 +150,7 @@
     <Compile Include="Ui\Dialogs\AssociationRowTests.fs" />
     <Compile Include="Ui\Dialogs\HandlerRowTests.fs" />
     <Compile Include="Ui\Dialogs\TabRowTests.fs" />
+    <Compile Include="Ui\Dialogs\DriveLineTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -215,6 +217,7 @@
     <Compile Include="Integration\Dialogs\PropertiesDialogTests.fs" />
     <Compile Include="Integration\Dialogs\SettingsDialogTests.fs" />
     <Compile Include="Integration\Dialogs\TabDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\DriveDialogTests.fs" />
     <Compile Include="Integration\Dialogs\PackDialogTests.fs" />
     <Compile Include="Integration\Dialogs\LinkDialogTests.fs" />
     <Compile Include="Integration\Dialogs\OpenWithDialogTests.fs" />

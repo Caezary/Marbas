@@ -67,15 +67,18 @@ module Drives =
         | DriveType.CDRom -> Optical
         | _ -> Fixed
 
-    let private labelOf (label: string) =
-        if String.IsNullOrWhiteSpace label then None else Some label
+    let private labelOf (root: string) (label: string) =
+        if String.IsNullOrWhiteSpace label || label = root then
+            None
+        else
+            Some label
 
     let private read (info: IDriveInfo) =
         try
             if info.IsReady && not (notStorage.Contains info.DriveFormat) then
                 Some
                     { Root = FileSystemPath.create info.Name
-                      Label = labelOf info.VolumeLabel
+                      Label = labelOf info.Name info.VolumeLabel
                       Kind = kindOf info.DriveType
                       Size = info.TotalSize
                       Free = info.AvailableFreeSpace }

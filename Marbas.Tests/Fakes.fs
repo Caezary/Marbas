@@ -176,7 +176,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       ListDrives = fun () -> Drives.list fs None
       OnQuit = ignore
       ReportError = fun _ _ -> ()
-      ChooseOption = fun _ _ -> None
+      ChooseDrive = fun _ -> None
       AskPattern = fun _ -> None
       AskName = fun _ _ -> None
       AskTarget = fun _ _ -> None
@@ -291,12 +291,26 @@ let private mountedDrive (fs: IFileSystem) (mount: Mount) =
 type MountedFileSystem(mounts: Mount list) =
     inherit MockFileSystem()
 
+    let plugged = ResizeArray mounts
+
+    member _.Plug(mount: Mount) = plugged.Add mount
+
     override this.DriveInfo =
         let drives () =
-            mounts |> List.map (mountedDrive this) |> Array.ofList
+            plugged |> Seq.map (mountedDrive this) |> Array.ofSeq
 
         { new IDriveInfoFactory with
             member _.GetDrives() = drives ()
             member _.New(name: string) = drives () |> Array.find (fun drive -> drive.Name = name)
             member _.Wrap(_: DriveInfo) = raise (NotSupportedException())
             member _.FileSystem = this }
+
+let driveAt (root: string) =
+    { Root = FileSystemPath.create root
+      Label = None
+      Kind = Fixed
+      Size = 0L
+      Free = 0L }
+
+let choosingDrive (root: string) =
+    fun (_: DriveRow list) -> Some(MountedDrive(driveAt root))

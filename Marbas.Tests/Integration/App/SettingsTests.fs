@@ -45,7 +45,7 @@ let ``what a session was set to is what the next one starts with`` () =
     use first =
         focusedWindow
             { deps fs with
-                ChooseOption = fun _ _ -> Some (at "backup") }
+                ChooseDrive = Fakes.choosingDrive (at "backup") }
 
     press (leftList first) KeyMap.sizeSortKey
     press (leftList first) KeyMap.hiddenKey

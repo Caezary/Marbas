@@ -13,15 +13,13 @@ open Marbas.Ui.Dialogs
 let reportError (app: IApplication) title message =
     MessageBox.ErrorQuery(app, title, message, "Ok") |> ignore
 
-let chooseOption (app: IApplication) title options =
-    match options with
+let chooseDrive (app: IApplication) (rows: DriveRow list) =
+    match rows with
     | [] -> None
     | _ ->
-        let buttons = options @ [ "Cancel" ] |> Array.ofList
-
-        match MessageBox.Query(app, title, "", buttons) with
-        | index when index.HasValue && index.Value < options.Length -> Some options[index.Value]
-        | _ -> None
+        use dialog = DriveDialog.create (DriveLine.describe rows)
+        app.Run dialog |> ignore
+        DriveDialog.choice dialog |> Option.map (fun index -> rows[index])
 
 let confirm (app: IApplication) (title: string) (message: string) =
     let answer = MessageBox.Query(app, title, message, "_Yes", "_No")

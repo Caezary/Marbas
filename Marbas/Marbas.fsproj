@@ -80,6 +80,7 @@
     <ItemGroup>
         <Compile Include="Ui\Format\LiteralText.fs" />
         <Compile Include="Ui\Format\EntrySize.fs" />
+        <Compile Include="Ui\Format\CompactSize.fs" />
         <Compile Include="Ui\Format\EntryFormat.fs" />
         <Compile Include="Ui\Format\TimestampText.fs" />
         <Compile Include="Ui\Format\PathText.fs" />
@@ -138,6 +139,8 @@
         <Compile Include="Ui\Dialogs\LinkDialog.fs" />
         <Compile Include="Ui\Dialogs\TabRow.fs" />
         <Compile Include="Ui\Dialogs\TabDialog.fs" />
+        <Compile Include="Ui\Dialogs\DriveLine.fs" />
+        <Compile Include="Ui\Dialogs\DriveDialog.fs" />
     </ItemGroup>
 
     <ItemGroup>

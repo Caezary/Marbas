@@ -66,6 +66,23 @@ let ``a blank label is no label`` () =
     Assert.Equal<DriveRow list>([ expected ], rows)
 
 [<Fact>]
+let ``a label that only repeats the root is no label`` () =
+    let fs =
+        Fakes.MountedFileSystem [ { Fakes.Mount.ext4 "/mnt/backup" with Label = "/mnt/backup" } ]
+
+    let rows = Drives.list fs None
+
+    let expected =
+        MountedDrive
+            { Root = fp "/mnt/backup"
+              Label = None
+              Kind = Fixed
+              Size = 0L
+              Free = 0L }
+
+    Assert.Equal<DriveRow list>([ expected ], rows)
+
+[<Fact>]
 let ``mounts are listed in alphabetical order of their roots`` () =
     let fs =
         Fakes.MountedFileSystem [ Fakes.Mount.ext4 "/mnt/backup"; Fakes.Mount.ext4 "/"; Fakes.Mount.ext4 "/boot" ]

@@ -22,9 +22,6 @@ let MkdirPrompt = "Create directory"
 let NewFilePrompt = "Create file"
 
 [<Literal>]
-let RootPrompt = "Select root"
-
-[<Literal>]
 let MovePrompt = "Move or rename"
 
 [<Literal>]
@@ -56,7 +53,7 @@ type Dependencies =
       ListDrives: unit -> DriveRow list
       OnQuit: unit -> unit
       ReportError: string -> string -> unit
-      ChooseOption: string -> string list -> string option
+      ChooseDrive: DriveRow list -> DriveRow option
       AskPattern: string -> string option
       AskName: string -> string -> string option
       AskTarget: string -> string -> string option
@@ -411,10 +408,8 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Some pattern -> dispatch (PatternEntered(mode, pattern))
         | None -> ()
     | PromptForRoot side ->
-        let roots = deps.ListDrives() |> List.map (DriveRow.root >> FileSystemPath.value)
-
-        match deps.ChooseOption RootPrompt roots with
-        | Some root -> dispatch (PathOpened(side, FileSystemPath.create root))
+        match deps.ChooseDrive(deps.ListDrives()) with
+        | Some row -> dispatch (PathOpened(side, DriveRow.root row))
         | None -> ()
     | WatchLocations paths -> deps.WatchLocations paths (fun () -> dispatch ExternalChangeDetected)
     | SaveSettings settings -> Settings.save deps.FileSystem deps.SettingsPath settings

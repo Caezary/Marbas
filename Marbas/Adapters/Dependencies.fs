@@ -45,7 +45,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
       ListDrives = fun () -> Drives.list fs (home env)
       OnQuit = fun () -> app.RequestStop()
       ReportError = Prompts.reportError app
-      ChooseOption = Prompts.chooseOption app
+      ChooseDrive = Prompts.chooseDrive app
       AskPattern = Prompts.askPattern app
       AskName = Prompts.askName app
       AskTarget = Prompts.askTarget app

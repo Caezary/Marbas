@@ -118,32 +118,51 @@ let ``an empty pattern never becomes a message`` () =
 [<Fact>]
 let ``a chosen root is dispatched as an opened path`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with ChooseOption = fun _ _ -> Some(at "elsewhere") }
+    let deps = { noDeps () with ChooseDrive = Fakes.choosingDrive (at "elsewhere") }
 
     Shell.interpret deps dispatch (PromptForRoot Right)
 
     Assert.Equal<Message list>([ PathOpened(Right, fp (at "elsewhere")) ], List.ofSeq sent)
 
 [<Fact>]
-let ``the chooser is offered the root of every drive row`` () =
+let ``a chosen home directory is dispatched as an opened path`` () =
+    let sent, dispatch = capture ()
+    let deps = { noDeps () with ChooseDrive = fun _ -> Some(HomeDirectory(fp (at "home/user"))) }
+
+    Shell.interpret deps dispatch (PromptForRoot Left)
+
+    Assert.Equal<Message list>([ PathOpened(Left, fp (at "home/user")) ], List.ofSeq sent)
+
+[<Fact>]
+let ``the chooser is offered every drive row as it was listed`` () =
     let _, dispatch = capture ()
     let mutable offered = []
 
     let stick =
         { Root = fp (at "media/stick")
-          Label = None
+          Label = Some "STICK"
           Kind = Removable
-          Size = 0L
-          Free = 0L }
+          Size = 64L
+          Free = 16L }
+
+    let rows = [ MountedDrive stick; HomeDirectory(fp (at "home/user")) ]
 
     let deps =
         { noDeps () with
-            ListDrives = fun () -> [ MountedDrive stick; HomeDirectory(fp (at "home/user")) ]
-            ChooseOption = fun _ roots -> offered <- roots; None }
+            ListDrives = fun () -> rows
+            ChooseDrive = fun offering -> offered <- offering; None }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
 
-    Assert.Equal<string list>([ at "media/stick"; at "home/user" ], offered)
+    Assert.Equal<DriveRow list>(rows, offered)
+
+[<Fact>]
+let ``closing the chooser dispatches nothing`` () =
+    let sent, dispatch = capture ()
+
+    Shell.interpret (noDeps ()) dispatch (PromptForRoot Left)
+
+    Assert.Empty sent
 
 [<Fact>]
 let ``the drives are listed again each time the chooser opens`` () =

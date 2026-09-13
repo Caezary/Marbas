@@ -24,7 +24,7 @@ let ``the tabs key asks which tab to stand on and goes there`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseOption = fun _ _ -> Some(at "backup")
+                ChooseDrive = Fakes.choosingDrive (at "backup")
                 ChooseTab = fun _ -> Some 0 }
 
     press (leftList window) KeyMap.newTabKey
@@ -57,7 +57,7 @@ let ``a tab the popup did not pick leaves the panels alone`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseOption = fun _ _ -> Some(at "backup")
+                ChooseDrive = Fakes.choosingDrive (at "backup")
                 ChooseTab = fun _ -> None }
 
     press (leftList window) KeyMap.newTabKey
@@ -73,7 +73,7 @@ let ``Alt and an arrow walk round the tabs without a popup`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseOption = fun _ _ -> Some(at "backup") }
+                ChooseDrive = Fakes.choosingDrive (at "backup") }
 
     press (leftList window) KeyMap.newTabKey
     press (leftList window) KeyMap.leftRootKey

@@ -23,7 +23,7 @@ let private windowWith (fs: MockFileSystem) askOverwrite reportError =
     let window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseOption = (fun _ _ -> Some (at "backup"))
+                ChooseDrive = Fakes.choosingDrive (at "backup")
                 AskOverwrite = askOverwrite
                 ReportError = reportError }
 

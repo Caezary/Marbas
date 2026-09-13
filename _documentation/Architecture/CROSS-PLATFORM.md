@@ -432,8 +432,8 @@ paths. P13.12 made it `Drives.list fs home` again, answering `DriveRow`s — a
 that are not storage were filtered out and the mount list became worth showing
 on Unix too. `Dependencies.create` still decides whether there is a home row,
 so neither platform is a special case below the composition root. The key keeps
-its vocabulary: `RootRequested`, `PromptForRoot`,
-`leftRootKey`, and a dialog that says *Select root*.
+its vocabulary — `RootRequested`, `PromptForRoot`, `leftRootKey` — while the
+popup, since P13.13, is titled *Drives* and shows each row with its sizes.
 
 ## Differences that are meant to be there
 
