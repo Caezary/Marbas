@@ -17,9 +17,6 @@ module DirectoryMeasure =
     let private lengthOf (fs: IFileSystem) (path: FileSystemPath) =
         (fs.FileInfo.New(FileSystemPath.value path)).Length
 
-    let private isLink (fs: IFileSystem) (path: FileSystemPath) =
-        (fs.DirectoryInfo.New(FileSystemPath.value path)).LinkTarget |> isNull |> not
-
     let private entriesUnder (fs: IFileSystem) (path: FileSystemPath) =
         fs.Directory.EnumerateFileSystemEntries(FileSystemPath.value path)
         |> Seq.map FileSystemPath.create
@@ -39,7 +36,7 @@ module DirectoryMeasure =
     and private sized (fs: IFileSystem) control (path: FileSystemPath) =
         match FileSystemPath.kind fs path with
         | FileEntry -> Exact(lengthOf fs path)
-        | DirectoryEntry when isLink fs path -> DirectorySize.nothingCounted
+        | DirectoryEntry when FileSystemPath.isLink fs path -> DirectorySize.nothingCounted
         | DirectoryEntry -> walk fs control path
         | NoEntry -> DirectorySize.nothingCounted
 

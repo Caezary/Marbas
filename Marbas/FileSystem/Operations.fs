@@ -82,6 +82,10 @@ let private deleteDirectory (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
     fs.Directory.Delete(raw, true)
 
+let private deleteEmptyDirectory (fs: IFileSystem) (path: FileSystemPath) =
+    let raw = FileSystemPath.value path
+    fs.Directory.Delete raw
+
 let private deleteFile (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
     fs.File.Delete raw
@@ -103,6 +107,7 @@ let private getFileSystemEntries (fs: IFileSystem) (path: FileSystemPath) =
 
 let isNonEmptyDirectory (fs: IFileSystem) (path: FileSystemPath) =
     match FileSystemPath.kind fs path with
+    | DirectoryEntry when FileSystemPath.isLink fs path -> false
     | DirectoryEntry ->
         try
             getFileSystemEntries fs path |> Seq.isEmpty |> not
@@ -131,15 +136,13 @@ let makeFile (fs: IFileSystem) (parent: FileSystemPath) (name: EntryName) =
 
 let delete (fs: IFileSystem) (path: FileSystemPath) =
     match FileSystemPath.kind fs path with
+    | DirectoryEntry when FileSystemPath.isLink fs path -> attempt fs path deleteEmptyDirectory
     | DirectoryEntry -> attempt fs path deleteDirectory
     | FileEntry -> attempt fs path deleteFile
     | NoEntry -> Error(SourceNotFound path)
 
 [<Literal>]
 let WipeBufferLength = 65536
-
-let private isLink (fs: IFileSystem) (path: FileSystemPath) =
-    fs.FileInfo.New(FileSystemPath.value path).LinkTarget |> isNull |> not
 
 let private clearReadOnly (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
@@ -198,18 +201,14 @@ let private wipeFile (fs: IFileSystem) (control: BatchControl) (path: FileSystem
         do! attempt fs anonymous deleteFile
     }
 
-let private deleteEmptyDirectory (fs: IFileSystem) (path: FileSystemPath) =
-    let raw = FileSystemPath.value path
-    fs.Directory.Delete raw
-
 let rec wipe (fs: IFileSystem) (control: BatchControl) (path: FileSystemPath) =
     if control.IsCancelled() then
         Error(Cancelled path)
     else
         match FileSystemPath.kind fs path with
         | NoEntry -> Error(SourceNotFound path)
-        | DirectoryEntry when isLink fs path -> attempt fs path deleteEmptyDirectory
-        | FileEntry when isLink fs path -> attempt fs path deleteFile
+        | DirectoryEntry when FileSystemPath.isLink fs path -> attempt fs path deleteEmptyDirectory
+        | FileEntry when FileSystemPath.isLink fs path -> attempt fs path deleteFile
         | FileEntry -> wipeFile fs control path
         | DirectoryEntry ->
             result {
@@ -219,12 +218,19 @@ let rec wipe (fs: IFileSystem) (control: BatchControl) (path: FileSystemPath) =
                 do! attempt fs path deleteEmptyDirectory
             }
 
+let private copyLink (fs: IFileSystem) (pointingAt: FileSystemPath) (target: FileSystemPath) =
+    fs.Directory.CreateSymbolicLink(FileSystemPath.value target, FileSystemPath.value pointingAt)
+    |> ignore
+
 let rec private copyTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
     if control.IsCancelled() then
         Error(Cancelled source)
     else
-        match FileSystemPath.kind fs source with
-        | DirectoryEntry ->
+        match FileSystemPath.kind fs source, FileSystemPath.linkTarget fs source with
+        | DirectoryEntry, Some pointingAt ->
+            control.Report source
+            attempting source (fun () -> copyLink fs pointingAt target)
+        | DirectoryEntry, None ->
             result {
                 do! attempt fs target createDirectory
 

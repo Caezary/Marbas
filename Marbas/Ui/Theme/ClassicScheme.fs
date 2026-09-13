@@ -34,6 +34,8 @@ let archiveEntry = attribute ColorName16.BrightMagenta ColorName16.Blue
 
 let executableEntry = attribute ColorName16.BrightGreen ColorName16.Blue
 
+let linkEntry = attribute ColorName16.BrightCyan ColorName16.Blue
+
 let summary =
     Scheme(
         Normal = attribute ColorName16.BrightYellow ColorName16.Blue,

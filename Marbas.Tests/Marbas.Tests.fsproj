@@ -13,6 +13,7 @@
     <Compile Include="Root.fs" />
     <Compile Include="WindowsFact.fs" />
     <Compile Include="UnixFact.fs" />
+    <Compile Include="SymbolicLinkFact.fs" />
     <Compile Include="Expect.fs" />
     <Compile Include="Collections\ZipperTests.fs" />
     <Compile Include="Fakes.fs" />
@@ -161,6 +162,10 @@
 
   <ItemGroup>
     <Compile Include="Integration\Gui.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Integration\Disk\LinkWalkTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

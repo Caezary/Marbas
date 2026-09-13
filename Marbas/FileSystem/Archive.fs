@@ -153,6 +153,9 @@ module Archive =
         else
             match FileSystemPath.kind fs source with
             | NoEntry -> Error(Operations.SourceNotFound source)
+            | DirectoryEntry when FileSystemPath.isLink fs source ->
+                control.Report source
+                attempt source (fun () -> sink.AddDirectory (entryName fs root source) None)
             | DirectoryEntry ->
                 result {
                     do! attempt source (fun () -> sink.AddDirectory (entryName fs root source) None)

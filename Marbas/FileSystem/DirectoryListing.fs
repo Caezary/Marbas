@@ -15,7 +15,8 @@ type Entry =
       Measured: DirectorySize option
       Modified: DateTimeOffset
       Visibility: EntryVisibility
-      Executability: Executability }
+      Executability: Executability
+      LinkTarget: FileSystemPath option }
 
 let ParentName = EntryName.create ".."
 
@@ -39,7 +40,8 @@ let private directoryEntry (info: IDirectoryInfo) =
       Measured = None
       Modified = DateTimeOffset info.LastWriteTime
       Visibility = EntryVisibility.classify name info.Attributes
-      Executability = NotExecutable }
+      Executability = NotExecutable
+      LinkTarget = FileSystemPath.linkTargetOf info }
 
 let private fileEntry (info: IFileInfo) =
     let name = EntryName.create info.Name
@@ -50,7 +52,8 @@ let private fileEntry (info: IFileInfo) =
       Measured = None
       Modified = DateTimeOffset info.LastWriteTime
       Visibility = EntryVisibility.classify name info.Attributes
-      Executability = Executability.classify name info.UnixFileMode }
+      Executability = Executability.classify name info.UnixFileMode
+      LinkTarget = FileSystemPath.linkTargetOf info }
 
 let read (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingError> =
     try
@@ -126,7 +129,8 @@ let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
               Measured = None
               Modified = DateTimeOffset parent.LastWriteTime
               Visibility = Plain
-              Executability = NotExecutable }
+              Executability = NotExecutable
+              LinkTarget = None }
 
 let listForDisplay (fs: IFileSystem) (sort: SortOrder) (hidden: HiddenEntries) (path: FileSystemPath) =
     read fs path

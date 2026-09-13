@@ -16,7 +16,8 @@ let private file name size =
       Measured = None
       Modified = modified
       Visibility = Plain
-      Executability = NotExecutable }
+      Executability = NotExecutable
+      LinkTarget = None }
 
 let private directory name =
     { Name = EntryName.create name
@@ -25,7 +26,8 @@ let private directory name =
       Measured = None
       Modified = modified
       Visibility = Plain
-      Executability = NotExecutable }
+      Executability = NotExecutable
+      LinkTarget = None }
 
 [<Fact>]
 let ``a file is described by name size and date`` () =
@@ -55,6 +57,22 @@ let ``no entry under the cursor is described as empty text`` () =
     let text = CursorInfo.describe None
 
     Assert.Equal("", text)
+
+[<Fact>]
+let ``a link says what it points at after its name`` () =
+    let link =
+        { directory "twin" with
+            LinkTarget = Some(FileSystemPath.create "/data/docs") }
+
+    let text = CursorInfo.describe (Some link)
+
+    Assert.StartsWith("twin -> /data/docs   <DIR>", text)
+
+[<Fact>]
+let ``an entry that is no link says nothing about a target`` () =
+    let text = CursorInfo.describe (Some(file "readme.txt" 1L))
+
+    Assert.DoesNotContain("->", text)
 
 [<Fact>]
 let ``a measured directory is described by what it holds`` () =

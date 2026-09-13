@@ -464,6 +464,73 @@ let ``an empty directory and a file are not non-empty directories`` () =
     Assert.False file
 
 [<Fact>]
+let ``a directory link is not a non-empty directory`` () =
+    let fs = Fakes.LinkFollowing()
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "x")
+    fs.Directory.CreateSymbolicLink(at "data/twin", at "data/docs") |> ignore
+
+    let nonEmpty = isNonEmptyDirectory fs (fp (at "data/twin"))
+
+    Assert.False nonEmpty
+
+let private linked () =
+    let fs = Fakes.LinkFollowing()
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "inner")
+    fs.Directory.CreateSymbolicLink(at "data/twin", at "data/docs") |> ignore
+    fs.AddDirectory(at "backup")
+    fs
+
+let private linkTargetOf (fs: IO.Abstractions.IFileSystem) path =
+    fs.DirectoryInfo.New(path).LinkTarget
+
+[<Fact>]
+let ``copy takes a directory link as a link rather than the tree behind it`` () =
+    let fs = linked ()
+
+    copy fs unattended (fp (at "backup")) (fp (at "data/twin")) |> Expect.ok
+
+    Assert.Equal(at "data/docs", linkTargetOf fs (at "backup/twin"))
+
+[<Fact>]
+let ``copy of a tree holding a link to its own ancestor terminates`` () =
+    let fs = linked ()
+    fs.Directory.CreateSymbolicLink(at "data/docs/loop", at "data") |> ignore
+
+    copy fs unattended (fp (at "backup")) (fp (at "data")) |> Expect.ok
+
+    Assert.Equal("inner", fs.File.ReadAllText(at "backup/data/docs/inner.txt"))
+    Assert.Equal(at "data", linkTargetOf fs (at "backup/data/docs/loop"))
+
+[<Fact>]
+let ``move takes a directory link as a link and leaves what it pointed at`` () =
+    let fs = linked ()
+
+    move fs unattended (fp (at "backup")) (fp (at "data/twin")) |> Expect.ok
+
+    Assert.Equal(at "data/docs", linkTargetOf fs (at "backup/twin"))
+    Assert.Null(linkTargetOf fs (at "data/twin"))
+    Assert.Equal("inner", fs.File.ReadAllText(at "data/docs/inner.txt"))
+
+[<Fact>]
+let ``delete of a directory link leaves what it points at`` () =
+    let fs = linked ()
+
+    delete fs (fp (at "data/twin")) |> Expect.ok
+
+    Assert.False(fs.Directory.Exists(at "data/twin"))
+    Assert.Equal("inner", fs.File.ReadAllText(at "data/docs/inner.txt"))
+
+[<Fact>]
+let ``delete of a tree holding a link leaves what the link points at`` () =
+    let fs = linked ()
+    fs.Directory.CreateSymbolicLink(at "backup/twin", at "data/docs") |> ignore
+
+    delete fs (fp (at "backup")) |> Expect.ok
+
+    Assert.False(fs.Directory.Exists(at "backup"))
+    Assert.Equal("inner", fs.File.ReadAllText(at "data/docs/inner.txt"))
+
+[<Fact>]
 let ``failures keeps only the items that went wrong`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/b.txt", MockFileData "b")

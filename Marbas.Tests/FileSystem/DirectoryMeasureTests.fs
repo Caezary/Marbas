@@ -113,6 +113,17 @@ let ``a directory link is a leaf rather than a way in`` () =
     Assert.DoesNotContain(at "data/twin", paths reported)
 
 [<Fact>]
+let ``a tree holding a link to its own ancestor measures and terminates`` () =
+    let fs = Fakes.LinkFollowing()
+    fs.AddFile(at "data/a.txt", MockFileData "12345")
+    fs.AddFile(at "data/docs/b.txt", MockFileData "1234567890")
+    fs.Directory.CreateSymbolicLink(at "data/docs/loop", at "data") |> ignore
+
+    let size = measured fs (OnDisk(fp (at "data")))
+
+    Assert.Equal(Exact 15L, size)
+
+[<Fact>]
 let ``a missing directory answers a lower bound of nothing`` () =
     let fs = tree ()
 

@@ -17,7 +17,8 @@ let private fileEntry (name: EntryName) (item: ArchiveItem) =
       Measured = None
       Modified = item.Modified
       Visibility = EntryVisibility.classify name FileAttributes.None
-      Executability = Executability.classify name UnixFileMode.None }
+      Executability = Executability.classify name UnixFileMode.None
+      LinkTarget = None }
 
 let private directoryEntry (name: EntryName) (modified: DateTimeOffset) =
     { Name = name
@@ -26,7 +27,8 @@ let private directoryEntry (name: EntryName) (modified: DateTimeOffset) =
       Measured = None
       Modified = modified
       Visibility = EntryVisibility.classify name FileAttributes.None
-      Executability = NotExecutable }
+      Executability = NotExecutable
+      LinkTarget = None }
 
 let private storedAt depth (group: ArchiveItem list) =
     group |> List.tryFind (fun item -> item.Segments.Length = depth + 1)
@@ -61,7 +63,8 @@ let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
       Measured = None
       Modified = DateTimeOffset(fs.FileInfo.New(FileSystemPath.value path).LastWriteTime)
       Visibility = Plain
-      Executability = NotExecutable }
+      Executability = NotExecutable
+      LinkTarget = None }
 
 let listForDisplay (fs: IFileSystem) (sort: SortOrder) (hidden: HiddenEntries) path level =
     read fs path level

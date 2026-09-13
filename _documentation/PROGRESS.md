@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-09-12. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-09-13. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
@@ -496,6 +496,33 @@ entries it never reached — stay. Inside an archive there is no disk block to
 overwrite, only an archive to rewrite, so `Alt+Del` there asks the same
 question `F8` does, for good.
 
+**P13.8 made a link say it is one, and stopped every walk at it.** A listing
+entry carries `LinkTarget` — what the link points at, or nothing — read from the
+entry's own `LinkTarget` rather than from `ResolveLinkTarget`, because
+`MockFileSystem` throws where the real system answers `null` for an entry that
+is no link. The listing and every walk ask the same
+`FileSystemPath.linkTargetOf`, so there is one answer to "is this a link". A
+link, to a file or to a directory, is drawn in bright cyan
+whatever it points at, and the status line says `twin -> C:\data\docs` after its
+name. Every recursive walk now stops at a directory link: copying makes a new
+symbolic link pointing where the old one did instead of copying the tree behind
+it, moving does the same and then removes the old link, packing stores it as an
+empty directory, deleting removes the link alone, measuring counts it as nothing
+and wiping removes it unwritten — and a directory link is never a *non-empty*
+directory, so the delete confirmation does not warn about contents it will not
+touch. A file link is still copied and packed by its contents, since following
+it cannot spin. What .NET does on its own was measured on a real disk rather
+than assumed: enumerating a directory link walks into what it points at, which
+is why the walks must stop, and `Directory.Delete` with `recursive` removes a
+link inside a tree without following it, which is why deleting a whole tree
+needs no walk of its own. `MockFileSystem` follows neither, so the logic tests
+run on `Fakes.LinkFollowing`, a mock that walks through a link the way a real
+system does and throws once a walk has gone round one; the disk tests are in
+`Integration/Disk/LinkWalkTests.fs` and skip where the system refuses the user a symbolic
+link. One consequence waits for P13.9: copying a junction, or any directory
+link on Windows for a user without that right, now fails for that entry where
+it used to copy the tree.
+
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -524,7 +551,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.7 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.8 done |
 
 ## What works today
 
@@ -566,7 +593,8 @@ written up as the checklist in
   Switching panels or reloading a panel closes its search, and the cursor stays
   where the search left it.
 - Entries are coloured by what they are: directories and `..` white, ordinary
-  files bright blue, archives bright magenta and executables bright green. A
+  files bright blue, archives bright magenta, executables bright green and links
+  — to a file or to a directory — bright cyan. A
   marked entry stays yellow and the entry under the cursor keeps the cursor
   bar, so neither is repainted.
 - Both panels list a real directory: `..` first, then directories, then files,
@@ -702,7 +730,8 @@ written up as the checklist in
   total) while nothing is marked. An open search takes it over from both.
 - A status line above the function-key bar describes the entry under the cursor
   of the active panel — untruncated name, exact size in bytes (`<DIR>` for
-  directories) and modification date. It follows both cursor movement and
+  directories) and modification date; a link adds what it points at after its
+  name (`twin -> C:\data\docs`). It follows both cursor movement and
   panel switching.
 - `F7` prompts for a name and creates that directory in the active panel; the
   panel refreshes with the cursor on the new entry and existing marks intact. A

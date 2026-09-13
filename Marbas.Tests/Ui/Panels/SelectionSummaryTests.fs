@@ -16,7 +16,8 @@ let private file name size =
       Measured = None
       Modified = modified
       Visibility = Plain
-      Executability = NotExecutable }
+      Executability = NotExecutable
+      LinkTarget = None }
 
 let private directory name =
     { Name = EntryName.create name
@@ -25,7 +26,8 @@ let private directory name =
       Measured = None
       Modified = modified
       Visibility = Plain
-      Executability = NotExecutable }
+      Executability = NotExecutable
+      LinkTarget = None }
 
 [<Fact>]
 let ``nothing selected is summarised as empty text`` () =

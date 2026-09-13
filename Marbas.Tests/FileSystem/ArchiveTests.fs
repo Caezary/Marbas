@@ -118,6 +118,34 @@ let ``an empty directory is kept as an entry of its own`` () =
 
     Assert.Equal<string list>([ "empty/" ], zipEntries fs target)
 
+let private linkedWork () =
+    let fs = Fakes.LinkFollowing()
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "work/docs/inner.txt", MockFileData "inner")
+    fs.Directory.CreateSymbolicLink(at "work/twin", at "work/docs") |> ignore
+    fs
+
+[<Fact>]
+let ``a directory link is packed as an empty directory rather than the tree behind it`` () =
+    let fs = linkedWork ()
+
+    let results =
+        Archive.write fs unattended (requested zip target) [ fp (at "work/twin") ]
+
+    Assert.Equal<(string * Result<unit, OperationError>) list>([ "twin", Ok() ], outcomes results)
+    Assert.Equal<string list>([ "twin/" ], zipEntries fs target)
+
+[<Fact>]
+let ``a tree holding a link to its own ancestor packs and terminates`` () =
+    let fs = linkedWork ()
+    fs.Directory.CreateSymbolicLink(at "work/docs/loop", at "work") |> ignore
+
+    let results =
+        Archive.write fs unattended (requested zip target) [ fp (at "work/docs") ]
+
+    Assert.Equal<(string * Result<unit, OperationError>) list>([ "docs", Ok() ], outcomes results)
+    Assert.Equal<string list>([ "docs/"; "docs/inner.txt"; "docs/loop/" ], zipEntries fs target |> List.sort)
+
 [<Fact>]
 let ``the modification time of a file survives the packing`` () =
     let fs = packed ()

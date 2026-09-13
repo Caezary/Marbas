@@ -166,3 +166,36 @@ let ``kind is DirectoryEntry for a directory`` () =
     let kind = FileSystemPath.kind fs (FileSystemPath.create (at "data/docs"))
 
     Assert.Equal(DirectoryEntry, kind)
+
+[<Fact>]
+let ``linkTarget answers what a directory link points at`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "data/docs")
+    fs.Directory.CreateSymbolicLink(at "data/twin", at "data/docs") |> ignore
+
+    let target = FileSystemPath.linkTarget fs (FileSystemPath.create (at "data/twin"))
+
+    Assert.Equal(Some(FileSystemPath.create (at "data/docs")), target)
+
+[<Fact>]
+let ``linkTarget answers what a file link points at`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "data/notes.txt", MockFileData "hello")
+    fs.File.CreateSymbolicLink(at "data/twin.txt", at "data/notes.txt") |> ignore
+
+    let target = FileSystemPath.linkTarget fs (FileSystemPath.create (at "data/twin.txt"))
+
+    Assert.Equal(Some(FileSystemPath.create (at "data/notes.txt")), target)
+
+[<Theory>]
+[<InlineData("data/docs")>]
+[<InlineData("data/notes.txt")>]
+[<InlineData("data/gone")>]
+let ``linkTarget answers nothing for what is no link`` path =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "data/docs")
+    fs.AddFile(at "data/notes.txt", MockFileData "hello")
+
+    let target = FileSystemPath.linkTarget fs (FileSystemPath.create (at path))
+
+    Assert.Equal(None, target)

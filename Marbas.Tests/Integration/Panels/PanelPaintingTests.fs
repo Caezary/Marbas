@@ -44,6 +44,18 @@ let ``every kind of entry is painted with its own colour`` () =
     )
 
 [<Fact>]
+let ``a link is painted with the link colour`` () =
+    let fs = mockFs ()
+    fs.Directory.CreateSymbolicLink(at "start/twin", at "start/docs") |> ignore
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
+    let list = leftList window
+    list.SelectedItem <- 0
+
+    let painted = paintedRow list 2
+
+    Assert.Equal(Nullable ClassicScheme.linkEntry, painted)
+
+[<Fact>]
 let ``the parent entry is painted like a directory`` () =
     use window = window ()
     let list = leftList window

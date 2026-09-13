@@ -148,6 +148,18 @@ let ``a directory link is removed without touching what it points at`` () =
     Assert.Equal<byte array>(secret, fs.File.ReadAllBytes(at "data/docs/secret.txt"))
 
 [<Fact>]
+let ``a tree holding a link to its own ancestor is wiped without walking through the link`` () =
+    let fs = Fakes.LinkFollowing()
+    fs.AddFile(at "data/docs/secret.txt", MockFileData secret)
+    fs.AddFile(at "data/kept.txt", MockFileData secret)
+    fs.Directory.CreateSymbolicLink(at "data/docs/loop", at "data") |> ignore
+
+    wipe fs unattended (fp (at "data/docs")) |> Expect.ok
+
+    Assert.False(fs.Directory.Exists(at "data/docs"))
+    Assert.Equal<byte array>(secret, fs.File.ReadAllBytes(at "data/kept.txt"))
+
+[<Fact>]
 let ``a file link is removed without touching what it points at`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/secret.txt", MockFileData secret)

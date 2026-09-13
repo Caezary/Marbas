@@ -33,6 +33,46 @@ type UnreadableDirectory(denied: string) =
 
         listing
 
+[<Literal>]
+let DeepestFollowedPath = 40
+
+type private LinkFollowingDirectory(fileSystem: IFileSystem, accessor: IMockFileDataAccessor, current: string) =
+    inherit MockDirectory(accessor, current)
+
+    let rec resolve (path: string) =
+        match Path.GetDirectoryName path with
+        | null
+        | "" -> path
+        | parent ->
+            let candidate = Path.Combine(resolve parent, Path.GetFileName path)
+
+            match fileSystem.FileInfo.New(candidate).LinkTarget with
+            | null -> candidate
+            | target -> resolve target
+
+    let depth (path: string) =
+        path.Split([| Path.DirectorySeparatorChar |], StringSplitOptions.RemoveEmptyEntries).Length
+
+    override this.Exists(path: string) = base.Exists(resolve path)
+
+    override this.EnumerateFileSystemEntries(path: string) =
+        if depth path > DeepestFollowedPath then
+            raise (InvalidOperationException $"The walk went round a link: '{path}'.")
+        else
+            base.EnumerateFileSystemEntries(resolve path)
+            |> Seq.map (fun entry -> Path.Combine(path, Path.GetFileName entry))
+
+type LinkFollowing() =
+    inherit MockFileSystem()
+
+    let mutable following: IDirectory = null
+
+    override this.Directory =
+        if isNull following then
+            following <- LinkFollowingDirectory(this, this, base.Directory.GetCurrentDirectory())
+
+        following
+
 type private UncreatableDirectory(accessor: IMockFileDataAccessor, current: string, denied: string) =
     inherit MockDirectory(accessor, current)
 

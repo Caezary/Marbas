@@ -11,10 +11,32 @@ touches the disk.
 dotnet test Marbas.slnx
 ```
 
-That is the whole suite — a few seconds, no disk, no terminal, no
-network, nothing to set up beyond the SDK. Nothing is marked flaky, so a red run
-is a real failure. A handful skip on Linux: the ones whose subject is drive
-letters.
+That is the whole suite — a few seconds, no terminal, no network, nothing to set
+up beyond the SDK, and no disk but for `Integration/Disk/`. Nothing is marked flaky, so a
+red run is a real failure. A handful skip on Linux: the ones whose subject is
+drive letters.
+
+**A test on the real disk is the last resort.** It is slower, it leaves a scratch
+directory behind when it crashes, and what it can prove depends on the machine
+and the rights of the user running it. So a behaviour is tested on the mock
+first, and on the mock taught to behave — a subclass in `Fakes` — second; the
+disk is reached for only when the subject *is* what the real system does and no
+mock can say it. Such tests are integration tests and live in
+`Integration/Disk/`.
+
+Symbolic links were the first case that needed it. Enumerating a directory link
+on a real system walks into what it points at, and on the mock it answers
+nothing, so a walk that would spin for ever on a disk passes on the mock without
+a stop at the link. The logic tests of the rule stay on a mock:
+`Fakes.LinkFollowing` enumerates through a link the way a real system does and
+throws once a path has grown deeper than any walk in a test could reach, so a
+walk that goes round a link fails instead of hanging. What only the disk can
+answer — that .NET itself walks into a link, and that `Directory.Delete` with
+`recursive` does not — is `Integration/Disk/LinkWalkTests.fs`, run on a scratch
+directory under the system temp folder, together with one walk of each kind over
+a real cycle. `[<SymbolicLinkFact>]` tries to create a link once and skips those
+tests where the system refuses — Windows without developer mode or
+administrator rights; Linux and the CI runners allow it.
 
 **One suite, two platforms.** Every path in an arrange block is built with
 `Root.at`, which answers `C:\start\docs` on Windows and `/start/docs` on Linux,
@@ -71,7 +93,10 @@ Four lines have no test and cannot get one from here: the `with ex ->` in
 behind a directory enumeration that throws, and `MockFileSystem` has no way to
 make one throw — a file can be locked or made read-only, a directory cannot.
 What each of them maps is unit-tested directly through `mapException`, so the
-gap is the plumbing, not the rule. `AppState.navigateUp`'s `None` branch is
+gap is the plumbing, not the rule. The `with _ ->` in `FileSystemPath.linkTargetOf`
+is the same kind of line: it keeps one reparse point the
+system will not read from failing the whole listing, and the mock has no such
+entry. `AppState.navigateUp`'s `None` branch is
 unreachable by construction: only `..` leads there and a root directory is never
 listed with one.
 
@@ -91,7 +116,9 @@ process-wide statics that force parallelisation off, so it belongs on the other
 side of the fence from the pure ones. It carries the same subfolders as
 `Marbas/Ui` — all but `Messages/`, whose modules are pure text and never build a
 view — so a feature's unit tests and its Terminal.Gui tests sit at matching
-paths on either side.
+paths on either side. `Disk/` is the one subfolder with no `Ui` counterpart:
+it holds the tests that need the real file system rather than a view, which are
+integration tests for the same reason — they reach outside the process.
 
 `Adapters/` is the exception the rule needs. Almost nothing there can be
 reached without starting the real thing, which is why the folder is excluded

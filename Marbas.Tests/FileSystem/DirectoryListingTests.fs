@@ -58,6 +58,40 @@ let ``reports last modification time`` () =
     Assert.Equal(modified, (List.exactlyOne entries).Modified)
 
 [<Fact>]
+let ``a directory link carries what it points at`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "data/docs")
+    fs.Directory.CreateSymbolicLink(at "data/twin", at "data/docs") |> ignore
+
+    let entries = read fs (fp (at "data")) |> Expect.ok
+    let twin = entries |> List.find (fun e -> e.Name = EntryName.create "twin")
+
+    Assert.Equal(Directory, twin.Kind)
+    Assert.Equal(Some(fp (at "data/docs")), twin.LinkTarget)
+
+[<Fact>]
+let ``a file link carries what it points at`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "data/notes.txt", MockFileData "hello")
+    fs.File.CreateSymbolicLink(at "data/twin.txt", at "data/notes.txt") |> ignore
+
+    let entries = read fs (fp (at "data")) |> Expect.ok
+    let twin = entries |> List.find (fun e -> e.Name = EntryName.create "twin.txt")
+
+    Assert.Equal(File, twin.Kind)
+    Assert.Equal(Some(fp (at "data/notes.txt")), twin.LinkTarget)
+
+[<Fact>]
+let ``an entry that is no link points at nothing`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "data/docs")
+    fs.AddFile(at "data/notes.txt", MockFileData "hello")
+
+    let entries = read fs (fp (at "data")) |> Expect.ok
+
+    Assert.Equal<FileSystemPath option list>([ None; None ], entries |> List.map _.LinkTarget)
+
+[<Fact>]
 let ``missing directory is an error value, not an exception`` () =
     let fs = MockFileSystem()
 

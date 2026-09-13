@@ -16,7 +16,8 @@ let private file name executability =
       Measured = None
       Modified = modified
       Visibility = Plain
-      Executability = executability }
+      Executability = executability
+      LinkTarget = None }
 
 let private directory name =
     { Name = EntryName.create name
@@ -25,7 +26,8 @@ let private directory name =
       Measured = None
       Modified = modified
       Visibility = Plain
-      Executability = NotExecutable }
+      Executability = NotExecutable
+      LinkTarget = None }
 
 [<Theory>]
 [<InlineData("docs")>]
@@ -67,9 +69,29 @@ let ``an archive stays an archive even when it is marked executable`` () =
 
     Assert.Equal(ArchiveColor, color)
 
+let private linked entry =
+    { entry with
+        LinkTarget = Some(FileSystemPath.create "/data/target") }
+
+[<Fact>]
+let ``a directory link has the link colour`` () =
+    let color = classify (linked (directory "twin"))
+
+    Assert.Equal(LinkColor, color)
+
+[<Theory>]
+[<InlineData("readme.txt")>]
+[<InlineData("sources.zip")>]
+[<InlineData("setup.exe")>]
+let ``a file link has the link colour whatever it points at`` name =
+    let color = classify (linked (file name Executable))
+
+    Assert.Equal(LinkColor, color)
+
 [<Fact>]
 let ``every colour is a distinct attribute of the classic palette`` () =
     let attributes =
-        [ DirectoryColor; PlainColor; ArchiveColor; ExecutableColor ] |> List.map attribute
+        [ DirectoryColor; PlainColor; ArchiveColor; ExecutableColor; LinkColor ]
+        |> List.map attribute
 
-    Assert.Equal(4, attributes |> List.distinct |> List.length)
+    Assert.Equal(5, attributes |> List.distinct |> List.length)
