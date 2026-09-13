@@ -99,3 +99,25 @@ let ``a start the user turned down is explained with its path`` () =
 
     Assert.Contains(at "start/tool.exe", message)
     Assert.Contains("administrator", message)
+
+[<Fact>]
+let ``a symbolic link Windows refuses names the two ways to be allowed one`` () =
+    let message = OperationErrorMessage.describe (SymbolicLinkNotPermitted(fp (at "data/twin")))
+
+    Assert.Contains(at "data/twin", message)
+    Assert.Contains("Developer Mode", message)
+    Assert.Contains("administrator", message)
+
+[<Fact>]
+let ``a hard link that cannot be made here is named as one`` () =
+    let message = OperationErrorMessage.describe (LinkKindUnavailable(Hard, fp (at "data/twin.txt")))
+
+    Assert.Contains(at "data/twin.txt", message)
+    Assert.Contains("hard link", message)
+
+[<Fact>]
+let ``a junction that cannot be made here is named as one`` () =
+    let message = OperationErrorMessage.describe (LinkKindUnavailable(Junction, fp (at "data/twin")))
+
+    Assert.Contains(at "data/twin", message)
+    Assert.Contains("junction", message)

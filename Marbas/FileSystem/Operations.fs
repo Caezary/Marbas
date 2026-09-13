@@ -17,6 +17,8 @@ type OperationError =
     | ArchiveEntryNotRunnable of path: FileSystemPath
     | NoProgramAssociated of path: FileSystemPath
     | StartDeclined of path: FileSystemPath
+    | SymbolicLinkNotPermitted of path: FileSystemPath
+    | LinkKindUnavailable of kind: LinkKind * path: FileSystemPath
     | ArchiveFailed of error: ArchiveError
     | BatchFailed of message: string
     | OperationFailed of path: FileSystemPath * message: string
@@ -48,9 +50,13 @@ let private NoAssociation = 1155
 [<Literal>]
 let private PromptCancelled = 1223
 
+[<Literal>]
+let private PrivilegeNotHeld = 0x80070522
+
 let mapException (path: FileSystemPath) (ex: exn) =
     match ex with
     | :? UnauthorizedAccessException -> AccessDenied path
+    | :? IO.IOException as refusal when refusal.HResult = PrivilegeNotHeld -> SymbolicLinkNotPermitted path
     | :? Win32Exception as refusal ->
         match refusal.NativeErrorCode with
         | NoAssociation -> NoProgramAssociated path

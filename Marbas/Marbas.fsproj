@@ -28,6 +28,7 @@
         <Compile Include="Domain\DeleteScope.fs" />
         <Compile Include="Domain\DeleteMode.fs" />
         <Compile Include="Domain\DirectorySize.fs" />
+        <Compile Include="Domain\LinkKind.fs" />
         <Compile Include="Domain\ProgramSettings.fs" />
     </ItemGroup>
 
@@ -54,6 +55,7 @@
         <Compile Include="FileSystem\ArchiveReader.fs" />
         <Compile Include="FileSystem\ArchiveListing.fs" />
         <Compile Include="FileSystem\Operations.fs" />
+        <Compile Include="FileSystem\Links.fs" />
         <Compile Include="FileSystem\DirectoryMeasure.fs" />
         <Compile Include="FileSystem\Workspace.fs" />
         <Compile Include="FileSystem\Archive.fs" />

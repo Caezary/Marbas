@@ -519,9 +519,31 @@ needs no walk of its own. `MockFileSystem` follows neither, so the logic tests
 run on `Fakes.LinkFollowing`, a mock that walks through a link the way a real
 system does and throws once a walk has gone round one; the disk tests are in
 `Integration/Disk/LinkWalkTests.fs` and skip where the system refuses the user a symbolic
-link. One consequence waits for P13.9: copying a junction, or any directory
-link on Windows for a user without that right, now fails for that entry where
-it used to copy the tree.
+link. One consequence: copying a junction, or any directory link on Windows for
+a user without that right, now fails for that entry where it used to copy the
+tree — and since P13.9 it says why.
+
+**P13.9 made the symbolic link.** `LinkKind` — `Symbolic`, `Hard`, `Junction` —
+is a word in `Domain`, and a `LinkRequest` carries a kind, the target and the
+location the link is to stand at. `Links.create` answers the refusals every kind
+shares before anything is made: a location something already stands at is
+`TargetExists`, and a target that is not there is `SourceNotFound`, because a
+file manager has no business making a link to nothing. The target is written
+absolute; a relative one is read from the directory the link will stand in, the
+way `F6` reads a bare name. A symbolic link goes through
+`fs.Directory.CreateSymbolicLink` or `fs.File.CreateSymbolicLink`, chosen by
+what the target is, so it is made and read back on `MockFileSystem`. A hard link
+and a junction have no managed API; until P13.10 puts them behind a port they
+answer `LinkKindUnavailable`, the refusal P13.10 will also give a junction on
+Unix. Windows' refusal was measured rather than taken from the plan: it is not
+an access refusal at all but an `IOException` carrying `0x80070522`,
+`ERROR_PRIVILEGE_NOT_HELD`, whose message the system writes in its own language.
+`Operations.mapException` reads that code into `SymbolicLinkNotPermitted`, the
+way it reads 1155 and 1223, so copying a directory link says the same thing as
+making one: that Windows makes a symbolic link only for an administrator or for
+a user with Developer Mode on, and where to turn it on. The sentence is broken
+by hand so the failures dialog stays inside 80 columns. Run against this
+machine, which has neither, `Links.create` answered exactly that.
 
 
 **The suite passes on both operating systems** — a handful of tests skip on
@@ -551,7 +573,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.8 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.9 done |
 
 ## What works today
 

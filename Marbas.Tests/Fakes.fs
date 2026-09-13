@@ -196,3 +196,45 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       WatchLocations = fun _ _ -> ()
       RunBatch = fun _ work finish -> work Operations.unattended |> finish
       RunMeasure = fun _ work finish -> work Operations.unattended |> finish }
+
+[<Literal>]
+let PrivilegeNotHeld = 0x80070522
+
+let private privilegeRefusal (path: string) =
+    IOException($"A required privilege is not held by the client. : '{path}'.", PrivilegeNotHeld)
+
+type private LinkRefusingDirectory(accessor: IMockFileDataAccessor, current: string, refusedUnder: string) =
+    inherit MockDirectory(accessor, current)
+
+    override this.CreateSymbolicLink(path: string, target: string) =
+        if path.StartsWith refusedUnder then
+            raise (privilegeRefusal path)
+        else
+            base.CreateSymbolicLink(path, target)
+
+type private LinkRefusingFile(accessor: IMockFileDataAccessor, refusedUnder: string) =
+    inherit MockFile(accessor)
+
+    override this.CreateSymbolicLink(path: string, target: string) =
+        if path.StartsWith refusedUnder then
+            raise (privilegeRefusal path)
+        else
+            base.CreateSymbolicLink(path, target)
+
+type SymbolicLinksRefused(refusedUnder: string) =
+    inherit MockFileSystem()
+
+    let mutable making: IDirectory = null
+    let mutable writing: IFile = null
+
+    override this.Directory =
+        if isNull making then
+            making <- LinkRefusingDirectory(this, base.Directory.GetCurrentDirectory(), refusedUnder)
+
+        making
+
+    override this.File =
+        if isNull writing then
+            writing <- LinkRefusingFile(this, refusedUnder)
+
+        writing

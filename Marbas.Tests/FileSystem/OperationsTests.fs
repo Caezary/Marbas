@@ -572,6 +572,25 @@ let ``an elevation prompt the user turned down maps to an error value`` () =
     Assert.Equal(StartDeclined(fp (at "tool.exe")), operationError)
 
 [<Fact>]
+let ``a symbolic link refused for want of a privilege maps to an error value`` () =
+    let refusal = IO.IOException("A required privilege is not held by the client.", Fakes.PrivilegeNotHeld)
+
+    let operationError = mapException (fp (at "data/twin")) refusal
+
+    Assert.Equal(SymbolicLinkNotPermitted(fp (at "data/twin")), operationError)
+
+[<Fact>]
+let ``copying a directory link the system will not let this user make says so`` () =
+    let fs = Fakes.SymbolicLinksRefused(at "backup")
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "inner")
+    fs.Directory.CreateSymbolicLink(at "data/twin", at "data/docs") |> ignore
+    fs.AddDirectory(at "backup")
+
+    let failure = copy fs unattended (fp (at "backup")) (fp (at "data/twin")) |> Expect.error
+
+    Assert.Equal(SymbolicLinkNotPermitted(fp (at "data/twin")), failure)
+
+[<Fact>]
 let ``a Windows failure of any other code keeps the words the system gave`` () =
     let refusal = ComponentModel.Win32Exception 2
 
