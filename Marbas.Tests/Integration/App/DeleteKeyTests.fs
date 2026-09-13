@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
 open Marbas.FileSystem
+open Marbas.Ui.App
 open Marbas.Ui.Keys
 open Marbas.Ui.Messages
 open Marbas.Tests
@@ -94,6 +95,59 @@ let ``Shift and F8 delete for good as well`` () =
 
     Assert.Empty bin.Taken
     Assert.False(fs.File.Exists(at "start/notes.txt"))
+
+[<Fact>]
+let ``Alt and Del wipe the entry behind the progress window after a question of its own`` () =
+    let fs = mockFs ()
+    let bin = Bin fs
+    let asked = ResizeArray<string * string>()
+    let batches = ResizeArray<string>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                Confirm = fun title message -> asked.Add(title, message); true
+                SendToTrash = bin.Send
+                RunBatch =
+                    fun title work finish ->
+                        batches.Add title
+                        work Operations.unattended |> finish }
+
+    (leftList window).SelectedItem <- 3
+
+    pressKey window KeyMap.wipeKey
+
+    let title, message = Assert.Single asked
+    Assert.Equal(DeleteConfirmation.WipeTitle, title)
+    Assert.Contains(DeleteConfirmation.WipeLimits, message)
+    Assert.Equal<string list>([ Shell.WipeTitle ], List.ofSeq batches)
+    Assert.Empty bin.Taken
+    Assert.False(fs.File.Exists(at "start/notes.txt"))
+    Assert.Equal(4, (leftList window).Source.Count)
+
+[<Fact>]
+let ``a wipe stopped with Esc leaves the entries it never reached and says where it stopped`` () =
+    let fs = mockFs ()
+    let reported = ResizeArray<string>()
+
+    let stopped: Operations.BatchControl =
+        { Report = ignore
+          IsCancelled = fun () -> true }
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                Confirm = agreeing
+                ReportError = fun _ -> reported.Add
+                RunBatch = fun _ work finish -> work stopped |> finish }
+
+    (leftList window).SelectedItem <- 3
+
+    pressKey window KeyMap.wipeKey
+
+    Assert.Equal("hi", fs.File.ReadAllText(at "start/notes.txt"))
+    Assert.Contains("notes.txt", Assert.Single reported)
+    Assert.Equal(5, (leftList window).Source.Count)
 
 [<Fact>]
 let ``a refused confirmation deletes nothing`` () =

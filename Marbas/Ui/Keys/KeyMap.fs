@@ -77,6 +77,8 @@ let trashKey = Key.Delete
 
 let permanentDeleteKey = Key.Delete.WithShift
 
+let wipeKey = Key.Delete.WithAlt
+
 let walkIntoKey = Key.W.WithAlt
 
 let classicWalkIntoKey = Key.PageDown.WithCtrl
@@ -147,6 +149,7 @@ let bindings =
       onBar rightRootKey "Right" (RootRequested Right)
       offBar trashKey (DeleteRequested ToTrash)
       offBar permanentDeleteKey (DeleteRequested Permanently)
+      offBar wipeKey (DeleteRequested ByWiping)
       offBar hiddenKey HiddenToggled
       offBar quitKey QuitRequested
       offBar classicHiddenKey HiddenToggled

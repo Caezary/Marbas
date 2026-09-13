@@ -266,6 +266,50 @@ let ``a confirmed permanent delete carries its own mode`` () =
     Assert.Equal<Effect list>([ DeleteTargets([ fp (at "start/notes.txt") ], Permanently) ], result.Effects)
 
 [<Fact>]
+let ``a wipe asks to confirm under its own mode`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+
+    let result = update fs (DeleteRequested ByWiping) state
+
+    Assert.Equal<Effect list>(
+        [ ConfirmDelete
+              { Targets = [ en "notes.txt" ]
+                Scope = NamedEntriesOnly
+                Mode = ByWiping } ],
+        result.Effects
+    )
+
+[<Fact>]
+let ``a confirmed wipe hands the targets over to be wiped`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 2
+
+    let result = update fs (DeleteConfirmed ByWiping) state
+
+    Assert.Equal<Effect list>([ DeleteTargets([ fp (at "start/notes.txt") ], ByWiping) ], result.Effects)
+    Assert.True(fs.File.Exists(at "start/notes.txt"))
+
+[<Fact>]
+let ``a finished wipe keeps the marks of what it did not get to`` () =
+    let fs = mockFs ()
+    let state =
+        loaded fs
+        |> setCursor Left 1
+        |> toggleSelectionMoving Downward Left
+        |> toggleSelectionMoving Downward Left
+        |> toggleSelectionMoving Downward Left
+
+    let results =
+        [ { Name = en "docs"; Outcome = Ok() }
+          { Name = en "notes.txt"
+            Outcome = Error(Cancelled(fp (at "start/notes.txt"))) } ]
+
+    let result = update fs (DeleteFinished results) state
+
+    Assert.Equal<string list>([ "notes.txt"; "setup.fs" ], selectedEntries result.State.Left |> names)
+
+[<Fact>]
 let ``a finished delete refreshes the panel and raises no effect`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2

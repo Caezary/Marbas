@@ -480,6 +480,22 @@ wiping from the start. Nothing is bound to a key yet — that is P13.7. The test
 watch the mock through `Fakes.WipeWitness`, which records what the file held at
 each flush and every rename, so the order is proved rather than inferred.
 
+**P13.7 put wiping on `Alt+Del`.** `DeleteMode` has a third case, `ByWiping`,
+beside `ToTrash` and `Permanently`, and the confirmation asks under a title of
+its own — *Wipe* — with two sentences the other deletes do not carry: what
+wiping does, and that on a solid-state disk or a copy-on-write or journaling
+file system the old blocks may outlive the file anyway. Those sentences are
+broken by hand, because a message box is as wide as its longest line and the
+single-line version, rendered, came out wider than an 80-column terminal. The
+effect leaves the synchronous path the trash and the permanent delete take and
+runs `Operations.wipeAll` through `RunBatch` under *Wiping*, so it shows the
+progress window and `Esc` stops it; what comes back is the same
+`DeleteFinished` the other deletes send, so the panel is read again and the
+marks of what was not wiped — a failure, the file a stopped run was in, and the
+entries it never reached — stay. Inside an archive there is no disk block to
+overwrite, only an archive to rewrite, so `Alt+Del` there asks the same
+question `F8` does, for good.
+
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -508,7 +524,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.6 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.7 done |
 
 ## What works today
 
@@ -872,9 +888,9 @@ shown as drives behind `Alt+F1` and `Alt+F2`, the root of the volume on `Ctrl+\`
 systems carry, and `Alt+Del` wiping what it deletes. P13.1 has measured what the
 terminals hand over, which settles two of those bindings, and P13.2 has put the
 root of the volume on the key they deliver, P13.3 can measure a directory, P13.4
-shows what it measured, P13.5 sorts by it and P13.6 can wipe a file rather than
-unlink it. P13.7, putting wiping on `Alt+Del` behind a confirmation of its own,
-is next. Three things are waiting beside it:
+shows what it measured, P13.5 sorts by it, P13.6 can wipe a file rather than
+unlink it and P13.7 puts wiping on `Alt+Del`. P13.8, a link that says it is one
+and every walk stopping at it, is next. Three things are waiting beside it:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
@@ -1054,6 +1070,8 @@ is next. Three things are waiting beside it:
   the UI thread rather than behind `RunBatch`, so removing a huge tree blocks.
   Neither `Directory.Delete` nor the recycle bin reports progress, so a
   progress window would have nothing to show; cancelling is what it would buy.
+  Wiping, the one delete that has something to report, is the exception: it
+  runs behind `RunBatch` and `Esc` stops it.
 - Only the home trash is written on Unix, never the per-volume
   `$topdir/.Trash-$uid` the freedesktop spec asks for. Deleting from another
   disk therefore copies the entry across rather than renaming it — correct, but

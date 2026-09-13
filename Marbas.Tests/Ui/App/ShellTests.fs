@@ -272,6 +272,57 @@ let ``a permanent delete removes the target itself`` () =
     )
 
 [<Fact>]
+let ``a wipe runs behind the progress window under a title of its own`` () =
+    let sent, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    let titles = ResizeArray<string>()
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            SendToTrash = fun path -> failwith $"the trash was asked for {FileSystemPath.value path}"
+            RunBatch =
+                fun title work finish ->
+                    titles.Add title
+                    work unattended |> finish }
+
+    Shell.interpret deps dispatch (DeleteTargets([ fp (at "start/notes.txt") ], ByWiping))
+
+    Assert.Equal<string list>([ Shell.WipeTitle ], List.ofSeq titles)
+    Assert.Empty(fs.Directory.GetFileSystemEntries(at "start"))
+
+    Assert.Equal<Message list>(
+        [ DeleteFinished [ { Name = en "notes.txt"; Outcome = Ok() } ] ],
+        List.ofSeq sent
+    )
+
+[<Fact>]
+let ``a stopped wipe hands back the file it stopped at`` () =
+    let sent, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "start/readme.txt", MockFileData "hi")
+
+    let stopped =
+        { Report = ignore
+          IsCancelled = fun () -> true }
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            RunBatch = fun _ work finish -> work stopped |> finish }
+
+    Shell.interpret deps dispatch (DeleteTargets([ fp (at "start/notes.txt"); fp (at "start/readme.txt") ], ByWiping))
+
+    Assert.True(fs.File.Exists(at "start/readme.txt"))
+
+    Assert.Equal<Message list>(
+        [ DeleteFinished
+              [ { Name = en "notes.txt"
+                  Outcome = Error(Cancelled(fp (at "start/notes.txt"))) } ] ],
+        List.ofSeq sent
+    )
+
+[<Fact>]
 let ``what the trash refused is reported item by item`` () =
     let sent, dispatch = capture ()
     let fs = MockFileSystem()

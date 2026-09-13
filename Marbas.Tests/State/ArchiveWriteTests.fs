@@ -101,6 +101,21 @@ let ``a delete inside an archive is confirmed for good and removes the entries``
     Assert.Equal<Effect list>([ RemoveEntries(archive, [ inside "notes.txt" ]) ], confirmed.Effects)
 
 [<Fact>]
+let ``a wipe inside an archive is confirmed as a delete for good`` () =
+    let fs = packed ()
+    let state = standingInside fs Left |> setCursor Left 2
+
+    let asked = update fs (DeleteRequested ByWiping) state
+
+    Assert.Equal<Effect list>(
+        [ ConfirmDelete
+              { Targets = [ en "notes.txt" ]
+                Scope = NamedEntriesOnly
+                Mode = Permanently } ],
+        asked.Effects
+    )
+
+[<Fact>]
 let ``a directory among the targets inside an archive warns about its contents`` () =
     let fs = packed ()
     let state = standingInside fs Left |> setCursor Left 1

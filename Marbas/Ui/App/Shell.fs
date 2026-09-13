@@ -37,6 +37,9 @@ let MoveTitle = "Moving"
 let DeleteTitle = "Deleting"
 
 [<Literal>]
+let WipeTitle = "Wiping"
+
+[<Literal>]
 let MeasureTitle = "Measuring"
 
 [<Literal>]
@@ -235,13 +238,17 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
     | ConfirmDelete request ->
         if deps.Confirm (DeleteConfirmation.title request) (DeleteConfirmation.describe request) then
             dispatch (DeleteConfirmed request.Mode)
-    | DeleteTargets(sources, mode) ->
-        let remove =
-            match mode with
-            | ToTrash -> deps.SendToTrash
-            | Permanently -> Operations.delete deps.FileSystem
-
-        Operations.removeAll deps.FileSystem remove sources |> DeleteFinished |> dispatch
+    | DeleteTargets(sources, ByWiping) ->
+        deps.RunBatch
+            WipeTitle
+            (fun control -> Operations.wipeAll deps.FileSystem control sources)
+            (DeleteFinished >> dispatch)
+    | DeleteTargets(sources, ToTrash) ->
+        Operations.removeAll deps.FileSystem deps.SendToTrash sources |> DeleteFinished |> dispatch
+    | DeleteTargets(sources, Permanently) ->
+        Operations.removeAll deps.FileSystem (Operations.delete deps.FileSystem) sources
+        |> DeleteFinished
+        |> dispatch
     | CopyTargets(sources, targetDirectory) ->
         startBatch deps CopyTitle Operations.copyAll (CopyFinished >> dispatch) sources targetDirectory
     | MoveTargets(sources, targetDirectory) ->

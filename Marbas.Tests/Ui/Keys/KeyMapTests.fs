@@ -221,6 +221,13 @@ let ``the permanent delete keys are the delete keys with shift held`` () =
     Assert.Equal(KeyMap.trashKey.WithShift, KeyMap.permanentDeleteKey)
 
 [<Fact>]
+let ``Alt and Del ask for a wipe`` () =
+    let message = KeyMap.messageFor KeyMap.wipeKey
+
+    Assert.Equal(Key.Delete.WithAlt, KeyMap.wipeKey)
+    Assert.Equal(Some(DeleteRequested ByWiping), message)
+
+[<Fact>]
 let ``the quit key requests a quit, so quitting always passes through the state`` () =
     let message = KeyMap.messageFor KeyMap.quitKey
 

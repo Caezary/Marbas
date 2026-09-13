@@ -59,6 +59,34 @@ let ``a permanent delete asks a question of its own, under a title of its own`` 
     Assert.DoesNotContain("trash", message)
     Assert.Equal(DeleteConfirmation.PermanentTitle, DeleteConfirmation.title asked)
 
+let private wiping names scope =
+    { request names scope with Mode = ByWiping }
+
+[<Fact>]
+let ``a wipe asks under a title of its own`` () =
+    let title = DeleteConfirmation.title (wiping [ en "notes.txt" ] NamedEntriesOnly)
+
+    Assert.Equal(DeleteConfirmation.WipeTitle, title)
+
+[<Fact>]
+let ``a wipe names its target and says what wiping does and cannot promise`` () =
+    let message =
+        DeleteConfirmation.describe (wiping [ en "notes.txt" ] NamedEntriesOnly)
+
+    Assert.Contains("notes.txt", message)
+    Assert.Contains(DeleteConfirmation.WipeExplanation, message)
+    Assert.Contains(DeleteConfirmation.WipeLimits, message)
+    Assert.DoesNotContain("trash", message)
+
+[<Fact>]
+let ``a wipe reaching into a directory says the contents are wiped too`` () =
+    let message =
+        DeleteConfirmation.describe (wiping [ en "docs"; en "notes.txt" ] WithDirectoryContents)
+
+    Assert.Contains("2", message)
+    Assert.Contains(DeleteConfirmation.WipeContentsWarning, message)
+    Assert.Contains(DeleteConfirmation.WipeLimits, message)
+
 [<Fact>]
 let ``a delete to the trash keeps the plain title`` () =
     let title =
