@@ -574,9 +574,11 @@ the system allows it.
 
 Making a junction on the disk turned up a hole in P13.8. `Directory.Delete` with
 `recursive`, which deleting a tree had relied on, removes a junction inside the
-tree and then throws an access refusal, leaving the tree behind: it asks
+tree and then throws, leaving the tree behind: it asks
 `DeleteVolumeMountPoint` about every mount point it meets, and a junction is one
-that is no volume. So `Operations.delete` now walks a tree itself, the way
+that is no volume. What it throws depends on who runs it — an access refusal for
+an ordinary user in a terminal, a plain `IOException` in another session — so
+the test that records it asserts only that it throws and what it leaves. So `Operations.delete` now walks a tree itself, the way
 wiping always has: a directory link is removed on its own, a directory is
 emptied and then removed, and nothing is followed. The disk tests hold both
 halves — what .NET does, and that deleting a tree with a junction in it now

@@ -75,8 +75,9 @@ let ``deleting a directory recursively stumbles on a junction inside it`` () =
 
     let thrown = Record.Exception(fun () -> Directory.Delete(scratch.At "backup", true))
 
-    Assert.IsType<System.UnauthorizedAccessException> thrown |> ignore
+    Assert.NotNull thrown
     Assert.True(Directory.Exists(scratch.At "backup"))
+    Assert.Equal("inner", File.ReadAllText(scratch.At "data/docs/inner.txt"))
 
 [<WindowsFact("A junction is a Windows concept")>]
 let ``deleting a tree holding a junction removes the tree and leaves what the junction points at`` () =
