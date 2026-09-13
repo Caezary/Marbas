@@ -65,7 +65,8 @@ type Dependencies =
       ShowFile: FileWindow.Source -> unit
       RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       Launch: LaunchRequest -> Result<unit, LaunchError>
-      AskLink: string -> (string -> LinkKind -> LinkRefusal option) -> LinkChoice option
+      LinkKinds: LinkKind list
+      AskLink: LinkKind list -> string -> (string -> LinkKind -> LinkRefusal option) -> LinkChoice option
       RefuseLink: LinkRequest -> LinkRefusal option
       MakeLink: LinkRequest -> Result<unit, Operations.OperationError>
       HandlersFor: EntryName -> Handler list
@@ -265,7 +266,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
             Links.requests deps.FileSystem kind sources directory text
             |> Links.sharedRefusal deps.RefuseLink
 
-        match deps.AskLink (FileSystemPath.value suggestion) refusalOf with
+        match deps.AskLink deps.LinkKinds (FileSystemPath.value suggestion) refusalOf with
         | Some choice -> dispatch (LinkEntered choice)
         | None -> ()
     | MakeLinks requests ->

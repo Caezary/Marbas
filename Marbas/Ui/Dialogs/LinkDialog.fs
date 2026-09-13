@@ -20,19 +20,23 @@ let KindId = "linkKind"
 [<Literal>]
 let ReasonId = "linkReason"
 
-let kinds = [ Symbolic; Hard; Junction ]
-
 let kindLabel kind =
     match kind with
     | Symbolic -> "_Symbolic link"
     | Hard -> "_Hard link"
     | Junction -> "_Junction"
 
+let private kindsOf (selector: OptionSelector) =
+    selector.Labels
+    |> Seq.map (fun label -> [ Symbolic; Hard; Junction ] |> List.find (kindLabel >> (=) label))
+    |> List.ofSeq
+
 let private chosenKind (selector: OptionSelector) =
     let index = selector.Value |> Option.ofNullable |> Option.defaultValue 0
-    kinds |> List.tryItem index |> Option.defaultValue Symbolic
+    kindsOf selector |> List.tryItem index |> Option.defaultValue Symbolic
 
 let private offer (refusal: string -> LinkKind -> LinkRefusal option) (target: TextField) (selector: OptionSelector) (reason: Label) =
+    let kinds = kindsOf selector
     let refusals = kinds |> List.map (refusal target.Text)
 
     Seq.zip selector.SubViews refusals
@@ -45,7 +49,7 @@ let private offer (refusal: string -> LinkKind -> LinkRefusal option) (target: T
     if List.zip kinds refusals |> List.exists (fun (kind, refused) -> kind = chosen && refused.IsSome) then
         selector.Value <- Nullable 0
 
-let create (refusal: string -> LinkKind -> LinkRefusal option) (suggestion: string) =
+let create (kinds: LinkKind list) (refusal: string -> LinkKind -> LinkRefusal option) (suggestion: string) =
     let dialog =
         new Dialog(Title = Title, Width = 64, Height = 14) |> DialogStyle.dress
 

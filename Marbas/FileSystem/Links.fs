@@ -15,9 +15,14 @@ type LinkChoice = { Target: string; Kind: LinkKind }
 
 type NativeLinks =
     { MakeHard: FileSystemPath -> FileSystemPath -> unit
-      MakeJunction: FileSystemPath -> FileSystemPath -> unit }
+      MakeJunction: (FileSystemPath -> FileSystemPath -> unit) option }
 
 module Links =
+
+    let available (native: NativeLinks) =
+        match native.MakeJunction with
+        | Some _ -> [ Symbolic; Hard; Junction ]
+        | None -> [ Symbolic; Hard ]
 
     let private absolute (fs: IFileSystem) (request: LinkRequest) =
         let standing = FileSystemPath.directory fs request.Location |> FileSystemPath.value
@@ -55,7 +60,6 @@ module Links =
         | Hard, DirectoryEntry -> Some HardLinkToDirectory
         | Hard, _ when not (onOneVolume platform fs target request.Location) -> Some HardLinkAcrossVolumes
         | Hard, _ -> None
-        | Junction, _ when platform = Unix -> Some JunctionOffWindows
         | Junction, FileEntry -> Some JunctionToFile
         | Junction, _ -> None
 
@@ -84,7 +88,10 @@ module Links =
             | Some refused, _ -> Error(LinkRefused(refused, location))
             | None, Symbolic -> makeSymbolic fs location target targetKind
             | None, Hard -> attempting location (fun () -> native.MakeHard target location)
-            | None, Junction -> attempting location (fun () -> native.MakeJunction target location)
+            | None, Junction ->
+                match native.MakeJunction with
+                | Some makeJunction -> attempting location (fun () -> makeJunction target location)
+                | None -> Error(LinkRefused(KindUnavailable, location))
 
     let requests (fs: IFileSystem) kind (sources: FileSystemPath list) (directory: FileSystemPath) (text: string) =
         let typed = FileSystemPath.combine fs directory (text.Trim())

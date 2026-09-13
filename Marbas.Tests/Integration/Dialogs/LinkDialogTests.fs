@@ -27,7 +27,7 @@ let private hardRefusedElsewhere (text: string) (kind: LinkKind) =
 
 let private laidOut refusal =
     DialogStyle.apply ()
-    let dialog = LinkDialog.create refusal suggestion
+    let dialog = LinkDialog.create [ Symbolic; Hard; Junction ] refusal suggestion
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore
@@ -60,6 +60,20 @@ let ``every kind is offered`` () =
     Assert.Equal<string list>([ "_Symbolic link"; "_Hard link"; "_Junction" ], List.ofSeq (kinds dialog).Labels)
     Assert.Equal<bool list>([ true; true; true ], enabled dialog)
     Assert.Equal("", reason dialog)
+
+[<Fact>]
+let ``only the kinds this system can make are offered`` () =
+    DialogStyle.apply ()
+    use dialog = LinkDialog.create [ Symbolic; Hard ] nothingRefused suggestion
+    dialog.BeginInit()
+    dialog.EndInit()
+    (LinkDialog.selector dialog).Value <- Nullable 1
+    dialog.Result <- 1
+
+    let choice = LinkDialog.choice dialog |> Expect.some
+
+    Assert.Equal<string list>([ "_Symbolic link"; "_Hard link" ], List.ofSeq (kinds dialog).Labels)
+    Assert.Equal(Hard, choice.Kind)
 
 [<Fact>]
 let ``a kind the target cannot carry is disabled with its reason beneath`` () =

@@ -23,7 +23,7 @@ let ``a junction to a file says it wants a directory`` () =
     Assert.Equal("A junction can only point at a directory.", message)
 
 [<Fact>]
-let ``a junction off Windows says where junctions exist`` () =
-    let message = LinkRefusalMessage.describe JunctionOffWindows
+let ``a kind the system lacks says so`` () =
+    let message = LinkRefusalMessage.describe KindUnavailable
 
-    Assert.Equal("A junction exists only on Windows.", message)
+    Assert.Equal("This system has no way to make a link of this kind.", message)

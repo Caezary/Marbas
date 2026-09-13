@@ -547,8 +547,10 @@ machine, which has neither, `Links.create` answered exactly that.
 **P13.10 made the two kinds the framework does not give.** What a kind can point
 at is a fact of the kind, so `Links.refusal` answers it from the platform and the
 file system before the system is asked, as a `LinkRefusal` in `Domain`: a hard
-link to a directory, a hard link onto another volume, a junction to a file, and a
-junction anywhere but Windows. The volume is the longest drive root holding the
+link to a directory, a hard link onto another volume and a junction to a file.
+(P13.10 also refused a junction anywhere but Windows; that refusal has since
+given way to a kind the platform does not offer at all — see after P13.11.) The
+volume is the longest drive root holding the
 path — a drive letter compared without regard to case on Windows, a mount point
 on Unix — which is why the dialog of P13.11 can grey a kind out without making
 anything. `MockFileSystem` names every drive `/:\` on Linux and so cannot model a
@@ -604,6 +606,22 @@ without a progress window, since making one costs a single call; what failed is
 reported entry by entry and keeps its mark, and both panels are read again with
 the cursor on the new link in whichever of them it landed in. The bar shows
 `F6 Link` while `Alt` is held.
+
+**Which kinds a platform can make is now said by the adapter, not checked by
+the logic.** `NativeLinks.MakeJunction` is an option: Windows supplies the
+`DeviceIoControl` junction and Unix supplies nothing, so the stand-in that threw
+`PlatformNotSupportedException` is gone and no code on Unix can make a junction.
+`Links.available` reads the kinds off that record, `Dependencies.create` puts
+them in `Shell.Dependencies.LinkKinds`, and the `Alt+F6` popup is built from
+them: on Linux there is no junction row at all, where there used to be a greyed
+one. `JunctionOffWindows` left `LinkRefusal` with its sentence, so greying a kind
+out is now only about the place typed — a directory for a hard link, another
+volume, a file for a junction. `LinkKind.Junction` is still a value every
+platform can spell, because it travels through `LinkEntered` and `MakeLinks` as
+data; `Links.create` given a junction with no function to make it answers
+`KindUnavailable`, a branch no popup can reach. `Platform` is still handed to
+`Links`, for one thing only: whether two drive roots are compared with or
+without regard to case.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -848,10 +866,10 @@ written up as the checklist in
   answer or a cancelled prompt does nothing.
 - `Alt+F6` makes a link to the operation targets. The popup offers the other
   panel's directory plus the name of the entry under the cursor — or the
-  directory alone when several are marked — and the three kinds: symbolic, hard
-  and junction. A kind the place typed cannot carry is greyed out with the
-  reason beneath it: a hard link only to a file on the same volume, a junction
-  only to a directory and only on Windows. The panel the link lands in is read
+  directory alone when several are marked — and the kinds this system can make:
+  symbolic and hard everywhere, a junction on Windows alone. A kind the place
+  typed cannot carry is greyed out with the reason beneath it: a hard link only
+  to a file on the same volume, a junction only to a directory. The panel the link lands in is read
   again with the cursor on it, drawn in the link colour; a link Windows refuses
   for want of Developer Mode, and every other failure, is reported with a
   sentence.

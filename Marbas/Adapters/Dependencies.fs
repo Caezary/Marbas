@@ -36,6 +36,8 @@ let private runEditor (app: IApplication) (fs: IFileSystem) (env: HostEnvironmen
     EditorProcess.run fs (fun () -> app.ClearScreenNextIteration <- true) env.Editor env.Platform
 
 let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.Dependencies =
+    let links = NativeLinks.forPlatform env.Platform
+
     { FileSystem = fs
       StartPath = fs.Directory.GetCurrentDirectory() |> FileSystemPath.create
       SettingsPath = Settings.location fs env.ApplicationData env.UserProfile
@@ -52,9 +54,10 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
       ShowFile = Prompts.showFile app
       RunEditor = runEditor app fs env
       Launch = LaunchProcess.start fs env.Platform
+      LinkKinds = Links.available links
       AskLink = Prompts.askLink app
       RefuseLink = Links.refusal env.Platform fs
-      MakeLink =Links.create (NativeLinks.forPlatform env.Platform) env.Platform fs
+      MakeLink = Links.create links env.Platform fs
       HandlersFor = handlersFor fs env
       AskHandler = Prompts.askHandler app
       ChooseTab = Prompts.chooseTab app fs

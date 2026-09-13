@@ -134,14 +134,11 @@ let private junction (target: FileSystemPath) (location: FileSystemPath) =
         Directory.Delete raw
         reraise ()
 
-let private noJunction (_: FileSystemPath) (location: FileSystemPath) =
-    raise (PlatformNotSupportedException $"A junction cannot be made at '{FileSystemPath.value location}'.")
-
 let forPlatform platform =
     match platform with
     | Windows ->
         { MakeHard = hardOnWindows
-          MakeJunction = junction }
+          MakeJunction = Some junction }
     | Unix ->
         { MakeHard = hardOnUnix
-          MakeJunction = noJunction }
+          MakeJunction = None }

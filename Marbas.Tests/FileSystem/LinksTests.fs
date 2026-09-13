@@ -33,11 +33,11 @@ type private Native() =
 
     member _.Links: NativeLinks =
         { MakeHard = fun target location -> made.Add((Hard, target, location))
-          MakeJunction = fun target location -> made.Add((Junction, target, location)) }
+          MakeJunction = Some(fun target location -> made.Add((Junction, target, location))) }
 
 let private refusing (ex: exn) : NativeLinks =
     { MakeHard = fun _ _ -> raise ex
-      MakeJunction = fun _ _ -> raise ex }
+      MakeJunction = Some(fun _ _ -> raise ex) }
 
 let private noNative = Native().Links
 
@@ -175,16 +175,28 @@ let ``a junction to a file is refused without asking the system`` () =
     Assert.Empty native.Made
 
 [<Fact>]
-let ``a junction off Windows is refused without asking the system`` () =
+let ``a junction with no native way to be made is refused as a kind this system lacks`` () =
     let fs = data ()
-    let native = Native()
+    let native = { Native().Links with MakeJunction = None }
 
     let failure =
-        Links.create native.Links Unix fs (requested Junction (at "data/docs") (at "data/twin"))
+        Links.create native Windows fs (requested Junction (at "data/docs") (at "data/twin"))
         |> Expect.error
 
-    Assert.Equal(LinkRefused(JunctionOffWindows, fp (at "data/twin")), failure)
-    Assert.Empty native.Made
+    Assert.Equal(LinkRefused(KindUnavailable, fp (at "data/twin")), failure)
+    Assert.False(fs.Directory.Exists(at "data/twin"))
+
+[<Fact>]
+let ``a system with a native junction offers all three kinds`` () =
+    let kinds = Links.available (Native().Links)
+
+    Assert.Equal<LinkKind list>([ Symbolic; Hard; Junction ], kinds)
+
+[<Fact>]
+let ``a system without a native junction offers no junction`` () =
+    let kinds = Links.available { Native().Links with MakeJunction = None }
+
+    Assert.Equal<LinkKind list>([ Symbolic; Hard ], kinds)
 
 [<Fact>]
 let ``a native link the system refuses is mapped the way every operation maps it`` () =
@@ -209,9 +221,9 @@ let ``a symbolic link carries no refusal of its kind`` () =
 let ``the refusal of a kind can be asked before anything is made`` () =
     let fs = data ()
 
-    let refusal = Links.refusal Unix fs (requested Junction (at "data/docs") (at "data/twin"))
+    let refusal = Links.refusal Unix fs (requested Hard (at "data/docs") (at "data/twin"))
 
-    Assert.Equal(Some JunctionOffWindows, refusal)
+    Assert.Equal(Some HardLinkToDirectory, refusal)
 
 let private sources = [ fp (at "data/notes.txt"); fp (at "data/docs") ]
 
@@ -272,14 +284,16 @@ let ``a kind is refused for several entries only when every one of them refuses 
 [<Fact>]
 let ``a kind every entry refuses is refused with the first reason`` () =
     let fs = data ()
-    let requests = Links.requests fs Junction sources (fp (at "data")) (at "backup")
+    fs.AddFile(at "data/other.txt", MockFileData "other")
+    let files = [ fp (at "data/notes.txt"); fp (at "data/other.txt") ]
+    let requests = Links.requests fs Junction files (fp (at "data")) (at "backup")
 
-    let refusal = Links.sharedRefusal (Links.refusal Unix fs) requests
+    let refusal = Links.sharedRefusal (Links.refusal Windows fs) requests
 
-    Assert.Equal(Some JunctionOffWindows, refusal)
+    Assert.Equal(Some JunctionToFile, refusal)
 
 [<Fact>]
 let ``no request carries no refusal`` () =
-    let refusal = Links.sharedRefusal (fun _ -> Some JunctionOffWindows) []
+    let refusal = Links.sharedRefusal (fun _ -> Some JunctionToFile) []
 
     Assert.Equal(None, refusal)

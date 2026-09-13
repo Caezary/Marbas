@@ -111,7 +111,7 @@ let ``a symbolic link Windows refuses names the two ways to be allowed one`` () 
 [<Fact>]
 let ``a link refused by its kind is explained with its path and the reason`` () =
     let message =
-        OperationErrorMessage.describe (LinkRefused(JunctionOffWindows, fp (at "data/twin")))
+        OperationErrorMessage.describe (LinkRefused(JunctionToFile, fp (at "data/twin")))
 
     Assert.Contains(at "data/twin", message)
-    Assert.Contains(LinkRefusalMessage.describe JunctionOffWindows, message)
+    Assert.Contains(LinkRefusalMessage.describe JunctionToFile, message)

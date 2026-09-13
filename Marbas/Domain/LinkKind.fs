@@ -9,4 +9,4 @@ type LinkRefusal =
     | HardLinkToDirectory
     | HardLinkAcrossVolumes
     | JunctionToFile
-    | JunctionOffWindows
+    | KindUnavailable

@@ -21,7 +21,7 @@ let private mockFs () =
 
 let private unreachable: NativeLinks =
     { MakeHard = fun _ _ -> failwith "no hard link expected"
-      MakeJunction = fun _ _ -> failwith "no junction expected" }
+      MakeJunction = None }
 
 let private windowWith (fs: MockFileSystem) askLink reportError =
     let window =
@@ -37,7 +37,7 @@ let private windowWith (fs: MockFileSystem) askLink reportError =
     window
 
 let private answering target kind =
-    fun (_: string) (_: string -> LinkKind -> LinkRefusal option) -> Some { Target = target; Kind = kind }
+    fun (_: LinkKind list) (_: string) (_: string -> LinkKind -> LinkRefusal option) -> Some { Target = target; Kind = kind }
 
 let private silent (_: string) (_: string) = ()
 
@@ -58,7 +58,7 @@ let ``Alt+F6 offers the other panel's directory and the name of the entry under 
     let fs = mockFs ()
     let mutable offered = ""
 
-    let asking suggestion _ =
+    let asking _ suggestion _ =
         offered <- suggestion
         None
 
@@ -74,7 +74,7 @@ let ``the popup is told which kinds the place typed cannot carry`` () =
     let fs = mockFs ()
     let mutable refusalOf = fun (_: string) (_: LinkKind) -> None
 
-    let asking _ refusal =
+    let asking _ _ refusal =
         refusalOf <- refusal
         None
 
@@ -101,7 +101,7 @@ let ``a kind the entry cannot carry is refused with a sentence`` () =
 [<Fact>]
 let ``a cancelled link popup leaves the disk alone`` () =
     let fs = mockFs ()
-    use window = windowWith fs (fun _ _ -> None) silent
+    use window = windowWith fs (fun _ _ _ -> None) silent
     (leftList window).SelectedItem <- 2
 
     pressKey window KeyMap.linkKey

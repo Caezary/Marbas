@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.App
 open Marbas.Tests
@@ -184,7 +185,8 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       ShowFile = ignore
       RunEditor = fun _ _ -> Ok()
       Launch = fun _ -> Ok()
-      AskLink = fun _ _ -> None
+      LinkKinds = [ Symbolic; Hard; Junction ]
+      AskLink = fun _ _ _ -> None
       RefuseLink = fun _ -> None
       MakeLink = fun _ -> Ok()
       HandlersFor = fun _ -> []
