@@ -580,6 +580,30 @@ emptied and then removed, and nothing is followed. The disk tests hold both
 halves — what .NET does, and that deleting a tree with a junction in it now
 succeeds and leaves what the junction points at.
 
+**P13.11 put the link on `Alt+F6`.** It takes the operation targets every other
+key takes — the marks, or the entry under the cursor — and opens a popup
+holding the other panel's directory and, for one entry, that entry's name,
+beneath a choice of the three kinds. What was typed is read the way `F6` reads
+its own: for one entry it is where the link will stand — a bare name beside the
+entry, a directory that already exists inside it under the entry's name — and
+for several it is the directory each link lands in under its entry's name.
+`Links.requests` is that reading, and it is the only one: the popup asks it
+about the text as it is typed, and the update asks it again about the text that
+was accepted. Each keystroke asks `Links.refusal` — through the `RefuseLink`
+port, since the platform is only known to `Adapters` — about every kind, and a
+kind it refuses is greyed out, with its sentence from `LinkRefusalMessage` on a
+line beneath the choices; a chosen kind that the new text refuses gives way to
+the symbolic link, which nothing refuses before the system is asked. With
+several entries a kind is greyed out only when every one of them refuses it,
+because the rest would otherwise be kept from a link they can carry; the ones
+that refuse come back as failures of their own. Terminal.Gui has no way to
+disable one option of an `OptionSelector`, but the options are `CheckBox`
+subviews, and disabling one was measured to take it out of the arrow keys and
+its hot key alike. The links are made one after another through `MakeLink`
+without a progress window, since making one costs a single call; what failed is
+reported entry by entry and keeps its mark, and both panels are read again with
+the cursor on the new link in whichever of them it landed in. The bar shows
+`F6 Link` while `Alt` is held.
 
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
@@ -608,7 +632,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.10 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.11 done |
 
 ## What works today
 
@@ -822,6 +846,15 @@ written up as the checklist in
   cursor following it to its new place in the listing; a name typed while
   several entries are marked is read as a directory beside them. An empty
   answer or a cancelled prompt does nothing.
+- `Alt+F6` makes a link to the operation targets. The popup offers the other
+  panel's directory plus the name of the entry under the cursor — or the
+  directory alone when several are marked — and the three kinds: symbolic, hard
+  and junction. A kind the place typed cannot carry is greyed out with the
+  reason beneath it: a hard link only to a file on the same volume, a junction
+  only to a directory and only on Windows. The panel the link lands in is read
+  again with the cursor on it, drawn in the link colour; a link Windows refuses
+  for want of Developer Mode, and every other failure, is reported with a
+  sentence.
 - While `F5` or `F6` works, a progress window names the file being handled and
   the rest of the app keeps drawing, because the batch runs on a background
   thread. `Esc` (or the Cancel button) closes that window and the batch stops
@@ -902,7 +935,7 @@ written up as the checklist in
   `F7 Mkdir`, `F8 Delete`, `F10 Quit`, `F12 Setup`) all do their job.
 - The commands follow the modifiers being held, the key names never move: with
   `Ctrl` down the slots read `F3 Name`, `F4 Ext`, `F5 Date`, `F6 Size`, with
-  `Alt` down `F1 Left` and `F2 Right`, with `Shift` down `F4 NewFile` and
+  `Alt` down `F1 Left`, `F2 Right` and `F6 Link`, with `Shift` down `F4 NewFile` and
   `F8 Erase`, and the classic commands come back when they are let go. A slot no command asks for
   stays empty. Keys that are not function keys — `Alt+H`, `Ctrl+R`, `+`, `-`,
   `Del`, `Shift+Del` and the rest — are bound but off the bar.

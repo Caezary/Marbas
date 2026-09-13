@@ -65,6 +65,8 @@ type Dependencies =
       ShowFile: FileWindow.Source -> unit
       RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       Launch: LaunchRequest -> Result<unit, LaunchError>
+      AskLink: string -> (string -> LinkKind -> LinkRefusal option) -> LinkChoice option
+      RefuseLink: LinkRequest -> LinkRefusal option
       MakeLink: LinkRequest -> Result<unit, Operations.OperationError>
       HandlersFor: EntryName -> Handler list
       AskHandler: EntryName -> Handler list -> ProgramPath option -> OpenWithChoice option
@@ -258,6 +260,26 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.AskArchive(FileSystemPath.value suggestion) with
         | Some choice -> dispatch (ArchiveEntered choice)
         | None -> ()
+    | PromptForLink(sources, directory, suggestion) ->
+        let refusalOf text kind =
+            Links.requests deps.FileSystem kind sources directory text
+            |> Links.sharedRefusal deps.RefuseLink
+
+        match deps.AskLink (FileSystemPath.value suggestion) refusalOf with
+        | Some choice -> dispatch (LinkEntered choice)
+        | None -> ()
+    | MakeLinks requests ->
+        let outcomes = requests |> List.map (fun link -> link, deps.MakeLink link)
+
+        let made =
+            outcomes
+            |> List.choose (fun (link, outcome) -> if Result.isOk outcome then Some link.Location else None)
+
+        let results =
+            outcomes
+            |> List.map (fun (link, outcome) -> Operations.itemResult deps.FileSystem link.Target outcome)
+
+        dispatch (LinksMade(made, results))
     | ArchiveTargets(sources, archive) ->
         let target = archive.Path
 

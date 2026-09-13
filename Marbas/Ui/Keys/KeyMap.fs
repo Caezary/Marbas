@@ -65,6 +65,8 @@ let packKey = Key.F1.WithShift
 
 let unpackKey = Key.F2.WithShift
 
+let linkKey = Key.F6.WithAlt
+
 let settingsKey = Key.F12
 
 let hiddenKey = Key.H.WithAlt
@@ -147,6 +149,7 @@ let bindings =
       onBar sizeSortKey "Size" (SortRequested SortKey.BySize)
       onBar leftRootKey "Left" (RootRequested Left)
       onBar rightRootKey "Right" (RootRequested Right)
+      onBar linkKey "Link" LinkRequested
       offBar trashKey (DeleteRequested ToTrash)
       offBar permanentDeleteKey (DeleteRequested Permanently)
       offBar wipeKey (DeleteRequested ByWiping)

@@ -11,6 +11,8 @@ type LinkRequest =
       Target: FileSystemPath
       Location: FileSystemPath }
 
+type LinkChoice = { Target: string; Kind: LinkKind }
+
 type NativeLinks =
     { MakeHard: FileSystemPath -> FileSystemPath -> unit
       MakeJunction: FileSystemPath -> FileSystemPath -> unit }
@@ -83,3 +85,27 @@ module Links =
             | None, Symbolic -> makeSymbolic fs location target targetKind
             | None, Hard -> attempting location (fun () -> native.MakeHard target location)
             | None, Junction -> attempting location (fun () -> native.MakeJunction target location)
+
+    let requests (fs: IFileSystem) kind (sources: FileSystemPath list) (directory: FileSystemPath) (text: string) =
+        let typed = FileSystemPath.combine fs directory (text.Trim())
+
+        let linking location source =
+            { Kind = kind
+              Target = source
+              Location = location }
+
+        let inside source =
+            let location = FileSystemPath.name fs source |> EntryName.value |> FileSystemPath.combine fs typed
+            linking location source
+
+        match text.Trim(), sources with
+        | "", _
+        | _, [] -> []
+        | _, [ source ] when FileSystemPath.kind fs typed <> DirectoryEntry -> [ linking typed source ]
+        | _ -> sources |> List.map inside
+
+    let sharedRefusal (refuse: LinkRequest -> LinkRefusal option) (requests: LinkRequest list) =
+        match requests |> List.map refuse with
+        | [] -> None
+        | refusals when List.forall Option.isSome refusals -> List.head refusals
+        | _ -> None

@@ -212,3 +212,74 @@ let ``the refusal of a kind can be asked before anything is made`` () =
     let refusal = Links.refusal Unix fs (requested Junction (at "data/docs") (at "data/twin"))
 
     Assert.Equal(Some JunctionOffWindows, refusal)
+
+let private sources = [ fp (at "data/notes.txt"); fp (at "data/docs") ]
+
+[<Fact>]
+let ``one entry is linked at the path that was typed`` () =
+    let fs = data ()
+
+    let requests = Links.requests fs Hard [ fp (at "data/notes.txt") ] (fp (at "data")) (at "backup/twin.txt")
+
+    Assert.Equal<LinkRequest list>([ requested Hard (at "data/notes.txt") (at "backup/twin.txt") ], requests)
+
+[<Fact>]
+let ``one entry given a bare name is linked beside itself`` () =
+    let fs = data ()
+
+    let requests = Links.requests fs Symbolic [ fp (at "data/notes.txt") ] (fp (at "data")) " twin.txt "
+
+    Assert.Equal<LinkRequest list>([ symbolic (at "data/notes.txt") (at "data/twin.txt") ], requests)
+
+[<Fact>]
+let ``one entry given a directory that exists is linked inside it under its own name`` () =
+    let fs = data ()
+    fs.AddDirectory(at "backup")
+
+    let requests = Links.requests fs Symbolic [ fp (at "data/notes.txt") ] (fp (at "data")) (at "backup")
+
+    Assert.Equal<LinkRequest list>([ symbolic (at "data/notes.txt") (at "backup/notes.txt") ], requests)
+
+[<Fact>]
+let ``several entries are linked one each inside the directory that was typed`` () =
+    let fs = data ()
+
+    let requests = Links.requests fs Symbolic sources (fp (at "data")) (at "backup")
+
+    Assert.Equal<LinkRequest list>(
+        [ symbolic (at "data/notes.txt") (at "backup/notes.txt")
+          symbolic (at "data/docs") (at "backup/docs") ],
+        requests
+    )
+
+[<Fact>]
+let ``nothing typed asks for no link`` () =
+    let fs = data ()
+
+    let requests = Links.requests fs Symbolic sources (fp (at "data")) "  "
+
+    Assert.Empty requests
+
+[<Fact>]
+let ``a kind is refused for several entries only when every one of them refuses it`` () =
+    let fs = data ()
+    let requests = Links.requests fs Hard sources (fp (at "data")) (at "backup")
+
+    let refusal = Links.sharedRefusal (Links.refusal Windows fs) requests
+
+    Assert.Equal(None, refusal)
+
+[<Fact>]
+let ``a kind every entry refuses is refused with the first reason`` () =
+    let fs = data ()
+    let requests = Links.requests fs Junction sources (fp (at "data")) (at "backup")
+
+    let refusal = Links.sharedRefusal (Links.refusal Unix fs) requests
+
+    Assert.Equal(Some JunctionOffWindows, refusal)
+
+[<Fact>]
+let ``no request carries no refusal`` () =
+    let refusal = Links.sharedRefusal (fun _ -> Some JunctionOffWindows) []
+
+    Assert.Equal(None, refusal)

@@ -14,7 +14,7 @@ let ``a hard link to a directory says it wants a file`` () =
 let ``a hard link across volumes says where it must stand`` () =
     let message = LinkRefusalMessage.describe HardLinkAcrossVolumes
 
-    Assert.Equal("A hard link must stand on the volume of the file it points at.", message)
+    Assert.Equal("A hard link must stand on the volume of its file.", message)
 
 [<Fact>]
 let ``a junction to a file says it wants a directory`` () =

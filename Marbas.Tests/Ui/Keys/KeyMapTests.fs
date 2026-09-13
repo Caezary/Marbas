@@ -34,10 +34,10 @@ let ``holding Ctrl puts the sort commands on the same slots`` () =
     Assert.Equal<string list>([ ""; ""; "Name"; "Ext"; "Date"; "Size"; ""; ""; ""; ""; ""; "" ], commands)
 
 [<Fact>]
-let ``holding Alt puts the drive choosers on the first two slots`` () =
+let ``holding Alt puts the drive choosers on the first two slots and the link on F6`` () =
     let commands = commandsOn (Modifiers.held [ Alt ])
 
-    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; ""; ""; ""; ""; ""; "NewTab"; "" ], commands)
+    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; "Link"; ""; ""; ""; ""; "NewTab"; "" ], commands)
 
 [<Fact>]
 let ``holding Alt and Shift puts closing a tab where opening one is`` () =
@@ -91,6 +91,11 @@ let ``Alt+W asks for the walk Enter no longer always makes`` () =
 let ``Ctrl+PgDn asks for the same walk, where a terminal delivers it`` () =
     Assert.Equal(Key.PageDown.WithCtrl, KeyMap.classicWalkIntoKey)
     Assert.Equal(Some WalkIntoRequested, KeyMap.messageFor KeyMap.classicWalkIntoKey)
+
+[<Fact>]
+let ``Alt+F6 asks for a link`` () =
+    Assert.Equal(Key.F6.WithAlt, KeyMap.linkKey)
+    Assert.Equal(Some LinkRequested, KeyMap.messageFor KeyMap.linkKey)
 
 [<Fact>]
 let ``Alt+R asks which program should open the entry`` () =

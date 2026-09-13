@@ -499,6 +499,18 @@ let finishPack (fs: IFileSystem) (archive: EntryName) results (state: AppState) 
     |> Result.bind (reloadFocusing fs (opposite state.Active) (ByName archive) (fun previous -> keepSurviving previous.Selected))
     |> Result.map (fun updated -> updated, results)
 
+let finishLinks (fs: IFileSystem) (made: FileSystemPath list) results (state: AppState) =
+    let showing side keep state =
+        let standing = directoryOf (panel side state)
+
+        match made |> List.tryFind (fun location -> Some(FileSystemPath.directory fs location) = standing) with
+        | Some location -> reloadFocusing fs side (ByName(FileSystemPath.name fs location)) keep state
+        | None -> reload fs side keep state
+
+    showing state.Active (fun previous -> keepUnfinished results previous.Selected) state
+    |> Result.bind (showing (opposite state.Active) (fun previous -> keepSurviving previous.Selected))
+    |> Result.map (fun updated -> updated, results)
+
 let finishRename (fs: IFileSystem) newName (state: AppState) =
     reloadFocusing fs state.Active (ByName newName) (fun previous -> keepSurviving previous.Selected) state
 

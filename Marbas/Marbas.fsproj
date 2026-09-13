@@ -134,6 +134,7 @@
         <Compile Include="Ui\Dialogs\PropertiesDialog.fs" />
         <Compile Include="Ui\Dialogs\SettingsDialog.fs" />
         <Compile Include="Ui\Dialogs\PackDialog.fs" />
+        <Compile Include="Ui\Dialogs\LinkDialog.fs" />
         <Compile Include="Ui\Dialogs\TabRow.fs" />
         <Compile Include="Ui\Dialogs\TabDialog.fs" />
     </ItemGroup>

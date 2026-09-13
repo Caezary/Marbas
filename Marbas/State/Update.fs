@@ -33,6 +33,9 @@ type Message =
     | MoveRequested
     | TargetEntered of text: string
     | MoveFinished of Operations.ItemResult list
+    | LinkRequested
+    | LinkEntered of LinkChoice
+    | LinksMade of made: FileSystemPath list * results: Operations.ItemResult list
     | PackRequested
     | ArchiveEntered of ArchiveChoice
     | PackFinished of archive: EntryName * results: Operations.ItemResult list
@@ -94,6 +97,7 @@ type Effect =
         entries: ArchivePath list *
         target: FileSystemPath *
         level: ArchivePath
+    | MakeLinks of requests: LinkRequest list
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
     | MeasureTargets of targets: MeasureTarget list
@@ -105,6 +109,7 @@ type Effect =
     | ShowSettings of ProgramSettings * candidate: ProgramPath option
     | PromptForTarget of suggestion: FileSystemPath
     | PromptForArchive of suggestion: FileSystemPath
+    | PromptForLink of sources: FileSystemPath list * directory: FileSystemPath * suggestion: FileSystemPath
     | PromptForName of suggestion: EntryName option
     | PromptForFileName
     | PromptForPattern of SelectionMode
@@ -359,6 +364,29 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             request state (RenameTarget(single, EntryName.create trimmed))
         | trimmed, paths, Some source -> request state (MoveTargets(paths, combine' source trimmed))
     | MoveFinished results -> finishTransfer' results state |> applyBatch'
+    | LinkRequested ->
+        let panel = activePanel state
+
+        match operationPaths' panel, activeDirectory state with
+        | [], _
+        | _, None -> stay state
+        | sources, Some directory ->
+            let place = targetDirectory state |> Option.defaultValue directory
+
+            let suggestion =
+                match sources with
+                | [ single ] -> combine' place (EntryName.value (nameOf' single))
+                | _ -> place
+
+            request state (PromptForLink(sources, directory, suggestion))
+    | LinkEntered choice ->
+        match activeDirectory state with
+        | None -> stay state
+        | Some directory ->
+            match Links.requests fs choice.Kind (operationPaths' (activePanel state)) directory choice.Target with
+            | [] -> stay state
+            | requests -> request state (MakeLinks requests)
+    | LinksMade(made, results) -> finishLinks fs made results state |> applyBatch'
     | PackRequested ->
         match operationTargets (activePanel state), archiveSuggestion' ArchiveFormat.initial state with
         | [], _
