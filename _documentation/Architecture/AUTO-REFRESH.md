@@ -58,7 +58,7 @@ asks for one re-read.
 
 **A panel whose place is gone stands somewhere rather than reporting a loss.**
 `FileSystemPath.nearest` walks up to the first directory that is still there, and
-`Roots.mounted` supplies a root when the whole chain has gone with its drive. The
+`Drives.list` supplies a root when the whole chain has gone with its drive. The
 user did nothing to move that panel, so a popup would be an answer to a question
 nobody asked; the panel simply stands in the parent, or on `C:\`, with the cursor
 at the top and no marks, because it is a different place. `Ctrl+R` keeps the old

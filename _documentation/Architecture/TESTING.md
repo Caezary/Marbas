@@ -174,9 +174,9 @@ one thing under test, then assert. There are no `// Arrange` comments; the blank
 lines carry the structure.
 
 The act is a named binding, even when the call would fit inside the assertion:
-`let roots = Roots.list fs MountedDrives` followed by `Assert.Equal<FileSystemPath
-list>([...], roots)`, never `Assert.Equal<FileSystemPath list>([...],
-Roots.list fs MountedDrives)`. Where a test
+`let rows = Drives.list fs None` followed by `Assert.Equal<DriveRow
+list>([...], rows)`, never `Assert.Equal<DriveRow list>([...],
+Drives.list fs None)`. Where a test
 needs to compare before and after, the "before" value is captured in the arrange
 block and asserted at the end, so no assertion sits between two acts.
 

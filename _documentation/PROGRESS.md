@@ -625,6 +625,32 @@ data; `Links.create` given a junction with no function to make it answers
 `Links`, for one thing only: whether two drive roots are compared with or
 without regard to case.
 
+**P13.12 made a drive a value.** `DriveKind` in `Domain` — `Fixed`, `Removable`,
+`Network`, `Optical` — is what the system's `DriveType` is read into, with a RAM
+disk and anything the system calls unknown counted as fixed, so no `System.IO`
+enumeration goes further up. A `Drive` in `FileSystem/Drives.fs` carries the root
+it is reached by, its label (`None` when blank), its kind, its size and the free
+space the user can actually write to. `Drives.list fs home` reads them through
+`fs.DriveInfo` in the order of their roots and hides what cannot be used: a drive
+that is not ready, one whose size throws when asked — which a mount the user may
+not enter does on Linux — and a mount whose format is not storage, `squashfs`,
+`tmpfs`, `devtmpfs`, `overlay`, `proc`, `sysfs`, the cgroups and their like.
+That filter looks at the format alone and so runs on Windows too, where no drive
+carries one of those names. What the list answers is a `DriveRow`: a
+`MountedDrive`, or the `HomeDirectory` after the drives when a home was given,
+left out if a drive already stands there. `Roots` and `RootChoice` are gone;
+`Shell.Dependencies` carries a `ListDrives` port instead, which
+`Dependencies.create` wires to the list with the home on Unix and without it on
+Windows, and which is asked every time the root prompt opens. That prompt still
+offers bare roots through `ChooseOption` until P13.13 draws the rows; the panel
+that has lost its drive takes the first root of the same list. `MockFileSystem`
+covers the drive letters, the kinds and sizes added with `AddDrive` and the
+not-ready filter on Windows; since it names every drive `/:\` on Linux, the Unix
+spelling of a mount, the format filter and the home row are tested through
+`Fakes.MountedFileSystem`, a mock whose drive factory answers the mounts a test
+lists, on both systems. `Integration/Disk/DriveListTests.fs` checks the real list
+holds the root the working directory is on.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -652,7 +678,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.11 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.12 done |
 
 ## What works today
 
@@ -1028,8 +1054,10 @@ systems carry, and `Alt+Del` wiping what it deletes. P13.1 has measured what the
 terminals hand over, which settles two of those bindings, and P13.2 has put the
 root of the volume on the key they deliver, P13.3 can measure a directory, P13.4
 shows what it measured, P13.5 sorts by it, P13.6 can wipe a file rather than
-unlink it and P13.7 puts wiping on `Alt+Del`. P13.8, a link that says it is one
-and every walk stopping at it, is next. Three things are waiting beside it:
+unlink it and P13.7 puts wiping on `Alt+Del`. P13.8 to P13.11 made links visible,
+stopped every walk at them and put the three kinds on `Alt+F6`, and P13.12 made a
+drive a value with its kind and sizes. P13.13, the drive popup that shows them,
+is next. Three things are waiting beside it:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

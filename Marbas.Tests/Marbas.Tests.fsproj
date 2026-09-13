@@ -35,7 +35,7 @@
     <Compile Include="FileSystem\TextEncodingTests.fs" />
     <Compile Include="FileSystem\FileWindowTests.fs" />
     <Compile Include="FileSystem\LineIndexTests.fs" />
-    <Compile Include="FileSystem\RootsTests.fs" />
+    <Compile Include="FileSystem\DrivesTests.fs" />
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
     <Compile Include="FileSystem\DirectoryMeasureTests.fs" />
@@ -172,6 +172,7 @@
     <Compile Include="Integration\Disk\Scratch.fs" />
     <Compile Include="Integration\Disk\LinkWalkTests.fs" />
     <Compile Include="Integration\Disk\NativeLinkTests.fs" />
+    <Compile Include="Integration\Disk\DriveListTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

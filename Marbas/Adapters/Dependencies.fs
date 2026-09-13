@@ -15,10 +15,10 @@ let private sendToTrash (fs: IFileSystem) (env: HostEnvironment) =
 
         Trash.send fs trash (fun () -> DateTimeOffset.Now)
 
-let private roots (env: HostEnvironment) =
+let private home (env: HostEnvironment) =
     match env.Platform with
-    | Windows -> MountedDrives
-    | Unix -> env.UserProfile |> FileSystemPath.create |> RootAndHome
+    | Windows -> None
+    | Unix -> env.UserProfile |> FileSystemPath.create |> Some
 
 let private watchModifiers (app: IApplication) (env: HostEnvironment) =
     match env.Platform with
@@ -42,7 +42,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
       StartPath = fs.Directory.GetCurrentDirectory() |> FileSystemPath.create
       SettingsPath = Settings.location fs env.ApplicationData env.UserProfile
       WorkspacePath = Workspace.location fs env.TemporaryRoot env.Session
-      Roots = roots env
+      ListDrives = fun () -> Drives.list fs (home env)
       OnQuit = fun () -> app.RequestStop()
       ReportError = Prompts.reportError app
       ChooseOption = Prompts.chooseOption app

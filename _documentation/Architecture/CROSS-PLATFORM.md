@@ -44,17 +44,20 @@ suite covers both.
 
 | Check | Windows | Linux | Evidence |
 |-------|---------|-------|----------|
-| `Alt+F1` / `Alt+F2` open the root chooser | lists ready drives, `C:\`, `D:\`… | lists `/` and the home directory | suite, WSL |
+| `Alt+F1` / `Alt+F2` open the root chooser | lists ready drives, `C:\`, `D:\`… | lists the storage mounts, then the home directory | suite, WSL |
 | Choosing a root opens it in that panel | same | same | suite, WSL |
 | Cancelling changes nothing | same | same | suite |
 | A root that cannot be read is reported, panel stays put | same | same | suite |
-| A removable drive that is not ready is left out | yes | n/a | suite (Windows-only test) |
+| A drive that is not ready, or whose size cannot be read, is left out | yes | yes | suite |
+| A mount that is not storage (`squashfs`, `tmpfs`, `proc`…) is left out | n/a | yes | suite |
 
-The Unix list is `RootAndHome`: the file-system root plus `$HOME`, which is what
-P3.5 asked for. Windows gets `MountedDrives`. `Dependencies.create` picks
-between them; everything below it takes the choice as a value, so both branches
-are tested on both platforms. Three tests carry `[<WindowsFact>]` and skip
-elsewhere, because drive letters exist nowhere else.
+Both lists are `Drives.list fs home`: the ready drives that are storage, and a
+row for `$HOME` after them when a home is given, which is what P3.5 asked for.
+`Dependencies.create` gives one on Unix and none on Windows; everything below it
+takes the home as a value, so both branches are tested on both platforms. The
+mount points are spelled through `Fakes.MountedFileSystem`, a fake drive
+factory, because `MockFileSystem` names every drive `/:\` on Linux; the tests
+over drive letters carry `[<WindowsFact>]`.
 
 ## Hidden entries
 
@@ -422,12 +425,14 @@ manual row, since `MockFileSystem` accepts every flag the tests set.
 **The roots a panel can be sent to are a value, not a platform check.**
 `Drives.list` used to call `DriveInfo.GetDrives()` everywhere, which on Unix
 meant a list of mount points — and no way at all to reach the home directory,
-though P3.5 had asked for `/` and `~`. It is now `Roots.list fs choice` with
-`RootChoice` being `MountedDrives` or `RootAndHome home`; `Dependencies.create`
-picks one and `Shell.Dependencies` carries it, so both branches are ordinary
-tested code and neither platform is a special case below the composition root.
-The module was renamed from `Drives` because on Unix it does not answer
-drives, and the vocabulary follows: `RootRequested`, `PromptForRoot`,
+though P3.5 had asked for `/` and `~`. For a while it was `Roots.list fs choice`,
+with `RootChoice` being `MountedDrives` or `RootAndHome home`, answering bare
+paths. P13.12 made it `Drives.list fs home` again, answering `DriveRow`s — a
+`Drive` with its label, kind and sizes, or the home directory — once the mounts
+that are not storage were filtered out and the mount list became worth showing
+on Unix too. `Dependencies.create` still decides whether there is a home row,
+so neither platform is a special case below the composition root. The key keeps
+its vocabulary: `RootRequested`, `PromptForRoot`,
 `leftRootKey`, and a dialog that says *Select root*.
 
 ## Differences that are meant to be there

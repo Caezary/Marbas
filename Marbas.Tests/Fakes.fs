@@ -173,7 +173,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       StartPath = FileSystemPath.create startPath
       SettingsPath = FileSystemPath.create (at "marbas.conf")
       WorkspacePath = FileSystemPath.create (at "temp/Marbas/session")
-      Roots = MountedDrives
+      ListDrives = fun () -> Drives.list fs None
       OnQuit = ignore
       ReportError = fun _ _ -> ()
       ChooseOption = fun _ _ -> None
@@ -243,3 +243,60 @@ type SymbolicLinksRefused(refusedUnder: string) =
             writing <- LinkRefusingFile(this, refusedUnder)
 
         writing
+
+type Mount =
+    { MountPoint: string
+      Format: string
+      DriveType: DriveType
+      Ready: bool
+      Readable: bool
+      Size: int64
+      Free: int64
+      Label: string }
+
+module Mount =
+
+    let ext4 mountPoint =
+        { MountPoint = mountPoint
+          Format = "ext4"
+          DriveType = DriveType.Fixed
+          Ready = true
+          Readable = true
+          Size = 0L
+          Free = 0L
+          Label = "" }
+
+let private mountedDrive (fs: IFileSystem) (mount: Mount) =
+    let measured size =
+        if mount.Readable then
+            size
+        else
+            raise (UnauthorizedAccessException $"Access to the path '{mount.MountPoint}' is denied.")
+
+    { new IDriveInfo with
+        member _.Name = mount.MountPoint
+        member _.DriveFormat = mount.Format
+        member _.DriveType = mount.DriveType
+        member _.IsReady = mount.Ready
+        member _.TotalSize = measured mount.Size
+        member _.TotalFreeSpace = measured mount.Free
+        member _.AvailableFreeSpace = measured mount.Free
+        member _.RootDirectory = fs.DirectoryInfo.New mount.MountPoint
+        member _.FileSystem = fs
+
+        member _.VolumeLabel
+            with get () = mount.Label
+            and set _ = () }
+
+type MountedFileSystem(mounts: Mount list) =
+    inherit MockFileSystem()
+
+    override this.DriveInfo =
+        let drives () =
+            mounts |> List.map (mountedDrive this) |> Array.ofList
+
+        { new IDriveInfoFactory with
+            member _.GetDrives() = drives ()
+            member _.New(name: string) = drives () |> Array.find (fun drive -> drive.Name = name)
+            member _.Wrap(_: DriveInfo) = raise (NotSupportedException())
+            member _.FileSystem = this }

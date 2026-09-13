@@ -557,7 +557,7 @@ let private ground (fs: IFileSystem) (location: PanelLocation) =
     location
     |> PanelLocation.watched
     |> FileSystemPath.nearest fs
-    |> Option.orElseWith (fun () -> Roots.mounted fs |> List.tryHead)
+    |> Option.orElseWith (fun () -> Drives.list fs None |> List.tryHead |> Option.map DriveRow.root)
 
 let private replanted (fs: IFileSystem) side state =
     match ground fs (panel side state).Path with

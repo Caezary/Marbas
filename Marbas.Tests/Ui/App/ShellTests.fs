@@ -125,38 +125,39 @@ let ``a chosen root is dispatched as an opened path`` () =
     Assert.Equal<Message list>([ PathOpened(Right, fp (at "elsewhere")) ], List.ofSeq sent)
 
 [<Fact>]
-let ``the chooser is offered the roots the platform was given`` () =
+let ``the chooser is offered the root of every drive row`` () =
     let _, dispatch = capture ()
-    let fs = MockFileSystem()
-    fs.AddDirectory(at "home/user")
     let mutable offered = []
+
+    let stick =
+        { Root = fp (at "media/stick")
+          Label = None
+          Kind = Removable
+          Size = 0L
+          Free = 0L }
 
     let deps =
         { noDeps () with
-            FileSystem = fs
-            Roots = RootAndHome(fp (at "home/user"))
+            ListDrives = fun () -> [ MountedDrive stick; HomeDirectory(fp (at "home/user")) ]
             ChooseOption = fun _ roots -> offered <- roots; None }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
 
-    Assert.Equal<string list>([ at ""; at "home/user" ], offered)
+    Assert.Equal<string list>([ at "media/stick"; at "home/user" ], offered)
 
-[<WindowsFact>]
-let ``the chooser is offered every mounted drive`` () =
+[<Fact>]
+let ``the drives are listed again each time the chooser opens`` () =
     let _, dispatch = capture ()
-    let fs = MockFileSystem()
-    fs.AddDirectory @"C:\start"
-    fs.AddDirectory @"D:\data"
-    let mutable offered = []
+    let mutable listings = 0
 
     let deps =
         { noDeps () with
-            FileSystem = fs
-            ChooseOption = fun _ drives -> offered <- drives; None }
+            ListDrives = fun () -> listings <- listings + 1; [] }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
+    Shell.interpret deps dispatch (PromptForRoot Right)
 
-    Assert.Equal<string list>([ @"C:\"; @"D:\" ], offered)
+    Assert.Equal(2, listings)
 
 [<Fact>]
 let ``a listing error is reported under the listing title`` () =

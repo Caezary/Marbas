@@ -53,7 +53,7 @@ type Dependencies =
       StartPath: FileSystemPath
       SettingsPath: FileSystemPath
       WorkspacePath: FileSystemPath
-      Roots: RootChoice
+      ListDrives: unit -> DriveRow list
       OnQuit: unit -> unit
       ReportError: string -> string -> unit
       ChooseOption: string -> string list -> string option
@@ -411,7 +411,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Some pattern -> dispatch (PatternEntered(mode, pattern))
         | None -> ()
     | PromptForRoot side ->
-        let roots = Roots.list deps.FileSystem deps.Roots |> List.map FileSystemPath.value
+        let roots = deps.ListDrives() |> List.map (DriveRow.root >> FileSystemPath.value)
 
         match deps.ChooseOption RootPrompt roots with
         | Some root -> dispatch (PathOpened(side, FileSystemPath.create root))

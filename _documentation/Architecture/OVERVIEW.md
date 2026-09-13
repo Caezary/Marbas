@@ -36,8 +36,8 @@ asks which operating system it is running on. The answer to that last question
 is read once, by `HostEnvironment.current`, and carried as a value: `Platform`,
 the two home directories, `$EDITOR`. `Dependencies.create` reads it and picks a
 Windows or a Unix function per port — `RecycleBin.send` or `Trash.send`,
-`ModifierWatch.poll` or `ModifierWatch.unsupported`, `MountedDrives` or
-`RootAndHome` — so no branch on the platform survives below the composition
+`ModifierWatch.poll` or `ModifierWatch.unsupported`, the drives alone or the
+drives and the home directory — so no branch on the platform survives below the composition
 root. `Program.fs` is left with the handful of lines that start the application.
 
 ## Topics
@@ -75,6 +75,7 @@ Marbas/
     CursorDirection.fs    up or down, for a mark that moves the cursor with it
     DeleteScope.fs        whether a delete reaches into a directory's contents
     DeleteMode.fs         to the trash, or past it
+    DriveKind.fs          fixed, removable, network or optical, not `System.IO.DriveType`
     ProgramSettings.fs    extension and role -> the program that edits or opens it
   FileSystem/
     FileSystemPath.fs     single-case path type wrapping a raw string
@@ -86,7 +87,7 @@ Marbas/
     DesktopHandlers.fs    the XDG directories -> the handlers a name has
     Settings.fs           the session every tab carries, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
-    Roots.fs              where a panel can be sent: drives, or root and home
+    Drives.fs             where a panel can be sent: the usable drives, and home on Unix
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     ArchiveKind.fs        the archive kinds, their extensions and what can be done to each
     ArchivePath.fs        a place inside an archive: never rooted, never climbing

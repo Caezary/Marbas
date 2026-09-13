@@ -29,6 +29,7 @@
         <Compile Include="Domain\DeleteMode.fs" />
         <Compile Include="Domain\DirectorySize.fs" />
         <Compile Include="Domain\LinkKind.fs" />
+        <Compile Include="Domain\DriveKind.fs" />
         <Compile Include="Domain\ProgramSettings.fs" />
     </ItemGroup>
 
@@ -45,7 +46,7 @@
         <Compile Include="FileSystem\DesktopHandlers.fs" />
         <Compile Include="FileSystem\Settings.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
-        <Compile Include="FileSystem\Roots.fs" />
+        <Compile Include="FileSystem\Drives.fs" />
         <Compile Include="FileSystem\ArchiveKind.fs" />
         <Compile Include="FileSystem\ArchivePath.fs" />
         <Compile Include="FileSystem\PanelLocation.fs" />
