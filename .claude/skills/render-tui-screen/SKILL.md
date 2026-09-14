@@ -12,7 +12,8 @@ screen into text, so the look can be read instead of assumed.
 
 ```bash
 S="$SCRATCHPAD/probe"                     # scratchpad dir from the system prompt
-mkdir -p "$S" && cp .claude/skills/render-tui-screen/probe/* "$S"
+P=.claude/skills/render-tui-screen/probe
+mkdir -p "$S" && cp "$P/Program.fs" "$P/probe.fsproj" "$S"
 cd "$S" && timeout 120 dotnet run -- prompt
 ```
 
@@ -25,8 +26,18 @@ looked at. It prints the screen as text and, per row, the runs of equal
 - **Reference the real modules.** `probe.fsproj` has a `ProjectReference` to
   `Marbas.fsproj`, so scenes call `PromptDialog.create`, `DialogStyle.apply`,
   `MainWindow.create` — the code that ships, not a copy of it.
-- **Keep it out of the repo.** Build it in the scratchpad. Inside the tree it
-  would inherit `Directory.Packages.props` and clutter `git status`.
+- **Keep it out of the repo.** Build it in the scratchpad, and copy the two
+  template files by name: a `bin/` or `obj/` left in the skill folder by a build
+  there makes `cp probe/*` fail, and the `&&` after it then skips the run.
+- **Take the package versions from the repo.** `Marbas.dll` is compiled against
+  the repo's `FSharp.Core`; a probe on the SDK's implicit, older one dies at the
+  first F# call with `Could not load file or assembly 'FSharp.Core, Version=…'`.
+  So `probe.fsproj` imports the SDK by hand, pointing `DirectoryPackagesPropsPath`
+  at the repo's `Directory.Packages.props` before `Sdk.props` reads it — an
+  `Import` in the project body comes too late for central package management —
+  turns off the implicit `FSharp.Core` and references it and `Terminal.Gui`
+  without versions. A version bump in the repo reaches the probe on its own.
+  `MarbasRoot` at the top is the one path to change on another machine.
 - **Set `app.Screen` by reflection.** `Application.Create().Init()` works with a
   piped stdout, but the screen measures 0x0, and anything sized with `Dim.Auto`
   — `MessageBox` above all — then throws `ArgumentOutOfRangeException: width`.

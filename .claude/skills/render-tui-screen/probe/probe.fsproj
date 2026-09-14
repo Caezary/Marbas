@@ -1,15 +1,25 @@
-<Project Sdk="Microsoft.NET.Sdk">
+<Project>
+
+  <PropertyGroup>
+    <MarbasRoot>C:\projects\Marbas</MarbasRoot>
+    <DirectoryPackagesPropsPath>$(MarbasRoot)\Directory.Packages.props</DirectoryPackagesPropsPath>
+  </PropertyGroup>
+
+  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
   </PropertyGroup>
 
   <ItemGroup>
     <Compile Include="Program.fs" />
-    <PackageReference Include="Terminal.Gui" Version="2.4.17" />
-    <ProjectReference Include="C:\projects\Marbas\Marbas\Marbas.fsproj" />
+    <PackageReference Include="FSharp.Core" />
+    <PackageReference Include="Terminal.Gui" />
+    <ProjectReference Include="$(MarbasRoot)\Marbas\Marbas.fsproj" />
   </ItemGroup>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
 
 </Project>
