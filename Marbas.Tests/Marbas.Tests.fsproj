@@ -83,6 +83,7 @@
     <Compile Include="State\ArchivePanelTests.fs" />
     <Compile Include="State\ArchiveNavigationTests.fs" />
     <Compile Include="State\VolumeRootTests.fs" />
+    <Compile Include="State\DriveLandingTests.fs" />
     <Compile Include="State\ArchiveCopyTests.fs" />
     <Compile Include="State\ArchiveWriteTests.fs" />
     <Compile Include="State\SelectionPatternTests.fs" />

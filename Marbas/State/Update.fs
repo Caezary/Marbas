@@ -58,6 +58,7 @@ type Message =
     | RootRequested of PanelSide
     | VolumeRootRequested
     | PathOpened of PanelSide * FileSystemPath
+    | DriveChosen of PanelSide * DriveRow
     | TabOpened
     | TabClosed
     | TabsRequested
@@ -483,6 +484,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | RootRequested side -> request state (PromptForRoot side)
     | VolumeRootRequested -> sentToRoot' state
     | PathOpened(side, path) -> loadPanel' side path state |> applyListing'
+    | DriveChosen(side, row) -> loadPanel' side (driveLanding fs side row state) state |> applyListing'
     | TabOpened -> openTab state |> saving'
     | TabClosed -> closeTab state |> saving'
     | TabsRequested -> state.Tabs |> ShowTabs |> request state

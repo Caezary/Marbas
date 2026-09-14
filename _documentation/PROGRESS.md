@@ -682,6 +682,29 @@ sees it offered by the second. The popup was rendered on this machine through
 the running application: both drives with their labels and sizes, and `Esc`
 closing it with both panels where they were.
 
+**P13.14 decided where the panel lands.** The popup no longer answers a bare
+path: `Shell` dispatches `DriveChosen` with the side and the row, and
+`AppState.driveLanding` picks the directory. If the other panel stands on the
+chosen drive, the panel goes to the other panel's directory — also when this
+panel stands on that drive too, so `Alt+F1` on the disk both panels share brings
+them into one place, and the root stays the business of `Ctrl+\`. Any other
+drive gives its root, which covers the drive only this panel stands on. The home
+row gives the home directory. A panel inside an archive lends the directory that
+holds the archive, since the other panel is on disk and a drive is chosen to
+stand on disk. Which drive a panel stands on is `Drives.holding`: the longest
+root among the listed drives that the path equals or lies under at a separator,
+so a panel in `/media/user/stick/photos` stands on the stick and not on `/`, and
+`/media/user/sticker` does not stand on the stick. Roots are compared without
+regard to case, because update knows no platform and a drive letter must match
+whatever case a path was typed in; on Unix that could only mislead with two
+mounts whose paths differ in case alone. `Links` still keeps its own
+platform-aware volume check. A drive that vanished between the listing and the
+choice needs nothing of its own: loading its root — or the other panel's
+directory, which went with it — fails, the failure is reported as the listing
+error it is, and the panel stays where it was. `PathOpened` stays, for the start
+of the application. The cases are tests over `update` in
+`State/DriveLandingTests.fs`, on `Fakes.MountedFileSystem` with a second mount.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -709,7 +732,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.13 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.14 done |
 
 ## What works today
 
@@ -1087,8 +1110,9 @@ root of the volume on the key they deliver, P13.3 can measure a directory, P13.4
 shows what it measured, P13.5 sorts by it, P13.6 can wipe a file rather than
 unlink it and P13.7 puts wiping on `Alt+Del`. P13.8 to P13.11 made links visible,
 stopped every walk at them and put the three kinds on `Alt+F6`, and P13.12 made a
-drive a value with its kind and sizes, and P13.13 shows them in the drive popup.
-P13.14, where the panel lands when a drive is chosen, is next. Three things are waiting beside it:
+drive a value with its kind and sizes, P13.13 shows them in the drive popup and
+P13.14 takes a panel to the other panel's directory when both share the chosen
+drive. P13.15, handing a drive to the system file manager, is next. Three things are waiting beside it:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

@@ -409,7 +409,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | None -> ()
     | PromptForRoot side ->
         match deps.ChooseDrive(deps.ListDrives()) with
-        | Some row -> dispatch (PathOpened(side, DriveRow.root row))
+        | Some row -> dispatch (DriveChosen(side, row))
         | None -> ()
     | WatchLocations paths -> deps.WatchLocations paths (fun () -> dispatch ExternalChangeDetected)
     | SaveSettings settings -> Settings.save deps.FileSystem deps.SettingsPath settings

@@ -363,6 +363,14 @@ let activeDirectory state = directoryOf (activePanel state)
 
 let targetDirectory (state: AppState) = directoryOf (panel (opposite state.Active) state)
 
+let driveLanding (fs: IFileSystem) side (row: DriveRow) (state: AppState) =
+    let otherDirectory = PanelLocation.holding fs (panel (opposite side) state).Path
+
+    match row with
+    | HomeDirectory home -> home
+    | MountedDrive drive when Drives.holding fs otherDirectory = Some drive.Root -> otherDirectory
+    | MountedDrive drive -> drive.Root
+
 let transferTarget (state: AppState) =
     match (panel (opposite state.Active) state).Path with
     | OnDisk directory -> ToDirectory directory

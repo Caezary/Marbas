@@ -116,22 +116,22 @@ let ``an empty pattern never becomes a message`` () =
     Assert.Empty sent
 
 [<Fact>]
-let ``a chosen root is dispatched as an opened path`` () =
+let ``a chosen drive is dispatched with the side it was asked for`` () =
     let sent, dispatch = capture ()
     let deps = { noDeps () with ChooseDrive = Fakes.choosingDrive (at "elsewhere") }
 
     Shell.interpret deps dispatch (PromptForRoot Right)
 
-    Assert.Equal<Message list>([ PathOpened(Right, fp (at "elsewhere")) ], List.ofSeq sent)
+    Assert.Equal<Message list>([ DriveChosen(Right, MountedDrive(Fakes.driveAt (at "elsewhere"))) ], List.ofSeq sent)
 
 [<Fact>]
-let ``a chosen home directory is dispatched as an opened path`` () =
+let ``a chosen home directory is dispatched as it was chosen`` () =
     let sent, dispatch = capture ()
     let deps = { noDeps () with ChooseDrive = fun _ -> Some(HomeDirectory(fp (at "home/user"))) }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
 
-    Assert.Equal<Message list>([ PathOpened(Left, fp (at "home/user")) ], List.ofSeq sent)
+    Assert.Equal<Message list>([ DriveChosen(Left, HomeDirectory(fp (at "home/user"))) ], List.ofSeq sent)
 
 [<Fact>]
 let ``the chooser is offered every drive row as it was listed`` () =

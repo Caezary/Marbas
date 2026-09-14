@@ -96,6 +96,24 @@ module Drives =
         |> Seq.map MountedDrive
         |> List.ofSeq
 
+    let holding (fs: IFileSystem) (path: FileSystemPath) =
+        let raw = FileSystemPath.value path
+        let separators = [| fs.Path.DirectorySeparatorChar; fs.Path.AltDirectorySeparatorChar |]
+
+        let holds (root: string) =
+            let bare = root.TrimEnd separators
+
+            raw.Equals(bare, StringComparison.OrdinalIgnoreCase)
+            || raw.StartsWith(bare, StringComparison.OrdinalIgnoreCase)
+               && raw.Length > bare.Length
+               && Array.contains raw[bare.Length] separators
+
+        mounted fs
+        |> List.map DriveRow.root
+        |> List.filter (FileSystemPath.value >> holds)
+        |> List.sortByDescending (FileSystemPath.value >> String.length)
+        |> List.tryHead
+
     let list (fs: IFileSystem) (home: FileSystemPath option) =
         let drives = mounted fs
         let homeRows = home |> Option.map HomeDirectory |> Option.toList

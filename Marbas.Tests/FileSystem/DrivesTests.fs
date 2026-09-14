@@ -151,6 +151,35 @@ let ``the home row is the home directory itself`` () =
 
     Assert.Equal(HomeDirectory(fp "/home/user"), List.last rows)
 
+[<Theory>]
+[<InlineData("/home/user/docs", "/")>]
+[<InlineData("/media/user/stick/photos", "/media/user/stick")>]
+[<InlineData("/media/user/stick", "/media/user/stick")>]
+[<InlineData("/media/user/sticker", "/")>]
+let ``a path is held by the longest drive root it lies under`` (path: string) (expected: string) =
+    let fs =
+        Fakes.MountedFileSystem [ Fakes.Mount.ext4 "/"; Fakes.Mount.ext4 "/media/user/stick" ]
+
+    let drive = Drives.holding fs (fp path)
+
+    Assert.Equal(Some(fp expected), drive)
+
+[<WindowsFact>]
+let ``a drive letter holds a path spelled in another case`` () =
+    let fs = Fakes.MountedFileSystem [ Fakes.Mount.ext4 @"C:\"; Fakes.Mount.ext4 @"D:\" ]
+
+    let drive = Drives.holding fs (fp @"d:\data")
+
+    Assert.Equal(Some(fp @"D:\"), drive)
+
+[<Fact>]
+let ``a path under no drive is held by none`` () =
+    let fs = Fakes.MountedFileSystem [ Fakes.Mount.ext4 @"C:\" ]
+
+    let drive = Drives.holding fs (fp @"E:\data")
+
+    Assert.Equal(None, drive)
+
 [<WindowsFact>]
 let ``drives added to the mock are listed by their letters`` () =
     let fs = MockFileSystem()
