@@ -25,9 +25,20 @@ needs to be installed. On Linux and macOS, mark the file executable first
   it lands on a root that exists.
 - `Ctrl+R` reloads the active panel, which is what to reach for on a network
   share: those do not always report their own changes.
-- `Alt+F1` / `Alt+F2` open a root chooser for the left / right panel — the
-  ready drives on Windows, the file-system root and your home directory on
-  Unix.
+- `Alt+F1` / `Alt+F2` open *Drives* for the left / right panel: one row per
+  drive with its root, label, kind, total size and free space — the ready drives
+  on Windows, the mounts that hold files on Unix, followed there by your home
+  directory. The list is read each time it opens, so a stick plugged in a moment
+  ago is already there. In the popup:
+  - `Enter` goes to the drive. If the *other* panel is on that drive, the panel
+    goes to the other panel's directory, so both end up in one place; any other
+    drive opens at its root.
+  - `Alt+R` opens the drive in the system file manager (Explorer, or whatever
+    `xdg-open` starts) and leaves both panels where they are.
+  - `Esc` changes nothing.
+- `Ctrl+4` (or `Ctrl+\`) sends the active panel to the root of the drive it is
+  on. Terminals turn `Ctrl+\` into `Ctrl+4` before Marbas sees it, so both are
+  bound and `Ctrl+4` is the one that works everywhere.
 - Typing a printable character opens a search in the active panel: the
   cursor jumps to the first entry whose name contains what you typed.
   `Backspace` edits it, `Esc` or any other key closes it (and that other key
@@ -55,13 +66,38 @@ cursor when nothing is marked.
 - `Shift+F8` (or `Shift+Del`) deletes for good, skipping the trash. The
   question says which of the two is about to happen, and warns separately when
   a target directory is not empty.
+- `Alt+Del` wipes: every file is overwritten with random bytes, renamed and
+  then deleted. The question says so, and also says what wiping cannot promise —
+  on a solid-state disk, or on a copy-on-write or journaling file system, the old
+  data may survive anyway. A link is removed without touching what it points at.
+- `Alt+F6` makes a link. The popup holds the other panel's directory (and the
+  entry's name, for a single entry) and a choice of *Symbolic link*, *Hard link*
+  and, on Windows, *Junction*. A kind that cannot point at what you typed is
+  greyed out with the reason underneath: a hard link only to a file on the same
+  drive, a junction only to a directory. With several entries marked, one link
+  each is made inside the directory you typed. Windows makes symbolic links only
+  for an administrator or with Developer Mode on, and says so if you have
+  neither.
 - `F3` opens the file under the cursor in a read-only viewer (binary files
-  show as a hex dump); `F3`/`Esc` closes it.
+  show as a hex dump); `F3`/`Esc` closes it. On a directory — or with directories
+  marked — `F3` measures them instead: the size replaces `<DIR>` in the size
+  column and shows on the status line. A `≥` in front means something inside
+  could not be read, so the real size is at least that. Sorting by size
+  (`Ctrl+F6`) takes the measured sizes into account. The sizes are forgotten
+  when the panel is read again.
 - `F4` opens it in your `$EDITOR`, or the platform default (`notepad` on
   Windows, `vi` on Unix).
 
-Copying and moving run in the background behind a progress window; `Esc`
-stops the batch at the next file.
+Copying, moving, wiping and measuring run in the background behind a progress
+window; `Esc` stops them. A wipe stopped part way leaves the file it was working
+on in place, already overwritten, and says which one it was. A measurement
+stopped part way changes nothing.
+
+Links are shown in bright cyan, and the status line shows where the link under
+the cursor points (`twin -> C:\data\docs`). Copying, moving, deleting, packing,
+measuring and wiping treat a link to a directory as the link itself and never go
+inside it: a copy is a new link to the same place, and deleting removes only the
+link.
 
 ## Sorting and hidden entries
 
@@ -107,7 +143,7 @@ of its own and puts the command beside it, so `F5 Copy` reads as a key and a
 command rather than as one word.
 
 The key names never move. On Windows, holding `Ctrl`, `Alt` or `Shift` swaps
-the *commands* for the sort keys, the root choosers or the permanent delete
+the *commands* for the sort keys, the drive popups, the link or the permanent delete
 while the modifier is down — `F3` stays `F3` and its command becomes `Name`,
 `F8` becomes `Erase`. A slot no command asks for stays empty. Held modifiers are a Windows-only feature (see
 [Cross-platform](Architecture/CROSS-PLATFORM.md#differences-that-are-meant-to-be-there)).
@@ -116,7 +152,7 @@ Clicking a slot runs its command.
 
 Twelve slots want room: below about 90 columns the longer commands
 (`RenMov`, `Delete`) are clipped to fit. Only `Alt+H`, `Ctrl+H`, `Ctrl+R`,
-`Ctrl+Q`, `+`, `-`, `Insert` and the shifted arrows are off the bar altogether
+`Ctrl+Q`, `Ctrl+4`, `Alt+Del`, `+`, `-`, `Insert` and the shifted arrows are off the bar altogether
 — the bar shows function keys and nothing else.
 
 `Ctrl+Q` or `F10` quits and saves the session.
@@ -142,8 +178,11 @@ rewritten in the new spelling the next time the session is saved.
 
 ## Things that differ by platform
 
-- **Drive/root chooser.** Windows lists the ready drives; Unix lists the
-  file-system root and your home directory.
+- **Drives.** Windows lists the ready drives; Unix lists the mounts that hold
+  files — the pseudo file systems (`proc`, `tmpfs`, snap `squashfs` loops and the
+  like) are left out — followed by your home directory.
+- **Links.** A junction can be made on Windows only. A symbolic link on Windows
+  needs administrator rights or Developer Mode; Linux lets anyone make one.
 - **`Ctrl+H`** does not toggle hidden entries on most terminals — it arrives
   as the byte `0x08`, indistinguishable from `Backspace`. Use `Alt+H`.
 - **`F11`** never reaches Marbas under Windows Terminal or the Windows console,

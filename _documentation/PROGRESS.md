@@ -4,7 +4,7 @@ Status as of 2026-09-13. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Twelve phases are complete** (67 of 67 tasks). Marbas
+**Thirteen phases are complete** (83 of 83 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -727,6 +727,29 @@ with `Launch` replaced by a recorder, answered `Alt+F1`, `↓`, `Alt+R` with a
 request for `D:\` and closed the popup over two unmoved panels. The popup does
 not say that `Alt+R` exists; the user guide of P13.16 will.
 
+**P13.16 wrote the phase down where the rest of the design is.**
+`Architecture/LINKS.md` is new: the three kinds and what each can point at,
+which system makes which and through which call, why only the symbolic link is
+testable without a disk, why every recursive walk stops at a directory link and
+why deleting walks a tree itself, and the `Alt+F6` popup.
+[File operations](Architecture/FILE-OPERATIONS.md) gained *Wiping* — the one
+pass and why not three, the renamed name, the order proved on the mock, what the
+confirmation says it cannot promise, and what a stopped run leaves — and
+*Measuring*, the walk behind `F3` and the lower bound it can answer.
+[UI and input](Architecture/UI-AND-INPUT.md) gained the size column a measured
+directory fills and the size sort that sees it, the colour of a link, the drive
+popup with its columns, its sizes, its two answers and where a panel lands, and
+a table of the three new keys. [Cross-platform](Architecture/CROSS-PLATFORM.md)
+gained a *disk* kind of evidence, the rows of the drive popup, a section for
+links, wiping and measuring with the interop confined to `NativeLinks`, the Unix
+mount filter with its whole list of formats, and two differences meant to be
+there: the junction on Windows alone and the symbolic link Windows grants only
+some users. The [user guide](USER-GUIDE.md) names all five commands — *Drives*
+with `Enter`, `Alt+R` and `Esc`, `Ctrl+4`, `F3` on a directory, `Alt+Del` and
+`Alt+F6` — along with the link colour and the platform differences. The overview
+lists the new topic and the phase's modules in the code map. The table below
+and *Next up* call the phase finished.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -754,7 +777,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.15 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
 
 ## What works today
 
@@ -885,8 +908,12 @@ written up as the checklist in
   progress window is in front, and a panel whose directory — or whose whole drive
   — is gone steps onto the nearest place that is still there without a dialog.
   Tabs in the background are left alone, since switching to one re-reads it.
-- `Alt+F1` / `Alt+F2` open a root chooser for the left / right panel — the ready
-  drives on Windows, the file-system root and the home directory on Unix.
+- `Alt+F1` / `Alt+F2` open *Drives* for the left / right panel — one aligned row
+  per drive with its root, label, kind, size and free space: the ready drives on
+  Windows, the mounts that hold files on Unix and the home directory after them.
+  Choosing the drive the other panel stands on lands in that panel's directory,
+  any other drive in its root, and `Alt+R` opens the drive in the system file
+  manager without moving either panel.
 - Sorting by size compares directories by what `F3` measured, files by their own
   length, and a directory nobody measured counts as nothing, so it keeps the
   name order it had. A measurement that arrives while the panel sorts that way
@@ -1117,25 +1144,17 @@ cross-platform behaviour.
 
 ## Next up
 
-**Phase 12 is finished.** Twelve phases, 67 tasks: the twelfth put the
-directories on screen under a watch, so the panels follow the disk without a key
-— one `FileSystemWatcher` per path behind a port, a burst collapsed into one
-listing, the errors a watcher raises read as a reason to look again, a poll
-underneath for the drive no console application can hear leave, a panel stepped
-up to the nearest place that is still there rather than a dialog, and nothing
-re-read while a popup is in front. **A thirteenth phase has opened** — the drives
-shown as drives behind `Alt+F1` and `Alt+F2`, the root of the volume on `Ctrl+\`,
-`F3` measuring a directory, `Alt+F6` making a link in each of the three kinds the
-systems carry, and `Alt+Del` wiping what it deletes. P13.1 has measured what the
-terminals hand over, which settles two of those bindings, and P13.2 has put the
-root of the volume on the key they deliver, P13.3 can measure a directory, P13.4
-shows what it measured, P13.5 sorts by it, P13.6 can wipe a file rather than
-unlink it and P13.7 puts wiping on `Alt+Del`. P13.8 to P13.11 made links visible,
-stopped every walk at them and put the three kinds on `Alt+F6`, and P13.12 made a
-drive a value with its kind and sizes, P13.13 shows them in the drive popup and
-P13.14 takes a panel to the other panel's directory when both share the chosen
-drive, and P13.15 hands a drive to the system file manager on `Alt+R`. P13.16,
-the documentation of the phase, is next. Three things are waiting beside it:
+**Phase 13 is finished.** Thirteen phases, 83 tasks: the thirteenth measured
+what the terminals deliver before binding anything, put the root of the volume
+on `Ctrl+4`, taught `F3` to measure a directory and the size sort to see it,
+wiped files on `Alt+Del` with a confirmation that says what wiping cannot
+promise, made links visible and stopped every walk at them, made the three kinds
+of link on `Alt+F6`, and turned the root chooser into *Drives* — drives as
+values with their sizes, the panel landing beside the other one when they share
+a drive, and `Alt+R` handing a drive to the system file manager. The design is
+written up in [Links](Architecture/LINKS.md), [File operations](Architecture/FILE-OPERATIONS.md), [UI and input](Architecture/UI-AND-INPUT.md) and
+[Cross-platform](Architecture/CROSS-PLATFORM.md), and the commands in the [user guide](USER-GUIDE.md).
+Nothing further is planned yet. Three things are waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

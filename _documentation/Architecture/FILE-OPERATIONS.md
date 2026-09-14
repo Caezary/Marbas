@@ -92,9 +92,10 @@ decides the scope in the state layer, where the file system already is
 (`Operations.isNonEmptyDirectory`); a directory that cannot be enumerated
 counts as non-empty, so the warning errs towards showing up.
 
-**Deleting has two meanings, and the key says which.** `DeleteMode` is
-`ToTrash` or `Permanently`: `F8` and `Del` ask for the first, `Shift+F8` and
-`Shift+Del` for the second. The mode rides the whole way through —
+**Deleting has three meanings, and the key says which.** `DeleteMode` is
+`ToTrash`, `Permanently` or `ByWiping`: `F8` and `Del` ask for the first,
+`Shift+F8` and `Shift+Del` for the second, `Alt+Del` for the third, which has a
+section of its own below. The mode rides the whole way through —
 `DeleteRequested`, the `DeleteRequest` being confirmed, `DeleteConfirmed`, and
 the `DeleteTargets` effect — so nothing has to remember which key started it,
 and the question the user answers is the question that gets carried out: *Move
@@ -160,13 +161,96 @@ target, `Operations.failures` keeps the ones that went wrong, and the
 panel is refreshed first, so what survived a partial failure is on screen
 before the dialog appears.
 
+## Wiping
+
+**A wiped file is overwritten, shrunk, renamed and only then deleted.**
+`Operations.wipe` clears the read-only attribute, writes one pass of random
+bytes over the whole length of the file through `IFileSystem` in buffers of
+64 KiB — reporting and asking the batch control about cancellation after each —
+flushes, truncates the file to nothing, renames it and deletes it. A directory
+is walked depth-first and removed after what was in it; `wipeAll` runs the
+targets as a batch the way `copyAll` does. The order is proved on the mock, not
+inferred: `Fakes.WipeWitness` records what the file held at every flush and
+every rename.
+
+**One pass, not three.** On a solid-state disk with `TRIM`, on a copy-on-write
+file system and on one with a journal, further passes buy nothing the first did
+not — the controller or the file system decides where the bytes land, not the
+writer — and each costs the whole length of the file again.
+
+**The name is as much of a leak as the contents.** A deleted file's name can
+outlive it in the directory, so before the delete the file is renamed to a
+random name of its own length in the same directory, and nothing about the old
+name is left but how long it was. The name is drawn from lowercase
+hexadecimal digits, which can never spell a device name Windows reserves; if a
+hundred draws all collide with names already there, the file keeps its name
+rather than failing the wipe.
+
+**What it cannot promise is said before it starts.** `Alt+Del` asks under
+*Wipe*, with two sentences the other deletes do not carry: that each file is
+overwritten with random bytes before it is deleted, and that on a solid-state
+disk or a copy-on-write or journaling file system the old blocks may outlive the
+file anyway. The second is broken by hand, because a message box is as wide as
+its longest line and the one-line version came out wider than an 80-column
+terminal. Wiping is not a guarantee on modern storage, and a confirmation that
+implied otherwise would be the one untrue sentence in the application.
+
+**A run stopped inside a file leaves that file and names it.** `Esc` answers
+`Cancelled` with the path of the file it was in; the file stays where it was,
+already overwritten, because its contents are gone whatever `Esc` says and
+pretending otherwise would be untrue. Unlike the other deletes, wiping has
+something to report, so it leaves the synchronous path and runs through
+`RunBatch` under *Wiping*; what comes back is the same `DeleteFinished`, so the
+panel is read again and the marks of what was not wiped stay.
+
+**A link is removed, never written through.** Overwriting a link would destroy
+what it points at, so a link to a file or to a directory is removed unwritten —
+see [Links](LINKS.md). Inside an archive there is no disk block to overwrite,
+only an archive to rewrite, so `Alt+Del` there asks the question `F8` asks.
+
+## Measuring
+
+**`F3` on a directory measures it.** `F3` views the file under the cursor, as
+before; anywhere else it measures the operation targets — the marks, or the
+directory under the cursor — through `MeasureTargets`. `..` measures the
+directory it leads to, which inside an archive at its root is the directory
+holding the archive.
+
+**A size knows whether it is the whole truth.** `DirectorySize` is `Exact` or
+`AtLeast`. Three things make a walk answer a lower bound rather than a lie: a
+subdirectory that refuses to be read, a walk stopped part way, and an archive
+that cannot be opened at all. `DirectorySize.add` keeps `Exact` only while both
+sides are. The type is in `Domain`, because a listing entry carries it long
+before anything is measured; the walk is `DirectoryMeasure` in `FileSystem`.
+
+**One walk for a disk and for an archive.** `DirectoryMeasure` takes a
+`PanelLocation`, so it measures a directory on disk or a level inside an
+archive. An archive is measured from its index, read once and summed below the
+level asked for — reading it level by level would re-open the file once per
+directory in it. A directory link is counted as nothing and never entered.
+
+**It runs behind the progress window, through a port of its own.** Each
+directory entered is reported through the `BatchControl` copying uses, so the
+window has something to show and `Esc` something to answer. The port is
+`RunMeasure`, not `RunBatch`, because the batch runner speaks in the item
+results copying and deleting answer with, and measuring answers with sizes.
+
+**A stopped measurement changes nothing, and a re-read forgets a finished one.**
+`Esc` leaves the panel as it was, since a size stopped half way is worth less
+than the `<DIR>` it would replace. A measurement belongs to the listing it was
+taken over: `Ctrl+R`, an operation that finishes, the watch of phase 12 — any
+re-read — drops it, which falls out of the listing being read afresh rather than
+being a rule of its own. How the answer is shown and sorted is in
+[UI and input](UI-AND-INPUT.md).
+
 ## Viewing and editing
 
 **`F3` and `F4` take the cursor entry, not the operation targets.** Copy, move
 and delete work on `operationTargets` — the marks, or the cursor when nothing
 is marked. Viewing and editing are a different act: each opens one file, so
 both read `AppState.cursorFilePath`, which also filters out directories and
-`..`. There is nothing to view or edit for a directory, so nothing happens.
+`..`. There is nothing to view for a directory, so `F3` measures it instead
+(see *Measuring* above).
 
 **The viewer never reads a file whole.** `F3` opens a file, it does not load
 one. `FileWindow.openFile` keeps the stream open behind a `Source` that answers

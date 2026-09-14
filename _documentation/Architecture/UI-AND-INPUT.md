@@ -151,6 +151,13 @@ execute bit is worth colouring as a program and is *not* worth handing to
 `exec`, and one function answering both questions could only be wrong about one
 of them.
 
+**A link wears its own colour, whatever it points at.** `EntryColor.classify`
+asks about `LinkTarget` before anything else, so a symbolic link or a junction
+is bright cyan whether it leads to a directory, an archive or a program, and the
+status line adds `-> target` after the name. What it points at is one keystroke
+away; that it is a link, and that every walk stops at it, is what the colour has
+to say. See [Links](LINKS.md).
+
 ## Sorting and hidden entries
 
 **One comparison, three layers.** `DirectoryListing.order` compares a group
@@ -178,6 +185,16 @@ directory that vanished meanwhile. What keeps the order afterwards is the
 `SortOrder` the panel carries: `loadPanelFocusing` hands it to `listForDisplay`,
 so a refresh, a navigation, a drive switch and every reload after an operation
 all come back sorted the way the panel is set.
+
+**The size sort sees what was measured.** Two directories compare by their
+measured size, and one nobody measured counts as nothing, so unmeasured
+directories keep their name order among themselves — the order the panel showed
+before `F3` was pressed. Files compare by their own length, and the two never
+meet in one comparison, because the group rank already puts every directory
+above every file. A measurement arriving into a panel sorted by size moves its
+row at once, through the same `reorder` the sort keys use, which keeps the cursor
+on its entry — so the directory just measured travels under the cursor rather
+than away from it.
 
 **The same key again reverses.** `SortOrder.switchTo` starts ascending on a key
 the panel is not sorted by and flips the direction on the key it is, so
@@ -234,11 +251,21 @@ and a mark nobody can see is a file operated on by accident.
 ## Panel footer and search
 
 **One rule for the size column, formatting per view.** `EntrySize.describe`
-holds the shared decision — directories get `<DIR>`, files get their size, an
-unknown size gets nothing — and takes the byte-to-text function as an argument.
-The panel row passes `EntrySize.plain` (bare digits, to keep columns narrow),
-the status line passes a grouped format with a `bytes` suffix. A new view, or a
-future switch to `KB`/`MB`, only supplies another function.
+holds the shared decision — a directory nobody has measured gets `<DIR>`, a
+measured one gets its size, files get their size, an unknown size gets nothing —
+and takes the byte-to-text function as an argument. The panel row passes
+`EntrySize.plain` (bare digits, to keep columns narrow), the status line passes
+a grouped format with a `bytes` suffix. A new view only supplies another
+function; the drive popup, which needs `931.5 GB`, supplies `CompactSize`.
+
+**A measured directory fills the column it had nothing to say in.** `F3` on a
+directory measures it (see [File operations](FILE-OPERATIONS.md)), and the
+answer replaces the `<DIR>` in the size column and appears on the status line
+under the panels, grouped, like a file's. A lower bound — something could not
+be read, or an archive could not be opened — wears `≥` in both places, because a
+number that looks exact and is not would be worse than `<DIR>`. The measurement
+lives on the listing entry, so it goes wherever the entry goes and is forgotten
+with it on the next re-read.
 
 **The bottom row of a panel has three states, and one module picks.**
 `PanelFooter.describe` takes the whole `PanelState`: an open search wins, then
@@ -385,6 +412,58 @@ answering a keystroke with nothing. Making it a button rather than a bare
 binding is what makes it discoverable: a hotkey nobody can see is a hotkey
 nobody presses.
 
+**The drive popup is rows, not paths.** `Alt+F1` and `Alt+F2` open *Drives*.
+`ListDrives` is asked at the moment the key is pressed, so a stick plugged in
+while Marbas runs is simply there on the next opening and nothing polls in the
+background. What it answers is `DriveRow`s — a `MountedDrive` with its root,
+label, `DriveKind`, size and free space, or the `HomeDirectory` on Unix — and
+which drives are listed at all is in [Cross-platform](CROSS-PLATFORM.md). A
+`ChooseDrive` port of its own took the place of the generic `ChooseOption`,
+because a row is several things and not a string.
+
+**Its columns line up to what is on screen.** `DriveLine.describe` pads each
+column to the widest cell among the rows being shown — the root, the label, the
+kind spelled out (`fixed`, `removable`, `network`, `optical`, `home`), the total
+size and the free one followed by `free` — text on the left, sizes on the right.
+`TabRow` pads to fixed widths; drives cannot, because a Linux mount point can be
+long where a drive letter is three characters. The label column is left out when
+no row has a label, and a label that merely repeats the root, which is what .NET
+reports for every Unix mount, counts as none. `DriveDialog` is `TabDialog`'s
+twin, sized to its longest line and to at most twelve rows.
+
+**Sizes are one decimal in the largest unit reached, without leaving integers.**
+`CompactSize.describe` shifts the byte count right by ten bits until it drops
+below 1024; the shifts pick the unit, `B` through `EB`, and what is left is the
+whole part. The remainder is the count less the whole part shifted back, and its
+tenth is rounded to the nearest with a half going up, in `uint64`, since ten
+times the remainder of an exabyte size overflows `int64`. A tenth rounding to
+ten carries into the whole part, and a whole part reaching 1024 becomes `1.0` of
+the next unit.
+
+**The popup answers one of two things.** `ChooseDrive` answers a `DriveChoice`:
+`StandOn` a row, or `HandOver` one. `Ok` and `Enter` stand on it. `Alt+R` — the
+key that hands the entry under the cursor to the system in the panel — hands the
+drive over instead: `DriveView` remembers the key, sets the accepting result and
+stops, and the update turns `DriveHandedOver` into the `RunProgram` of phase 10,
+so the system file manager opens the root and neither panel moves. `Shift+Enter`,
+its twin in the panel, is not bound here: terminals deliver it as a bare
+`Enter`, which on a popup is the default button and would stand the panel on the
+drive the user asked to see elsewhere. The popup does not print `Alt+R`; the
+[user guide](../USER-GUIDE.md) names it.
+
+**Where a panel lands depends on the other panel.** `AppState.driveLanding`
+takes the panel to the other panel's directory when the other panel stands on
+the chosen drive — whether or not this panel stands there too — because two
+panels on one disk are almost always wanted in one place, and the root is what
+`Ctrl+4` asks for deliberately. Any other drive gives its root; the home row
+gives the home directory; a panel inside an archive lends the directory holding
+the archive. Which drive a panel stands on is `Drives.holding`: the longest
+listed root the path equals or lies under at a separator, compared without
+regard to case, since the update knows no platform and a drive letter must
+match however a path was typed. A drive that vanished between the listing and
+the choice needs no case of its own — loading it fails, the failure is the
+listing error it is, and the panel stays put.
+
 ## The key table and the bar
 
 **One table holds every key, and the bar is a view of it.** `KeyMap.bindings`
@@ -445,6 +524,22 @@ chosen: a driver that reported the shifted letter without its shift flag would
 turn `Alt+Shift+R` into `Alt+R` and open the popup instead, so both of
 Terminal.Gui's key converters were asked outright — see
 [Cross-platform](CROSS-PLATFORM.md) — and both keep the flag.
+
+**Phase 13 added three keys, each bound where the terminals were measured to
+deliver it.** They are ordinary `bindings` rows; what arrives where is recorded
+in [Cross-platform](CROSS-PLATFORM.md).
+
+| Key | Message | On the bar | Why this key |
+|-----|---------|------------|--------------|
+| `Ctrl+4`, and `Ctrl+\` beside it | `VolumeRootRequested` | no | `Ctrl+\` is the classic name, but terminals send the byte `0x1C`, which the driver decodes as `Ctrl+4`; the second row waits for a driver that tells them apart |
+| `Alt+Del` | `DeleteRequested ByWiping` | no | a delete with one more modifier, as `Shift+Del` is; it arrived in every terminal measured, so it needs no spare |
+| `Alt+F6` | `LinkRequested` | `F6 Link` while `Alt` is held, on Windows | the move key with a modifier: its popup reads the target the way `F6` reads its own |
+
+`VolumeRootRequested` sends the active panel to the root of what it stands on —
+the disk holding the archive when it is inside one — and a panel already on a
+root stays, rather than re-listing and losing its cursor. `F3` kept its key and
+its label and gained a second meaning, measuring a directory, so it is not in
+the table.
 
 **The bar is twelve slots, not a list of what happens to be bound.**
 `KeyMap.bar` walks `KeyMap.functionKeys` — `F1` … `F12`, in order — applies the

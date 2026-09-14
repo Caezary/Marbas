@@ -44,9 +44,10 @@ root. `Program.fs` is left with the handful of lines that start the application.
 
 - [Domain types](DOMAIN-TYPES.md) — paths as a type, typed messages and effects
 - [State and effects](STATE-AND-EFFECTS.md) — the update loop, dependency injection, composition
-- [File operations](FILE-OPERATIONS.md) — copy/move/delete/rename, batches, viewer and editor
+- [File operations](FILE-OPERATIONS.md) — copy/move/delete/rename, wiping, measuring, batches, viewer and editor
+- [Links](LINKS.md) — the three kinds, which system makes which, why every walk stops at a link
 - [Archives](ARCHIVES.md) — kinds and formats, the deduced name, writing, reading, extracting, the libraries
-- [UI and input](UI-AND-INPUT.md) — colour, sorting, hidden entries, search, the key table
+- [UI and input](UI-AND-INPUT.md) — colour, sorting, hidden entries, search, popups and the drive popup, the key table
 - [Settings persistence](SETTINGS-PERSISTENCE.md) — the config file and what survives a restart
 - [Tabs](TABS.md) — a tab as a pair of panels, the zipper, switching, the counter
 - [Auto-refresh](AUTO-REFRESH.md) — watching the directories on screen, the burst, what the watcher cannot say
@@ -75,6 +76,8 @@ Marbas/
     CursorDirection.fs    up or down, for a mark that moves the cursor with it
     DeleteScope.fs        whether a delete reaches into a directory's contents
     DeleteMode.fs         to the trash, or past it
+    DirectorySize.fs      a measured size, exact or a lower bound
+    LinkKind.fs           symbolic, hard or junction, and why a kind is refused
     DriveKind.fs          fixed, removable, network or optical, not `System.IO.DriveType`
     ProgramSettings.fs    extension and role -> the program that edits or opens it
   FileSystem/
@@ -89,6 +92,8 @@ Marbas/
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             where a panel can be sent: the usable drives, and home on Unix
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
+    Links.fs              what a link request means, what refuses it, and making one
+    DirectoryMeasure.fs   the size of a directory or an archive level, stopping at links
     ArchiveKind.fs        the archive kinds, their extensions and what can be done to each
     ArchivePath.fs        a place inside an archive: never rooted, never climbing
     ArchiveFormat.fs      which kinds can be created, and what each one carries
@@ -130,6 +135,7 @@ Marbas/
       ListingErrorMessage.fs    ListingError -> user-facing text
       ContentErrorMessage.fs    ContentError -> user-facing text
       ArchiveErrorMessage.fs    ArchiveError -> user-facing text
+      LinkRefusalMessage.fs     LinkRefusal -> the one sentence saying why
       OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
       LaunchErrorMessage.fs     LaunchError -> user-facing text
       DeleteConfirmation.fs     delete targets -> confirmation question
@@ -163,6 +169,7 @@ Marbas/
       SettingsDialog.fs     the default editor and the associations, one list per role
       OpenWithDialog.fs     which program opens this file, and whether to remember it
       PackDialog.fs         what `Shift+F1` asks before an archive is written
+      LinkDialog.fs         what `Alt+F6` asks, with the refused kinds greyed out
       TabRow.fs             one tab -> its number and where both its panels stand
       TabDialog.fs          the list `F11` opens, and the tab it answers with
       DriveLine.fs          drive rows -> lines whose root, label, kind and sizes line up
@@ -182,6 +189,7 @@ Marbas/
     RecycleBin.fs         the Windows recycle bin, through the VB runtime
     EditorProcess.fs      the editor started as a child process, and waited on
     LaunchProcess.fs      a program handed to the system, and never waited on
+    NativeLinks.fs        hard links and junctions through kernel32 and libc
     RegistryHandlers.fs   the Windows registry -> the handlers a name has
     BatchRunner.fs        a batch on a background task under the progress dialog
     ModifierWatch.fs      held Ctrl / Alt / Shift, polled on Windows, absent elsewhere

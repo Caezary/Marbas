@@ -2,24 +2,30 @@
 
 P8.2. What has to hold on Windows and on Linux, how to check it, and what is
 known to differ. Run it before a release and after anything that touches
-`Adapters/`, `Roots`, `Settings` or a key binding.
+`Adapters/`, `Drives`, `Links`, `Settings` or a key binding.
 
-Four kinds of evidence appear below:
+Five kinds of evidence appear below:
 
 - **suite** — an automated test asserts it; `dotnet test` on both platforms is
   the whole check, and `.github/workflows/ci.yml` runs both legs on every push.
 - **WSL** — verified by running the built application under WSL (Ubuntu 24.04,
   .NET 10.0.110) on 2026-08-18, driving it through a pseudo-terminal and
   reading the screen back.
-- **probe** — measured by a throwaway program rather than asserted, in two
+- **probe** — measured by a throwaway program rather than asserted, in three
   flavours. `_probes/KeyProbe` reports what a terminal really hands to
   Terminal.Gui rather than what a binding says it should; the rows marked so
   under *Keyboard and terminal* were measured with it on 2026-09-05 in cmder,
   Windows Terminal and the Windows console, and under WSL started from cmder and
   from the console. The rows under *Watching the directories on screen* were
   measured on 2026-09-11 with a probe that builds the real `MainWindow` over a
-  real file system and changes the disk behind its back. See
+  real file system and changes the disk behind its back. The drive popup rows were
+  rendered on 2026-09-14 with the `render-tui-screen` probe, which runs the real
+  application with `Launch` replaced by a recorder. See
   [Development](../DEVELOPMENT.md), *Probes*.
+- **disk** — an integration test in `Marbas.Tests/Integration/Disk` does it
+  against the real file system of whichever machine runs the suite, so it runs on
+  both legs of CI; it is reached for only where no mock can say what the system
+  does.
 - **manual** — needs a person at a real terminal. These are the items where the
   answer is "does it *look* right", which nothing here can assert.
 
@@ -44,12 +50,17 @@ suite covers both.
 
 | Check | Windows | Linux | Evidence |
 |-------|---------|-------|----------|
-| `Alt+F1` / `Alt+F2` open the root chooser | lists ready drives, `C:\`, `D:\`… | lists the storage mounts, then the home directory | suite, WSL |
-| Choosing a root opens it in that panel | same | same | suite, WSL |
-| Cancelling changes nothing | same | same | suite |
-| A root that cannot be read is reported, panel stays put | same | same | suite |
+| `Alt+F1` / `Alt+F2` open *Drives* | lists ready drives, `C:\`, `D:\`… | lists the storage mounts, then the home directory | suite; probe on Windows; **manual** on Linux |
+| Each row shows root, label, kind, size and free space in aligned columns | yes | yes, with no label column for mounts | suite; probe on Windows; **manual** on Linux |
+| A drive plugged in while Marbas runs is listed on the next opening | same | same | suite |
+| Choosing a drive the other panel stands on lands in that panel's directory | same | same | suite |
+| Choosing any other drive lands in its root | same | same | suite, WSL |
+| Cancelling changes nothing | same | same | suite, probe on Windows |
+| A drive that cannot be read is reported, panel stays put | same | same | suite |
+| `Alt+R` in the popup opens the drive in the system file manager, panels unmoved | Explorer | `xdg-open` | suite (injected), probe on Windows; **manual** for the window that opens |
 | A drive that is not ready, or whose size cannot be read, is left out | yes | yes | suite |
 | A mount that is not storage (`squashfs`, `tmpfs`, `proc`…) is left out | n/a | yes | suite |
+| `Ctrl+4` / `Ctrl+\` send the panel to the root of its volume | yes | yes | suite, probe |
 
 Both lists are `Drives.list fs home`: the ready drives that are storage, and a
 row for `$HOME` after them when a home is given, which is what P3.5 asked for.
@@ -58,6 +69,50 @@ takes the home as a value, so both branches are tested on both platforms. The
 mount points are spelled through `Fakes.MountedFileSystem`, a fake drive
 factory, because `MockFileSystem` names every drive `/:\` on Linux; the tests
 over drive letters carry `[<WindowsFact>]`.
+
+**On Unix most mounts are not drives, so the list filters by format.**
+`DriveInfo.GetDrives()` on Linux answers every entry of the mount table: the
+root and a home partition, and beside them `proc`, `sysfs`, the cgroups,
+`devpts`, `tmpfs` for `/run` and `/dev/shm`, an `overlay` per container and a
+`squashfs` loop per snap — easily a dozen rows burying the two a user can store
+anything on. `Drives.list` drops a mount whose `DriveFormat` is one of the
+formats that hold no files of the user's (`autofs`, `binfmt_misc`, `bpf`,
+`cgroup`, `cgroup2`, `configfs`, `debugfs`, `devpts`, `devtmpfs`, `efivarfs`,
+`fuse.gvfsd-fuse`, `fuse.portal`, `fusectl`, `hugetlbfs`, `mqueue`, `nsfs`,
+`overlay`, `proc`, `pstore`, `ramfs`, `rpc_pipefs`, `securityfs`, `selinuxfs`,
+`squashfs`, `sysfs`, `tmpfs`, `tracefs`), a drive that is not ready — an empty
+card reader — and one whose size throws when asked, which is what a mount the
+user may not enter does. The format list runs on Windows too, where no drive
+carries one of those names, so it needs no platform. A format not on the list
+shows up as a drive; the list is a denial list on purpose, because a real file
+system Marbas has not heard of is better listed than lost. The system's
+`DriveType` is read into four kinds, with a RAM disk and an unknown type counted
+as fixed.
+
+## Links, wiping and measuring
+
+| Check | Windows | Linux | Evidence |
+|-------|---------|-------|----------|
+| A symbolic link or junction is drawn in its own colour, `-> target` on the status line | same | same | suite |
+| Copying, moving, packing, deleting, measuring and wiping stop at a directory link | same | same | suite, disk |
+| `Alt+F6` makes a symbolic link | only for an administrator or with Developer Mode on; otherwise refused with a sentence saying which | yes | suite, disk |
+| `Alt+F6` makes a hard link to a file on the same volume | `CreateHardLinkW` | `link` | disk |
+| `Alt+F6` makes a junction to a directory | `CreateFileW` + `DeviceIoControl` | **not offered** | disk |
+| A kind the typed target cannot carry is greyed out with its reason | same | same | suite |
+| `F3` on a directory measures it; `Esc` leaves `<DIR>` | same | same | suite |
+| `Alt+Del` wipes behind the progress window, `Esc` names the file it was in | same | same | suite |
+| The old blocks of a wiped file are unreadable afterwards | **not promised** on SSD, copy-on-write or journaling file systems | the same | stated in the confirmation |
+
+**Interop is confined to one adapter.** The hard link
+and the junction have no managed API, so `Adapters/NativeLinks.fs` holds the
+`DllImport`s: `kernel32` on Windows (`CreateHardLinkW`, `CreateFileW`,
+`DeviceIoControl` with `FSCTL_SET_REPARSE_POINT`) and `libc` on Unix (`link`).
+`NativeLinks.forPlatform` picks the record for the platform and leaves the
+junction out on Unix, so no import of the other system is ever bound — the same
+guarantee `ModifierWatch` relies on for `user32`. The *disk* rows are
+`Integration/Disk/NativeLinkTests.fs` and `LinkWalkTests.fs`, which run on both
+CI legs and skip the symbolic-link half where the user may not make one. The
+whole story is in [Links](LINKS.md).
 
 ## Hidden entries
 
@@ -447,9 +502,16 @@ popup, since P13.13, is titled *Drives* and shows each row with its sizes.
 - **`Ctrl+H` is `0x08` on a VT terminal**, the byte backspace already owns, so it
   cannot be told apart from `Backspace` outside the kitty protocol. `Alt+H`
   carries the label on the bar for exactly this reason.
-- **Drive letters do not exist on Unix**, so three tests skip there rather than
-  pretending. `MockFileSystem` emulates drives Windows-style and answers a
+- **Drive letters do not exist on Unix**, so the tests over them skip there
+  rather than pretending. `MockFileSystem` emulates drives Windows-style and answers a
   duplicated `/:\` on Linux, which is a second reason not to assert on it.
+- **A junction exists on Windows alone.** The `Alt+F6` popup on Unix offers the
+  symbolic and the hard link and no junction row at all, because
+  `NativeLinks.forPlatform` supplies no function to make one.
+- **Windows makes a symbolic link only for an administrator or with Developer
+  Mode on.** Linux lets any user make one. The refusal is mapped to a sentence
+  saying which of the two to switch on, rather than passed through as an access
+  error.
 - **Dialogs and message boxes keep Terminal.Gui's own theme** on both
   platforms; the main screen and the viewer wear the classic colours.
 - **Only the home trash is written on Unix.** The freedesktop spec puts a trash
