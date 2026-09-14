@@ -313,4 +313,4 @@ let driveAt (root: string) =
       Free = 0L }
 
 let choosingDrive (root: string) =
-    fun (_: DriveRow list) -> Some(MountedDrive(driveAt root))
+    fun (_: DriveRow list) -> root |> driveAt |> MountedDrive |> StandOn |> Some

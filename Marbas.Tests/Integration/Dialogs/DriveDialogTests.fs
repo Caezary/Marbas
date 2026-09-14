@@ -3,31 +3,51 @@ module Marbas.Tests.Integration.Dialogs.DriveDialogTests
 open System.Drawing
 open Xunit
 open Terminal.Gui.Views
+open Marbas.Domain
+open Marbas.FileSystem
+open Marbas.Ui.Keys
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 
-let private lines =
-    [ "C:\\  System  fixed  931.5 GB  120.0 GB free"
-      "D:\\  Data    fixed    1.8 TB    1.2 TB free" ]
+let private fp = FileSystemPath.create
+
+let private system =
+    MountedDrive
+        { Root = fp @"C:\"
+          Label = Some "System"
+          Kind = Fixed
+          Size = 1000204886016L
+          Free = 128849018880L }
+
+let private data =
+    MountedDrive
+        { Root = fp @"D:\"
+          Label = Some "Data"
+          Kind = Fixed
+          Size = 2000398934016L
+          Free = 1319413953331L }
+
+let private rows = [ system; data ]
 
 let private laidOut () =
     DialogStyle.apply ()
-    let dialog = DriveDialog.create lines
+    let dialog = DriveDialog.create rows
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(120, 30)) |> ignore
+    (DriveDialog.drives dialog).SetFocus() |> ignore
     dialog
 
-let private rows (dialog: Dialog) =
+let private shown (dialog: Dialog) =
     let list = DriveDialog.drives dialog
     let source = list.Source.ToList()
     [ for index in 0 .. list.Source.Count - 1 -> source[index].ToString() ]
 
 [<Fact>]
-let ``every drive is listed in the order it was given`` () =
+let ``every drive is listed as its line, in the order it was given`` () =
     use dialog = laidOut ()
 
-    Assert.Equal<string list>(lines, rows dialog)
+    Assert.Equal<string list>(DriveLine.describe rows, shown dialog)
 
 [<Fact>]
 let ``the list opens on the first drive`` () =
@@ -42,13 +62,30 @@ let ``a dialog that was closed without a choice picks nothing`` () =
     Assert.Equal(None, DriveDialog.choice dialog)
 
 [<Fact>]
-let ``what was accepted is the drive the cursor stood on`` () =
+let ``what was accepted is the drive the cursor stood on, to stand on`` () =
     use dialog = laidOut ()
     (DriveDialog.drives dialog).SelectedItem <- 1
 
     dialog.Result <- 1
 
-    Assert.Equal(Some 1, DriveDialog.choice dialog)
+    Assert.Equal(Some(StandOn data), DriveDialog.choice dialog)
+
+[<Fact>]
+let ``alt+R hands over the drive the cursor stood on`` () =
+    use dialog = laidOut ()
+    (DriveDialog.drives dialog).SelectedItem <- 1
+
+    dialog.NewKeyDownEvent KeyMap.openWithKey |> ignore
+
+    Assert.Equal(Some(HandOver data), DriveDialog.choice dialog)
+
+[<Fact>]
+let ``shift+Enter does not hand the drive over`` () =
+    use dialog = laidOut ()
+
+    dialog.NewKeyDownEvent KeyMap.classicOpenWithKey |> ignore
+
+    Assert.NotEqual(Some(HandOver system), DriveDialog.choice dialog)
 
 [<Fact>]
 let ``the widest line fits inside the frame`` () =
@@ -56,6 +93,7 @@ let ``the widest line fits inside the frame`` () =
 
     let list = (DriveDialog.drives dialog).Frame
 
-    Assert.True(list.Width >= lines.Head.Length, $"the drive list at %A{list} cuts its lines")
+    let widest = DriveLine.describe rows |> List.map String.length |> List.max
+    Assert.True(list.Width >= widest, $"the drive list at %A{list} cuts its lines")
     Assert.True(list.Right <= dialog.Viewport.Width, $"the drive list at %A{list} runs past the frame")
     Assert.True(list.Bottom <= dialog.Viewport.Height, $"the drive list at %A{list} runs past the frame")

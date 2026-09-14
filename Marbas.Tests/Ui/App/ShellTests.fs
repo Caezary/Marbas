@@ -125,9 +125,19 @@ let ``a chosen drive is dispatched with the side it was asked for`` () =
     Assert.Equal<Message list>([ DriveChosen(Right, MountedDrive(Fakes.driveAt (at "elsewhere"))) ], List.ofSeq sent)
 
 [<Fact>]
+let ``a drive handed over is dispatched without a side`` () =
+    let sent, dispatch = capture ()
+    let stick = MountedDrive(Fakes.driveAt (at "media/stick"))
+    let deps = { noDeps () with ChooseDrive = fun _ -> Some(HandOver stick) }
+
+    Shell.interpret deps dispatch (PromptForRoot Left)
+
+    Assert.Equal<Message list>([ DriveHandedOver stick ], List.ofSeq sent)
+
+[<Fact>]
 let ``a chosen home directory is dispatched as it was chosen`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with ChooseDrive = fun _ -> Some(HomeDirectory(fp (at "home/user"))) }
+    let deps = { noDeps () with ChooseDrive = fun _ -> Some(StandOn(HomeDirectory(fp (at "home/user")))) }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
 

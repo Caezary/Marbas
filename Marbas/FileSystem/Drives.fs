@@ -16,6 +16,10 @@ type DriveRow =
     | MountedDrive of Drive
     | HomeDirectory of FileSystemPath
 
+type DriveChoice =
+    | StandOn of DriveRow
+    | HandOver of DriveRow
+
 module DriveRow =
 
     let root row =

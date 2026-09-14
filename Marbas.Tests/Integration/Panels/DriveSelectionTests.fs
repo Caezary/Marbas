@@ -9,6 +9,8 @@ open Marbas.Tests.Integration.Gui
 
 let private at = Root.at
 
+let private fp = FileSystemPath.create
+
 let private chooserFs () =
     let fs = Fakes.MountedFileSystem [ Fakes.Mount.ext4 (at "") ]
     fs.AddDirectory(at "start")
@@ -80,6 +82,26 @@ let ``a drive plugged in between two openings is offered by the second`` () =
     press (leftList window) KeyMap.rightRootKey
 
     Assert.Equal<string list list>([ [ at "" ]; [ at ""; at "media/stick" ] ], offeredRoots offered)
+
+[<Fact>]
+let ``a drive handed over opens outside and moves neither panel`` () =
+    let fs = chooserFs ()
+    fs.Plug(Fakes.Mount.ext4 (at "media/stick"))
+    fs.AddDirectory(at "media/stick")
+    let started = ResizeArray<LaunchRequest>()
+    let stick = MountedDrive(Fakes.driveAt (at "media/stick"))
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                ChooseDrive = fun _ -> Some(HandOver stick)
+                Launch = fun request -> started.Add request; Ok() }
+
+    press (leftList window) KeyMap.rightRootKey
+
+    Assert.Equal(fp (at "media/stick"), (Assert.Single started).Target)
+    Assert.Equal(at "start", shownPath FilePanel.LeftId window)
+    Assert.Equal(at "start", shownPath FilePanel.RightId window)
 
 [<Fact>]
 let ``cancelling the chooser leaves both panels untouched`` () =

@@ -17,9 +17,9 @@ let chooseDrive (app: IApplication) (rows: DriveRow list) =
     match rows with
     | [] -> None
     | _ ->
-        use dialog = DriveDialog.create (DriveLine.describe rows)
+        use dialog = DriveDialog.create rows
         app.Run dialog |> ignore
-        DriveDialog.choice dialog |> Option.map (fun index -> rows[index])
+        DriveDialog.choice dialog
 
 let confirm (app: IApplication) (title: string) (message: string) =
     let answer = MessageBox.Query(app, title, message, "_Yes", "_No")

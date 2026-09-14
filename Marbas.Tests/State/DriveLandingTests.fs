@@ -123,3 +123,27 @@ let ``a drive that went away is reported and the panel stays where it was`` () =
 
     Assert.Equal(state, result.State)
     Assert.Equal<Effect list>([ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "media/gone"))) ], result.Effects)
+
+[<Fact>]
+let ``a drive handed over is started with the system's own choice, standing in its root`` () =
+    let fs = mounted ()
+    let state = standing fs (at "start") (at "backup")
+
+    let result = update fs (DriveHandedOver stick) state
+
+    let expected =
+        { Target = fp (at "media/stick")
+          Program = None
+          WorkingDirectory = fp (at "media/stick")
+          Elevation = AsUser }
+
+    Assert.Equal<Effect list>([ RunProgram expected ], result.Effects)
+
+[<Fact>]
+let ``a drive handed over moves neither panel`` () =
+    let fs = mounted ()
+    let state = standing fs (at "start") (at "backup")
+
+    let result = update fs (DriveHandedOver stick) state
+
+    Assert.Equal(state, result.State)

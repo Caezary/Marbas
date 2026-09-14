@@ -53,7 +53,7 @@ type Dependencies =
       ListDrives: unit -> DriveRow list
       OnQuit: unit -> unit
       ReportError: string -> string -> unit
-      ChooseDrive: DriveRow list -> DriveRow option
+      ChooseDrive: DriveRow list -> DriveChoice option
       AskPattern: string -> string option
       AskName: string -> string -> string option
       AskTarget: string -> string -> string option
@@ -409,7 +409,8 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | None -> ()
     | PromptForRoot side ->
         match deps.ChooseDrive(deps.ListDrives()) with
-        | Some row -> dispatch (DriveChosen(side, row))
+        | Some(StandOn row) -> dispatch (DriveChosen(side, row))
+        | Some(HandOver row) -> dispatch (DriveHandedOver row)
         | None -> ()
     | WatchLocations paths -> deps.WatchLocations paths (fun () -> dispatch ExternalChangeDetected)
     | SaveSettings settings -> Settings.save deps.FileSystem deps.SettingsPath settings

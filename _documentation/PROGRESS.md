@@ -705,6 +705,28 @@ error it is, and the panel stays where it was. `PathOpened` stays, for the start
 of the application. The cases are tests over `update` in
 `State/DriveLandingTests.fs`, on `Fakes.MountedFileSystem` with a second mount.
 
+**P13.15 let the popup hand a drive over.** What `ChooseDrive` answers is now a
+`DriveChoice`: `StandOn` a row, or `HandOver` one. `Alt+R`, the key that hands
+the entry under the cursor to the system in the panel, answers the second inside
+*Drives*: `DriveDialog.DriveView` remembers that it was pressed, sets the result
+to the accepting button and stops, so `choice` reads the row under the cursor
+either way and `Esc` still reads as nothing. `Shift+Enter`, its twin in the
+panel, is left unbound here, since it arrives as a bare `Enter` and would stand
+the panel on the drive instead; a test pins that it hands nothing over. `Shell`
+dispatches `DriveChosen` for the first answer and `DriveHandedOver` for the
+second, and the update turns that into the `RunProgram` of P10.2 — the root as
+the target and as the working directory, no program, as the user — while both
+panels stay where they were. Putting it through `LaunchProcess` turned up a hole
+on Unix: a directory carries the execute bit, so a directory with no program
+chosen was being started as if it were a program, which fails, rather than being
+given to `xdg-open`. `LaunchProcess.describe` now sends a directory to the
+desktop's opener before it looks at the mode, which also mends `Alt+R` on a
+directory in the panel; `describe` is public so a test can read the command it
+builds without starting anything. On this machine the running application,
+with `Launch` replaced by a recorder, answered `Alt+F1`, `↓`, `Alt+R` with a
+request for `D:\` and closed the popup over two unmoved panels. The popup does
+not say that `Alt+R` exists; the user guide of P13.16 will.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -732,7 +754,7 @@ written up as the checklist in
 | 10 — Running a file | P10.1–P10.7 | done |
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
-| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.14 done |
+| 13 — The drive, the link and what is left behind | P13.1–P13.16 | P13.1–P13.15 done |
 
 ## What works today
 
@@ -1112,7 +1134,8 @@ unlink it and P13.7 puts wiping on `Alt+Del`. P13.8 to P13.11 made links visible
 stopped every walk at them and put the three kinds on `Alt+F6`, and P13.12 made a
 drive a value with its kind and sizes, P13.13 shows them in the drive popup and
 P13.14 takes a panel to the other panel's directory when both share the chosen
-drive. P13.15, handing a drive to the system file manager, is next. Three things are waiting beside it:
+drive, and P13.15 hands a drive to the system file manager on `Alt+R`. P13.16,
+the documentation of the phase, is next. Three things are waiting beside it:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

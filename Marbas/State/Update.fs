@@ -59,6 +59,7 @@ type Message =
     | VolumeRootRequested
     | PathOpened of PanelSide * FileSystemPath
     | DriveChosen of PanelSide * DriveRow
+    | DriveHandedOver of DriveRow
     | TabOpened
     | TabClosed
     | TabsRequested
@@ -182,6 +183,10 @@ let private startingAs elevation state directory program target =
 
 let private running state directory program target =
     startingAs AsUser state directory program target
+
+let private handedOver state row =
+    let root = DriveRow.root row
+    running state root None root
 
 let private opening (fs: IFileSystem) state directory path =
     match programFor ForOpening (FileSystemPath.name fs path) state with
@@ -485,6 +490,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | VolumeRootRequested -> sentToRoot' state
     | PathOpened(side, path) -> loadPanel' side path state |> applyListing'
     | DriveChosen(side, row) -> loadPanel' side (driveLanding fs side row state) state |> applyListing'
+    | DriveHandedOver row -> handedOver state row
     | TabOpened -> openTab state |> saving'
     | TabClosed -> closeTab state |> saving'
     | TabsRequested -> state.Tabs |> ShowTabs |> request state

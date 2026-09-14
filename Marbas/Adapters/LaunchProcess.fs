@@ -60,12 +60,13 @@ let private ofItsOwn (fs: IFileSystem) (request: LaunchRequest) =
 
     match request.Program with
     | Some program -> detached (ProgramPath.value program) [ target ]
+    | None when fs.Directory.Exists target -> detached DesktopOpener [ target ]
     | None ->
         match Executability.ofMode (fs.FileInfo.New target).UnixFileMode with
         | Executable -> detached target []
         | NotExecutable -> detached DesktopOpener [ target ]
 
-let private describe (fs: IFileSystem) platform (request: LaunchRequest) =
+let describe (fs: IFileSystem) platform (request: LaunchRequest) =
     match platform, request.Elevation with
     | Unix, AsAdministrator -> Error(LaunchRefused(request.Target, ElevationUnavailable))
     | Windows, _ -> Ok(throughShell request)
