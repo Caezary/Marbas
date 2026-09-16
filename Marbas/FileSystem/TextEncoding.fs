@@ -10,6 +10,10 @@ type Charset =
 
 type TextEncoding = { Charset: Charset; HasBom: bool }
 
+type Content =
+    | Textual
+    | Binary
+
 module TextEncoding =
 
     [<Literal>]
@@ -61,17 +65,21 @@ module TextEncoding =
         elif trailing = 0 && leading * 2 > pairs then Some Utf16Be
         else None
 
-    let detect (probe: byte array) =
+    let private examine (probe: byte array) =
         let plain charset = { Charset = charset; HasBom = false }
 
-        if startsWith utf8Mark probe then { Charset = Utf8; HasBom = true }
-        elif startsWith utf16LeMark probe then { Charset = Utf16Le; HasBom = true }
-        elif startsWith utf16BeMark probe then { Charset = Utf16Be; HasBom = true }
+        if startsWith utf8Mark probe then { Charset = Utf8; HasBom = true }, Textual
+        elif startsWith utf16LeMark probe then { Charset = Utf16Le; HasBom = true }, Textual
+        elif startsWith utf16BeMark probe then { Charset = Utf16Be; HasBom = true }, Textual
         else
             match wideCharset probe with
-            | Some charset -> plain charset
-            | None when Array.contains 0uy probe -> plain Latin1
-            | None -> plain (if isUtf8 probe then Utf8 else Latin1)
+            | Some charset -> plain charset, Textual
+            | None when Array.contains 0uy probe -> plain Latin1, Binary
+            | None -> plain (if isUtf8 probe then Utf8 else Latin1), Textual
+
+    let detect (probe: byte array) = examine probe |> fst
+
+    let contentOf (probe: byte array) = examine probe |> snd
 
     let name encoding =
         match encoding.Charset with
@@ -113,3 +121,8 @@ module TextEncoding =
 
     let decode encoding (bytes: byte array) =
         (charsetEncoding encoding.Charset).GetString bytes
+
+    let decoder encoding = (charsetEncoding encoding.Charset).GetDecoder()
+
+    let maxChars encoding byteCount =
+        (charsetEncoding encoding.Charset).GetMaxCharCount byteCount

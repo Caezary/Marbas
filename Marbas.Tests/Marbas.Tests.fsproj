@@ -40,6 +40,7 @@
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
     <Compile Include="FileSystem\DirectoryMeasureTests.fs" />
+    <Compile Include="FileSystem\ContentMatchTests.fs" />
     <Compile Include="FileSystem\HandlerTests.fs" />
     <Compile Include="FileSystem\ProgramCommandTests.fs" />
     <Compile Include="FileSystem\DesktopEntryTests.fs" />

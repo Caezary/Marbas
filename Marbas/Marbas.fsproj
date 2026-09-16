@@ -59,6 +59,7 @@
         <Compile Include="FileSystem\Operations.fs" />
         <Compile Include="FileSystem\Links.fs" />
         <Compile Include="FileSystem\DirectoryMeasure.fs" />
+        <Compile Include="FileSystem\ContentMatch.fs" />
         <Compile Include="FileSystem\Workspace.fs" />
         <Compile Include="FileSystem\Archive.fs" />
         <Compile Include="FileSystem\EntryProperties.fs" />

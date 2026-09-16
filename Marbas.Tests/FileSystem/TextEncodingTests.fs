@@ -162,3 +162,35 @@ let ``latin-1 bytes decode one character to the byte`` () =
     let text = TextEncoding.decode encoding [| 0x41uy; 0xE9uy |]
 
     Assert.Equal("Aé", text)
+
+[<Fact>]
+let ``a nul byte with no mark and no wide pattern means binary`` () =
+    let probe = Array.append (bytes "MZ") [| 0x00uy; 0x01uy; 0x02uy |]
+
+    let content = TextEncoding.contentOf probe
+
+    Assert.Equal<Content>(Binary, content)
+
+[<Fact>]
+let ``plain text is not binary`` () =
+    let probe = bytes "{ \"name\": \"value\" }"
+
+    let content = TextEncoding.contentOf probe
+
+    Assert.Equal<Content>(Textual, content)
+
+[<Fact>]
+let ``marked utf-16 is text, nul bytes and all`` () =
+    let probe = Array.append [| 0xFFuy; 0xFEuy |] (wide "first")
+
+    let content = TextEncoding.contentOf probe
+
+    Assert.Equal<Content>(Textual, content)
+
+[<Fact>]
+let ``unmarked utf-16 is text, nul bytes and all`` () =
+    let probe = wide "first line of the file"
+
+    let content = TextEncoding.contentOf probe
+
+    Assert.Equal<Content>(Textual, content)

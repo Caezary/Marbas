@@ -62,6 +62,13 @@ type TextSearch =
       Sense: TextSense
       Binary: BinaryFiles }
 
+type ContentAnswer =
+    | TextMatched
+    | TextDidNotMatch
+    | FileSkipped
+    | FileUnreadable
+    | SearchStopped
+
 type FindTargets =
     | FilesOnly
     | FilesAndDirectories

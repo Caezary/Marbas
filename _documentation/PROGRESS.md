@@ -789,6 +789,30 @@ text. Beside them a `FindQuery` carries the scope — the six places of P14.5 �
 along with `HiddenEntries`, whether links are followed and whether archives are
 searched.
 
+**P14.3 matched text without ever holding a file whole.** What it answers —
+matched, did not match, skipped as binary, unreadable, stopped — is a `Domain`
+word beside the query it answers, since nothing about it knows a file system
+exists. `ContentMatch.search` settles the encoding from the first 8192 bytes with the same `TextEncoding` call
+the viewer makes, then reads the rest in buffers of 64 KiB through a `Decoder`,
+so a multi-byte sequence split across two reads still decodes. What could
+straddle the boundary is carried over: the last length of the text plus one
+character stay in front of the next buffer, which is what makes a match found
+wherever it falls — the tests put one at every offset around 64 KiB and around
+128 KiB. The plus one is for whole words, whose rule needs the character before
+a match as well as the one after; a match ending exactly at a buffer's end is
+deferred rather than decided, because the character that would settle it has not
+been read yet, and a match at the very start of a carried-over piece is one the
+previous buffer already rejected. Whether a file is binary is not a second guess
+made here: `TextEncoding.detect` and `TextEncoding.contentOf` now come from one
+`examine`, so the branch that reads a NUL byte as Latin-1 is the same branch that
+calls the file binary, and the search and the viewer cannot disagree about a
+file. A binary file is passed over unless the query asks for it, and asked for,
+it is searched as the Latin-1 the viewer shows. "Not containing" is the negation
+of the answer and nothing else: a file that cannot be read answers
+`FileUnreadable` either way, so it never passes as one that lacks the text. Each
+buffer asks the batch control first, so a stopped search answers `SearchStopped`
+instead of a verdict it did not reach.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -817,7 +841,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.2 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.3 done |
 
 ## What works today
 
@@ -1199,8 +1223,9 @@ written up in [Links](Architecture/LINKS.md), [File operations](Architecture/FIL
 for a name pattern, a text and where to look; the answer arrives in a
 full-screen window while the search still runs, grouped by directory, and can be
 walked, viewed, reopened or sent into a panel as a temporary listing. The
-fourteen tasks are in [PLAN.md](PLAN.md); P14.1, the measurement, and P14.2, the
-query as a value, are done, and P14.3, matching text in a stream, is next. Three older things are still waiting:
+fourteen tasks are in [PLAN.md](PLAN.md); the measurement, the query as a value
+and the matching of text in a stream are done, and P14.4, the walk over the
+disk, is next. Three older things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
