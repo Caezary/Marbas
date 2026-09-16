@@ -770,6 +770,25 @@ presses the default button first — so `F3`, `Enter` and a first `Esc` that is
 held and a second that closes all work in a window shaped like the `F3` viewer,
 which is what the window will be.
 
+**P14.2 made the question a value, and made the combinations that mean nothing
+unbuildable rather than checked.** `NameMasks` reads the typed field the way a
+user of the classic managers expects: split at `;`, each piece trimmed, empty
+pieces dropped, `*` and `*.*` meaning every name — which
+`FileSystemName.MatchesSimpleExpression` does not do on its own, since `*.*`
+there wants a dot and passes `Makefile` over — and a piece carrying neither `*`
+nor `?` read as a fragment, so `report` is `*report*`. A mask is matched against
+the name alone and always without regard to case; case belongs to the text and
+to nothing else. The pieces become `NamePattern` values, so the matching is the
+one `+` and `-` have always used and that type is untouched. What is searched
+for is a `FindWhat` of two cases — a name with targets, or a name with a
+`TextSearch` — which is what makes the impossible states impossible: the case,
+the whole-word rule, the negation and the binary-file option live inside
+`TextSearch` and so cannot exist without text, and a query carrying text answers
+`FilesOnly` whatever targets it was built with, because a directory holds no
+text. Beside them a `FindQuery` carries the scope — the six places of P14.5 —
+along with `HiddenEntries`, whether links are followed and whether archives are
+searched.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -798,7 +817,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.2 done |
 
 ## What works today
 
@@ -1180,8 +1199,8 @@ written up in [Links](Architecture/LINKS.md), [File operations](Architecture/FIL
 for a name pattern, a text and where to look; the answer arrives in a
 full-screen window while the search still runs, grouped by directory, and can be
 walked, viewed, reopened or sent into a panel as a temporary listing. The
-fourteen tasks are in [PLAN.md](PLAN.md); P14.1, the measurement, is done and
-P14.2 is next. Three older things are still waiting:
+fourteen tasks are in [PLAN.md](PLAN.md); P14.1, the measurement, and P14.2, the
+query as a value, are done, and P14.3, matching text in a stream, is next. Three older things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

@@ -31,6 +31,7 @@
         <Compile Include="Domain\LinkKind.fs" />
         <Compile Include="Domain\DriveKind.fs" />
         <Compile Include="Domain\ProgramSettings.fs" />
+        <Compile Include="Domain\FindQuery.fs" />
     </ItemGroup>
 
     <ItemGroup>
