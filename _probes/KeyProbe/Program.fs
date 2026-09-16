@@ -16,6 +16,9 @@ let private LogLength = 12
 [<Literal>]
 let private PopupTitle = "Popup — the two keys below, then Esc or Close"
 
+[<Literal>]
+let private ResultsTitle = "Full-screen window, viewer-shaped, no buttons — F3, Enter, then Esc twice"
+
 let private literal (view: #View) =
     view.HotKeySpecifier <- Rune NoHotKey
     view
@@ -24,17 +27,31 @@ let private quitKey = Key.Q.WithCtrl
 
 let private popupKey = Key.F1
 
+let private resultsKey = Key.F2
+
 let private wanted =
     [ "Alt+Del wipe", Key.Delete.WithAlt
-      "Ctrl+Backslash root", (Key '\\').WithCtrl ]
+      "Ctrl+Backslash root", (Key '\\').WithCtrl
+      "Alt+F7 find", Key.F7.WithAlt ]
 
 let private candidates =
     [ "Alt+Backslash root", (Key '\\').WithAlt
-      "Alt+Shift+Del wipe", Key.Delete.WithAlt.WithShift ]
+      "Alt+Shift+Del wipe", Key.Delete.WithAlt.WithShift
+      "Alt+Shift+F find", Key.F.WithAlt.WithShift ]
 
 let private inPopup =
     [ "Shift+Enter reveal", Key.Enter.WithShift
       "Alt+R reveal", Key.R.WithAlt ]
+
+let private alreadyBound =
+    [ "Alt+F1 drives", Key.F1.WithAlt
+      "Alt+F2 drives", Key.F2.WithAlt
+      "Alt+F6 link", Key.F6.WithAlt ]
+
+let private inResults =
+    [ "F3 view", Key.F3
+      "Enter choose", Key.Enter
+      "Esc stop", Key.Esc ]
 
 let private modifiersOf (key: Key) =
     [ if key.IsCtrl then "ctrl"
@@ -66,12 +83,19 @@ let private rows (heading: string) keys =
             | Some arrival -> $"  [x] %-20s{name} %s{arrival}"
             | None -> $"  [ ] %-20s{name}"))
 
+let mutable private escapes = 0
+
 let private checklist () =
     rows "Wanted:" wanted
     @ [ "" ]
     @ rows "Stand-ins:" candidates
     @ [ "" ]
+    @ rows "Already bound, no stand-in yet:" alreadyBound
+    @ [ "" ]
     @ rows "Inside a popup (F1 opens one):" inPopup
+    @ [ "" ]
+    @ rows "Inside a full-screen modal (F2 opens one):" inResults
+    @ [ $"  Escapes taken there: %d{escapes} (the first is held, the second closes)" ]
 
 let private screen () =
     checklist ()
@@ -81,6 +105,13 @@ let private screen () =
 let private popupScreen () =
     rows "Inside a popup:" inPopup
     @ [ ""; "Anything else arriving here:" ]
+    @ (log |> List.truncate 3 |> List.map (fun line -> "  " + line))
+
+let private resultsScreen () =
+    rows "Inside a full-screen modal:" inResults
+    @ [ $"  Escapes taken here: %d{escapes} (the first is held, the second closes)"
+        ""
+        "Anything else arriving here:" ]
     @ (log |> List.truncate 3 |> List.map (fun line -> "  " + line))
 
 let private environmentOf (name: string) =
@@ -116,6 +147,33 @@ let private runPopup (app: IApplication) =
 
     app.Run dialog |> ignore
 
+let private runResults (app: IApplication) =
+    use window = new Window(Title = ResultsTitle, Width = Dim.Fill(), Height = Dim.Fill())
+
+    let inside =
+        new Label(X = 1, Y = 0, Width = Dim.Fill 1, Height = Dim.Fill 1, Text = String.concat "\n" (resultsScreen ()))
+        |> literal
+
+    window.Add inside |> ignore
+
+    escapes <- 0
+
+    window.KeyDown.Add(fun key ->
+        record inResults key
+
+        if key = Key.Esc then
+            escapes <- escapes + 1
+            key.Handled <- true
+
+            if escapes >= 2 then
+                window.RequestStop()
+        elif inResults |> List.exists (fun (_, wantedKey) -> key = wantedKey) then
+            key.Handled <- true
+
+        inside.Text <- String.concat "\n" (resultsScreen ()))
+
+    app.Run window |> ignore
+
 [<EntryPoint>]
 let main _ =
     Application.SetDefaultKeyBinding(Command.Quit, Bind.All quitKey)
@@ -124,7 +182,7 @@ let main _ =
 
     let window =
         new Window(
-            Title = "Marbas key probe — press the keys below, F1 opens a popup, Ctrl+Q quits",
+            Title = "Marbas key probe — press the keys below, F1 a popup, F2 a full-screen one, Ctrl+Q quits",
             Width = Dim.Fill(),
             Height = Dim.Fill()
         )
@@ -140,14 +198,14 @@ let main _ =
     app.Keyboard.KeyDown.Add(fun key ->
         if popupIsUp || key = quitKey then
             ()
-        elif key = popupKey then
+        elif key = popupKey || key = resultsKey then
             key.Handled <- true
             popupIsUp <- true
-            runPopup app
+            (if key = popupKey then runPopup app else runResults app)
             popupIsUp <- false
             board.Text <- String.concat "\n" (screen ())
         else
-            record (wanted @ candidates) key
+            record (wanted @ candidates @ alreadyBound) key
             board.Text <- String.concat "\n" (screen ())
             key.Handled <- true)
 

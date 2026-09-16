@@ -750,6 +750,26 @@ with `Enter`, `Alt+R` and `Esc`, `Ctrl+4`, `F3` on a directory, `Alt+Del` and
 lists the new topic and the phase's modules in the code map. The table below
 and *Next up* call the phase finished.
 
+**A fourteenth phase opened with a measurement, and it needed a new kind of
+evidence.** P14.1 asked what becomes of `Alt+F7`, the key the search will use.
+Every terminal tried hands it over — cmder, Windows Terminal, the Windows
+console, and `gnome-terminal` under WSLg, which is a real VTE terminal and the
+only piece of a Linux desktop this machine has — and it is lost all the same,
+because GNOME's window manager claims `<Alt>F7` for moving a window and grabs it
+before the terminal is sent anything. That half cannot be pressed without a
+desktop, so it was read instead, out of
+`org.gnome.desktop.wm.keybindings` with `gsettings`, which is a kind of evidence
+the checklist did not have. `Alt+Shift+F` arrives everywhere and is the binding
+the phase carries beside the classic name. The same reading turned up three keys
+Marbas already binds in GNOME's own list — `Alt+F1`, `Alt+F2` and `Alt+F6`, the
+drive choosers and the link key — which have no second binding and are therefore
+unreachable on that desktop; that is a defect and is recorded below. The probe
+also answered the question the results window asks: `Enter` reaches a
+full-screen `Window` with no buttons, and does not reach a `Dialog`, where it
+presses the default button first — so `F3`, `Enter` and a first `Esc` that is
+held and a second that closes all work in a window shaped like the `F3` viewer,
+which is what the window will be.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -778,6 +798,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
+| 14 — Finding files | P14.1–P14.14 | P14.1 done |
 
 ## What works today
 
@@ -1154,7 +1175,13 @@ values with their sizes, the panel landing beside the other one when they share
 a drive, and `Alt+R` handing a drive to the system file manager. The design is
 written up in [Links](Architecture/LINKS.md), [File operations](Architecture/FILE-OPERATIONS.md), [UI and input](Architecture/UI-AND-INPUT.md) and
 [Cross-platform](Architecture/CROSS-PLATFORM.md), and the commands in the [user guide](USER-GUIDE.md).
-Nothing further is planned yet. Three things are waiting:
+
+**Phase 14, finding files, is planned in full and has begun.** `Alt+F7` will ask
+for a name pattern, a text and where to look; the answer arrives in a
+full-screen window while the search still runs, grouped by directory, and can be
+walked, viewed, reopened or sent into a panel as a temporary listing. The
+fourteen tasks are in [PLAN.md](PLAN.md); P14.1, the measurement, is done and
+P14.2 is next. Three older things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
@@ -1168,6 +1195,16 @@ Nothing further is planned yet. Three things are waiting:
 
 ## Known rough edges
 
+- `Alt+F1`, `Alt+F2` and `Alt+F6` cannot be reached on a GNOME desktop. Its
+  window manager claims all three by default — `panel-main-menu`,
+  `panel-run-dialog` and `cycle-group` — and a grab means the terminal is never
+  sent the key, whichever terminal it is. The drive choosers of P13.13 and the
+  link key of P13.11 therefore do nothing there, and unlike every key measured
+  since P10.7 they carry no second binding. The fix is the shape the rest of the
+  application already uses: a letter with `Alt` bound beside each of them in
+  `KeyMap`, which is a row in the table and a line in the user guide per key.
+  Found by reading GNOME's defaults during P14.1, not by pressing them on a
+  desktop — no one has run Marbas on one yet.
 - `SharpZipLib` cleans an entry name as it writes it, turning a backslash into
   a separator. On Linux, where a backslash is a legal character in a file name,
   packing `a\b.txt` therefore stores `a/b.txt` and the archive gains a level the

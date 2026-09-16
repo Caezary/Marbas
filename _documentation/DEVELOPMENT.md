@@ -48,6 +48,18 @@ binding says it should be. Run it in every terminal that matters and compare;
 the rows marked *probe* in [Cross-platform](Architecture/CROSS-PLATFORM.md) come
 from it.
 
+A real Linux terminal can be reached from a Windows machine without a Linux
+machine: publish the probe as `linux-x64`, self-contained and single-file, and
+run it under WSLg in a terminal installed inside the distribution
+(`gnome-terminal` is VTE, which is what GNOME and Xfce use). Two things bite.
+The distribution shuts itself down once nothing is attached to it, taking the
+window and `/tmp` with it, so the probe is started from a `wsl.exe` command that
+stays attached — `gnome-terminal --wait` — and writes its answer under `/mnt/c`
+rather than into `/tmp`. And WSLg runs no window manager at all, so it measures
+what the terminal encodes and can say nothing about a shortcut a desktop grabs
+first; that half is read out of the desktop's own configuration instead, which
+is the *desktop defaults* evidence in the checklist.
+
 **Driving the real window over a real file system.** The `render-tui-screen`
 skill's probe template takes a `ProjectReference` on `Marbas.fsproj`, forces a
 screen size by reflection and reads `app.Driver.ToString()` back from inside a

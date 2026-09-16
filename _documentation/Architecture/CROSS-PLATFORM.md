@@ -4,7 +4,7 @@ P8.2. What has to hold on Windows and on Linux, how to check it, and what is
 known to differ. Run it before a release and after anything that touches
 `Adapters/`, `Drives`, `Links`, `Settings` or a key binding.
 
-Five kinds of evidence appear below:
+Six kinds of evidence appear below:
 
 - **suite** — an automated test asserts it; `dotnet test` on both platforms is
   the whole check, and `.github/workflows/ci.yml` runs both legs on every push.
@@ -26,6 +26,11 @@ Five kinds of evidence appear below:
   against the real file system of whichever machine runs the suite, so it runs on
   both legs of CI; it is reached for only where no mock can say what the system
   does.
+- **desktop defaults** — read out of a desktop environment's own configuration
+  rather than pressed. A window manager grabs a shortcut before any terminal sees
+  it, so what it claims by default decides whether a key can reach Marbas at all;
+  `gsettings list-recursively org.gnome.desktop.wm.keybindings` under WSL answers
+  for GNOME and Mutter without a desktop being installed. Read on 2026-09-16.
 - **manual** — needs a person at a real terminal. These are the items where the
   answer is "does it *look* right", which nothing here can assert.
 
@@ -240,6 +245,14 @@ tested and was confirmed by running the app.
 | `Alt+\` reaches the application at all | **no** | **no** | probe |
 | `Shift+Enter` reaches a popup that is up | **no**, arrives as `Enter` | **no**, the same | probe |
 | `Alt+R` reaches a popup that is up | yes | yes | probe |
+| `Alt+F7`, the key phase 14 finds with, reaches the terminal | yes | yes | probe |
+| `Alt+F7` reaches the application on a desktop | n/a, no window manager claims it | **no** under GNOME, whose `begin-move` is `<Alt>F7` by default | desktop defaults; **manual** for KDE and Xfce |
+| `Alt+Shift+F`, the stand-in phase 14 therefore binds | yes | yes | probe |
+| `F3` reaches a full-screen window that is up | yes | yes | probe |
+| `Enter` reaches a full-screen window that is up | yes, in a `Window` with no buttons; **no** in a `Dialog`, where it presses the default button | the same | probe |
+| `Esc` can be taken by a full-screen window and close it on the second press | yes | yes | probe |
+| `Alt+F1`, `Alt+F2` and `Alt+F6`, already bound, reach the terminal | yes | yes | probe |
+| `Alt+F1`, `Alt+F2` and `Alt+F6` reach the application on a desktop | n/a | **no** under GNOME: `panel-main-menu`, `panel-run-dialog` and `cycle-group` | desktop defaults |
 
 `Ctrl+Q` deserves a note: it is `0x11`, which is also `XON`, so a terminal doing
 software flow control could in principle eat it. Terminal.Gui puts the terminal
@@ -294,6 +307,38 @@ than of the panel: `Alt+R` arrives inside one in all five terminals, and it is
 the only binding P13.15 takes. `Alt+Del` and `Alt+Shift+Del` arrive everywhere
 too, so wiping needs no spare at all — a letter or a named key with `Alt` is
 once more the one shape that travels.
+
+**`Alt+F7` is the first key in this checklist that no terminal argues about and
+a desktop takes anyway.** P14.1 measured it on 2026-09-16 in cmder, Windows
+Terminal, the Windows console and a real VTE terminal — `gnome-terminal` run
+under WSLg, which is where a Linux terminal's own encoding can be read without a
+Linux machine. All four hand the key over as `Alt+F7`, `code=0x80110075`. The
+loss happens one layer higher: GNOME's `org.gnome.desktop.wm.keybindings`
+claims `<Alt>F7` for `begin-move` by default, and a window manager's grab means
+the terminal is never sent the key at all. So the measurement had to be split —
+what the terminal encodes, which a probe can press, and what the desktop claims,
+which is read out of its configuration. WSLg is exactly the right place for the
+first half and cannot answer the second at all, because it runs no window
+manager.
+
+The same reading found three keys Marbas already binds in the same list:
+`<Alt>F1` is `panel-main-menu`, `<Alt>F2` is `panel-run-dialog` and `<Alt>F6` is
+`cycle-group`, which are the drive choosers of P13.13 and the link key of
+P13.11. On a GNOME desktop those three commands cannot be reached, and unlike
+`Alt+F7` they carry no second binding. That is a defect rather than a
+measurement, and it is recorded as one in [Progress](../PROGRESS.md), *Known
+rough edges*.
+
+**A full-screen window may take `Enter`; a dialog may not.** The results window
+of phase 14 needs `Enter` to choose the row under the cursor, and the probe first
+asked this of a `Dialog`, which answered by closing: `Enter` presses the default
+button before a handler sees it, exactly as `Shift+Enter` arriving as a bare
+`Enter` does to a popup. Asked again of a full-screen `Window` with no buttons —
+the shape `FileViewer` has had since P6.1 — the same key is delivered to the
+handler in all four terminals, `F3` with it, and `Esc` can be taken on the first
+press and close the window on the second. So the shape of the window is what
+decides, not the terminal: a window that wants the keys of a panel must be
+built like the viewer and reach its commands with keys rather than buttons.
 
 ## Watching the directories on screen
 

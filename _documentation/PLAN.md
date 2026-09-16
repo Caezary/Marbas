@@ -782,6 +782,18 @@ before the search. The last answer of the session can be reopened, so the walk
 from one hit to the next is `Alt+F7`, `↓`, `Enter` rather than a new search each
 time.
 
+What the keys really do was measured before anything was bound to them, the way
+P10.7, P11 and P13.1 measured theirs, and P14.1 found two things worth carrying
+into the tasks below. `Alt+F7` is delivered by every terminal tried, Windows and
+VTE alike, and is nevertheless lost on a GNOME desktop, whose window manager
+claims `<Alt>F7` for moving a window before the terminal is sent anything — so
+the phase binds `Alt+Shift+F` beside it, the letter-with-`Alt` shape that has
+travelled everywhere since P10.7. And `Enter` reaches a full-screen `Window`
+with no buttons but not a `Dialog`, where it presses the default button before a
+handler sees it. The results window is therefore built like the `F3` viewer
+rather than like a popup, and everything it offers is reached by a key rather
+than by a button.
+
 Two decisions run through the whole phase. The first is where a running search
 keeps its hits: in the results window, not in `AppState`. A search over a whole
 disk can find a hundred thousand entries, and turning each of them into a message
@@ -794,15 +806,18 @@ follows links therefore carries a set of the real paths it has entered and refus
 to enter one twice.
 
 - **P14.1 The keys the terminals deliver** — `Alt+F7` is the classic key, and it
-  is also what GNOME, KDE and Xfce take for "move the window" before the terminal
-  sees it. `_probes/KeyProbe` gains `Alt+F7` and the stand-in the phase would fall
+  is also what a desktop takes for "move the window" before the terminal sees it.
+  The measurement therefore splits in two, which is new for this checklist: what
+  a terminal encodes, which a probe can press, and what a window manager claims,
+  which is read out of its own configuration and cannot be pressed without a
+  desktop. `_probes/KeyProbe` gains `Alt+F7` and the stand-in the phase would fall
   back on, `Alt+Shift+F`, and asks besides whether `F3`, `Enter` and `Esc` reach a
-  full-screen modal window that is up rather than the panel behind it, since the
-  results window wants all three. Five runs as in P11 and P13 — cmder, Windows
-  Terminal, the console, and a WSL session started from the first and from the
-  third — plus a Linux desktop terminal, since that is where the key is most
-  likely to go missing. *Done when:* the search is reachable by a key that arrives
-  everywhere, and what was measured is a row in
+  full-screen window that is up rather than the panel behind it, since the results
+  window wants all three. Four runs — cmder, Windows Terminal, the Windows
+  console, and `gnome-terminal` under WSLg, which is a real VTE terminal and the
+  half of a Linux desktop that can be reached from this machine — and GNOME's
+  defaults read with `gsettings` for the other half. *Done when:* the search is
+  reachable by a key that arrives everywhere, and what was measured is a row in
   [Cross-platform](Architecture/CROSS-PLATFORM.md).
 - **P14.2 The question is a value** — `FindQuery` in `Domain` carries the name
   masks, the text, the scope and the options, and makes the combinations that
@@ -903,6 +918,10 @@ to enter one twice.
   text and the marks, and it stays inside an 80-column terminal.
 - **P14.8 The results window** — the query runs off the UI thread through a
   `RunSearch` port, and a full-screen window shows what it finds as it finds it.
+  It is a `Window` with no buttons, run modally the way `Prompts.showFile` runs
+  the viewer, because P14.1 measured that a `Dialog` answers `Enter` with its
+  default button before a handler sees it; what the window offers is reached by
+  keys, and the key bar at its foot says which.
   Hits reach the window through `app.Invoke` gathered on a short timer rather than
   one call per hit, which is the rough edge the progress window already records.
   The list is grouped by the directory a hit lives in: a header row carrying the
@@ -944,7 +963,8 @@ to enter one twice.
   `Enter` on a hit, `Alt+F7` and *Last results* land the cursor on that hit
   again, a file deleted in between is gone from the list and counted, and a new
   search replaces the old answer.
-- **P14.11 The results in the panel** — a *Panel* button in the results window
+- **P14.11 The results in the panel** — a key in the results window — the bar
+  names it, and it is a key rather than a button for the reason P14.1 gives —
   sends the answer into the active panel. `PanelLocation` gains a third case,
   `SearchResults`, holding the hits and the location the panel stood on before,
   and the listing is those hits as entries: the name column shows each hit's path
