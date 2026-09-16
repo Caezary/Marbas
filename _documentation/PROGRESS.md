@@ -813,6 +813,31 @@ of the answer and nothing else: a file that cannot be read answers
 buffer asks the batch control first, so a stopped search answers `SearchStopped`
 instead of a verdict it did not reach.
 
+**P14.4 walked the disk, and it is the one walk in the app allowed through a
+link.** `FileSearch.run` takes the places to start from and answers `Finished`
+or `Stopped` with its counts of files, directories and skipped entries, handing
+every hit to a function as it finds it — a full path and the same `Entry` a
+directory listing gives, built by the very functions `DirectoryListing` builds
+its own with, so what a hit shows and what the panel shows cannot drift. The
+scope decides only how deep it goes: `DirectoryOnly` reads one directory's
+entries, everything else walks the tree below each place it was given, which is
+what makes the marked directories nothing more than several places. Every
+directory entered is reported through the `BatchControl` the batches already
+carry, so the summary of P14.8 has something to say and `Esc` has something to
+answer; the control is asked again before each entry, so stopping takes effect
+within one entry rather than one directory. A directory that refuses to be read
+is counted and stepped over, the way `DirectoryMeasure` steps over one. Hidden
+entries follow the query, and a concealed directory is not walked into either,
+because a place the user cannot see is not a place they asked to search. Links
+are the exception P13.8 did not make: with `FollowLinks` a directory link is
+entered, but only if the path it resolves to has not been entered before — the
+walk keeps the set of what it has entered, and the identity of a link is its
+target, so a link pointing at its own ancestor is refused rather than walked. A
+cycle therefore terminates with every real directory reported exactly once,
+which `Fakes.LinkFollowing` — the mock that walks through a link the way a real
+system does — proves, as it proves that a link leading out of the tree is
+entered and that `StopAtLinks` never enters one at all.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -841,7 +866,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.3 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.4 done |
 
 ## What works today
 
@@ -1223,9 +1248,9 @@ written up in [Links](Architecture/LINKS.md), [File operations](Architecture/FIL
 for a name pattern, a text and where to look; the answer arrives in a
 full-screen window while the search still runs, grouped by directory, and can be
 walked, viewed, reopened or sent into a panel as a temporary listing. The
-fourteen tasks are in [PLAN.md](PLAN.md); the measurement, the query as a value
-and the matching of text in a stream are done, and P14.4, the walk over the
-disk, is next. Three older things are still waiting:
+fourteen tasks are in [PLAN.md](PLAN.md); the measurement, the query as a value,
+the matching of text in a stream and the walk over the disk are done, and P14.5,
+the volume root, the drives and `PATH`, is next. Three older things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

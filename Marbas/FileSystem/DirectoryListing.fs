@@ -31,7 +31,7 @@ let mapException path (ex: exn) =
     | :? UnauthorizedAccessException -> AccessDenied path
     | _ -> ListingFailed(path, ex.Message)
 
-let private directoryEntry (info: IDirectoryInfo) =
+let directoryEntry (info: IDirectoryInfo) =
     let name = EntryName.create info.Name
 
     { Name = name
@@ -43,7 +43,7 @@ let private directoryEntry (info: IDirectoryInfo) =
       Executability = NotExecutable
       LinkTarget = FileSystemPath.linkTargetOf info }
 
-let private fileEntry (info: IFileInfo) =
+let fileEntry (info: IFileInfo) =
     let name = EntryName.create info.Name
 
     { Name = name
