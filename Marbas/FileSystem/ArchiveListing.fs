@@ -10,7 +10,7 @@ let private below (level: EntryName list) (item: ArchiveItem) =
     item.Segments.Length > level.Length
     && List.truncate level.Length item.Segments = level
 
-let private fileEntry (name: EntryName) (item: ArchiveItem) =
+let fileEntry (name: EntryName) (item: ArchiveItem) =
     { Name = name
       Kind = File
       Size = Some item.Size
@@ -20,7 +20,7 @@ let private fileEntry (name: EntryName) (item: ArchiveItem) =
       Executability = Executability.classify name UnixFileMode.None
       LinkTarget = None }
 
-let private directoryEntry (name: EntryName) (modified: DateTimeOffset) =
+let directoryEntry (name: EntryName) (modified: DateTimeOffset) =
     { Name = name
       Kind = Directory
       Size = None

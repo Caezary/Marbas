@@ -859,6 +859,30 @@ however many times and in whatever spelling `PATH` repeats it, and leaves out an
 entry that is not there. Those directories are walked without descending, which
 is the second scope to join `DirectoryOnly` in staying where it was put.
 
+**P14.6 opened the archives, and a hit stopped being a path.** A hit now carries
+the place holding it and the entry standing there — a directory on disk, or a
+level inside an archive — which is the `PanelLocation` the panels have used
+since P9.10, so grouping the results by where they live and walking a panel to
+one of them need no second vocabulary; `FindHit.spelled` puts the two back
+together as `C:\work\backup.zip\docs\notes.txt` when a path is what is wanted.
+The places a search starts from are locations too, which is what lets a panel
+standing inside an archive search below the level it stands on rather than the
+directory holding the archive, whether the archive option is on or off. On disk
+the option decides: an archive the walk meets is a hit by its own name like any
+file, and with `SearchArchives` its entries are matched at every level as well —
+the file names from the index, the directory levels gathered as the entries go
+by, implied ones included, since an archive that stores no entry for a folder
+still has the folder. Text is read straight out of the entry, and that is what
+settled the shape of the reading: the first attempt took the index as a list and
+then asked each entry for its content, which fails, because the list outlives
+the open archive and the content does not. So the archive is read in one pass
+and each entry is answered while the reader stands on it, which also means one
+entry in memory at a time rather than an index. An entry that is encrypted stops
+the archive there and counts it skipped, since asking for a password once per
+archive would put a prompt between the user and a disk full of them. An archive
+inside an archive is a hit by name and nothing more. A zip and a tar.gz are
+covered both ways, by name and by text.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -887,7 +911,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.5 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.6 done |
 
 ## What works today
 
@@ -1270,8 +1294,9 @@ for a name pattern, a text and where to look; the answer arrives in a
 full-screen window while the search still runs, grouped by directory, and can be
 walked, viewed, reopened or sent into a panel as a temporary listing. The
 fourteen tasks are in [PLAN.md](PLAN.md); the measurement, the query as a value,
-the matching of text in a stream, the walk over the disk and the places the six
-scopes name are done, and P14.6, searching inside the archives, is next. Three older things are still waiting:
+the matching of text in a stream, the walk over the disk, the places the six
+scopes name and the archives are done, so everything underneath the screen is in
+place; P14.7, the popup that asks the question, is next. Three older things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

@@ -5,7 +5,7 @@ open System.IO.Abstractions
 open Marbas.Domain
 
 type FindGround =
-    { Roots: FileSystemPath list
+    { Roots: PanelLocation list
       OtherRoots: FileSystemPath list }
 
 module FindGround =
@@ -36,18 +36,20 @@ module FindGround =
             |> List.map FileSystemPath.create
             |> List.filter (fun path -> fs.Directory.Exists(FileSystemPath.value path))
 
-    let resolve (fs: IFileSystem) location marked onPath scope =
-        let here () = PanelLocation.holding fs location
+    let private onDisk paths = paths |> List.map OnDisk
 
+    let resolve (fs: IFileSystem) location marked onPath scope =
         match scope with
         | FromDirectory
-        | DirectoryOnly -> { Roots = [ here () ]; OtherRoots = [] }
+        | DirectoryOnly -> { Roots = [ location ]; OtherRoots = [] }
         | MarkedDirectories -> { Roots = marked; OtherRoots = [] }
         | FromVolumeRoot ->
-            let start = here ()
+            let start = PanelLocation.holding fs location
             let root = Drives.holding fs start |> Option.defaultValue start
 
-            { Roots = [ root ]
+            { Roots = [ OnDisk root ]
               OtherRoots = allRoots fs |> List.filter (sameRoot root >> not) }
-        | AllDrives -> { Roots = allRoots fs; OtherRoots = [] }
-        | PathDirectories -> { Roots = onPath; OtherRoots = [] }
+        | AllDrives ->
+            { Roots = allRoots fs |> onDisk
+              OtherRoots = [] }
+        | PathDirectories -> { Roots = onPath |> onDisk; OtherRoots = [] }

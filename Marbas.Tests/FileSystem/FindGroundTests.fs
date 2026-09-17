@@ -22,8 +22,8 @@ let private mounted () =
 let private resolved (fs: IFileSystem) location scope =
     FindGround.resolve fs location [] [] scope
 
-let private roots ground =
-    ground.Roots |> List.map FileSystemPath.value
+let private roots (fs: IFileSystem) ground =
+    ground.Roots |> List.map (PanelLocation.value fs)
 
 let private otherRoots ground =
     ground.OtherRoots |> List.map FileSystemPath.value |> List.sort
@@ -36,7 +36,7 @@ let ``a search from the panel starts where the panel stands`` directory =
 
     let ground = resolved fs (OnDisk(fp (at directory))) FromDirectory
 
-    Assert.Equal<string list>([ at directory ], roots ground)
+    Assert.Equal<string list>([ at directory ], roots fs ground)
 
 [<Fact>]
 let ``a search of one directory starts there too`` () =
@@ -44,25 +44,36 @@ let ``a search of one directory starts there too`` () =
 
     let ground = resolved fs (OnDisk(fp (at "start/docs"))) DirectoryOnly
 
-    Assert.Equal<string list>([ at "start/docs" ], roots ground)
+    Assert.Equal<string list>([ at "start/docs" ], roots fs ground)
 
 [<Fact>]
-let ``a panel inside an archive lends the directory holding it`` () =
+let ``a panel inside an archive searches below the level it stands on`` () =
     let fs = mounted ()
     let level = ArchivePath.tryCreate "docs" |> Expect.some
 
     let ground = resolved fs (InArchive(fp (at "start/backup.zip"), level)) FromDirectory
 
-    Assert.Equal<string list>([ at "start" ], roots ground)
+    Assert.Equal<string list>([ at "start/backup.zip/docs" ], roots fs ground)
+
+[<Fact>]
+let ``a panel inside an archive leaves it for the root of the volume`` () =
+    let fs = mounted ()
+    let level = ArchivePath.tryCreate "docs" |> Expect.some
+
+    let ground = resolved fs (InArchive(fp (at "start/backup.zip"), level)) FromVolumeRoot
+
+    Assert.Equal<string list>([ at "" ], roots fs ground)
 
 [<Fact>]
 let ``a search of marked directories starts at each of them`` () =
     let fs = mounted ()
-    let marked = [ fp (at "start/docs"); fp (at "media/stick/photos") ]
+
+    let marked =
+        [ OnDisk(fp (at "start/docs")); OnDisk(fp (at "media/stick/photos")) ]
 
     let ground = FindGround.resolve fs (OnDisk(fp (at "start"))) marked [] MarkedDirectories
 
-    Assert.Equal<string list>([ at "start/docs"; at "media/stick/photos" ], roots ground)
+    Assert.Equal<string list>([ at "start/docs"; at "media/stick/photos" ], roots fs ground)
 
 [<Fact>]
 let ``a search from the volume root starts at the drive the panel stands on`` () =
@@ -70,7 +81,7 @@ let ``a search from the volume root starts at the drive the panel stands on`` ()
 
     let ground = resolved fs (OnDisk(fp (at "media/stick/photos"))) FromVolumeRoot
 
-    Assert.Equal<string list>([ at "media/stick" ], roots ground)
+    Assert.Equal<string list>([ at "media/stick" ], roots fs ground)
 
 [<Fact>]
 let ``a search from the volume root keeps the other drives out`` () =
@@ -86,7 +97,7 @@ let ``a search of all drives starts at every root`` () =
 
     let ground = resolved fs (OnDisk(fp (at "start"))) AllDrives
 
-    Assert.Equal<string list>([ at ""; at "media/stick" ], roots ground |> List.sort)
+    Assert.Equal<string list>([ at ""; at "media/stick" ], roots fs ground |> List.sort)
 
 [<Fact>]
 let ``a search of all drives crosses freely between them`` () =
@@ -103,7 +114,7 @@ let ``a search of the path starts at the directories it was given`` () =
 
     let ground = FindGround.resolve fs (OnDisk(fp (at "start"))) [] onPath PathDirectories
 
-    Assert.Equal<string list>([ at "start/docs" ], roots ground)
+    Assert.Equal<string list>([ at "start/docs" ], roots fs ground)
 
 [<Fact>]
 let ``the path is split at the semicolon Windows uses`` () =

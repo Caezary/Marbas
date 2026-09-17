@@ -43,6 +43,7 @@
     <Compile Include="FileSystem\ContentMatchTests.fs" />
     <Compile Include="FileSystem\FindGroundTests.fs" />
     <Compile Include="FileSystem\FileSearchTests.fs" />
+    <Compile Include="FileSystem\FileSearchArchiveTests.fs" />
     <Compile Include="FileSystem\HandlerTests.fs" />
     <Compile Include="FileSystem\ProgramCommandTests.fs" />
     <Compile Include="FileSystem\DesktopEntryTests.fs" />

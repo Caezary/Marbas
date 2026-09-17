@@ -72,10 +72,7 @@ let private probeOf (stream: Stream) =
     let read = stream.Read(probe, 0, probe.Length)
     Array.sub probe 0 read
 
-let private searched (fs: IFileSystem) control (search: TextSearch) (path: FileSystemPath) =
-    use stream =
-        fs.File.Open(FileSystemPath.value path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
-
+let private answered control (search: TextSearch) (stream: Stream) =
     let probe = probeOf stream
     let encoding = TextEncoding.detect probe
 
@@ -84,6 +81,12 @@ let private searched (fs: IFileSystem) control (search: TextSearch) (path: FileS
     | _ ->
         stream.Position <- int64 (TextEncoding.preambleLength encoding)
         scan control stream search encoding
+
+let private searched (fs: IFileSystem) control (search: TextSearch) (path: FileSystemPath) =
+    use stream =
+        fs.File.Open(FileSystemPath.value path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+
+    answered control search stream
 
 let private sensed sense answer =
     match sense, answer with
@@ -94,5 +97,11 @@ let private sensed sense answer =
 let search (fs: IFileSystem) control (query: TextSearch) (path: FileSystemPath) =
     try
         searched fs control query path |> sensed query.Sense
+    with _ ->
+        FileUnreadable
+
+let inStream control (query: TextSearch) (stream: Stream) =
+    try
+        answered control query stream |> sensed query.Sense
     with _ ->
         FileUnreadable
