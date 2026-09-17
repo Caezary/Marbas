@@ -46,8 +46,13 @@ let private stoppingAfter count (reported: ResizeArray<FileSystemPath>) : Operat
 
 let private hitsOf (fs: IFileSystem) control query roots =
     let hits = ResizeArray<FindHit>()
-    let outcome = run fs control hits.Add query roots
+    let outcome = run fs control hits.Add query { Roots = roots; OtherRoots = [] }
     outcome, hits |> Seq.map (fun hit -> FileSystemPath.value hit.Path) |> List.ofSeq |> List.sort
+
+let private hitsWithin (fs: IFileSystem) query ground =
+    let hits = ResizeArray<FindHit>()
+    run fs Operations.unattended hits.Add query ground |> ignore
+    hits |> Seq.map (fun hit -> FileSystemPath.value hit.Path) |> List.ofSeq |> List.sort
 
 let private found fs query roots =
     hitsOf fs Operations.unattended query roots |> snd
@@ -240,3 +245,29 @@ let ``a walk that stops at links never enters one`` () =
     hitsOf fs (recording reported) query [ fp (at "data") ] |> ignore
 
     Assert.Equal<string list>([ at "data"; at "data/docs" ], paths reported |> List.sort)
+
+[<Fact>]
+let ``a walk from a volume root does not cross into another drive`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "let x = 1")
+    fs.AddFile(at "media/stick/notes.txt", MockFileData "let y = 2")
+
+    let ground =
+        { Roots = [ fp (at "") ]
+          OtherRoots = [ fp (at "media/stick") ] }
+
+    let hits = hitsWithin fs (queryFor "*.txt" FromVolumeRoot) ground
+
+    Assert.Equal<string list>([ at "start/notes.txt" ], hits)
+
+[<Fact>]
+let ``a walk of the path directories does not descend`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "bin/tool.txt", MockFileData "let x = 1")
+    fs.AddFile(at "bin/share/deep.txt", MockFileData "let y = 2")
+
+    let ground = { Roots = [ fp (at "bin") ]; OtherRoots = [] }
+
+    let hits = hitsWithin fs (queryFor "*.txt" PathDirectories) ground
+
+    Assert.Equal<string list>([ at "bin/tool.txt" ], hits)

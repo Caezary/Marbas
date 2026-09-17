@@ -13,6 +13,7 @@ type HostEnvironment =
       ConfigDirectories: string
       TemporaryRoot: string
       Session: string
+      SearchPath: string
       Editor: string option }
 
 module HostEnvironment =
@@ -32,6 +33,9 @@ module HostEnvironment =
     [<Literal>]
     let EditorVariable = "EDITOR"
 
+    [<Literal>]
+    let SearchPathVariable = "PATH"
+
     let current () =
         { Platform = if OperatingSystem.IsWindows() then Windows else Unix
           UserProfile = Environment.GetFolderPath Environment.SpecialFolder.UserProfile
@@ -42,4 +46,5 @@ module HostEnvironment =
           ConfigDirectories = Environment.GetEnvironmentVariable ConfigDirectoriesVariable
           TemporaryRoot = IO.Path.GetTempPath()
           Session = Guid.NewGuid().ToString "N"
+          SearchPath = Environment.GetEnvironmentVariable SearchPathVariable
           Editor = Environment.GetEnvironmentVariable EditorVariable |> Option.ofObj }

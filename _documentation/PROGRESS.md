@@ -838,6 +838,27 @@ which `Fakes.LinkFollowing` — the mock that walks through a link the way a rea
 system does — proves, as it proves that a link leading out of the tree is
 entered and that `StopAtLinks` never enters one at all.
 
+**P14.5 gave the three scopes that do not start at the panel somewhere to
+start.** `FindGround.resolve` turns a scope into the places to walk and the
+roots not to cross: the panel's own directory for the two that start there — the
+directory *holding* the archive when the panel stands inside one — the marked
+directories as they were given, the root `Drives.holding` names for
+`FromVolumeRoot`, every mounted root for `AllDrives`, and for `PathDirectories`
+what was read off `PATH`. Only the volume root answers with roots not to cross,
+and it is the plainest way to say what a volume is: every other listed root. The
+walk refuses to enter one of them, so a search of `/` does not wander into the
+memory stick mounted under `/media`, while `AllDrives` names them all as places
+and crosses nothing, since there is nothing left to cross into. The mounts
+P13.12 filters out are not listed at all and so are never entered, and the home
+row is left out of `AllDrives` because it lies on a drive already walked.
+`PATH` is read where it can be tested rather than where it is fetched:
+`HostEnvironment` carries the raw string, `FindGround.pathDirectories` splits it
+at the separator it is handed — `;` on Windows, `:` on Unix — trims the quotes
+Windows allows around an entry, drops what is blank, names a directory once
+however many times and in whatever spelling `PATH` repeats it, and leaves out an
+entry that is not there. Those directories are walked without descending, which
+is the second scope to join `DirectoryOnly` in staying where it was put.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -866,7 +887,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.4 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.5 done |
 
 ## What works today
 
@@ -1249,8 +1270,8 @@ for a name pattern, a text and where to look; the answer arrives in a
 full-screen window while the search still runs, grouped by directory, and can be
 walked, viewed, reopened or sent into a panel as a temporary listing. The
 fourteen tasks are in [PLAN.md](PLAN.md); the measurement, the query as a value,
-the matching of text in a stream and the walk over the disk are done, and P14.5,
-the volume root, the drives and `PATH`, is next. Three older things are still waiting:
+the matching of text in a stream, the walk over the disk and the places the six
+scopes name are done, and P14.6, searching inside the archives, is next. Three older things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

@@ -1,5 +1,6 @@
 module Marbas.FileSystem.FileSearch
 
+open System
 open System.Collections.Generic
 open System.IO.Abstractions
 open Marbas.Domain
@@ -39,11 +40,21 @@ let private entryOf (fs: IFileSystem) (path: FileSystemPath) =
 
 let private walksDeep query =
     match query.Scope with
-    | DirectoryOnly -> false
+    | DirectoryOnly
+    | PathDirectories -> false
     | _ -> true
 
-let run (fs: IFileSystem) (control: BatchControl) (report: FindHit -> unit) (query: FindQuery) roots =
+let run (fs: IFileSystem) (control: BatchControl) (report: FindHit -> unit) (query: FindQuery) (ground: FindGround) =
     let visited = HashSet<string>()
+    let separators = [| fs.Path.DirectorySeparatorChar; fs.Path.AltDirectorySeparatorChar |]
+
+    let bare (path: FileSystemPath) =
+        (FileSystemPath.value path).TrimEnd separators
+
+    let boundaries =
+        HashSet<string>(ground.OtherRoots |> List.map bare, StringComparer.OrdinalIgnoreCase)
+
+    let crosses path = boundaries.Contains(bare path)
     let mutable files = 0
     let mutable directories = 0
     let mutable skipped = 0
@@ -121,7 +132,12 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindHit -> unit) (que
                 if wanted entry && FindQuery.targets query = FilesAndDirectories then
                     hit child entry
 
-                if walksDeep query && follows entry && entered (identityOf entry child) then
+                if
+                    walksDeep query
+                    && follows entry
+                    && not (crosses child)
+                    && entered (identityOf entry child)
+                then
                     walk child
 
     let rec start places =
@@ -134,6 +150,6 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindHit -> unit) (que
             if not stopped then
                 start rest
 
-    start roots
+    start ground.Roots
 
     if stopped then Stopped(counted ()) else Finished(counted ())
