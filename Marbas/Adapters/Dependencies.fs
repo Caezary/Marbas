@@ -55,6 +55,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
       RunEditor = runEditor app fs env
       Launch = LaunchProcess.start fs env.Platform
       LinkKinds = Links.available links
+      AskFind = Prompts.askFind app
       AskLink = Prompts.askLink app
       RefuseLink = Links.refusal env.Platform fs
       MakeLink = Links.create links env.Platform fs

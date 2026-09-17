@@ -883,6 +883,26 @@ archive would put a prompt between the user and a disk full of them. An archive
 inside an archive is a hit by name and nothing more. A zip and a tar.gz are
 covered both ways, by name and by text.
 
+**P14.7 put the question on the screen.** `Alt+F7` — `Alt+Shift+F` beside it,
+since GNOME's window manager takes the classic key before a terminal sees it —
+opens *Find* over the active panel: the name masks, opening on `*.*` and
+selected so the first keystroke replaces them, the text to look for, the six
+scopes as one option selector and the rest as check boxes. What P14.2 made
+unbuildable is greyed out rather than refused: the four text options are closed
+until there is text, the directories box closes once there is, and the marked
+directories are closed while no directory is marked, which the update reads off
+the panel as a `MarkedGround` rather than as a count. The hidden box opens on
+what the panel conceals. A *Last results* button sits before *Cancel* and *Ok*,
+disabled until P14.10 fills it — and because Terminal.Gui reads every button but
+the last as a dismissal, it answers nothing today by the same rule `Esc` does.
+What comes back is a `FindQuery` or nothing, built through `FindWhat.create`, so
+a query carrying text asks about files alone whatever the directories box was
+left on. Nothing runs yet: `FindEntered` reaches the update and changes nothing
+until P14.8 gives it a search to start. The popup was rendered on this machine
+at 56 by 17 columns, well inside an 80-column terminal, and the greying was read
+off the screen rather than off a property: a closed option is drawn in grey where
+an open one wears its hot key in yellow.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -911,7 +931,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.6 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.7 done |
 
 ## What works today
 
@@ -1295,8 +1315,10 @@ full-screen window while the search still runs, grouped by directory, and can be
 walked, viewed, reopened or sent into a panel as a temporary listing. The
 fourteen tasks are in [PLAN.md](PLAN.md); the measurement, the query as a value,
 the matching of text in a stream, the walk over the disk, the places the six
-scopes name and the archives are done, so everything underneath the screen is in
-place; P14.7, the popup that asks the question, is next. Three older things are still waiting:
+scopes name, the archives and now the popup that asks the question are done, so
+the question can be put and nothing yet answers it; P14.8, the results window
+that runs the query off the UI thread and fills as it finds, is next. Three
+older things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

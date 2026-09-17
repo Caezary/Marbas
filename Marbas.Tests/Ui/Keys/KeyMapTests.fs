@@ -37,7 +37,7 @@ let ``holding Ctrl puts the sort commands on the same slots`` () =
 let ``holding Alt puts the drive choosers on the first two slots and the link on F6`` () =
     let commands = commandsOn (Modifiers.held [ Alt ])
 
-    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; "Link"; ""; ""; ""; ""; "NewTab"; "" ], commands)
+    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; "Link"; "Find"; ""; ""; ""; "NewTab"; "" ], commands)
 
 [<Fact>]
 let ``holding Alt and Shift puts closing a tab where opening one is`` () =

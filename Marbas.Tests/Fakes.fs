@@ -185,6 +185,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       ShowFile = ignore
       RunEditor = fun _ _ -> Ok()
       Launch = fun _ -> Ok()
+      AskFind = fun _ _ -> None
       LinkKinds = [ Symbolic; Hard; Junction ]
       AskLink = fun _ _ _ -> None
       RefuseLink = fun _ -> None

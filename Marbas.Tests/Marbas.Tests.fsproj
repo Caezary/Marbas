@@ -102,6 +102,7 @@
     <Compile Include="State\PropertiesTests.fs" />
     <Compile Include="State\MeasureTests.fs" />
     <Compile Include="State\LinkTests.fs" />
+    <Compile Include="State\FindTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
   </ItemGroup>
@@ -227,6 +228,7 @@
     <Compile Include="Integration\Dialogs\PackDialogTests.fs" />
     <Compile Include="Integration\Dialogs\LinkDialogTests.fs" />
     <Compile Include="Integration\Dialogs\OpenWithDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\FindDialogTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -243,6 +245,7 @@
     <Compile Include="Integration\App\CopyKeyTests.fs" />
     <Compile Include="Integration\App\PackKeyTests.fs" />
     <Compile Include="Integration\App\LinkKeyTests.fs" />
+    <Compile Include="Integration\App\FindKeyTests.fs" />
     <Compile Include="Integration\App\UnpackKeyTests.fs" />
     <Compile Include="Integration\App\ArchiveBrowseTests.fs" />
     <Compile Include="Integration\App\ArchiveWriteKeyTests.fs" />

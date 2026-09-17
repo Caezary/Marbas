@@ -357,6 +357,12 @@ let operationTargets panel =
     | [] -> cursorEntry panel |> Option.filter selectable |> Option.toList
     | marked -> marked
 
+let markedGround panel =
+    if selectedEntries panel |> List.exists (fun entry -> entry.Kind = Directory) then
+        DirectoriesMarked
+    else
+        NoDirectoryMarked
+
 let directoryOf panel = PanelLocation.directory panel.Path
 
 let activeDirectory state = directoryOf (activePanel state)

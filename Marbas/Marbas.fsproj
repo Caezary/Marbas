@@ -145,6 +145,7 @@
         <Compile Include="Ui\Dialogs\TabDialog.fs" />
         <Compile Include="Ui\Dialogs\DriveLine.fs" />
         <Compile Include="Ui\Dialogs\DriveDialog.fs" />
+        <Compile Include="Ui\Dialogs\FindDialog.fs" />
     </ItemGroup>
 
     <ItemGroup>

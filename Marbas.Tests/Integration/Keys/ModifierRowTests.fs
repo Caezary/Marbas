@@ -73,7 +73,7 @@ let ``holding Alt shows the drive choosers`` () =
 
     hold (Modifiers.held [ Alt ])
 
-    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; "Link"; ""; ""; ""; ""; "NewTab"; "" ], commands window)
+    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; "Link"; "Find"; ""; ""; ""; "NewTab"; "" ], commands window)
 
 [<Fact>]
 let ``holding Shift shows the permanent delete on the delete slot`` () =

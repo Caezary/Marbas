@@ -62,6 +62,7 @@ type Dependencies =
       ShowFile: FileWindow.Source -> unit
       RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       Launch: LaunchRequest -> Result<unit, LaunchError>
+      AskFind: MarkedGround -> HiddenEntries -> FindQuery option
       LinkKinds: LinkKind list
       AskLink: LinkKind list -> string -> (string -> LinkKind -> LinkRefusal option) -> LinkChoice option
       RefuseLink: LinkRequest -> LinkRefusal option
@@ -257,6 +258,10 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
     | PromptForArchive suggestion ->
         match deps.AskArchive(FileSystemPath.value suggestion) with
         | Some choice -> dispatch (ArchiveEntered choice)
+        | None -> ()
+    | PromptForFind(ground, hidden) ->
+        match deps.AskFind ground hidden with
+        | Some query -> dispatch (FindEntered query)
         | None -> ()
     | PromptForLink(sources, directory, suggestion) ->
         let refusalOf text kind =

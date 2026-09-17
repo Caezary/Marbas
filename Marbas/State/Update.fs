@@ -33,6 +33,8 @@ type Message =
     | MoveRequested
     | TargetEntered of text: string
     | MoveFinished of Operations.ItemResult list
+    | FindRequested
+    | FindEntered of FindQuery
     | LinkRequested
     | LinkEntered of LinkChoice
     | LinksMade of made: FileSystemPath list * results: Operations.ItemResult list
@@ -99,6 +101,7 @@ type Effect =
         entries: ArchivePath list *
         target: FileSystemPath *
         level: ArchivePath
+    | PromptForFind of ground: MarkedGround * hidden: HiddenEntries
     | MakeLinks of requests: LinkRequest list
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
@@ -370,6 +373,11 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             request state (RenameTarget(single, EntryName.create trimmed))
         | trimmed, paths, Some source -> request state (MoveTargets(paths, combine' source trimmed))
     | MoveFinished results -> finishTransfer' results state |> applyBatch'
+    | FindRequested ->
+        let panel = activePanel state
+
+        request state (PromptForFind(markedGround panel, panel.Hidden))
+    | FindEntered _ -> stay state
     | LinkRequested ->
         let panel = activePanel state
 

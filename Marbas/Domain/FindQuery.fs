@@ -107,6 +107,10 @@ type FindScope =
     | AllDrives
     | PathDirectories
 
+type MarkedGround =
+    | NoDirectoryMarked
+    | DirectoriesMarked
+
 type LinkWalk =
     | StopAtLinks
     | FollowLinks

@@ -67,6 +67,10 @@ let unpackKey = Key.F2.WithShift
 
 let linkKey = Key.F6.WithAlt
 
+let findKey = Key.F7.WithAlt
+
+let spareFindKey = Key.F.WithAlt.WithShift
+
 let settingsKey = Key.F12
 
 let hiddenKey = Key.H.WithAlt
@@ -150,6 +154,8 @@ let bindings =
       onBar leftRootKey "Left" (RootRequested Left)
       onBar rightRootKey "Right" (RootRequested Right)
       onBar linkKey "Link" LinkRequested
+      onBar findKey "Find" FindRequested
+      offBar spareFindKey FindRequested
       offBar trashKey (DeleteRequested ToTrash)
       offBar permanentDeleteKey (DeleteRequested Permanently)
       offBar wipeKey (DeleteRequested ByWiping)
