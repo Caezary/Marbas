@@ -266,11 +266,25 @@ let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
     | Some directory -> running remembered directory (Some choice.Program) path
     | None -> stay remembered
 
+let private refusing state refusal =
+    request state (ReportOperationError(Operations.NotInSearchResults refusal))
+
+let private guarding (fs: IFileSystem) state (source: ResultsRefusal option) receives proceed =
+    let active = activePanel state
+    let facing = panel (opposite state.Active) state
+
+    match source, archivedHit fs active with
+    | Some refusal, _ when showsResults active -> refusing state refusal
+    | _, Some path -> request state (ReportOperationError(Operations.HitInsideArchive path))
+    | _ when receives && showsResults facing -> refusing state Receiving
+    | _ -> proceed ()
+
 let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     let applyListing' = applyListing state
     let applyOperation' = applyOperation state
     let applyBatch' = applyBatch state
     let changing' = changing fs state
+    let guarding' = guarding fs state
     let saving' = saving fs
     let standingOn' = standingOn fs
     let opened' = opened fs
@@ -324,10 +338,11 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | PatternRequested mode -> request state (PromptForPattern mode)
     | PatternEntered(mode, pattern) -> stay (applyPattern mode state.Active pattern state)
     | MakeDirectoryRequested ->
-        match (activePanel state).Path with
-        | OnDisk _ -> request state (PromptForName state.LastCreatedDirectory)
-        | InArchive(archive, _) -> changing' [ archive ] (PromptForName state.LastCreatedDirectory)
-        | SearchResults _ -> stay state
+        guarding' (Some MakingDirectory) false (fun () ->
+            match (activePanel state).Path with
+            | OnDisk _ -> request state (PromptForName state.LastCreatedDirectory)
+            | InArchive(archive, _) -> changing' [ archive ] (PromptForName state.LastCreatedDirectory)
+            | SearchResults _ -> stay state)
     | NameEntered name ->
         match (activePanel state).Path with
         | OnDisk directory -> makeDirectory' state.Active directory name state |> applyOperation'
@@ -342,11 +357,12 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
                   Scope = deleteScope' target
                   Mode = asked }
 
-        match target.Path, operationTargets target with
-        | _, [] -> stay state
-        | OnDisk _, _ -> request state (confirmed mode)
-        | InArchive(archive, _), _ -> changing' [ archive ] (confirmed Permanently)
-        | SearchResults _, _ -> stay state
+        guarding' None false (fun () ->
+            match target.Path, operationTargets target with
+            | _, [] -> stay state
+            | OnDisk _, _
+            | SearchResults _, _ -> request state (confirmed mode)
+            | InArchive(archive, _), _ -> changing' [ archive ] (confirmed Permanently))
     | DeleteConfirmed mode ->
         match transferSource' (activePanel state) with
         | None -> stay state
@@ -354,33 +370,43 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | Some(FromArchive(archive, entries)) -> request state (RemoveEntries(archive, entries))
     | DeleteFinished results -> finishDelete' results state |> applyBatch'
     | CopyRequested ->
-        match transferSource' (activePanel state), transferTarget state with
-        | None, _
-        | _, None -> stay state
-        | Some(FromDisk paths), Some(ToDirectory target) -> request state (CopyTargets(paths, target))
-        | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
-            request state (ExtractEntries(archive, entries, target))
-        | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
-            changing' [ archive ] (AddEntries(archive, level, paths))
-        | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
-            changing' [ target ] (CopyEntriesAcross(source, entries, target, level))
+        guarding' None true (fun () ->
+            match transferSource' (activePanel state), transferTarget state with
+            | None, _
+            | _, None -> stay state
+            | Some(FromDisk paths), Some(ToDirectory target) -> request state (CopyTargets(paths, target))
+            | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
+                request state (ExtractEntries(archive, entries, target))
+            | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
+                changing' [ archive ] (AddEntries(archive, level, paths))
+            | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
+                changing' [ target ] (CopyEntriesAcross(source, entries, target, level)))
     | CopyFinished results -> finishTransfer' results state |> applyBatch'
     | MoveRequested ->
-        match transferSource' (activePanel state), transferTarget state with
-        | None, _
-        | _, None -> stay state
-        | Some(FromDisk _), Some(ToDirectory target) -> request state (PromptForTarget target)
-        | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
-            changing' [ archive ] (MoveEntriesOut(archive, entries, target))
-        | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
-            changing' [ archive ] (MoveEntriesIn(archive, level, paths))
-        | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
-            changing' [ target; source ] (MoveEntriesAcross(source, entries, target, level))
+        guarding' None true (fun () ->
+            match transferSource' (activePanel state), transferTarget state with
+            | None, _
+            | _, None -> stay state
+            | Some(FromDisk _), Some(ToDirectory target) -> request state (PromptForTarget target)
+            | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
+                changing' [ archive ] (MoveEntriesOut(archive, entries, target))
+            | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
+                changing' [ archive ] (MoveEntriesIn(archive, level, paths))
+            | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
+                changing' [ target; source ] (MoveEntriesAcross(source, entries, target, level)))
     | TargetEntered text ->
-        match text.Trim(), operationPaths' (activePanel state), activeDirectory state with
+        let panel = activePanel state
+
+        let standing =
+            match panel.Path with
+            | SearchResults _ -> Some(PanelLocation.holding fs panel.Path)
+            | location -> PanelLocation.directory location
+
+        match text.Trim(), operationPaths' panel, standing with
         | "", _, _
         | _, [], _
         | _, _, None -> stay state
+        | trimmed, _, _ when showsResults panel && isBareName' trimmed -> refusing state Renaming
         | trimmed, [ single ], _ when isBareName' trimmed ->
             request state (RenameTarget(single, EntryName.create trimmed))
         | trimmed, paths, Some source -> request state (MoveTargets(paths, combine' source trimmed))
@@ -413,18 +439,19 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | LinkRequested ->
         let panel = activePanel state
 
-        match operationPaths' panel, activeDirectory state with
-        | [], _
-        | _, None -> stay state
-        | sources, Some directory ->
-            let place = targetDirectory state |> Option.defaultValue directory
+        guarding' (Some Linking) false (fun () ->
+            match operationPaths' panel, activeDirectory state with
+            | [], _
+            | _, None -> stay state
+            | sources, Some directory ->
+                let place = targetDirectory state |> Option.defaultValue directory
 
-            let suggestion =
-                match sources with
-                | [ single ] -> combine' place (EntryName.value (nameOf' single))
-                | _ -> place
+                let suggestion =
+                    match sources with
+                    | [ single ] -> combine' place (EntryName.value (nameOf' single))
+                    | _ -> place
 
-            request state (PromptForLink(sources, directory, suggestion))
+                request state (PromptForLink(sources, directory, suggestion)))
     | LinkEntered choice ->
         match activeDirectory state with
         | None -> stay state
@@ -434,10 +461,11 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             | requests -> request state (MakeLinks requests)
     | LinksMade(made, results) -> finishLinks fs made results state |> applyBatch'
     | PackRequested ->
-        match operationTargets (activePanel state), archiveSuggestion' ArchiveFormat.initial state with
-        | [], _
-        | _, None -> stay state
-        | _, Some suggestion -> request state (PromptForArchive suggestion)
+        guarding' (Some Packing) true (fun () ->
+            match operationTargets (activePanel state), archiveSuggestion' ArchiveFormat.initial state with
+            | [], _
+            | _, None -> stay state
+            | _, Some suggestion -> request state (PromptForArchive suggestion))
     | ArchiveEntered choice ->
         match choice.Target.Trim(), operationPaths' (activePanel state), activeDirectory state with
         | "", _, _
@@ -460,10 +488,11 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
                     ))
     | PackFinished(archive, results) -> finishPack' archive results state |> applyBatch'
     | UnpackRequested ->
-        match operationPaths' (activePanel state), targetDirectory state with
-        | [], _
-        | _, None -> stay state
-        | paths, Some target -> request state (ExtractTargets(paths, target))
+        guarding' (Some Unpacking) true (fun () ->
+            match operationPaths' (activePanel state), targetDirectory state with
+            | [], _
+            | _, None -> stay state
+            | paths, Some target -> request state (ExtractTargets(paths, target)))
     | UnpackFinished results -> finishTransfer' results state |> applyBatch'
     | RenameFinished(newName, outcome) ->
         match outcome with
@@ -495,9 +524,10 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
                 | Error error -> request state (ReportOperationError error)
             | None, None -> stay state
     | NewFileRequested ->
-        match activeDirectory state with
-        | None -> stay state
-        | Some _ -> request state PromptForFileName
+        guarding' (Some MakingFile) false (fun () ->
+            match activeDirectory state with
+            | None -> stay state
+            | Some _ -> request state PromptForFileName)
     | FileNameEntered name ->
         match activeDirectory state with
         | None -> stay state

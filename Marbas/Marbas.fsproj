@@ -32,6 +32,7 @@
         <Compile Include="Domain\DriveKind.fs" />
         <Compile Include="Domain\ProgramSettings.fs" />
         <Compile Include="Domain\FindQuery.fs" />
+        <Compile Include="Domain\ResultsRefusal.fs" />
     </ItemGroup>
 
     <ItemGroup>

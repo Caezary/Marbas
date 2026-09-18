@@ -1014,6 +1014,35 @@ the gathering timer and by the walk's own last `app.Invoke` after it had been
 disposed. `SearchRunner` now asks whether the window is still showing before
 either of them touches it.
 
+**P14.12 let the keys act on what a results panel shows.** The operation paths
+of such a panel are read off each entry's own hit rather than off the panel's
+directory joined to a name, so the marks can lie in as many directories as the
+search found them in: `F5` copies them into the other panel, `F6` moves them
+there, `F8`, `Shift+F8` and `Alt+Del` send them to the trash, delete them for
+good or wipe them, and `F4` edits the one under the cursor — each in one batch,
+through the effects a directory already raises, since what reaches them is a
+list of paths on disk. Afterwards the listing is read again, and because a
+results panel lists only the hits still on disk, what was moved, deleted or
+wiped leaves it without a rule of its own. Which marks stay is decided by the
+file names a batch answers with, as it always was; a results panel translates
+its shown names back to those, and keeps the mark of an entry whose name
+failed *or* never finished, so two hits called `README.md` of which one failed
+both stay marked rather than both losing the mark. What needs the panel itself
+to be a directory refuses by name before a popup opens — `F7`, `Shift+F4`,
+`Shift+F1`, `Shift+F2`, `Alt+F6` and a bare name typed for `F6`, which would
+be a rename — and so do `F5`, `F6`, `Shift+F1` and `Shift+F2` from the other
+panel when a results panel is where they would land. Each refusal is a
+`ResultsRefusal`, a word in `Domain`, carried by the one new
+`OperationError`, `NotInSearchResults`, so the dialog says which command it
+was. A marked hit inside an archive refuses the batch it would be part of with
+`HitInsideArchive` and a sentence naming it, which P14.13 removes. A path typed
+for `F6` that is not a bare name is read from the directory the results panel
+returns to. The same change mended `F3` on a hit inside an archive in a results
+panel, which P14.11 had sent to the viewer as a path on disk that does not
+exist: an archive hit now has no operation path at all, so `F3` streams the
+entry the way it does inside an archive panel. The refusal was rendered in an
+80-column terminal, the widest of the new sentences at 59 columns.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -1042,7 +1071,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.11 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.12 done |
 
 ## What works today
 
@@ -1430,9 +1459,10 @@ scopes name, the archives, the popup that asks the question, the window that
 answers it, the two keys that walk into a hit or read it, the last results that
 outlive the window and the results as a panel's own listing are done, so a
 search can be asked for, watched, acted on one hit at a time, opened again
-afterwards and stood in as if it were a directory; what it found cannot be
-operated on in bulk yet. P14.12, the operations on the marks of such a panel, is
-next. Three older things are still waiting:
+afterwards, stood in as if it were a directory and copied, moved, deleted or
+wiped in bulk from there — as long as no mark lies inside an archive. P14.13,
+the operations on hits inside archives, is next. Three older things are still
+waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

@@ -362,11 +362,26 @@ let private surviving entries selected =
 let private keepSurviving selected (p: PanelState) =
     { p with Selected = surviving p.Entries selected }
 
-let private finishedNames (results: Operations.ItemResult list) =
-    results |> List.filter (_.Outcome >> Result.isOk) |> List.map _.Name |> Set.ofList
+let private namesWhere wanted (results: Operations.ItemResult list) =
+    results |> List.filter (_.Outcome >> wanted) |> List.map _.Name |> Set.ofList
 
-let private keepUnfinished results selected (p: PanelState) =
-    keepSurviving (Set.difference selected (finishedNames results)) p
+let private bareName (fs: IFileSystem) (p: PanelState) (name: EntryName) =
+    match p.Path with
+    | SearchResults found ->
+        SearchListing.hitFor fs found name
+        |> Option.map _.Entry.Name
+        |> Option.defaultValue name
+    | _ -> name
+
+let private keepUnfinished (fs: IFileSystem) results selected (p: PanelState) =
+    let finished = namesWhere Result.isOk results
+    let failed = namesWhere Result.isError results
+
+    let unfinished name =
+        let bare = bareName fs p name
+        failed.Contains bare || not (finished.Contains bare)
+
+    keepSurviving (Set.filter unfinished selected) p
 
 let private asOperationError error =
     match error with
@@ -464,7 +479,10 @@ let transferTarget (state: AppState) =
 
 let private entryPath (fs: IFileSystem) panel (entry: Entry) =
     match panel.Path with
-    | SearchResults _ -> hitAt fs panel entry |> Option.map (FindHit.spelled fs)
+    | SearchResults _ ->
+        hitAt fs panel entry
+        |> Option.filter (fun hit -> PanelLocation.directory hit.Location |> Option.isSome)
+        |> Option.map (FindHit.spelled fs)
     | location -> PanelLocation.combine fs location (EntryName.value entry.Name)
 
 let operationPaths (fs: IFileSystem) panel =
@@ -486,7 +504,7 @@ let transferSource (fs: IFileSystem) panel =
     | OnDisk _, _ -> Some(FromDisk(operationPaths fs panel))
     | InArchive(archive, level), targets ->
         Some(FromArchive(archive, targets |> List.map (fun entry -> ArchivePath.child level entry.Name)))
-    | SearchResults _, _ -> None
+    | SearchResults _, _ -> Some(FromDisk(operationPaths fs panel))
 
 let private insideArchive location (name: EntryName) =
     match location with
@@ -508,6 +526,19 @@ let cursorFileInArchive (fs: IFileSystem) panel =
     cursorEntry panel
     |> Option.filter (fun entry -> entry.Kind = File)
     |> Option.bind (entryInArchive fs panel)
+
+let archivedHit (fs: IFileSystem) panel =
+    match panel.Path with
+    | SearchResults _ ->
+        operationTargets panel
+        |> List.tryPick (entryInArchive fs panel)
+        |> Option.map (fun (archive, entry) -> ArchivePath.spelled fs archive entry)
+    | _ -> None
+
+let showsResults panel =
+    match panel.Path with
+    | SearchResults _ -> true
+    | _ -> false
 
 let cursorDirectory (fs: IFileSystem) panel =
     match panel.Path with
@@ -549,9 +580,9 @@ let applyMeasurements side (measured: Measurement list) state =
 let deleteScope (fs: IFileSystem) panel =
     let reachesContents =
         match panel.Path with
-        | OnDisk _ -> operationPaths fs panel |> List.exists (Operations.isNonEmptyDirectory fs)
+        | OnDisk _
+        | SearchResults _ -> operationPaths fs panel |> List.exists (Operations.isNonEmptyDirectory fs)
         | InArchive _ -> operationTargets panel |> List.exists (fun entry -> entry.Kind = Directory)
-        | SearchResults _ -> false
 
     if reachesContents then
         WithDirectoryContents
@@ -569,11 +600,11 @@ let private reload (fs: IFileSystem) side keep state =
     reloadFocusing fs side (cursorFocus (panel side state)) keep state
 
 let finishDelete (fs: IFileSystem) results (state: AppState) =
-    reload fs state.Active (fun previous -> keepUnfinished results previous.Selected) state
+    reload fs state.Active (fun previous -> keepUnfinished fs results previous.Selected) state
     |> Result.map (fun updated -> updated, results)
 
 let finishTransfer (fs: IFileSystem) results (state: AppState) =
-    reload fs state.Active (fun previous -> keepUnfinished results previous.Selected) state
+    reload fs state.Active (fun previous -> keepUnfinished fs results previous.Selected) state
     |> Result.bind (reload fs (opposite state.Active) (fun previous -> keepSurviving previous.Selected))
     |> Result.map (fun updated -> updated, results)
 
@@ -589,7 +620,7 @@ let archiveSuggestion (fs: IFileSystem) format state =
     ||> Option.map2 (fun source target -> FileSystemPath.combine fs target (named source))
 
 let finishPack (fs: IFileSystem) (archive: EntryName) results (state: AppState) =
-    reload fs state.Active (fun previous -> keepUnfinished results previous.Selected) state
+    reload fs state.Active (fun previous -> keepUnfinished fs results previous.Selected) state
     |> Result.bind (reloadFocusing fs (opposite state.Active) (ByName archive) (fun previous -> keepSurviving previous.Selected))
     |> Result.map (fun updated -> updated, results)
 
@@ -601,7 +632,7 @@ let finishLinks (fs: IFileSystem) (made: FileSystemPath list) results (state: Ap
         | Some location -> reloadFocusing fs side (ByName(FileSystemPath.name fs location)) keep state
         | None -> reload fs side keep state
 
-    showing state.Active (fun previous -> keepUnfinished results previous.Selected) state
+    showing state.Active (fun previous -> keepUnfinished fs results previous.Selected) state
     |> Result.bind (showing (opposite state.Active) (fun previous -> keepSurviving previous.Selected))
     |> Result.map (fun updated -> updated, results)
 
