@@ -63,6 +63,8 @@ type Dependencies =
       RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       Launch: LaunchRequest -> Result<unit, LaunchError>
       AskFind: MarkedGround -> HiddenEntries -> FindQuery option
+      PathDirectories: FileSystemPath list
+      RunSearch: FindQuery -> FindGround -> unit
       LinkKinds: LinkKind list
       AskLink: LinkKind list -> string -> (string -> LinkKind -> LinkRefusal option) -> LinkChoice option
       RefuseLink: LinkRequest -> LinkRefusal option
@@ -263,6 +265,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.AskFind ground hidden with
         | Some query -> dispatch (FindEntered query)
         | None -> ()
+    | RunSearch(query, location, marked) ->
+        FindGround.resolve deps.FileSystem location marked deps.PathDirectories query.Scope
+        |> deps.RunSearch query
     | PromptForLink(sources, directory, suggestion) ->
         let refusalOf text kind =
             Links.requests deps.FileSystem kind sources directory text

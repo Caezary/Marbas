@@ -102,6 +102,7 @@ type Effect =
         target: FileSystemPath *
         level: ArchivePath
     | PromptForFind of ground: MarkedGround * hidden: HiddenEntries
+    | RunSearch of query: FindQuery * location: PanelLocation * marked: PanelLocation list
     | MakeLinks of requests: LinkRequest list
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
@@ -377,7 +378,10 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         let panel = activePanel state
 
         request state (PromptForFind(markedGround panel, panel.Hidden))
-    | FindEntered _ -> stay state
+    | FindEntered query ->
+        let panel = activePanel state
+
+        request state (RunSearch(query, panel.Path, markedDirectories fs panel))
     | LinkRequested ->
         let panel = activePanel state
 

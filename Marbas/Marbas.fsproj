@@ -149,6 +149,13 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="Ui\Find\FindKeys.fs" />
+        <Compile Include="Ui\Find\FindSummary.fs" />
+        <Compile Include="Ui\Find\ResultRow.fs" />
+        <Compile Include="Ui\Find\ResultsWindow.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Compile Include="Ui\App\CursorInfo.fs" />
         <Compile Include="Ui\App\StatusLine.fs" />
         <Compile Include="Ui\App\TabCounter.fs" />
@@ -166,6 +173,7 @@
         <Compile Include="Adapters\LaunchProcess.fs" />
         <Compile Include="Adapters\RegistryHandlers.fs" />
         <Compile Include="Adapters\BatchRunner.fs" />
+        <Compile Include="Adapters\SearchRunner.fs" />
         <Compile Include="Adapters\DirectoryWatch.fs" />
         <Compile Include="Adapters\ModifierWatch.fs" />
         <Compile Include="Adapters\NativeLinks.fs" />

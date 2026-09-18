@@ -903,6 +903,35 @@ at 56 by 17 columns, well inside an 80-column terminal, and the greying was read
 off the screen rather than off a property: a closed option is drawn in grey where
 an open one wears its hot key in yellow.
 
+**P14.8 ran the query and filled a window while it ran.** `RunSearch` is the
+port and `Adapters/SearchRunner.fs` the only thing that knows a thread exists:
+the walk goes on a `Task` with the same `BatchControl` copying uses, the hits it
+finds are queued, and a timer on the UI thread drains the queue ten times a
+second — one `app.Invoke` per tick rather than one per hit, which is the rough
+edge the progress window records. The window is a frameless full-screen
+`Window`, run the way the viewer is run, because P14.1 measured that a `Dialog`
+answers `Enter` with its default button before a handler sees it. Its list is
+grouped: a header row spelling the directory a hit lives in — a level inside an
+archive spelled `C:\work\backup.zip\docs` — and its hits indented beneath it,
+with the name, the size and the date. `ResultRow.rows` is that grouping and it
+is pure: groups keep the order the walk reached them, a hit for a group already
+open joins it rather than opening a second one, and because the list is rebuilt
+on each tick the cursor is put back on the row it stood on rather than on the
+index it stood at, so a hit landing in an earlier group cannot move it. The
+summary line says `Searching: <directory>` with what has been found so far,
+`Finished` or `Stopped` with the counts the walk answered — the counts are never
+stored twice: while it runs they are counted off the hits, and afterwards they
+are the outcome's own. The first `Esc` stops a running walk and leaves the
+window up over what it found, the next one closes it, and a walk that finished
+on its own is closed by the first. Proved in the running application over this
+repository: `Searching: …\linux-x64 — 18 files, 0 directories` at half a second,
+`Stopped — 18 files, 0 directories, 187 skipped` after the first `Esc`, and the
+window gone after the second. Where the search starts is still resolved outside
+the walk: `Update` sends the query with the panel's location and its marked
+directories, and `Shell` asks `FindGround.resolve` with the `PATH` directories
+`Dependencies` read once at startup, splitting them at `;` on Windows and `:` on
+Unix.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -931,7 +960,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.7 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.8 done |
 
 ## What works today
 
@@ -1315,10 +1344,10 @@ full-screen window while the search still runs, grouped by directory, and can be
 walked, viewed, reopened or sent into a panel as a temporary listing. The
 fourteen tasks are in [PLAN.md](PLAN.md); the measurement, the query as a value,
 the matching of text in a stream, the walk over the disk, the places the six
-scopes name, the archives and now the popup that asks the question are done, so
-the question can be put and nothing yet answers it; P14.8, the results window
-that runs the query off the UI thread and fills as it finds, is next. Three
-older things are still waiting:
+scopes name, the archives, the popup that asks the question and the window that
+answers it are done, so a search can be asked for and watched from beginning to
+end; what it finds cannot be acted on yet. P14.9, `Enter` and `F3` from the
+results, is next. Three older things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

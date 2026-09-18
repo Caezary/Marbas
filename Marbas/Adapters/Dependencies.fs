@@ -15,6 +15,11 @@ let private sendToTrash (fs: IFileSystem) (env: HostEnvironment) =
 
         Trash.send fs trash (fun () -> DateTimeOffset.Now)
 
+let private pathSeparator platform =
+    match platform with
+    | Windows -> ';'
+    | Unix -> ':'
+
 let private home (env: HostEnvironment) =
     match env.Platform with
     | Windows -> None
@@ -56,6 +61,8 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Shell.
       Launch = LaunchProcess.start fs env.Platform
       LinkKinds = Links.available links
       AskFind = Prompts.askFind app
+      PathDirectories = FindGround.pathDirectories fs (pathSeparator env.Platform) env.SearchPath
+      RunSearch = SearchRunner.run app fs
       AskLink = Prompts.askLink app
       RefuseLink = Links.refusal env.Platform fs
       MakeLink = Links.create links env.Platform fs

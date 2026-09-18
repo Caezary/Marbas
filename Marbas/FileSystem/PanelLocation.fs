@@ -23,6 +23,11 @@ module PanelLocation =
         | OnDisk path -> path
         | InArchive(archive, _) -> archive
 
+    let into (fs: IFileSystem) location (name: Marbas.Domain.EntryName) =
+        match location with
+        | OnDisk path -> OnDisk(FileSystemPath.combine fs path (Marbas.Domain.EntryName.value name))
+        | InArchive(archive, level) -> InArchive(archive, ArchivePath.child level name)
+
     let combine (fs: IFileSystem) location (name: string) =
         directory location |> Option.map (fun path -> FileSystemPath.combine fs path name)
 

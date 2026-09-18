@@ -357,6 +357,11 @@ let operationTargets panel =
     | [] -> cursorEntry panel |> Option.filter selectable |> Option.toList
     | marked -> marked
 
+let markedDirectories (fs: IFileSystem) panel =
+    selectedEntries panel
+    |> List.filter (fun entry -> entry.Kind = Directory)
+    |> List.map (fun entry -> PanelLocation.into fs panel.Path entry.Name)
+
 let markedGround panel =
     if selectedEntries panel |> List.exists (fun entry -> entry.Kind = Directory) then
         DirectoriesMarked
