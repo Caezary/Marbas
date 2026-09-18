@@ -981,6 +981,39 @@ happened. Proved in the running application: a walk over `Ui/Find` left the
 cursor on row 2 of five hits, and the window reopened from its own answer came
 back on row 2 under that summary line.
 
+**P14.11 made the answer a panel of its own.** `F2` in the results window — the
+bar names it, and it is a key rather than a button for the reason P14.1 gives —
+sends what was found into the active panel. `PanelLocation` has a third case,
+`SearchResults`, holding the query, the ground, the hits, the location the panel
+stood on before and the entry its cursor was on, and `SearchListing` turns those
+hits into the entries a listing gives: each one named by its path below where
+the search started — `App\Shell.fs` — or by its whole path when the scope had
+more than one start, because two `README.md` from two directories must not look
+like one. The name is the key to the hit, so nothing has to be carried beside
+the listing: `SearchListing.hitFor` reads it back, and that is what gives `F3`
+the file to view, `Enter` the program to run and `..` the way home. The title
+says `Find: *.fs in C:\work`, `..` returns to the location stood on before with
+the cursor where it was, `Enter` on a directory goes into that real directory
+and leaves the results behind, and sorting, hidden entries, marking, the quick
+search, the colours and the footer work as they do on a directory, since the
+entries are the entries a directory gives. The panel is watched by nothing,
+which is what `PanelLocation.watched` now answers with an option; every listing
+of it asks the file system whether each hit is still there and drops the ones
+that are not, so `Ctrl+R` needs no rule of its own. The location the panel
+returns to is what the session file keeps, what a tab opened beside it opens on
+and what `Alt+F7` searches from — the results are a place to look at, never a
+place to come back to. Operations on the marks are P14.12; until then `F5`,
+`F6`, `F7` and `F8` answer such a panel with silence rather than with a
+sentence. Proved in the running application over `Marbas\Ui`: the window filling
+under `F2 Panel`, the panel afterwards titled `Find: *.fs in
+C:\projects\Marbas\Marbas\Ui` over `App\AppView.fs`, `Dialogs\FindDialog.fs` and
+sixty more, and `Enter` on `..` back in `C:\projects\Marbas\Marbas\Ui`. The same
+run turned up a hole the new key made easy to reach and `Enter` on a hit could
+already fall into: a window closed while its walk still ran was written to by
+the gathering timer and by the walk's own last `app.Invoke` after it had been
+disposed. `SearchRunner` now asks whether the window is still showing before
+either of them touches it.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -1009,7 +1042,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.10 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.11 done |
 
 ## What works today
 
@@ -1394,11 +1427,12 @@ walked, viewed, reopened or sent into a panel as a temporary listing. The
 fourteen tasks are in [PLAN.md](PLAN.md); the measurement, the query as a value,
 the matching of text in a stream, the walk over the disk, the places the six
 scopes name, the archives, the popup that asks the question, the window that
-answers it, the two keys that walk into a hit or read it and the last results
-that outlive the window are done, so a search can be asked for, watched, acted
-on one hit at a time and opened again afterwards; what it found cannot be
-operated on in bulk yet. P14.11, the results as a panel's own listing, is next.
-Three older things are still waiting:
+answers it, the two keys that walk into a hit or read it, the last results that
+outlive the window and the results as a panel's own listing are done, so a
+search can be asked for, watched, acted on one hit at a time, opened again
+afterwards and stood in as if it were a directory; what it found cannot be
+operated on in bulk yet. P14.12, the operations on the marks of such a panel, is
+next. Three older things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

@@ -33,6 +33,38 @@ let ``a descending order points the arrow down`` () =
 
     Assert.Equal(at "start" + " [name ↓]", title)
 
+let private query =
+    { What = FindWhat.create (NameMasks.read "*.jpg") None FilesOnly
+      Scope = FromDirectory
+      Hidden = Concealed
+      Links = StopAtLinks
+      Archives = SkipArchives }
+
+let private results roots =
+    SearchResults
+        { Query = query
+          Ground = { Roots = roots; OtherRoots = [] }
+          Hits = []
+          Origin = start
+          Returning = None }
+
+[<Fact>]
+let ``the title of a results panel names the query and where it ran`` () =
+    let where = at "start"
+
+    let title = PanelTitle.describe fs Roomy (results [ start ]) SortOrder.byName Concealed
+
+    Assert.Equal($"Find: *.jpg in %s{where} [name ↑]", title)
+
+[<Fact>]
+let ``a results panel that ran over several places names them all`` () =
+    let places = [ start; OnDisk(fp (at "backup")) ]
+    let where = at "start" + ", " + at "backup"
+
+    let title = PanelTitle.describe fs Roomy (results places) SortOrder.byName Concealed
+
+    Assert.Equal($"Find: *.jpg in %s{where} [name ↑]", title)
+
 [<Fact>]
 let ``a panel showing hidden entries says so`` () =
     let title = PanelTitle.describe fs Roomy start SortOrder.byName Shown

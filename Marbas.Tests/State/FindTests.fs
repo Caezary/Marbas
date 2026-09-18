@@ -126,7 +126,7 @@ let private entry name kind visibility =
       Executability = NotExecutable
       LinkTarget = None }
 
-let private hitIn where name kind visibility : FileSearch.FindHit =
+let private hitIn where name kind visibility : FindHit =
     { Location = OnDisk(fp (at where))
       Entry = entry name kind visibility }
 
@@ -212,7 +212,7 @@ let ``Enter on a hit inside an archive walks the panel into that level`` () =
     let fs = ArchiveFixture.packed ()
     let state = ArchiveFixture.loaded fs
     let level = InArchive(ArchiveFixture.archive, ArchivePath.child ArchivePath.root (EntryName.create "docs"))
-    let hit: FileSearch.FindHit =
+    let hit: FindHit =
         { Location = level
           Entry = entry "inner.txt" File Plain }
 

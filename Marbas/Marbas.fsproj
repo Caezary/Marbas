@@ -56,6 +56,7 @@
         <Compile Include="FileSystem\ArchiveNames.fs" />
         <Compile Include="FileSystem\ArchiveReader.fs" />
         <Compile Include="FileSystem\ArchiveListing.fs" />
+        <Compile Include="FileSystem\SearchListing.fs" />
         <Compile Include="FileSystem\Operations.fs" />
         <Compile Include="FileSystem\Links.fs" />
         <Compile Include="FileSystem\DirectoryMeasure.fs" />
@@ -89,6 +90,7 @@
         <Compile Include="Ui\Format\EntryFormat.fs" />
         <Compile Include="Ui\Format\TimestampText.fs" />
         <Compile Include="Ui\Format\PathText.fs" />
+        <Compile Include="Ui\Format\QueryText.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -151,7 +153,6 @@
 
     <ItemGroup>
         <Compile Include="Ui\Find\FindKeys.fs" />
-        <Compile Include="Ui\Find\QueryText.fs" />
         <Compile Include="Ui\Find\FindSummary.fs" />
         <Compile Include="Ui\Find\ResultRow.fs" />
         <Compile Include="Ui\Find\ResultsWindow.fs" />

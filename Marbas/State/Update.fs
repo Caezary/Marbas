@@ -173,9 +173,9 @@ let private sentToRoot (fs: IFileSystem) (state: AppState) =
     let getRoot = FileSystemPath.root fs
     let loadPanel' root = loadPanel fs state.Active root state
     let panel = activePanel state
-    let watchedPath = PanelLocation.watched panel.Path
-    
-    match watchedPath |> getRoot with
+    let standing = PanelLocation.holding fs panel.Path
+
+    match standing |> getRoot with
     | Some root when OnDisk root <> panel.Path -> loadPanel' root |> applyListing state
     | _ -> stay state
 
@@ -206,11 +206,11 @@ let private opening (fs: IFileSystem) state directory path =
 let private opened (fs: IFileSystem) state =
     let panel = activePanel state
 
-    match cursorFileInArchive panel with
+    match cursorFileInArchive fs panel with
     | Some(archive, entry) ->
         request state (ReportOperationError(Operations.ArchiveEntryNotRunnable(ArchivePath.spelled fs archive entry)))
     | None ->
-        match cursorFilePath fs panel, activeDirectory state with
+        match cursorFilePath fs panel, cursorDirectory fs panel with
         | Some path, Some directory -> opening fs state directory path
         | _ -> enter fs state |> applyListing state
 
@@ -221,7 +221,7 @@ let private revealed (fs: IFileSystem) panel directory =
 
 let private refusingInArchive (fs: IFileSystem) state panel archive level =
     let named =
-        cursorEntryInArchive panel
+        cursorEntryInArchive fs panel
         |> Option.map snd
         |> Option.defaultValue level
 
@@ -232,6 +232,7 @@ let private openedWith (fs: IFileSystem) state =
 
     match panel.Path with
     | InArchive(archive, level) -> refusingInArchive fs state panel archive level
+    | SearchResults _ -> stay state
     | OnDisk directory ->
         match cursorFilePath fs panel with
         | Some path -> request state (ShowHandlers(path, programFor ForOpening (FileSystemPath.name fs path) state))
@@ -245,6 +246,7 @@ let private runElevated (fs: IFileSystem) state =
 
     match panel.Path with
     | InArchive(archive, level) -> refusingInArchive fs state panel archive level
+    | SearchResults _ -> stay state
     | OnDisk directory ->
         match cursorExecutablePath fs panel with
         | Some path -> startingAs AsAdministrator state directory None path
@@ -325,10 +327,12 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         match (activePanel state).Path with
         | OnDisk _ -> request state (PromptForName state.LastCreatedDirectory)
         | InArchive(archive, _) -> changing' [ archive ] (PromptForName state.LastCreatedDirectory)
+        | SearchResults _ -> stay state
     | NameEntered name ->
         match (activePanel state).Path with
         | OnDisk directory -> makeDirectory' state.Active directory name state |> applyOperation'
         | InArchive(archive, level) -> makeEntryDirectory' state.Active archive level name state |> applyOperation'
+        | SearchResults _ -> stay state
     | DeleteRequested mode ->
         let target = activePanel state
 
@@ -342,6 +346,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | _, [] -> stay state
         | OnDisk _, _ -> request state (confirmed mode)
         | InArchive(archive, _), _ -> changing' [ archive ] (confirmed Permanently)
+        | SearchResults _, _ -> stay state
     | DeleteConfirmed mode ->
         match transferSource' (activePanel state) with
         | None -> stay state
@@ -350,23 +355,26 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | DeleteFinished results -> finishDelete' results state |> applyBatch'
     | CopyRequested ->
         match transferSource' (activePanel state), transferTarget state with
-        | None, _ -> stay state
-        | Some(FromDisk paths), ToDirectory target -> request state (CopyTargets(paths, target))
-        | Some(FromArchive(archive, entries)), ToDirectory target ->
+        | None, _
+        | _, None -> stay state
+        | Some(FromDisk paths), Some(ToDirectory target) -> request state (CopyTargets(paths, target))
+        | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
             request state (ExtractEntries(archive, entries, target))
-        | Some(FromDisk paths), ToArchive(archive, level) -> changing' [ archive ] (AddEntries(archive, level, paths))
-        | Some(FromArchive(source, entries)), ToArchive(target, level) ->
+        | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
+            changing' [ archive ] (AddEntries(archive, level, paths))
+        | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
             changing' [ target ] (CopyEntriesAcross(source, entries, target, level))
     | CopyFinished results -> finishTransfer' results state |> applyBatch'
     | MoveRequested ->
         match transferSource' (activePanel state), transferTarget state with
-        | None, _ -> stay state
-        | Some(FromDisk _), ToDirectory target -> request state (PromptForTarget target)
-        | Some(FromArchive(archive, entries)), ToDirectory target ->
+        | None, _
+        | _, None -> stay state
+        | Some(FromDisk _), Some(ToDirectory target) -> request state (PromptForTarget target)
+        | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
             changing' [ archive ] (MoveEntriesOut(archive, entries, target))
-        | Some(FromDisk paths), ToArchive(archive, level) ->
+        | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
             changing' [ archive ] (MoveEntriesIn(archive, level, paths))
-        | Some(FromArchive(source, entries)), ToArchive(target, level) ->
+        | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
             changing' [ target; source ] (MoveEntriesAcross(source, entries, target, level))
     | TargetEntered text ->
         match text.Trim(), operationPaths' (activePanel state), activeDirectory state with
@@ -386,7 +394,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | FindEntered query ->
         let panel = activePanel state
 
-        request state (RunSearch(query, panel.Path, markedDirectories fs panel))
+        request state (RunSearch(query, PanelLocation.origin panel.Path, markedDirectories fs panel))
     | LastResultsRequested ->
         match state.LastSearch with
         | None -> stay state
@@ -401,6 +409,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | None -> stay remembered
         | Some(AtHit hit) -> standOnHit fs state.Active hit remembered |> applyListing remembered
         | Some(AtDirectory location) -> standInside fs state.Active location remembered |> applyListing remembered
+        | Some InPanel -> showResults fs state.Active answer.Results remembered |> applyListing remembered
     | LinkRequested ->
         let panel = activePanel state
 
@@ -463,7 +472,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | ViewRequested ->
         let target = activePanel state
 
-        match cursorFilePath' target, cursorFileInArchive target with
+        match cursorFilePath' target, cursorFileInArchive fs target with
         | Some path, _ -> request state (ViewFile path)
         | _, Some(archive, entry) -> request state (ViewArchiveEntry(archive, entry))
         | None, None ->
@@ -474,7 +483,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | EditRequested ->
         let target = activePanel state
 
-        match cursorEntryInArchive target with
+        match cursorEntryInArchive fs target with
         | Some(archive, entry) ->
             request state (ReportOperationError(Operations.ArchiveEntryNotEditable(spelled' archive entry)))
         | None ->
@@ -522,7 +531,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | PathOpened(side, path) -> loadPanel' side path state |> applyListing'
     | DriveChosen(side, row) -> loadPanel' side (driveLanding fs side row state) state |> applyListing'
     | DriveHandedOver row -> handedOver state row
-    | TabOpened -> openTab state |> saving'
+    | TabOpened -> openTab fs state |> saving'
     | TabClosed -> closeTab state |> saving'
     | TabsRequested -> state.Tabs |> ShowTabs |> request state
     | TabSwitched position -> switchTab position state |> standingOn'

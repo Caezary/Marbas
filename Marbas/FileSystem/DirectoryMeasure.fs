@@ -94,6 +94,7 @@ module DirectoryMeasure =
         match location with
         | OnDisk path -> walk fs control path
         | InArchive(archive, level) -> measureArchive fs control archive level
+        | SearchResults _ -> AtLeast 0L
 
     let measureAll (fs: IFileSystem) (control: BatchControl) (targets: MeasureTarget list) =
         let measured =

@@ -4,10 +4,7 @@ open System
 open System.IO.Abstractions
 open Marbas.Domain
 
-type FindGround =
-    { Roots: PanelLocation list
-      OtherRoots: FileSystemPath list }
-
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module FindGround =
 
     let private separatorsOf (fs: IFileSystem) =

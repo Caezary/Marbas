@@ -3,6 +3,8 @@ module Marbas.Ui.Find.FindKeys
 open Terminal.Gui.Input
 open Marbas.Ui.Keys
 
+let panelKey = Key.F2
+
 let viewKey = Key.F3
 
 let standKey = Key.Enter
@@ -12,7 +14,8 @@ let quitKey = Key.F10
 let closeKeys = [ quitKey; Key.Esc ]
 
 let private label key =
-    if key = viewKey then "View"
+    if key = panelKey then "Panel"
+    elif key = viewKey then "View"
     elif key = quitKey then "Quit"
     else ""
 

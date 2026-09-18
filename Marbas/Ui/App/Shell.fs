@@ -65,7 +65,7 @@ type Dependencies =
       Launch: LaunchRequest -> Result<unit, LaunchError>
       AskFind: MarkedGround -> HiddenEntries -> int option -> FindDialog.FindChoice option
       PathDirectories: FileSystemPath list
-      RunSearch: SearchRun -> (FileSearch.FindHit -> unit) -> (FindAnswer -> unit) -> unit
+      RunSearch: SearchRun -> (FindHit -> unit) -> (FindAnswer -> unit) -> unit
       LinkKinds: LinkKind list
       AskLink: LinkKind list -> string -> (string -> LinkKind -> LinkRefusal option) -> LinkChoice option
       RefuseLink: LinkRequest -> LinkRefusal option
@@ -146,9 +146,10 @@ let private showEntry (deps: Dependencies) archive password entry =
         deps.ShowFile source
     | Error error -> deps.ReportError ArchiveErrorMessage.Title (ArchiveErrorMessage.describe error)
 
-let private showHit (deps: Dependencies) (hit: FileSearch.FindHit) =
+let private showHit (deps: Dependencies) (hit: FindHit) =
     match hit.Location with
-    | OnDisk _ -> showPath deps (FileSearch.FindHit.spelled deps.FileSystem hit)
+    | OnDisk _
+    | SearchResults _ -> showPath deps (FindHit.spelled deps.FileSystem hit)
     | InArchive(archive, level) ->
         let entry = ArchivePath.child level hit.Entry.Name
 

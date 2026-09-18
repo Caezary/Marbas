@@ -251,6 +251,22 @@ let ``Enter on the header of a group answers the directory it names`` () =
     Assert.Equal(Some(AtDirectory(OnDisk(fp (at "start/docs")))), (ResultsWindow.answer window).Landing)
 
 [<Fact>]
+let ``the panel key answers with the whole list and closes the window`` () =
+    let closed = ref 0
+    use window = showing ignore (fun _ -> closed.Value <- closed.Value + 1)
+    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    (ResultsWindow.list window).SelectedItem <- 1
+
+    press (ResultsWindow.list window) Key.F2
+
+    Assert.Equal(Some InPanel, (ResultsWindow.answer window).Landing)
+    Assert.Equal(1, closed.Value)
+
+[<Fact>]
+let ``the panel key names itself in the bar`` () =
+    Assert.Equal("Panel", FindKeys.bar[1])
+
+[<Fact>]
 let ``a window left by Esc answers no landing at all`` () =
     use window = laidOut ()
     ResultsWindow.add window [ hitIn "start" "a.txt" ]

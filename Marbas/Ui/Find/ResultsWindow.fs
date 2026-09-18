@@ -150,6 +150,10 @@ let private standOn (window: ResultsView) (close: Window -> unit) =
 
         close window
 
+let private sendToPanel (window: ResultsView) (close: Window -> unit) =
+    window.Landing <- Some InPanel
+    close window
+
 let answer (window: ResultsView) =
     { Landing = window.Landing
       Results =
@@ -197,7 +201,10 @@ let create (fs: IFileSystem) (run: SearchRun) (view: FindHit -> unit) (stop: uni
             viewRow window view
         elif key = FindKeys.standKey then
             key.Handled <- true
-            standOn window close)
+            standOn window close
+        elif key = FindKeys.panelKey then
+            key.Handled <- true
+            sendToPanel window close)
 
     window.Add(hits, line, bar)
     FunctionKeyBar.label bar FindKeys.bar

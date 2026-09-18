@@ -16,10 +16,11 @@ let private walk
     (fs: IFileSystem)
     (window: ResultsWindow.ResultsView)
     (cancellation: CancellationTokenSource)
+    (showing: unit -> bool)
     query
     ground
     =
-    let pending = ConcurrentQueue<FileSearch.FindHit>()
+    let pending = ConcurrentQueue<FindHit>()
 
     let mutable walking =
         ground.Roots
@@ -33,13 +34,14 @@ let private walk
 
     let gather () =
         let arrived =
-            [ let mutable hit = Unchecked.defaultof<FileSearch.FindHit>
+            [ let mutable hit = Unchecked.defaultof<FindHit>
 
               while pending.TryDequeue &hit do
                   yield hit ]
 
-        ResultsWindow.add window arrived
-        ResultsWindow.walking window walking
+        if showing () then
+            ResultsWindow.add window arrived
+            ResultsWindow.walking window walking
 
     let timer = app.AddTimeout(Gathering, (fun () -> gather (); true))
 
@@ -48,23 +50,27 @@ let private walk
 
         app.Invoke(fun () ->
             gather ()
-            ResultsWindow.finish window outcome))
+
+            if showing () then
+                ResultsWindow.finish window outcome))
     |> ignore
 
     timer
 
-let run (app: IApplication) (fs: IFileSystem) (asked: SearchRun) (view: FileSearch.FindHit -> unit) (finished: FindAnswer -> unit) =
+let run (app: IApplication) (fs: IFileSystem) (asked: SearchRun) (view: FindHit -> unit) (finished: FindAnswer -> unit) =
     let cancellation = new CancellationTokenSource()
+    let mutable showing = true
 
     let window =
         ResultsWindow.create fs asked view (fun () -> cancellation.Cancel()) _.RequestStop()
 
     let timer =
         match asked with
-        | Walk(query, ground) -> walk app fs window cancellation query ground |> Some
+        | Walk(query, ground) -> walk app fs window cancellation (fun () -> showing) query ground |> Some
         | Reopen _ -> None
 
     app.Run window |> ignore
+    showing <- false
     cancellation.Cancel()
     timer |> Option.iter (app.RemoveTimeout >> ignore)
     finished (ResultsWindow.answer window)

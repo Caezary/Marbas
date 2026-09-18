@@ -29,9 +29,9 @@ let private started (fs: IFileSystem) =
 
 let private threeTabs (fs: IFileSystem) =
     started fs
-    |> openTab
+    |> openTab fs
     |> opened Left (fp (at "start/docs")) fs
-    |> openTab
+    |> openTab fs
     |> opened Left (fp (at "notes")) fs
 
 let private leftPath state = (panel Left state).Path
@@ -45,9 +45,10 @@ let ``a new state holds one tab`` () =
 
 [<Fact>]
 let ``opening a tab clones the panels of the current one and makes it current`` () =
-    let state = started (mockFs ())
+    let fs = mockFs ()
+    let state = started fs
 
-    let twoTabs = openTab state
+    let twoTabs = openTab fs state
 
     Assert.Equal(2, Zipper.count twoTabs.Tabs)
     Assert.Equal(1, Zipper.position twoTabs.Tabs)
@@ -60,17 +61,19 @@ let ``opening a tab clones the panels of the current one and makes it current`` 
 
 [<Fact>]
 let ``the new tab starts with nothing marked`` () =
-    let state = started (mockFs ()) |> setCursor Left 1 |> toggleSelection Left
+    let fs = mockFs ()
+    let state = started fs |> setCursor Left 1 |> toggleSelection Left
 
-    let twoTabs = openTab state
+    let twoTabs = openTab fs state
 
     Assert.Empty twoTabs.Left.Selected
 
 [<Fact>]
 let ``the tab left behind keeps what was marked in it`` () =
-    let state = started (mockFs ()) |> setCursor Left 1 |> toggleSelection Left
+    let fs = mockFs ()
+    let state = started fs |> setCursor Left 1 |> toggleSelection Left
 
-    let back = state |> openTab |> switchTab 0
+    let back = state |> openTab fs |> switchTab 0
 
     Assert.Equal<Set<EntryName>>(state.Left.Selected, back.Left.Selected)
 
@@ -97,7 +100,8 @@ let ``closing the last tab falls back to the one before it`` () =
 
 [<Fact>]
 let ``the only tab cannot be closed`` () =
-    let state = started (mockFs ())
+    let fs = mockFs ()
+    let state = started fs
 
     let closed = closeTab state
 

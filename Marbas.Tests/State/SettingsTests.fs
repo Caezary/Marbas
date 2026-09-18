@@ -85,7 +85,7 @@ let ``the settings of a state name every tab it holds`` () =
         create (fp (at "start"))
         |> loadPanel fs Left (fp (at "start"))
         |> Expect.ok
-        |> openTab
+        |> openTab fs
         |> loadPanel fs Left (fp (at "backup"))
         |> Expect.ok
 

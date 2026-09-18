@@ -1,5 +1,7 @@
 module Marbas.Tests.Ui.App.TabCounterTests
 
+open System.IO.Abstractions
+open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Collections
 open Marbas.FileSystem
@@ -11,6 +13,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
+let private fs = MockFileSystem() :> IFileSystem
+
 let private started () = create (fp (at "start"))
 
 [<Fact>]
@@ -21,7 +25,7 @@ let ``one tab says it is the first of one`` () =
 
 [<Fact>]
 let ``the counter says which of how many the tab in front is`` () =
-    let state = started () |> openTab |> openTab
+    let state = started () |> openTab fs |> openTab fs
 
     let counter = TabCounter.describe state
 
@@ -29,7 +33,7 @@ let ``the counter says which of how many the tab in front is`` () =
 
 [<Fact>]
 let ``switching tabs moves the number in front`` () =
-    let state = started () |> openTab |> openTab |> switchTab 1
+    let state = started () |> openTab fs |> openTab fs |> switchTab 1
 
     let counter = TabCounter.describe state
 
@@ -37,7 +41,7 @@ let ``switching tabs moves the number in front`` () =
 
 [<Fact>]
 let ``a tenth tab widens the counter rather than losing a digit`` () =
-    let state = [ 1..9 ] |> List.fold (fun current _ -> openTab current) (started ())
+    let state = [ 1..9 ] |> List.fold (fun current _ -> openTab fs current) (started ())
 
     let counter = TabCounter.describe state
 

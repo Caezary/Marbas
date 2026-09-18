@@ -1643,7 +1643,7 @@ let ``a hit the results window asks to view is read out of the file it names`` (
     fs.AddFile(at "start/notes.txt", MockFileData "first")
     let mutable shown = ""
 
-    let hit: FileSearch.FindHit =
+    let hit: FindHit =
         { Location = OnDisk(fp (at "start"))
           Entry = DirectoryListing.fileEntry (fs.FileInfo.New(at "start/notes.txt")) }
 

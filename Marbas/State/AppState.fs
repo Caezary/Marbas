@@ -70,16 +70,21 @@ let fromSettings (settings: Settings) =
 
 let create (path: FileSystemPath) = fromSettings (Settings.forPath path)
 
-let private panelSettings (fs: IFileSystem) (p: PanelState) : PanelSettings =
-    { Path = PanelLocation.holding fs p.Path
-      Sort = p.Sort
-      Hidden = p.Hidden
-      Cursor =
+let private standingName (p: PanelState) =
+    match p.Path with
+    | SearchResults found -> found.Returning
+    | _ ->
         p.Entries
         |> List.tryItem p.Cursor
         |> Option.filter (fun entry -> entry.Name <> DirectoryListing.ParentName)
         |> Option.map _.Name
-        |> Option.orElse p.Remembered }
+        |> Option.orElse p.Remembered
+
+let private panelSettings (fs: IFileSystem) (p: PanelState) : PanelSettings =
+    { Path = PanelLocation.holding fs p.Path
+      Sort = p.Sort
+      Hidden = p.Hidden
+      Cursor = standingName p }
 
 let private tabSettings (fs: IFileSystem) (tab: Tab) : TabSettings =
     { Left = panelSettings fs tab.Left
@@ -105,7 +110,7 @@ let activePanel (state: AppState) = panel state.Active state
 
 let watchedLocations (state: AppState) =
     [ state.Left.Path; state.Right.Path ]
-    |> List.map PanelLocation.watched
+    |> List.choose PanelLocation.watched
     |> List.distinct
 
 let private updateTab f (state: AppState) =
@@ -133,16 +138,6 @@ let private cleared (p: PanelState) =
     { p with
         Selected = Set.empty
         Search = None }
-
-let openTab (state: AppState) =
-    let clone (tab: Tab) =
-        { tab with
-            Left = cleared tab.Left
-            Right = cleared tab.Right }
-    
-    let cloned = state.Tabs |> Zipper.current |> clone
-
-    { state with Tabs = state.Tabs |> Zipper.insert cloned }
 
 let closeTab (state: AppState) =
     { state with Tabs = state.Tabs |> Zipper.remove }
@@ -209,6 +204,7 @@ let private listing (fs: IFileSystem) sort hidden location =
     match location with
     | OnDisk path -> DirectoryListing.listForDisplay fs sort hidden path
     | InArchive(archive, level) -> ArchiveListing.listForDisplay fs sort hidden archive level
+    | SearchResults found -> SearchListing.listForDisplay fs sort hidden found
 
 let loadLocationFocusing (fs: IFileSystem) side (location: PanelLocation) focus state =
     let previous = panel side state
@@ -252,6 +248,31 @@ let private cursorFocus panel =
     match cursorEntry panel with
     | Some entry -> ByName entry.Name
     | None -> rememberedFocus panel
+
+let private focusOn name =
+    match name with
+    | Some name -> ByName name
+    | None -> Top
+
+let private steppingOffResults (fs: IFileSystem) side state =
+    match (panel side state).Path with
+    | SearchResults found ->
+        loadLocationFocusing fs side found.Origin (focusOn found.Returning) state
+        |> Result.defaultValue state
+    | _ -> state
+
+let openTab (fs: IFileSystem) (state: AppState) =
+    let clone (tab: Tab) =
+        { tab with
+            Left = cleared tab.Left
+            Right = cleared tab.Right }
+
+    let cloned = state.Tabs |> Zipper.current |> clone
+
+    { state with
+        Tabs = state.Tabs |> Zipper.insert cloned }
+    |> steppingOffResults fs Left
+    |> steppingOffResults fs Right
 
 let private reorder (p: PanelState) =
     let entries = DirectoryListing.order p.Sort p.Entries
@@ -359,9 +380,33 @@ let operationTargets panel =
     | [] -> cursorEntry panel |> Option.filter selectable |> Option.toList
     | marked -> marked
 
+let private hitAt (fs: IFileSystem) panel (entry: Entry) =
+    match panel.Path with
+    | SearchResults found -> SearchListing.hitFor fs found entry.Name
+    | _ -> None
+
+let private locationAbove (fs: IFileSystem) panel =
+    match panel.Path with
+    | OnDisk path -> FileSystemPath.parent fs path |> Option.map OnDisk
+    | InArchive(archive, level) ->
+        match ArchivePath.parent level with
+        | Some above -> InArchive(archive, above) |> Some
+        | None -> OnDisk(FileSystemPath.directory fs archive) |> Some
+    | SearchResults found -> Some found.Origin
+
+let private locationOf (fs: IFileSystem) panel (entry: Entry) =
+    if entry.Name = ParentName then
+        locationAbove fs panel
+    else
+        match panel.Path with
+        | SearchResults _ ->
+            hitAt fs panel entry
+            |> Option.bind (fun hit -> PanelLocation.into fs hit.Location hit.Entry.Name)
+        | location -> PanelLocation.into fs location entry.Name
+
 let withLastSearch (results: FindResults) state = { state with LastSearch = Some results }
 
-let standOnHit (fs: IFileSystem) side (hit: FileSearch.FindHit) state =
+let standOnHit (fs: IFileSystem) side (hit: FindHit) state =
     let showing =
         match hit.Entry.Visibility with
         | Hidden -> Shown
@@ -374,10 +419,22 @@ let standOnHit (fs: IFileSystem) side (hit: FileSearch.FindHit) state =
 let standInside (fs: IFileSystem) side location state =
     loadLocationFocusing fs side location Top state
 
+let showResults (fs: IFileSystem) side (results: FindResults) state =
+    let previous = panel side state
+
+    let found =
+        { Query = results.Query
+          Ground = results.Ground
+          Hits = results.Hits
+          Origin = PanelLocation.origin previous.Path
+          Returning = standingName previous }
+
+    loadLocationFocusing fs side (SearchResults found) Top state
+
 let markedDirectories (fs: IFileSystem) panel =
     selectedEntries panel
     |> List.filter (fun entry -> entry.Kind = Directory)
-    |> List.map (fun entry -> PanelLocation.into fs panel.Path entry.Name)
+    |> List.choose (locationOf fs panel)
 
 let markedGround panel =
     if selectedEntries panel |> List.exists (fun entry -> entry.Kind = Directory) then
@@ -401,11 +458,14 @@ let driveLanding (fs: IFileSystem) side (row: DriveRow) (state: AppState) =
 
 let transferTarget (state: AppState) =
     match (panel (opposite state.Active) state).Path with
-    | OnDisk directory -> ToDirectory directory
-    | InArchive(archive, level) -> ToArchive(archive, level)
+    | OnDisk directory -> Some(ToDirectory directory)
+    | InArchive(archive, level) -> Some(ToArchive(archive, level))
+    | SearchResults _ -> None
 
 let private entryPath (fs: IFileSystem) panel (entry: Entry) =
-    PanelLocation.combine fs panel.Path (EntryName.value entry.Name)
+    match panel.Path with
+    | SearchResults _ -> hitAt fs panel entry |> Option.map (FindHit.spelled fs)
+    | location -> PanelLocation.combine fs location (EntryName.value entry.Name)
 
 let operationPaths (fs: IFileSystem) panel =
     operationTargets panel |> List.choose (entryPath fs panel)
@@ -426,44 +486,41 @@ let transferSource (fs: IFileSystem) panel =
     | OnDisk _, _ -> Some(FromDisk(operationPaths fs panel))
     | InArchive(archive, level), targets ->
         Some(FromArchive(archive, targets |> List.map (fun entry -> ArchivePath.child level entry.Name)))
+    | SearchResults _, _ -> None
 
-let private entryInArchive panel (entry: Entry) =
+let private insideArchive location (name: EntryName) =
+    match location with
+    | InArchive(archive, level) -> Some(archive, ArchivePath.child level name)
+    | OnDisk _
+    | SearchResults _ -> None
+
+let private entryInArchive (fs: IFileSystem) panel (entry: Entry) =
     match panel.Path with
-    | OnDisk _ -> None
-    | InArchive(archive, level) -> Some(archive, ArchivePath.child level entry.Name)
+    | SearchResults _ ->
+        hitAt fs panel entry
+        |> Option.bind (fun hit -> insideArchive hit.Location hit.Entry.Name)
+    | location -> insideArchive location entry.Name
 
-let cursorEntryInArchive panel =
-    cursorEntry panel |> Option.filter selectable |> Option.bind (entryInArchive panel)
+let cursorEntryInArchive (fs: IFileSystem) panel =
+    cursorEntry panel |> Option.filter selectable |> Option.bind (entryInArchive fs panel)
 
-let cursorFileInArchive panel =
+let cursorFileInArchive (fs: IFileSystem) panel =
     cursorEntry panel
     |> Option.filter (fun entry -> entry.Kind = File)
-    |> Option.bind (entryInArchive panel)
+    |> Option.bind (entryInArchive fs panel)
+
+let cursorDirectory (fs: IFileSystem) panel =
+    match panel.Path with
+    | SearchResults _ ->
+        cursorEntry panel
+        |> Option.bind (hitAt fs panel)
+        |> Option.map (fun hit -> PanelLocation.holding fs hit.Location)
+    | location -> PanelLocation.directory location
 
 let cursorDirectoryPath (fs: IFileSystem) panel =
     cursorEntry panel
     |> Option.filter (fun entry -> entry.Kind = Directory && selectable entry)
     |> Option.bind (entryPath fs panel)
-
-let private locationAbove (fs: IFileSystem) panel =
-    match panel.Path with
-    | OnDisk path -> FileSystemPath.parent fs path |> Option.map OnDisk
-    | InArchive(archive, level) ->
-        match ArchivePath.parent level with
-        | Some above -> InArchive(archive, above) |> Some
-        | None -> OnDisk(FileSystemPath.directory fs archive) |> Some
-
-let private locationOf (fs: IFileSystem) panel (entry: Entry) =
-    if entry.Name = ParentName then
-        locationAbove fs panel
-    else
-        match panel.Path with
-        | OnDisk path ->
-            (EntryName.value entry.Name)
-            |> (FileSystemPath.combine fs path)
-            |> OnDisk
-            |> Some
-        | InArchive(archive, level) -> InArchive(archive, ArchivePath.child level entry.Name) |> Some
 
 let measureTargets (fs: IFileSystem) panel =
     let considered =
@@ -494,6 +551,7 @@ let deleteScope (fs: IFileSystem) panel =
         match panel.Path with
         | OnDisk _ -> operationPaths fs panel |> List.exists (Operations.isNonEmptyDirectory fs)
         | InArchive _ -> operationTargets panel |> List.exists (fun entry -> entry.Kind = Directory)
+        | SearchResults _ -> false
 
     if reachesContents then
         WithDirectoryContents
@@ -591,7 +649,7 @@ let readTabAgain (fs: IFileSystem) state =
 
 let private ground (fs: IFileSystem) (location: PanelLocation) =
     location
-    |> PanelLocation.watched
+    |> PanelLocation.holding fs
     |> FileSystemPath.nearest fs
     |> Option.orElseWith (fun () -> Drives.list fs None |> List.tryHead |> Option.map DriveRow.root)
 
@@ -657,6 +715,14 @@ let private enterInArchive (fs: IFileSystem) side archive level (entry: Entry) s
     | Directory -> loadLocationFocusing fs side (InArchive(archive, ArchivePath.child level entry.Name)) Top state
     | File -> Ok state
 
+let private enterInResults (fs: IFileSystem) side panel found (entry: Entry) state =
+    match entry.Kind, locationOf fs panel entry with
+    | File, _
+    | _, None -> Ok state
+    | Directory, Some location when entry.Name = ParentName ->
+        loadLocationFocusing fs side location (focusOn found.Returning) state
+    | Directory, Some location -> loadLocationFocusing fs side location Top state
+
 let enter (fs: IFileSystem) state =
     let panel = activePanel state
 
@@ -666,3 +732,4 @@ let enter (fs: IFileSystem) state =
         match panel.Path with
         | OnDisk path -> enterOnDisk fs state.Active path entry state
         | InArchive(archive, level) -> enterInArchive fs state.Active archive level entry state
+        | SearchResults found -> enterInResults fs state.Active panel found entry state

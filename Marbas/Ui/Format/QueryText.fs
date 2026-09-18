@@ -1,4 +1,4 @@
-module Marbas.Ui.Find.QueryText
+module Marbas.Ui.Format.QueryText
 
 open System.IO.Abstractions
 open Marbas.Domain

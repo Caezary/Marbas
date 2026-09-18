@@ -8,10 +8,6 @@ open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
 open Marbas.FileSystem.Operations
 
-type FindHit =
-    { Location: PanelLocation
-      Entry: Entry }
-
 type FindCounts =
     { Files: int
       Directories: int
@@ -20,13 +16,6 @@ type FindCounts =
 type FindOutcome =
     | Finished of FindCounts
     | Stopped of FindCounts
-
-module FindHit =
-
-    let spelled (fs: IFileSystem) hit =
-        match hit.Location with
-        | OnDisk directory -> FileSystemPath.combine fs directory (EntryName.value hit.Entry.Name)
-        | InArchive(archive, level) -> ArchivePath.spelled fs archive (ArchivePath.child level hit.Entry.Name)
 
 let private childrenOf (fs: IFileSystem) (path: FileSystemPath) =
     try
@@ -265,6 +254,7 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindHit -> unit) (que
                 match ArchiveReader.kindOf fs archive with
                 | Some kind -> scanArchive archive level kind
                 | None -> skipped <- skipped + 1
+            | SearchResults _ -> ()
 
             if not stopped then
                 start rest
