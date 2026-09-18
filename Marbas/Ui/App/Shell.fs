@@ -8,6 +8,7 @@ open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Ui.Keys
 open Marbas.Ui.Messages
+open Marbas.Ui.Dialogs
 
 [<Literal>]
 let SelectPrompt = "Select"
@@ -62,9 +63,9 @@ type Dependencies =
       ShowFile: FileWindow.Source -> unit
       RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       Launch: LaunchRequest -> Result<unit, LaunchError>
-      AskFind: MarkedGround -> HiddenEntries -> FindQuery option
+      AskFind: MarkedGround -> HiddenEntries -> int option -> FindDialog.FindChoice option
       PathDirectories: FileSystemPath list
-      RunSearch: FindQuery -> FindGround -> (FileSearch.FindHit -> unit) -> (FindAnswer -> unit) -> unit
+      RunSearch: SearchRun -> (FileSearch.FindHit -> unit) -> (FindAnswer -> unit) -> unit
       LinkKinds: LinkKind list
       AskLink: LinkKind list -> string -> (string -> LinkKind -> LinkRefusal option) -> LinkChoice option
       RefuseLink: LinkRequest -> LinkRefusal option
@@ -279,15 +280,18 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.AskArchive(FileSystemPath.value suggestion) with
         | Some choice -> dispatch (ArchiveEntered choice)
         | None -> ()
-    | PromptForFind(ground, hidden) ->
-        match deps.AskFind ground hidden with
-        | Some query -> dispatch (FindEntered query)
+    | PromptForFind(ground, hidden, found) ->
+        match deps.AskFind ground hidden found with
+        | Some(FindDialog.Search query) -> dispatch (FindEntered query)
+        | Some FindDialog.LastResults -> dispatch LastResultsRequested
         | None -> ()
     | RunSearch(query, location, marked) ->
         let ground =
             FindGround.resolve deps.FileSystem location marked deps.PathDirectories query.Scope
 
-        deps.RunSearch query ground (showHit deps) (SearchAnswered >> dispatch)
+        deps.RunSearch (Walk(query, ground)) (showHit deps) (SearchAnswered >> dispatch)
+    | ShowLastResults(results, gone) ->
+        deps.RunSearch (Reopen(results, gone)) (showHit deps) (SearchAnswered >> dispatch)
     | PromptForLink(sources, directory, suggestion) ->
         let refusalOf text kind =
             Links.requests deps.FileSystem kind sources directory text

@@ -1591,7 +1591,13 @@ let private searchFor scope =
       Archives = SkipArchives }
 
 let private answering landing =
-    { Landing = landing; Hits = []; Cursor = 0 }
+    { Landing = landing
+      Results =
+        { Query = searchFor FromDirectory
+          Ground = { Roots = []; OtherRoots = [] }
+          Hits = []
+          Outcome = FileSearch.Finished { Files = 0; Directories = 0; Skipped = 0 }
+          Cursor = 0 } }
 
 [<Fact>]
 let ``the search runs over the ground its scope names`` () =
@@ -1599,7 +1605,7 @@ let ``the search runs over the ground its scope names`` () =
 
     let deps =
         { noDeps () with
-            RunSearch = fun _ ground _ _ -> asked <- ground }
+            RunSearch = fun run _ _ -> asked <- SearchRun.ground run }
 
     Shell.interpret deps ignore (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
 
@@ -1612,7 +1618,7 @@ let ``the directories of PATH are the ground of the scope that names them`` () =
     let deps =
         { noDeps () with
             PathDirectories = [ fp (at "tools") ]
-            RunSearch = fun _ ground _ _ -> asked <- ground }
+            RunSearch = fun run _ _ -> asked <- SearchRun.ground run }
 
     Shell.interpret deps ignore (RunSearch(searchFor PathDirectories, OnDisk(fp (at "start")), []))
 
@@ -1625,7 +1631,7 @@ let ``what the results window answered becomes a message`` () =
 
     let deps =
         { noDeps () with
-            RunSearch = fun _ _ _ finished -> finished (answering (Some landing)) }
+            RunSearch = fun _ _ finished -> finished (answering (Some landing)) }
 
     Shell.interpret deps dispatch (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
 
@@ -1645,7 +1651,7 @@ let ``a hit the results window asks to view is read out of the file it names`` (
         { noDeps () with
             FileSystem = fs
             ShowFile = fun source -> shown <- FileSystemPath.value source.Path
-            RunSearch = fun _ _ view _ -> view hit }
+            RunSearch = fun _ view _ -> view hit }
 
     Shell.interpret deps ignore (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
 

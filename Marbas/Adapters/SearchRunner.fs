@@ -6,30 +6,30 @@ open System.IO.Abstractions
 open System.Threading
 open System.Threading.Tasks
 open Terminal.Gui.App
-open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Find
 
 let private Gathering = TimeSpan.FromMilliseconds 100.0
 
-let run
+let private walk
     (app: IApplication)
     (fs: IFileSystem)
-    (query: FindQuery)
-    (ground: FindGround)
-    (view: FileSearch.FindHit -> unit)
-    (finished: FindAnswer -> unit)
+    (window: ResultsWindow.ResultsView)
+    (cancellation: CancellationTokenSource)
+    query
+    ground
     =
-    let cancellation = new CancellationTokenSource()
     let pending = ConcurrentQueue<FileSearch.FindHit>()
-    let mutable walking = ground.Roots |> List.tryHead |> Option.map (PanelLocation.value fs) |> Option.defaultValue ""
+
+    let mutable walking =
+        ground.Roots
+        |> List.tryHead
+        |> Option.map (PanelLocation.value fs)
+        |> Option.defaultValue ""
 
     let control: Operations.BatchControl =
         { Report = fun path -> walking <- FileSystemPath.value path
           IsCancelled = fun () -> cancellation.IsCancellationRequested }
-
-    let window =
-        ResultsWindow.create fs view (fun () -> cancellation.Cancel()) _.RequestStop()
 
     let gather () =
         let arrived =
@@ -51,8 +51,21 @@ let run
             ResultsWindow.finish window outcome))
     |> ignore
 
+    timer
+
+let run (app: IApplication) (fs: IFileSystem) (asked: SearchRun) (view: FileSearch.FindHit -> unit) (finished: FindAnswer -> unit) =
+    let cancellation = new CancellationTokenSource()
+
+    let window =
+        ResultsWindow.create fs asked view (fun () -> cancellation.Cancel()) _.RequestStop()
+
+    let timer =
+        match asked with
+        | Walk(query, ground) -> walk app fs window cancellation query ground |> Some
+        | Reopen _ -> None
+
     app.Run window |> ignore
     cancellation.Cancel()
-    app.RemoveTimeout timer |> ignore
+    timer |> Option.iter (app.RemoveTimeout >> ignore)
     finished (ResultsWindow.answer window)
     window.Dispose()

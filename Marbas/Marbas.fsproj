@@ -151,6 +151,7 @@
 
     <ItemGroup>
         <Compile Include="Ui\Find\FindKeys.fs" />
+        <Compile Include="Ui\Find\QueryText.fs" />
         <Compile Include="Ui\Find\FindSummary.fs" />
         <Compile Include="Ui\Find\ResultRow.fs" />
         <Compile Include="Ui\Find\ResultsWindow.fs" />

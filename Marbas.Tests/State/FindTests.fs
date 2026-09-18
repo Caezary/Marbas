@@ -40,7 +40,7 @@ let ``the popup is asked about the panel the key was pressed in`` () =
 
     let result = update fs FindRequested state
 
-    Assert.Equal<Effect list>([ PromptForFind(NoDirectoryMarked, Concealed) ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForFind(NoDirectoryMarked, Concealed, None) ], result.Effects)
 
 [<Fact>]
 let ``a panel showing its hidden entries offers to search them`` () =
@@ -49,7 +49,7 @@ let ``a panel showing its hidden entries offers to search them`` () =
 
     let result = update fs FindRequested state
 
-    Assert.Equal<Effect list>([ PromptForFind(NoDirectoryMarked, Shown) ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForFind(NoDirectoryMarked, Shown, None) ], result.Effects)
 
 [<Fact>]
 let ``a marked directory opens the scope that walks the marks`` () =
@@ -58,7 +58,7 @@ let ``a marked directory opens the scope that walks the marks`` () =
 
     let result = update fs FindRequested state
 
-    Assert.Equal<Effect list>([ PromptForFind(DirectoriesMarked, Concealed) ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForFind(DirectoriesMarked, Concealed, None) ], result.Effects)
 
 [<Fact>]
 let ``a marked file leaves that scope closed`` () =
@@ -67,7 +67,7 @@ let ``a marked file leaves that scope closed`` () =
 
     let result = update fs FindRequested state
 
-    Assert.Equal<Effect list>([ PromptForFind(NoDirectoryMarked, Concealed) ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForFind(NoDirectoryMarked, Concealed, None) ], result.Effects)
 
 [<Fact>]
 let ``the entry under the cursor is no mark of its own`` () =
@@ -76,7 +76,7 @@ let ``the entry under the cursor is no mark of its own`` () =
 
     let result = update fs FindRequested state
 
-    Assert.Equal<Effect list>([ PromptForFind(NoDirectoryMarked, Concealed) ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForFind(NoDirectoryMarked, Concealed, None) ], result.Effects)
 
 [<Fact>]
 let ``the query the popup answered runs from where the panel stands`` () =
@@ -130,7 +130,18 @@ let private hitIn where name kind visibility : FileSearch.FindHit =
     { Location = OnDisk(fp (at where))
       Entry = entry name kind visibility }
 
-let private landing where = { Landing = Some where; Hits = []; Cursor = 0 }
+let private results hits cursor =
+    { Query = query FromDirectory
+      Ground =
+        { Roots = [ OnDisk(fp (at "start")) ]
+          OtherRoots = [] }
+      Hits = hits
+      Outcome = FileSearch.Finished { Files = List.length hits; Directories = 0; Skipped = 0 }
+      Cursor = cursor }
+
+let private answer landing = { Landing = landing; Results = results [] 0 }
+
+let private landing where = answer (Some where)
 
 let private cursorName state =
     cursorEntry (activePanel state) |> Option.map (_.Name >> EntryName.value)
@@ -182,7 +193,7 @@ let ``a window left without a landing moves nothing`` () =
     let fs = treeWith ()
     let state = loaded fs
 
-    let result = update fs (SearchAnswered { Landing = None; Hits = []; Cursor = 0 }) state
+    let result = update fs (SearchAnswered(answer None)) state
 
     Assert.Equal(OnDisk(fp (at "start")), (activePanel result.State).Path)
     Assert.Empty result.Effects
@@ -209,3 +220,77 @@ let ``Enter on a hit inside an archive walks the panel into that level`` () =
 
     Assert.Equal(level, (activePanel result.State).Path)
     Assert.Equal(Some "inner.txt", cursorName result.State)
+
+let private answering hits cursor =
+    { Landing = None
+      Results = results hits cursor }
+
+[<Fact>]
+let ``the answer of a walk becomes the last results`` () =
+    let fs = treeWith ()
+    let state = loaded fs
+
+    let result = update fs (SearchAnswered(answering [ hitIn "start" "notes.txt" File Plain ] 1)) state
+
+    Assert.Equal(Some(results [ hitIn "start" "notes.txt" File Plain ] 1), result.State.LastSearch)
+
+[<Fact>]
+let ``a new search replaces the answer of the one before it`` () =
+    let fs = treeWith ()
+
+    let state =
+        loaded fs
+        |> update fs (SearchAnswered(answering [ hitIn "start" "notes.txt" File Plain ] 1))
+        |> _.State
+
+    let result = update fs (SearchAnswered(answering [] 0)) state
+
+    Assert.Equal(Some(results [] 0), result.State.LastSearch)
+
+[<Fact>]
+let ``the popup is told how many hits there are to reopen`` () =
+    let fs = treeWith ()
+
+    let state =
+        loaded fs
+        |> update fs (SearchAnswered(answering [ hitIn "start" "notes.txt" File Plain ] 1))
+        |> _.State
+
+    let result = update fs FindRequested state
+
+    Assert.Equal<Effect list>([ PromptForFind(NoDirectoryMarked, Concealed, Some 1) ], result.Effects)
+
+[<Fact>]
+let ``the last results are shown again with the row the cursor left`` () =
+    let fs = treeWith ()
+
+    let state =
+        loaded fs
+        |> update fs (SearchAnswered(answering [ hitIn "start" "notes.txt" File Plain ] 1))
+        |> _.State
+
+    let result = update fs LastResultsRequested state
+
+    Assert.Equal<Effect list>([ ShowLastResults(results [ hitIn "start" "notes.txt" File Plain ] 1, 0) ], result.Effects)
+
+[<Fact>]
+let ``a hit that is gone by now is dropped and counted`` () =
+    let fs = treeWith ()
+    let kept = hitIn "start" "notes.txt" File Plain
+    let found = results [ kept; hitIn "start" "gone.txt" File Plain ] 1
+    let surviving = { found with Hits = [ kept ] }
+    let state = loaded fs |> update fs (SearchAnswered { Landing = None; Results = found }) |> _.State
+
+    let result = update fs LastResultsRequested state
+
+    Assert.Equal<Effect list>([ ShowLastResults(surviving, 1) ], result.Effects)
+    Assert.Equal(Some surviving, result.State.LastSearch)
+
+[<Fact>]
+let ``there is nothing to reopen until something was searched for`` () =
+    let fs = treeWith ()
+    let state = loaded fs
+
+    let result = update fs LastResultsRequested state
+
+    Assert.Empty result.Effects

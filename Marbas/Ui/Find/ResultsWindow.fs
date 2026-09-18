@@ -26,13 +26,25 @@ let private nothing =
       Directories = 0
       Skipped = 0 }
 
-type ResultsView(fs: IFileSystem) =
+type ResultsView(fs: IFileSystem, run: SearchRun) =
     inherit Window(Width = Dim.Fill(), Height = Dim.Fill())
 
     let found = ResizeArray<FindHit>()
     let mutable directory = ""
     let mutable ended: FindOutcome option = None
     let mutable asked = false
+
+    let reopened =
+        match run with
+        | Walk _ -> None
+        | Reopen(results, gone) -> Some(results, gone)
+
+    do
+        match run with
+        | Walk _ -> ()
+        | Reopen(results, _) ->
+            found.AddRange results.Hits
+            ended <- Some results.Outcome
 
     member val Room = 0 with get, set
 
@@ -59,9 +71,16 @@ type ResultsView(fs: IFileSystem) =
           Skipped = 0 }
 
     member this.Progress =
-        match ended with
-        | Some outcome -> FindSummary.Done outcome
-        | None -> FindSummary.Walking(directory, this.Counted)
+        match reopened, ended with
+        | Some(results, gone), _ ->
+            FindSummary.Reopened(QueryText.describe results.Query, QueryText.where fs results.Ground, this.Counted, gone)
+        | None, Some outcome -> FindSummary.Done outcome
+        | None, None -> FindSummary.Walking(directory, this.Counted)
+
+    member _.Ran = run
+
+    member this.Outcome =
+        ended |> Option.defaultWith (fun () -> Stopped this.Counted)
 
     member _.Walking(place: string) = directory <- place
 
@@ -133,8 +152,12 @@ let private standOn (window: ResultsView) (close: Window -> unit) =
 
 let answer (window: ResultsView) =
     { Landing = window.Landing
-      Hits = window.Hits
-      Cursor = (list window).SelectedItem |> Option.ofNullable |> Option.defaultValue 0 }
+      Results =
+        { Query = SearchRun.query window.Ran
+          Ground = SearchRun.ground window.Ran
+          Hits = window.Hits
+          Outcome = window.Outcome
+          Cursor = (list window).SelectedItem |> Option.ofNullable |> Option.defaultValue 0 } }
 
 let private leave (window: ResultsView) (stop: unit -> unit) (close: Window -> unit) =
     if window.Running && not window.Asked then
@@ -143,8 +166,8 @@ let private leave (window: ResultsView) (stop: unit -> unit) (close: Window -> u
     else
         close window
 
-let create (fs: IFileSystem) (view: FindHit -> unit) (stop: unit -> unit) (close: Window -> unit) =
-    let window = new ResultsView(fs)
+let create (fs: IFileSystem) (run: SearchRun) (view: FindHit -> unit) (stop: unit -> unit) (close: Window -> unit) =
+    let window = new ResultsView(fs, run)
 
     window.BorderStyle <- LineStyle.None
     window.SetScheme ClassicScheme.panel |> ignore
@@ -185,6 +208,11 @@ let create (fs: IFileSystem) (view: FindHit -> unit) (stop: unit -> unit) (close
 
     hits.SetFocus() |> ignore
     refresh window
+
+    match run with
+    | Walk _ -> ()
+    | Reopen(results, _) -> hits.SelectedItem <- max 0 (min results.Cursor (hits.Source.Count - 1))
+
     window
 
 let add (window: ResultsView) (hits: FindHit list) =

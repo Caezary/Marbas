@@ -35,14 +35,34 @@ let private hitIn where name =
 
 let private counts files = { Files = files; Directories = 0; Skipped = 0 }
 
-let private watching view stop close =
-    let window = ResultsWindow.create (MockFileSystem()) view stop close
+let private query =
+    { What = FindWhat.create (NameMasks.read "*.txt") None FilesOnly
+      Scope = FromDirectory
+      Hidden = Concealed
+      Links = StopAtLinks
+      Archives = SkipArchives }
+
+let private ground =
+    { Roots = [ OnDisk(fp (at "start")) ]
+      OtherRoots = [] }
+
+let private running view stop close =
+    let window = ResultsWindow.create (MockFileSystem()) (Walk(query, ground)) view stop close
     window.BeginInit()
     window.EndInit()
     window.Layout(Size(80, 24)) |> ignore
     window
 
-let private showing stop close = watching ignore stop close
+let private reopening results gone =
+    let window = ResultsWindow.create (MockFileSystem()) (Reopen(results, gone)) ignore ignore ignore
+    window.BeginInit()
+    window.EndInit()
+    window.Layout(Size(80, 24)) |> ignore
+    window
+
+let private watching view stop close = running view stop close
+
+let private showing stop close = running ignore stop close
 
 let private laidOut () = showing ignore ignore
 
@@ -248,5 +268,69 @@ let ``the answer carries what was found and the row it was left on`` () =
 
     let answer = ResultsWindow.answer window
 
-    Assert.Equal<FindHit list>([ hitIn "start" "a.txt"; hitIn "start" "b.txt" ], answer.Hits)
-    Assert.Equal(2, answer.Cursor)
+    Assert.Equal<FindHit list>([ hitIn "start" "a.txt"; hitIn "start" "b.txt" ], answer.Results.Hits)
+    Assert.Equal(2, answer.Results.Cursor)
+
+let private lastResults hits cursor =
+    { Query = query
+      Ground = ground
+      Hits = hits
+      Outcome = Finished(counts (List.length hits))
+      Cursor = cursor }
+
+[<Fact>]
+let ``a reopened window shows what was found before`` () =
+    use window = reopening (lastResults [ hitIn "start" "a.txt"; hitIn "start" "b.txt" ] 0) 0
+
+    let shown = lines window
+
+    Assert.Equal(at "start", shown |> List.item 0)
+    Assert.StartsWith("  a.txt", shown |> List.item 1)
+    Assert.StartsWith("  b.txt", shown |> List.item 2)
+
+[<Fact>]
+let ``a reopened window names the query and where it ran`` () =
+    use window = reopening (lastResults [ hitIn "start" "a.txt" ] 0) 0
+
+    let start = at "start"
+
+    Assert.Equal($"Last results: *.txt in %s{start} — 1 file, 0 directories", summary window)
+
+[<Fact>]
+let ``a reopened window counts the hits that are gone`` () =
+    use window = reopening (lastResults [ hitIn "start" "a.txt" ] 0) 2
+
+    let start = at "start"
+
+    Assert.Equal($"Last results: *.txt in %s{start} — 1 file, 0 directories, 2 gone", summary window)
+
+[<Fact>]
+let ``a reopened window comes back on the row the cursor left`` () =
+    use window = reopening (lastResults [ hitIn "start" "a.txt"; hitIn "start" "b.txt" ] 2) 0
+
+    Assert.Equal(Nullable 2, (ResultsWindow.list window).SelectedItem)
+
+[<Fact>]
+let ``a cursor past what is left comes back on the nearest row still there`` () =
+    use window = reopening (lastResults [ hitIn "start" "a.txt" ] 7) 3
+
+    Assert.Equal(Nullable 1, (ResultsWindow.list window).SelectedItem)
+
+[<Fact>]
+let ``a reopened window answers the walk it was told about rather than a new one`` () =
+    use window = reopening (lastResults [ hitIn "start" "a.txt" ] 1) 0
+
+    let answer = ResultsWindow.answer window
+
+    Assert.Equal(query, answer.Results.Query)
+    Assert.Equal(Finished(counts 1), answer.Results.Outcome)
+    Assert.Equal(1, answer.Results.Cursor)
+
+[<Fact>]
+let ``a window closed while the walk still ran answers a stopped walk`` () =
+    use window = laidOut ()
+    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+
+    let answer = ResultsWindow.answer window
+
+    Assert.Equal(Stopped(counts 1), answer.Results.Outcome)

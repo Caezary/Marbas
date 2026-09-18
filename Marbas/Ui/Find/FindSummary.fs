@@ -5,6 +5,7 @@ open Marbas.FileSystem.FileSearch
 type SearchProgress =
     | Walking of directory: string * found: FindCounts
     | Done of FindOutcome
+    | Reopened of query: string * where: string * found: FindCounts * gone: int
 
 [<Literal>]
 let private Separator = " — "
@@ -30,8 +31,15 @@ let private tally counts =
 
     found @ passed |> String.concat ", "
 
+let private gone count =
+    if count = 0 then ""
+    elif count = 1 then ", 1 gone"
+    else $", %d{count} gone"
+
 let describe progress =
     match progress with
     | Walking(directory, counts) -> $"Searching: %s{directory}%s{Separator}%s{tally counts}"
     | Done(Finished counts) -> $"Finished%s{Separator}%s{tally counts}"
     | Done(Stopped counts) -> $"Stopped%s{Separator}%s{tally counts}"
+    | Reopened(query, where, counts, missing) ->
+        $"Last results: %s{query} in %s{where}%s{Separator}%s{tally counts}%s{gone missing}"

@@ -24,6 +24,7 @@ type Tab =
 type AppState =
     { Tabs: Zipper<Tab>
       LastCreatedDirectory: EntryName option
+      LastSearch: FindResults option
       Programs: ProgramSettings }
 
     member private this.Focused = this.Tabs |> Zipper.current
@@ -64,6 +65,7 @@ let private tabFrom (tab: TabSettings) =
 let fromSettings (settings: Settings) =
     { Tabs = settings.Tabs |> Zipper.map tabFrom
       LastCreatedDirectory = settings.LastCreatedDirectory
+      LastSearch = None
       Programs = settings.Programs }
 
 let create (path: FileSystemPath) = fromSettings (Settings.forPath path)
@@ -356,6 +358,8 @@ let operationTargets panel =
     match selectedEntries panel with
     | [] -> cursorEntry panel |> Option.filter selectable |> Option.toList
     | marked -> marked
+
+let withLastSearch (results: FindResults) state = { state with LastSearch = Some results }
 
 let standOnHit (fs: IFileSystem) side (hit: FileSearch.FindHit) state =
     let showing =

@@ -958,6 +958,29 @@ on screen, `F3` putting the viewer over them
 header back, and `Enter` closing the window with `AtHit … FindSummary.fs` at row
 2.
 
+**P14.10 made the answer outlive the window.** `AppState.LastSearch` holds a
+`FindResults` — the query, the ground it ran over, the hits, whether the walk
+finished or was stopped and the row the cursor was on — and every closing window
+writes it, so the next search replaces the one before it. It belongs to the
+session and not to a tab, and nothing of it reaches the settings file. The
+*Last results* button of P14.7 carries the count, `Last results (123)`, and is
+open only when there is something to reopen; because Terminal.Gui reads every
+button but the last as a dismissal, it sets a flag of its own the way the drive
+popup's hand-over key does, and the popup now answers a `FindChoice` — a query
+or the last results — rather than a query alone. Reopening asks the file system
+whether every hit is still there, drops the ones that are not and says how many
+went, and the summary line names the query and where it ran
+(`Last results: *.fs in C:\work — 5 files, 0 directories, 2 gone`), so a list
+from half an hour ago cannot pass for a fresh one. The cursor comes back on the
+row it left, clamped to what is still there. What made this cheap was giving the
+runner one port with two ways to fill the window — `Walk` starts the task,
+`Reopen` fills it from what was kept and starts nothing — so the window, its
+keys, its grouping and its answer are the same in both. A window closed while
+its walk still ran answers `Stopped` with the counts it had, since that is what
+happened. Proved in the running application: a walk over `Ui/Find` left the
+cursor on row 2 of five hits, and the window reopened from its own answer came
+back on row 2 under that summary line.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -986,7 +1009,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.9 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.10 done |
 
 ## What works today
 
@@ -1371,10 +1394,11 @@ walked, viewed, reopened or sent into a panel as a temporary listing. The
 fourteen tasks are in [PLAN.md](PLAN.md); the measurement, the query as a value,
 the matching of text in a stream, the walk over the disk, the places the six
 scopes name, the archives, the popup that asks the question, the window that
-answers it and the two keys that walk into a hit or read it are done, so a
-search can be asked for, watched and acted on one hit at a time; nothing
-survives the window closing yet. P14.10, the last results, is next. Three older
-things are still waiting:
+answers it, the two keys that walk into a hit or read it and the last results
+that outlive the window are done, so a search can be asked for, watched, acted
+on one hit at a time and opened again afterwards; what it found cannot be
+operated on in bulk yet. P14.11, the results as a panel's own listing, is next.
+Three older things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

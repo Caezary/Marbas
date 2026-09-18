@@ -21,6 +21,22 @@ let ScopeId = "findScope"
 [<Literal>]
 let LastResultsTitle = "_Last results"
 
+type FindChoice =
+    | Search of FindQuery
+    | LastResults
+
+type FindView(count: int option) =
+    inherit Dialog()
+
+    member val Reopening = false with get, set
+
+    member _.Count = count
+
+let lastResultsTitle count =
+    match count with
+    | Some found -> $"%s{LastResultsTitle} (%d{found})"
+    | None -> LastResultsTitle
+
 [<Literal>]
 let EveryName = "*.*"
 
@@ -121,9 +137,11 @@ let private offer (dialog: Dialog) =
     textBoxes |> List.iter (fun box -> (checkBox dialog box).Enabled <- searching)
     (checkBox dialog DirectoriesBox).Enabled <- not searching
 
-let create (ground: MarkedGround) (hidden: HiddenEntries) =
+let create (ground: MarkedGround) (hidden: HiddenEntries) (count: int option) =
     let dialog =
-        new Dialog(Title = Title, Width = Width, Height = Height) |> DialogStyle.dress
+        new FindView(count, Title = Title, Width = Width, Height = Height)
+
+    DialogStyle.dress dialog |> ignore
 
     let masks = input MasksId 1
     masks.Text <- EveryName
@@ -149,8 +167,9 @@ let create (ground: MarkedGround) (hidden: HiddenEntries) =
     offer dialog
     (field dialog TextId).TextChanged.Add(fun _ -> offer dialog)
 
-    let last = DialogStyle.button LastResultsTitle
-    last.Enabled <- false
+    let last = DialogStyle.button (lastResultsTitle count)
+    last.Enabled <- Option.isSome count
+    last.Accepting.Add(fun _ -> dialog.Reopening <- true)
 
     dialog.AddButton last
     dialog.AddButton(DialogStyle.button "_Cancel")
@@ -174,19 +193,21 @@ let private textSearch dialog =
           Sense = if ticked dialog SenseBox then NotContaining else Containing
           Binary = if ticked dialog BinaryBox then Searched else Skipped })
 
-let choice (dialog: Dialog) =
-    if dialog.Canceled then
-        None
-    else
-        let targets =
-            if ticked dialog DirectoriesBox then
-                FilesAndDirectories
-            else
-                FilesOnly
+let private query (dialog: FindView) =
+    let targets =
+        if ticked dialog DirectoriesBox then
+            FilesAndDirectories
+        else
+            FilesOnly
 
-        Some
-            { What = FindWhat.create (NameMasks.read (field dialog MasksId).Text) (textSearch dialog) targets
-              Scope = chosenScope dialog
-              Hidden = if ticked dialog HiddenBox then Shown else Concealed
-              Links = if ticked dialog LinksBox then FollowLinks else StopAtLinks
-              Archives = if ticked dialog ArchivesBox then SearchArchives else SkipArchives }
+    { What = FindWhat.create (NameMasks.read (field dialog MasksId).Text) (textSearch dialog) targets
+      Scope = chosenScope dialog
+      Hidden = if ticked dialog HiddenBox then Shown else Concealed
+      Links = if ticked dialog LinksBox then FollowLinks else StopAtLinks
+      Archives = if ticked dialog ArchivesBox then SearchArchives else SkipArchives }
+
+let choice (dialog: FindView) =
+    match dialog.Reopening, dialog.Canceled with
+    | true, _ -> Some LastResults
+    | false, true -> None
+    | false, false -> Some(Search(query dialog))

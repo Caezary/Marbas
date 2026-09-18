@@ -21,7 +21,7 @@ let private windowAsking asking =
             AskFind = asking }
 
 let private recording (answers: (MarkedGround * HiddenEntries) list ref) =
-    fun ground hidden ->
+    fun ground hidden (_: int option) ->
         answers.Value <- answers.Value @ [ ground, hidden ]
         None
 

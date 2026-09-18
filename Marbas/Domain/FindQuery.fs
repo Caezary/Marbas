@@ -27,6 +27,9 @@ module NameMasks =
         |> List.choose NamePattern.tryCreate
         |> NameMasks
 
+    let spelled (NameMasks patterns) =
+        patterns |> List.map NamePattern.value |> String.concat (string Separator)
+
     let matches (NameMasks patterns) name =
         List.isEmpty patterns || patterns |> List.exists (fun pattern -> NamePattern.matches pattern name)
 

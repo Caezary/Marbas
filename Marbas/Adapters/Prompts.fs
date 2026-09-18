@@ -63,8 +63,8 @@ let askArchive (app: IApplication) retarget suggestion =
     app.Run dialog |> ignore
     PackDialog.choice dialog
 
-let askFind (app: IApplication) ground hidden =
-    use dialog = FindDialog.create ground hidden
+let askFind (app: IApplication) ground hidden found =
+    use dialog = FindDialog.create ground hidden found
     app.Run dialog |> ignore
     FindDialog.choice dialog
 

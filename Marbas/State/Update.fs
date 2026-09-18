@@ -35,6 +35,7 @@ type Message =
     | MoveFinished of Operations.ItemResult list
     | FindRequested
     | FindEntered of FindQuery
+    | LastResultsRequested
     | SearchAnswered of FindAnswer
     | LinkRequested
     | LinkEntered of LinkChoice
@@ -102,8 +103,9 @@ type Effect =
         entries: ArchivePath list *
         target: FileSystemPath *
         level: ArchivePath
-    | PromptForFind of ground: MarkedGround * hidden: HiddenEntries
+    | PromptForFind of ground: MarkedGround * hidden: HiddenEntries * lastResults: int option
     | RunSearch of query: FindQuery * location: PanelLocation * marked: PanelLocation list
+    | ShowLastResults of results: FindResults * gone: int
     | MakeLinks of requests: LinkRequest list
     | RenameTarget of source: FileSystemPath * newName: EntryName
     | ViewFile of path: FileSystemPath
@@ -378,16 +380,27 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | FindRequested ->
         let panel = activePanel state
 
-        request state (PromptForFind(markedGround panel, panel.Hidden))
+        let found = state.LastSearch |> Option.map (_.Hits >> List.length)
+
+        request state (PromptForFind(markedGround panel, panel.Hidden, found))
     | FindEntered query ->
         let panel = activePanel state
 
         request state (RunSearch(query, panel.Path, markedDirectories fs panel))
-    | SearchAnswered answer ->
-        match answer.Landing with
+    | LastResultsRequested ->
+        match state.LastSearch with
         | None -> stay state
-        | Some(AtHit hit) -> standOnHit fs state.Active hit state |> applyListing'
-        | Some(AtDirectory location) -> standInside fs state.Active location state |> applyListing'
+        | Some results ->
+            let surviving, gone = FindResults.surviving fs results
+
+            request (withLastSearch surviving state) (ShowLastResults(surviving, gone))
+    | SearchAnswered answer ->
+        let remembered = withLastSearch answer.Results state
+
+        match answer.Landing with
+        | None -> stay remembered
+        | Some(AtHit hit) -> standOnHit fs state.Active hit remembered |> applyListing remembered
+        | Some(AtDirectory location) -> standInside fs state.Active location remembered |> applyListing remembered
     | LinkRequested ->
         let panel = activePanel state
 

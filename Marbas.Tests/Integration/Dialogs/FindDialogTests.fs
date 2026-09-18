@@ -9,13 +9,15 @@ open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Tests
 
-let private laidOut ground hidden =
+let private opened ground hidden found =
     DialogStyle.apply ()
-    let dialog = FindDialog.create ground hidden
+    let dialog = FindDialog.create ground hidden found
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore
     dialog
+
+let private laidOut ground hidden = opened ground hidden None
 
 let private fresh () = laidOut NoDirectoryMarked Concealed
 
@@ -34,9 +36,14 @@ let private tick dialog which =
 
 let private AcceptingButton = 2
 
-let private accepted (dialog: Dialog) =
+let private answered (dialog: FindDialog.FindView) =
     dialog.Result <- AcceptingButton
     FindDialog.choice dialog |> Expect.some
+
+let private accepted (dialog: FindDialog.FindView) =
+    match answered dialog with
+    | FindDialog.Search query -> query
+    | FindDialog.LastResults -> failwith "expected a query, got the last results"
 
 let private scopeChosen index =
     use dialog = fresh ()
@@ -257,3 +264,20 @@ let ``every label fits inside the popup`` () =
         |> Seq.fold max 0
 
     Assert.True(widest <= dialog.Viewport.Width, $"{widest} columns of a viewport {dialog.Viewport.Width} wide")
+
+[<Fact>]
+let ``the last results carry how many there are`` () =
+    use dialog = opened NoDirectoryMarked Concealed (Some 123)
+
+    let button = FindDialog.lastResults dialog
+
+    Assert.Equal("_Last results (123)", button.Title)
+    Assert.True button.Enabled
+
+[<Fact>]
+let ``asking for the last results is what the popup answers`` () =
+    use dialog = opened NoDirectoryMarked Concealed (Some 123)
+
+    (FindDialog.lastResults dialog).InvokeCommand Terminal.Gui.Input.Command.Accept |> ignore
+
+    Assert.Equal(Some FindDialog.LastResults, FindDialog.choice dialog)
