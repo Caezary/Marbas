@@ -1,7 +1,8 @@
 # Links
 
 Phase 13. What a link is to Marbas, how the three kinds are made, and why every
-walk in the application stops at one.
+walk in the application stops at one — but the search, which phase 14 lets
+through.
 
 ## The three kinds
 
@@ -125,6 +126,26 @@ the junction points at.
 junction, or any directory link on Windows for a user without the right to make
 symbolic links, now fails for that entry, since the copy is a new link; the
 failure says why.
+
+## The one walk that may follow a link
+
+**Searching is the exception, and only when asked.** Every walk above stops at a
+directory link because following one acts on what the user never selected; a
+search acts on nothing, and a user who keeps their projects behind a link wants
+them found. So `FileSearch.run` follows a directory link when the query says
+`FollowLinks`, and treats it as a leaf like every other walk when it says
+`StopAtLinks`.
+
+**A set keeps it from spinning.** The walk remembers every directory it has
+entered, and a link's identity is its target rather than its own path: a link is
+entered only if the path it resolves to is not in the set yet. A link pointing
+at its own ancestor is therefore refused rather than walked, a cycle terminates
+with every real directory reported exactly once, and a directory reached both
+directly and through a link is searched once. A link leading out of the tree is
+entered like any other place. `Fakes.LinkFollowing` — the mock that walks
+through a link the way a real system does and throws once a walk has gone round
+one — proves all three, and that `StopAtLinks` never enters a link at all. See
+[Finding files](FINDING-FILES.md).
 
 ## `Alt+F6`
 

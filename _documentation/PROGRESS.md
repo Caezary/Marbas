@@ -1,10 +1,10 @@
 # Progress
 
-Status as of 2026-09-13. Phases and task numbers refer to [PLAN.md](PLAN.md).
+Status as of 2026-09-18. Phases and task numbers refer to [PLAN.md](PLAN.md).
 
 ## Where we are
 
-**Thirteen phases are complete** (83 of 83 tasks). Marbas
+**Fourteen phases are complete** (97 of 97 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -1074,6 +1074,27 @@ user did not ask to empty. The tests run the real archive code over the mock
 file system: a tar stands in for the plan's rar, being just as readable and
 just as unchangeable, because nothing in the toolchain can write a rar.
 
+**P14.14 wrote the phase down where the rest of the design is.**
+`Architecture/FINDING-FILES.md` is new: what a query is and why `*.*` is read
+the classic way, how text is matched in a stream and why binary files are an
+option, the walk and the six scopes with what each refuses to cross, the
+archives, the popup, the results window and why its hits stay out of the state
+while the walk runs, the last results, the results panel, and the operations on
+it across the disk and the archives. [Links](Architecture/LINKS.md) gained the
+one walk that may follow a link and the set that keeps it from spinning;
+[State and effects](Architecture/STATE-AND-EFFECTS.md) gained `LastSearch`, the
+third `PanelLocation` and `FromPlaces`; [UI and input](Architecture/UI-AND-INPUT.md)
+gained the popup, the results window with its keys and the `Alt+F7` row of the
+key table; [Cross-platform](Architecture/CROSS-PLATFORM.md) gained a *Finding
+files* section with the `PATH` separator and the mount boundary; the
+[user guide](USER-GUIDE.md) gained the command; and the overview lists the new
+topic and the phase's modules in the code map, `Ui` now counted as nine
+folders. Writing the boundary down turned up a defect the P14.5 paragraph above
+had described away: the walk is bounded by the *listed* drives, P13.12 keeps
+`/proc`, `/sys` and their like off that list, so a search from the root of the
+volume on Linux walks into them. It is recorded under *Known rough edges*,
+beside the one blind spot of P14.12's marks.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -1102,7 +1123,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.13 done |
+| 14 — Finding files | P14.1–P14.14 | done |
 
 ## What works today
 
@@ -1480,20 +1501,24 @@ a drive, and `Alt+R` handing a drive to the system file manager. The design is
 written up in [Links](Architecture/LINKS.md), [File operations](Architecture/FILE-OPERATIONS.md), [UI and input](Architecture/UI-AND-INPUT.md) and
 [Cross-platform](Architecture/CROSS-PLATFORM.md), and the commands in the [user guide](USER-GUIDE.md).
 
-**Phase 14, finding files, is planned in full and has begun.** `Alt+F7` will ask
-for a name pattern, a text and where to look; the answer arrives in a
-full-screen window while the search still runs, grouped by directory, and can be
-walked, viewed, reopened or sent into a panel as a temporary listing. The
-fourteen tasks are in [PLAN.md](PLAN.md); the measurement, the query as a value,
-the matching of text in a stream, the walk over the disk, the places the six
-scopes name, the archives, the popup that asks the question, the window that
-answers it, the two keys that walk into a hit or read it, the last results that
-outlive the window and the results as a panel's own listing are done, so a
-search can be asked for, watched, acted on one hit at a time, opened again
-afterwards, stood in as if it were a directory and copied, moved, deleted or
-wiped in bulk from there, on the disk and inside archives alike. P14.14, the
-documentation of the phase, is what is left. Three older things are still
-waiting:
+**Phase 14 is finished.** Fourteen phases, 97 tasks: the fourteenth measured
+`Alt+F7` and found a desktop that takes it, made the query a value whose
+meaningless combinations cannot be built, matched text a buffer at a time in
+whatever encoding the viewer would read, walked the disk — the one walk allowed
+through a link, kept from spinning by a set — over six scopes and into
+archives, asked the question in a popup and answered it in a full-screen window
+that fills while the walk runs, walked into a hit or read it, kept the last
+answer for the session, and turned that answer into a panel whose marks can be
+copied, moved, deleted and wiped wherever they lie, on disk or inside archives.
+The design is written up in [Finding files](Architecture/FINDING-FILES.md), with
+the rest in [Links](Architecture/LINKS.md),
+[State and effects](Architecture/STATE-AND-EFFECTS.md),
+[UI and input](Architecture/UI-AND-INPUT.md) and
+[Cross-platform](Architecture/CROSS-PLATFORM.md), and the command in the
+[user guide](USER-GUIDE.md). What the plan left for a later phase — a history of
+queries, excluding masks, a depth limit, regular expressions and the viewer
+opening at the match — is listed at the end of phase 14 in [PLAN.md](PLAN.md).
+Three older things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`
@@ -1517,6 +1542,17 @@ waiting:
   `KeyMap`, which is a row in the table and a line in the user guide per key.
   Found by reading GNOME's defaults during P14.1, not by pressing them on a
   desktop — no one has run Marbas on one yet.
+- A search *from the root of the volume* on Linux walks into `/proc`, `/sys`,
+  `/run` and the other pseudo file systems. The walk is bounded by the other
+  listed drives, and P13.12 keeps exactly those mounts off the list, so nothing
+  bounds them; P14.5 described them as never entered, which holds only for
+  *All drives*, where they are never a starting place. The fix is to hand
+  `FindGround.resolve` the filtered mounts as roots not to cross. Found while
+  writing the phase down in P14.14, by reading the code.
+- A results panel decides which marks survive a batch by file name, since that
+  is all `Operations.ItemResult` carries. Two hits called `README.md` of which
+  one failed and one did not therefore both keep their marks. Carrying the path
+  in the result would close it, at the price of every place that builds one.
 - `SharpZipLib` cleans an entry name as it writes it, turning a backslash into
   a separator. On Linux, where a backslash is a legal character in a file name,
   packing `a\b.txt` therefore stores `a/b.txt` and the archive gains a level the

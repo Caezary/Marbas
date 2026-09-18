@@ -464,6 +464,36 @@ match however a path was typed. A drive that vanished between the listing and
 the choice needs no case of its own — loading it fails, the failure is the
 listing error it is, and the panel stays put.
 
+## Finding files
+
+**The question is a popup; the answer is a screen.** `Alt+F7` opens *Find*, a
+`Dialog` like every other popup, because everything it asks is typed or ticked
+and `Enter` pressing *Ok* is exactly right there. What it greys out, and why the
+*Last results* button sets a flag rather than being a dismissal, is in
+[Finding files](FINDING-FILES.md), *The popup*. The results then come up in a
+window built the way the viewer is: frameless, full-screen, no buttons, its own
+key bar at the foot and a summary line above it — because P14.1 measured that a
+`Dialog` presses its default button on `Enter` before any handler sees the key,
+and the results need `Enter` to mean "stand on this row".
+
+| Key in the results window | What it does |
+|---------------------------|--------------|
+| `Enter` | closes the window and stands the active panel on the hit, or inside the directory a group header names |
+| `F2` | closes the window and makes the list the active panel's own listing, titled `Find: *.jpg in C:\photos` |
+| `F3` | views the file hit under the cursor over the window; `Esc` in the viewer returns to the list |
+| `Esc`, `F10` | the first `Esc` stops a walk still running and keeps the list up; the next one, or any on a finished list, closes it |
+
+**The bar names the keys and nothing else.** `FindKeys.bar` fills the same
+twelve slots `FunctionKeyBar.build` makes for the panel and the viewer: `F2
+Panel`, `F3 View`, `F10 Quit`. A key rather than a button sends the list to the
+panel for the reason the whole window is a `Window`.
+
+**A results panel is drawn as any panel is.** Its entries are the entries a
+listing gives, named by their path below where the search started, so the
+colours, the footer, sorting, hidden entries, marking and the quick search need
+nothing of their own; only `PanelTitle` knows it, and spells the query and where
+it ran in place of a path, shortened the way a path is when the room runs out.
+
 ## The key table and the bar
 
 **One table holds every key, and the bar is a view of it.** `KeyMap.bindings`
@@ -540,6 +570,14 @@ the disk holding the archive when it is inside one — and a panel already on a
 root stays, rather than re-listing and losing its cursor. `F3` kept its key and
 its label and gained a second meaning, measuring a directory, so it is not in
 the table.
+
+**Phase 14 added one command under two names.**
+
+| Key | Message | On the bar | Why this key |
+|-----|---------|------------|--------------|
+| `Alt+F7`, and `Alt+Shift+F` beside it | `FindRequested` | `F7 Find` while `Alt` is held, on Windows | `Alt+F7` is the classic name and every terminal delivers it, but GNOME's window manager claims it for moving a window before the terminal is sent anything; `Alt` with a letter travels everywhere, as it has since P10.7 |
+
+The results window and its keys are described under *Finding files* above.
 
 **The bar is twelve slots, not a list of what happens to be bound.**
 `KeyMap.bar` walks `KeyMap.functionKeys` — `F1` … `F12`, in order — applies the

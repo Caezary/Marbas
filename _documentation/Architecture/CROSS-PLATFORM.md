@@ -119,6 +119,40 @@ guarantee `ModifierWatch` relies on for `user32`. The *disk* rows are
 CI legs and skip the symbolic-link half where the user may not make one. The
 whole story is in [Links](LINKS.md).
 
+## Finding files
+
+| Check | Windows | Linux | Evidence |
+|-------|---------|-------|----------|
+| `Alt+F7` opens *Find* | yes | yes in a terminal; **no** under a GNOME desktop, which takes the key first | suite; probe; desktop defaults |
+| `Alt+Shift+F` opens *Find* wherever `Alt+F7` does not | yes | yes | suite; probe |
+| `PATH` is split at the platform's own separator | `;`, quotes round an entry trimmed | `:` | suite |
+| A directory `PATH` names twice, in any spelling, is searched once; one that is not there is left out | same | same | suite |
+| *From the root of the volume* does not cross into another listed drive below it | a drive letter holds nothing else | `/` does not enter `/media/user/stick` | suite, over `Fakes.MountedFileSystem` |
+| *All drives* walks every listed drive and not the home row | the ready drives | the storage mounts; the pseudo file systems are never listed, so never started from | suite |
+| *From the root of the volume* stays out of `/proc`, `/sys` and the other pseudo file systems | n/a | **no** — they are not listed roots, so nothing bounds them | code reading |
+| A directory link is followed only when asked, and a link to its own ancestor ends the walk | same | same | suite, over `Fakes.LinkFollowing` |
+| A UTF-16 file is searched as text | yes | yes | suite |
+
+**The `PATH` separator is the one platform difference the search reads, and it
+is read where the platform is known.** `HostEnvironment` carries `PATH` as the
+raw string and `Dependencies.create` picks the separator; `FindGround`
+`.pathDirectories` takes both as arguments, so the Windows and the Unix split are
+tested on either system. Drive letters are compared without regard to case and
+so are mount points — the update knows no platform — which on Unix could only
+mislead with two mounts whose paths differ in case alone.
+
+**The volume is bounded by the other drives, not by asking the system.**
+`FromVolumeRoot` starts at the root `Drives.holding` names and refuses to enter
+any other root `Drives.list` gives, which is the plainest statement of what a
+volume is to Marbas: on Windows no drive lies inside another and the rule never
+fires, on Unix it is what keeps a search of `/` off a stick, a second disk and a
+network share mounted below it. The price of reading the boundary off the list
+is what the list leaves out: a mount the P13.12 filter drops as not being
+storage — `/proc`, `/sys`, `/run` — is no listed root, so a search of `/` walks
+into it like a directory. That is a defect, recorded in
+[Progress](../PROGRESS.md), *Known rough edges*; the fix is to hand the walk the
+filtered mounts as boundaries too.
+
 ## Hidden entries
 
 | Check | Windows | Linux | Evidence |

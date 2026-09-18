@@ -19,10 +19,11 @@ the disk. See [Testing](TESTING.md) for how the suite itself is organised.
 
 **No code comments.** Intent lives in names, tests and these documents.
 
-**`Ui` is one layer in eight folders.** Forty-odd modules under a single folder
+**`Ui` is one layer in nine folders.** Forty-odd modules under a single folder
 stopped being navigable, so they are grouped by what they are about — theme,
-formatting, keys, messages, panels, viewer, dialogs, and the application's own
-composition root — and each folder is a namespace: `Marbas.Ui.Panels.FilePanel`.
+formatting, keys, messages, panels, viewer, dialogs, the search results, and the
+application's own composition root — and each folder is a namespace:
+`Marbas.Ui.Panels.FilePanel`.
 The folder order in the code map below is also the compile order, and every
 dependency inside `Ui` points at a folder listed above it, which is what keeps
 the layer acyclic without any tooling. `Ui` is still one layer of `Adapters` →
@@ -46,6 +47,7 @@ root. `Program.fs` is left with the handful of lines that start the application.
 - [State and effects](STATE-AND-EFFECTS.md) — the update loop, dependency injection, composition
 - [File operations](FILE-OPERATIONS.md) — copy/move/delete/rename, wiping, measuring, batches, viewer and editor
 - [Links](LINKS.md) — the three kinds, which system makes which, why every walk stops at a link
+- [Finding files](FINDING-FILES.md) — the query, matching text, the scopes, the results window, the results panel
 - [Archives](ARCHIVES.md) — kinds and formats, the deduced name, writing, reading, extracting, the libraries
 - [UI and input](UI-AND-INPUT.md) — colour, sorting, hidden entries, search, popups and the drive popup, the key table
 - [Settings persistence](SETTINGS-PERSISTENCE.md) — the config file and what survives a restart
@@ -80,6 +82,8 @@ Marbas/
     LinkKind.fs           symbolic, hard or junction, and why a kind is refused
     DriveKind.fs          fixed, removable, network or optical, not `System.IO.DriveType`
     ProgramSettings.fs    extension and role -> the program that edits or opens it
+    FindQuery.fs          what a search asks: masks, text, scope, options, and what a file answers
+    ResultsRefusal.fs     which command a panel of search results cannot carry out
   FileSystem/
     FileSystemPath.fs     single-case path type wrapping a raw string
     LaunchRequest.fs      what to start, with what, where, and with which rights
@@ -91,15 +95,22 @@ Marbas/
     Settings.fs           the session every tab carries, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             where a panel can be sent: the usable drives, and home on Unix
+    PanelLocation.fs      where a panel stands: a directory, an archive level, search results;
+                          a hit and the ground a search covers
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     Links.fs              what a link request means, what refuses it, and making one
     DirectoryMeasure.fs   the size of a directory or an archive level, stopping at links
+    ContentMatch.fs       whether a file holds a text, read a buffer at a time
+    FindGround.fs         a scope -> the places to walk and the roots not to cross
+    FileSearch.fs         the walk: hits reported as found, links followed once
+    FindAnswer.fs         what the results window answers, and the last results kept
     ArchiveKind.fs        the archive kinds, their extensions and what can be done to each
     ArchivePath.fs        a place inside an archive: never rooted, never climbing
     ArchiveFormat.fs      which kinds can be created, and what each one carries
     ArchiveName.fs        the name an archive is offered under, and its extension
     ArchiveReader.fs      opening an archive: its entries, their content, failures as values
     ArchiveListing.fs     reading one level of an archive as the entries a directory gives
+    SearchListing.fs      search hits as the entries a directory gives, named by their path
     Archive.fs            writing one and taking one apart: the walk, cancelling, the password
     Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     ContentError.fs       what can go wrong reading a file, as values
@@ -111,7 +122,7 @@ Marbas/
                           built from and read back as Settings
     Update.fs             messages and effects: message + state -> state + effects
     Runtime.fs            generic host: the single mutable cell, dispatch, render
-  Ui/                     eight folders, compiled in this order; every
+  Ui/                     nine folders, compiled in this order; every
                           dependency points at a folder listed above it
     Theme/                the look, applied before any view is built
       ClassicScheme.fs      the five schemes the screen is painted with
@@ -123,6 +134,7 @@ Marbas/
       EntryFormat.fs        one entry -> one fixed-width row
       TimestampText.fs      one moment <-> the text a dialog reads and writes back
       PathText.fs           a path too long for the room -> C:\...\parent\current
+      QueryText.fs          a query and where it ran -> the words a title and a summary use
     Keys/                 what a keystroke means, and the bar that names them
       Modifiers.fs          Ctrl / Alt / Shift as a set, the set a key carries,
                             and the key a set makes of a plain one
@@ -174,6 +186,12 @@ Marbas/
       TabDialog.fs          the list `F11` opens, and the tab it answers with
       DriveLine.fs          drive rows -> lines whose root, label, kind and sizes line up
       DriveDialog.fs        the list `Alt+F1` / `Alt+F2` open, and the row it answers with
+      FindDialog.fs         what `Alt+F7` asks, greyed where the query means nothing
+    Find/                 the full-screen results window
+      FindKeys.fs           its keys and its twelve bar labels
+      FindSummary.fs        the walk so far, or its outcome -> the summary line
+      ResultRow.fs          hits -> header and hit rows, grouped by where they live
+      ResultsWindow.fs      the window: list, summary, bar, and the answer it gives
     App/                  the composition root, and the way out to the world
       CursorInfo.fs         cursor entry -> status line text
       StatusLine.fs         the status line view
@@ -192,6 +210,7 @@ Marbas/
     NativeLinks.fs        hard links and junctions through kernel32 and libc
     RegistryHandlers.fs   the Windows registry -> the handlers a name has
     BatchRunner.fs        a batch on a background task under the progress dialog
+    SearchRunner.fs       the walk on a background task, hits gathered ten times a second
     ModifierWatch.fs      held Ctrl / Alt / Shift, polled on Windows, absent elsewhere
     DirectoryWatch.fs     the directories on screen watched, bursts collapsed,
                           what the watcher cannot say polled for
@@ -209,7 +228,7 @@ Marbas.Tests/
   FileSystem/             unit tests, one module per FileSystem module
   State/                  unit tests, one module per State module
   Ui/                     unit tests of the pure Ui modules and the Shell
-                          interpreter, in the same eight folders as the source
+                          interpreter, in the same nine folders as the source
   Integration/            every test that constructs a Terminal.Gui view, in
                           those same folders
     Gui.fs                 focusedWindow, leftList, rightList, press, panel,

@@ -99,6 +99,61 @@ measuring and wiping treat a link to a directory as the link itself and never go
 inside it: a copy is a new link to the same place, and deleting removes only the
 link.
 
+## Finding files
+
+`Alt+F7` (or `Alt+Shift+F`, which is the one to use on a GNOME desktop, where
+`Alt+F7` moves the window instead) asks what to look for:
+
+- **File names** — one or more masks separated by `;`, such as `*.jpg;*.png`.
+  `*` and `*.*` both mean every name, and a mask without `*` or `?` is found
+  anywhere in the name, so `report` finds `2026-report.pdf`. Case never matters
+  in a name.
+- **Containing text** — leave it empty to search by name alone. With text, you
+  can match case, match whole words only, look for files that do *not* contain
+  it, and search binary files as well (off by default, since executables are
+  full of accidental matches). The encoding of each file is detected, so a
+  UTF-16 file is searched as text.
+- **Where** — the panel's directory and everything below it, that directory
+  alone, the marked directories, the whole drive the panel is on (without
+  wandering into other drives mounted inside it), every drive, or the
+  directories on your `PATH`.
+- **Options** — directories as well as files, hidden entries, following links to
+  directories (a link that loops back on itself is not followed twice), and
+  looking inside archives, whose entries are matched by name and, with text, by
+  content.
+
+The results fill a full-screen window while the search runs, grouped under the
+directory each one lives in:
+
+- `Enter` closes the window and puts the panel on the result, or inside the
+  directory whose header you are on. A hidden result turns hidden entries on; a
+  result inside an archive opens the archive at that level.
+- `F2` sends the whole list into the panel (see below).
+- `F3` views the file under the cursor; `Esc` in the viewer returns to the list.
+- `Esc` stops a search that is still running and keeps what it found on screen;
+  `Esc` again, or `F10`, closes the window.
+
+The last results are kept until the next search: *Last results (123)* in the
+`Alt+F7` popup brings them back, drops whatever has been deleted since, and says
+how many went. They are forgotten when Marbas quits.
+
+**Results in the panel.** After `F2` the panel lists the results by their path
+below where the search started — `photos\2025\beach.jpg` — or by their full path
+when the search started in several places. The title says what was searched for
+and where (`Find: *.jpg in C:\photos`). Sorting, hidden entries, marking and the
+quick search work as usual. `..` returns to where the panel stood before, `Enter`
+on a directory goes into it, `Enter` on a file runs it, `Ctrl+R` drops results
+that are gone, and `Alt+F7` searches again from where the panel stood.
+
+From there the marked results can be copied (`F5`) or moved (`F6`) into the other
+panel, deleted (`F8`, `Shift+F8`), wiped (`Alt+Del`) or edited (`F4`) — even
+when they lie in different directories and inside archives, all in one go. A
+mark inside an archive makes `F8` delete for good, since an archive has no
+trash, and an archive of a kind Marbas cannot change (a plain `tar`, a `rar`) is
+reported by name while the rest still goes ahead. What needs a real directory —
+making a directory or a file, packing, unpacking, making a link, renaming — says
+so instead, and so does copying or moving *into* a panel of results.
+
 ## Sorting and hidden entries
 
 - `Ctrl+F3`…`Ctrl+F6` sort the active panel by name, extension, date or size;
@@ -189,6 +244,9 @@ rewritten in the new spelling the next time the session is saved.
   which keep it for full screen; cmder passes it through. Use `Alt+T` to list
   the tabs. A WSL session inherits whatever terminal it was started from, so the
   same Linux build answers `F11` under one and not under the other.
+- **`Alt+F7`** is taken by GNOME's window manager for moving a window, so on a
+  GNOME desktop use `Alt+Shift+F` to find files. `PATH` is split at `;` on
+  Windows and `:` on Unix.
 - **The modifier-aware function-key bar is Windows-only** — no Unix terminal
   driver Marbas relies on reports a held `Ctrl`/`Alt` on its own.
 - **`F4` with a full-screen console editor** (`vi`, `nano`) does not work

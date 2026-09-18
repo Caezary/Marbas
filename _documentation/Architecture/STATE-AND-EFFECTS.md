@@ -297,3 +297,39 @@ every other transition silent. The first watch of a session is not a transition
 at all: at startup the panels already stand where the settings put them, so
 `MainWindow` arms it by interpreting one `WatchLocations` itself, next to the
 `WatchModifiers` it already wires. See [Auto-refresh](AUTO-REFRESH.md).
+
+**A search reaches the state once, finished.** `FindEntered` raises `RunSearch`
+with the query, the location the panel returns to and its marked directories;
+`Shell` resolves the ground and hands both to the `RunSearch` port, and while the
+walk runs its hits live in the results window, not in `AppState`. The window
+answers a `FindAnswer` when it closes, which comes back as `SearchAnswered`: the
+`FindResults` in it become `AppState.LastSearch`, and the `FindLanding` beside
+them — a hit, a directory, the panel, or nothing — decides where the active
+panel goes. `LastSearch` belongs to the session rather than to a tab and is
+never written to the settings file; `LastResultsRequested` drops what is gone
+from it and raises `ShowLastResults`, which fills the same window from the kept
+answer. Why the hits are kept out of the state while they arrive is in
+[Finding files](FINDING-FILES.md), *The results window*.
+
+**A panel can stand on search results, and every question about a place has a
+third answer.** `PanelLocation` has `SearchResults` beside `OnDisk` and
+`InArchive`, holding the query, the ground, the hits, the location stood on
+before (`Origin`) and the entry the cursor was on there (`Returning`).
+`PanelLocation.origin` is where such a panel really is for everything that needs
+a place — the session file, a new tab, the next search, the root of its volume —
+and `PanelLocation.watched` answers nothing for it, so it drops out of the watch
+by the same comparison that raises `WatchLocations`. The paths of its entries
+come from the hits rather than from the panel, through `SearchListing.hitFor`,
+which is why `operationPaths`, the cursor paths and `enter` each grew a
+`SearchResults` arm rather than a second function. A key that needs a directory
+where a results panel stands answers `NotInSearchResults` with the
+`ResultsRefusal` naming it, and `Update.guarding` asks that question once, ahead
+of the transition, for the active panel and for the panel that would receive.
+
+**Marks in several places are a `TransferSource` of its own.** `FromPlaces`
+holds one `FromDisk` or `FromArchive` group per place, and `Update` maps it onto
+`CopyPlaces`, `MovePlaces` and `DeletePlaces`, which `Shell` runs as one batch of
+pieces — each built through the effect its place already had. A results panel
+whose marks lie in one place answers that place's own case, so nothing about
+one place changed. See [Finding files](FINDING-FILES.md), *Operations on the
+results*.
