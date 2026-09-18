@@ -1582,3 +1582,71 @@ let ``what the watch reports is dispatched as an external change`` () =
     report ()
 
     Assert.Equal<Message list>([ ExternalChangeDetected ], List.ofSeq sent)
+
+let private searchFor scope =
+    { What = FindWhat.create (NameMasks.read "*.txt") None FilesOnly
+      Scope = scope
+      Hidden = Concealed
+      Links = StopAtLinks
+      Archives = SkipArchives }
+
+let private answering landing =
+    { Landing = landing; Hits = []; Cursor = 0 }
+
+[<Fact>]
+let ``the search runs over the ground its scope names`` () =
+    let mutable asked = { Roots = []; OtherRoots = [] }
+
+    let deps =
+        { noDeps () with
+            RunSearch = fun _ ground _ _ -> asked <- ground }
+
+    Shell.interpret deps ignore (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
+
+    Assert.Equal<PanelLocation list>([ OnDisk(fp (at "start")) ], asked.Roots)
+
+[<Fact>]
+let ``the directories of PATH are the ground of the scope that names them`` () =
+    let mutable asked = { Roots = []; OtherRoots = [] }
+
+    let deps =
+        { noDeps () with
+            PathDirectories = [ fp (at "tools") ]
+            RunSearch = fun _ ground _ _ -> asked <- ground }
+
+    Shell.interpret deps ignore (RunSearch(searchFor PathDirectories, OnDisk(fp (at "start")), []))
+
+    Assert.Equal<PanelLocation list>([ OnDisk(fp (at "tools")) ], asked.Roots)
+
+[<Fact>]
+let ``what the results window answered becomes a message`` () =
+    let sent, dispatch = capture ()
+    let landing = AtDirectory(OnDisk(fp (at "start/docs")))
+
+    let deps =
+        { noDeps () with
+            RunSearch = fun _ _ _ finished -> finished (answering (Some landing)) }
+
+    Shell.interpret deps dispatch (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
+
+    Assert.Equal<Message list>([ SearchAnswered(answering (Some landing)) ], List.ofSeq sent)
+
+[<Fact>]
+let ``a hit the results window asks to view is read out of the file it names`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "first")
+    let mutable shown = ""
+
+    let hit: FileSearch.FindHit =
+        { Location = OnDisk(fp (at "start"))
+          Entry = DirectoryListing.fileEntry (fs.FileInfo.New(at "start/notes.txt")) }
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            ShowFile = fun source -> shown <- FileSystemPath.value source.Path
+            RunSearch = fun _ _ view _ -> view hit }
+
+    Shell.interpret deps ignore (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
+
+    Assert.Equal(at "start/notes.txt", shown)

@@ -932,6 +932,32 @@ directories, and `Shell` asks `FindGround.resolve` with the `PATH` directories
 `Dependencies` read once at startup, splitting them at `;` on Windows and `:` on
 Unix.
 
+**P14.9 let the results be walked into and read.** `Enter` on a hit closes the
+window and stands the active panel where that hit lives with the cursor on it,
+whether it is a file or a directory — a directory hit lands *beside* it, not
+inside it, because the panel stands where the hit was found. A hit the panel
+conceals turns its hidden entries on first, the way `Alt+H` would, since the
+user has just asked to stand on it; a hit inside an archive walks the panel into
+that level, which needs nothing new, the location the hit carries since P14.6
+being the one the panels have used since P9.10. `Enter` on a group header stands
+the panel inside the directory the header names. `F3` views a file hit over the
+results window — a hit inside an archive streamed as P9.11 streams it, its
+password asked for first — and `Esc` in the viewer comes back to the list with
+the cursor where it was; `F3` on a directory or on a header views nothing. What
+the window answers is a `FindAnswer`: the landing, or nothing when it was left
+by `Esc`, together with the hits and the row the cursor was on, which P14.10
+will keep. It reaches `Update` as `SearchAnswered`, so every landing is a test
+over the update rather than over a view. The `RunSearch` port grew the two
+functions that make this possible — one to view a hit, one to take the answer —
+the way `RunBatch` takes the work and what to do when it finishes, which keeps
+the password question and the archive streaming in `Shell` beside the ones `F3`
+in a panel already goes through: `ViewFile` and the new port now share one
+`showPath`. Proved in the running application over this repository: the results
+on screen, `F3` putting the viewer over them
+(`FindSummary.fs  Text  UTF-8  1,117 B  line 1  64%`), `Esc` bringing the group
+header back, and `Enter` closing the window with `AtHit … FindSummary.fs` at row
+2.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -960,7 +986,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.8 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.9 done |
 
 ## What works today
 
@@ -1344,10 +1370,11 @@ full-screen window while the search still runs, grouped by directory, and can be
 walked, viewed, reopened or sent into a panel as a temporary listing. The
 fourteen tasks are in [PLAN.md](PLAN.md); the measurement, the query as a value,
 the matching of text in a stream, the walk over the disk, the places the six
-scopes name, the archives, the popup that asks the question and the window that
-answers it are done, so a search can be asked for and watched from beginning to
-end; what it finds cannot be acted on yet. P14.9, `Enter` and `F3` from the
-results, is next. Three older things are still waiting:
+scopes name, the archives, the popup that asks the question, the window that
+answers it and the two keys that walk into a hit or read it are done, so a
+search can be asked for, watched and acted on one hit at a time; nothing
+survives the window closing yet. P14.10, the last results, is next. Three older
+things are still waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —
   colours, a resized terminal, the mouse, a real Unix permission bit, and `F4`

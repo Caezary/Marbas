@@ -5,6 +5,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.DirectoryListing
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -106,3 +107,105 @@ let ``a marked file is no place to search`` () =
     let result = update fs (FindEntered(query MarkedDirectories)) state
 
     Assert.Equal<Effect list>([ RunSearch(query MarkedDirectories, OnDisk(fp (at "start")), []) ], result.Effects)
+
+let private hidden = Root.at "start/.secret.txt"
+
+let private treeWith () =
+    let fs = mockFs ()
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "hi")
+    fs.AddFile(hidden, MockFileData "hi")
+    fs
+
+let private entry name kind visibility =
+    { Name = EntryName.create name
+      Kind = kind
+      Size = None
+      Measured = None
+      Modified = System.DateTimeOffset.MinValue
+      Visibility = visibility
+      Executability = NotExecutable
+      LinkTarget = None }
+
+let private hitIn where name kind visibility : FileSearch.FindHit =
+    { Location = OnDisk(fp (at where))
+      Entry = entry name kind visibility }
+
+let private landing where = { Landing = Some where; Hits = []; Cursor = 0 }
+
+let private cursorName state =
+    cursorEntry (activePanel state) |> Option.map (_.Name >> EntryName.value)
+
+[<Fact>]
+let ``Enter on a file stands the panel in the directory holding it, on the file`` () =
+    let fs = treeWith ()
+    let state = loaded fs |> loadPanel fs Left (fp (at "backup")) |> Expect.ok
+    let hit = hitIn "start" "notes.txt" File Plain
+
+    let result = update fs (SearchAnswered(landing (AtHit hit))) state
+
+    Assert.Equal(OnDisk(fp (at "start")), (activePanel result.State).Path)
+    Assert.Equal(Some "notes.txt", cursorName result.State)
+
+[<Fact>]
+let ``Enter on a directory stands the panel beside it, not inside it`` () =
+    let fs = treeWith ()
+    let state = loaded fs |> loadPanel fs Left (fp (at "backup")) |> Expect.ok
+    let hit = hitIn "start" "docs" Directory Plain
+
+    let result = update fs (SearchAnswered(landing (AtHit hit))) state
+
+    Assert.Equal(OnDisk(fp (at "start")), (activePanel result.State).Path)
+    Assert.Equal(Some "docs", cursorName result.State)
+
+[<Fact>]
+let ``a hit the panel conceals shows the hidden entries first`` () =
+    let fs = treeWith ()
+    let state = loaded fs
+    let hit = hitIn "start" ".secret.txt" File Hidden
+
+    let result = update fs (SearchAnswered(landing (AtHit hit))) state
+
+    Assert.Equal(Shown, (activePanel result.State).Hidden)
+    Assert.Equal(Some ".secret.txt", cursorName result.State)
+
+[<Fact>]
+let ``Enter on a group header stands the panel inside that directory`` () =
+    let fs = treeWith ()
+    let state = loaded fs
+
+    let result = update fs (SearchAnswered(landing (AtDirectory(OnDisk(fp (at "start/docs")))))) state
+
+    Assert.Equal(OnDisk(fp (at "start/docs")), (activePanel result.State).Path)
+
+[<Fact>]
+let ``a window left without a landing moves nothing`` () =
+    let fs = treeWith ()
+    let state = loaded fs
+
+    let result = update fs (SearchAnswered { Landing = None; Hits = []; Cursor = 0 }) state
+
+    Assert.Equal(OnDisk(fp (at "start")), (activePanel result.State).Path)
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``a landing whose directory is gone says so instead of moving`` () =
+    let fs = treeWith ()
+    let state = loaded fs
+
+    let result = update fs (SearchAnswered(landing (AtDirectory(OnDisk(fp (at "start/gone")))))) state
+
+    Assert.Equal<Effect list>([ ReportListingError(DirectoryNotFound(fp (at "start/gone"))) ], result.Effects)
+
+[<Fact>]
+let ``Enter on a hit inside an archive walks the panel into that level`` () =
+    let fs = ArchiveFixture.packed ()
+    let state = ArchiveFixture.loaded fs
+    let level = InArchive(ArchiveFixture.archive, ArchivePath.child ArchivePath.root (EntryName.create "docs"))
+    let hit: FileSearch.FindHit =
+        { Location = level
+          Entry = entry "inner.txt" File Plain }
+
+    let result = update fs (SearchAnswered(landing (AtHit hit))) state
+
+    Assert.Equal(level, (activePanel result.State).Path)
+    Assert.Equal(Some "inner.txt", cursorName result.State)

@@ -12,7 +12,14 @@ open Marbas.Ui.Find
 
 let private Gathering = TimeSpan.FromMilliseconds 100.0
 
-let run (app: IApplication) (fs: IFileSystem) (query: FindQuery) (ground: FindGround) =
+let run
+    (app: IApplication)
+    (fs: IFileSystem)
+    (query: FindQuery)
+    (ground: FindGround)
+    (view: FileSearch.FindHit -> unit)
+    (finished: FindAnswer -> unit)
+    =
     let cancellation = new CancellationTokenSource()
     let pending = ConcurrentQueue<FileSearch.FindHit>()
     let mutable walking = ground.Roots |> List.tryHead |> Option.map (PanelLocation.value fs) |> Option.defaultValue ""
@@ -22,7 +29,7 @@ let run (app: IApplication) (fs: IFileSystem) (query: FindQuery) (ground: FindGr
           IsCancelled = fun () -> cancellation.IsCancellationRequested }
 
     let window =
-        ResultsWindow.create fs (fun () -> cancellation.Cancel()) _.RequestStop()
+        ResultsWindow.create fs view (fun () -> cancellation.Cancel()) _.RequestStop()
 
     let gather () =
         let arrived =
@@ -47,4 +54,5 @@ let run (app: IApplication) (fs: IFileSystem) (query: FindQuery) (ground: FindGr
     app.Run window |> ignore
     cancellation.Cancel()
     app.RemoveTimeout timer |> ignore
+    finished (ResultsWindow.answer window)
     window.Dispose()

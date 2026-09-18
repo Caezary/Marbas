@@ -36,6 +36,8 @@ type ResultsView(fs: IFileSystem) =
 
     member val Room = 0 with get, set
 
+    member val Landing: FindLanding option = None with get, set
+
     member _.Hits = List.ofSeq found
 
     member _.Rows = ResultRow.rows (List.ofSeq found)
@@ -108,6 +110,32 @@ let private refresh (window: ResultsView) =
     (summary window).Text <- FindSummary.describe window.Progress
     view.SetNeedsDraw()
 
+let private rowUnderCursor (window: ResultsView) =
+    let standing = (list window).SelectedItem |> Option.ofNullable |> Option.defaultValue 0
+
+    window.Rows |> List.tryItem standing
+
+let private viewRow (window: ResultsView) (view: FindHit -> unit) =
+    match rowUnderCursor window with
+    | Some(ResultRow.Hit hit) when hit.Entry.Kind = DirectoryListing.File -> view hit
+    | _ -> ()
+
+let private standOn (window: ResultsView) (close: Window -> unit) =
+    match rowUnderCursor window with
+    | None -> ()
+    | Some row ->
+        window.Landing <-
+            match row with
+            | ResultRow.Hit hit -> Some(AtHit hit)
+            | ResultRow.GroupHeader location -> Some(AtDirectory location)
+
+        close window
+
+let answer (window: ResultsView) =
+    { Landing = window.Landing
+      Hits = window.Hits
+      Cursor = (list window).SelectedItem |> Option.ofNullable |> Option.defaultValue 0 }
+
 let private leave (window: ResultsView) (stop: unit -> unit) (close: Window -> unit) =
     if window.Running && not window.Asked then
         window.Ask()
@@ -115,7 +143,7 @@ let private leave (window: ResultsView) (stop: unit -> unit) (close: Window -> u
     else
         close window
 
-let create (fs: IFileSystem) (stop: unit -> unit) (close: Window -> unit) =
+let create (fs: IFileSystem) (view: FindHit -> unit) (stop: unit -> unit) (close: Window -> unit) =
     let window = new ResultsView(fs)
 
     window.BorderStyle <- LineStyle.None
@@ -140,7 +168,13 @@ let create (fs: IFileSystem) (stop: unit -> unit) (close: Window -> unit) =
     hits.KeyDown.Add(fun (key: Key) ->
         if FindKeys.closes key then
             key.Handled <- true
-            leave window stop close)
+            leave window stop close
+        elif key = FindKeys.viewKey then
+            key.Handled <- true
+            viewRow window view
+        elif key = FindKeys.standKey then
+            key.Handled <- true
+            standOn window close)
 
     window.Add(hits, line, bar)
     FunctionKeyBar.label bar FindKeys.bar

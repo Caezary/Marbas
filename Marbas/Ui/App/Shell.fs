@@ -64,7 +64,7 @@ type Dependencies =
       Launch: LaunchRequest -> Result<unit, LaunchError>
       AskFind: MarkedGround -> HiddenEntries -> FindQuery option
       PathDirectories: FileSystemPath list
-      RunSearch: FindQuery -> FindGround -> unit
+      RunSearch: FindQuery -> FindGround -> (FileSearch.FindHit -> unit) -> (FindAnswer -> unit) -> unit
       LinkKinds: LinkKind list
       AskLink: LinkKind list -> string -> (string -> LinkKind -> LinkRefusal option) -> LinkChoice option
       RefuseLink: LinkRequest -> LinkRefusal option
@@ -131,12 +131,30 @@ let private unpackTargets (deps: Dependencies) targetDirectory (archive: FileSys
         |> List.map (_.Name >> ArchivePath.child ArchivePath.root)
         |> approvedEntries deps targetDirectory archive
 
+let private showPath (deps: Dependencies) path =
+    match FileWindow.openFile deps.FileSystem path with
+    | Ok source ->
+        use source = source
+        deps.ShowFile source
+    | Error error -> deps.ReportError ContentErrorMessage.Title (ContentErrorMessage.describe error)
+
 let private showEntry (deps: Dependencies) archive password entry =
     match FileWindow.openEntry deps.FileSystem password archive entry with
     | Ok source ->
         use source = source
         deps.ShowFile source
     | Error error -> deps.ReportError ArchiveErrorMessage.Title (ArchiveErrorMessage.describe error)
+
+let private showHit (deps: Dependencies) (hit: FileSearch.FindHit) =
+    match hit.Location with
+    | OnDisk _ -> showPath deps (FileSearch.FindHit.spelled deps.FileSystem hit)
+    | InArchive(archive, level) ->
+        let entry = ArchivePath.child level hit.Entry.Name
+
+        match passwordFor deps archive with
+        | NotGiven -> ()
+        | NotNeeded -> showEntry deps archive None entry
+        | Given password -> showEntry deps archive (Some password) entry
 
 let private approvedInto (deps: Dependencies) archive level sources =
     let taken =
@@ -266,8 +284,10 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Some query -> dispatch (FindEntered query)
         | None -> ()
     | RunSearch(query, location, marked) ->
-        FindGround.resolve deps.FileSystem location marked deps.PathDirectories query.Scope
-        |> deps.RunSearch query
+        let ground =
+            FindGround.resolve deps.FileSystem location marked deps.PathDirectories query.Scope
+
+        deps.RunSearch query ground (showHit deps) (SearchAnswered >> dispatch)
     | PromptForLink(sources, directory, suggestion) ->
         let refusalOf text kind =
             Links.requests deps.FileSystem kind sources directory text
@@ -368,12 +388,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
             MeasureTitle
             (fun control -> DirectoryMeasure.measureAll deps.FileSystem control targets)
             (MeasureFinished >> dispatch)
-    | ViewFile path ->
-        match FileWindow.openFile deps.FileSystem path with
-        | Ok source ->
-            use source = source
-            deps.ShowFile source
-        | Error error -> deps.ReportError ContentErrorMessage.Title (ContentErrorMessage.describe error)
+    | ViewFile path -> showPath deps path
     | ViewArchiveEntry(archive, entry) ->
         match passwordFor deps archive with
         | NotGiven -> ()

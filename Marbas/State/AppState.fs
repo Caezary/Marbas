@@ -357,6 +357,19 @@ let operationTargets panel =
     | [] -> cursorEntry panel |> Option.filter selectable |> Option.toList
     | marked -> marked
 
+let standOnHit (fs: IFileSystem) side (hit: FileSearch.FindHit) state =
+    let showing =
+        match hit.Entry.Visibility with
+        | Hidden -> Shown
+        | Plain -> (panel side state).Hidden
+
+    state
+    |> updatePanel side (fun p -> { p with Hidden = showing })
+    |> loadLocationFocusing fs side hit.Location (ByName hit.Entry.Name)
+
+let standInside (fs: IFileSystem) side location state =
+    loadLocationFocusing fs side location Top state
+
 let markedDirectories (fs: IFileSystem) panel =
     selectedEntries panel
     |> List.filter (fun entry -> entry.Kind = Directory)

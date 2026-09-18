@@ -35,6 +35,7 @@ type Message =
     | MoveFinished of Operations.ItemResult list
     | FindRequested
     | FindEntered of FindQuery
+    | SearchAnswered of FindAnswer
     | LinkRequested
     | LinkEntered of LinkChoice
     | LinksMade of made: FileSystemPath list * results: Operations.ItemResult list
@@ -382,6 +383,11 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         let panel = activePanel state
 
         request state (RunSearch(query, panel.Path, markedDirectories fs panel))
+    | SearchAnswered answer ->
+        match answer.Landing with
+        | None -> stay state
+        | Some(AtHit hit) -> standOnHit fs state.Active hit state |> applyListing'
+        | Some(AtDirectory location) -> standInside fs state.Active location state |> applyListing'
     | LinkRequested ->
         let panel = activePanel state
 

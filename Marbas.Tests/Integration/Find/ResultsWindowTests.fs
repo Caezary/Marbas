@@ -35,12 +35,14 @@ let private hitIn where name =
 
 let private counts files = { Files = files; Directories = 0; Skipped = 0 }
 
-let private showing stop close =
-    let window = ResultsWindow.create (MockFileSystem()) stop close
+let private watching view stop close =
+    let window = ResultsWindow.create (MockFileSystem()) view stop close
     window.BeginInit()
     window.EndInit()
     window.Layout(Size(80, 24)) |> ignore
     window
+
+let private showing stop close = watching ignore stop close
 
 let private laidOut () = showing ignore ignore
 
@@ -166,3 +168,85 @@ let ``the key bar says which key leaves the results`` () =
 
     Assert.Equal<string list>(FindKeys.bar, labels)
     Assert.Equal("Quit", labels |> List.item 9)
+
+let private viewing (seen: ResizeArray<FindHit>) = watching seen.Add ignore ignore
+
+let private directoryIn where name =
+    { Location = OnDisk(fp (at where))
+      Entry = { file name with Kind = Directory; Size = None } }
+
+[<Fact>]
+let ``F3 on a file hit views it`` () =
+    let seen = ResizeArray<FindHit>()
+    use window = viewing seen
+    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    (ResultsWindow.list window).SelectedItem <- 1
+
+    press (ResultsWindow.list window) Key.F3
+
+    Assert.Equal<FindHit list>([ hitIn "start" "a.txt" ], List.ofSeq seen)
+
+[<Fact>]
+let ``F3 on a directory hit views nothing`` () =
+    let seen = ResizeArray<FindHit>()
+    use window = viewing seen
+    ResultsWindow.add window [ directoryIn "start" "docs" ]
+    (ResultsWindow.list window).SelectedItem <- 1
+
+    press (ResultsWindow.list window) Key.F3
+
+    Assert.Empty seen
+
+[<Fact>]
+let ``F3 on the header of a group views nothing`` () =
+    let seen = ResizeArray<FindHit>()
+    use window = viewing seen
+    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    (ResultsWindow.list window).SelectedItem <- 0
+
+    press (ResultsWindow.list window) Key.F3
+
+    Assert.Empty seen
+
+[<Fact>]
+let ``Enter on a hit answers it and closes the window`` () =
+    let closed = ref 0
+    use window = showing ignore (fun _ -> closed.Value <- closed.Value + 1)
+    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    (ResultsWindow.list window).SelectedItem <- 1
+
+    press (ResultsWindow.list window) Key.Enter
+
+    Assert.Equal(Some(AtHit(hitIn "start" "a.txt")), (ResultsWindow.answer window).Landing)
+    Assert.Equal(1, closed.Value)
+
+[<Fact>]
+let ``Enter on the header of a group answers the directory it names`` () =
+    use window = laidOut ()
+    ResultsWindow.add window [ hitIn "start/docs" "a.txt" ]
+    (ResultsWindow.list window).SelectedItem <- 0
+
+    press (ResultsWindow.list window) Key.Enter
+
+    Assert.Equal(Some(AtDirectory(OnDisk(fp (at "start/docs")))), (ResultsWindow.answer window).Landing)
+
+[<Fact>]
+let ``a window left by Esc answers no landing at all`` () =
+    use window = laidOut ()
+    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    ResultsWindow.finish window (Finished(counts 1))
+
+    press (ResultsWindow.list window) Key.Esc
+
+    Assert.Equal(None, (ResultsWindow.answer window).Landing)
+
+[<Fact>]
+let ``the answer carries what was found and the row it was left on`` () =
+    use window = laidOut ()
+    ResultsWindow.add window [ hitIn "start" "a.txt"; hitIn "start" "b.txt" ]
+    (ResultsWindow.list window).SelectedItem <- 2
+
+    let answer = ResultsWindow.answer window
+
+    Assert.Equal<FindHit list>([ hitIn "start" "a.txt"; hitIn "start" "b.txt" ], answer.Hits)
+    Assert.Equal(2, answer.Cursor)
