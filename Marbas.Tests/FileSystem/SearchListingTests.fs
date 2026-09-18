@@ -109,6 +109,61 @@ let ``a concealed hit is listed only where the panel shows hidden entries`` () =
     Assert.Equal<string list>([ ".." ], named concealing)
     Assert.Equal<string list>([ ".."; ".secret.txt" ], named showing)
 
+let private packed () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "work/notes.txt", MockFileData "notes")
+    fs.AddFile(at "work/docs/inner.txt", MockFileData "inner")
+    fs.AddDirectory(at "start")
+
+    Archive.write
+        fs
+        Operations.unattended
+        { Path = fp (at "start/data.zip")
+          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Compression = Normal
+          Password = None }
+        [ fp (at "work/notes.txt"); fp (at "work/docs") ]
+    |> ignore
+
+    fs
+
+let private archived level name kind =
+    { Location = InArchive(fp (at "start/data.zip"), ArchivePath.tryCreate level |> Expect.some)
+      Entry = { entry name Plain with Kind = kind } }
+
+[<Fact>]
+let ``a hit inside an archive stays while the archive still holds it`` () =
+    let fs = packed ()
+
+    let hits = [ archived "" "notes.txt" File; archived "" "docs" Directory; archived "docs" "inner.txt" File ]
+
+    let entries = listed fs Concealed (fromStart hits)
+
+    Assert.Equal<string list>(
+        [ ".."; relative "data.zip/docs"; relative "data.zip/docs/inner.txt"; relative "data.zip/notes.txt" ],
+        named entries
+    )
+
+[<Fact>]
+let ``a hit inside an archive that no longer holds it is left out`` () =
+    let fs = packed ()
+
+    Archive.removeEntries fs Operations.unattended (fp (at "start/data.zip")) [ ArchivePath.tryCreate "notes.txt" |> Expect.some ]
+    |> ignore
+
+    let entries = listed fs Concealed (fromStart [ archived "" "notes.txt" File; archived "docs" "inner.txt" File ])
+
+    Assert.Equal<string list>([ ".."; relative "data.zip/docs/inner.txt" ], named entries)
+
+[<Fact>]
+let ``a hit inside an archive whose index cannot be read stays while the archive is there`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/data.zip", MockFileData "not a zip")
+
+    let entries = listed fs Concealed (fromStart [ archived "" "notes.txt" File ])
+
+    Assert.Equal<string list>([ ".."; relative "data.zip/notes.txt" ], named entries)
+
 [<Fact>]
 let ``the name a hit is shown under leads back to that hit`` () =
     let fs = mockFs ()

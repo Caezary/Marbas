@@ -44,8 +44,6 @@ let describe error =
     | LinkRefused(refusal, path) ->
         $"'{FileSystemPath.value path}' was not made. {LinkRefusalMessage.describe refusal}"
     | NotInSearchResults refusal -> resultsRefusal refusal
-    | HitInsideArchive path ->
-        $"'{FileSystemPath.value path}' lies inside an archive.\nHits inside archives cannot be copied, moved or deleted yet."
     | BatchFailed reason -> $"The operation could not be completed: {reason}"
     | OperationFailed(path, reason) -> $"Could not complete '{FileSystemPath.value path}': {reason}"
 

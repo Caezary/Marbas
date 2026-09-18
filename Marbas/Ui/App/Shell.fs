@@ -250,6 +250,91 @@ let private crossing (deps: Dependencies) dispatch title carry finished source e
                     |> itemsOf deps source)
                 (finished >> dispatch))
 
+type private Piece = Operations.BatchControl -> Operations.ItemResult list
+
+let private gated (deps: Dependencies) archive (piece: unit -> Piece option) : Piece option =
+    match Archive.changeRefusal deps.FileSystem archive with
+    | Some refusal -> Some(fun _ -> [ refusedWhole deps archive refusal ])
+    | None -> piece ()
+
+let private approvedOnDisk (deps: Dependencies) paths directory (piece: FileSystemPath list -> Piece) =
+    match Operations.approve deps.FileSystem (askOverwrite deps) paths directory with
+    | [] -> None
+    | approved -> Some(piece approved)
+
+let private approvedInArchive (deps: Dependencies) archive level paths (piece: FileSystemPath list -> Piece) =
+    match approvedInto deps archive level paths with
+    | [] -> None
+    | approved -> Some(piece approved)
+
+let private copyPiece (deps: Dependencies) target group : Piece option =
+    let fs = deps.FileSystem
+
+    match group, target with
+    | FromDisk paths, ToDirectory directory ->
+        approvedOnDisk deps paths directory (fun approved control -> Operations.copyAll fs control approved directory)
+    | FromArchive(archive, entries), ToDirectory directory ->
+        extractPlan deps directory archive entries
+        |> Option.map (fun plan control -> Archive.extractAll fs control [ plan ])
+    | FromDisk paths, ToArchive(into, level) ->
+        approvedInArchive deps into level paths (fun approved control ->
+            Archive.addEntries fs control into level approved |> itemsOf deps into)
+    | FromArchive(archive, entries), ToArchive(into, level) ->
+        acrossPlan deps archive into level entries
+        |> Option.map (fun plan control ->
+            Archive.copyAcross fs control plan.Request plan.Targets into level |> itemsOf deps archive)
+    | FromPlaces _, _ -> None
+
+let private movePiece (deps: Dependencies) target group : Piece option =
+    let fs = deps.FileSystem
+
+    match group, target with
+    | FromDisk paths, ToDirectory directory ->
+        approvedOnDisk deps paths directory (fun approved control -> Operations.moveAll fs control approved directory)
+    | FromArchive(archive, entries), ToDirectory directory ->
+        gated deps archive (fun () ->
+            extractPlan deps directory archive entries
+            |> Option.map (fun plan control ->
+                Archive.moveOut fs control plan.Request plan.Targets |> itemsOf deps archive))
+    | FromDisk paths, ToArchive(into, level) ->
+        approvedInArchive deps into level paths (fun approved control ->
+            Archive.moveIn fs control into level approved |> itemsOf deps into)
+    | FromArchive(archive, entries), ToArchive(into, level) ->
+        gated deps archive (fun () ->
+            acrossPlan deps archive into level entries
+            |> Option.map (fun plan control ->
+                Archive.moveAcross fs control plan.Request plan.Targets into level |> itemsOf deps archive))
+    | FromPlaces _, _ -> None
+
+let private deletePiece (deps: Dependencies) mode group : Piece option =
+    let fs = deps.FileSystem
+
+    match group, mode with
+    | FromDisk paths, ToTrash -> Some(fun _ -> Operations.removeAll fs deps.SendToTrash paths)
+    | FromDisk paths, Permanently -> Some(fun _ -> Operations.removeAll fs (Operations.delete fs) paths)
+    | FromDisk paths, ByWiping -> Some(fun control -> Operations.wipeAll fs control paths)
+    | FromArchive(archive, entries), _ ->
+        gated deps archive (fun () ->
+            Some(fun control -> Archive.removeEntries fs control archive entries |> itemsOf deps archive))
+    | FromPlaces _, _ -> None
+
+let private runPlaces (deps: Dependencies) title (pieces: Piece option list) finished =
+    match List.choose id pieces with
+    | [] -> ()
+    | ready ->
+        deps.RunBatch
+            title
+            (fun control ->
+                ready
+                |> List.collect (fun piece -> if control.IsCancelled() then [] else piece control))
+            finished
+
+let private deleteTitle mode =
+    match mode with
+    | ByWiping -> WipeTitle
+    | ToTrash
+    | Permanently -> DeleteTitle
+
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
     | ReportListingError error ->
@@ -376,6 +461,12 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
                     Archive.removeEntries deps.FileSystem control archive entries
                     |> itemsOf deps archive)
                 (DeleteFinished >> dispatch))
+    | CopyPlaces(groups, target) ->
+        runPlaces deps CopyTitle (groups |> List.map (copyPiece deps target)) (CopyFinished >> dispatch)
+    | MovePlaces(groups, target) ->
+        runPlaces deps MoveTitle (groups |> List.map (movePiece deps target)) (MoveFinished >> dispatch)
+    | DeletePlaces(groups, mode) ->
+        runPlaces deps (deleteTitle mode) (groups |> List.map (deletePiece deps mode)) (DeleteFinished >> dispatch)
     | ExtractTargets(archives, targetDirectory) ->
         match archives |> List.choose (unpackPlan deps targetDirectory) with
         | [] -> ()

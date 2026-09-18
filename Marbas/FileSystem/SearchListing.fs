@@ -27,8 +27,40 @@ let private shownAs (fs: IFileSystem) (found: FoundEntries) (hit: FindHit) =
     { hit.Entry with
         Name = displayName fs found hit }
 
+let private prefixes (segments: EntryName list) =
+    [ 1 .. segments.Length ] |> List.map (fun length -> List.truncate length segments)
+
+let private heldIn (fs: IFileSystem) (archive: FileSystemPath) =
+    ArchiveReader.kindOf fs archive
+    |> Option.bind (fun kind ->
+        try
+            ArchiveReader.items fs None kind archive
+            |> Seq.collect (_.Segments >> prefixes)
+            |> Set.ofSeq
+            |> Some
+        with _ ->
+            None)
+
 let private surviving (fs: IFileSystem) (found: FoundEntries) =
-    found.Hits |> List.filter (FindHit.exists fs)
+    let archives = Collections.Generic.Dictionary<FileSystemPath, Set<EntryName list> option>()
+
+    let held archive =
+        match archives.TryGetValue archive with
+        | true, known -> known
+        | _ ->
+            let read = heldIn fs archive
+            archives[archive] <- read
+            read
+
+    let survives (hit: FindHit) =
+        match hit.Location with
+        | InArchive(archive, level) when FindHit.exists fs hit ->
+            match held archive with
+            | Some names -> names.Contains(ArchivePath.segments level @ [ hit.Entry.Name ])
+            | None -> true
+        | _ -> FindHit.exists fs hit
+
+    found.Hits |> List.filter survives
 
 let hitFor (fs: IFileSystem) (found: FoundEntries) (name: EntryName) =
     found.Hits |> List.tryFind (fun hit -> displayName fs found hit = name)

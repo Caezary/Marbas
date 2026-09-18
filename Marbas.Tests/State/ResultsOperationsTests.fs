@@ -23,6 +23,7 @@ let private mockFs () =
     fs.AddFile(at "start/b/two.txt", MockFileData "2")
     fs.AddFile(at "start/c/three.txt", MockFileData "3")
     fs.AddFile(at "start/backup.zip", MockFileData "zip")
+    fs.AddFile(at "start/old.tar", MockFileData "tar")
     fs.AddDirectory(at "target")
     fs
 
@@ -185,15 +186,75 @@ let ``what was copied loses its mark and what failed keeps it`` () =
 
     Assert.Equal<string list>([ relative "b/two.txt" ], markedNames finished)
 
+let private insideTar =
+    { Location = InArchive(fp (at "start/old.tar"), ArchivePath.root)
+      Entry = file "kept.txt" }
+
+let private threePlaces = [ hitIn "start/a" "one.txt"; insideArchive; insideTar ]
+
+let private inner name =
+    ArchivePath.child ArchivePath.root (EntryName.create name)
+
+let private groups =
+    [ FromDisk [ fp (at "start/a/one.txt") ]
+      FromArchive(fp (at "start/backup.zip"), [ inner "inner.txt" ])
+      FromArchive(fp (at "start/old.tar"), [ inner "kept.txt" ]) ]
+
 [<Fact>]
-let ``a hit inside an archive refuses with a sentence of its own`` () =
+let ``marks on the disk and in two archives are copied as three groups`` () =
     let fs = mockFs ()
-    let state = marked fs (insideArchive :: threeDirectories)
+    let state = marked fs threePlaces
+
+    let result = update fs CopyRequested state
+
+    Assert.Equal<Effect list>([ CopyPlaces(groups, ToDirectory(fp (at "target"))) ], result.Effects)
+
+[<Fact>]
+let ``marks on the disk and in two archives are moved as three groups where the prompt says`` () =
+    let fs = mockFs ()
+    let state = marked fs threePlaces
+
+    let asked = update fs MoveRequested state
+    let result = update fs (TargetEntered(at "target")) state
+
+    Assert.Equal<Effect list>([ PromptForTarget(fp (at "target")) ], asked.Effects)
+    Assert.Equal<Effect list>([ MovePlaces(groups, ToDirectory(fp (at "target"))) ], result.Effects)
+
+[<Fact>]
+let ``marks on the disk and in two archives are deleted as three groups`` () =
+    let fs = mockFs ()
+    let state = marked fs threePlaces
+
+    let result = update fs (DeleteConfirmed Permanently) state
+
+    Assert.Equal<Effect list>([ DeletePlaces(groups, Permanently) ], result.Effects)
+
+[<Fact>]
+let ``a mark inside an archive turns the trash into deleting for good`` () =
+    let fs = mockFs ()
+    let state = marked fs threePlaces
+
+    let result = update fs (DeleteRequested ToTrash) state
+
+    Assert.Equal<Effect list>(
+        [ ConfirmDelete
+              { Targets =
+                  [ relative "a/one.txt"; relative "backup.zip/inner.txt"; relative "old.tar/kept.txt" ]
+                  |> List.map EntryName.create
+                Scope = NamedEntriesOnly
+                Mode = Permanently } ],
+        result.Effects
+    )
+
+[<Fact>]
+let ``marks in one archive alone take the way an archive panel takes`` () =
+    let fs = mockFs ()
+    let state = marked fs [ insideArchive ]
 
     let result = update fs CopyRequested state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.HitInsideArchive(fp (at "start/backup.zip/inner.txt"))) ],
+        [ ExtractEntries(fp (at "start/backup.zip"), [ inner "inner.txt" ], fp (at "target")) ],
         result.Effects
     )
 

@@ -20,7 +20,6 @@ type OperationError =
     | SymbolicLinkNotPermitted of path: FileSystemPath
     | LinkRefused of refusal: LinkRefusal * path: FileSystemPath
     | NotInSearchResults of refusal: ResultsRefusal
-    | HitInsideArchive of path: FileSystemPath
     | ArchiveFailed of error: ArchiveError
     | BatchFailed of message: string
     | OperationFailed of path: FileSystemPath * message: string

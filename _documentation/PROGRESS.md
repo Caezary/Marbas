@@ -1043,6 +1043,37 @@ exist: an archive hit now has no operation path at all, so `F3` streams the
 entry the way it does inside an archive panel. The refusal was rendered in an
 80-column terminal, the widest of the new sentences at 59 columns.
 
+**P14.13 let the marks of a results panel lie inside archives too.** Every
+operation had assumed one source place, and the marks of a results panel can
+lie on the disk and in several archives at once. `TransferSource` therefore has
+a third case, `FromPlaces`, holding one group per place — the disk, or one
+particular archive — in the order the listing first reaches them, and a
+results panel whose marks lie in one place answers that place's own case, so
+marks in one zip alone take exactly the way an archive panel takes. Three
+effects carry the groups, `CopyPlaces`, `MovePlaces` and `DeletePlaces`, and
+`Shell` turns each group into a piece of work through the path its place
+already had: copying and moving on the disk, extracting out of an archive for
+`F5`, the extract-then-drop of P9.13 for `F6`, removing entries for `F8`, and
+into an archive the add and the carry across of P9.14. Every question is asked
+before the batch starts — the overwrite question per group, and the password
+once per archive, since an archive is one group — and all the pieces then run
+in one batch behind one progress window, each asking the control before it
+starts, so `Esc` stops the whole of it. The capability gate is asked per
+group: an archive of a kind that cannot be changed answers one failure named
+after the archive, and the rest of the batch still runs, which is what moving
+a mark on the disk, one in a zip and one in a tar shows. A password turned down
+leaves its archive out the same way. Removing from an archive has no trash, so
+`F8` with any mark inside one asks to delete for good, the way `F8` inside an
+archive panel always has; `Alt+Del` stays a wipe for what lies on the disk and
+removes the entries. `HitInsideArchive`, the refusal P14.12 left behind, is
+gone. For the listing afterwards to hold only what is still there, a hit inside
+an archive now survives only while the archive's index still names it — the
+index read once per archive per listing — and one whose index cannot be read
+at all stays while the archive file does, rather than vanishing from a list the
+user did not ask to empty. The tests run the real archive code over the mock
+file system: a tar stands in for the plan's rar, being just as readable and
+just as unchangeable, because nothing in the toolchain can write a rar.
+
 **The suite passes on both operating systems** — a handful of tests skip on
 Linux, the ones that assert on drive letters, which exist nowhere else. Unit
 tests cover the logic modules and the pure `Ui` ones; integration tests drive
@@ -1071,7 +1102,7 @@ written up as the checklist in
 | 11 — Tabs | P11.1–P11.8 | done |
 | 12 — Watching the directories on screen | P12.1–P12.6 | done |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done |
-| 14 — Finding files | P14.1–P14.14 | P14.1–P14.12 done |
+| 14 — Finding files | P14.1–P14.14 | P14.1–P14.13 done |
 
 ## What works today
 
@@ -1460,8 +1491,8 @@ answers it, the two keys that walk into a hit or read it, the last results that
 outlive the window and the results as a panel's own listing are done, so a
 search can be asked for, watched, acted on one hit at a time, opened again
 afterwards, stood in as if it were a directory and copied, moved, deleted or
-wiped in bulk from there — as long as no mark lies inside an archive. P14.13,
-the operations on hits inside archives, is next. Three older things are still
+wiped in bulk from there, on the disk and inside archives alike. P14.14, the
+documentation of the phase, is what is left. Three older things are still
 waiting:
 
 - The rows still marked *manual* in [Cross-platform](Architecture/CROSS-PLATFORM.md) —

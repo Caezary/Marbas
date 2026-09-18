@@ -93,6 +93,9 @@ type Effect =
     | MoveEntriesIn of archive: FileSystemPath * level: ArchivePath * sources: FileSystemPath list
     | MoveEntriesOut of archive: FileSystemPath * entries: ArchivePath list * targetDirectory: FileSystemPath
     | RemoveEntries of archive: FileSystemPath * entries: ArchivePath list
+    | CopyPlaces of groups: TransferSource list * target: TransferTarget
+    | MovePlaces of groups: TransferSource list * target: TransferTarget
+    | DeletePlaces of groups: TransferSource list * mode: DeleteMode
     | CopyEntriesAcross of
         source: FileSystemPath *
         entries: ArchivePath list *
@@ -269,22 +272,27 @@ let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
 let private refusing state refusal =
     request state (ReportOperationError(Operations.NotInSearchResults refusal))
 
-let private guarding (fs: IFileSystem) state (source: ResultsRefusal option) receives proceed =
+let private guarding state (source: ResultsRefusal option) receives proceed =
     let active = activePanel state
     let facing = panel (opposite state.Active) state
 
-    match source, archivedHit fs active with
-    | Some refusal, _ when showsResults active -> refusing state refusal
-    | _, Some path -> request state (ReportOperationError(Operations.HitInsideArchive path))
+    match source with
+    | Some refusal when showsResults active -> refusing state refusal
     | _ when receives && showsResults facing -> refusing state Receiving
     | _ -> proceed ()
+
+let private forGood mode =
+    match mode with
+    | ToTrash -> Permanently
+    | Permanently
+    | ByWiping -> mode
 
 let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     let applyListing' = applyListing state
     let applyOperation' = applyOperation state
     let applyBatch' = applyBatch state
     let changing' = changing fs state
-    let guarding' = guarding fs state
+    let guarding' = guarding state
     let saving' = saving fs
     let standingOn' = standingOn fs
     let opened' = opened fs
@@ -358,16 +366,18 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
                   Mode = asked }
 
         guarding' None false (fun () ->
-            match target.Path, operationTargets target with
-            | _, [] -> stay state
-            | OnDisk _, _
-            | SearchResults _, _ -> request state (confirmed mode)
-            | InArchive(archive, _), _ -> changing' [ archive ] (confirmed Permanently))
+            match target.Path, transferSource' target with
+            | _, None -> stay state
+            | InArchive(archive, _), _
+            | SearchResults _, Some(FromArchive(archive, _)) -> changing' [ archive ] (confirmed Permanently)
+            | _, Some(FromPlaces _) -> request state (confirmed (forGood mode))
+            | _ -> request state (confirmed mode))
     | DeleteConfirmed mode ->
         match transferSource' (activePanel state) with
         | None -> stay state
         | Some(FromDisk paths) -> request state (DeleteTargets(paths, mode))
         | Some(FromArchive(archive, entries)) -> request state (RemoveEntries(archive, entries))
+        | Some(FromPlaces groups) -> request state (DeletePlaces(groups, mode))
     | DeleteFinished results -> finishDelete' results state |> applyBatch'
     | CopyRequested ->
         guarding' None true (fun () ->
@@ -380,14 +390,21 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
                 changing' [ archive ] (AddEntries(archive, level, paths))
             | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
-                changing' [ target ] (CopyEntriesAcross(source, entries, target, level)))
+                changing' [ target ] (CopyEntriesAcross(source, entries, target, level))
+            | Some(FromPlaces groups), Some(ToDirectory target) ->
+                request state (CopyPlaces(groups, ToDirectory target))
+            | Some(FromPlaces groups), Some(ToArchive(archive, level)) ->
+                changing' [ archive ] (CopyPlaces(groups, ToArchive(archive, level))))
     | CopyFinished results -> finishTransfer' results state |> applyBatch'
     | MoveRequested ->
         guarding' None true (fun () ->
             match transferSource' (activePanel state), transferTarget state with
             | None, _
             | _, None -> stay state
-            | Some(FromDisk _), Some(ToDirectory target) -> request state (PromptForTarget target)
+            | Some(FromDisk _), Some(ToDirectory target)
+            | Some(FromPlaces _), Some(ToDirectory target) -> request state (PromptForTarget target)
+            | Some(FromPlaces groups), Some(ToArchive(archive, level)) ->
+                changing' [ archive ] (MovePlaces(groups, ToArchive(archive, level)))
             | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
                 changing' [ archive ] (MoveEntriesOut(archive, entries, target))
             | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
@@ -402,14 +419,17 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             | SearchResults _ -> Some(PanelLocation.holding fs panel.Path)
             | location -> PanelLocation.directory location
 
-        match text.Trim(), operationPaths' panel, standing with
+        match text.Trim(), transferSource' panel, standing with
         | "", _, _
-        | _, [], _
+        | _, None, _
         | _, _, None -> stay state
         | trimmed, _, _ when showsResults panel && isBareName' trimmed -> refusing state Renaming
-        | trimmed, [ single ], _ when isBareName' trimmed ->
+        | trimmed, Some(FromDisk [ single ]), _ when isBareName' trimmed ->
             request state (RenameTarget(single, EntryName.create trimmed))
-        | trimmed, paths, Some source -> request state (MoveTargets(paths, combine' source trimmed))
+        | trimmed, Some(FromPlaces groups), Some source ->
+            request state (MovePlaces(groups, ToDirectory(combine' source trimmed)))
+        | trimmed, Some(FromDisk paths), Some source -> request state (MoveTargets(paths, combine' source trimmed))
+        | _, Some(FromArchive _), _ -> stay state
     | MoveFinished results -> finishTransfer' results state |> applyBatch'
     | FindRequested ->
         let panel = activePanel state

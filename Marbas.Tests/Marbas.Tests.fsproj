@@ -173,6 +173,7 @@
     <Compile Include="Ui\App\TabCounterTests.fs" />
     <Compile Include="Ui\App\EditorCommandTests.fs" />
     <Compile Include="Ui\App\ShellTests.fs" />
+    <Compile Include="Ui\App\ShellPlacesTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

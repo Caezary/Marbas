@@ -42,6 +42,7 @@ type FocusTarget =
 type TransferSource =
     | FromDisk of paths: FileSystemPath list
     | FromArchive of archive: FileSystemPath * entries: ArchivePath list
+    | FromPlaces of groups: TransferSource list
 
 type TransferTarget =
     | ToDirectory of directory: FileSystemPath
@@ -498,19 +499,35 @@ let cursorExecutablePath (fs: IFileSystem) panel =
     |> Option.filter (fun entry -> entry.Kind = File && entry.Executability = Executable)
     |> Option.bind (entryPath fs panel)
 
+let private insideArchive location (name: EntryName) =
+    match location with
+    | InArchive(archive, level) -> Some(archive, ArchivePath.child level name)
+    | OnDisk _
+    | SearchResults _ -> None
+
+let private placeOf (hit: FindHit) = insideArchive hit.Location hit.Entry.Name
+
+let private groupedByPlace (fs: IFileSystem) (hits: FindHit list) =
+    hits
+    |> List.groupBy (placeOf >> Option.map fst)
+    |> List.map (fun (place, held) ->
+        match place with
+        | None -> FromDisk(held |> List.map (FindHit.spelled fs))
+        | Some archive -> FromArchive(archive, held |> List.choose placeOf |> List.map snd))
+
+let private fromResults (fs: IFileSystem) panel =
+    match operationTargets panel |> List.choose (hitAt fs panel) |> groupedByPlace fs with
+    | [] -> None
+    | [ single ] -> Some single
+    | several -> Some(FromPlaces several)
+
 let transferSource (fs: IFileSystem) panel =
     match panel.Path, operationTargets panel with
     | _, [] -> None
     | OnDisk _, _ -> Some(FromDisk(operationPaths fs panel))
     | InArchive(archive, level), targets ->
         Some(FromArchive(archive, targets |> List.map (fun entry -> ArchivePath.child level entry.Name)))
-    | SearchResults _, _ -> Some(FromDisk(operationPaths fs panel))
-
-let private insideArchive location (name: EntryName) =
-    match location with
-    | InArchive(archive, level) -> Some(archive, ArchivePath.child level name)
-    | OnDisk _
-    | SearchResults _ -> None
+    | SearchResults _, _ -> fromResults fs panel
 
 let private entryInArchive (fs: IFileSystem) panel (entry: Entry) =
     match panel.Path with
@@ -526,14 +543,6 @@ let cursorFileInArchive (fs: IFileSystem) panel =
     cursorEntry panel
     |> Option.filter (fun entry -> entry.Kind = File)
     |> Option.bind (entryInArchive fs panel)
-
-let archivedHit (fs: IFileSystem) panel =
-    match panel.Path with
-    | SearchResults _ ->
-        operationTargets panel
-        |> List.tryPick (entryInArchive fs panel)
-        |> Option.map (fun (archive, entry) -> ArchivePath.spelled fs archive entry)
-    | _ -> None
 
 let showsResults panel =
     match panel.Path with
@@ -580,9 +589,12 @@ let applyMeasurements side (measured: Measurement list) state =
 let deleteScope (fs: IFileSystem) panel =
     let reachesContents =
         match panel.Path with
-        | OnDisk _
-        | SearchResults _ -> operationPaths fs panel |> List.exists (Operations.isNonEmptyDirectory fs)
+        | OnDisk _ -> operationPaths fs panel |> List.exists (Operations.isNonEmptyDirectory fs)
         | InArchive _ -> operationTargets panel |> List.exists (fun entry -> entry.Kind = Directory)
+        | SearchResults _ ->
+            operationPaths fs panel |> List.exists (Operations.isNonEmptyDirectory fs)
+            || operationTargets panel
+               |> List.exists (fun entry -> entry.Kind = Directory && entryInArchive fs panel entry |> Option.isSome)
 
     if reachesContents then
         WithDirectoryContents
