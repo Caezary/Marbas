@@ -287,4 +287,4 @@ The popup opens on `*.*` every time, and `LastSearch` does not outlive a
 restart; remembering the last query and a history of masks and texts is its own
 phase. Excluding masks in the classic spelling (`*.* | *.bak`), a depth limit,
 regular expressions, text across a line break, and the viewer opening at the
-match are listed in [PLAN.md](../PLAN.md).
+match are listed at the end of [phase 14](../Plan/PHASE-14-FINDING-FILES.md).

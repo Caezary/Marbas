@@ -6,8 +6,10 @@ An orthodox (two-panel) console file manager in F# on Terminal.Gui 2.
 
 Read these before starting work — they carry the context this file omits:
 
-- `_documentation/PROGRESS.md` — current status, what works today, what's next
-- `_documentation/PLAN.md` — the task breakdown (P1.1 … P8.3)
+- `_documentation/PROGRESS.md` — current status and what is next; the journal
+  of each phase is in `_documentation/Progress/`
+- `_documentation/PLAN.md` — the index of the phases; one file per phase in
+  `_documentation/Plan/` (P1.1 … P15.23)
 - `_documentation/Architecture/` — design decisions, one topic per file
   (start at `OVERVIEW.md`); `TESTING.md` there covers Terminal.Gui testing
   pitfalls

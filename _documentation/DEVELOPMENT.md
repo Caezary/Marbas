@@ -95,8 +95,12 @@ Keep the build outputs apart from the Windows ones with
 
 ## Documentation map
 
-- [Implementation plan](PLAN.md) — the task breakdown (P1.1 … P8.3)
-- [Progress](PROGRESS.md) — current status, what works today, what's next
+- [Implementation plan](PLAN.md) — the index of the phases, one file per phase
+  in [Plan/](Plan) (P1.1 … P15.23)
+- [Progress](PROGRESS.md) — current status, with the journal of each phase in
+  [Progress/](Progress) and the catalogue in
+  [What works today](Progress/WHAT-WORKS.md)
+- [Rough edges](ROUGH-EDGES.md) — what is known to be wrong or missing
 - [Architecture](Architecture/OVERVIEW.md) — design decisions, by topic
   - [Domain types](Architecture/DOMAIN-TYPES.md)
   - [State and effects](Architecture/STATE-AND-EFFECTS.md)

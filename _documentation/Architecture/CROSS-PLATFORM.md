@@ -150,7 +150,7 @@ network share mounted below it. The price of reading the boundary off the list
 is what the list leaves out: a mount the P13.12 filter drops as not being
 storage — `/proc`, `/sys`, `/run` — is no listed root, so a search of `/` walks
 into it like a directory. That is a defect, recorded in
-[Progress](../PROGRESS.md), *Known rough edges*; the fix is to hand the walk the
+[Rough edges](../ROUGH-EDGES.md); the fix is to hand the walk the
 filtered mounts as boundaries too.
 
 ## Hidden entries
@@ -360,8 +360,7 @@ The same reading found three keys Marbas already binds in the same list:
 `cycle-group`, which are the drive choosers of P13.13 and the link key of
 P13.11. On a GNOME desktop those three commands cannot be reached, and unlike
 `Alt+F7` they carry no second binding. That is a defect rather than a
-measurement, and it is recorded as one in [Progress](../PROGRESS.md), *Known
-rough edges*.
+measurement, and it is recorded as one in [Rough edges](../ROUGH-EDGES.md).
 
 **A full-screen window may take `Enter`; a dialog may not.** The results window
 of phase 14 needs `Enter` to choose the row under the cursor, and the probe first
