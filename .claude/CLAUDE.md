@@ -10,6 +10,8 @@ Read these before starting work — they carry the context this file omits:
   of each phase is in `_documentation/Progress/`
 - `_documentation/PLAN.md` — the index of the phases; one file per phase in
   `_documentation/Plan/` (P1.1 … P15.23)
+- `_documentation/coding-style-conventions.md` — the style and conventions code
+  and tests are held to; a rule there beats a habit found in an older file
 - `_documentation/Architecture/` — design decisions, one topic per file
   (start at `OVERVIEW.md`); `TESTING.md` there covers Terminal.Gui testing
   pitfalls

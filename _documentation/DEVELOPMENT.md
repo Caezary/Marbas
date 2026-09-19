@@ -100,6 +100,8 @@ Keep the build outputs apart from the Windows ones with
 - [Progress](PROGRESS.md) — current status, with the journal of each phase in
   [Progress/](Progress) and the catalogue in
   [What works today](Progress/WHAT-WORKS.md)
+- [Coding style and conventions](coding-style-conventions.md) — the rules code
+  and tests are held to
 - [Rough edges](ROUGH-EDGES.md) — what is known to be wrong or missing
 - [Architecture](Architecture/OVERVIEW.md) — design decisions, by topic
   - [Domain types](Architecture/DOMAIN-TYPES.md)
