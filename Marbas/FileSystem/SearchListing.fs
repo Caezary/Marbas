@@ -2,6 +2,7 @@ module Marbas.FileSystem.SearchListing
 
 open System
 open System.IO.Abstractions
+open FsToolkit.ErrorHandling
 open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
 
@@ -25,18 +26,20 @@ let private prefixes (segments: EntryName list) =
     [ 1 .. segments.Length ] |> List.map (fun length -> List.truncate length segments)
 
 let private heldIn (fs: IFileSystem) (archive: FileSystemPath) =
-    ArchiveReader.kindOf fs archive
-    |> Option.bind (fun kind ->
+    match ArchiveReader.kindOf fs archive with
+    | None -> Error(KindCannotBeRead archive)
+    | Some kind ->
         try
             ArchiveReader.items fs None kind archive
             |> Seq.collect (_.Segments >> prefixes)
             |> Set.ofSeq
-            |> Some
-        with _ ->
-            None)
+            |> Ok
+        with ex ->
+            Error(ArchiveReader.mapException archive ex)
 
 let private surviving (fs: IFileSystem) (found: FoundEntries) =
-    let archives = Collections.Generic.Dictionary<FileSystemPath, Set<EntryName list> option>()
+    let archives =
+        Collections.Generic.Dictionary<FileSystemPath, Result<Set<EntryName list>, ArchiveError>>()
 
     let held archive =
         match archives.TryGetValue archive with
@@ -49,12 +52,13 @@ let private surviving (fs: IFileSystem) (found: FoundEntries) =
     let survives (hit: FindHit) =
         match hit.Location with
         | InArchive(archive, level) when FindHit.exists fs hit ->
-            match held archive with
-            | Some names -> names.Contains(ArchivePath.segments level @ [ hit.Entry.Name ])
-            | None -> true
-        | _ -> FindHit.exists fs hit
+            held archive
+            |> Result.map (fun names -> names.Contains(ArchivePath.segments level @ [ hit.Entry.Name ]))
+        | _ -> Ok(FindHit.exists fs hit)
 
-    found.Hits |> List.filter survives
+    found.Hits
+    |> List.traverseResultM (fun hit -> survives hit |> Result.map (fun kept -> hit, kept))
+    |> Result.map (List.filter snd >> List.map fst)
 
 let hitFor (fs: IFileSystem) (found: FoundEntries) (name: EntryName) =
     found.Hits |> List.tryFind (fun hit -> displayName fs found hit = name)
@@ -78,7 +82,9 @@ let private parentEntry (fs: IFileSystem) (found: FoundEntries) =
       LinkTarget = None }
 
 let read (fs: IFileSystem) (found: FoundEntries) =
-    surviving fs found |> List.map (shownAs fs found)
+    surviving fs found |> Result.map (List.map (shownAs fs found))
 
 let listForDisplay (fs: IFileSystem) (sort: SortOrder) (hidden: HiddenEntries) (found: FoundEntries) =
-    Ok(order sort (parentEntry fs found :: shown hidden (read fs found)))
+    read fs found
+    |> Result.mapError ArchiveUnreadable
+    |> Result.map (fun entries -> order sort (parentEntry fs found :: shown hidden entries))

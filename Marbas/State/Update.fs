@@ -47,7 +47,7 @@ type Message =
     | UnpackFinished of results: Operations.ItemResult list
     | RenameFinished of newName: EntryName * outcome: Result<unit, Operations.OperationError>
     | ViewRequested
-    | MeasureFinished of measured: Measurement list
+    | MeasureFinished of measured: Result<Measurement list, Operations.OperationError>
     | EditRequested
     | EditFinished of outcome: Result<unit, Operations.OperationError>
     | LaunchFinished of outcome: Result<unit, LaunchError>
@@ -528,7 +528,8 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             match measureTargets' target with
             | [] -> stay state
             | targets -> request state (MeasureTargets targets)
-    | MeasureFinished measured -> stay (applyMeasurements state.Active measured state)
+    | MeasureFinished(Ok measured) -> stay (applyMeasurements state.Active measured state)
+    | MeasureFinished(Error error) -> request state (ReportOperationError error)
     | EditRequested ->
         let target = activePanel state
 

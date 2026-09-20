@@ -7,8 +7,8 @@ open Marbas.FileSystem
 open Marbas.Ui.Dialogs
 
 let private drive (app: IApplication) title (work: Operations.BatchControl -> 'a) (finish: 'a -> unit) =
-    let cancellation = new CancellationTokenSource()
-    let dialog = ProgressDialog.create title
+    use cancellation = new CancellationTokenSource()
+    use dialog = ProgressDialog.create title
 
     let control: Operations.BatchControl =
         { Report =
@@ -33,5 +33,11 @@ let private drive (app: IApplication) title (work: Operations.BatchControl -> 'a
 let run app title work finish =
     drive app title (Operations.guarded title work) finish
 
+let measured (work: Operations.BatchControl -> Measurement list) control =
+    try
+        Ok(work control)
+    with ex ->
+        Error(Operations.BatchFailed ex.Message)
+
 let runMeasuring app title work finish =
-    drive app title (fun control -> try work control with _ -> []) finish
+    drive app title (measured work) finish

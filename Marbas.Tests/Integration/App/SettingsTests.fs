@@ -27,7 +27,8 @@ let private deps fs =
     { Fakes.dependencies fs (at "start") with
         SettingsPath = settingsPath }
 
-let private store fs settings = Settings.save fs settingsPath settings
+let private store fs settings =
+    Settings.save fs settingsPath settings |> Expect.ok
 
 let private session left right : Settings =
     { Tabs =

@@ -742,6 +742,24 @@ let ``saved settings are written where the settings path points`` () =
     Assert.Equal(settings, Settings.load fs settings (fp (at "config/marbas.conf")))
 
 [<Fact>]
+let ``a session that could not be written is reported`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "start")
+    fs.AddFile(at "blocked", MockFileData "x")
+    let mutable reported = ("", "")
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            SettingsPath = fp (at "blocked/marbas.conf")
+            ReportError = fun title message -> reported <- (title, message) }
+
+    Shell.interpret deps ignore (SaveSettings(Settings.forPath (fp (at "start"))))
+
+    Assert.Equal(SettingsErrorMessage.Title, fst reported)
+    Assert.Contains(at "blocked/marbas.conf", snd reported)
+
+[<Fact>]
 let ``quit runs the quit port`` () =
     let mutable quit = false
     let deps = { noDeps () with OnQuit = fun () -> quit <- true }

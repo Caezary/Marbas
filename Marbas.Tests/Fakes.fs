@@ -244,7 +244,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
       WatchModifiers = ignore
       WatchLocations = fun _ _ -> ()
       RunBatch = fun _ work finish -> work Operations.unattended |> finish
-      RunMeasure = fun _ work finish -> work Operations.unattended |> finish }
+      RunMeasure = fun _ work finish -> work Operations.unattended |> Ok |> finish }
 
 [<Literal>]
 let PrivilegeNotHeld = 0x80070522

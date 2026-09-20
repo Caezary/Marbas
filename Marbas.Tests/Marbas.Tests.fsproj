@@ -177,6 +177,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Adapters\BatchRunnerTests.fs" />
     <Compile Include="Adapters\DirectoryWatchTests.fs" />
     <Compile Include="Adapters\LaunchProcessTests.fs" />
     <Compile Include="Adapters\NativeLinksTests.fs" />

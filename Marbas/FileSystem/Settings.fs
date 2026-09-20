@@ -357,5 +357,6 @@ module Settings =
             |> ignore
 
             fs.File.WriteAllLines(FileSystemPath.value path, format settings)
-        with _ ->
-            ()
+            Ok()
+        with ex ->
+            Error(SettingsError.mapException path ex)

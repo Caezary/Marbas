@@ -51,8 +51,12 @@ one shape it has always had.
 with two effects — `SaveSettings(settings fs state)` and then `Quit` — which keeps
 *what* is written a pure function of the state, asserted in `UpdateTests`, and
 keeps the writing itself in `Shell.interpret` with everything else that touches
-the world. A write that fails is swallowed: by then there is no screen left to
-report it on.
+the world. `Settings.save` answers `Result<unit, SettingsError>` — the one place
+that turns a write's exception into a value is `SettingsError.mapException` —
+and `Shell` reports the failure through `SettingsErrorMessage` rather than
+passing it over. The dialog arrives before `Quit` runs, because `QuitRequested`
+raises `SaveSettings` first and the effects are interpreted in order, so a
+session that could not be written says so instead of looking saved.
 
 **`Ctrl+Q` joined the key table, so quitting passes through the state.** It used
 to be only an application-level `Command.Quit` binding, which bypasses `Update`

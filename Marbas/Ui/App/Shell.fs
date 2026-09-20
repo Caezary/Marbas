@@ -82,7 +82,11 @@ type Dependencies =
       WatchLocations: FileSystemPath list -> (unit -> unit) -> unit
       RunBatch:
           string -> (Operations.BatchControl -> Operations.ItemResult list) -> (Operations.ItemResult list -> unit) -> unit
-      RunMeasure: string -> (Operations.BatchControl -> Measurement list) -> (Measurement list -> unit) -> unit }
+      RunMeasure:
+          string
+              -> (Operations.BatchControl -> Measurement list)
+              -> (Result<Measurement list, Operations.OperationError> -> unit)
+              -> unit }
 
 let private patternPrompt mode =
     match mode with
@@ -534,7 +538,10 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Some(HandOver row) -> dispatch (DriveHandedOver row)
         | None -> ()
     | WatchLocations paths -> deps.WatchLocations paths (fun () -> dispatch ExternalChangeDetected)
-    | SaveSettings settings -> Settings.save deps.FileSystem deps.SettingsPath settings
+    | SaveSettings settings ->
+        match Settings.save deps.FileSystem deps.SettingsPath settings with
+        | Ok() -> ()
+        | Error error -> deps.ReportError SettingsErrorMessage.Title (SettingsErrorMessage.describe error)
     | Quit ->
         Workspace.release deps.FileSystem deps.WorkspacePath
         deps.OnQuit()

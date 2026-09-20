@@ -60,6 +60,11 @@ let private named entries =
 let private listed fs hidden found =
     SearchListing.listForDisplay fs SortOrder.byName hidden found |> Expect.ok
 
+let private damagedArchive error =
+    match error with
+    | ArchiveUnreadable(ArchiveDamaged(path, _)) -> Some path
+    | _ -> None
+
 [<Fact>]
 let ``a hit is named by its path below where the search started`` () =
     let fs = mockFs ()
@@ -156,13 +161,14 @@ let ``a hit inside an archive that no longer holds it is left out`` () =
     Assert.Equal<string list>([ ".."; relative "data.zip/docs/inner.txt" ], named entries)
 
 [<Fact>]
-let ``a hit inside an archive whose index cannot be read stays while the archive is there`` () =
+let ``a hit inside an archive whose index cannot be read is reported instead of shown`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "start/data.zip", MockFileData "not a zip")
 
-    let entries = listed fs Concealed (fromStart [ archived "" "notes.txt" File ])
+    let listing =
+        SearchListing.listForDisplay fs SortOrder.byName Concealed (fromStart [ archived "" "notes.txt" File ])
 
-    Assert.Equal<string list>([ ".."; relative "data.zip/notes.txt" ], named entries)
+    Assert.Equal(Some(fp (at "start/data.zip")), damagedArchive (Expect.error listing))
 
 [<Fact>]
 let ``the name a hit is shown under leads back to that hit`` () =

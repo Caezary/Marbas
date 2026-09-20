@@ -6,7 +6,9 @@ every task leaves the code easier to change for the tasks after it. Findings are
 cited by their ids in those reports (`A…`, `Q…`, and `perf P…` for the
 performance report, so they are not read as task numbers); the phase adds no
 feature, so every task keeps the behaviour the suite already describes and adds
-the tests that pin what it fixes.
+the tests that pin what it fixes. Stage 6 is the exception, and says so: it
+holds the work an earlier answer in this phase opened rather than anything the
+reviews asked for.
 
 Three rules decide the order. Correctness comes first: the findings that can
 lose or confuse a user's data are small and independent, and nothing else should
@@ -185,3 +187,23 @@ polished that a structural task is about to delete.
   no `[<Theory>]` in the suite carries a boolean expectation, and the three
   duplications the tech-debt notes describe — the repeated path helpers, the
   repeated drive and separator handling, and `guarding` — are gone.
+
+## Stage 6 — What an answer opened
+
+- **P15.24 A damaged archive loses its own hits, not the whole listing** —
+  P15.4 made `SearchListing` answer an error when an archive's index cannot be
+  read, which is right about the silence and wrong about the blast radius: one
+  damaged archive now keeps the entire results panel from loading. The listing
+  answers the hits it *could* verify, and says beside them which archives it
+  could not read. `SearchListing.read` keeps its `Result` for a caller that
+  wants the strict answer; `listForDisplay` grows a second half — the entries
+  plus the archives that refused — and the hits inside a refusing archive are
+  shown rather than dropped, marked as unverified so nobody reads them as
+  checked. Where the mark lives is the design question: an `Entry` field that
+  `EntryColor` paints in the warning colour reads best on screen, a count in the
+  panel footer reads best in a narrow panel, and both may be wanted. Whatever
+  is chosen is verified by rendering the screen, not by reading properties.
+  *Done when:* a results panel holding one hit on disk, one in a readable
+  archive and one in a damaged archive lists all three, the damaged one is
+  visibly marked on a rendered screen, and no listing error is raised; the
+  archive error still reaches the user once, not per hit.

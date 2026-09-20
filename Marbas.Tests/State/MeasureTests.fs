@@ -151,7 +151,7 @@ let ``a measurement lands on the entry it was taken for`` () =
     let state = loaded fs
 
     let result =
-        update fs (MeasureFinished [ { Name = en "docs"; Size = Exact 5L } ]) state
+        update fs (MeasureFinished(Ok [ { Name = en "docs"; Size = Exact 5L } ])) state
 
     Assert.Equal(Some(Exact 5L), measurementOf "docs" result.State.Left)
     Assert.Equal(None, measurementOf "empty" result.State.Left)
@@ -163,7 +163,7 @@ let ``a measurement stopped part way is kept as the lower bound it is`` () =
     let state = loaded fs
 
     let result =
-        update fs (MeasureFinished [ { Name = en "docs"; Size = AtLeast 5L } ]) state
+        update fs (MeasureFinished(Ok [ { Name = en "docs"; Size = AtLeast 5L } ])) state
 
     Assert.Equal(Some(AtLeast 5L), measurementOf "docs" result.State.Left)
 
@@ -175,7 +175,7 @@ let ``a measurement taken while the panel sorts by size moves the row into place
         loaded fs |> sortBy SortKey.BySize Left |> setCursor Left 1
 
     let result =
-        update fs (MeasureFinished [ { Name = en "docs"; Size = Exact 5L } ]) state
+        update fs (MeasureFinished(Ok [ { Name = en "docs"; Size = Exact 5L } ])) state
 
     let order = result.State.Left.Entries |> List.map (_.Name >> EntryName.value)
 
@@ -188,7 +188,7 @@ let ``a measurement changes no order in a panel sorted by name`` () =
     let state = loaded fs |> setCursor Left 1
 
     let result =
-        update fs (MeasureFinished [ { Name = en "docs"; Size = Exact 5L } ]) state
+        update fs (MeasureFinished(Ok [ { Name = en "docs"; Size = Exact 5L } ])) state
 
     let order = result.State.Left.Entries |> List.map (_.Name >> EntryName.value)
 
@@ -201,9 +201,20 @@ let ``a re-read of the panel forgets what was measured`` () =
 
     let measured =
         loaded fs
-        |> update fs (MeasureFinished [ { Name = en "docs"; Size = Exact 5L } ])
+        |> update fs (MeasureFinished(Ok [ { Name = en "docs"; Size = Exact 5L } ]))
         |> _.State
 
     let result = update fs RefreshRequested measured
 
+    Assert.Equal(None, measurementOf "docs" result.State.Left)
+
+[<Fact>]
+let ``a measurement that fell over is reported instead of emptying the sizes`` () =
+    let fs = mockFs ()
+    let state = loaded fs
+    let failure = Operations.BatchFailed "the walk fell over"
+
+    let result = update fs (MeasureFinished(Error failure)) state
+
+    Assert.Equal<Effect list>([ ReportOperationError failure ], result.Effects)
     Assert.Equal(None, measurementOf "docs" result.State.Left)

@@ -94,3 +94,41 @@ The measurement the task asked for is a counting fake: `Fakes.CopyCounting`
 overrides `MockFile.Copy` and shows no copies at all for a same-volume move, and
 a control test beside it copies a two-file tree and sees exactly two, so the
 zero is a reading and not an oversight.
+
+**P15.4 made four quiet failures speak.** Each was a `with _ ->` that answered
+something plausible instead of saying what went wrong.
+
+`Settings.save` swallowed every exception, so a session that could not be
+written looked exactly like one that was. It answers
+`Result<unit, SettingsError>` now — a new error family beside `ContentError` and
+`ArchiveError`, with `SettingsError.mapException` as its one place for turning an
+exception into a value — and `Shell` reports it through `SettingsErrorMessage`.
+`QuitRequested` raises `SaveSettings` before `Quit` and effects are interpreted
+in order, so the dialog is seen before the application goes; `SessionSaveRequested`
+takes the same path.
+
+`BatchRunner.runMeasuring` turned any exception into an empty measurement, which
+is also what an empty directory answers. `BatchRunner.measured` now wraps the
+work the way `Operations.guarded` wraps a batch and answers
+`Result<Measurement list, OperationError>` with `BatchFailed`; `MeasureFinished`
+carries that result and `Update` turns an `Error` into `ReportOperationError`.
+Pulling the guard out of the runner is also what made it testable without a
+Terminal.Gui application running.
+
+`SearchListing.heldIn` read an unreadable archive as "no index" and kept every
+hit inside it as if it had been verified. It answers a `Result` now, `surviving`
+traverses instead of filtering, and the listing fails as `ArchiveUnreadable`, so
+the panel says the archive cannot be read rather than showing hits nothing
+checked. Seven results-panel tests had leant on the old rule by standing on
+`MockFileData "zip"`; they build a real zip and a real tar now, which is the
+honest fixture anyway.
+
+`BatchRunner.drive` leaked a `CancellationTokenSource` and a `ProgressDialog` per
+batch and `SearchRunner.run` leaked a token source per search. Both are `use`
+bindings now. The order matters and is kept: `cancellation.Cancel()` runs before
+either is disposed, so the work still on the batch thread sees a cancelled token
+and never touches a disposed dialog.
+
+`Archive.needsPassword` is the fifth site A9 names and is left alone on purpose:
+P15.13 answers it from the cached index, and narrowing its net before that would
+be written twice.

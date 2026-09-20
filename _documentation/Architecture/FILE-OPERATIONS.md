@@ -252,6 +252,11 @@ directory entered is reported through the `BatchControl` copying uses, so the
 window has something to show and `Esc` something to answer. The port is
 `RunMeasure`, not `RunBatch`, because the batch runner speaks in the item
 results copying and deleting answer with, and measuring answers with sizes.
+A walk that falls over answers `Error` rather than an empty measurement:
+`BatchRunner.measured` wraps the work the way `Operations.guarded` wraps a
+batch, `MeasureFinished` carries a `Result`, and `Update` turns the `Error`
+into `ReportOperationError`. An empty list is a directory with nothing in it,
+not a walk that failed, and the two used to look alike.
 
 **A stopped measurement changes nothing, and a re-read forgets a finished one.**
 `Esc` leaves the panel as it was, since a size stopped half way is worth less

@@ -58,7 +58,7 @@ let private walk
     timer
 
 let run (app: IApplication) (fs: IFileSystem) (asked: SearchRun) (view: FindHit -> unit) (finished: FindAnswer -> unit) =
-    let cancellation = new CancellationTokenSource()
+    use cancellation = new CancellationTokenSource()
     let mutable showing = true
 
     let window =

@@ -225,10 +225,13 @@ title says `Find: *.jpg in C:\photos`.
 
 **Every listing asks what is still there.** A hit on disk survives while its
 path exists; a hit inside an archive survives while the archive's index still
-names it, the index read once per archive per listing, and one whose index
-cannot be read at all stays while the archive file does. So `Ctrl+R` and the
+names it, the index read once per archive per listing. So `Ctrl+R` and the
 reload after an operation drop what was moved or deleted without a rule of
-their own.
+their own. An archive whose index cannot be read at all is not an answer:
+`SearchListing.heldIn` hands the `ArchiveError` back, the listing fails as
+`ArchiveUnreadable`, and the panel says so. Keeping those hits would show them
+as verified when nothing verified them, and the damage would surface later
+under a different message from whichever operation tripped over it.
 
 **A results panel is a place to look at, never a place to come back to.** It is
 not watched — `PanelLocation.watched` answers nothing for it — since a result can

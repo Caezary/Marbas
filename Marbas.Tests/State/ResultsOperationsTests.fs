@@ -1,6 +1,7 @@
 module Marbas.Tests.State.ResultsOperationsTests
 
 open System
+open System.Formats.Tar
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
@@ -17,14 +18,35 @@ let private relative = Root.relative
 
 let private fp = FileSystemPath.create
 
+let private zipped (fs: MockFileSystem) path sources =
+    Archive.write
+        fs
+        Operations.unattended
+        { Path = fp path
+          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Compression = Normal
+          Password = None }
+        sources
+    |> ignore
+
+let private tarred (fs: MockFileSystem) path entry =
+    use file = fs.File.Create path
+    use tar = new TarWriter(file, TarEntryFormat.Pax, true)
+    use content = fs.File.OpenRead(FileSystemPath.value entry)
+    tar.WriteEntry(PaxTarEntry(TarEntryType.RegularFile, "kept.txt", DataStream = content))
+
 let private mockFs () =
     let fs = MockFileSystem()
     fs.AddFile(at "start/a/one.txt", MockFileData "1")
     fs.AddFile(at "start/b/two.txt", MockFileData "2")
     fs.AddFile(at "start/c/three.txt", MockFileData "3")
-    fs.AddFile(at "start/backup.zip", MockFileData "zip")
-    fs.AddFile(at "start/old.tar", MockFileData "tar")
+    fs.AddFile(at "work/inner.txt", MockFileData "inner")
+    fs.AddFile(at "work/same.txt", MockFileData "same")
+    fs.AddFile(at "work/kept.txt", MockFileData "kept")
     fs.AddDirectory(at "target")
+
+    zipped fs (at "start/backup.zip") [ fp (at "work/inner.txt"); fp (at "work/same.txt") ]
+    tarred fs (at "start/old.tar") (fp (at "work/kept.txt"))
     fs
 
 let private query =

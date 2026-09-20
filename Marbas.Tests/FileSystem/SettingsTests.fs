@@ -63,6 +63,11 @@ let private stored: Settings =
                 Role = ForOpening
                 Program = Expect.some (ProgramPath.tryCreate "firefox.exe") } ] } }
 
+let private unwritten error =
+    match error with
+    | SettingsAccessDenied path -> Some path
+    | SettingsWriteFailed(path, _) -> Some path
+
 let private write (fs: MockFileSystem) lines =
     fs.AddFile(FileSystemPath.value settingsPath, MockFileData(String.concat "\n" lines))
 
@@ -401,7 +406,7 @@ let ``a stored path that names a file falls back to the default`` () =
 let ``what is saved is what is loaded back`` () =
     let fs = mockFs ()
 
-    Settings.save fs settingsPath stored
+    Settings.save fs settingsPath stored |> Expect.ok
 
     Assert.Equal(stored, Settings.load fs defaults settingsPath)
 
@@ -409,26 +414,27 @@ let ``what is saved is what is loaded back`` () =
 let ``saving creates the directory it writes into`` () =
     let fs = mockFs ()
 
-    Settings.save fs settingsPath stored
+    Settings.save fs settingsPath stored |> Expect.ok
 
     Assert.True(fs.File.Exists(FileSystemPath.value settingsPath))
 
 [<Fact>]
 let ``saving over an older file replaces it`` () =
     let fs = mockFs ()
-    Settings.save fs settingsPath stored
+    Settings.save fs settingsPath stored |> Expect.ok
 
-    Settings.save fs settingsPath defaults
+    Settings.save fs settingsPath defaults |> Expect.ok
 
     Assert.Equal(defaults, Settings.load fs defaults settingsPath)
 
 [<Fact>]
-let ``saving where nothing can be written is passed over in silence`` () =
+let ``saving where nothing can be written answers the failure`` () =
     let fs = mockFs ()
     fs.AddFile(at "blocked", MockFileData "x")
 
-    Settings.save fs (fp (at "blocked/marbas.conf")) stored
+    let saved = Settings.save fs (fp (at "blocked/marbas.conf")) stored
 
+    Assert.Equal(Some(fp (at "blocked/marbas.conf")), unwritten (Expect.error saved))
     Assert.False(fs.File.Exists(at "blocked/marbas.conf"))
 
 [<Fact>]

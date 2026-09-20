@@ -46,6 +46,7 @@
         <Compile Include="FileSystem\DesktopEntry.fs" />
         <Compile Include="FileSystem\MimeDatabase.fs" />
         <Compile Include="FileSystem\DesktopHandlers.fs" />
+        <Compile Include="FileSystem\SettingsError.fs" />
         <Compile Include="FileSystem\Settings.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="FileSystem\Drives.fs" />
@@ -108,6 +109,7 @@
         <Compile Include="Ui\Messages\LinkRefusalMessage.fs" />
         <Compile Include="Ui\Messages\OperationErrorMessage.fs" />
         <Compile Include="Ui\Messages\LaunchErrorMessage.fs" />
+        <Compile Include="Ui\Messages\SettingsErrorMessage.fs" />
         <Compile Include="Ui\Messages\DeleteConfirmation.fs" />
         <Compile Include="Ui\Messages\OverwriteQuestion.fs" />
         <Compile Include="Ui\Messages\PasswordQuestion.fs" />
