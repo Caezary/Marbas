@@ -66,3 +66,31 @@ The suite covers the rule with `[<Theory>]` rows for both platforms over literal
 Windows and Unix paths, so both halves are checked whichever system the run is
 on; the end-to-end consequence — a differently-cased sibling refused or allowed
 — is a `UnixFact` and a `WindowsFact` beside each other.
+
+**P15.3 made a move a move again.** `Operations.moveTo` handled a directory as
+`copyTo` followed by `delete`, whatever the two paths were, so renaming a 50 GB
+directory in place read and wrote 50 GB and `F6` between two directories of one
+drive did the same — where `IDirectory.Move` is a metadata operation. The copy
+was not atomic either: a failure in the middle left both trees standing.
+
+It now asks `IDirectory.Move` first. The answer is a three-case
+`DirectoryMove`: `Renamed` is done, `RenameFailed` carries the error through
+`mapException` as any other operation does, and only `RenameRefused` — an
+`IOException`, the shape .NET raises for a move across volumes — falls back to
+copy-then-delete. That `IOException` is also what a target directory that
+already stands raises, which is deliberate: a move onto an existing directory
+keeps merging into it the way it always has, because the fallback is exactly
+the old code. An `UnauthorizedAccessException` is no longer answered by copying
+what cannot be removed afterwards; it is reported as the move's own failure.
+
+Cancellation moved with it. A same-volume rename cannot be stopped halfway, so
+`moveTo` reads the flag before it starts and reports the directory once instead
+of reporting every file under it. The test that pinned "cancelled halfway keeps
+the source where it is" now says "cancelled before it starts", and a second one
+beside it takes the fallback path — over a `MockFileSystem` whose
+`Directory.Move` refuses — and pins the halfway rule where halfway still exists.
+
+The measurement the task asked for is a counting fake: `Fakes.CopyCounting`
+overrides `MockFile.Copy` and shows no copies at all for a same-volume move, and
+a control test beside it copies a two-file tree and sees exactly two, so the
+zero is a reading and not an oversight.

@@ -168,6 +168,47 @@ type WipeWitness() =
 
         writing
 
+type private CountingFile(accessor: IMockFileDataAccessor, copied: unit -> unit) =
+    inherit MockFile(accessor)
+
+    override this.Copy(source: string, target: string, overwrite: bool) =
+        copied ()
+        base.Copy(source, target, overwrite)
+
+type CopyCounting() =
+    inherit MockFileSystem()
+
+    let mutable copies = 0
+    let mutable writing: IFile = null
+
+    member _.Copies = copies
+
+    override this.File =
+        if isNull writing then
+            writing <- CountingFile(this, fun () -> copies <- copies + 1)
+
+        writing
+
+[<Literal>]
+let CrossVolumeReason = "Source and destination path must have identical roots."
+
+type private UnmovableDirectory(accessor: IMockFileDataAccessor, current: string) =
+    inherit MockDirectory(accessor, current)
+
+    override this.Move(source: string, target: string) =
+        raise (IOException CrossVolumeReason)
+
+type DirectoryMoveRefused() =
+    inherit MockFileSystem()
+
+    let mutable listing: IDirectory = null
+
+    override this.Directory =
+        if isNull listing then
+            listing <- UnmovableDirectory(this, base.Directory.GetCurrentDirectory())
+
+        listing
+
 let dependencies (fs: IFileSystem) (startPath: string) : Shell.Dependencies =
     { FileSystem = fs
       StartPath = FileSystemPath.create startPath

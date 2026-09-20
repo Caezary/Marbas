@@ -77,9 +77,21 @@ without a mode switch, the way the orthodox managers do it.
 `ByName newName`, so the renamed entry keeps the cursor even though the listing
 reorders around it. Every other reload focuses whatever the cursor was on.
 
-**Moving a directory is copy-then-delete.** `IDirectory.Move` fails across
-volumes, which is the normal case for a two-panel manager, so directories are
-copied and then removed; files still use `IFile.Move`.
+**Moving a directory is a rename first, a copy only when it has to be.**
+`Operations.moveTo` asks `IDirectory.Move` and answers `Renamed`,
+`RenameRefused` or `RenameFailed`. On one volume the rename is a metadata
+operation whatever the tree weighs, so `F6` between two directories of one
+drive and a rename in place no longer read and write the whole tree, and
+nothing can leave two trees behind halfway. `IDirectory.Move` throws
+`IOException` across volumes — and also when the target directory already
+stands — and only that answer falls back to copy-then-delete, which is how a
+move onto an existing directory still merges into it. Any other exception is
+the move's own failure and is reported as such rather than retried as a copy.
+Files still use `IFile.Move`, which overwrites.
+
+The fallback is the only path that can be stopped halfway, so `Esc` during a
+same-volume move either arrives before the rename and leaves everything where
+it was, or arrives after it and finds the work already done.
 
 **Marks survive exactly what did not finish.** After a batch, the panel keeps
 the marks of the entries whose `ItemResult` is not `Ok` (and that still exist);

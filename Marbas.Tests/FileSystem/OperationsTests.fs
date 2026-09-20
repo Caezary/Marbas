@@ -182,6 +182,56 @@ let ``move takes a directory tree to the target directory`` () =
     Assert.False(fs.Directory.Exists(at "data/docs"))
 
 [<Fact>]
+let ``copying a directory copies every file under it`` () =
+    let fs = Fakes.CopyCounting()
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "x")
+    fs.AddFile(at "data/docs/deep/leaf.txt", MockFileData "y")
+    fs.AddDirectory(at "backup")
+
+    let copied = copy fs unattended (fp (at "backup")) (fp (at "data/docs"))
+
+    Expect.ok copied
+    Assert.Equal(2, fs.Copies)
+
+[<Fact>]
+let ``moving a directory where the file system can rename it copies nothing`` () =
+    let fs = Fakes.CopyCounting()
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "x")
+    fs.AddDirectory(at "backup")
+
+    let moved = move fs unattended (fp (at "backup")) (fp (at "data/docs"))
+
+    Expect.ok moved
+    Assert.Equal(0, fs.Copies)
+    Assert.Equal("x", fs.File.ReadAllText(at "backup/docs/inner.txt"))
+    Assert.False(fs.Directory.Exists(at "data/docs"))
+
+[<Fact>]
+let ``moving a directory onto one that already stands merges into it`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "x")
+    fs.AddFile(at "backup/docs/other.txt", MockFileData "y")
+
+    let moved = move fs unattended (fp (at "backup")) (fp (at "data/docs"))
+
+    Expect.ok moved
+    Assert.Equal("x", fs.File.ReadAllText(at "backup/docs/inner.txt"))
+    Assert.Equal("y", fs.File.ReadAllText(at "backup/docs/other.txt"))
+    Assert.False(fs.Directory.Exists(at "data/docs"))
+
+[<Fact>]
+let ``a directory the file system refuses to rename is copied and then removed`` () =
+    let fs = Fakes.DirectoryMoveRefused()
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "x")
+    fs.AddDirectory(at "backup")
+
+    let moved = move fs unattended (fp (at "backup")) (fp (at "data/docs"))
+
+    Expect.ok moved
+    Assert.Equal("x", fs.File.ReadAllText(at "backup/docs/inner.txt"))
+    Assert.False(fs.Directory.Exists(at "data/docs"))
+
+[<Fact>]
 let ``move replaces whatever is already there`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/notes.txt", MockFileData "new")
@@ -434,12 +484,26 @@ let ``a tree cancelled halfway is reported as stopped`` () =
     | other -> failwith $"expected a cancelled item, got %A{other}"
 
 [<Fact>]
-let ``a move cancelled halfway keeps the source where it is`` () =
+let ``a move cancelled before it starts keeps the source where it is`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/docs/a.txt", MockFileData "a")
     fs.AddFile(at "data/docs/b.txt", MockFileData "b")
     fs.AddDirectory(at "backup")
-    let _, control = watching 1
+    let _, control = watching 0
+
+    moveAll fs control [ fp (at "data/docs") ] (fp (at "backup")) |> ignore
+
+    Assert.True(fs.Directory.Exists(at "data/docs"))
+    Assert.Equal("a", fs.File.ReadAllText(at "data/docs/a.txt"))
+    Assert.Equal("b", fs.File.ReadAllText(at "data/docs/b.txt"))
+
+[<Fact>]
+let ``a move that fell back to copying and was cancelled halfway keeps the source where it is`` () =
+    let fs = Fakes.DirectoryMoveRefused()
+    fs.AddFile(at "data/docs/a.txt", MockFileData "a")
+    fs.AddFile(at "data/docs/b.txt", MockFileData "b")
+    fs.AddDirectory(at "backup")
+    let _, control = watching 2
 
     moveAll fs control [ fp (at "data/docs") ] (fp (at "backup")) |> ignore
 

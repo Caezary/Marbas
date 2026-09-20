@@ -294,14 +294,34 @@ let copy (fs: IFileSystem) control (targetDirectory: FileSystemPath) (source: Fi
         |> inDirectory fs targetDirectory
         |> copyTo fs control source
 
+type private DirectoryMove =
+    | Renamed
+    | RenameRefused
+    | RenameFailed of error: OperationError
+
+let private renameDirectory (fs: IFileSystem) (source: FileSystemPath) (target: FileSystemPath) =
+    try
+        fs.Directory.Move(FileSystemPath.value source, FileSystemPath.value target)
+        Renamed
+    with
+    | :? IO.IOException -> RenameRefused
+    | ex -> RenameFailed(mapException source ex)
+
 let moveTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
     match FileSystemPath.kind fs source with
     | NoEntry -> Error(SourceNotFound source)
+    | DirectoryEntry when control.IsCancelled() -> Error(Cancelled source)
     | DirectoryEntry ->
-        result {
-            do! copyTo fs control source target
-            do! delete fs source
-        }
+        control.Report source
+
+        match renameDirectory fs source target with
+        | Renamed -> Ok()
+        | RenameFailed error -> Error error
+        | RenameRefused ->
+            result {
+                do! copyTo fs control source target
+                do! delete fs source
+            }
     | FileEntry when control.IsCancelled() -> Error(Cancelled source)
     | FileEntry ->
         control.Report source
