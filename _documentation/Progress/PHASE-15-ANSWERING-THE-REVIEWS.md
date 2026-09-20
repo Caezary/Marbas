@@ -153,3 +153,40 @@ proof this task can offer.
 What the review also suggested — a local `let` beside any arm calling one helper
 more than three times — turned out to have no site: after the block went, no arm
 repeats a call often enough to earn a name back.
+
+**P15.6 turned a gate into a rule, and the rule now reads in one place.**
+`guarding state source receives proceed` took a `ResultsRefusal option`, a bare
+`bool` and a continuation, and eight arms — not the seven the task counted —
+passed it their whole body, each paying an indentation level for it (Q7,
+TD-021). Nothing in it depended on anything `transition` computes: the refusal
+follows from the message and from whether each of the two panels shows results.
+
+So it is decided before `transition` runs. `refusedAsSource` answers what a
+message is refused for while the active panel shows results — `MakingDirectory`,
+`MakingFile`, `Linking`, `Packing`, `Unpacking` — and `refusedAsTarget` answers
+`Receiving` for the messages that need a directory on the other side: copy,
+move, pack, unpack. `resultsRefusal` matches the two answers against the two
+panels, and `update` either reports the refusal or runs `transition`. The `bool`
+went with the continuation: a rule that answers *which* refusal has no use for a
+flag that only says *whether*.
+
+The review sketched a `Gate` record with a `Source: ResultsRefusal option` and a
+`TargetGate` union. Two functions over the message say the same thing with no
+record and no second union — the target side has exactly one refusal, so
+`Some Receiving` is the whole of it — and they let `DeleteRequested` drop out
+altogether. Its gate had been `None`, `false`: a row that refused nothing.
+Deleting from a results panel and deleting while facing one are both allowed,
+and the honest way to write that is to leave delete out of both tables, which
+the tests of P14.12 already pin from the other side.
+
+`Renaming` stays where it was, inside the `TargetEntered` arm, because it is the
+one refusal that does not follow from the message: it depends on whether the
+text the user typed is a bare name.
+
+Two corners of the rule had no test, and both are where a careless rewrite
+would have broken it. When the active panel shows results and the message has no
+source refusal, the target check must still run — `F5` between two results panels
+refuses as `Receiving`, not at all. And when both refusals apply at once —
+`Shift+F1` between two results panels — the source refusal wins, so the message
+names `Packing` rather than `Receiving`. Both were written against the old
+`guarding`, passed there, and pin the order the new rule keeps.

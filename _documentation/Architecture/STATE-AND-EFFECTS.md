@@ -323,8 +323,10 @@ come from the hits rather than from the panel, through `SearchListing.hitFor`,
 which is why `operationPaths`, the cursor paths and `enter` each grew a
 `SearchResults` arm rather than a second function. A key that needs a directory
 where a results panel stands answers `NotInSearchResults` with the
-`ResultsRefusal` naming it, and `Update.guarding` asks that question once, ahead
-of the transition, for the active panel and for the panel that would receive.
+`ResultsRefusal` naming it. `Update.refusedAsSource` and `refusedAsTarget` read
+that refusal off the message alone, and `resultsRefusal` weighs them against the
+two panels once, in `update`, ahead of the transition: the active panel first,
+then the panel that would receive.
 
 **Marks in several places are a `TransferSource` of its own.** `FromPlaces`
 holds one `FromDisk` or `FromArchive` group per place, and `Update` maps it onto

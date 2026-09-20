@@ -37,7 +37,7 @@ numbered `P<phase>.<task>` so they can be referenced in commits (e.g.
 | [12 — Watching the directories on screen](Plan/PHASE-12-WATCHING-THE-DIRECTORIES.md) | P12.1–P12.6 | done |
 | [13 — The drive, the link and what is left behind](Plan/PHASE-13-DRIVES-LINKS-AND-TRASH.md) | P13.1–P13.16 | done |
 | [14 — Finding files](Plan/PHASE-14-FINDING-FILES.md) | P14.1–P14.14 | done |
-| [15 — Answering the reviews](Plan/PHASE-15-ANSWERING-THE-REVIEWS.md) | P15.1–P15.24 | P15.1–P15.5 done |
+| [15 — Answering the reviews](Plan/PHASE-15-ANSWERING-THE-REVIEWS.md) | P15.1–P15.24 | P15.1–P15.6 done |
 
 ## Suggested module layout
 

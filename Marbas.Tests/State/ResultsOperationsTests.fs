@@ -2,7 +2,6 @@ module Marbas.Tests.State.ResultsOperationsTests
 
 open System
 open System.Formats.Tar
-open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
@@ -403,6 +402,31 @@ let ``Shift+F2 into a results panel refuses`` () =
     let result = update fs UnpackRequested state
 
     Assert.Equal<Effect list>(refused Receiving, result.Effects)
+
+let private bothShowingResults (fs: MockFileSystem) =
+    showing fs threeDirectories
+    |> activate Right
+    |> update fs (sentToPanel threeDirectories)
+    |> _.State
+    |> activate Left
+
+[<Fact>]
+let ``F5 from one results panel into another refuses as the target`` () =
+    let fs = mockFs ()
+    let state = bothShowingResults fs
+
+    let result = update fs CopyRequested state
+
+    Assert.Equal<Effect list>(refused Receiving, result.Effects)
+
+[<Fact>]
+let ``Shift+F1 between two results panels names what the panel it stands in refuses`` () =
+    let fs = mockFs ()
+    let state = bothShowingResults fs
+
+    let result = update fs PackRequested state
+
+    Assert.Equal<Effect list>(refused Packing, result.Effects)
 
 let private twinsOnDisk =
     [ hitIn "start/a" "same.txt"; hitIn "start/b" "same.txt" ]

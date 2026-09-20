@@ -270,15 +270,6 @@ let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
 let private refusing state refusal =
     request state (ReportOperationError(Operations.NotInSearchResults refusal))
 
-let private guarding state (source: ResultsRefusal option) receives proceed =
-    let active = activePanel state
-    let facing = panel (opposite state.Active) state
-
-    match source with
-    | Some refusal when showsResults active -> refusing state refusal
-    | _ when receives && showsResults facing -> refusing state Receiving
-    | _ -> proceed ()
-
 let private forGood mode =
     match mode with
     | ToTrash -> Permanently
@@ -303,11 +294,10 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | PatternRequested mode -> request state (PromptForPattern mode)
     | PatternEntered(mode, pattern) -> stay (applyPattern mode state.Active pattern state)
     | MakeDirectoryRequested ->
-        guarding state (Some MakingDirectory) false (fun () ->
-            match (activePanel state).Path with
-            | OnDisk _ -> request state (PromptForName state.LastCreatedDirectory)
-            | InArchive(archive, _) -> changing fs state [ archive ] (PromptForName state.LastCreatedDirectory)
-            | SearchResults _ -> stay state)
+        match (activePanel state).Path with
+        | OnDisk _ -> request state (PromptForName state.LastCreatedDirectory)
+        | InArchive(archive, _) -> changing fs state [ archive ] (PromptForName state.LastCreatedDirectory)
+        | SearchResults _ -> stay state
     | NameEntered name ->
         match (activePanel state).Path with
         | OnDisk directory -> makeDirectory fs state.Active directory name state |> applyOperation state
@@ -323,13 +313,12 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
                   Scope = deleteScope fs target
                   Mode = asked }
 
-        guarding state None false (fun () ->
-            match target.Path, transferSource fs target with
-            | _, None -> stay state
-            | InArchive(archive, _), _
-            | SearchResults _, Some(FromArchive(archive, _)) -> changing fs state [ archive ] (confirmed Permanently)
-            | _, Some(FromPlaces _) -> request state (confirmed (forGood mode))
-            | _ -> request state (confirmed mode))
+        match target.Path, transferSource fs target with
+        | _, None -> stay state
+        | InArchive(archive, _), _
+        | SearchResults _, Some(FromArchive(archive, _)) -> changing fs state [ archive ] (confirmed Permanently)
+        | _, Some(FromPlaces _) -> request state (confirmed (forGood mode))
+        | _ -> request state (confirmed mode)
     | DeleteConfirmed mode ->
         match transferSource fs (activePanel state) with
         | None -> stay state
@@ -338,37 +327,34 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | Some(FromPlaces groups) -> request state (DeletePlaces(groups, mode))
     | DeleteFinished results -> finishDelete fs results state |> applyBatch state
     | CopyRequested ->
-        guarding state None true (fun () ->
-            match transferSource fs (activePanel state), transferTarget state with
-            | None, _
-            | _, None -> stay state
-            | Some(FromDisk paths), Some(ToDirectory target) -> request state (CopyTargets(paths, target))
-            | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
-                request state (ExtractEntries(archive, entries, target))
-            | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
-                changing fs state [ archive ] (AddEntries(archive, level, paths))
-            | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
-                changing fs state [ target ] (CopyEntriesAcross(source, entries, target, level))
-            | Some(FromPlaces groups), Some(ToDirectory target) ->
-                request state (CopyPlaces(groups, ToDirectory target))
-            | Some(FromPlaces groups), Some(ToArchive(archive, level)) ->
-                changing fs state [ archive ] (CopyPlaces(groups, ToArchive(archive, level))))
+        match transferSource fs (activePanel state), transferTarget state with
+        | None, _
+        | _, None -> stay state
+        | Some(FromDisk paths), Some(ToDirectory target) -> request state (CopyTargets(paths, target))
+        | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
+            request state (ExtractEntries(archive, entries, target))
+        | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
+            changing fs state [ archive ] (AddEntries(archive, level, paths))
+        | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
+            changing fs state [ target ] (CopyEntriesAcross(source, entries, target, level))
+        | Some(FromPlaces groups), Some(ToDirectory target) -> request state (CopyPlaces(groups, ToDirectory target))
+        | Some(FromPlaces groups), Some(ToArchive(archive, level)) ->
+            changing fs state [ archive ] (CopyPlaces(groups, ToArchive(archive, level)))
     | CopyFinished results -> finishTransfer fs results state |> applyBatch state
     | MoveRequested ->
-        guarding state None true (fun () ->
-            match transferSource fs (activePanel state), transferTarget state with
-            | None, _
-            | _, None -> stay state
-            | Some(FromDisk _), Some(ToDirectory target)
-            | Some(FromPlaces _), Some(ToDirectory target) -> request state (PromptForTarget target)
-            | Some(FromPlaces groups), Some(ToArchive(archive, level)) ->
-                changing fs state [ archive ] (MovePlaces(groups, ToArchive(archive, level)))
-            | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
-                changing fs state [ archive ] (MoveEntriesOut(archive, entries, target))
-            | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
-                changing fs state [ archive ] (MoveEntriesIn(archive, level, paths))
-            | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
-                changing fs state [ target; source ] (MoveEntriesAcross(source, entries, target, level)))
+        match transferSource fs (activePanel state), transferTarget state with
+        | None, _
+        | _, None -> stay state
+        | Some(FromDisk _), Some(ToDirectory target)
+        | Some(FromPlaces _), Some(ToDirectory target) -> request state (PromptForTarget target)
+        | Some(FromPlaces groups), Some(ToArchive(archive, level)) ->
+            changing fs state [ archive ] (MovePlaces(groups, ToArchive(archive, level)))
+        | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
+            changing fs state [ archive ] (MoveEntriesOut(archive, entries, target))
+        | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
+            changing fs state [ archive ] (MoveEntriesIn(archive, level, paths))
+        | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
+            changing fs state [ target; source ] (MoveEntriesAcross(source, entries, target, level))
     | TargetEntered text ->
         let panel = activePanel state
 
@@ -418,19 +404,18 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | LinkRequested ->
         let panel = activePanel state
 
-        guarding state (Some Linking) false (fun () ->
-            match operationPaths fs panel, activeDirectory state with
-            | [], _
-            | _, None -> stay state
-            | sources, Some directory ->
-                let place = targetDirectory state |> Option.defaultValue directory
+        match operationPaths fs panel, activeDirectory state with
+        | [], _
+        | _, None -> stay state
+        | sources, Some directory ->
+            let place = targetDirectory state |> Option.defaultValue directory
 
-                let suggestion =
-                    match sources with
-                    | [ single ] -> FileSystemPath.combine fs place (EntryName.value (FileSystemPath.name fs single))
-                    | _ -> place
+            let suggestion =
+                match sources with
+                | [ single ] -> FileSystemPath.combine fs place (EntryName.value (FileSystemPath.name fs single))
+                | _ -> place
 
-                request state (PromptForLink(sources, directory, suggestion)))
+            request state (PromptForLink(sources, directory, suggestion))
     | LinkEntered choice ->
         match activeDirectory state with
         | None -> stay state
@@ -440,11 +425,10 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             | requests -> request state (MakeLinks requests)
     | LinksMade(made, results) -> finishLinks fs made results state |> applyBatch state
     | PackRequested ->
-        guarding state (Some Packing) true (fun () ->
-            match operationTargets (activePanel state), archiveSuggestion fs ArchiveFormat.initial state with
-            | [], _
-            | _, None -> stay state
-            | _, Some suggestion -> request state (PromptForArchive suggestion))
+        match operationTargets (activePanel state), archiveSuggestion fs ArchiveFormat.initial state with
+        | [], _
+        | _, None -> stay state
+        | _, Some suggestion -> request state (PromptForArchive suggestion)
     | ArchiveEntered choice ->
         match choice.Target.Trim(), operationPaths fs (activePanel state), activeDirectory state with
         | "", _, _
@@ -467,11 +451,10 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
                     ))
     | PackFinished(archive, results) -> finishPack fs archive results state |> applyBatch state
     | UnpackRequested ->
-        guarding state (Some Unpacking) true (fun () ->
-            match operationPaths fs (activePanel state), targetDirectory state with
-            | [], _
-            | _, None -> stay state
-            | paths, Some target -> request state (ExtractTargets(paths, target)))
+        match operationPaths fs (activePanel state), targetDirectory state with
+        | [], _
+        | _, None -> stay state
+        | paths, Some target -> request state (ExtractTargets(paths, target))
     | UnpackFinished results -> finishTransfer fs results state |> applyBatch state
     | RenameFinished(newName, outcome) ->
         match outcome with
@@ -506,10 +489,9 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
                 | Error error -> request state (ReportOperationError error)
             | None, None -> stay state
     | NewFileRequested ->
-        guarding state (Some MakingFile) false (fun () ->
-            match activeDirectory state with
-            | None -> stay state
-            | Some _ -> request state PromptForFileName)
+        match activeDirectory state with
+        | None -> stay state
+        | Some _ -> request state PromptForFileName
     | FileNameEntered name ->
         match activeDirectory state with
         | None -> stay state
@@ -560,8 +542,36 @@ let private watching before result =
         { result with
             Effects = result.Effects @ [ WatchLocations after ] }
 
+let private refusedAsSource msg =
+    match msg with
+    | MakeDirectoryRequested -> Some MakingDirectory
+    | NewFileRequested -> Some MakingFile
+    | LinkRequested -> Some Linking
+    | PackRequested -> Some Packing
+    | UnpackRequested -> Some Unpacking
+    | _ -> None
+
+let private refusedAsTarget msg =
+    match msg with
+    | CopyRequested
+    | MoveRequested
+    | PackRequested
+    | UnpackRequested -> Some Receiving
+    | _ -> None
+
+let private resultsRefusal (state: AppState) msg =
+    match refusedAsSource msg, refusedAsTarget msg with
+    | Some refusal, _ when showsResults (activePanel state) -> Some refusal
+    | _, Some refusal when showsResults (panel (opposite state.Active) state) -> Some refusal
+    | _ -> None
+
 let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
-    transition fs msg state |> watching state
+    let result =
+        match resultsRefusal state msg with
+        | Some refusal -> refusing state refusal
+        | None -> transition fs msg state
+
+    result |> watching state
 
 let step (fs: IFileSystem) (msg: Message) (state: AppState) =
     let result = update fs msg state
