@@ -132,3 +132,24 @@ and never touches a disposed dialog.
 `Archive.needsPassword` is the fifth site A9 names and is left alone on purpose:
 P15.13 answers it from the cached index, and narrowing its net before that would
 be written twice.
+
+**P15.5 deleted the forty aliases, and the arms say what they call.** Forty
+`let x' = …` bindings stood between `transition`'s signature and its `match`,
+and they were not one thing: `applyListing'`, `applyOperation'` and
+`applyBatch'` bound `state`, `changing'` and `chosen'` bound both `fs` and
+`state`, and the other thirty-five bound `fs` alone. So a reader meeting
+`makeDirectory'` had to climb back to the block to learn which arguments were
+already there, and the block itself allocated forty closures for a `CursorMoved`
+that used one of them (Q1, perf P10).
+
+Every arm now names the function and passes the arguments — `makeDirectory fs
+state.Active directory name state |> applyOperation state` — and `sentToRoot`
+lost the two the convention had leaked into it, `loadPanel'` and `getRoot`,
+which were a closure and an alias standing over one call site each. Three arms
+grew past the line limit and took Fantomas' break onto the next line; nothing
+else about the file changed, and the suite passed unchanged, which is the whole
+proof this task can offer.
+
+What the review also suggested — a local `let` beside any arm calling one helper
+more than three times — turned out to have no site: after the block went, no arm
+repeats a call often enough to earn a name back.
