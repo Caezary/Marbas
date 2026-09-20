@@ -24,9 +24,23 @@ type OperationError =
     | BatchFailed of message: string
     | OperationFailed of path: FileSystemPath * message: string
 
+type ItemSource =
+    | ItemOnDisk of path: FileSystemPath
+    | ItemInArchive of archive: FileSystemPath * entry: ArchivePath
+    | WholeBatch of title: string
+
 type ItemResult =
-    { Name: EntryName
+    { Source: ItemSource
       Outcome: Result<unit, OperationError> }
+
+module ItemSource =
+
+    let name (fs: IFileSystem) source =
+        match source with
+        | ItemOnDisk path -> FileSystemPath.name fs path
+        | ItemInArchive(archive, entry) ->
+            ArchivePath.name entry |> Option.defaultValue (FileSystemPath.name fs archive)
+        | WholeBatch title -> EntryName.create title
 
 type OverwriteAnswer =
     | Yes
@@ -75,7 +89,7 @@ let guarded (title: string) (work: BatchControl -> ItemResult list) control =
     try
         work control
     with ex ->
-        [ { Name = EntryName.create title
+        [ { Source = WholeBatch title
             Outcome = Error(BatchFailed ex.Message) } ]
 
 let private attempt fs path (action: FileSystemAction) =
@@ -309,19 +323,19 @@ let rename (fs: IFileSystem) (source: FileSystemPath) (newName: EntryName) =
     | NoEntry -> moveTo fs unattended source target
     | _ -> Error(TargetExists target)
 
-let itemResult (fs: IFileSystem) source outcome =
-    { Name = FileSystemPath.name fs source
+let itemResult source outcome =
+    { Source = ItemOnDisk source
       Outcome = outcome }
 
-let private itemResults (fs: IFileSystem) sources outcome =
-    sources |> List.map (fun source -> itemResult fs source (outcome source))
+let private itemResults sources outcome =
+    sources |> List.map (fun source -> itemResult source (outcome source))
 
 let failures (results: ItemResult list) =
     results |> List.filter (_.Outcome >> Result.isError)
 
-let removeAll (fs: IFileSystem) remove sources = itemResults fs sources remove
+let removeAll remove sources = itemResults sources remove
 
-let deleteAll (fs: IFileSystem) sources = removeAll fs (delete fs) sources
+let deleteAll (fs: IFileSystem) sources = removeAll (delete fs) sources
 
 type private StandingAnswer =
     | AskEachTime
@@ -361,12 +375,12 @@ let approveInto
 let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources targetDirectory =
     approveInto (inDirectory fs targetDirectory) (fun target -> FileSystemPath.kind fs target <> NoEntry) ask sources
 
-let allWatched (fs: IFileSystem) (control: BatchControl) apply sources =
+let allWatched (control: BatchControl) apply sources =
     let rec run finished remaining =
         match remaining with
         | [] -> List.rev finished
         | source :: rest ->
-            let item = itemResult fs source (apply source)
+            let item = itemResult source (apply source)
 
             if control.IsCancelled() then
                 List.rev (item :: finished)
@@ -376,10 +390,10 @@ let allWatched (fs: IFileSystem) (control: BatchControl) apply sources =
     run [] sources
 
 let copyAll (fs: IFileSystem) control sources targetDirectory =
-    allWatched fs control (copy fs control targetDirectory) sources
+    allWatched control (copy fs control targetDirectory) sources
 
 let moveAll (fs: IFileSystem) control sources targetDirectory =
-    allWatched fs control (move fs control targetDirectory) sources
+    allWatched control (move fs control targetDirectory) sources
 
 let wipeAll (fs: IFileSystem) control sources =
-    allWatched fs control (wipe fs control) sources
+    allWatched control (wipe fs control) sources

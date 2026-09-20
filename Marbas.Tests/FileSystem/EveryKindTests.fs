@@ -62,7 +62,7 @@ let private emptied (fs: IFileSystem) archive =
           Destination = fp (at "out") }
         [ inside "notes.txt"; inside "docs" ]
     |> Expect.ok
-    |> List.map (fun item -> EntryName.value item.Name, item.Outcome)
+    |> List.map (fun item -> EntryName.value (Operations.ItemSource.name fs item.Source), item.Outcome)
 
 [<Theory>]
 [<InlineData("zip")>]

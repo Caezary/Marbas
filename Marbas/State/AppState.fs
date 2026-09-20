@@ -363,27 +363,6 @@ let private surviving entries selected =
 let private keepSurviving selected (p: PanelState) =
     { p with Selected = surviving p.Entries selected }
 
-let private namesWhere wanted (results: Operations.ItemResult list) =
-    results |> List.filter (_.Outcome >> wanted) |> List.map _.Name |> Set.ofList
-
-let private bareName (fs: IFileSystem) (p: PanelState) (name: EntryName) =
-    match p.Path with
-    | SearchResults found ->
-        SearchListing.hitFor fs found name
-        |> Option.map _.Entry.Name
-        |> Option.defaultValue name
-    | _ -> name
-
-let private keepUnfinished (fs: IFileSystem) results selected (p: PanelState) =
-    let finished = namesWhere Result.isOk results
-    let failed = namesWhere Result.isError results
-
-    let unfinished name =
-        let bare = bareName fs p name
-        failed.Contains bare || not (finished.Contains bare)
-
-    keepSurviving (Set.filter unfinished selected) p
-
 let private asOperationError error =
     match error with
     | DirectoryNotFound path -> Operations.SourceNotFound path
@@ -410,15 +389,18 @@ let private locationAbove (fs: IFileSystem) panel =
         | None -> OnDisk(FileSystemPath.directory fs archive) |> Some
     | SearchResults found -> Some found.Origin
 
+let private locationOfName (fs: IFileSystem) panel (name: EntryName) =
+    match panel.Path with
+    | SearchResults found ->
+        SearchListing.hitFor fs found name
+        |> Option.bind (fun hit -> PanelLocation.into fs hit.Location hit.Entry.Name)
+    | location -> PanelLocation.into fs location name
+
 let private locationOf (fs: IFileSystem) panel (entry: Entry) =
     if entry.Name = ParentName then
         locationAbove fs panel
     else
-        match panel.Path with
-        | SearchResults _ ->
-            hitAt fs panel entry
-            |> Option.bind (fun hit -> PanelLocation.into fs hit.Location hit.Entry.Name)
-        | location -> PanelLocation.into fs location entry.Name
+        locationOfName fs panel entry.Name
 
 let withLastSearch (results: FindResults) state = { state with LastSearch = Some results }
 
@@ -600,6 +582,27 @@ let deleteScope (fs: IFileSystem) panel =
         WithDirectoryContents
     else
         NamedEntriesOnly
+
+let private sourceOf (fs: IFileSystem) panel (name: EntryName) =
+    locationOfName fs panel name
+    |> Option.bind (function
+        | OnDisk path -> Some(Operations.ItemOnDisk path)
+        | InArchive(archive, entry) -> Some(Operations.ItemInArchive(archive, entry))
+        | SearchResults _ -> None)
+
+let private sourcesWhere wanted (results: Operations.ItemResult list) =
+    results |> List.filter (_.Outcome >> wanted) |> List.map _.Source |> Set.ofList
+
+let private keepUnfinished (fs: IFileSystem) results selected (p: PanelState) =
+    let finished = sourcesWhere Result.isOk results
+    let failed = sourcesWhere Result.isError results
+
+    let unfinished name =
+        match sourceOf fs p name with
+        | Some source -> failed.Contains source || not (finished.Contains source)
+        | None -> true
+
+    keepSurviving (Set.filter unfinished selected) p
 
 let private reloadFocusing (fs: IFileSystem) side focus keep state =
     let previous = panel side state

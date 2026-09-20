@@ -9,10 +9,13 @@ function key pressed on the parent entry has nothing to do and asks nothing.
 **Operations answer per item, and one bad item never stops the batch.**
 `Operations` mirrors `DirectoryListing`: every function returns
 `Result<unit, OperationError>` instead of throwing, and the `*All` functions map
-a list of source paths to `ItemResult` values (entry name plus outcome) in the
-input order, so the UI can report exactly which entries failed and why. A
-single-item failure inside one *tree* does abort that tree — a half-copied
-directory stops at the first error rather than pressing on blindly.
+a list of source paths to `ItemResult` values in the input order, so the UI can
+report exactly which entries failed and why. An `ItemResult` says where the item
+came from — an `ItemSource`, which is a `FileSystemPath` on disk, the archive and
+the entry's `ArchivePath` inside one, or the batch itself when the batch as a
+whole failed — so two entries of one name in different places never trade
+outcomes. A single-item failure inside one *tree* does abort that tree — a
+half-copied directory stops at the first error rather than pressing on blindly.
 
 **Nothing reaches the file system outside `attempting`.**
 `Operations.attempting` is the one place an exception becomes a value: it runs
@@ -26,7 +29,8 @@ batch to run; before, it escaped the batch entirely.
 
 **A batch that raises anyway still closes its window.** `Operations.guarded`
 wraps the work a batch runs and turns anything that escapes into one
-`ItemResult` named after the batch, carrying `BatchFailed` with the reason.
+`ItemResult` whose source is the batch itself (`WholeBatch`), carrying
+`BatchFailed` with the reason.
 `BatchRunner` runs the work through it, so the promise that the progress window
 closes and `finish` is called holds whatever happens on the batch thread — an
 exception used to skip both, leaving a progress window that answered nothing
@@ -79,8 +83,10 @@ copied and then removed; files still use `IFile.Move`.
 
 **Marks survive exactly what did not finish.** After a batch, the panel keeps
 the marks of the entries whose `ItemResult` is not `Ok` (and that still exist);
-everything that succeeded loses its mark. Delete, copy and move share the rule,
-so a failed batch can be retried by pressing the key again.
+everything that succeeded loses its mark. The match is made on the item's
+`ItemSource`, not on its bare name, so the panel asks what each marked entry's
+source is and compares that. Delete, copy and move share the rule, so a failed
+batch can be retried by pressing the key again.
 
 **A confirmation is an effect; its wording belongs to Ui.** `ConfirmDelete`
 carries a `DeleteRequest` — the target names, a `DeleteScope` saying

@@ -383,8 +383,9 @@ answer for.
 
 **An archive that fails answers under its own name.** `Archive.extractAll` runs
 the plans one after another and turns an `Error` from `extract` into a single
-`ItemResult` named after the archive, carrying `Operations.ArchiveFailed`. That
-case wraps the `ArchiveError` whole rather than flattening it to a string, so
+`ItemResult` whose source is the archive file itself, carrying
+`Operations.ArchiveFailed`. That case wraps the `ArchiveError` whole rather
+than flattening it to a string, so
 the failures dialog words it through `ArchiveErrorMessage` and nothing in
 `FileSystem` has to know how to phrase anything.
 
@@ -573,8 +574,8 @@ except that the source is read out of a file.
 
 **The archive is never written.** Extraction only reads: the file's bytes are
 the same after the batch as before it, which is asserted rather than assumed.
-An archive that cannot be read fails the whole plan as one `ItemResult` named
-after the archive, the way `Shift+F2` reports it.
+An archive that cannot be read fails the whole plan as one `ItemResult` whose
+source is the archive file, the way `Shift+F2` reports it.
 
 ## Changing an archive
 
@@ -657,9 +658,10 @@ because both halves were already written against the capability table.
 that `moveOut` uses, so an entry is removed from the archive it came from only
 once the other archive holds it — the rule every move in Marbas follows. What
 failed on the way out keeps that failure; what failed on the way in replaces
-it, which is what `carryingOver` is for: the two halves answer one
-`ItemResult` per target, matched by name, the way a level cannot hold two
-entries with the same name.
+it, which is what `carryingOver` is for: the two halves answer one `ItemResult`
+per target, and `carryingOver` joins them through the scratch path each target
+landed on, so two targets of one name from different levels keep their own
+outcomes.
 
 **Both archives are gated, and each for its own reason.** `F5` needs only the
 *target* to be changeable — copying out of a rar into a zip is fine. `F6` needs

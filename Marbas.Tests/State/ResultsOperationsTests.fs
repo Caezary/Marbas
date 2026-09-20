@@ -94,8 +94,12 @@ let private named state =
 let private markedNames state =
     (activePanel state).Selected |> Set.map EntryName.value |> Set.toList
 
-let private item name outcome : Operations.ItemResult =
-    { Name = EntryName.create name
+let private item where name outcome : Operations.ItemResult =
+    { Source = Operations.ItemOnDisk(fp (at $"{where}/{name}"))
+      Outcome = outcome }
+
+let private entryItem archive name outcome : Operations.ItemResult =
+    { Source = Operations.ItemInArchive(fp (at archive), ArchivePath.child ArchivePath.root (EntryName.create name))
       Outcome = outcome }
 
 let private refused refusal =
@@ -163,9 +167,9 @@ let ``what was deleted leaves the listing and what failed keeps its mark`` () =
     fs.File.Delete(at "start/b/two.txt")
 
     let results =
-        [ item "one.txt" (Ok())
-          item "two.txt" (Ok())
-          item "three.txt" (Error(Operations.AccessDenied(fp (at "start/c/three.txt")))) ]
+        [ item "start/a" "one.txt" (Ok())
+          item "start/b" "two.txt" (Ok())
+          item "start/c" "three.txt" (Error(Operations.AccessDenied(fp (at "start/c/three.txt")))) ]
 
     let finished = update fs (DeleteFinished results) state |> _.State
 
@@ -178,9 +182,9 @@ let ``what was copied loses its mark and what failed keeps it`` () =
     let state = marked fs threeDirectories
 
     let results =
-        [ item "one.txt" (Ok())
-          item "two.txt" (Error(Operations.TargetExists(fp (at "target/two.txt"))))
-          item "three.txt" (Ok()) ]
+        [ item "start/a" "one.txt" (Ok())
+          item "start/b" "two.txt" (Error(Operations.TargetExists(fp (at "target/two.txt"))))
+          item "start/c" "three.txt" (Ok()) ]
 
     let finished = update fs (CopyFinished results) state |> _.State
 
@@ -377,3 +381,44 @@ let ``Shift+F2 into a results panel refuses`` () =
     let result = update fs UnpackRequested state
 
     Assert.Equal<Effect list>(refused Receiving, result.Effects)
+
+let private twinsOnDisk =
+    [ hitIn "start/a" "same.txt"; hitIn "start/b" "same.txt" ]
+
+let private twinInArchive =
+    { Location = InArchive(fp (at "start/backup.zip"), ArchivePath.root)
+      Entry = file "same.txt" }
+
+let private twinsAcrossPlaces = [ hitIn "start/a" "same.txt"; twinInArchive ]
+
+let private withTwins () =
+    let fs = mockFs ()
+    fs.AddFile(at "start/a/same.txt", MockFileData "a")
+    fs.AddFile(at "start/b/same.txt", MockFileData "b")
+    fs
+
+[<Fact>]
+let ``of two hits of one name only the one that failed keeps its mark`` () =
+    let fs = withTwins ()
+    let state = marked fs twinsOnDisk
+
+    let results =
+        [ item "start/a" "same.txt" (Ok())
+          item "start/b" "same.txt" (Error(Operations.AccessDenied(fp (at "start/b/same.txt")))) ]
+
+    let finished = update fs (CopyFinished results) state |> _.State
+
+    Assert.Equal<string list>([ relative "b/same.txt" ], markedNames finished)
+
+[<Fact>]
+let ``a twin inside an archive keeps no mark when only the one on disk failed`` () =
+    let fs = withTwins ()
+    let state = marked fs twinsAcrossPlaces
+
+    let results =
+        [ item "start/a" "same.txt" (Error(Operations.AccessDenied(fp (at "start/a/same.txt"))))
+          entryItem "start/backup.zip" "same.txt" (Ok()) ]
+
+    let finished = update fs (CopyFinished results) state |> _.State
+
+    Assert.Equal<string list>([ relative "a/same.txt" ], markedNames finished)

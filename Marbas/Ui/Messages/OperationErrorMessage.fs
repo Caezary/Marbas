@@ -1,5 +1,6 @@
 module Marbas.Ui.Messages.OperationErrorMessage
 
+open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
@@ -47,10 +48,10 @@ let describe error =
     | BatchFailed reason -> $"The operation could not be completed: {reason}"
     | OperationFailed(path, reason) -> $"Could not complete '{FileSystemPath.value path}': {reason}"
 
-let describeFailures (results: ItemResult list) =
+let describeFailures (fs: IFileSystem) (results: ItemResult list) =
     results
     |> List.choose (fun item ->
         match item.Outcome with
-        | Error error -> Some $"{EntryName.value item.Name}: {describe error}"
+        | Error error -> Some $"{EntryName.value (ItemSource.name fs item.Source)}: {describe error}"
         | Ok() -> None)
     |> String.concat "\n"

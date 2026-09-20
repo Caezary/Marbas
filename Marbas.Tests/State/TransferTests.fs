@@ -63,7 +63,7 @@ let ``a mark stays on an entry whose copy failed`` () =
     let fs, state = started ()
 
     let results =
-        [ { Name = EntryName.create "notes.txt"
+        [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
             Outcome = Error(AccessDenied(fp (at "backup/notes.txt"))) } ]
 
     let updated = finished fs results (markedNotes state)

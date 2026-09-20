@@ -301,8 +301,8 @@ let ``a finished wipe keeps the marks of what it did not get to`` () =
         |> toggleSelectionMoving Downward Left
 
     let results =
-        [ { Name = en "docs"; Outcome = Ok() }
-          { Name = en "notes.txt"
+        [ { Source = ItemOnDisk(fp (at "start/docs")); Outcome = Ok() }
+          { Source = ItemOnDisk(fp (at "start/notes.txt"))
             Outcome = Error(Cancelled(fp (at "start/notes.txt"))) } ]
 
     let result = update fs (DeleteFinished results) state
@@ -331,7 +331,7 @@ let ``a delete that fails is reported item by item`` () =
 
     Assert.Equal<Effect list>(
         [ ReportItemFailures
-              [ { Name = EntryName.create "gone.txt"
+              [ { Source = ItemOnDisk(fp (at "start/gone.txt"))
                   Outcome = Error(SourceNotFound(fp (at "start/gone.txt"))) } ] ],
         result.Effects
     )
@@ -372,7 +372,7 @@ let ``a finished copy reports the items that failed`` () =
     let state = loadedBoth fs
 
     let failed =
-        [ { Name = EntryName.create "notes.txt"
+        [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
             Outcome = Error(AccessDenied(fp (at "backup/notes.txt"))) } ]
 
     let result = update fs (CopyFinished failed) state
@@ -894,7 +894,7 @@ let ``a finished pack reports the items that failed`` () =
     let state = loadedBoth fs
 
     let failed =
-        [ { Name = en "notes.txt"
+        [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
             Outcome = Error(AccessDenied(fp (at "start/notes.txt"))) } ]
 
     let result = update fs (PackFinished(en "notes.zip", failed)) state
@@ -907,7 +907,7 @@ let ``a finished pack keeps the marks of what did not make it`` () =
     let state = loadedBoth fs |> setCursor Left 2 |> marking
 
     let failed =
-        [ { Name = en "notes.txt"
+        [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
             Outcome = Error(AccessDenied(fp (at "start/notes.txt"))) } ]
 
     let result = update fs (PackFinished(en "notes.zip", failed)) state
@@ -967,7 +967,7 @@ let ``a finished unpack reports the archives that failed`` () =
     let state = loadedBoth fs
 
     let failed =
-        [ { Name = en "data.bin"
+        [ { Source = ItemOnDisk(fp (at "start/data.bin"))
             Outcome = Error(ArchiveFailed(KindCannotBeRead(fp (at "start/data.bin")))) } ]
 
     let result = update fs (UnpackFinished failed) state

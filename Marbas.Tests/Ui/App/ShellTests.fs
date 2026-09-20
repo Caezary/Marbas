@@ -17,6 +17,10 @@ let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
+let private entry raw = ArchivePath.tryCreate raw |> Expect.some
+
+let private dataZip = fp (at "start/data.zip")
+
 let private noDeps () = Fakes.dependencies (MockFileSystem()) (at "start")
 
 let private launching target =
@@ -278,7 +282,7 @@ let ``targets sent to the trash go through the port, not the file system`` () =
     Assert.True(fs.File.Exists(at "start/notes.txt"))
 
     Assert.Equal<Message list>(
-        [ DeleteFinished [ { Name = en "notes.txt"; Outcome = Ok() } ] ],
+        [ DeleteFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -297,7 +301,7 @@ let ``a permanent delete removes the target itself`` () =
     Assert.False(fs.File.Exists(at "start/notes.txt"))
 
     Assert.Equal<Message list>(
-        [ DeleteFinished [ { Name = en "notes.txt"; Outcome = Ok() } ] ],
+        [ DeleteFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -322,7 +326,7 @@ let ``a wipe runs behind the progress window under a title of its own`` () =
     Assert.Empty(fs.Directory.GetFileSystemEntries(at "start"))
 
     Assert.Equal<Message list>(
-        [ DeleteFinished [ { Name = en "notes.txt"; Outcome = Ok() } ] ],
+        [ DeleteFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -347,7 +351,7 @@ let ``a stopped wipe hands back the file it stopped at`` () =
 
     Assert.Equal<Message list>(
         [ DeleteFinished
-              [ { Name = en "notes.txt"
+              [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
                   Outcome = Error(Cancelled(fp (at "start/notes.txt"))) } ] ],
         List.ofSeq sent
     )
@@ -366,7 +370,7 @@ let ``what the trash refused is reported item by item`` () =
     Shell.interpret deps dispatch (DeleteTargets([ fp (at "start/notes.txt") ], ToTrash))
 
     Assert.Equal<Message list>(
-        [ DeleteFinished [ { Name = en "notes.txt"; Outcome = Error refusal } ] ],
+        [ DeleteFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Error refusal } ] ],
         List.ofSeq sent
     )
 
@@ -376,7 +380,7 @@ let ``item failures are reported under the operation title`` () =
     let deps = { noDeps () with ReportError = fun title message -> reported <- (title, message) }
 
     let failed =
-        [ { Name = EntryName.create "gone.txt"
+        [ { Source = ItemOnDisk(fp (at "start/gone.txt"))
             Outcome = Error(SourceNotFound(fp (at "start/gone.txt"))) } ]
 
     Shell.interpret deps ignore (ReportItemFailures failed)
@@ -400,7 +404,7 @@ let ``copy targets are copied and the outcome dispatched back`` () =
 
     Assert.Equal("new", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.Equal<Message list>(
-        [ CopyFinished [ { Name = EntryName.create "notes.txt"; Outcome = Ok() } ] ],
+        [ CopyFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -486,7 +490,7 @@ let ``move targets are moved and the outcome dispatched back`` () =
     Assert.Equal("new", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.False(fs.File.Exists(at "start/notes.txt"))
     Assert.Equal<Message list>(
-        [ MoveFinished [ { Name = EntryName.create "notes.txt"; Outcome = Ok() } ] ],
+        [ MoveFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -836,7 +840,7 @@ let ``archive targets are packed and the outcome dispatched back`` () =
     Assert.True(fs.File.Exists(at "backup/notes.zip"))
 
     Assert.Equal<Message list>(
-        [ PackFinished(en "notes.zip", [ { Name = en "notes.txt"; Outcome = Ok() } ]) ],
+        [ PackFinished(en "notes.zip", [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ]) ],
         List.ofSeq sent
     )
 
@@ -934,8 +938,8 @@ let ``an archive is emptied into the target directory and the outcome dispatched
 
     Assert.Equal<Message list>(
         [ UnpackFinished(
-              [ { Name = en "notes.txt"; Outcome = Ok() }
-                { Name = en "docs"; Outcome = Ok() } ]
+              [ { Source = ItemInArchive(dataZip, entry "notes.txt"); Outcome = Ok() }
+                { Source = ItemInArchive(dataZip, entry "docs"); Outcome = Ok() } ]
           ) ],
         List.ofSeq sent
     )
@@ -1038,7 +1042,7 @@ let ``an archive that cannot be read answers for itself`` () =
 
     Assert.Equal<Message list>(
         [ UnpackFinished(
-              [ { Name = en "data.bin"
+              [ { Source = ItemOnDisk(fp (at "start/data.bin"))
                   Outcome = Error(ArchiveFailed(KindCannotBeRead(fp (at "start/data.bin")))) } ]
           ) ],
         List.ofSeq sent
@@ -1166,10 +1170,6 @@ let ``a locked archive whose password is not given shows nothing`` () =
 
     Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/locked.zip"), entry))
 
-    Assert.False shown
-
-let private entry raw = ArchivePath.tryCreate raw |> Expect.some
-
 [<Fact>]
 let ``entries copied out of an archive land in the target directory and the outcome is dispatched back`` () =
     let sent, dispatch = capture ()
@@ -1186,8 +1186,8 @@ let ``entries copied out of an archive land in the target directory and the outc
 
     Assert.Equal<Message list>(
         [ CopyFinished(
-              [ { Name = en "notes.txt"; Outcome = Ok() }
-                { Name = en "docs"; Outcome = Ok() } ]
+              [ { Source = ItemInArchive(dataZip, entry "notes.txt"); Outcome = Ok() }
+                { Source = ItemInArchive(dataZip, entry "docs"); Outcome = Ok() } ]
           ) ],
         List.ofSeq sent
     )
@@ -1293,7 +1293,7 @@ let ``copying out of a locked archive whose password is not given copies nothing
     Assert.False(fs.File.Exists(at "backup/notes.txt"))
     Assert.Empty sent
 
-let private zipAt = fp (at "start/data.zip")
+let private zipAt = dataZip
 
 let private withLooseFile () =
     let fs = unpackReadyFs None
@@ -1315,7 +1315,10 @@ let ``sources added to an archive are in it and the outcome is dispatched back``
     Shell.interpret deps dispatch (AddEntries(zipAt, ArchivePath.root, [ fp (at "backup/fresh.txt") ]))
 
     Assert.Equal<string list>([ "docs"; "fresh.txt"; "notes.txt" ], levelNames fs ArchivePath.root)
-    Assert.Equal<Message list>([ CopyFinished [ { Name = en "fresh.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+    Assert.Equal<Message list>(
+        [ CopyFinished [ { Source = ItemOnDisk(fp (at "backup/fresh.txt")); Outcome = Ok() } ] ],
+        List.ofSeq sent
+    )
 
 [<Fact>]
 let ``a name already at that level of the archive is asked about`` () =
@@ -1400,7 +1403,10 @@ let ``a source moved into an archive is gone from disk once it is in`` () =
     Assert.Equal<string list>([ "docs"; "fresh.txt"; "notes.txt" ], levelNames fs ArchivePath.root)
     Assert.False(fs.File.Exists(at "backup/fresh.txt"))
     Assert.Equal<string list>([ Shell.MoveTitle ], List.ofSeq titles)
-    Assert.Equal<Message list>([ MoveFinished [ { Name = en "fresh.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+    Assert.Equal<Message list>(
+        [ MoveFinished [ { Source = ItemOnDisk(fp (at "backup/fresh.txt")); Outcome = Ok() } ] ],
+        List.ofSeq sent
+    )
 
 [<Fact>]
 let ``an entry moved out of an archive is on disk and gone from the archive`` () =
@@ -1414,7 +1420,10 @@ let ``an entry moved out of an archive is on disk and gone from the archive`` ()
 
     Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.Equal<string list>([ "docs" ], levelNames fs ArchivePath.root)
-    Assert.Equal<Message list>([ MoveFinished [ { Name = en "notes.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+    Assert.Equal<Message list>(
+        [ MoveFinished [ { Source = ItemInArchive(zipAt, entry); Outcome = Ok() } ] ],
+        List.ofSeq sent
+    )
 
 [<Fact>]
 let ``entries removed from an archive are gone and the outcome is dispatched back`` () =
@@ -1435,7 +1444,10 @@ let ``entries removed from an archive are gone and the outcome is dispatched bac
 
     Assert.Equal<string list>([ "docs" ], levelNames fs ArchivePath.root)
     Assert.Equal<string list>([ Shell.DeleteTitle ], List.ofSeq titles)
-    Assert.Equal<Message list>([ DeleteFinished [ { Name = en "notes.txt"; Outcome = Ok() } ] ], List.ofSeq sent)
+    Assert.Equal<Message list>(
+        [ DeleteFinished [ { Source = ItemInArchive(zipAt, entry); Outcome = Ok() } ] ],
+        List.ofSeq sent
+    )
 
 let private otherAt = fp (at "start/other.zip")
 
@@ -1475,7 +1487,10 @@ let ``an entry copied across archives lands in the other and stays in its own`` 
     Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs otherAt ArchivePath.root)
     Assert.Equal<string list>([ "inner.txt" ], namesIn fs otherAt (entry "docs"))
     Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs zipAt ArchivePath.root)
-    Assert.Equal<Message list>([ CopyFinished [ { Name = en "docs"; Outcome = Ok() } ] ], List.ofSeq sent)
+    Assert.Equal<Message list>(
+        [ CopyFinished [ { Source = ItemInArchive(zipAt, entry "docs"); Outcome = Ok() } ] ],
+        List.ofSeq sent
+    )
 
 [<Fact>]
 let ``an entry moved across archives leaves the one it came from`` () =

@@ -129,10 +129,6 @@ belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   one, and 7z — which can encrypt its headers as well as its content — is
   created without one, because `ArchiveKind.carriesPassword` answers `true` for
   zip alone.
-- A results panel decides which marks survive a batch by file name, since that
-  is all `Operations.ItemResult` carries. Two hits called `README.md` of which
-  one failed and one did not therefore both keep their marks. P15.1 carries the
-  source in the result and closes it.
 
 ## Finding files
 

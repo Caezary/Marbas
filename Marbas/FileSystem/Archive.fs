@@ -177,18 +177,18 @@ module Archive =
 
     let private packAll (fs: IFileSystem) control sources sink =
         sources
-        |> Operations.allWatched fs control (fun source -> add fs control sink (FileSystemPath.directory fs source) source)
+        |> Operations.allWatched control (fun source -> add fs control sink (FileSystemPath.directory fs source) source)
 
     let private packInto fs control (request: ArchiveRequest) sources stream =
         intoArchive request.Format request.Compression request.Password stream (packAll fs control sources)
 
-    let private failingEvery (fs: IFileSystem) sources error =
+    let private failingEvery sources error =
         sources
-        |> List.map (fun source -> Operations.itemResult fs source (Error error))
+        |> List.map (fun source -> Operations.itemResult source (Error error))
 
     let write (fs: IFileSystem) control (request: ArchiveRequest) sources =
         match Operations.attempting request.Path (fun () -> fs.File.Create(FileSystemPath.value request.Path)) with
-        | Error error -> failingEvery fs sources error
+        | Error error -> failingEvery sources error
         | Ok created ->
             let packed =
                 Operations.attempting request.Path (fun () ->
@@ -201,13 +201,13 @@ module Archive =
                 discard ()
 
                 sources
-                |> List.map (fun source -> Operations.itemResult fs source (Error(Operations.Cancelled source)))
+                |> List.map (fun source -> Operations.itemResult source (Error(Operations.Cancelled source)))
             else
                 match packed with
                 | Ok results -> results
                 | Error error ->
                     discard ()
-                    failingEvery fs sources error
+                    failingEvery sources error
 
     let private within (fs: IFileSystem) (directory: FileSystemPath) (path: FileSystemPath) =
         let inside =
@@ -285,16 +285,13 @@ module Archive =
             | 0 -> Error(Operations.SourceNotFound(ArchivePath.spelled fs request.Archive target))
             | _ -> Ok())
 
-    let private eachTarget (fs: IFileSystem) (control: Operations.BatchControl) (archive: FileSystemPath) unpack targets =
-        let named target =
-            ArchivePath.name target |> Option.defaultValue (FileSystemPath.name fs archive)
-
+    let private eachTarget (control: Operations.BatchControl) (archive: FileSystemPath) unpack targets =
         let rec run finished remaining =
             match remaining with
             | [] -> List.rev finished
             | target :: rest ->
                 let item: Operations.ItemResult =
-                    { Name = named target
+                    { Source = Operations.ItemInArchive(archive, target)
                       Outcome = unpack target }
 
                 if control.IsCancelled() then
@@ -321,13 +318,13 @@ module Archive =
                 if request.Password.IsNone && needsPassword fs request.Archive then
                     Error(PasswordNeeded request.Archive)
                 else
-                    Ok(eachTarget fs control request.Archive (unpackTarget fs control request kind) targets)
+                    Ok(eachTarget control request.Archive (unpackTarget fs control request kind) targets)
             with ex ->
                 Error(ArchiveReader.mapException request.Archive ex)
 
     let extractAll (fs: IFileSystem) control (plans: ExtractPlan list) =
         let refused (request: ExtractRequest) error : Operations.ItemResult =
-            { Name = FileSystemPath.name fs request.Archive
+            { Source = Operations.ItemOnDisk request.Archive
               Outcome = Error(Operations.ArchiveFailed error) }
 
         plans
@@ -490,10 +487,8 @@ module Archive =
     let private cancelledEntries (fs: IFileSystem) archive targets =
         targets
         |> List.map (fun target ->
-            let path = ArchivePath.spelled fs archive target
-
-            { Name = ArchivePath.name target |> Option.defaultValue (FileSystemPath.name fs archive)
-              Outcome = Error(Operations.Cancelled path) }: Operations.ItemResult)
+            { Source = Operations.ItemInArchive(archive, target)
+              Outcome = Error(Operations.Cancelled(ArchivePath.spelled fs archive target)) }: Operations.ItemResult)
 
     let addEntries (fs: IFileSystem) control (archive: FileSystemPath) (level: ArchivePath) sources =
         let replaced =
@@ -506,7 +501,7 @@ module Archive =
             if control.IsCancelled() then
                 Abort(
                     sources
-                    |> List.map (fun source -> Operations.itemResult fs source (Error(Operations.Cancelled source)))
+                    |> List.map (fun source -> Operations.itemResult source (Error(Operations.Cancelled source)))
                 )
             else
                 Commit added)
@@ -515,7 +510,7 @@ module Archive =
         changeWith fs archive control targets ArchivePath.root (fun changing ->
             let dropped =
                 targets
-                |> eachTarget fs control archive (fun target ->
+                |> eachTarget control archive (fun target ->
                     control.Report(ArchivePath.spelled fs archive target)
 
                     if changing.Held |> List.exists (underPath target) then
@@ -551,24 +546,26 @@ module Archive =
                     dropped
                     |> List.choose (fun item ->
                         match item.Outcome with
-                        | Error error -> Some(item.Name, error)
+                        | Error error -> Some(item.Source, error)
                         | Ok() -> None)
                     |> Map.ofList
 
                 results
                 |> List.map (fun item ->
-                    match item.Outcome, Map.tryFind item.Name refused with
+                    match item.Outcome, Map.tryFind item.Source refused with
                     | Ok(), Some error -> { item with Outcome = Error error }
                     | _ -> item))
 
-    let private arrivedOf (targets: ArchivePath list) (results: Operations.ItemResult list) =
-        List.zip (List.truncate results.Length targets) results
-        |> List.filter (snd >> _.Outcome >> Result.isOk)
-        |> List.map fst
+    let private arrivedOf (results: Operations.ItemResult list) =
+        results
+        |> List.choose (fun item ->
+            match item.Outcome, item.Source with
+            | Ok(), Operations.ItemInArchive(_, entry) -> Some entry
+            | _ -> None)
 
     let moveOut (fs: IFileSystem) control (request: ExtractRequest) (targets: ArchivePath list) =
         extract fs control request targets
-        |> Result.bind (fun results -> droppingArrived fs control request.Archive (arrivedOf targets results) results)
+        |> Result.bind (fun results -> droppingArrived fs control request.Archive (arrivedOf results) results)
 
     let private landedAs (fs: IFileSystem) archive scratch target =
         ArchivePath.name target
@@ -576,12 +573,19 @@ module Archive =
         |> EntryName.value
         |> FileSystemPath.combine fs scratch
 
-    let private carryingOver (added: Operations.ItemResult list) (taken: Operations.ItemResult list) =
-        let landed = added |> List.map (fun item -> item.Name, item.Outcome) |> Map.ofList
+    let private carryingOver
+        (came: Map<Operations.ItemSource, Operations.ItemSource>)
+        (added: Operations.ItemResult list)
+        (taken: Operations.ItemResult list)
+        =
+        let landed =
+            added
+            |> List.choose (fun item -> Map.tryFind item.Source came |> Option.map (fun from -> from, item.Outcome))
+            |> Map.ofList
 
         taken
         |> List.map (fun item ->
-            match item.Outcome, Map.tryFind item.Name landed with
+            match item.Outcome, Map.tryFind item.Source landed with
             | Ok(), Some outcome -> { item with Outcome = outcome }
             | _ -> item)
 
@@ -593,23 +597,30 @@ module Archive =
             | Error error ->
                 targets
                 |> List.map (fun entry ->
-                    { Name = ArchivePath.name entry |> Option.defaultValue (FileSystemPath.name fs request.Archive)
+                    { Source = Operations.ItemInArchive(request.Archive, entry)
                       Outcome = Error error }: Operations.ItemResult)
                 |> Ok
             | Ok scratch ->
+                let cameFrom entry =
+                    Operations.ItemOnDisk(landedAs fs request.Archive scratch entry),
+                    Operations.ItemInArchive(request.Archive, entry)
+
                 try
                     extract fs control { request with Destination = scratch } targets
                     |> Result.bind (fun taken ->
-                        arrivedOf targets taken
+                        let arrived = arrivedOf taken
+
+                        arrived
                         |> List.map (landedAs fs request.Archive scratch)
                         |> addEntries fs control target level
-                        |> Result.map (fun added -> carryingOver added taken))
+                        |> Result.map (fun added ->
+                            carryingOver (arrived |> List.map cameFrom |> Map.ofList) added taken))
                 finally
                     Operations.delete fs scratch |> ignore
 
     let moveAcross (fs: IFileSystem) control (request: ExtractRequest) targets target level =
         copyAcross fs control request targets target level
-        |> Result.bind (fun results -> droppingArrived fs control request.Archive (arrivedOf targets results) results)
+        |> Result.bind (fun results -> droppingArrived fs control request.Archive (arrivedOf results) results)
 
     let moveIn (fs: IFileSystem) control archive level (sources: FileSystemPath list) =
         addEntries fs control archive level sources

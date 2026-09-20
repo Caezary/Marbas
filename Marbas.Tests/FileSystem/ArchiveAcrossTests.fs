@@ -58,8 +58,8 @@ let private names (fs: IFileSystem) archive level =
     |> List.map (_.Name >> EntryName.value)
     |> List.sort
 
-let private outcomes (results: Operations.ItemResult list) =
-    results |> List.map (fun item -> EntryName.value item.Name, item.Outcome)
+let private outcomes (fs: IFileSystem) (results: Operations.ItemResult list) =
+    results |> List.map (fun item -> EntryName.value (Operations.ItemSource.name fs item.Source), item.Outcome)
 
 let private stopped () =
     { Operations.unattended with
@@ -75,7 +75,7 @@ let ``an entry copied between archives lands in the other and stays in its own``
 
     Assert.Equal<string list>([ "kept.txt"; "notes.txt" ], names fs target ArchivePath.root)
     Assert.Equal<string list>([ "docs"; "notes.txt" ], names fs source ArchivePath.root)
-    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "notes.txt", Ok() ], outcomes results)
+    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "notes.txt", Ok() ], outcomes fs results)
 
 [<Fact>]
 let ``a directory copied between archives brings the tree below it`` () =
@@ -135,7 +135,7 @@ let ``an entry moved between archives leaves the archive it came from`` () =
 
     Assert.Equal<string list>([ "kept.txt"; "notes.txt" ], names fs target ArchivePath.root)
     Assert.Equal<string list>([ "docs" ], names fs source ArchivePath.root)
-    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "notes.txt", Ok() ], outcomes results)
+    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "notes.txt", Ok() ], outcomes fs results)
 
 [<Fact>]
 let ``an entry the source archive does not hold is reported and moves nothing`` () =
@@ -150,7 +150,7 @@ let ``an entry the source archive does not hold is reported and moves nothing`` 
 
     Assert.Equal<(string * Result<unit, Operations.OperationError>) list>(
         [ "gone.txt", Error(Operations.SourceNotFound(fp (at "start/from.zip/gone.txt"))) ],
-        outcomes results
+        outcomes fs results
     )
 
 [<Fact>]

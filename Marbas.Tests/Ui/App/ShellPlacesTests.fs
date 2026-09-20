@@ -75,7 +75,7 @@ let private recording (fs: MockFileSystem) (titles: ResizeArray<string>) =
                 work unattended |> finish }
 
 let private refusedTar =
-    { Name = en "old.tar"
+    { Source = ItemOnDisk tarAt
       Outcome = Error(ArchiveFailed(KindCannotBeChanged tarAt)) }
 
 [<Fact>]
@@ -93,9 +93,9 @@ let ``a mark on the disk, one in a zip and one in a tar copy out in one batch`` 
 
     Assert.Equal<Message list>(
         [ CopyFinished
-              [ { Name = en "loose.txt"; Outcome = Ok() }
-                { Name = en "notes.txt"; Outcome = Ok() }
-                { Name = en "kept.txt"; Outcome = Ok() } ] ],
+              [ { Source = ItemOnDisk(fp (at "start/loose.txt")); Outcome = Ok() }
+                { Source = ItemInArchive(zipAt, entry "notes.txt"); Outcome = Ok() }
+                { Source = ItemInArchive(tarAt, entry "kept.txt"); Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -116,8 +116,8 @@ let ``moving the same three moves two and refuses the tar by name`` () =
 
     Assert.Equal<Message list>(
         [ MoveFinished
-              [ { Name = en "loose.txt"; Outcome = Ok() }
-                { Name = en "notes.txt"; Outcome = Ok() }
+              [ { Source = ItemOnDisk(fp (at "start/loose.txt")); Outcome = Ok() }
+                { Source = ItemInArchive(zipAt, entry "notes.txt"); Outcome = Ok() }
                 refusedTar ] ],
         List.ofSeq sent
     )
@@ -136,8 +136,8 @@ let ``deleting the same three removes two and refuses the tar by name`` () =
 
     Assert.Equal<Message list>(
         [ DeleteFinished
-              [ { Name = en "loose.txt"; Outcome = Ok() }
-                { Name = en "notes.txt"; Outcome = Ok() }
+              [ { Source = ItemOnDisk(fp (at "start/loose.txt")); Outcome = Ok() }
+                { Source = ItemInArchive(zipAt, entry "notes.txt"); Outcome = Ok() }
                 refusedTar ] ],
         List.ofSeq sent
     )

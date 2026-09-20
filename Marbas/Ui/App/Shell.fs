@@ -198,14 +198,14 @@ let private approvedAcross (deps: Dependencies) source target level entries =
 
     spelled |> List.filter (fst >> allowed.Contains) |> List.map snd
 
-let private refusedWhole (deps: Dependencies) archive error : Operations.ItemResult =
-    { Name = FileSystemPath.name deps.FileSystem archive
+let private refusedWhole archive error : Operations.ItemResult =
+    { Source = Operations.ItemOnDisk archive
       Outcome = Error(Operations.ArchiveFailed error) }
 
-let private itemsOf (deps: Dependencies) archive result =
+let private itemsOf archive result =
     match result with
     | Ok items -> items
-    | Error error -> [ refusedWhole deps archive error ]
+    | Error error -> [ refusedWhole archive error ]
 
 let private changingArchive (deps: Dependencies) archive work =
     match Archive.changeRefusal deps.FileSystem archive with
@@ -247,14 +247,14 @@ let private crossing (deps: Dependencies) dispatch title carry finished source e
                 title
                 (fun control ->
                     carry deps.FileSystem control plan.Request plan.Targets target level
-                    |> itemsOf deps source)
+                    |> itemsOf source)
                 (finished >> dispatch))
 
 type private Piece = Operations.BatchControl -> Operations.ItemResult list
 
 let private gated (deps: Dependencies) archive (piece: unit -> Piece option) : Piece option =
     match Archive.changeRefusal deps.FileSystem archive with
-    | Some refusal -> Some(fun _ -> [ refusedWhole deps archive refusal ])
+    | Some refusal -> Some(fun _ -> [ refusedWhole archive refusal ])
     | None -> piece ()
 
 let private approvedOnDisk (deps: Dependencies) paths directory (piece: FileSystemPath list -> Piece) =
@@ -278,11 +278,11 @@ let private copyPiece (deps: Dependencies) target group : Piece option =
         |> Option.map (fun plan control -> Archive.extractAll fs control [ plan ])
     | FromDisk paths, ToArchive(into, level) ->
         approvedInArchive deps into level paths (fun approved control ->
-            Archive.addEntries fs control into level approved |> itemsOf deps into)
+            Archive.addEntries fs control into level approved |> itemsOf into)
     | FromArchive(archive, entries), ToArchive(into, level) ->
         acrossPlan deps archive into level entries
         |> Option.map (fun plan control ->
-            Archive.copyAcross fs control plan.Request plan.Targets into level |> itemsOf deps archive)
+            Archive.copyAcross fs control plan.Request plan.Targets into level |> itemsOf archive)
     | FromPlaces _, _ -> None
 
 let private movePiece (deps: Dependencies) target group : Piece option =
@@ -295,27 +295,27 @@ let private movePiece (deps: Dependencies) target group : Piece option =
         gated deps archive (fun () ->
             extractPlan deps directory archive entries
             |> Option.map (fun plan control ->
-                Archive.moveOut fs control plan.Request plan.Targets |> itemsOf deps archive))
+                Archive.moveOut fs control plan.Request plan.Targets |> itemsOf archive))
     | FromDisk paths, ToArchive(into, level) ->
         approvedInArchive deps into level paths (fun approved control ->
-            Archive.moveIn fs control into level approved |> itemsOf deps into)
+            Archive.moveIn fs control into level approved |> itemsOf into)
     | FromArchive(archive, entries), ToArchive(into, level) ->
         gated deps archive (fun () ->
             acrossPlan deps archive into level entries
             |> Option.map (fun plan control ->
-                Archive.moveAcross fs control plan.Request plan.Targets into level |> itemsOf deps archive))
+                Archive.moveAcross fs control plan.Request plan.Targets into level |> itemsOf archive))
     | FromPlaces _, _ -> None
 
 let private deletePiece (deps: Dependencies) mode group : Piece option =
     let fs = deps.FileSystem
 
     match group, mode with
-    | FromDisk paths, ToTrash -> Some(fun _ -> Operations.removeAll fs deps.SendToTrash paths)
-    | FromDisk paths, Permanently -> Some(fun _ -> Operations.removeAll fs (Operations.delete fs) paths)
+    | FromDisk paths, ToTrash -> Some(fun _ -> Operations.removeAll deps.SendToTrash paths)
+    | FromDisk paths, Permanently -> Some(fun _ -> Operations.removeAll (Operations.delete fs) paths)
     | FromDisk paths, ByWiping -> Some(fun control -> Operations.wipeAll fs control paths)
     | FromArchive(archive, entries), _ ->
         gated deps archive (fun () ->
-            Some(fun control -> Archive.removeEntries fs control archive entries |> itemsOf deps archive))
+            Some(fun control -> Archive.removeEntries fs control archive entries |> itemsOf archive))
     | FromPlaces _, _ -> None
 
 let private runPlaces (deps: Dependencies) title (pieces: Piece option list) finished =
@@ -343,7 +343,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describe error)
     | ReportLaunchError error -> deps.ReportError LaunchErrorMessage.Title (LaunchErrorMessage.describe error)
     | ReportItemFailures failures ->
-        deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describeFailures failures)
+        deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describeFailures deps.FileSystem failures)
     | ConfirmDelete request ->
         if deps.Confirm (DeleteConfirmation.title request) (DeleteConfirmation.describe request) then
             dispatch (DeleteConfirmed request.Mode)
@@ -353,9 +353,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
             (fun control -> Operations.wipeAll deps.FileSystem control sources)
             (DeleteFinished >> dispatch)
     | DeleteTargets(sources, ToTrash) ->
-        Operations.removeAll deps.FileSystem deps.SendToTrash sources |> DeleteFinished |> dispatch
+        Operations.removeAll deps.SendToTrash sources |> DeleteFinished |> dispatch
     | DeleteTargets(sources, Permanently) ->
-        Operations.removeAll deps.FileSystem (Operations.delete deps.FileSystem) sources
+        Operations.removeAll (Operations.delete deps.FileSystem) sources
         |> DeleteFinished
         |> dispatch
     | CopyTargets(sources, targetDirectory) ->
@@ -395,7 +395,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
 
         let results =
             outcomes
-            |> List.map (fun (link, outcome) -> Operations.itemResult deps.FileSystem link.Target outcome)
+            |> List.map (fun (link, outcome) -> Operations.itemResult link.Target outcome)
 
         dispatch (LinksMade(made, results))
     | ArchiveTargets(sources, archive) ->
@@ -425,7 +425,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
                     CopyTitle
                     (fun control ->
                         Archive.addEntries deps.FileSystem control archive level approved
-                        |> itemsOf deps archive)
+                        |> itemsOf archive)
                     (CopyFinished >> dispatch))
     | MoveEntriesIn(archive, level, sources) ->
         changingArchive deps archive (fun () ->
@@ -436,7 +436,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
                     MoveTitle
                     (fun control ->
                         Archive.moveIn deps.FileSystem control archive level approved
-                        |> itemsOf deps archive)
+                        |> itemsOf archive)
                     (MoveFinished >> dispatch))
     | MoveEntriesOut(archive, entries, targetDirectory) ->
         changingArchive deps archive (fun () ->
@@ -447,7 +447,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
                     MoveTitle
                     (fun control ->
                         Archive.moveOut deps.FileSystem control plan.Request plan.Targets
-                        |> itemsOf deps archive)
+                        |> itemsOf archive)
                     (MoveFinished >> dispatch))
     | CopyEntriesAcross(source, entries, target, level) ->
         crossing deps dispatch CopyTitle Archive.copyAcross CopyFinished source entries target level
@@ -459,7 +459,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
                 DeleteTitle
                 (fun control ->
                     Archive.removeEntries deps.FileSystem control archive entries
-                    |> itemsOf deps archive)
+                    |> itemsOf archive)
                 (DeleteFinished >> dispatch))
     | CopyPlaces(groups, target) ->
         runPlaces deps CopyTitle (groups |> List.map (copyPiece deps target)) (CopyFinished >> dispatch)

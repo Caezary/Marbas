@@ -188,5 +188,8 @@ let ``wipeAll wipes every source it is given and stops where it is cancelled`` (
     let wiped =
         wipeAll fs (stoppingAfter 1 reported) [ fp (at "data/a.txt"); fp (at "data/b.txt") ]
 
-    Assert.Equal<string list>([ "a.txt" ], wiped |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<Operations.ItemSource list>(
+        [ Operations.ItemOnDisk(fp (at "data/a.txt")) ],
+        wiped |> List.map _.Source
+    )
     Assert.True(fs.File.Exists(at "data/b.txt"))

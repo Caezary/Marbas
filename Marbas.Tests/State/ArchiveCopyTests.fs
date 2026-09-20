@@ -84,9 +84,9 @@ let ``a mark whose entry made it out is dropped and one that failed stays`` () =
         |> toggleSelection Left
 
     let results: Operations.ItemResult list =
-        [ { Name = EntryName.create "docs"; Outcome = Ok() }
-          { Name = EntryName.create "notes.txt"
-            Outcome = Error(Operations.Cancelled(fp (at "start/notes.txt"))) } ]
+        [ { Source = Operations.ItemInArchive(archive, inside "docs"); Outcome = Ok() }
+          { Source = Operations.ItemInArchive(archive, inside "notes.txt")
+            Outcome = Error(Operations.Cancelled(fp (at "start/backup.zip/notes.txt"))) } ]
 
     let result = update fs (CopyFinished results) state
 

@@ -14,8 +14,7 @@ let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
-let private names (results: ItemResult list) =
-    results |> List.map (_.Name >> EntryName.value)
+let private sources (results: ItemResult list) = results |> List.map _.Source
 
 let private failedPath error =
     match error with
@@ -214,14 +213,17 @@ let ``rename refuses an existing name`` () =
     Assert.Equal(TargetExists(fp (at "data/readme.txt")), failure)
 
 [<Fact>]
-let ``batch results carry the entry name and keep the input order`` () =
+let ``batch results carry the source and keep the input order`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/a.txt", MockFileData "a")
     fs.AddFile(at "data/b.txt", MockFileData "b")
 
     let results = deleteAll fs [ fp (at "data/a.txt"); fp (at "data/b.txt") ]
 
-    Assert.Equal<string list>([ "a.txt"; "b.txt" ], names results)
+    Assert.Equal<ItemSource list>(
+        [ ItemOnDisk(fp (at "data/a.txt")); ItemOnDisk(fp (at "data/b.txt")) ],
+        sources results
+    )
     Assert.All(results, fun r -> Assert.Equal(Ok(), r.Outcome))
 
 [<Fact>]
@@ -364,7 +366,10 @@ let ``copyAll copies every source it is given`` () =
 
     let copied = copyAll fs unattended bothSources (fp (at "backup"))
 
-    Assert.Equal<string list>([ "a.txt"; "b.txt" ], names copied)
+    Assert.Equal<ItemSource list>(
+        [ ItemOnDisk(fp (at "data/a.txt")); ItemOnDisk(fp (at "data/b.txt")) ],
+        sources copied
+    )
     Assert.Equal("new a", fs.File.ReadAllText(at "backup/a.txt"))
     Assert.Equal("new b", fs.File.ReadAllText(at "backup/b.txt"))
 
@@ -375,7 +380,7 @@ let ``moveAll moves every source it is given`` () =
 
     let moved = moveAll fs unattended bothSources (fp (at "backup"))
 
-    Assert.Equal<string list>([ "a.txt"; "b.txt" ], names moved)
+    Assert.Equal<ItemSource list>([ ItemOnDisk(fp (at "data/a.txt")); ItemOnDisk(fp (at "data/b.txt")) ], sources moved)
     Assert.Equal("new a", fs.File.ReadAllText(at "backup/a.txt"))
     Assert.False(fs.File.Exists(at "data/a.txt"))
 
@@ -411,7 +416,7 @@ let ``a cancelled batch leaves the sources it never reached alone`` () =
 
     let copied = copyAll fs control bothSources (fp (at "backup"))
 
-    Assert.Equal<string list>([ "a.txt" ], names copied)
+    Assert.Equal<ItemSource list>([ ItemOnDisk(fp (at "data/a.txt")) ], sources copied)
     Assert.False(fs.File.Exists(at "backup/b.txt"))
 
 [<Fact>]
@@ -537,7 +542,7 @@ let ``failures keeps only the items that went wrong`` () =
 
     let failed = deleteAll fs [ fp (at "data/gone.txt"); fp (at "data/b.txt") ] |> failures
 
-    Assert.Equal<string list>([ "gone.txt" ], names failed)
+    Assert.Equal<ItemSource list>([ ItemOnDisk(fp (at "data/gone.txt")) ], sources failed)
 
 [<Fact>]
 let ``access denied maps to an error value`` () =
@@ -618,17 +623,22 @@ let ``a directory that may not be read leaves the other sources to finish`` () =
     let copied =
         copyAll fs unattended [ fp (at "data/docs"); fp (at "data/notes.txt") ] (fp (at "backup"))
 
-    Assert.Equal<string list>([ "docs"; "notes.txt" ], names copied)
-    Assert.Equal<string list>([ "docs" ], names (failures copied))
+    Assert.Equal<ItemSource list>(
+        [ ItemOnDisk(fp (at "data/docs")); ItemOnDisk(fp (at "data/notes.txt")) ],
+        sources copied
+    )
+    Assert.Equal<ItemSource list>([ ItemOnDisk(fp (at "data/docs")) ], sources (failures copied))
     Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
 
 [<Fact>]
 let ``guarded answers what work that finishes answers`` () =
-    let work _ = [ { Name = en "notes.txt"; Outcome = Ok() } ]
+    let work _ =
+        [ { Source = ItemOnDisk(fp (at "data/notes.txt"))
+            Outcome = Ok() } ]
 
     let results = guarded "Copying" work unattended
 
-    Assert.Equal<string list>([ "notes.txt" ], names results)
+    Assert.Equal<ItemSource list>([ ItemOnDisk(fp (at "data/notes.txt")) ], sources results)
 
 [<Fact>]
 let ``guarded turns work that throws into one failure named after the batch`` () =
@@ -637,5 +647,5 @@ let ``guarded turns work that throws into one failure named after the batch`` ()
     let results = guarded "Copying" work unattended
 
     let failure = List.exactlyOne results
-    Assert.Equal(en "Copying", failure.Name)
+    Assert.Equal<ItemSource>(WholeBatch "Copying", failure.Source)
     Assert.Equal(BatchFailed "no writer for tar", Expect.error failure.Outcome)

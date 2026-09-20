@@ -82,8 +82,11 @@ let private watching cancelAfter =
 
     reported, control
 
-let private outcomes (results: ItemResult list) =
-    results |> List.map (fun result -> EntryName.value result.Name, result.Outcome)
+let private itemNames (fs: IFileSystem) (results: ItemResult list) =
+    results |> List.map (fun item -> EntryName.value (ItemSource.name fs item.Source))
+
+let private outcomes (fs: IFileSystem) (results: ItemResult list) =
+    results |> List.map (fun result -> EntryName.value (ItemSource.name fs result.Source), result.Outcome)
 
 [<Fact>]
 let ``a file is packed under its own name`` () =
@@ -94,7 +97,7 @@ let ``a file is packed under its own name`` () =
 
     Assert.Equal<string list>([ "notes.txt" ], zipEntries fs target)
     Assert.Equal("notes", zipText fs target "notes.txt")
-    Assert.Equal<(string * Result<unit, OperationError>) list>([ "notes.txt", Ok() ], outcomes results)
+    Assert.Equal<(string * Result<unit, OperationError>) list>([ "notes.txt", Ok() ], outcomes fs results)
 
 [<Fact>]
 let ``a directory is packed with the whole tree below it`` () =
@@ -132,7 +135,7 @@ let ``a directory link is packed as an empty directory rather than the tree behi
     let results =
         Archive.write fs unattended (requested zip target) [ fp (at "work/twin") ]
 
-    Assert.Equal<(string * Result<unit, OperationError>) list>([ "twin", Ok() ], outcomes results)
+    Assert.Equal<(string * Result<unit, OperationError>) list>([ "twin", Ok() ], outcomes fs results)
     Assert.Equal<string list>([ "twin/" ], zipEntries fs target)
 
 [<Fact>]
@@ -143,7 +146,7 @@ let ``a tree holding a link to its own ancestor packs and terminates`` () =
     let results =
         Archive.write fs unattended (requested zip target) [ fp (at "work/docs") ]
 
-    Assert.Equal<(string * Result<unit, OperationError>) list>([ "docs", Ok() ], outcomes results)
+    Assert.Equal<(string * Result<unit, OperationError>) list>([ "docs", Ok() ], outcomes fs results)
     Assert.Equal<string list>([ "docs/"; "docs/inner.txt"; "docs/loop/" ], zipEntries fs target |> List.sort)
 
 [<Fact>]
@@ -170,7 +173,7 @@ let ``several sources land side by side in one archive`` () =
         zipEntries fs target |> List.sort
     )
 
-    Assert.Equal<string list>([ "notes.txt"; "docs" ], results |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<string list>([ "notes.txt"; "docs" ], itemNames fs results)
 
 [<Fact>]
 let ``a tar gz keeps the same tree with directories of its own`` () =
@@ -196,7 +199,7 @@ let ``a source that is gone fails alone and the rest is packed`` () =
     Assert.Equal<(string * Result<unit, OperationError>) list>(
         [ "missing.txt", Error(SourceNotFound(fp (at "work/missing.txt")))
           "notes.txt", Ok() ],
-        outcomes results
+        outcomes fs results
     )
 
     Assert.Equal<string list>([ "notes.txt" ], zipEntries fs target)
@@ -226,7 +229,7 @@ let ``a cancelled packing leaves no archive behind and nothing packed`` () =
     Assert.Equal<(string * Result<unit, OperationError>) list>(
         [ "notes.txt", Error(Cancelled(fp (at "work/notes.txt")))
           "docs", Error(Cancelled(fp (at "work/docs"))) ],
-        outcomes results
+        outcomes fs results
     )
 
 [<Fact>]
@@ -333,7 +336,7 @@ let ``a disk that refuses every write fails each source instead of throwing`` ()
         Archive.write fs unattended (requested zip target) [ fp (at "work/notes.txt") ]
 
     let failure = List.exactlyOne written
-    Assert.Equal(EntryName.create "notes.txt", failure.Name)
+    Assert.Equal<ItemSource>(ItemOnDisk(fp (at "work/notes.txt")), failure.Source)
     Assert.Equal(OperationFailed(fp target, Fakes.DiskFullReason), Expect.error failure.Outcome)
 
 [<Fact>]

@@ -148,7 +148,7 @@ let ``an entry named in the legacy code page can be removed`` () =
                 [ ArchivePath.child ArchivePath.root (EntryName.create polish) ]
             |> Expect.ok)
 
-    Assert.Equal<string list>([], Operations.failures removed |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<Operations.ItemResult list>([], Operations.failures removed)
     Assert.Equal<string list>([], inCulture "pl-PL" (fun () -> listedNames fs "foreign.zip"))
 
 [<Fact>]

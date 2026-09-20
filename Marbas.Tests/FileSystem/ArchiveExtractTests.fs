@@ -76,8 +76,11 @@ let private damagedPath error =
     | ArchiveDamaged(path, _) -> Some path
     | _ -> None
 
-let private outcomes (results: ItemResult list) =
-    results |> List.map (fun result -> EntryName.value result.Name, result.Outcome)
+let private itemNames (fs: IFileSystem) (results: ItemResult list) =
+    results |> List.map (fun item -> EntryName.value (ItemSource.name fs item.Source))
+
+let private outcomes (fs: IFileSystem) (results: ItemResult list) =
+    results |> List.map (fun result -> EntryName.value (ItemSource.name fs result.Source), result.Outcome)
 
 [<Fact>]
 let ``a file target is written under the destination`` () =
@@ -129,7 +132,7 @@ let ``the root as a target empties the whole archive into the destination`` () =
 
     let results = extracted fs unattended (unpacking archive None) [ ArchivePath.root ]
 
-    Assert.Equal<string list>([ "data.zip" ], results |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<string list>([ "data.zip" ], itemNames fs results)
     Assert.Equal("notes", fs.File.ReadAllText(at "out/notes.txt"))
     Assert.Equal("inner", fs.File.ReadAllText(at "out/docs/inner.txt"))
 
@@ -154,7 +157,7 @@ let ``every target answers for itself`` () =
 
     Assert.Equal<(string * Result<unit, OperationError>) list>(
         [ "notes.txt", Ok(); "docs", Ok() ],
-        outcomes results
+        outcomes fs results
     )
 
 [<Fact>]
@@ -176,7 +179,7 @@ let ``a cancelled run stops where it stood and keeps what it wrote`` () =
 
     let results = extracted fs control (unpacking archive None) [ inside "notes.txt"; inside "docs" ]
 
-    Assert.Equal<string list>([ "notes.txt" ], results |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<string list>([ "notes.txt" ], itemNames fs results)
     Assert.Equal("notes", fs.File.ReadAllText(at "out/notes.txt"))
     Assert.False(fs.Directory.Exists(at "out/docs"))
 
@@ -188,7 +191,7 @@ let ``a target the archive does not hold is not found`` () =
 
     Assert.Equal<(string * Result<unit, OperationError>) list>(
         [ "missing.txt", Error(SourceNotFound(fp (at "backup/data.zip/missing.txt"))) ],
-        outcomes results
+        outcomes fs results
     )
 
 [<Fact>]
@@ -200,7 +203,7 @@ let ``an entry that would climb out of the destination is refused`` () =
 
     Assert.Equal<(string * Result<unit, OperationError>) list>(
         [ "docs", Error(EntryOutsideTarget(fp (at "evil.txt"))) ],
-        outcomes results
+        outcomes fs results
     )
 
     Assert.False(fs.File.Exists(at "evil.txt"))
@@ -273,7 +276,7 @@ let ``several archives are emptied in one batch`` () =
 
     Assert.Equal<(string * Result<unit, OperationError>) list>(
         [ "notes.txt", Ok(); "docs", Ok() ],
-        outcomes results
+        outcomes fs results
     )
 
     Assert.Equal("notes", fs.File.ReadAllText(at "out/notes.txt"))
@@ -289,7 +292,7 @@ let ``an archive that refuses as a whole answers for itself under its own name``
 
     Assert.Equal<(string * Result<unit, OperationError>) list>(
         [ "data.bin", Error(ArchiveFailed(KindCannotBeRead(fp (at "backup/data.bin")))) ],
-        outcomes results
+        outcomes fs results
     )
 
 [<Fact>]

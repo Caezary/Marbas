@@ -46,8 +46,8 @@ let private names (fs: IFileSystem) level =
     |> List.map (_.Name >> EntryName.value)
     |> List.sort
 
-let private outcomes (results: Operations.ItemResult list) =
-    results |> List.map (fun item -> EntryName.value item.Name, item.Outcome)
+let private outcomes (fs: IFileSystem) (results: Operations.ItemResult list) =
+    results |> List.map (fun item -> EntryName.value (Operations.ItemSource.name fs item.Source), item.Outcome)
 
 let private stopped () =
     { Operations.unattended with
@@ -67,7 +67,7 @@ let ``a source added at the top of an archive is in it`` () =
         |> Expect.ok
 
     Assert.Equal<string list>([ "added.txt"; "docs"; "notes.txt" ], names fs ArchivePath.root)
-    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "added.txt", Ok() ], outcomes results)
+    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "added.txt", Ok() ], outcomes fs results)
 
 [<Fact>]
 let ``a source added at a level below the top lands there`` () =
@@ -118,7 +118,7 @@ let ``a cancelled add leaves the archive as it was and answers for every source`
 
     Assert.Equal<(string * Result<unit, Operations.OperationError>) list>(
         [ "added.txt", Error(Operations.Cancelled(fp (at "loose/added.txt"))) ],
-        outcomes results
+        outcomes fs results
     )
 
 [<Fact>]
@@ -129,7 +129,7 @@ let ``an entry removed from an archive is gone from it`` () =
         Archive.removeEntries fs Operations.unattended archive [ inside "notes.txt" ] |> Expect.ok
 
     Assert.Equal<string list>([ "docs" ], names fs ArchivePath.root)
-    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "notes.txt", Ok() ], outcomes results)
+    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "notes.txt", Ok() ], outcomes fs results)
 
 [<Fact>]
 let ``a directory removed from an archive takes the tree below it`` () =
@@ -148,7 +148,7 @@ let ``an entry the archive does not hold cannot be removed`` () =
 
     Assert.Equal<(string * Result<unit, Operations.OperationError>) list>(
         [ "gone.txt", Error(Operations.SourceNotFound(fp (at "start/data.zip/gone.txt"))) ],
-        outcomes results
+        outcomes fs results
     )
 
 [<Fact>]
@@ -161,7 +161,7 @@ let ``a cancelled removal leaves every entry where it was`` () =
 
     Assert.Equal<(string * Result<unit, Operations.OperationError>) list>(
         [ "notes.txt", Error(Operations.Cancelled(fp (at "start/data.zip/notes.txt"))) ],
-        outcomes results
+        outcomes fs results
     )
 
 [<Fact>]
@@ -190,7 +190,7 @@ let ``a source moved into an archive is deleted once it is in`` () =
 
     Assert.Equal<string list>([ "added.txt"; "docs"; "notes.txt" ], names fs ArchivePath.root)
     Assert.False(fs.File.Exists(at "loose/added.txt"))
-    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "added.txt", Ok() ], outcomes results)
+    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "added.txt", Ok() ], outcomes fs results)
 
 [<Fact>]
 let ``a source that never arrived is left where it is`` () =
@@ -204,7 +204,7 @@ let ``a source that never arrived is left where it is`` () =
 
     Assert.Equal<(string * Result<unit, Operations.OperationError>) list>(
         [ "gone.txt", Error(Operations.SourceNotFound(fp (at "loose/gone.txt"))) ],
-        outcomes results
+        outcomes fs results
     )
 
 [<Fact>]
@@ -217,7 +217,7 @@ let ``an entry moved out of an archive lands on disk and leaves the archive`` ()
 
     Assert.Equal("notes", fs.File.ReadAllText(at "out/notes.txt"))
     Assert.Equal<string list>([ "docs" ], names fs ArchivePath.root)
-    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "notes.txt", Ok() ], outcomes results)
+    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "notes.txt", Ok() ], outcomes fs results)
 
 [<Fact>]
 let ``an entry that never arrived on disk stays in the archive`` () =
@@ -231,7 +231,39 @@ let ``an entry that never arrived on disk stays in the archive`` () =
 
     Assert.Equal<(string * Result<unit, Operations.OperationError>) list>(
         [ "gone.txt", Error(Operations.SourceNotFound(fp (at "start/data.zip/gone.txt"))) ],
-        outcomes results
+        outcomes fs results
+    )
+
+let private packedTwins () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "start")
+    fs.AddDirectory(at "out")
+    fs.AddFile(at "work/a/same.txt", MockFileData "a")
+    fs.AddFile(at "work/b/same.txt", MockFileData "b")
+
+    let twins = [ fp (at "work/a"); fp (at "work/b") ]
+
+    Archive.write fs Operations.unattended (request Zip (at "start/data.zip") None) twins
+    |> ignore
+
+    fs
+
+[<Fact>]
+let ``moving out two entries of one name drops only the one that arrived`` () =
+    let fs = packedTwins ()
+
+    let results =
+        Archive.moveOut fs Operations.unattended (extracting (at "out")) [ inside "a/same.txt"; inside "c/same.txt" ]
+        |> Expect.ok
+
+    Assert.Equal<string list>([], names fs (inside "a"))
+    Assert.Equal<string list>([ "same.txt" ], names fs (inside "b"))
+
+    Assert.Equal<(Operations.ItemSource * Result<unit, Operations.OperationError>) list>(
+        [ Operations.ItemInArchive(archive, inside "a/same.txt"), Ok()
+          Operations.ItemInArchive(archive, inside "c/same.txt"),
+          Error(Operations.SourceNotFound(fp (at "start/data.zip/c/same.txt"))) ],
+        results |> List.map (fun item -> item.Source, item.Outcome)
     )
 
 [<Fact>]

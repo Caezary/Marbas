@@ -1,5 +1,6 @@
 module Marbas.Tests.Ui.Messages.OperationErrorMessageTests
 
+open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
@@ -56,12 +57,12 @@ let ``an unexpected failure includes the underlying reason`` () =
 [<Fact>]
 let ``every failed item is named with its own reason`` () =
     let items =
-        [ { Name = EntryName.create "gone.txt"
+        [ { Source = ItemOnDisk(fp (at "data/gone.txt"))
             Outcome = Error(SourceNotFound(fp (at "data/gone.txt"))) }
-          { Name = EntryName.create "locked"
+          { Source = ItemOnDisk(fp (at "data/locked"))
             Outcome = Error(AccessDenied(fp (at "data/locked"))) } ]
 
-    let message = OperationErrorMessage.describeFailures items
+    let message = OperationErrorMessage.describeFailures (MockFileSystem()) items
 
     Assert.Contains("gone.txt", message)
     Assert.Contains("no longer exists", message)
@@ -71,11 +72,11 @@ let ``every failed item is named with its own reason`` () =
 [<Fact>]
 let ``items that succeeded are left out`` () =
     let items =
-        [ { Name = EntryName.create "a.txt"; Outcome = Ok() }
-          { Name = EntryName.create "gone.txt"
+        [ { Source = ItemOnDisk(fp (at "data/a.txt")); Outcome = Ok() }
+          { Source = ItemOnDisk(fp (at "data/gone.txt"))
             Outcome = Error(SourceNotFound(fp (at "data/gone.txt"))) } ]
 
-    let message = OperationErrorMessage.describeFailures items
+    let message = OperationErrorMessage.describeFailures (MockFileSystem()) items
 
     Assert.DoesNotContain("a.txt", message)
     Assert.Contains("gone.txt", message)

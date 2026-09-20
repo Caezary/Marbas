@@ -273,13 +273,12 @@ archive has no trash, so `F8` with any mark inside one asks to delete for good,
 as it always has inside an archive panel; `Alt+Del` stays a wipe for what lies on
 disk and removes the entries.
 
-**Which marks stay is decided by file names, and that has one blind spot.** A
-batch answers its items by file name, as it always has; a results panel
-translates its shown names back to those and keeps the mark of an entry whose
-name failed *or* never finished. Two hits called `README.md` of which one failed
-therefore both stay marked — too many marks rather than too few. Carrying a path
-in `Operations.ItemResult` would close it, at the price of every place that
-builds one.
+**Which marks stay is decided by where each item came from.** A batch answers
+its items by `Operations.ItemSource` — a path on disk, or the archive and the
+entry's `ArchivePath` — and a results panel resolves each shown name back to the
+same source, keeping the mark of an entry whose source failed *or* never
+finished. Two hits called `README.md` in different directories therefore no
+longer trade outcomes.
 
 ## Left for a later phase
 

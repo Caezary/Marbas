@@ -93,7 +93,11 @@ let ``every marked entry is deleted and reported`` () =
 
     let _, results = deleted fs marked
 
-    Assert.Equal<string list>([ "notes.txt"; "readme.txt" ], results |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<Operations.ItemSource list>(
+        [ Operations.ItemOnDisk(fp (at "start/notes.txt"))
+          Operations.ItemOnDisk(fp (at "start/readme.txt")) ],
+        results |> List.map _.Source
+    )
     Assert.All(results, fun item -> Assert.Equal(Ok(), item.Outcome))
     Assert.False(fs.File.Exists(at "start/notes.txt"))
     Assert.False(fs.File.Exists(at "start/readme.txt"))

@@ -97,7 +97,7 @@ let ``a made link is shown in the other panel with the cursor on it`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
     fs.File.CreateSymbolicLink(at "backup/twin.txt", at "start/notes.txt") |> ignore
-    let results = [ { Name = EntryName.create "notes.txt"; Outcome = Ok() } ]
+    let results = [ { Source = Operations.ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ]
 
     let result = update fs (LinksMade([ fp (at "backup/twin.txt") ], results)) state
 
@@ -111,7 +111,7 @@ let ``a link made beside its entry is shown in the active panel with the cursor 
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
     fs.File.CreateSymbolicLink(at "start/twin.txt", at "start/notes.txt") |> ignore
-    let results = [ { Name = EntryName.create "notes.txt"; Outcome = Ok() } ]
+    let results = [ { Source = Operations.ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ]
 
     let result = update fs (LinksMade([ fp (at "start/twin.txt") ], results)) state
 
@@ -122,7 +122,7 @@ let ``a link that could not be made is reported and keeps its mark`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2 |> marking
     let refused = Error(LinkRefused(HardLinkToDirectory, fp (at "backup/notes.txt")))
-    let results = [ { Name = EntryName.create "notes.txt"; Outcome = refused } ]
+    let results = [ { Source = Operations.ItemOnDisk(fp (at "start/notes.txt")); Outcome = refused } ]
 
     let result = update fs (LinksMade([], results)) state
 
