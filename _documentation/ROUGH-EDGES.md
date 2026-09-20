@@ -114,10 +114,6 @@ belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   unreadable file inside one source leaves the archive standing with everything
   that did go in, which is deliberate — the failures are listed and the marks
   survive — but it does mean a zip can be complete-looking and short of a file.
-- The refusal to pack an archive into itself compares paths case-insensitively
-  on both platforms, so on Unix two directories differing only in case can make
-  it refuse a target that would have been legal. P15.2 gives every such
-  comparison one platform-aware rule.
 - `SharpZipLib` cleans an entry name as it writes it, turning a backslash into
   a separator. On Linux, where a backslash is a legal character in a file name,
   packing `a\b.txt` therefore stores `a/b.txt` and the archive gains a level the

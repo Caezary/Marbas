@@ -180,10 +180,10 @@ and typing a bare name puts it beside the entries being packed.
 or lies inside one of them, and `Update` turns that into `TargetWithinSource`,
 an `OperationError` like any other, worded by `OperationErrorMessage`. An
 archive beside what it packs is fine — the sources are a fixed list of names,
-and a file created afterwards is not one of them. The comparison ignores case,
-which on Unix can refuse a target that two directories differing only in case
-would have made legal; refusing too much is the safe side of a rule that
-otherwise packs an archive into itself.
+and a file created afterwards is not one of them. The comparison is
+`FileSystemPath.atOrUnder`, so it ignores case on Windows and minds it on Unix:
+two directories differing only in case are two directories where the file
+system says they are.
 
 **An archive that already exists asks once.** `Shell` puts the
 `OverwriteQuestion` wording through the plain `Confirm` port rather than the

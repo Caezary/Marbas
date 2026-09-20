@@ -2,6 +2,7 @@ namespace Marbas.FileSystem
 
 open System
 open System.IO.Abstractions
+open Marbas
 open Marbas.Domain
 
 type FileSystemPath = private FileSystemPath of string
@@ -37,6 +38,49 @@ module FileSystemPath =
 
     let name (fs: IFileSystem) (FileSystemPath path) =
         fs.Path.GetFileName path |> EntryName.create
+
+    let platformOf (fs: IFileSystem) =
+        if fs.Path.DirectorySeparatorChar = '\\' then Windows else Unix
+
+    let private separatorsOf platform =
+        match platform with
+        | Windows -> [| '\\'; '/' |]
+        | Unix -> [| '/' |]
+
+    let private caseRule platform =
+        match platform with
+        | Windows -> StringComparison.OrdinalIgnoreCase
+        | Unix -> StringComparison.Ordinal
+
+    let comparer platform =
+        StringComparer.FromComparison(caseRule platform)
+
+    let private withoutTrailingSeparator platform (FileSystemPath path) =
+        path.TrimEnd(separatorsOf platform)
+
+    let sameEntry platform one other =
+        String.Equals(
+            withoutTrailingSeparator platform one,
+            withoutTrailingSeparator platform other,
+            caseRule platform
+        )
+
+    let strictlyUnder platform root (FileSystemPath path) =
+        let above = withoutTrailingSeparator platform root
+
+        path.Length > above.Length
+        && path.StartsWith(above, caseRule platform)
+        && Array.contains path[above.Length] (separatorsOf platform)
+
+    let atOrUnder platform root path =
+        sameEntry platform root path || strictlyUnder platform root path
+
+    let pathAfter platform root path =
+        if strictlyUnder platform root path then
+            let above = withoutTrailingSeparator platform root
+            Some((value path).Substring(above.Length + 1))
+        else
+            None
 
     let isBareName (fs: IFileSystem) (name: string) =
         not (fs.Path.IsPathRooted name) && String.IsNullOrEmpty(fs.Path.GetDirectoryName name)

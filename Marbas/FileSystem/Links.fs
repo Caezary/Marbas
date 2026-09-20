@@ -1,6 +1,5 @@
 namespace Marbas.FileSystem
 
-open System
 open System.IO.Abstractions
 open Marbas
 open Marbas.Domain
@@ -29,30 +28,17 @@ module Links =
         let target = fs.Path.Combine(standing, FileSystemPath.value request.Target)
         FileSystemPath.create (fs.Path.GetFullPath target)
 
-    let private comparison platform =
-        match platform with
-        | Windows -> StringComparison.OrdinalIgnoreCase
-        | Unix -> StringComparison.Ordinal
-
     let private volumeOf (platform: Platform) (fs: IFileSystem) (path: FileSystemPath) =
-        let raw = FileSystemPath.value path
-        let separator = string fs.Path.DirectorySeparatorChar
-
-        let holds (root: string) =
-            let bare = root.TrimEnd(fs.Path.DirectorySeparatorChar, fs.Path.AltDirectorySeparatorChar)
-
-            raw.Equals(bare, comparison platform)
-            || raw.StartsWith(bare + separator, comparison platform)
-
         fs.DriveInfo.GetDrives()
         |> Seq.map _.Name
-        |> Seq.filter holds
+        |> Seq.filter (fun root -> FileSystemPath.atOrUnder platform (FileSystemPath.create root) path)
         |> Seq.sortByDescending String.length
         |> Seq.tryHead
-        |> Option.defaultWith (fun () -> fs.Path.GetPathRoot raw)
+        |> Option.defaultWith (fun () -> fs.Path.GetPathRoot(FileSystemPath.value path))
+        |> FileSystemPath.create
 
     let private onOneVolume platform fs (target: FileSystemPath) (location: FileSystemPath) =
-        String.Equals(volumeOf platform fs target, volumeOf platform fs location, comparison platform)
+        FileSystemPath.sameEntry platform (volumeOf platform fs target) (volumeOf platform fs location)
 
     let private refusalFor platform fs (request: LinkRequest) target =
         match request.Kind, FileSystemPath.kind fs target with

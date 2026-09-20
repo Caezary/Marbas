@@ -174,7 +174,14 @@ polished that a structural task is about to delete.
   (A10), dense one-liners split into named predicates (Q9), partial access
   (Q12), the small style inconsistencies (Q13), the line index and the viewer on
   very large files (perf P11); the wipe's generator stays as documented (perf
-  P15). *Done when:* every finding of the three reports is either done or written
-  down with the reason it is not, and the three duplications the tech-debt notes
-  describe — the repeated path helpers, the repeated drive and separator
-  handling, and `guarding` — are gone.
+  P15). `Platform` moves out of the root `Marbas` namespace into `Domain`, where
+  a two-case union describing the host belongs — `Marbas/Platform.fs` becomes
+  `Marbas/Domain/Platform.fs` and the `open Marbas` lines that only reached it go.
+  The three theories that still take the expected answer as a `true`/`false`
+  column — `Domain/FindQueryTests.fs`, `Domain/NamePatternTests.fs` and
+  `Domain/SearchTextTests.fs` — split into an affirming and a denying theory
+  each, the way §8 of the conventions now asks. *Done when:* every finding of
+  the three reports is either done or written down with the reason it is not,
+  no `[<Theory>]` in the suite carries a boolean expectation, and the three
+  duplications the tech-debt notes describe — the repeated path helpers, the
+  repeated drive and separator handling, and `guarding` — are gone.

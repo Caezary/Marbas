@@ -15,8 +15,8 @@ module FindGround =
         | "" -> raw
         | trimmed -> trimmed
 
-    let private sameRoot a b =
-        String.Equals(FileSystemPath.value a, FileSystemPath.value b, StringComparison.OrdinalIgnoreCase)
+    let private sameRoot (fs: IFileSystem) a b =
+        FileSystemPath.sameEntry (FileSystemPath.platformOf fs) a b
 
     let private allRoots (fs: IFileSystem) =
         Drives.list fs None |> List.map DriveRow.root
@@ -45,7 +45,7 @@ module FindGround =
             let root = Drives.holding fs start |> Option.defaultValue start
 
             { Roots = [ OnDisk root ]
-              OtherRoots = allRoots fs |> List.filter (sameRoot root >> not) }
+              OtherRoots = allRoots fs |> List.filter (sameRoot fs root >> not) }
         | AllDrives ->
             { Roots = allRoots fs |> onDisk
               OtherRoots = [] }

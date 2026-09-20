@@ -26,6 +26,22 @@ listing, operations, and panel/navigation layers and the error path fields.
 Raw OS strings are wrapped once at the outside edge — `Dependencies.create` for
 the start path, `Shell` for drive roots and prompt answers.
 
+**One path lies under another by one rule, and the name says how strictly**.
+`FileSystemPath.strictlyUnder`, `atOrUnder` and `sameEntry` take a `Platform`
+and answer the boundary question every module used to answer for itself:
+Windows folds case and reads `\` and `/` as separators, Unix minds case and
+reads `/` alone, and a trailing separator never changes the answer.
+`pathAfter` is the same rule spelling what lies below a root, which is how a
+results panel shortens a hit. The platform comes from
+`FileSystemPath.platformOf`, which reads it off the `IFileSystem` a module
+already holds, so nothing had to grow a parameter; `Links` passes the platform
+it was given, since it needs one anyway to know which link kinds exist. The
+rule replaced six copies with two different case conventions between them —
+`Archive.within`, `Drives.holding`, `SearchListing.relativeTo`, the boundaries
+of `FileSearch.run`, `FindGround.sameRoot` and `Links.volumeOf` — and
+`FileSearch`'s record of the directories it has entered now folds case wherever
+the file system does.
+
 **Every value a `Message` or `Effect` carries says what it is**.
 `EntryName` for an entry's name, `NamePattern` for a wildcard, `FileSystemPath`
 for a path, `SelectionMode` (`Select`/`Deselect`) and `DeleteScope`

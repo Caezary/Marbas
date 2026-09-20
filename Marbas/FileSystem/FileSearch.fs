@@ -58,16 +58,11 @@ let private parentOf segments =
     segments |> List.take (List.length segments - 1) |> pathOf
 
 let run (fs: IFileSystem) (control: BatchControl) (report: FindHit -> unit) (query: FindQuery) (ground: FindGround) =
-    let visited = HashSet<string>()
-    let separators = [| fs.Path.DirectorySeparatorChar; fs.Path.AltDirectorySeparatorChar |]
+    let platform = FileSystemPath.platformOf fs
+    let visited = HashSet<string>(FileSystemPath.comparer platform)
 
-    let bare (path: FileSystemPath) =
-        (FileSystemPath.value path).TrimEnd separators
-
-    let boundaries =
-        HashSet<string>(ground.OtherRoots |> List.map bare, StringComparer.OrdinalIgnoreCase)
-
-    let crosses path = boundaries.Contains(bare path)
+    let crosses path =
+        ground.OtherRoots |> List.exists (fun root -> FileSystemPath.sameEntry platform root path)
     let deep = walksDeep query
     let wantsDirectories = FindQuery.targets query = FilesAndDirectories
     let mutable files = 0

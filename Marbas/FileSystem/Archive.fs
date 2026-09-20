@@ -209,15 +209,11 @@ module Archive =
                     discard ()
                     failingEvery sources error
 
-    let private within (fs: IFileSystem) (directory: FileSystemPath) (path: FileSystemPath) =
-        let inside =
-            FileSystemPath.value directory + string fs.Path.DirectorySeparatorChar
-
-        (FileSystemPath.value path).StartsWith(inside, StringComparison.OrdinalIgnoreCase)
-
     let wouldPackItself (fs: IFileSystem) (target: FileSystemPath) sources =
+        let platform = FileSystemPath.platformOf fs
+
         sources
-        |> List.exists (fun source -> source = target || within fs source target)
+        |> List.exists (fun source -> FileSystemPath.atOrUnder platform source target)
 
     let private underPath (target: ArchivePath) (segments: EntryName list) =
         let names = ArchivePath.segments target
@@ -252,7 +248,7 @@ module Archive =
 
         if control.IsCancelled() then
             Error(Operations.Cancelled path)
-        elif not (within fs destination path) then
+        elif not (FileSystemPath.strictlyUnder (FileSystemPath.platformOf fs) destination path) then
             Error(Operations.EntryOutsideTarget path)
         elif item.IsDirectory then
             attempt path (fun () -> fs.Directory.CreateDirectory(FileSystemPath.value path) |> ignore)

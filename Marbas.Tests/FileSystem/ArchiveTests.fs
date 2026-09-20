@@ -269,6 +269,22 @@ let ``an archive that is one of the sources would pack itself`` () =
 
     Assert.True(Archive.wouldPackItself fs (fp (at "work/notes.txt")) [ fp (at "work/notes.txt") ])
 
+[<UnixFact>]
+let ``an archive in a differently cased sibling is allowed where case tells them apart`` () =
+    let fs = packed ()
+
+    let refused = Archive.wouldPackItself fs (fp (at "work/DOCS/data.zip")) [ fp (at "work/docs") ]
+
+    Assert.False refused
+
+[<WindowsFact>]
+let ``an archive in a differently cased sibling would pack itself where case is ignored`` () =
+    let fs = packed ()
+
+    let refused = Archive.wouldPackItself fs (fp (at "work/DOCS/data.zip")) [ fp (at "work/docs") ]
+
+    Assert.True refused
+
 let private secured format path secret =
     { requested format path with
         Password = ArchivePassword.tryCreate secret }

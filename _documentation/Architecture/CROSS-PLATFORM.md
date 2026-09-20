@@ -137,9 +137,14 @@ whole story is in [Links](LINKS.md).
 is read where the platform is known.** `HostEnvironment` carries `PATH` as the
 raw string and `Dependencies.create` picks the separator; `FindGround`
 `.pathDirectories` takes both as arguments, so the Windows and the Unix split are
-tested on either system. Drive letters are compared without regard to case and
-so are mount points — the update knows no platform — which on Unix could only
-mislead with two mounts whose paths differ in case alone.
+tested on either system. Whether one path lies under another is the second
+difference, and since P15.2 it is one rule: `FileSystemPath.strictlyUnder`,
+`atOrUnder` and `sameEntry` take a `Platform` and fold case on Windows only,
+`FileSystemPath.platformOf` reads that platform off the `IFileSystem` the module
+already holds, and the rule is covered by `[<Theory>]` rows for both platforms
+whichever system the suite runs on. Drive letters, mount points, search
+boundaries, the archive's own refusal to pack itself and the walk's record of
+where it has been all go through it.
 
 **The volume is bounded by the other drives, not by asking the system.**
 `FromVolumeRoot` starts at the root `Drives.holding` names and refuses to enter

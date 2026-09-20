@@ -146,10 +146,17 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] Logic modules take `IFileSystem`, so tests run on `MockFileSystem` and
       never touch the disk. `Integration/Disk/` is the last resort, for
       behaviour only the real system can answer.
-- [ ] Arrange, act, assert — separated by blank lines, in that order. The act
-      result is bound to a name.
+- [ ] Arrange, act, assert — separated by blank lines, in that order, and no
+      blank line *inside* a section, so the three blocks are visible at a
+      glance. A section that is not needed is left out, not faked.
+- [ ] The act is a line of its own and its result is bound to a name. It is
+      never folded into the assertion: `let refused = wouldPackItself …` then
+      `Assert.False refused`, not `Assert.False(wouldPackItself …)`.
 - [ ] No `if`, no `for`, no `match` inside a test. Cases go into `[<Theory>]`
       with `[<InlineData>]`.
+- [ ] A `[<Theory>]` does not take the expected answer as a `true`/`false`
+      column. The affirming rows and the denying rows are two theories, each
+      named for what it claims, and each asserting one way.
 - [ ] One test module per module under test, mirroring the folder layout.
 - [ ] A fake overrides one field of the dependencies record, or subclasses
       `MockFileSystem`; the whole interface is never stubbed by hand.

@@ -5,22 +5,16 @@ open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
 
-let private relativeTo (fs: IFileSystem) (root: FileSystemPath) (full: string) =
-    let separator = fs.Path.DirectorySeparatorChar
-    let bare = (FileSystemPath.value root).TrimEnd separator
-    let prefix = bare + string separator
-
-    if full.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) then
-        full.Substring prefix.Length
-    else
-        full
+let private relativeTo (fs: IFileSystem) (root: FileSystemPath) (full: FileSystemPath) =
+    FileSystemPath.pathAfter (FileSystemPath.platformOf fs) root full
+    |> Option.defaultValue (FileSystemPath.value full)
 
 let displayName (fs: IFileSystem) (found: FoundEntries) (hit: FindHit) =
-    let full = FindHit.spelled fs hit |> FileSystemPath.value
+    let full = FindHit.spelled fs hit
 
     match found.Ground.Roots with
     | [ single ] -> relativeTo fs (PanelLocation.spelled fs single) full
-    | _ -> full
+    | _ -> FileSystemPath.value full
     |> EntryName.create
 
 let private shownAs (fs: IFileSystem) (found: FoundEntries) (hit: FindHit) =
