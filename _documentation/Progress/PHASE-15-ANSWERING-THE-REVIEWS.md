@@ -239,3 +239,39 @@ and asks afterwards, so each piece reports its own cancelled items — which is
 what `Operations.allWatched` was written to do — and the groups after a stop are
 still skipped. The wipe test that caught it is unchanged; it had been asserting
 the right thing all along, against the arm that no longer exists.
+
+**P15.8 gave `Runtime` a queue, and a nested dispatch stopped cutting the
+line.** `Dispatch` updated, painted and then interpreted each effect in turn —
+and `Shell.interpret` dispatches from inside a dozen of them. So a nested
+`Dispatch` ran to completion, its own effects included, in the middle of the
+outer effect list, and the `WatchLocations` that `Update.watching` appends to
+the outer result was interpreted *after* the nested one, re-arming the watch on
+the directories the panels had already left (A3).
+
+`Dispatch` now enqueues. If no drain is running it starts one, and the loop
+takes messages off the queue, running update, render and interpret until the
+queue is empty. A dispatch raised from inside an effect therefore waits until
+the message that raised it has finished with all of its effects. The drain stays
+synchronous — `Dispatch` returns with the queue empty — which is what
+`MainWindow.create` relies on when it reads `Runtime.State` straight after
+seeding both panels, and what every test that dispatches and then asserts on
+the state relies on too. A `try/finally` lowers the draining flag even if an
+interpreter throws, so one failed effect cannot wedge the runtime.
+
+The review called this "a trap for the next feature" rather than a live defect,
+because no transition today both moves a panel and raises an effect that
+dispatches synchronously. The trap is now two tests. The generic one belongs to
+`Runtime` and is written in its own toy vocabulary: a message whose effects are
+`[FollowUp; Marked 100]`, where interpreting `FollowUp` dispatches a message
+whose effect is `Marked 101`, and the interpreter sees `FollowUp`, `Marked 100`,
+`Marked 101` — where before it saw the 101 first. The second is the real thing:
+a tab switch raising `[SaveSettings; WatchLocations …]`, an interpreter that
+opens another directory when it sees the save, and the assertion that the outer
+`WatchLocations` carries the directories of the tab switched to and the *last*
+one carries the directory opened after it.
+
+The change also reaches the batch path, which nobody had called a problem.
+`deps.RunBatch` dispatches its `…Finished` message from inside the progress
+dialog's own event loop, which is inside the effect being interpreted; before
+the queue that recursion went several dispatches deep, exactly as the review
+noted about `RunBatch` in tests. It is one queued message now.

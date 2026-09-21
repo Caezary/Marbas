@@ -108,6 +108,7 @@
     <Compile Include="State\ResultsOperationsTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
+    <Compile Include="State\RuntimeQueueTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

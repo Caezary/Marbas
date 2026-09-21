@@ -6,6 +6,20 @@ functions; `Update.update` folds a `Message` into a new state plus a list of
 re-renders after each dispatch and hands the effects to the interpreter.
 Handlers send messages, they never mutate. See PLAN.md, *State handling*.
 
+**`Dispatch` enqueues; one loop drains.** Since P15.8 a message is put on a
+queue and, unless a drain is already running, one loop takes messages off it and
+runs update → render → interpret until the queue is empty. `Shell.interpret`
+dispatches from inside several effects, so before the queue such a message ran
+to completion — its own effects included — in the middle of the outer effect
+list. Two things follow from the loop. An effect is always interpreted against
+the state it was raised from, so the `WatchLocations` that `Update.watching`
+appends can no longer be overtaken by a nested one and then re-armed on the
+older directories. And a batch that finishes inside `deps.RunBatch`, which
+dispatches from within the dialog's own event loop, no longer re-enters the
+runtime several dispatches deep. The drain is still synchronous: `Dispatch`
+returns with the queue empty, which is what lets `MainWindow.create` read
+`Runtime.State` straight after seeding the panels.
+
 **The outside world is injected.** `Shell.Dependencies` names every port (file
 system, start path, quit callback, error reporter, root chooser, pattern
 prompt, name prompt, confirmation) and `Shell.interpret` is the only place that

@@ -6,13 +6,22 @@ open Marbas.State.Runtime
 type private Msg =
     | Bump
     | Cascade
+    | Branching
 
-type private Effect = FollowUp
+type private Effect =
+    | FollowUp
+    | Marked of int
 
 let private step msg state =
     match msg with
-    | Bump -> state + 1, []
+    | Bump -> state + 1, [ Marked(state + 1) ]
     | Cascade -> state + 10, [ FollowUp ]
+    | Branching -> state + 100, [ FollowUp; Marked(state + 100) ]
+
+let private following dispatch effect =
+    match effect with
+    | FollowUp -> dispatch Bump
+    | Marked _ -> ()
 
 [<Fact>]
 let ``dispatch applies the update and renders the new state`` () =
@@ -27,13 +36,27 @@ let ``dispatch applies the update and renders the new state`` () =
 [<Fact>]
 let ``effects are interpreted after the render and can dispatch a follow-up`` () =
     let renders = ResizeArray<int>()
-    let interpret dispatch FollowUp = dispatch Bump
-    let runtime = Runtime(0, step, interpret, renders.Add)
+    let runtime = Runtime(0, step, following, renders.Add)
 
     runtime.Dispatch Cascade
 
     Assert.Equal(11, runtime.State)
     Assert.Equal<int list>([ 10; 11 ], List.ofSeq renders)
+
+[<Fact>]
+let ``the effects of the message that dispatched run before the effects it dispatched`` () =
+    let seen = ResizeArray<Effect>()
+
+    let watching dispatch effect =
+        seen.Add effect
+        following dispatch effect
+
+    let runtime = Runtime(0, step, watching, ignore)
+
+    runtime.Dispatch Branching
+
+    Assert.Equal(101, runtime.State)
+    Assert.Equal<Effect list>([ FollowUp; Marked 100; Marked 101 ], List.ofSeq seen)
 
 [<Fact>]
 let ``a runtime is not rendering before anything is dispatched`` () =

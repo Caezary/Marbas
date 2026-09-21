@@ -121,7 +121,8 @@ Marbas/
     AppState.fs           immutable panel, tab and app state and its transitions,
                           built from and read back as Settings
     Update.fs             messages and effects: message + state -> state + effects
-    Runtime.fs            generic host: the single mutable cell, dispatch, render
+    Runtime.fs            generic host: the single mutable cell, the message
+                          queue, one drain loop over update/render/interpret
   Ui/                     nine folders, compiled in this order; every
                           dependency points at a folder listed above it
     Theme/                the look, applied before any view is built
