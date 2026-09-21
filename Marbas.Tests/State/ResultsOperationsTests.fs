@@ -133,7 +133,7 @@ let ``marked hits from three directories are copied in one batch`` () =
 
     let result = update fs CopyRequested state
 
-    Assert.Equal<Effect list>([ CopyTargets(sources, fp (at "target")) ], result.Effects)
+    Assert.Equal<Effect list>([ CopyPlaces([ FromDisk sources ], ToDirectory(fp (at "target"))) ], result.Effects)
 
 [<Fact>]
 let ``marked hits from three directories are moved where the prompt says`` () =
@@ -144,7 +144,7 @@ let ``marked hits from three directories are moved where the prompt says`` () =
     let result = update fs (TargetEntered(at "target")) state
 
     Assert.Equal<Effect list>([ PromptForTarget(fp (at "target")) ], asked.Effects)
-    Assert.Equal<Effect list>([ MoveTargets(sources, fp (at "target")) ], result.Effects)
+    Assert.Equal<Effect list>([ MovePlaces([ FromDisk sources ], ToDirectory(fp (at "target"))) ], result.Effects)
 
 let private deletedAs mode =
     let fs = mockFs ()
@@ -152,7 +152,7 @@ let private deletedAs mode =
 
     let result = update fs (DeleteConfirmed mode) state
 
-    Assert.Equal<Effect list>([ DeleteTargets(sources, mode) ], result.Effects)
+    Assert.Equal<Effect list>([ DeletePlaces([ FromDisk sources ], mode) ], result.Effects)
 
 [<Fact>]
 let ``marked hits from three directories go to the trash in one batch`` () = deletedAs ToTrash
@@ -279,7 +279,10 @@ let ``marks in one archive alone take the way an archive panel takes`` () =
     let result = update fs CopyRequested state
 
     Assert.Equal<Effect list>(
-        [ ExtractEntries(fp (at "start/backup.zip"), [ inner "inner.txt" ], fp (at "target")) ],
+        [ CopyPlaces(
+              [ FromArchive(fp (at "start/backup.zip"), [ inner "inner.txt" ]) ],
+              ToDirectory(fp (at "target"))
+          ) ],
         result.Effects
     )
 

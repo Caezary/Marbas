@@ -174,7 +174,10 @@ let ``opening a missing path reports a listing error`` () =
     let result = update fs (PathOpened(Right, fp (at "gone"))) state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "gone"))) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "gone"))) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``entering a directory navigates into it`` () =
@@ -253,7 +256,7 @@ let ``a confirmed delete hands the targets over with the mode it was asked for``
 
     let result = update fs (DeleteConfirmed ToTrash) state
 
-    Assert.Equal<Effect list>([ DeleteTargets([ fp (at "start/notes.txt") ], ToTrash) ], result.Effects)
+    Assert.Equal<Effect list>([ DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToTrash) ], result.Effects)
     Assert.True(fs.File.Exists(at "start/notes.txt"))
 
 [<Fact>]
@@ -263,7 +266,7 @@ let ``a confirmed permanent delete carries its own mode`` () =
 
     let result = update fs (DeleteConfirmed Permanently) state
 
-    Assert.Equal<Effect list>([ DeleteTargets([ fp (at "start/notes.txt") ], Permanently) ], result.Effects)
+    Assert.Equal<Effect list>([ DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], Permanently) ], result.Effects)
 
 [<Fact>]
 let ``a wipe asks to confirm under its own mode`` () =
@@ -287,7 +290,7 @@ let ``a confirmed wipe hands the targets over to be wiped`` () =
 
     let result = update fs (DeleteConfirmed ByWiping) state
 
-    Assert.Equal<Effect list>([ DeleteTargets([ fp (at "start/notes.txt") ], ByWiping) ], result.Effects)
+    Assert.Equal<Effect list>([ DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ByWiping) ], result.Effects)
     Assert.True(fs.File.Exists(at "start/notes.txt"))
 
 [<Fact>]
@@ -343,7 +346,10 @@ let ``copy requested aims at the other panel's directory`` () =
 
     let result = update fs CopyRequested state
 
-    Assert.Equal<Effect list>([ CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ CopyPlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``copy requested on the parent entry raises no effect`` () =
@@ -417,7 +423,10 @@ let ``an entered path moves the targets into it`` () =
 
     let result = update fs (TargetEntered (at "backup")) state
 
-    Assert.Equal<Effect list>([ MoveTargets([ fp (at "start/notes.txt") ], fp (at "backup")) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ MovePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a bare name renames the only target`` () =
@@ -441,7 +450,10 @@ let ``a bare name with several targets names a directory beside them`` () =
     let result = update fs (TargetEntered "archive") state
 
     Assert.Equal<Effect list>(
-        [ MoveTargets([ fp (at "start/notes.txt"); fp (at "start/setup.fs") ], fp (at "start/archive")) ],
+        [ MovePlaces(
+              [ FromDisk [ fp (at "start/notes.txt"); fp (at "start/setup.fs") ] ],
+              ToDirectory(fp (at "start/archive"))
+          ) ],
         result.Effects
     )
 
@@ -756,7 +768,10 @@ let ``a hidden toggle of a vanished directory is reported`` () =
     let result = update fs HiddenToggled state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "start/docs"))) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "start/docs"))) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``quit requested saves what the panels are set to before it quits`` () =
@@ -863,7 +878,10 @@ let ``an archive that would land inside what it packs is refused`` () =
 
     let result = update fs (ArchiveEntered(chose (at "start/docs/all.zip"))) state
 
-    Assert.Equal<Effect list>([ ReportOperationError(TargetWithinSource(fp (at "start/docs/all.zip"))) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ ReportOperationError(TargetWithinSource(fp (at "start/docs/all.zip"))) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a blank archive name raises no effect`` () =
@@ -912,7 +930,10 @@ let ``a finished pack keeps the marks of what did not make it`` () =
 
     let result = update fs (PackFinished(en "notes.zip", failed)) state
 
-    Assert.Equal<string list>([ "notes.txt" ], selectedEntries result.State.Left |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<string list>(
+        [ "notes.txt" ],
+        selectedEntries result.State.Left |> List.map (_.Name >> EntryName.value)
+    )
 
 [<Fact>]
 let ``the password from the dialog rides into the request`` () =

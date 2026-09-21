@@ -538,9 +538,10 @@ the gates P9.10 put in.
 the panel is: `FromDisk` of paths when it stands on disk, `FromArchive` of the
 archive and one `ArchivePath` per target when it stands inside one, and `None`
 when there is nothing under the cursor to take (`..` alone). `Update` turns the
-first into `CopyTargets` and the second into `ExtractEntries`, so the key has
-one message, the state has one decision and neither has to ask what kind of
-place a panel is twice. Both need a *disk* directory to write into, which is
+first into `CopyPlaces([ FromDisk … ], …)` and the second into
+`CopyPlaces([ FromArchive … ], …)` — one effect either way since P15.7 — so the
+key has one message, the state has one decision and neither has to ask what kind
+of place a panel is twice. Both need a *disk* directory to write into, which is
 the other panel's; a target panel standing inside an archive is P9.13 and does
 nothing today.
 

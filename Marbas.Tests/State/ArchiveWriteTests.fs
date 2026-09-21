@@ -42,7 +42,10 @@ let ``a copy into a panel inside an archive adds the targets at that level`` () 
 
     let result = update fs CopyRequested state
 
-    Assert.Equal<Effect list>([ AddEntries(archive, ArchivePath.root, [ loose ]) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ CopyPlaces([ FromDisk [ loose ] ], ToArchive(archive, ArchivePath.root)) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a copy into a level below the top of an archive lands at that level`` () =
@@ -59,7 +62,7 @@ let ``a copy into a level below the top of an archive lands at that level`` () =
 
     let result = update fs CopyRequested state
 
-    Assert.Equal<Effect list>([ AddEntries(archive, inside "docs", [ loose ]) ], result.Effects)
+    Assert.Equal<Effect list>([ CopyPlaces([ FromDisk [ loose ] ], ToArchive(archive, inside "docs")) ], result.Effects)
 
 [<Fact>]
 let ``a move into a panel inside an archive asks for no target and moves straight in`` () =
@@ -68,7 +71,10 @@ let ``a move into a panel inside an archive asks for no target and moves straigh
 
     let result = update fs MoveRequested state
 
-    Assert.Equal<Effect list>([ MoveEntriesIn(archive, ArchivePath.root, [ loose ]) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ MovePlaces([ FromDisk [ loose ] ], ToArchive(archive, ArchivePath.root)) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a move out of a panel inside an archive takes the entries to the other panel`` () =
@@ -78,7 +84,7 @@ let ``a move out of a panel inside an archive takes the entries to the other pan
     let result = update fs MoveRequested state
 
     Assert.Equal<Effect list>(
-        [ MoveEntriesOut(archive, [ inside "notes.txt" ], fp (at "start")) ],
+        [ MovePlaces([ FromArchive(archive, [ inside "notes.txt" ]) ], ToDirectory(fp (at "start"))) ],
         result.Effects
     )
 
@@ -98,7 +104,10 @@ let ``a delete inside an archive is confirmed for good and removes the entries``
         asked.Effects
     )
 
-    Assert.Equal<Effect list>([ RemoveEntries(archive, [ inside "notes.txt" ]) ], confirmed.Effects)
+    Assert.Equal<Effect list>(
+        [ DeletePlaces([ FromArchive(archive, [ inside "notes.txt" ]) ], Permanently) ],
+        confirmed.Effects
+    )
 
 [<Fact>]
 let ``a wipe inside an archive is confirmed as a delete for good`` () =
@@ -190,7 +199,7 @@ let ``a copy between two archives carries the entry across`` () =
     let result = update fs CopyRequested (standingInBoth fs)
 
     Assert.Equal<Effect list>(
-        [ CopyEntriesAcross(archive, [ inside "notes.txt" ], other, ArchivePath.root) ],
+        [ CopyPlaces([ FromArchive(archive, [ inside "notes.txt" ]) ], ToArchive(other, ArchivePath.root)) ],
         result.Effects
     )
 
@@ -201,7 +210,7 @@ let ``a move between two archives carries the entry across`` () =
     let result = update fs MoveRequested (standingInBoth fs)
 
     Assert.Equal<Effect list>(
-        [ MoveEntriesAcross(archive, [ inside "notes.txt" ], other, ArchivePath.root) ],
+        [ MovePlaces([ FromArchive(archive, [ inside "notes.txt" ]) ], ToArchive(other, ArchivePath.root)) ],
         result.Effects
     )
 
@@ -220,7 +229,7 @@ let ``a move between archives needs the one it takes from to be changeable`` () 
     )
 
     Assert.Equal<Effect list>(
-        [ CopyEntriesAcross(unchangeable, [ inside "notes.txt" ], other, ArchivePath.root) ],
+        [ CopyPlaces([ FromArchive(unchangeable, [ inside "notes.txt" ]) ], ToArchive(other, ArchivePath.root)) ],
         copied.Effects
     )
 
@@ -246,7 +255,7 @@ let ``a move out of a kind that cannot be changed is refused where a copy works`
     Assert.Equal<Effect list>([ refusal ], moved.Effects)
 
     Assert.Equal<Effect list>(
-        [ ExtractEntries(tarball, [ inside "notes.txt" ], fp (at "start")) ],
+        [ CopyPlaces([ FromArchive(tarball, [ inside "notes.txt" ]) ], ToDirectory(fp (at "start"))) ],
         copied.Effects
     )
 

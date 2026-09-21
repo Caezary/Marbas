@@ -115,7 +115,7 @@ counts as non-empty, so the warning errs towards showing up.
 `Shift+F8` and `Shift+Del` for the second, `Alt+Del` for the third, which has a
 section of its own below. The mode rides the whole way through —
 `DeleteRequested`, the `DeleteRequest` being confirmed, `DeleteConfirmed`, and
-the `DeleteTargets` effect — so nothing has to remember which key started it,
+the `DeletePlaces` effect — so nothing has to remember which key started it,
 and the question the user answers is the question that gets carried out: *Move
 'docs' to the trash?* under **Delete**, or *Delete 'docs' for good?* under
 **Delete for good**.
@@ -166,11 +166,14 @@ operating system sweeps its own temporary directory eventually.
 **Delete is an effect now, like copy and move.** It used to happen inside the
 `AppState` transition for `DeleteConfirmed`, which left no room for a port that
 the state layer must not know about. The walk is now `DeleteRequested mode` →
-`ConfirmDelete` → `DeleteConfirmed mode` → `DeleteTargets` → the removal in
+`ConfirmDelete` → `DeleteConfirmed mode` → `DeletePlaces` → the removal in
 `Shell` → `DeleteFinished results` → `AppState.finishDelete`, which only
-re-reads the active panel and keeps the marks of what did not finish. It still
-runs on the UI thread rather than behind `RunBatch`: `Directory.Delete` and the
-recycle bin report no progress, so there would be nothing to show.
+re-reads the active panel and keeps the marks of what did not finish. Since
+P15.7 every mode goes through `RunBatch`, because the places path always did and
+the two paths became one: the trash and a permanent delete now run off the UI
+thread behind the progress window. Neither reports progress per item yet and
+neither watches the cancel flag — P15.15 is what makes `Esc` mean something
+there.
 
 **Per-item failures share one dialog.** `Operations.deleteAll` answers for every
 target, `Operations.failures` keeps the ones that went wrong, and the

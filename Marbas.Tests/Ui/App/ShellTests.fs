@@ -6,6 +6,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Domain
+open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Ui.Messages
 open Marbas.Ui.App
@@ -276,7 +277,7 @@ let ``targets sent to the trash go through the port, not the file system`` () =
         { Fakes.dependencies fs (at "start") with
             SendToTrash = fun path -> trashed.Add path; Ok() }
 
-    Shell.interpret deps dispatch (DeleteTargets([ fp (at "start/notes.txt") ], ToTrash))
+    Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToTrash))
 
     Assert.Equal<FileSystemPath list>([ fp (at "start/notes.txt") ], List.ofSeq trashed)
     Assert.True(fs.File.Exists(at "start/notes.txt"))
@@ -296,7 +297,7 @@ let ``a permanent delete removes the target itself`` () =
         { Fakes.dependencies fs (at "start") with
             SendToTrash = fun path -> failwith $"the trash was asked for {FileSystemPath.value path}" }
 
-    Shell.interpret deps dispatch (DeleteTargets([ fp (at "start/notes.txt") ], Permanently))
+    Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], Permanently))
 
     Assert.False(fs.File.Exists(at "start/notes.txt"))
 
@@ -320,7 +321,7 @@ let ``a wipe runs behind the progress window under a title of its own`` () =
                     titles.Add title
                     work unattended |> finish }
 
-    Shell.interpret deps dispatch (DeleteTargets([ fp (at "start/notes.txt") ], ByWiping))
+    Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ByWiping))
 
     Assert.Equal<string list>([ Shell.WipeTitle ], List.ofSeq titles)
     Assert.Empty(fs.Directory.GetFileSystemEntries(at "start"))
@@ -345,7 +346,10 @@ let ``a stopped wipe hands back the file it stopped at`` () =
         { Fakes.dependencies fs (at "start") with
             RunBatch = fun _ work finish -> work stopped |> finish }
 
-    Shell.interpret deps dispatch (DeleteTargets([ fp (at "start/notes.txt"); fp (at "start/readme.txt") ], ByWiping))
+    Shell.interpret
+        deps
+        dispatch
+        (DeletePlaces([ FromDisk [ fp (at "start/notes.txt"); fp (at "start/readme.txt") ] ], ByWiping))
 
     Assert.True(fs.File.Exists(at "start/readme.txt"))
 
@@ -367,7 +371,7 @@ let ``what the trash refused is reported item by item`` () =
         { Fakes.dependencies fs (at "start") with
             SendToTrash = fun _ -> Error refusal }
 
-    Shell.interpret deps dispatch (DeleteTargets([ fp (at "start/notes.txt") ], ToTrash))
+    Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToTrash))
 
     Assert.Equal<Message list>(
         [ DeleteFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Error refusal } ] ],
@@ -400,7 +404,10 @@ let ``copy targets are copied and the outcome dispatched back`` () =
     let fs = copyReadyFs ()
     let deps = { noDeps () with FileSystem = fs }
 
-    Shell.interpret deps dispatch (CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))))
 
     Assert.Equal("new", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.Equal<Message list>(
@@ -417,8 +424,14 @@ let ``a batch is handed to the runner under its own title`` () =
             FileSystem = copyReadyFs ()
             RunBatch = fun title work finish -> titles.Add title; work unattended |> finish }
 
-    Shell.interpret (deps ()) dispatch (CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
-    Shell.interpret (deps ()) dispatch (MoveTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
+    Shell.interpret
+        (deps ())
+        dispatch
+        (CopyPlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))))
+    Shell.interpret
+        (deps ())
+        dispatch
+        (MovePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))))
 
     Assert.Equal<string list>([ Shell.CopyTitle; Shell.MoveTitle ], List.ofSeq titles)
 
@@ -434,7 +447,10 @@ let ``nothing is run when every collision is refused`` () =
             AskOverwrite = (fun _ _ -> No)
             RunBatch = fun _ work finish -> started <- true; work unattended |> finish }
 
-    Shell.interpret deps dispatch (CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))))
 
     Assert.False started
     Assert.Empty sent
@@ -451,7 +467,10 @@ let ``a collision asks the overwrite question under its own title`` () =
             FileSystem = fs
             AskOverwrite = fun title message -> asked <- (title, message); No }
 
-    Shell.interpret deps dispatch (CopyTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))))
 
     Assert.Equal(OverwriteQuestion.Title, fst asked)
     Assert.Contains(at "backup/notes.txt", snd asked)
@@ -485,7 +504,10 @@ let ``move targets are moved and the outcome dispatched back`` () =
     let fs = copyReadyFs ()
     let deps = { noDeps () with FileSystem = fs }
 
-    Shell.interpret deps dispatch (MoveTargets([ fp (at "start/notes.txt") ], fp (at "backup")))
+    Shell.interpret
+        deps
+        dispatch
+        (MovePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))))
 
     Assert.Equal("new", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.False(fs.File.Exists(at "start/notes.txt"))
@@ -1197,7 +1219,7 @@ let ``entries copied out of an archive land in the target directory and the outc
     Shell.interpret
         deps
         dispatch
-        (ExtractEntries(fp (at "start/data.zip"), [ entry "notes.txt"; entry "docs" ], fp (at "backup")))
+        (CopyPlaces([ FromArchive(dataZip, [ entry "notes.txt"; entry "docs" ]) ], ToDirectory(fp (at "backup"))))
 
     Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.Equal("inner", fs.File.ReadAllText(at "backup/docs/inner.txt"))
@@ -1216,7 +1238,10 @@ let ``an entry deeper in an archive is copied out under its own name`` () =
     let fs = unpackReadyFs None
     let deps = { noDeps () with FileSystem = fs }
 
-    Shell.interpret deps dispatch (ExtractEntries(fp (at "start/data.zip"), [ entry "docs/inner.txt" ], fp (at "backup")))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromArchive(dataZip, [ entry "docs/inner.txt" ]) ], ToDirectory(fp (at "backup"))))
 
     Assert.Equal("inner", fs.File.ReadAllText(at "backup/inner.txt"))
 
@@ -1235,7 +1260,10 @@ let ``copying out of an archive runs under the copying title and leaves the arch
                     titles.Add title
                     work unattended |> finish }
 
-    Shell.interpret deps dispatch (ExtractEntries(fp (at "start/data.zip"), [ entry "notes.txt" ], fp (at "backup")))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromArchive(dataZip, [ entry "notes.txt" ]) ], ToDirectory(fp (at "backup"))))
 
     Assert.Equal<string list>([ Shell.CopyTitle ], List.ofSeq titles)
     Assert.Equal<byte list>(List.ofArray before, List.ofArray (fs.File.ReadAllBytes(at "start/data.zip")))
@@ -1255,7 +1283,10 @@ let ``an entry copied over one already there is asked about by its landing place
                     asked.Add message
                     No }
 
-    Shell.interpret deps dispatch (ExtractEntries(fp (at "start/data.zip"), [ entry "notes.txt" ], fp (at "backup")))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromArchive(dataZip, [ entry "notes.txt" ]) ], ToDirectory(fp (at "backup"))))
 
     Assert.Contains(at "backup/notes.txt", Assert.Single asked)
     Assert.Equal("old", fs.File.ReadAllText(at "backup/notes.txt"))
@@ -1276,7 +1307,10 @@ let ``a refused overwrite copies nothing and starts no batch`` () =
                     batches.Add title
                     work unattended |> finish }
 
-    Shell.interpret deps dispatch (ExtractEntries(fp (at "start/data.zip"), [ entry "notes.txt" ], fp (at "backup")))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromArchive(dataZip, [ entry "notes.txt" ]) ], ToDirectory(fp (at "backup"))))
 
     Assert.Empty batches
     Assert.Empty sent
@@ -1295,7 +1329,10 @@ let ``copying out of a locked archive asks for the password once`` () =
                     asked.Add message
                     Some "opensesame" }
 
-    Shell.interpret deps dispatch (ExtractEntries(fp (at "start/data.zip"), [ entry "notes.txt" ], fp (at "backup")))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromArchive(dataZip, [ entry "notes.txt" ]) ], ToDirectory(fp (at "backup"))))
 
     Assert.Single asked |> ignore
     Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
@@ -1306,7 +1343,10 @@ let ``copying out of a locked archive whose password is not given copies nothing
     let fs = unpackReadyFs (ArchivePassword.tryCreate "opensesame")
     let deps = { noDeps () with FileSystem = fs; AskPassword = fun _ _ -> None }
 
-    Shell.interpret deps dispatch (ExtractEntries(fp (at "start/data.zip"), [ entry "notes.txt" ], fp (at "backup")))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromArchive(dataZip, [ entry "notes.txt" ]) ], ToDirectory(fp (at "backup"))))
 
     Assert.False(fs.File.Exists(at "backup/notes.txt"))
     Assert.Empty sent
@@ -1330,7 +1370,10 @@ let ``sources added to an archive are in it and the outcome is dispatched back``
     let fs = withLooseFile ()
     let deps = { noDeps () with FileSystem = fs }
 
-    Shell.interpret deps dispatch (AddEntries(zipAt, ArchivePath.root, [ fp (at "backup/fresh.txt") ]))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromDisk [ fp (at "backup/fresh.txt") ] ], ToArchive(zipAt, ArchivePath.root)))
 
     Assert.Equal<string list>([ "docs"; "fresh.txt"; "notes.txt" ], levelNames fs ArchivePath.root)
     Assert.Equal<Message list>(
@@ -1353,39 +1396,43 @@ let ``a name already at that level of the archive is asked about`` () =
                     asked.Add message
                     No }
 
-    Shell.interpret deps dispatch (AddEntries(zipAt, ArchivePath.root, [ fp (at "backup/notes.txt") ]))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromDisk [ fp (at "backup/notes.txt") ] ], ToArchive(zipAt, ArchivePath.root)))
 
     Assert.Contains(at "start/data.zip/notes.txt", Assert.Single asked)
 
 [<Fact>]
-let ``a kind that cannot be changed is reported and no batch runs`` () =
+let ``a kind that cannot be changed comes back as a failed item`` () =
     let sent, dispatch = capture ()
     let fs = withLooseFile ()
     fs.AddFile(at "start/data.rar", MockFileData "whatever")
-    let batches = ResizeArray<string>()
+    let rarAt = fp (at "start/data.rar")
     let mutable reported = ("", "")
 
     let deps =
         { noDeps () with
             FileSystem = fs
             ReportError = fun title message -> reported <- (title, message)
-            RunBatch =
-                fun title work finish ->
-                    batches.Add title
-                    work unattended |> finish }
+            RunBatch = fun _ work finish -> work unattended |> finish }
 
     Shell.interpret
         deps
         dispatch
-        (AddEntries(fp (at "start/data.rar"), ArchivePath.root, [ fp (at "backup/fresh.txt") ]))
+        (CopyPlaces([ FromDisk [ fp (at "backup/fresh.txt") ] ], ToArchive(rarAt, ArchivePath.root)))
 
-    Assert.Empty batches
-    Assert.Empty sent
-    Assert.Equal(ArchiveErrorMessage.Title, fst reported)
-    Assert.Contains("Marbas can change", snd reported)
+    Assert.Equal<Message list>(
+        [ CopyFinished
+              [ { Source = ItemOnDisk rarAt
+                  Outcome = Error(ArchiveFailed(KindCannotBeChanged rarAt)) } ] ],
+        List.ofSeq sent
+    )
+
+    Assert.Equal(("", ""), reported)
 
 [<Fact>]
-let ``an archive behind a password is reported instead of changed`` () =
+let ``an archive behind a password comes back as a failed item`` () =
     let sent, dispatch = capture ()
     let fs = unpackReadyFs (ArchivePassword.tryCreate "opensesame")
     fs.AddFile(at "backup/fresh.txt", MockFileData "fresh")
@@ -1394,13 +1441,22 @@ let ``an archive behind a password is reported instead of changed`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            ReportError = fun title message -> reported <- (title, message) }
+            ReportError = fun title message -> reported <- (title, message)
+            RunBatch = fun _ work finish -> work unattended |> finish }
 
-    Shell.interpret deps dispatch (AddEntries(zipAt, ArchivePath.root, [ fp (at "backup/fresh.txt") ]))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromDisk [ fp (at "backup/fresh.txt") ] ], ToArchive(zipAt, ArchivePath.root)))
 
-    Assert.Empty sent
-    Assert.Equal(ArchiveErrorMessage.Title, fst reported)
-    Assert.Contains("password", snd reported)
+    Assert.Equal<Message list>(
+        [ CopyFinished
+              [ { Source = ItemOnDisk zipAt
+                  Outcome = Error(ArchiveFailed(ProtectedArchiveCannotBeChanged zipAt)) } ] ],
+        List.ofSeq sent
+    )
+
+    Assert.Equal(("", ""), reported)
 
 [<Fact>]
 let ``a source moved into an archive is gone from disk once it is in`` () =
@@ -1416,7 +1472,10 @@ let ``a source moved into an archive is gone from disk once it is in`` () =
                     titles.Add title
                     work unattended |> finish }
 
-    Shell.interpret deps dispatch (MoveEntriesIn(zipAt, ArchivePath.root, [ fp (at "backup/fresh.txt") ]))
+    Shell.interpret
+        deps
+        dispatch
+        (MovePlaces([ FromDisk [ fp (at "backup/fresh.txt") ] ], ToArchive(zipAt, ArchivePath.root)))
 
     Assert.Equal<string list>([ "docs"; "fresh.txt"; "notes.txt" ], levelNames fs ArchivePath.root)
     Assert.False(fs.File.Exists(at "backup/fresh.txt"))
@@ -1434,7 +1493,7 @@ let ``an entry moved out of an archive is on disk and gone from the archive`` ()
 
     let deps = { noDeps () with FileSystem = fs }
 
-    Shell.interpret deps dispatch (MoveEntriesOut(zipAt, [ entry ], fp (at "backup")))
+    Shell.interpret deps dispatch (MovePlaces([ FromArchive(zipAt, [ entry ]) ], ToDirectory(fp (at "backup"))))
 
     Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.Equal<string list>([ "docs" ], levelNames fs ArchivePath.root)
@@ -1458,7 +1517,7 @@ let ``entries removed from an archive are gone and the outcome is dispatched bac
                     titles.Add title
                     work unattended |> finish }
 
-    Shell.interpret deps dispatch (RemoveEntries(zipAt, [ entry ]))
+    Shell.interpret deps dispatch (DeletePlaces([ FromArchive(zipAt, [ entry ]) ], Permanently))
 
     Assert.Equal<string list>([ "docs" ], levelNames fs ArchivePath.root)
     Assert.Equal<string list>([ Shell.DeleteTitle ], List.ofSeq titles)
@@ -1500,7 +1559,10 @@ let ``an entry copied across archives lands in the other and stays in its own`` 
             FileSystem = fs
             WorkspacePath = fp (at "temp/Marbas/session") }
 
-    Shell.interpret deps dispatch (CopyEntriesAcross(zipAt, [ entry "docs" ], otherAt, ArchivePath.root))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromArchive(zipAt, [ entry "docs" ]) ], ToArchive(otherAt, ArchivePath.root)))
 
     Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs otherAt ArchivePath.root)
     Assert.Equal<string list>([ "inner.txt" ], namesIn fs otherAt (entry "docs"))
@@ -1520,7 +1582,10 @@ let ``an entry moved across archives leaves the one it came from`` () =
             FileSystem = fs
             WorkspacePath = fp (at "temp/Marbas/session") }
 
-    Shell.interpret deps dispatch (MoveEntriesAcross(zipAt, [ entry "docs" ], otherAt, ArchivePath.root))
+    Shell.interpret
+        deps
+        dispatch
+        (MovePlaces([ FromArchive(zipAt, [ entry "docs" ]) ], ToArchive(otherAt, ArchivePath.root)))
 
     Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs otherAt ArchivePath.root)
     Assert.Equal<string list>([ "notes.txt" ], namesIn fs zipAt ArchivePath.root)
@@ -1540,7 +1605,10 @@ let ``a name already at the target level of the other archive is asked about`` (
                     asked.Add message
                     No }
 
-    Shell.interpret deps dispatch (CopyEntriesAcross(zipAt, [ entry "notes.txt" ], otherAt, ArchivePath.root))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromArchive(zipAt, [ entry "notes.txt" ]) ], ToArchive(otherAt, ArchivePath.root)))
 
     Assert.Contains(at "start/other.zip/notes.txt", Assert.Single asked)
 
@@ -1554,7 +1622,10 @@ let ``the workspace is empty once a crossing has finished`` () =
             FileSystem = fs
             WorkspacePath = fp (at "temp/Marbas/session") }
 
-    Shell.interpret deps dispatch (CopyEntriesAcross(zipAt, [ entry "docs" ], otherAt, ArchivePath.root))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromArchive(zipAt, [ entry "docs" ]) ], ToArchive(otherAt, ArchivePath.root)))
 
     Assert.Empty(fs.Directory.EnumerateFileSystemEntries(at "temp/Marbas/session"))
 
@@ -1584,7 +1655,10 @@ let ``a crossing out of a locked archive asks for its password once`` () =
                     asked.Add message
                     Some "opensesame" }
 
-    Shell.interpret deps dispatch (CopyEntriesAcross(zipAt, [ entry "docs" ], otherAt, ArchivePath.root))
+    Shell.interpret
+        deps
+        dispatch
+        (CopyPlaces([ FromArchive(zipAt, [ entry "docs" ]) ], ToArchive(otherAt, ArchivePath.root)))
 
     Assert.Single asked |> ignore
     Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs otherAt ArchivePath.root)

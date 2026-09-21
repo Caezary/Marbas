@@ -23,7 +23,10 @@ let ``copying the entry under the cursor out of an archive extracts it into the 
 
     let result = update fs CopyRequested state
 
-    Assert.Equal<Effect list>([ ExtractEntries(archive, [ inside "notes.txt" ], start) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ CopyPlaces([ FromArchive(archive, [ inside "notes.txt" ]) ], ToDirectory start) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``the marked entries of an archive panel are the targets`` () =
@@ -39,7 +42,7 @@ let ``the marked entries of an archive panel are the targets`` () =
     let result = update fs CopyRequested state
 
     Assert.Equal<Effect list>(
-        [ ExtractEntries(archive, [ inside "docs"; inside "notes.txt" ], start) ],
+        [ CopyPlaces([ FromArchive(archive, [ inside "docs"; inside "notes.txt" ]) ], ToDirectory start) ],
         result.Effects
     )
 
@@ -52,7 +55,10 @@ let ``a level below the top names its targets by where they stand`` () =
 
     let result = update fs CopyRequested state
 
-    Assert.Equal<Effect list>([ ExtractEntries(archive, [ inside "docs/inner.txt" ], start) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ CopyPlaces([ FromArchive(archive, [ inside "docs/inner.txt" ]) ], ToDirectory start) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``the way out of an archive is nothing to copy`` () =
@@ -70,7 +76,10 @@ let ``a panel on disk still copies the paths it points at`` () =
 
     let result = update fs CopyRequested state
 
-    Assert.Equal<Effect list>([ CopyTargets([ fp (at "start/backup.zip") ], start) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ CopyPlaces([ FromDisk [ fp (at "start/backup.zip") ] ], ToDirectory start) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a mark whose entry made it out is dropped and one that failed stays`` () =

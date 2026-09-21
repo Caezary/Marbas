@@ -201,3 +201,30 @@ let ``a password turned down leaves its archive out and the rest still runs`` ()
     Assert.True(fs.File.Exists(at "backup/loose.txt"))
     Assert.False(fs.File.Exists(at "backup/notes.txt"))
     Assert.True(fs.File.Exists(at "backup/kept.txt"))
+
+[<Fact>]
+let ``a copy into a tar is refused as a failed item from one place and from two`` () =
+    let sent, dispatch = capture ()
+    let fs = placesFs None
+    let mutable reported = ("", "")
+
+    let deps =
+        { recording fs (ResizeArray()) with
+            ReportError = fun title message -> reported <- (title, message) }
+
+    let intoTar = ToArchive(tarAt, ArchivePath.root)
+
+    let scattered =
+        [ FromDisk [ fp (at "start/loose.txt") ]
+          FromDisk [ fp (at "work/notes.txt") ] ]
+
+    Shell.interpret deps dispatch (CopyPlaces([ FromDisk [ fp (at "start/loose.txt") ] ], intoTar))
+    Shell.interpret deps dispatch (CopyPlaces(scattered, intoTar))
+
+    Assert.Equal<Message list>(
+        [ CopyFinished [ refusedTar ]
+          CopyFinished [ refusedTar; refusedTar ] ],
+        List.ofSeq sent
+    )
+
+    Assert.Equal(("", ""), reported)

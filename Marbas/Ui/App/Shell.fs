@@ -96,11 +96,6 @@ let private patternPrompt mode =
 let private askOverwrite (deps: Dependencies) target =
     deps.AskOverwrite OverwriteQuestion.Title (OverwriteQuestion.describe target)
 
-let private startBatch (deps: Dependencies) title operation finished sources targetDirectory =
-    match Operations.approve deps.FileSystem (askOverwrite deps) sources targetDirectory with
-    | [] -> ()
-    | approved -> deps.RunBatch title (fun control -> operation deps.FileSystem control approved targetDirectory) finished
-
 type private PasswordOutcome =
     | NotNeeded
     | NotGiven
@@ -211,11 +206,6 @@ let private itemsOf archive result =
     | Ok items -> items
     | Error error -> [ refusedWhole archive error ]
 
-let private changingArchive (deps: Dependencies) archive work =
-    match Archive.changeRefusal deps.FileSystem archive with
-    | Some refusal -> deps.ReportError ArchiveErrorMessage.Title (ArchiveErrorMessage.describe refusal)
-    | None -> work ()
-
 let private planFor (deps: Dependencies) targetDirectory archive (targets: unit -> ArchivePath list) =
     let planned password =
         match targets () with
@@ -241,18 +231,6 @@ let private extractPlan (deps: Dependencies) targetDirectory archive entries =
 
 let private acrossPlan (deps: Dependencies) source target level entries =
     planFor deps deps.WorkspacePath source (fun () -> approvedAcross deps source target level entries)
-
-let private crossing (deps: Dependencies) dispatch title carry finished source entries target level =
-    changingArchive deps target (fun () ->
-        match acrossPlan deps source target level entries with
-        | None -> ()
-        | Some plan ->
-            deps.RunBatch
-                title
-                (fun control ->
-                    carry deps.FileSystem control plan.Request plan.Targets target level
-                    |> itemsOf source)
-                (finished >> dispatch))
 
 type private Piece = Operations.BatchControl -> Operations.ItemResult list
 
@@ -322,16 +300,21 @@ let private deletePiece (deps: Dependencies) mode group : Piece option =
             Some(fun control -> Archive.removeEntries fs control archive entries |> itemsOf archive))
     | FromPlaces _, _ -> None
 
+let private untilStopped (control: Operations.BatchControl) (pieces: Piece list) =
+    let rec running remaining =
+        match remaining with
+        | [] -> []
+        | piece :: rest ->
+            match piece control with
+            | results when control.IsCancelled() -> results
+            | results -> results @ running rest
+
+    running pieces
+
 let private runPlaces (deps: Dependencies) title (pieces: Piece option list) finished =
     match List.choose id pieces with
     | [] -> ()
-    | ready ->
-        deps.RunBatch
-            title
-            (fun control ->
-                ready
-                |> List.collect (fun piece -> if control.IsCancelled() then [] else piece control))
-            finished
+    | ready -> deps.RunBatch title (fun control -> untilStopped control ready) finished
 
 let private deleteTitle mode =
     match mode with
@@ -351,21 +334,6 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
     | ConfirmDelete request ->
         if deps.Confirm (DeleteConfirmation.title request) (DeleteConfirmation.describe request) then
             dispatch (DeleteConfirmed request.Mode)
-    | DeleteTargets(sources, ByWiping) ->
-        deps.RunBatch
-            WipeTitle
-            (fun control -> Operations.wipeAll deps.FileSystem control sources)
-            (DeleteFinished >> dispatch)
-    | DeleteTargets(sources, ToTrash) ->
-        Operations.removeAll deps.SendToTrash sources |> DeleteFinished |> dispatch
-    | DeleteTargets(sources, Permanently) ->
-        Operations.removeAll (Operations.delete deps.FileSystem) sources
-        |> DeleteFinished
-        |> dispatch
-    | CopyTargets(sources, targetDirectory) ->
-        startBatch deps CopyTitle Operations.copyAll (CopyFinished >> dispatch) sources targetDirectory
-    | MoveTargets(sources, targetDirectory) ->
-        startBatch deps MoveTitle Operations.moveAll (MoveFinished >> dispatch) sources targetDirectory
     | PromptForArchive suggestion ->
         match deps.AskArchive(FileSystemPath.value suggestion) with
         | Some choice -> dispatch (ArchiveEntered choice)
@@ -412,59 +380,6 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         if allowed then
             deps.RunBatch PackTitle (fun control -> Archive.write deps.FileSystem control archive sources) (fun results ->
                 dispatch (PackFinished(FileSystemPath.name deps.FileSystem target, results)))
-    | ExtractEntries(archive, entries, targetDirectory) ->
-        match extractPlan deps targetDirectory archive entries with
-        | None -> ()
-        | Some plan ->
-            deps.RunBatch
-                CopyTitle
-                (fun control -> Archive.extractAll deps.FileSystem control [ plan ])
-                (CopyFinished >> dispatch)
-    | AddEntries(archive, level, sources) ->
-        changingArchive deps archive (fun () ->
-            match approvedInto deps archive level sources with
-            | [] -> ()
-            | approved ->
-                deps.RunBatch
-                    CopyTitle
-                    (fun control ->
-                        Archive.addEntries deps.FileSystem control archive level approved
-                        |> itemsOf archive)
-                    (CopyFinished >> dispatch))
-    | MoveEntriesIn(archive, level, sources) ->
-        changingArchive deps archive (fun () ->
-            match approvedInto deps archive level sources with
-            | [] -> ()
-            | approved ->
-                deps.RunBatch
-                    MoveTitle
-                    (fun control ->
-                        Archive.moveIn deps.FileSystem control archive level approved
-                        |> itemsOf archive)
-                    (MoveFinished >> dispatch))
-    | MoveEntriesOut(archive, entries, targetDirectory) ->
-        changingArchive deps archive (fun () ->
-            match extractPlan deps targetDirectory archive entries with
-            | None -> ()
-            | Some plan ->
-                deps.RunBatch
-                    MoveTitle
-                    (fun control ->
-                        Archive.moveOut deps.FileSystem control plan.Request plan.Targets
-                        |> itemsOf archive)
-                    (MoveFinished >> dispatch))
-    | CopyEntriesAcross(source, entries, target, level) ->
-        crossing deps dispatch CopyTitle Archive.copyAcross CopyFinished source entries target level
-    | MoveEntriesAcross(source, entries, target, level) ->
-        crossing deps dispatch MoveTitle Archive.moveAcross MoveFinished source entries target level
-    | RemoveEntries(archive, entries) ->
-        changingArchive deps archive (fun () ->
-            deps.RunBatch
-                DeleteTitle
-                (fun control ->
-                    Archive.removeEntries deps.FileSystem control archive entries
-                    |> itemsOf archive)
-                (DeleteFinished >> dispatch))
     | CopyPlaces(groups, target) ->
         runPlaces deps CopyTitle (groups |> List.map (copyPiece deps target)) (CopyFinished >> dispatch)
     | MovePlaces(groups, target) ->

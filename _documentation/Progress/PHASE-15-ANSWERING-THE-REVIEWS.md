@@ -190,3 +190,52 @@ refuses as `Receiving`, not at all. And when both refusals apply at once —
 `Shift+F1` between two results panels — the source refusal wins, so the message
 names `Packing` rather than `Receiving`. Both were written against the old
 `guarding`, passed there, and pin the order the new rule keeps.
+
+**P15.7 deleted ten effects that were special cases of three.** `CopyTargets`,
+`MoveTargets`, `DeleteTargets`, `ExtractEntries`, `AddEntries`, `MoveEntriesIn`,
+`MoveEntriesOut`, `RemoveEntries`, `CopyEntriesAcross` and `MoveEntriesAcross`
+each named one pairing of a source kind with a target kind, and `Shell` already
+had all of those pairings once, in `copyPiece`, `movePiece` and `deletePiece`.
+The single-place arms of `interpret` were the second implementation — a hundred
+lines of it — and `CopyRequested` and `MoveRequested` needed seven arms apiece to
+choose between them (A2).
+
+`Update` builds a one-group list where it built a special case. `places` turns a
+`TransferSource` into the groups the effect carries, which for everything but
+`FromPlaces` is a list of one. `CopyRequested` is now a single arm;
+`DeleteConfirmed` is a single arm; `TargetEntered` lost the split between a
+rename and a move. `MoveRequested` keeps three, because moving *out* of an
+archive has never asked for a target the way a move to a directory does, and
+that is a behaviour the phase keeps rather than a shape the task asked to flatten.
+
+The archive gate became a rule instead of a list per arm. `sourceArchives`
+answers the archives a group takes from and `targetArchives` the one the
+transfer writes into; a copy gates the target, a move gates both. Written that
+way it covers `FromPlaces` too, which it had not before — a move out of an
+unchangeable archive among several marks used to reach `Shell` and come back as
+a failed item, and is now refused by name up front like every other move.
+
+In `Shell` the ten arms, `startBatch`, `crossing` and `changingArchive` are
+gone. `changingArchive` was the drift A2 pointed at: the single-place path
+reported an unchangeable or password-protected archive through an error dialog
+and never started, while the places path let it come back as a failed item.
+There is one behaviour now, the places one, and two tests changed their names to
+say so. It is also the honest one for a batch of several groups, where one
+refusing archive must not silence the groups that would have worked.
+
+Two consequences are worth naming because neither is in A2. The trash and a
+permanent delete used to run synchronously on the UI thread — `DeleteTargets`
+dispatched straight from `interpret` — and now go through `RunBatch` like every
+other place, so they run off the UI thread behind the progress window. That is
+where P15.15 wants them; what P15.15 still owes them is a cancel flag they
+actually read.
+
+The other was a defect the unification exposed. `runPlaces` asked
+`control.IsCancelled()` *before* each piece and answered `[]` for the ones it
+skipped, which is right for the pieces after a stop and wrong for the first:
+a batch cancelled before it started reported nothing at all, where the
+single-place path reported the item it stopped at. `untilStopped` runs a piece
+and asks afterwards, so each piece reports its own cancelled items — which is
+what `Operations.allWatched` was written to do — and the groups after a stop are
+still skipped. The wipe test that caught it is unchanged; it had been asserting
+the right thing all along, against the arm that no longer exists.

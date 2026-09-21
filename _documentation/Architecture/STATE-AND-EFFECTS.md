@@ -228,10 +228,10 @@ through its own reader — the state never holds a stream. See
 [ARCHIVES.md](ARCHIVES.md), *Walking into an archive*.
 
 **What `F5` transfers is a value, not a place the effect has to guess.**
-`AppState.transferSource` answers a `TransferSource` — `FromDisk` of paths or
-`FromArchive` of an archive and the `ArchivePath`s inside it — so `Update` maps
-the two cases onto `CopyTargets` and `ExtractEntries` in two arms and never
-asks a second time what kind of place the panel is standing in. The type is
+`AppState.transferSource` answers a `TransferSource` — `FromDisk` of paths,
+`FromArchive` of an archive and the `ArchivePath`s inside it, or `FromPlaces` of
+several such groups — so `Update` raises one `CopyPlaces` whatever the source is
+and never asks a second time what kind of place the panel is standing in. The type is
 what `F6` will match on when moving out of an archive joins it in P9.13. See
 [ARCHIVES.md](ARCHIVES.md), *Copying out of an archive*.
 

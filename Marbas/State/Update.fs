@@ -83,29 +83,11 @@ type Effect =
     | ReportLaunchError of LaunchError
     | ReportItemFailures of Operations.ItemResult list
     | ConfirmDelete of DeleteRequest
-    | DeleteTargets of sources: FileSystemPath list * mode: DeleteMode
-    | CopyTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
-    | MoveTargets of sources: FileSystemPath list * targetDirectory: FileSystemPath
     | ArchiveTargets of sources: FileSystemPath list * request: ArchiveRequest
     | ExtractTargets of archives: FileSystemPath list * targetDirectory: FileSystemPath
-    | ExtractEntries of archive: FileSystemPath * entries: ArchivePath list * targetDirectory: FileSystemPath
-    | AddEntries of archive: FileSystemPath * level: ArchivePath * sources: FileSystemPath list
-    | MoveEntriesIn of archive: FileSystemPath * level: ArchivePath * sources: FileSystemPath list
-    | MoveEntriesOut of archive: FileSystemPath * entries: ArchivePath list * targetDirectory: FileSystemPath
-    | RemoveEntries of archive: FileSystemPath * entries: ArchivePath list
     | CopyPlaces of groups: TransferSource list * target: TransferTarget
     | MovePlaces of groups: TransferSource list * target: TransferTarget
     | DeletePlaces of groups: TransferSource list * mode: DeleteMode
-    | CopyEntriesAcross of
-        source: FileSystemPath *
-        entries: ArchivePath list *
-        target: FileSystemPath *
-        level: ArchivePath
-    | MoveEntriesAcross of
-        source: FileSystemPath *
-        entries: ArchivePath list *
-        target: FileSystemPath *
-        level: ArchivePath
     | PromptForFind of ground: MarkedGround * hidden: HiddenEntries * lastResults: int option
     | RunSearch of query: FindQuery * location: PanelLocation * marked: PanelLocation list
     | ShowLastResults of results: FindResults * gone: int
@@ -143,6 +125,23 @@ let private changing (fs: IFileSystem) state archives effect =
     match archives |> List.tryFind (Archive.changeableKind fs >> Option.isNone) with
     | None -> request state effect
     | Some unchangeable -> request state (ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged unchangeable)))
+
+let private places source =
+    match source with
+    | FromPlaces groups -> groups
+    | group -> [ group ]
+
+let private sourceArchives groups =
+    groups
+    |> List.choose (function
+        | FromArchive(archive, _) -> Some archive
+        | FromDisk _
+        | FromPlaces _ -> None)
+
+let private targetArchives target =
+    match target with
+    | ToArchive(archive, _) -> [ archive ]
+    | ToDirectory _ -> []
 
 let private saving (fs: IFileSystem) state =
     request state (SaveSettings(settings fs state))
@@ -322,39 +321,25 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | DeleteConfirmed mode ->
         match transferSource fs (activePanel state) with
         | None -> stay state
-        | Some(FromDisk paths) -> request state (DeleteTargets(paths, mode))
-        | Some(FromArchive(archive, entries)) -> request state (RemoveEntries(archive, entries))
-        | Some(FromPlaces groups) -> request state (DeletePlaces(groups, mode))
+        | Some source -> request state (DeletePlaces(places source, mode))
     | DeleteFinished results -> finishDelete fs results state |> applyBatch state
     | CopyRequested ->
         match transferSource fs (activePanel state), transferTarget state with
         | None, _
         | _, None -> stay state
-        | Some(FromDisk paths), Some(ToDirectory target) -> request state (CopyTargets(paths, target))
-        | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
-            request state (ExtractEntries(archive, entries, target))
-        | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
-            changing fs state [ archive ] (AddEntries(archive, level, paths))
-        | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
-            changing fs state [ target ] (CopyEntriesAcross(source, entries, target, level))
-        | Some(FromPlaces groups), Some(ToDirectory target) -> request state (CopyPlaces(groups, ToDirectory target))
-        | Some(FromPlaces groups), Some(ToArchive(archive, level)) ->
-            changing fs state [ archive ] (CopyPlaces(groups, ToArchive(archive, level)))
+        | Some source, Some target -> changing fs state (targetArchives target) (CopyPlaces(places source, target))
     | CopyFinished results -> finishTransfer fs results state |> applyBatch state
     | MoveRequested ->
         match transferSource fs (activePanel state), transferTarget state with
         | None, _
         | _, None -> stay state
-        | Some(FromDisk _), Some(ToDirectory target)
-        | Some(FromPlaces _), Some(ToDirectory target) -> request state (PromptForTarget target)
-        | Some(FromPlaces groups), Some(ToArchive(archive, level)) ->
-            changing fs state [ archive ] (MovePlaces(groups, ToArchive(archive, level)))
-        | Some(FromArchive(archive, entries)), Some(ToDirectory target) ->
-            changing fs state [ archive ] (MoveEntriesOut(archive, entries, target))
-        | Some(FromDisk paths), Some(ToArchive(archive, level)) ->
-            changing fs state [ archive ] (MoveEntriesIn(archive, level, paths))
-        | Some(FromArchive(source, entries)), Some(ToArchive(target, level)) ->
-            changing fs state [ target; source ] (MoveEntriesAcross(source, entries, target, level))
+        | Some(FromArchive _ as group), Some(ToDirectory target) ->
+            changing fs state (sourceArchives [ group ]) (MovePlaces([ group ], ToDirectory target))
+        | Some _, Some(ToDirectory target) -> request state (PromptForTarget target)
+        | Some source, Some target ->
+            let groups = places source
+
+            changing fs state (targetArchives target @ sourceArchives groups) (MovePlaces(groups, target))
     | TargetEntered text ->
         let panel = activePanel state
 
@@ -370,11 +355,9 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | trimmed, _, _ when showsResults panel && FileSystemPath.isBareName fs trimmed -> refusing state Renaming
         | trimmed, Some(FromDisk [ single ]), _ when FileSystemPath.isBareName fs trimmed ->
             request state (RenameTarget(single, EntryName.create trimmed))
-        | trimmed, Some(FromPlaces groups), Some source ->
-            request state (MovePlaces(groups, ToDirectory(FileSystemPath.combine fs source trimmed)))
-        | trimmed, Some(FromDisk paths), Some source ->
-            request state (MoveTargets(paths, FileSystemPath.combine fs source trimmed))
         | _, Some(FromArchive _), _ -> stay state
+        | trimmed, Some source, Some place ->
+            request state (MovePlaces(places source, ToDirectory(FileSystemPath.combine fs place trimmed)))
     | MoveFinished results -> finishTransfer fs results state |> applyBatch state
     | FindRequested ->
         let panel = activePanel state
