@@ -7,6 +7,7 @@ open Terminal.Gui.Drawing
 open Terminal.Gui.Views
 open Marbas.Ui.Theme
 open Marbas.Ui.Keys
+open Marbas.Ui.Panels
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
@@ -96,3 +97,49 @@ let ``the cursor of an unfocused panel gives its row back to the colours`` () =
     let painted = paintedRow list 2
 
     Assert.Equal(Nullable ClassicScheme.plainEntry, painted)
+
+[<Fact>]
+let ``moving the cursor leaves the rows of the panel as they were`` () =
+    use window = window ()
+    let list = leftList window
+    let painted = list.Source
+
+    list.SelectedItem <- 2
+
+    Assert.Same(painted, list.Source)
+    Assert.Equal(2, list.SelectedItem.GetValueOrDefault -1)
+
+[<Fact>]
+let ``the panel nobody touched keeps the rows it had`` () =
+    use window = window ()
+    let untouched = (rightList window).Source
+    let list = leftList window
+    list.SelectedItem <- 1
+
+    press list Terminal.Gui.Input.Key.Enter
+
+    Assert.Equal(at "start/docs", shownPath FilePanel.LeftId window)
+    Assert.Same(untouched, (rightList window).Source)
+
+[<Fact>]
+let ``marking an entry paints the rows again`` () =
+    use window = window ()
+    let list = leftList window
+    list.SelectedItem <- 1
+    let painted = list.Source
+
+    press list KeyMap.selectionKeys.Head
+
+    Assert.NotSame(painted, list.Source)
+    Assert.True(list.Source.IsMarked 1)
+
+[<Fact>]
+let ``a directory opened paints the rows again`` () =
+    use window = window ()
+    let list = leftList window
+    list.SelectedItem <- 1
+    let painted = list.Source
+
+    press list Terminal.Gui.Input.Key.Enter
+
+    Assert.NotSame(painted, list.Source)

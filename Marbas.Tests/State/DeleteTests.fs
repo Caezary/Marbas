@@ -28,7 +28,7 @@ let private started () =
     let fs = mockFs ()
     fs, loaded fs
 
-let private targetNames (state: AppState) = operationTargets state.Left |> List.map (_.Name >> EntryName.value)
+let private targetNames (state: AppState) = operationTargets state.Left |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private deleted (fs: IFileSystem) state =
     let results = operationPaths fs (panel Left state) |> deleteAll fs
@@ -70,7 +70,7 @@ let ``deleting removes the cursor entry and refreshes the panel`` () =
     let updated, _ = state |> setCursor Left 3 |> deleted fs
 
     Assert.False(fs.File.Exists(at "start/notes.txt"))
-    Assert.DoesNotContain("notes.txt", updated.Left.Entries |> List.map (_.Name >> EntryName.value))
+    Assert.DoesNotContain("notes.txt", updated.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
 
 [<Fact>]
 let ``deleting a directory takes its contents with it`` () =
@@ -79,7 +79,7 @@ let ``deleting a directory takes its contents with it`` () =
     let updated, _ = state |> setCursor Left 1 |> deleted fs
 
     Assert.False(fs.Directory.Exists(at "start/docs"))
-    Assert.DoesNotContain("docs", updated.Left.Entries |> List.map (_.Name >> EntryName.value))
+    Assert.DoesNotContain("docs", updated.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
 
 [<Fact>]
 let ``every marked entry is deleted and reported`` () =

@@ -24,9 +24,9 @@ let private mockFs () =
 let private loaded (fs: IFileSystem) =
     create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
-let private names panel = panel.Entries |> List.map (_.Name >> EntryName.value)
+let private names panel = panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
-let private selectedNames panel = selectedEntries panel |> List.map (_.Name >> EntryName.value)
+let private selectedNames panel = selectedEntries panel |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 [<Fact>]
 let ``making a directory adds it and lands the cursor on it`` () =

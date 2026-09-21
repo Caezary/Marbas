@@ -34,7 +34,7 @@ let private loaded (fs: IFileSystem) =
     |> Expect.ok
 
 let private measurementOf name (panel: PanelState) =
-    panel.Entries |> List.find (fun entry -> entry.Name = en name) |> _.Measured
+    panel.Entries |> Array.find (fun entry -> entry.Name = en name) |> _.Measured
 
 [<Fact>]
 let ``the view key on a directory asks for it to be measured`` () =
@@ -177,7 +177,7 @@ let ``a measurement taken while the panel sorts by size moves the row into place
     let result =
         update fs (MeasureFinished(Ok [ { Name = en "docs"; Size = Exact 5L } ])) state
 
-    let order = result.State.Left.Entries |> List.map (_.Name >> EntryName.value)
+    let order = result.State.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
     Assert.Equal<string list>([ ".."; "empty"; "docs"; "notes.txt" ], order)
     Assert.Equal(2, result.State.Left.Cursor)
@@ -190,7 +190,7 @@ let ``a measurement changes no order in a panel sorted by name`` () =
     let result =
         update fs (MeasureFinished(Ok [ { Name = en "docs"; Size = Exact 5L } ])) state
 
-    let order = result.State.Left.Entries |> List.map (_.Name >> EntryName.value)
+    let order = result.State.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
     Assert.Equal<string list>([ ".."; "docs"; "empty"; "notes.txt" ], order)
     Assert.Equal(1, result.State.Left.Cursor)

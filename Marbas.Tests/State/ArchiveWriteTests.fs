@@ -31,7 +31,7 @@ let private withTarball () =
     fs.AddFile(at "start/loose.txt", MockFileData "loose")
     fs
 
-let private names panel = panel.Entries |> List.map (_.Name >> EntryName.value)
+let private names panel = panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private atLoose state = setCursor Left 2 state
 
@@ -156,7 +156,7 @@ let ``a directory made inside an archive is in it and under the cursor`` () =
         "fresh",
         ArchiveListing.read fs archive ArchivePath.root
         |> Expect.ok
-        |> List.map (_.Name >> EntryName.value)
+        |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
     )
 
 [<Fact>]

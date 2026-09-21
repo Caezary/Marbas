@@ -49,8 +49,6 @@ let create (deps: Shell.Dependencies) =
     for side, panel in AppView.panels view do
         PanelWiring.attach host side panel
 
-    deps.WatchModifiers(fun modifiers ->
-        FunctionKeyBar.show keyBar modifiers
-        runtime.Refresh())
+    deps.WatchModifiers(FunctionKeyBar.show keyBar)
 
     view.Window

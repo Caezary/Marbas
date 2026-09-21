@@ -52,7 +52,10 @@ render and handler bounce off each other.
 builds the window, the two panels and the status line and hands back a record;
 `AppView.render` is the whole screen as a function of `AppState`, so it can be
 tested by rendering a state into a view and reading the panels back, with no
-`Runtime` involved. The side-to-view pairing lives in `FilePanel.Panels` and
+`Runtime` involved. Each panel remembers what it last painted and skips the
+work a message did not change, which
+[UI-AND-INPUT.md](UI-AND-INPUT.md) describes; the memo is a cache in front of
+that function, not a second notion of what the screen shows. The side-to-view pairing lives in `FilePanel.Panels` and
 `FilePanel.pairs`, which is what render, seeding and wiring all iterate.
 `MainWindow.create` is left with four steps: build the view, build the runtime,
 seed both panels, attach the wiring. The function key bar is added after the

@@ -8,7 +8,7 @@ open Marbas.FileSystem.DirectoryListing
 
 type PanelState =
     { Path: PanelLocation
-      Entries: Entry list
+      Entries: Entry array
       Cursor: int
       Remembered: EntryName option
       Selected: Set<EntryName>
@@ -50,7 +50,7 @@ type TransferTarget =
 
 let private panelFrom (settings: PanelSettings) =
     { Path = OnDisk settings.Path
-      Entries = []
+      Entries = Array.empty
       Cursor = 0
       Remembered = settings.Cursor
       Selected = Set.empty
@@ -76,7 +76,7 @@ let private standingName (p: PanelState) =
     | SearchResults found -> found.Returning
     | _ ->
         p.Entries
-        |> List.tryItem p.Cursor
+        |> Array.tryItem p.Cursor
         |> Option.filter (fun entry -> entry.Name <> DirectoryListing.ParentName)
         |> Option.map _.Name
         |> Option.orElse p.Remembered
@@ -177,7 +177,7 @@ let private focusFirstMatch (p: PanelState) =
     match p.Search with
     | None -> p
     | Some text ->
-        match p.Entries |> List.tryFindIndex (fun e -> SearchText.matches text e.Name) with
+        match p.Entries |> Array.tryFindIndex (fun e -> SearchText.matches text e.Name) with
         | Some index -> withCursor index p
         | None -> p
 
@@ -216,7 +216,7 @@ let loadLocationFocusing (fs: IFileSystem) side (location: PanelLocation) focus 
     |> Result.map (fun entries ->
         let cursor =
             match focus with
-            | ByName name -> entries |> List.tryFindIndex (fun e -> e.Name = name) |> Option.defaultValue 0
+            | ByName name -> entries |> Array.tryFindIndex (fun e -> e.Name = name) |> Option.defaultValue 0
             | Top -> 0
 
         updatePanel
@@ -235,7 +235,7 @@ let loadLocationFocusing (fs: IFileSystem) side (location: PanelLocation) focus 
 let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state =
     loadLocationFocusing fs side (OnDisk path) focus state
 
-let cursorEntry panel = panel.Entries |> List.tryItem panel.Cursor
+let cursorEntry panel = panel.Entries |> Array.tryItem panel.Cursor
 
 let private rememberedFocus (p: PanelState) =
     match p.Remembered with
@@ -280,7 +280,7 @@ let private reorder (p: PanelState) =
 
     let cursor =
         cursorEntry p
-        |> Option.bind (fun entry -> entries |> List.tryFindIndex (fun e -> e.Name = entry.Name))
+        |> Option.bind (fun entry -> entries |> Array.tryFindIndex (fun e -> e.Name = entry.Name))
         |> Option.defaultValue 0
 
     { p with
@@ -293,7 +293,9 @@ let sortBy (key: SortKey) side state =
 let private selectable entry = entry.Name <> DirectoryListing.ParentName
 
 let selectedEntries panel =
-    panel.Entries |> List.filter (fun e -> panel.Selected.Contains e.Name)
+    panel.Entries
+    |> Array.filter (fun e -> panel.Selected.Contains e.Name)
+    |> List.ofArray
 
 let private markedAtCursor (p: PanelState) =
     match cursorEntry p with
@@ -307,7 +309,7 @@ let private runFrom cursor target =
 
 let private namesOf indexes (p: PanelState) =
     indexes
-    |> List.choose (fun index -> List.tryItem index p.Entries)
+    |> List.choose (fun index -> Array.tryItem index p.Entries)
     |> List.filter selectable
     |> List.map _.Name
     |> Set.ofList
@@ -339,9 +341,9 @@ let toggleSelectionMoving direction side state =
 
 let private matching pattern panel =
     panel.Entries
-    |> List.filter (fun e -> selectable e && NamePattern.matches pattern e.Name)
-    |> List.map _.Name
-    |> Set.ofList
+    |> Array.filter (fun e -> selectable e && NamePattern.matches pattern e.Name)
+    |> Array.map _.Name
+    |> Set.ofArray
 
 let private selectMatchingIn pattern (p: PanelState) =
     { p with Selected = Set.union p.Selected (matching pattern p) }
@@ -358,7 +360,7 @@ let applyPattern mode side pattern state =
     updatePanel side (apply pattern) state
 
 let private surviving entries selected =
-    entries |> List.map _.Name |> Set.ofList |> Set.intersect selected
+    entries |> Array.map _.Name |> Set.ofArray |> Set.intersect selected
 
 let private keepSurviving selected (p: PanelState) =
     { p with Selected = surviving p.Entries selected }
@@ -566,7 +568,7 @@ let applyMeasurements side (measured: Measurement list) state =
         | Some size -> { entry with Measured = Some size }
         | None -> entry
 
-    updatePanel side (fun p -> reorder { p with Entries = p.Entries |> List.map measuredEntry }) state
+    updatePanel side (fun p -> reorder { p with Entries = p.Entries |> Array.map measuredEntry }) state
 
 let deleteScope (fs: IFileSystem) panel =
     let reachesContents =

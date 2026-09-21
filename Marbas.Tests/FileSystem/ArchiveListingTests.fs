@@ -73,8 +73,8 @@ let private listed (fs: IFileSystem) path level =
 let private refused (fs: IFileSystem) path =
     ArchiveListing.read fs (fp path) ArchivePath.root |> Expect.error
 
-let private names entries =
-    entries |> List.map (_.Name >> EntryName.value) |> List.sort
+let private names (entries: Entry seq) =
+    entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq |> List.sort
 
 let private named entries raw =
     entries |> List.find (fun entry -> entry.Name = en raw)
@@ -278,7 +278,7 @@ let ``a level shown in a panel opens with the way out`` () =
 
     let entries = displayed fs Concealed target ArchivePath.root
 
-    Assert.Equal<string list>([ ".."; "docs"; "notes.txt" ], entries |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<string list>([ ".."; "docs"; "notes.txt" ], entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
 
 [<Fact>]
 let ``a level below the top is shown with a way out of its own`` () =
@@ -288,14 +288,14 @@ let ``a level below the top is shown with a way out of its own`` () =
 
     Assert.Equal<string list>(
         [ ".."; "deep"; "empty"; "inner.txt" ],
-        entries |> List.map (_.Name >> EntryName.value)
+        entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
     )
 
 [<Fact>]
 let ``the way out of an archive is a directory carrying the archive's own time`` () =
     let fs = packed ()
 
-    let parent = displayed fs Concealed target ArchivePath.root |> List.head
+    let parent = displayed fs Concealed target ArchivePath.root |> Array.head
 
     Assert.Equal(Directory, parent.Kind)
     Assert.Equal(DateTimeOffset(fs.FileInfo.New(target).LastWriteTime), parent.Modified)
@@ -309,8 +309,8 @@ let ``a hidden entry inside an archive is concealed until it is asked for`` () =
     let concealed = displayed fs Concealed target ArchivePath.root
     let shown = displayed fs Shown target ArchivePath.root
 
-    Assert.Equal<string list>([ ".." ], concealed |> List.map (_.Name >> EntryName.value))
-    Assert.Equal<string list>([ ".."; ".secret" ], shown |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<string list>([ ".." ], concealed |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
+    Assert.Equal<string list>([ ".."; ".secret" ], shown |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
 
 [<Fact>]
 let ``a level of an archive that cannot be read fails the listing`` () =

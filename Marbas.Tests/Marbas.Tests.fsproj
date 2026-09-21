@@ -146,6 +146,7 @@
     <Compile Include="Ui\Panels\SelectionSummaryTests.fs" />
     <Compile Include="Ui\Panels\PanelFooterTests.fs" />
     <Compile Include="Ui\Panels\PanelTitleTests.fs" />
+    <Compile Include="Ui\Panels\PanelRowsTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

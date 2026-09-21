@@ -54,8 +54,8 @@ let private found roots hits =
 let private fromStart hits =
     found [ OnDisk(fp (at "start")) ] hits
 
-let private named entries =
-    entries |> List.map (_.Name >> EntryName.value)
+let private named (entries: Entry seq) =
+    entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private listed fs hidden found =
     SearchListing.listForDisplay fs SortOrder.byName hidden found |> Expect.ok

@@ -19,8 +19,8 @@ let private en = EntryName.create
 
 let private cursor side index = { Side = side; Index = index }
 
-let private names (entries: DirectoryListing.Entry list) =
-    entries |> List.map (_.Name >> EntryName.value)
+let private names (entries: DirectoryListing.Entry seq) =
+    entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private mockFs () =
     let fs = MockFileSystem()
@@ -932,7 +932,7 @@ let ``a finished pack keeps the marks of what did not make it`` () =
 
     Assert.Equal<string list>(
         [ "notes.txt" ],
-        selectedEntries result.State.Left |> List.map (_.Name >> EntryName.value)
+        selectedEntries result.State.Left |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
     )
 
 [<Fact>]

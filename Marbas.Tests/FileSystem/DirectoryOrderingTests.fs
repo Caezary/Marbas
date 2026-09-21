@@ -33,7 +33,8 @@ let private dated name day =
 let private measured name size =
     { entry name Directory with Measured = Some size }
 
-let private names entries = entries |> List.map (_.Name >> EntryName.value)
+let private names (entries: Entry seq) =
+    entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private byName = SortOrder.byName
 
@@ -219,8 +220,8 @@ let ``non-root listing starts with the parent entry`` () =
 
     let entries = listForDisplay fs byName Concealed (fp (at "start/sub")) |> Expect.ok
 
-    Assert.Equal("..", EntryName.value entries.Head.Name)
-    Assert.Equal(Directory, entries.Head.Kind)
+    Assert.Equal("..", EntryName.value entries[0].Name)
+    Assert.Equal(Directory, entries[0].Kind)
 
 [<Fact>]
 let ``the parent entry stays first whatever the sort`` () =

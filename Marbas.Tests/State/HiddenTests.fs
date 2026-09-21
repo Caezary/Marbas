@@ -40,7 +40,7 @@ let private both (fs: IFileSystem) =
     |> loaded Right (fp (at "backup")) fs
 
 let private names entries =
-    entries |> List.map (fun (e: Entry) -> EntryName.value e.Name)
+    entries |> Seq.map (fun (e: Entry) -> EntryName.value e.Name) |> List.ofSeq
 
 [<Fact>]
 let ``a panel conceals the hidden entries until it is told otherwise`` () =

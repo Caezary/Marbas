@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
 open Marbas.Ui.Keys
+open Marbas.Ui.Panels
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
@@ -107,3 +108,14 @@ let ``the slots on show carry the commands of the modifiers held`` () =
         KeyMap.bar (Modifiers.held [ Ctrl ]) |> List.map _.Message,
         carried
     )
+
+[<Fact>]
+let ``a change of the modifiers held paints no panel again`` () =
+    let window, hold = watchedWindow ()
+    use window = window
+    let painted = (panelView FilePanel.LeftId window).Painted
+
+    hold (Modifiers.held [ Ctrl ])
+
+    Assert.Same(painted, (panelView FilePanel.LeftId window).Painted)
+    Assert.NotEqual<string list>(classic, commands window)

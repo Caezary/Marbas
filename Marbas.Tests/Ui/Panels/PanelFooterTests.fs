@@ -32,7 +32,7 @@ let private directory name =
       LinkTarget = None }
 
 let private entries =
-    [ directory ".."; directory "docs"; file "a.txt" 1000L; file "b.txt" 234L ]
+    [| directory ".."; directory "docs"; file "a.txt" 1000L; file "b.txt" 234L |]
 
 let private panel =
     { Path = OnDisk(FileSystemPath.create (Root.at "start"))
@@ -54,14 +54,14 @@ let ``with nothing marked the footer counts the files and the folders of the dir
 
 [<Fact>]
 let ``the parent entry is counted as neither file nor folder`` () =
-    let text = PanelFooter.describe { panel with Entries = [ directory ".." ] }
+    let text = PanelFooter.describe { panel with Entries = [| directory ".." |] }
 
     Assert.Contains("0 files", text)
     Assert.Contains("0 folders", text)
 
 [<Fact>]
 let ``folders are left out of the total size`` () =
-    let text = PanelFooter.describe { panel with Entries = [ directory ".."; directory "docs" ] }
+    let text = PanelFooter.describe { panel with Entries = [| directory ".."; directory "docs" |] }
 
     Assert.Contains("0 files", text)
     Assert.Contains("1 folder", text)
@@ -70,7 +70,7 @@ let ``folders are left out of the total size`` () =
 [<Fact>]
 let ``a single file and a single folder are named in the singular`` () =
     let text =
-        PanelFooter.describe { panel with Entries = [ directory "docs"; file "a.txt" 5L ] }
+        PanelFooter.describe { panel with Entries = [| directory "docs"; file "a.txt" 5L |] }
 
     Assert.Contains("1 file,", text)
     Assert.Contains("1 folder ", text)

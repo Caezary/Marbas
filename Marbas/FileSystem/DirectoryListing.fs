@@ -75,14 +75,9 @@ let private groupRank entry =
         | Directory -> 1
         | File -> 2
 
-let private compareText (left: string) (right: string) =
-    String.Compare(left, right, StringComparison.InvariantCultureIgnoreCase)
+let private textOrder = StringComparer.InvariantCultureIgnoreCase
 
-let private compareNames a b =
-    compareText (EntryName.value a.Name) (EntryName.value b.Name)
-
-let private compareExtensions a b =
-    compareText (EntryName.extension a.Name) (EntryName.extension b.Name)
+let private compareText (left: string) (right: string) = textOrder.Compare(left, right)
 
 let private sizeToSortBy entry =
     match entry.Kind with
@@ -93,27 +88,32 @@ let private sizeToSortBy entry =
         |> Some
     | File -> entry.Size
 
-let private compareByKey key a b =
-    let primary =
-        match key with
-        | ByName -> 0
-        | ByExtension -> compareExtensions a b
-        | ByDate -> compare a.Modified b.Modified
-        | BySize -> compare (sizeToSortBy a) (sizeToSortBy b)
-
-    if primary = 0 then compareNames a b else primary
-
 let private direction sort =
     match sort.Direction with
     | Ascending -> 1
     | Descending -> -1
 
-let order (sort: SortOrder) (entries: Entry list) =
+let private compareRanked sort compareKeys (groupA, keyA, nameA) (groupB, keyB, nameB) =
+    match compare groupA groupB with
+    | 0 ->
+        match compareKeys keyA keyB with
+        | 0 -> direction sort * compareText nameA nameB
+        | primary -> direction sort * primary
+    | grouped -> grouped
+
+let private arrange sort keyOf compareKeys (entries: Entry seq) =
     entries
-    |> List.sortWith (fun a b ->
-        match compare (groupRank a) (groupRank b) with
-        | 0 -> direction sort * compareByKey sort.Key a b
-        | grouped -> grouped)
+    |> Seq.map (fun entry -> (groupRank entry, keyOf entry, EntryName.value entry.Name), entry)
+    |> Seq.sortWith (fun (ranked, _) (against, _) -> compareRanked sort compareKeys ranked against)
+    |> Seq.map snd
+    |> Array.ofSeq
+
+let order (sort: SortOrder) (entries: Entry seq) =
+    match sort.Key with
+    | ByName -> arrange sort ignore (fun _ _ -> 0) entries
+    | ByExtension -> arrange sort (_.Name >> EntryName.extension) compareText entries
+    | ByDate -> arrange sort _.Modified compare entries
+    | BySize -> arrange sort sizeToSortBy compare entries
 
 let shown (hidden: HiddenEntries) (entries: Entry list) =
     entries |> List.filter (_.Visibility >> HiddenEntries.admits hidden)

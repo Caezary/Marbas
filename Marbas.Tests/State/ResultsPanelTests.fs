@@ -69,7 +69,7 @@ let private hits = [ hitIn "start/docs" "inner.txt" File; hitIn "start" "notes.t
 let private showing fs state = update fs (sentToPanel hits) state |> _.State
 
 let private named state =
-    (activePanel state).Entries |> List.map (_.Name >> EntryName.value)
+    (activePanel state).Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private cursorName state =
     cursorEntry (activePanel state) |> Option.map (_.Name >> EntryName.value)
@@ -77,7 +77,7 @@ let private cursorName state =
 let private standingAt name state =
     let index =
         (activePanel state).Entries
-        |> List.findIndex (fun e -> EntryName.value e.Name = name)
+        |> Array.findIndex (fun e -> EntryName.value e.Name = name)
 
     setCursor state.Active index state
 

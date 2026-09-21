@@ -19,7 +19,7 @@ let private en = EntryName.create
 
 let private inside raw = ArchivePath.tryCreate raw |> Expect.some
 
-let private names panel = panel.Entries |> List.map (_.Name >> EntryName.value)
+let private names panel = panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private cursorName panel =
     cursorEntry panel |> Option.map (_.Name >> EntryName.value)

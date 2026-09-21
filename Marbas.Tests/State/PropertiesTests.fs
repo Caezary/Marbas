@@ -76,7 +76,7 @@ let ``a directory that has just been hidden leaves a panel that conceals it`` ()
 
     let applied = applyProperties fs properties state |> Expect.ok
 
-    Assert.DoesNotContain(EntryName.create "docs", applied.Left.Entries |> List.map _.Name)
+    Assert.DoesNotContain(EntryName.create "docs", applied.Left.Entries |> Array.map _.Name)
 
 [<Fact>]
 let ``a stamp that is applied is what the entry carries afterwards`` () =

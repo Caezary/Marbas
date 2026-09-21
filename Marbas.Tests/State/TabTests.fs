@@ -55,8 +55,8 @@ let ``opening a tab clones the panels of the current one and makes it current`` 
     Assert.Equal(state.Left.Path, twoTabs.Left.Path)
     Assert.Equal(state.Right.Path, twoTabs.Right.Path)
     Assert.Equal<string list>(
-        state.Left.Entries |> List.map (_.Name >> EntryName.value),
-        twoTabs.Left.Entries |> List.map (_.Name >> EntryName.value)
+        state.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq,
+        twoTabs.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
     )
 
 [<Fact>]

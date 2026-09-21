@@ -8,7 +8,7 @@ right files when a refresh reorders the listing. Terminal.Gui's own marking is
 used purely for rendering: the panel runs with `MarkMultiple = true` and
 `ShowMarks = false`, which draws marked rows with `VisualRole.Highlight` and no
 checkbox glyphs, and `FilePanel.render` re-applies `Source.SetMark` from the
-state after every render. `Insert`/`Space` are handled by Marbas and marked
+state whenever it rebuilds the rows. `Insert`/`Space` are handled by Marbas and marked
 handled, so the built-in SPACE marking never runs and cannot disagree with the
 state.
 
@@ -112,6 +112,26 @@ is attached once and reads the array, rather than being re-subscribed on every
 render. `OnRowRender` is public, so a test raises it and reads the attribute
 back; nothing else about colour is observable without a driver.
 
+**A keystroke renders what changed.** `Runtime` paints after every message, so
+`FilePanel.render` runs for both panels on every arrow key — and formatting a
+row, classifying its colour and setting its mark are each a pass over the whole
+listing. What those three passes depend on is the entries, the marks and the
+width the rows are formatted to, and nothing else; `PanelRows.Painting` is that
+triple, and `PanelRows.rows` answers `Kept` or `Rebuilt` by comparing it with
+the one the panel last painted. `PanelState.Entries` is an array and `Selected`
+a set, both carried unchanged through `{ p with Cursor = … }`, so the
+comparison is by reference: a cursor move keeps them, a load, a mark or a
+resize does not. On `Kept` the panel only moves `ListView.SelectedItem` and
+writes its footer, which is why the panel nobody touched costs nothing.
+`PanelRows` is pure and has its own unit tests; that the rows really stand is
+the identity of `ListView.Source`, which a new `SetSource` would replace.
+
+**A held modifier repaints the bottom bar alone.** `ModifierWatch` polls every
+100 ms, and a change used to go through `Runtime.Refresh` — the whole screen,
+for two rows of labels. `MainWindow` now hands `FunctionKeyBar.show` straight to
+`WatchModifiers`; the bar marks itself for drawing and no panel is painted
+again.
+
 **Which `VisualRole` a view draws with was measured, not guessed.** A view asks
 its scheme for an attribute through the `GettingAttributeForRole` event, so
 subscribing to it and drawing the view answers the question directly:
@@ -167,6 +187,16 @@ The direction reverses the key and that fallback together, but never the group
 rank, which is why a descending sort still keeps `..` on top and directories
 above files, the way the classic managers do it. Sorting by name is the same
 rule with an empty key comparison, so it needs no case of its own.
+
+**Each key is computed once.** `order` chooses the projection its sort key
+needs — the extension, the modification time, the size to sort by, or nothing
+at all for a sort by name — decorates every entry with `(group rank, key, name)`
+and sorts on that. A comparator that read the entry would recompute the
+substring and the culture-aware compare on every one of the *n* log *n*
+comparisons instead of *n* times. `Seq.sortWith` keeps it stable, which matters
+in a results panel, where two hits may carry the same display name and should
+stay in the order the walk found them. `order` takes any sequence and answers
+the array a panel holds.
 
 **Names collate, they do not compare byte by byte.** Names and extensions go
 through `StringComparison.InvariantCultureIgnoreCase`, which puts punctuation

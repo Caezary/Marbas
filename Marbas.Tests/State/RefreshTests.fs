@@ -23,7 +23,7 @@ let private loaded side path (fs: IFileSystem) state =
     loadPanel fs side path state |> Expect.ok
 
 let private names entries =
-    entries |> List.map (fun (e: Entry) -> EntryName.value e.Name)
+    entries |> Seq.map (fun (e: Entry) -> EntryName.value e.Name) |> List.ofSeq
 
 [<Fact>]
 let ``refresh picks up entries created after the panel was loaded`` () =

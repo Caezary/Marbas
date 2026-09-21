@@ -13,6 +13,8 @@ let private at = Root.at
 let panel id (window: Window) =
     window.SubViews |> Seq.find (fun v -> v.Id = id)
 
+let panelView id window = panel id window :?> FilePanel.PanelView
+
 let panelTitle id window = (panel id window).Title
 
 let drawnText (view: View) =

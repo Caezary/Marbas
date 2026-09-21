@@ -47,7 +47,7 @@ let ``a finished copy lists the new entries in the other panel`` () =
 
     let updated = finished fs results (markedNotes state)
 
-    Assert.Contains("notes.txt", updated.Right.Entries |> List.map (_.Name >> EntryName.value))
+    Assert.Contains("notes.txt", updated.Right.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
 
 [<Fact>]
 let ``marks are dropped from the entries that were copied`` () =
@@ -68,7 +68,7 @@ let ``a mark stays on an entry whose copy failed`` () =
 
     let updated = finished fs results (markedNotes state)
 
-    Assert.Equal<string list>([ "notes.txt" ], selectedEntries updated.Left |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<string list>([ "notes.txt" ], selectedEntries updated.Left |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
 
 [<Fact>]
 let ``a transfer whose other panel vanished answers with an operation error`` () =

@@ -14,7 +14,7 @@ let private fp = FileSystemPath.create
 
 let private mockFs () = packed ()
 
-let private names panel = panel.Entries |> List.map (_.Name >> EntryName.value)
+let private names panel = panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 [<Fact>]
 let ``the targets of a panel inside an archive have no paths on disk`` () =

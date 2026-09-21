@@ -5,18 +5,18 @@ open Marbas.FileSystem.DirectoryListing
 open Marbas.State
 open Marbas.Ui.Format
 
-let private totalBytes (entries: Entry list) =
-    entries |> List.sumBy (fun e -> e.Size |> Option.defaultValue 0L)
+let private totalBytes (entries: Entry array) =
+    entries |> Array.sumBy (fun e -> e.Size |> Option.defaultValue 0L)
 
-let private counted noun (entries: Entry list) =
+let private counted noun (entries: Entry array) =
     match entries.Length with
     | 1 -> $"1 {noun}"
     | count -> $"{count} {noun}s"
 
-let private describeContents (entries: Entry list) =
-    let listed = entries |> List.filter (fun e -> e.Name <> ParentName)
-    let files = listed |> List.filter (fun e -> e.Kind = File)
-    let folders = listed |> List.filter (fun e -> e.Kind = Directory)
+let private describeContents (entries: Entry array) =
+    let listed = entries |> Array.filter (fun e -> e.Name <> ParentName)
+    let files = listed |> Array.filter (fun e -> e.Kind = File)
+    let folders = listed |> Array.filter (fun e -> e.Kind = Directory)
     let fileCount = counted "file" files
     let folderCount = counted "folder" folders
     let size = EntrySize.grouped (totalBytes files)

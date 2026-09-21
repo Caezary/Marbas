@@ -275,3 +275,59 @@ The change also reaches the batch path, which nobody had called a problem.
 dialog's own event loop, which is inside the effect being interpreted; before
 the queue that recursion went several dispatches deep, exactly as the review
 noted about `RunBatch` in tests. It is one queued message now.
+
+**P15.9 made a keystroke pay for what it changed.** `Runtime` paints after
+every message, and `FilePanel.render` rebuilt everything it could see: a
+formatted string per entry, a classified colour per entry, a fresh
+`ObservableCollection`, a `SetMark` per entry — for both panels, on every arrow
+key. The listing the review measured at 50,000 entries cost a quarter of a
+million string allocations before the cursor moved, and the panel nobody had
+touched paid the same (perf P1, A14).
+
+Those three passes depend on the entries, the marks and the width the rows are
+formatted to. `PanelRows.Painting` is that triple and `PanelRows.rows` answers
+`Kept` or `Rebuilt` by comparing it with what the panel last painted, which is
+why `PanelState.Entries` became an array: the comparison is by reference, and
+an array is what every other access to it already wanted — `cursorEntry`,
+`withCursorWithin`, `namesOf` were all reaching into an F# list by index.
+`Selected` is a set and rides along unchanged, so `{ p with Cursor = … }` keeps
+both references and a cursor move is `Kept`; a load, a mark, a sort or a resize
+is not. On `Kept` the panel moves `ListView.SelectedItem` and writes its footer,
+and nothing else.
+
+`PanelRows` is pure, so the decision has ordinary unit tests — the one that
+matters says a second array of the same entries is `Rebuilt`, which is what
+stops the comparison from quietly becoming structural. The counting renderer
+the task asked for turned out to be already on the screen: a rebuild replaces
+`ListView.Source`, so its identity across a dispatch *is* the count, and
+`Integration/Panels/PanelPaintingTests` asserts it for a cursor move, for the
+untouched panel while the other one opens a directory, and the other way round
+for a mark and for a directory opened. Both fail if the memo is switched off.
+
+`PanelState.Entries` reached further than the panel. `DirectoryListing.order`
+now takes any sequence and answers the array, which let the three
+`listForDisplay` functions keep their bodies and their `parent :: listed`, and
+moved the change to the tests' own name projections. Nothing in `Marbas` needed
+a conversion.
+
+The sort stopped recomputing its keys (perf P12). The comparator called
+`EntryName.extension` — a `Substring` — and a culture-aware compare on every
+one of the *n* log *n* comparisons; `order` now picks the projection its key
+needs, decorates each entry with `(group rank, key, name)` once and sorts on
+that. `Seq.sortWith` keeps the sort stable, which is not academic in a results
+panel, where two hits can carry the same display name and should stay in the
+order the walk found them.
+
+The held-modifier poll was the last of it (perf P14). A change fired every
+100 ms went through `Runtime.Refresh` — the whole screen, for two rows of
+labels — and `MainWindow` now hands `FunctionKeyBar.show` straight to
+`WatchModifiers`. That one has a test of its own, and it is the reason
+`PanelView` carries its last painting as a public member rather than a private
+field: "the panels were not painted again" is only observable from outside as
+the painting the panel still holds.
+
+What the task chose not to do: `PanelFooter.describe` still runs on every
+render, four passes over the listing, although it can only change when the
+entries, the marks or the search do. The plan asks for the footer on a
+cursor-only change and it is cheap next to what was removed; folding it into
+the memo is a line of work for whoever needs it.

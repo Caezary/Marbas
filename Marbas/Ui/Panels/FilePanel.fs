@@ -21,6 +21,8 @@ type PanelView() =
 
     member val RowColors: Attribute array = Array.empty with get, set
 
+    member val Painted: PanelRows.Painting option = None with get, set
+
 let listView (panel: View) =
     panel.SubViews
     |> Seq.pick (function
@@ -85,29 +87,33 @@ let private roomForTitle (panel: PanelView) taken =
     | 0 -> Unmeasured
     | width -> width - FrameAndCorners - taken
 
-let render (fs: IFileSystem) (taken: int) (state: AppState.PanelState) (panel: PanelView) =
-    panel.Title <- PanelTitle.describe fs (roomForTitle panel taken) state.Path state.Sort state.Hidden
-    let list = listView panel
-    let width = list.Viewport.Width
-
+let private fill (panel: PanelView) (list: ListView) (painting: PanelRows.Painting) =
     let rows =
-        if width > 0 then
-            state.Entries |> List.map (EntryFormat.format width)
+        if painting.Width > 0 then
+            painting.Entries |> Array.map (EntryFormat.format painting.Width)
         else
-            state.Entries |> List.map (fun e -> EntryName.value e.Name)
+            painting.Entries |> Array.map (fun e -> EntryName.value e.Name)
 
-    panel.RowColors <-
-        state.Entries
-        |> List.map (EntryColor.classify >> EntryColor.attribute)
-        |> Array.ofList
+    panel.RowColors <- painting.Entries |> Array.map (EntryColor.classify >> EntryColor.attribute)
 
     list.SetSource(ObservableCollection rows)
 
-    state.Entries
-    |> List.iteri (fun index entry -> list.Source.SetMark(index, state.Selected.Contains entry.Name))
+    painting.Entries
+    |> Array.iteri (fun index entry -> list.Source.SetMark(index, painting.Selected.Contains entry.Name))
 
-    if not rows.IsEmpty then
-        list.SelectedItem <- min state.Cursor (rows.Length - 1)
+let render (fs: IFileSystem) (taken: int) (state: AppState.PanelState) (panel: PanelView) =
+    panel.Title <- PanelTitle.describe fs (roomForTitle panel taken) state.Path state.Sort state.Hidden
+    let list = listView panel
+    let painting = PanelRows.painting list.Viewport.Width state
+
+    match PanelRows.rows panel.Painted painting with
+    | PanelRows.Kept -> ()
+    | PanelRows.Rebuilt -> fill panel list painting
+
+    panel.Painted <- Some painting
+
+    if painting.Entries.Length > 0 then
+        list.SelectedItem <- min state.Cursor (painting.Entries.Length - 1)
 
     (footer panel).Text <- PanelFooter.describe state
 

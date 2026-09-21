@@ -23,7 +23,7 @@ let private loaded side path fs state =
     loadPanel fs side path state |> Expect.ok
 
 let private names entries =
-    entries |> List.map (fun (e: Entry) -> EntryName.value e.Name)
+    entries |> Seq.map (fun (e: Entry) -> EntryName.value e.Name) |> List.ofSeq
 
 [<Fact>]
 let ``cursor is reset to zero after loading a panel`` () =

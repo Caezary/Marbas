@@ -121,6 +121,7 @@
         <Compile Include="Ui\Panels\SelectionSummary.fs" />
         <Compile Include="Ui\Panels\PanelFooter.fs" />
         <Compile Include="Ui\Panels\PanelTitle.fs" />
+        <Compile Include="Ui\Panels\PanelRows.fs" />
         <Compile Include="Ui\Panels\FilePanel.fs" />
         <Compile Include="Ui\Panels\PanelWiring.fs" />
     </ItemGroup>

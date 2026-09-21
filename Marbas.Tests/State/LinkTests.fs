@@ -14,8 +14,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private names (entries: DirectoryListing.Entry list) =
-    entries |> List.map (_.Name >> EntryName.value)
+let private names (entries: DirectoryListing.Entry seq) =
+    entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private mockFs () =
     let fs = MockFileSystem()

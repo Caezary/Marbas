@@ -54,7 +54,7 @@ let ``loading a panel fills its entries and leaves the other side untouched`` ()
 
     let loaded = loadPanel fs Right (fp (at "start")) state |> Expect.ok
 
-    Assert.Equal<string list>([ ".."; "docs"; "readme.txt" ], loaded.Right.Entries |> List.map (_.Name >> EntryName.value))
+    Assert.Equal<string list>([ ".."; "docs"; "readme.txt" ], loaded.Right.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
     Assert.Empty loaded.Left.Entries
 
 [<Fact>]

@@ -110,7 +110,7 @@ let private marked (fs: MockFileSystem) hits =
     showing fs hits |> update fs (PatternEntered(Select, everything)) |> _.State
 
 let private named state =
-    (activePanel state).Entries |> List.map (_.Name >> EntryName.value)
+    (activePanel state).Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private markedNames state =
     (activePanel state).Selected |> Set.map EntryName.value |> Set.toList
