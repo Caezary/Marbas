@@ -385,3 +385,40 @@ leaves the rows alone` assert the source's identity. All three fail if `add` or
 `walking` goes back to rebuilding. A real search was rendered to a screen to
 check the result: headers flush left, hits indented with size and date, and
 `Finished — 48 files, 0 directories` on the summary line.
+
+**P15.11 turned reading a name back into a lookup.** A results panel names each
+entry by its path — below the single root the search started from, or whole when
+there were several — and every operation has to read that name back into the hit
+it stands for. `SearchListing.hitFor` did it by spelling every hit's name again
+until one matched, and spelling a name is a `FindHit.spelled` and a
+`Path.Combine`. Since `AppState.hitAt` is asked once per marked entry, marking m
+entries in a panel of H hits cost m × H of them, and `operationPaths`,
+`keepUnfinished`, `transferSource` and `deleteScope` each pay it at least once —
+`deleteScope` twice (perf P3).
+
+`FoundEntries` now carries `Shown`, a `Map` from the display name to the hit,
+and `hitFor` is `Map.tryFind`. The review offered two ways round this and the
+plan wrote down the other one — the display name stored on `FindHit` — but that
+one puts a presentation concern into the walk, since `FileSearch` is where hits
+are made, and it still leaves `hitFor` scanning. The map is the review's own
+first suggestion and it is the one that makes an operation linear in the marks
+rather than in the hits. Measured over the real code, 20,000 marks read back
+against 20,000 hits: ten seconds before, nine milliseconds after.
+
+`displayName` moved out of `SearchListing` and into the `FindHit` module in
+`PanelLocation.fs`, next to the `FindHit.spelled` it is built on, and it takes
+the `FindGround` rather than the whole `FoundEntries` — which is what lets the
+index be built while the record it belongs to is being constructed.
+`FoundEntries.shownBy` is that one builder, so the map is never assembled by
+hand: `AppState.showResults` is the only place in the application that makes a
+`FoundEntries`, and nothing afterwards changes its hits, so the index cannot go
+stale. The display names are paths, so they are unique and the map loses no hit.
+
+`hitFor` and `hitAt` lost their `IFileSystem`: a lookup asks the disk nothing.
+
+The task's own "done when" was that the results-panel tests of P14.12 and P14.13
+pass unchanged, and they do — they never built a `FoundEntries` by hand, they go
+through `showResults` like the application. What is pinned on top of them is the
+index itself, in `PanelLocationTests`: the name a hit is shown under below one
+root, the whole path when there are several, and that `shownBy` keys every hit
+by the name it is shown under.

@@ -6,21 +6,9 @@ open FsToolkit.ErrorHandling
 open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
 
-let private relativeTo (fs: IFileSystem) (root: FileSystemPath) (full: FileSystemPath) =
-    FileSystemPath.pathAfter (FileSystemPath.platformOf fs) root full
-    |> Option.defaultValue (FileSystemPath.value full)
-
-let displayName (fs: IFileSystem) (found: FoundEntries) (hit: FindHit) =
-    let full = FindHit.spelled fs hit
-
-    match found.Ground.Roots with
-    | [ single ] -> relativeTo fs (PanelLocation.spelled fs single) full
-    | _ -> FileSystemPath.value full
-    |> EntryName.create
-
 let private shownAs (fs: IFileSystem) (found: FoundEntries) (hit: FindHit) =
     { hit.Entry with
-        Name = displayName fs found hit }
+        Name = FindHit.displayName fs found.Ground hit }
 
 let private prefixes (segments: EntryName list) =
     [ 1 .. segments.Length ] |> List.map (fun length -> List.truncate length segments)
@@ -60,8 +48,7 @@ let private surviving (fs: IFileSystem) (found: FoundEntries) =
     |> List.traverseResultM (fun hit -> survives hit |> Result.map (fun kept -> hit, kept))
     |> Result.map (List.filter snd >> List.map fst)
 
-let hitFor (fs: IFileSystem) (found: FoundEntries) (name: EntryName) =
-    found.Hits |> List.tryFind (fun hit -> displayName fs found hit = name)
+let hitFor (found: FoundEntries) (name: EntryName) = found.Shown |> Map.tryFind name
 
 let private parentEntry (fs: IFileSystem) (found: FoundEntries) =
     let holding = PanelLocation.holding fs found.Origin

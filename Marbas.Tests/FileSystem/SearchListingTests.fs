@@ -44,15 +44,18 @@ let private hitIn where name =
     { Location = OnDisk(fp (at where))
       Entry = entry name Plain }
 
-let private found roots hits =
+let private found fs roots hits =
+    let ground = { Roots = roots; OtherRoots = [] }
+
     { Query = query
-      Ground = { Roots = roots; OtherRoots = [] }
+      Ground = ground
       Hits = hits
+      Shown = FoundEntries.shownBy fs ground hits
       Origin = OnDisk(fp (at "start"))
       Returning = None }
 
-let private fromStart hits =
-    found [ OnDisk(fp (at "start")) ] hits
+let private fromStart fs hits =
+    found fs [ OnDisk(fp (at "start")) ] hits
 
 let private named (entries: Entry seq) =
     entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
@@ -69,7 +72,7 @@ let private damagedArchive error =
 let ``a hit is named by its path below where the search started`` () =
     let fs = mockFs ()
 
-    let entries = listed fs Concealed (fromStart [ hitIn "start/docs" "inner.txt" ])
+    let entries = listed fs Concealed (fromStart fs [ hitIn "start/docs" "inner.txt" ])
 
     Assert.Equal<string list>([ ".."; relative "docs/inner.txt" ], named entries)
 
@@ -77,7 +80,7 @@ let ``a hit is named by its path below where the search started`` () =
 let ``a hit in the directory the search started from is named by itself`` () =
     let fs = mockFs ()
 
-    let entries = listed fs Concealed (fromStart [ hitIn "start" "notes.txt" ])
+    let entries = listed fs Concealed (fromStart fs [ hitIn "start" "notes.txt" ])
 
     Assert.Equal<string list>([ ".."; "notes.txt" ], named entries)
 
@@ -87,7 +90,7 @@ let ``hits from several starting places keep their whole paths`` () =
     let places = [ OnDisk(fp (at "start")); OnDisk(fp (at "other")) ]
     let hits = [ hitIn "start" "notes.txt"; hitIn "other" "notes.txt" ]
 
-    let entries = listed fs Concealed (found places hits)
+    let entries = listed fs Concealed (found fs places hits)
 
     Assert.Equal<string list>([ ".."; at "other/notes.txt"; at "start/notes.txt" ], named entries)
 
@@ -96,7 +99,7 @@ let ``a hit that is gone by now is left out`` () =
     let fs = mockFs ()
     let hits = [ hitIn "start" "notes.txt"; hitIn "start" "gone.txt" ]
 
-    let entries = listed fs Concealed (fromStart hits)
+    let entries = listed fs Concealed (fromStart fs hits)
 
     Assert.Equal<string list>([ ".."; "notes.txt" ], named entries)
 
@@ -108,8 +111,8 @@ let ``a concealed hit is listed only where the panel shows hidden entries`` () =
         { Location = OnDisk(fp (at "start"))
           Entry = entry ".secret.txt" Hidden }
 
-    let concealing = listed fs Concealed (fromStart [ hidden ])
-    let showing = listed fs Shown (fromStart [ hidden ])
+    let concealing = listed fs Concealed (fromStart fs [ hidden ])
+    let showing = listed fs Shown (fromStart fs [ hidden ])
 
     Assert.Equal<string list>([ ".." ], named concealing)
     Assert.Equal<string list>([ ".."; ".secret.txt" ], named showing)
@@ -142,7 +145,7 @@ let ``a hit inside an archive stays while the archive still holds it`` () =
 
     let hits = [ archived "" "notes.txt" File; archived "" "docs" Directory; archived "docs" "inner.txt" File ]
 
-    let entries = listed fs Concealed (fromStart hits)
+    let entries = listed fs Concealed (fromStart fs hits)
 
     Assert.Equal<string list>(
         [ ".."; relative "data.zip/docs"; relative "data.zip/docs/inner.txt"; relative "data.zip/notes.txt" ],
@@ -156,7 +159,7 @@ let ``a hit inside an archive that no longer holds it is left out`` () =
     Archive.removeEntries fs Operations.unattended (fp (at "start/data.zip")) [ ArchivePath.tryCreate "notes.txt" |> Expect.some ]
     |> ignore
 
-    let entries = listed fs Concealed (fromStart [ archived "" "notes.txt" File; archived "docs" "inner.txt" File ])
+    let entries = listed fs Concealed (fromStart fs [ archived "" "notes.txt" File; archived "docs" "inner.txt" File ])
 
     Assert.Equal<string list>([ ".."; relative "data.zip/docs/inner.txt" ], named entries)
 
@@ -166,7 +169,7 @@ let ``a hit inside an archive whose index cannot be read is reported instead of 
     fs.AddFile(at "start/data.zip", MockFileData "not a zip")
 
     let listing =
-        SearchListing.listForDisplay fs SortOrder.byName Concealed (fromStart [ archived "" "notes.txt" File ])
+        SearchListing.listForDisplay fs SortOrder.byName Concealed (fromStart fs [ archived "" "notes.txt" File ])
 
     Assert.Equal(Some(fp (at "start/data.zip")), damagedArchive (Expect.error listing))
 
@@ -175,7 +178,7 @@ let ``the name a hit is shown under leads back to that hit`` () =
     let fs = mockFs ()
     let hit = hitIn "start/docs" "inner.txt"
 
-    let back = SearchListing.hitFor fs (fromStart [ hit ]) (EntryName.create (relative "docs/inner.txt"))
+    let back = SearchListing.hitFor (fromStart fs [ hit ]) (EntryName.create (relative "docs/inner.txt"))
 
     Assert.Equal(Some hit, back)
 
@@ -183,6 +186,6 @@ let ``the name a hit is shown under leads back to that hit`` () =
 let ``a name that stands for no hit leads nowhere`` () =
     let fs = mockFs ()
 
-    let back = SearchListing.hitFor fs (fromStart [ hitIn "start" "notes.txt" ]) ParentName
+    let back = SearchListing.hitFor (fromStart fs [ hitIn "start" "notes.txt" ]) ParentName
 
     Assert.Equal(None, back)

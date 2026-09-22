@@ -45,6 +45,7 @@ let private results roots =
         { Query = query
           Ground = { Roots = roots; OtherRoots = [] }
           Hits = []
+          Shown = Map.empty
           Origin = start
           Returning = None }
 

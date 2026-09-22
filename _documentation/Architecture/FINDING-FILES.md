@@ -226,8 +226,8 @@ for both.
 
 **A results panel is a third kind of place.** `PanelLocation` has
 `SearchResults` beside `OnDisk` and `InArchive`, carrying a `FoundEntries`: the
-query, the ground, the hits, the location the panel stood on before and the
-entry its cursor was on there. `FindHit` and `FindGround` moved into the same
+query, the ground, the hits, the hits again by the name each is shown under, the
+location the panel stood on before and the entry its cursor was on there. `FindHit` and `FindGround` moved into the same
 recursive definition, because a hit names a location and this location holds
 hits. `SearchListing` turns the hits into the entries a listing gives, so
 sorting, hidden entries, marking, the quick search, the colours and the footer
@@ -237,10 +237,24 @@ need nothing new.
 named by its path below where the search started — `App\Shell.fs` — or by its
 whole path when the scope had more than one start (`AllDrives`,
 `PathDirectories`, several marked directories), because two `README.md` from two
-directories must not look like one. `SearchListing.hitFor` reads the name back
-into the hit, so nothing is carried beside the listing: that is what gives `F3`
-its file, `Enter` its program or directory, and every operation its path. The
-title says `Find: *.jpg in C:\photos`.
+directories must not look like one. `FindHit.displayName` spells that name, and
+it sits next to `FindHit.spelled`, which it is built on, rather than in the
+listing that shows it. `SearchListing.hitFor` reads the name back into the hit,
+so nothing is carried beside the listing: that is what gives `F3` its file,
+`Enter` its program or directory, and every operation its path. The title says
+`Find: *.jpg in C:\photos`.
+
+**Reading a name back is a lookup, not a search.** `FoundEntries` carries
+`Shown`, a `Map` from the display name to the hit, built by
+`FoundEntries.shownBy` once where the results become a panel location and never
+rebuilt, since nothing changes the hits afterwards. `hitFor` is a lookup into
+it, so an operation is linear in what is marked rather than in what was found.
+It used to spell every hit's name again until one matched, which put a
+`FindHit.spelled` and a `Path.Combine` behind every hit for every marked entry:
+`operationPaths`, `keepUnfinished`, `transferSource` and `deleteScope` each
+walked that product at least once, `deleteScope` twice. Marking 20,000 hits and
+reading them all back took ten seconds; through the map it takes nine
+milliseconds.
 
 **Every listing asks what is still there.** A hit on disk survives while its
 path exists; a hit inside an archive survives while the archive's index still

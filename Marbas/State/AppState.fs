@@ -377,9 +377,9 @@ let operationTargets panel =
     | [] -> cursorEntry panel |> Option.filter selectable |> Option.toList
     | marked -> marked
 
-let private hitAt (fs: IFileSystem) panel (entry: Entry) =
+let private hitAt panel (entry: Entry) =
     match panel.Path with
-    | SearchResults found -> SearchListing.hitFor fs found entry.Name
+    | SearchResults found -> SearchListing.hitFor found entry.Name
     | _ -> None
 
 let private locationAbove (fs: IFileSystem) panel =
@@ -394,7 +394,7 @@ let private locationAbove (fs: IFileSystem) panel =
 let private locationOfName (fs: IFileSystem) panel (name: EntryName) =
     match panel.Path with
     | SearchResults found ->
-        SearchListing.hitFor fs found name
+        SearchListing.hitFor found name
         |> Option.bind (fun hit -> PanelLocation.into fs hit.Location hit.Entry.Name)
     | location -> PanelLocation.into fs location name
 
@@ -426,6 +426,7 @@ let showResults (fs: IFileSystem) side (results: FindResults) state =
         { Query = results.Query
           Ground = results.Ground
           Hits = results.Hits
+          Shown = FoundEntries.shownBy fs results.Ground results.Hits
           Origin = PanelLocation.origin previous.Path
           Returning = standingName previous }
 
@@ -465,7 +466,7 @@ let transferTarget (state: AppState) =
 let private entryPath (fs: IFileSystem) panel (entry: Entry) =
     match panel.Path with
     | SearchResults _ ->
-        hitAt fs panel entry
+        hitAt panel entry
         |> Option.filter (fun hit -> PanelLocation.directory hit.Location |> Option.isSome)
         |> Option.map (FindHit.spelled fs)
     | location -> PanelLocation.combine fs location (EntryName.value entry.Name)
@@ -500,7 +501,7 @@ let private groupedByPlace (fs: IFileSystem) (hits: FindHit list) =
         | Some archive -> FromArchive(archive, held |> List.choose placeOf |> List.map snd))
 
 let private fromResults (fs: IFileSystem) panel =
-    match operationTargets panel |> List.choose (hitAt fs panel) |> groupedByPlace fs with
+    match operationTargets panel |> List.choose (hitAt panel) |> groupedByPlace fs with
     | [] -> None
     | [ single ] -> Some single
     | several -> Some(FromPlaces several)
@@ -516,7 +517,7 @@ let transferSource (fs: IFileSystem) panel =
 let private entryInArchive (fs: IFileSystem) panel (entry: Entry) =
     match panel.Path with
     | SearchResults _ ->
-        hitAt fs panel entry
+        hitAt panel entry
         |> Option.bind (fun hit -> insideArchive hit.Location hit.Entry.Name)
     | location -> insideArchive location entry.Name
 
@@ -537,7 +538,7 @@ let cursorDirectory (fs: IFileSystem) panel =
     match panel.Path with
     | SearchResults _ ->
         cursorEntry panel
-        |> Option.bind (hitAt fs panel)
+        |> Option.bind (hitAt panel)
         |> Option.map (fun hit -> PanelLocation.holding fs hit.Location)
     | location -> PanelLocation.directory location
 

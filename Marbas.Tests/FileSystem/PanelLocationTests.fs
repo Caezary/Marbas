@@ -3,7 +3,9 @@ module Marbas.Tests.FileSystem.PanelLocationTests
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.DirectoryListing
 open Marbas.Tests
 
 let private at = Root.at
@@ -69,3 +71,47 @@ let ``a name in a location inside an archive is no path on disk`` () =
     let location = InArchive(archive, ArchivePath.root)
 
     Assert.Equal(None, PanelLocation.combine fs location "notes.txt")
+
+let private entry name =
+    { Name = EntryName.create name
+      Kind = File
+      Size = Some 2L
+      Measured = None
+      Modified = System.DateTimeOffset.MinValue
+      Visibility = Plain
+      Executability = NotExecutable
+      LinkTarget = None }
+
+let private hitIn where name =
+    { Location = OnDisk(fp (at where))
+      Entry = entry name }
+
+let private groundOf roots =
+    { Roots = roots |> List.map (fp >> OnDisk)
+      OtherRoots = [] }
+
+[<Fact>]
+let ``a hit found below the one root it was searched from is shown by its path under it`` () =
+    let ground = groundOf [ at "start" ]
+
+    let shown = FindHit.displayName fs ground (hitIn "start/docs" "inner.txt")
+
+    Assert.Equal(EntryName.create (Root.relative "docs/inner.txt"), shown)
+
+[<Fact>]
+let ``a hit found over several roots is shown by its whole path`` () =
+    let ground = groundOf [ at "start"; at "work" ]
+
+    let shown = FindHit.displayName fs ground (hitIn "start/docs" "inner.txt")
+
+    Assert.Equal(EntryName.create (at "start/docs/inner.txt"), shown)
+
+[<Fact>]
+let ``the hits are indexed by the name each is shown under`` () =
+    let ground = groundOf [ at "start" ]
+    let hit = hitIn "start/docs" "inner.txt"
+
+    let index = FoundEntries.shownBy fs ground [ hit; hitIn "start" "notes.txt" ]
+
+    Assert.Equal(Some hit, index |> Map.tryFind (EntryName.create (Root.relative "docs/inner.txt")))
+    Assert.Equal(2, index.Count)

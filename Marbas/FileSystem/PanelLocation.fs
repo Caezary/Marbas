@@ -19,6 +19,7 @@ and FoundEntries =
     { Query: FindQuery
       Ground: FindGround
       Hits: FindHit list
+      Shown: Map<EntryName, FindHit>
       Origin: PanelLocation
       Returning: EntryName option }
 
@@ -81,3 +82,22 @@ module FindHit =
         match hit.Location with
         | InArchive(archive, _) -> stands fs archive
         | _ -> stands fs (spelled fs hit)
+
+    let private under (fs: IFileSystem) (root: FileSystemPath) (full: FileSystemPath) =
+        FileSystemPath.pathAfter (FileSystemPath.platformOf fs) root full
+        |> Option.defaultValue (FileSystemPath.value full)
+
+    let displayName (fs: IFileSystem) (ground: FindGround) (hit: FindHit) =
+        let full = spelled fs hit
+
+        match ground.Roots with
+        | [ single ] -> under fs (PanelLocation.spelled fs single) full
+        | _ -> FileSystemPath.value full
+        |> EntryName.create
+
+module FoundEntries =
+
+    let shownBy (fs: IFileSystem) (ground: FindGround) (hits: FindHit list) =
+        hits
+        |> List.map (fun hit -> FindHit.displayName fs ground hit, hit)
+        |> Map.ofList
