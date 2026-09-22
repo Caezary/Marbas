@@ -80,6 +80,12 @@ entry. A directory that refuses to be read is counted and stepped over, the way
 concealed directory is not walked into either: a place the user cannot see is
 not a place they asked to search.
 
+**It reads a directory once, like every other walk.** The children come from
+`DirectoryListing.children`, so the name, kind, size, time, visibility and link
+target of an entry are what the one enumeration said; the walk asks the file
+system nothing else about an entry before deciding what to do with it. See
+[File operations](FILE-OPERATIONS.md), *Every walk reads a directory once*.
+
 **It is the one walk in the application allowed through a link.** With
 `FollowLinks` a directory link is entered, but only if the path it resolves to
 has not been entered before; the walk keeps the set of what it has entered, and
@@ -128,6 +134,16 @@ reader stands on it, which also keeps one entry in memory at a time rather than
 an index. An encrypted entry stops that archive and counts it skipped — asking
 for a password per archive would put a prompt between the user and a disk full
 of them — and an archive inside an archive is a hit by name and nothing more.
+
+**The scan is a function of its own, and it answers rather than sets flags.**
+`FileSearch.ArchiveScan.run` takes what it needs — the archive, its kind, the
+level to start from and how deep the walk goes — and one function to call per
+entry, which reports the hit and says whether to keep reading. It answers
+`Levels` with the directory levels it gathered, or `Locked`, `Cancelled` or
+`Unreadable`, and the caller decides what each of those means for its counters.
+The level bookkeeping — which implied directory exists and what time to show it
+under — lives in that module too. `run` used to hold all of it inline, over a
+`while` loop and two flags nobody outside the loop could read.
 
 ## The popup
 

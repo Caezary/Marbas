@@ -229,6 +229,15 @@ was listed. Only `/` separates a level from the next: a backslash is an
 ordinary character in a key, so an entry named `a\b.txt` is one entry and not
 two levels, which is what the format says whatever platform reads it.
 
+**"Below this level" is one rule, and the name says whether it is strict.**
+`ArchivePath.strictlyUnder` and `atOrUnder` take a level and the names an entry
+is keyed by, and read the same way `FileSystemPath.strictlyUnder` and
+`atOrUnder` do for a path on disk. The listing, the measurement and the search
+ask the strict one for the entries *below* a level; the extraction and the
+rewrite ask the other for the entries *at or below* a target, since a target
+names an entry as well as a level. There used to be three copies of the first
+and one of the second, all spelled out by hand.
+
 **One reader under both, with two openers chosen by kind.** `ArchiveReader` is
 where an archive is opened, and it opens one only for the length of a walk:
 `withItems` takes an `ArchiveStep` and calls it once per entry with an

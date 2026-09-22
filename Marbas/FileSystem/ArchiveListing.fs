@@ -6,10 +6,6 @@ open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
 
-let private below (level: EntryName list) (info: ArchiveEntryInfo) =
-    info.Segments.Length > level.Length
-    && List.truncate level.Length info.Segments = level
-
 let fileEntry (name: EntryName) (info: ArchiveEntryInfo) =
     { Name = name
       Kind = File
@@ -43,7 +39,7 @@ let private atLevel (level: ArchivePath) (items: ArchiveEntryInfo list) =
     let names = ArchivePath.segments level
 
     items
-    |> List.filter (below names)
+    |> List.filter (fun info -> ArchivePath.strictlyUnder level info.Segments)
     |> List.groupBy (fun info -> info.Segments |> List.item names.Length)
     |> List.map (fun (name, group) -> entryOf names.Length name group)
 

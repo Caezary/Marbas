@@ -10,6 +10,7 @@ open SharpCompress.Common
 open SharpCompress.Writers.SevenZip
 open FsToolkit.ErrorHandling
 open Marbas.Domain
+open Marbas.FileSystem.DirectoryListing
 
 module Archive =
 
@@ -44,9 +45,6 @@ module Archive =
             .GetRelativePath(FileSystemPath.value root, FileSystemPath.value path)
             .Replace(fs.Path.DirectorySeparatorChar, '/')
 
-    let private modifiedAt (fs: IFileSystem) (path: FileSystemPath) =
-        DateTimeOffset(fs.FileInfo.New(FileSystemPath.value path).LastWriteTime)
-
     let private reading (fs: IFileSystem) (path: FileSystemPath) =
         fs.File.OpenRead(FileSystemPath.value path)
 
@@ -62,9 +60,9 @@ module Archive =
         | Normal -> CompressionLevel.Optimal
         | Maximum -> CompressionLevel.SmallestSize
 
-    let private onDisk (fs: IFileSystem) (path: FileSystemPath) =
-        { Size = fs.FileInfo.New(FileSystemPath.value path).Length
-          Modified = known (modifiedAt fs path)
+    let private onDisk (fs: IFileSystem) (entry: Entry) (path: FileSystemPath) =
+        { Size = entry.Size |> Option.defaultValue 0L
+          Modified = known entry.Modified
           Content = fun () -> reading fs path }
 
     let private intoZip compression (password: ArchivePassword option) (stream: Stream) pack =
@@ -147,33 +145,28 @@ module Archive =
         | SevenZip -> intoSevenZip compression stream pack
         | uncreatable -> invalidOp $"no writer for {ArchiveKind.extension uncreatable}"
 
-    let rec private add (fs: IFileSystem) (control: Operations.BatchControl) sink root source =
+    let rec private adding (fs: IFileSystem) (control: Operations.BatchControl) sink root (child: Child) =
         if control.IsCancelled() then
-            Error(Operations.Cancelled source)
+            Error(Operations.Cancelled child.Path)
         else
-            match FileSystemPath.kind fs source with
-            | NoEntry -> Error(Operations.SourceNotFound source)
-            | DirectoryEntry when FileSystemPath.isLink fs source ->
-                control.Report source
-                attempt source (fun () -> sink.AddDirectory (entryName fs root source) None)
-            | DirectoryEntry ->
+            match child.Entry.Kind, child.Entry.LinkTarget with
+            | Directory, Some _ ->
+                control.Report child.Path
+                attempt child.Path (fun () -> sink.AddDirectory (entryName fs root child.Path) None)
+            | Directory, None ->
                 result {
-                    do! attempt source (fun () -> sink.AddDirectory (entryName fs root source) None)
-
-                    let! children =
-                        Operations.attempting source (fun () ->
-                            fs.Directory.EnumerateFileSystemEntries(FileSystemPath.value source)
-                            |> Seq.map FileSystemPath.create
-                            |> List.ofSeq)
-
-                    do!
-                        children
-                        |> List.traverseResultM (add fs control sink root)
-                        |> Result.ignore
+                    do! attempt child.Path (fun () -> sink.AddDirectory (entryName fs root child.Path) None)
+                    let! below = Operations.attempting child.Path (fun () -> children fs child.Path)
+                    do! below |> List.traverseResultM (adding fs control sink root) |> Result.ignore
                 }
-            | FileEntry ->
-                control.Report source
-                attempt source (fun () -> sink.AddFile (entryName fs root source) (onDisk fs source))
+            | File, _ ->
+                control.Report child.Path
+                attempt child.Path (fun () -> sink.AddFile (entryName fs root child.Path) (onDisk fs child.Entry child.Path))
+
+    let private add (fs: IFileSystem) control sink root source =
+        match entryAt fs source with
+        | None -> Error(Operations.SourceNotFound source)
+        | Some entry -> adding fs control sink root { Path = source; Entry = entry }
 
     let private packAll (fs: IFileSystem) control sources sink =
         sources
@@ -215,16 +208,11 @@ module Archive =
         sources
         |> List.exists (fun source -> FileSystemPath.atOrUnder platform source target)
 
-    let private underPath (target: ArchivePath) (segments: EntryName list) =
-        let names = ArchivePath.segments target
-
-        segments.Length >= names.Length && List.truncate names.Length segments = names
-
-    let private under (target: ArchivePath) (info: ArchiveEntryInfo) = underPath target info.Segments
+    let private under (target: ArchivePath) (info: ArchiveEntryInfo) =
+        ArchivePath.atOrUnder target info.Segments
 
     let private beneath (target: ArchivePath) (info: ArchiveEntryInfo) =
-        info.Segments
-        |> List.skip (max 0 (List.length (ArchivePath.segments target) - 1))
+        info.Segments |> List.skip (max 0 (ArchivePath.depth target - 1))
 
     let private landingPlace (fs: IFileSystem) (destination: FileSystemPath) segments =
         segments
@@ -400,7 +388,7 @@ module Archive =
             |> List.ofSeq
 
         held
-        |> List.filter (fun (_, segments) -> dropped |> List.exists (fun target -> underPath target segments))
+        |> List.filter (fun (_, segments) -> dropped |> List.exists (fun target -> ArchivePath.atOrUnder target segments))
         |> List.iter (fst >> zip.Delete)
 
         match work
@@ -527,7 +515,7 @@ module Archive =
                 |> eachTarget control archive (fun target ->
                     control.Report(ArchivePath.spelled fs archive target)
 
-                    if changing.Held |> List.exists (underPath target) then
+                    if changing.Held |> List.exists (ArchivePath.atOrUnder target) then
                         Ok()
                     else
                         Error(Operations.SourceNotFound(ArchivePath.spelled fs archive target)))

@@ -38,6 +38,19 @@ module ArchivePath =
     let child path (name: EntryName) =
         ArchivePath(segments path @ [ name ])
 
+    let depth path = segments path |> List.length
+
+    let private prefixed (level: EntryName list) (names: EntryName list) =
+        List.truncate level.Length names = level
+
+    let strictlyUnder (level: ArchivePath) (names: EntryName list) =
+        let above = segments level
+        names.Length > above.Length && prefixed above names
+
+    let atOrUnder (level: ArchivePath) (names: EntryName list) =
+        let above = segments level
+        names.Length >= above.Length && prefixed above names
+
     let name path = segments path |> List.tryLast
 
     let parent path =

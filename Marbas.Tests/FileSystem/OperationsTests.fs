@@ -713,3 +713,43 @@ let ``guarded turns work that throws into one failure named after the batch`` ()
     let failure = List.exactlyOne results
     Assert.Equal<ItemSource>(WholeBatch "Copying", failure.Source)
     Assert.Equal(BatchFailed "no writer for tar", Expect.error failure.Outcome)
+
+let private watched () =
+    let fs = Fakes.WalkWitness()
+    fs.AddDirectory(at "out")
+    fs.AddFile(at "work/notes.txt", MockFileData "notes")
+    fs.AddFile(at "work/docs/inner.txt", MockFileData "inner")
+    fs.AddFile(at "work/docs/deep/leaf.txt", MockFileData "leaf")
+    fs
+
+[<Fact>]
+let ``deleting a tree enumerates each directory once`` () =
+    let fs = watched ()
+
+    delete fs (fp (at "work")) |> Expect.ok
+
+    Assert.Equal(3, fs.Enumerations)
+
+[<Fact>]
+let ``deleting a tree asks nothing about an entry it enumerated`` () =
+    let fs = watched ()
+
+    delete fs (fp (at "work")) |> Expect.ok
+
+    Assert.Equal(0, fs.AskedAbout(at "work/docs/inner.txt"))
+
+[<Fact>]
+let ``copying a tree enumerates each directory once`` () =
+    let fs = watched ()
+
+    copy fs unattended (fp (at "out")) (fp (at "work")) |> Expect.ok
+
+    Assert.Equal(3, fs.Enumerations)
+
+[<Fact>]
+let ``copying a tree asks nothing about an entry it enumerated`` () =
+    let fs = watched ()
+
+    copy fs unattended (fp (at "out")) (fp (at "work")) |> Expect.ok
+
+    Assert.Equal(0, fs.AskedAbout(at "work/docs/inner.txt"))

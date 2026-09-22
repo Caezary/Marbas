@@ -27,6 +27,23 @@ keeping a copy. *Listing* a directory goes through it too, which is what makes
 a directory the user may not read fail its own item and leave the rest of the
 batch to run; before, it escaped the batch entirely.
 
+**Every walk reads a directory once and carries what it read.**
+`DirectoryListing.children` enumerates a directory as `IFileSystemInfo`s and
+answers a `Child` per entry — where it is and the `Entry` a listing would show
+for it, kind, size, time, attributes and link target all from that one read.
+`Operations.deleteTree`, `copyTo` and `wipe`, `DirectoryMeasure`, `FileSearch`
+and `Archive.add` all walk over it, and none of them asks the file system
+anything more about an entry it has already enumerated. They used to: every one
+of them enumerated *paths* and then asked again per entry — two `Exists` calls
+for the kind, a `FileInfo` for the link target, another for the length — three
+to four system calls for every file in the tree, each one a round trip on a
+network share. `DirectoryListing.entryAt` is the same answer for a single path,
+and it is what `delete`, `wipe` and `Archive.add` ask at the root of a walk,
+where there is nothing enumerated yet. Measured over a mock tree of 20,000
+files in 200 directories, measuring cost 700–800 ms with a stat per entry and
+400–480 ms from the one enumeration; a real disk charges far more for the
+difference than a mock does.
+
 **A batch that raises anyway still closes its window.** `Operations.guarded`
 wraps the work a batch runs and turns anything that escapes into one
 `ItemResult` whose source is the batch itself (`WholeBatch`), carrying

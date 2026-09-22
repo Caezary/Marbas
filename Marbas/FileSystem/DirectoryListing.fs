@@ -31,40 +31,72 @@ let mapException path (ex: exn) =
     | :? UnauthorizedAccessException -> AccessDenied path
     | _ -> ListingFailed(path, ex.Message)
 
-let directoryEntry (info: IDirectoryInfo) =
+let private lengthOf (info: IFileSystemInfo) =
+    match info with
+    | :? IFileInfo as file -> Some file.Length
+    | _ -> None
+
+let private kindOf (info: IFileSystemInfo) =
+    if info.Attributes.HasFlag IO.FileAttributes.Directory then
+        Directory
+    else
+        File
+
+let entryOf (info: IFileSystemInfo) =
     let name = EntryName.create info.Name
 
-    { Name = name
-      Kind = Directory
-      Size = None
-      Measured = None
-      Modified = DateTimeOffset info.LastWriteTime
-      Visibility = EntryVisibility.classify name info.Attributes
-      Executability = NotExecutable
-      LinkTarget = FileSystemPath.linkTargetOf info }
+    match kindOf info with
+    | Directory ->
+        { Name = name
+          Kind = Directory
+          Size = None
+          Measured = None
+          Modified = DateTimeOffset info.LastWriteTime
+          Visibility = EntryVisibility.classify name info.Attributes
+          Executability = NotExecutable
+          LinkTarget = FileSystemPath.linkTargetOf info }
+    | File ->
+        { Name = name
+          Kind = File
+          Size = lengthOf info
+          Measured = None
+          Modified = DateTimeOffset info.LastWriteTime
+          Visibility = EntryVisibility.classify name info.Attributes
+          Executability = Executability.classify name info.UnixFileMode
+          LinkTarget = FileSystemPath.linkTargetOf info }
 
-let fileEntry (info: IFileInfo) =
-    let name = EntryName.create info.Name
+type Child =
+    { Path: FileSystemPath
+      Entry: Entry }
 
-    { Name = name
-      Kind = File
-      Size = Some info.Length
-      Measured = None
-      Modified = DateTimeOffset info.LastWriteTime
-      Visibility = EntryVisibility.classify name info.Attributes
-      Executability = Executability.classify name info.UnixFileMode
-      LinkTarget = FileSystemPath.linkTargetOf info }
+let private childOf (info: IFileSystemInfo) =
+    { Path = FileSystemPath.create info.FullName
+      Entry = entryOf info }
+
+let children (fs: IFileSystem) (path: FileSystemPath) =
+    fs.DirectoryInfo.New(FileSystemPath.value path).EnumerateFileSystemInfos()
+    |> Seq.map childOf
+    |> List.ofSeq
+
+let entryAt (fs: IFileSystem) (path: FileSystemPath) =
+    let raw = FileSystemPath.value path
+    let file = fs.FileInfo.New raw
+
+    if file.Exists then
+        Some(entryOf file)
+    else
+        let directory = fs.DirectoryInfo.New raw
+
+        if directory.Exists then Some(entryOf directory) else None
 
 let read (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingError> =
     try
-        let dir = fs.DirectoryInfo.New(FileSystemPath.value path)
+        let directory = fs.DirectoryInfo.New(FileSystemPath.value path)
 
-        if not dir.Exists then
+        if not directory.Exists then
             Error(DirectoryNotFound path)
         else
-            let directories = dir.EnumerateDirectories() |> Seq.map directoryEntry
-            let files = dir.EnumerateFiles() |> Seq.map fileEntry
-            Ok(Seq.append directories files |> List.ofSeq)
+            Ok(directory.EnumerateFileSystemInfos() |> Seq.map entryOf |> List.ofSeq)
     with ex ->
         Error(mapException path ex)
 

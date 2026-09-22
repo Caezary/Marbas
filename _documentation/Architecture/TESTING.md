@@ -264,6 +264,16 @@ archive that cannot be finished is deleted rather than left unreadable. Anything
 `MockFileData` *can* express belongs on the file: these two exist because
 nothing else reaches those code paths.
 
+**What a walk asks the file system is counted, not read off the code.**
+`Fakes.WalkWitness` is a `MockFileSystem` whose `File`, `Directory`, `FileInfo`
+and `DirectoryInfo` count what they are asked about: `Enumerations` says how
+many times a directory was enumerated, and `AskedAbout` how many times a path
+was probed — `Exists`, or an info built for it. It stops counting while a mock
+operation is carrying itself out, and while an enumeration is building the
+infos it answers with, so what is left is what Marbas itself asked. That is
+what pins the promise of P15.14 for all six walks: a tree of three directories
+is enumerated three times, and nothing is asked about a file inside it.
+
 A UI test that needs the two panels on *different* directories gets there the
 way a user would: `press list KeyMap.rightRootKey` with a `ChooseOption`
 that answers with the wanted path. No test reaches into the state to set it.

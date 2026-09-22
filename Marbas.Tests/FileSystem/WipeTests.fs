@@ -193,3 +193,26 @@ let ``wipeAll wipes every source it is given and stops where it is cancelled`` (
         wiped |> List.map _.Source
     )
     Assert.True(fs.File.Exists(at "data/b.txt"))
+
+let private watched () =
+    let fs = Fakes.WalkWitness()
+    fs.AddFile(at "work/notes.txt", MockFileData "notes")
+    fs.AddFile(at "work/docs/inner.txt", MockFileData "inner")
+    fs.AddFile(at "work/docs/deep/leaf.txt", MockFileData "leaf")
+    fs
+
+[<Fact>]
+let ``wiping a tree enumerates each directory once`` () =
+    let fs = watched ()
+
+    wipe fs unattended (fp (at "work")) |> Expect.ok
+
+    Assert.Equal(3, fs.Enumerations)
+
+[<Fact>]
+let ``wiping a tree asks nothing about an entry it enumerated`` () =
+    let fs = watched ()
+
+    wipe fs unattended (fp (at "work")) |> Expect.ok
+
+    Assert.Equal(0, fs.AskedAbout(at "work/docs/inner.txt"))

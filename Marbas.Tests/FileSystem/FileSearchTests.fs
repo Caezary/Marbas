@@ -284,3 +284,26 @@ let ``a walk of the path directories does not descend`` () =
     let hits = hitsWithin fs (queryFor "*.txt" PathDirectories) ground
 
     Assert.Equal<string list>([ at "bin/tool.txt" ], hits)
+
+let private watched () =
+    let fs = Fakes.WalkWitness()
+    fs.AddFile(at "work/notes.txt", MockFileData "notes")
+    fs.AddFile(at "work/docs/inner.txt", MockFileData "inner")
+    fs.AddFile(at "work/docs/deep/leaf.txt", MockFileData "leaf")
+    fs
+
+[<Fact>]
+let ``a search enumerates each directory once`` () =
+    let fs = watched ()
+
+    found fs (queryFor "*.txt" FromDirectory) [ fp (at "work") ] |> ignore
+
+    Assert.Equal(3, fs.Enumerations)
+
+[<Fact>]
+let ``a search asks nothing about an entry it enumerated`` () =
+    let fs = watched ()
+
+    found fs (queryFor "*.txt" FromDirectory) [ fp (at "work") ] |> ignore
+
+    Assert.Equal(0, fs.AskedAbout(at "work/docs/inner.txt"))

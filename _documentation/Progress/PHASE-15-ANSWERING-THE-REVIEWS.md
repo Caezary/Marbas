@@ -523,3 +523,65 @@ costs 80–100 ms, and every level change after it costs 4–8 ms, `needsPasswor
 about 1 ms and `heldIn` about 0.2 ms — each of which used to be another 80–100
 ms. What still opens the file per target is extraction, and it should: content
 is only ever handed out inside a walk, and the streaming reader cannot go back.
+
+**P15.14 made every walk read a directory once and carry what it read.** Six
+walks went over a tree — `Operations.deleteTree`, `copyTo` and `wipe`,
+`DirectoryMeasure`, `FileSearch` and `Archive.add` — and every one of them
+enumerated *paths* and then asked the file system again about each entry: two
+`Exists` calls for the kind, a `FileInfo` for the link target, another for the
+length. Three to four system calls per file, where the directory read had
+already carried all of it, and on a network share each one is a round trip
+(perf P6). `DirectoryListing.read` was the only walk doing it right, and it did
+it with two enumerations of its own.
+
+`DirectoryListing.children` is now the one enumeration: `EnumerateFileSystemInfos`
+once, and a `Child` per entry — where it is and the `Entry` a listing would
+show for it, built by `entryOf` from the `IFileSystemInfo` the enumeration
+already handed over. `entryAt` is the same answer for a single path, for the
+root of a walk where nothing has been enumerated yet, and it replaced
+`FileSearch.entryOf` and the `kind`-then-`isLink` pairs at the head of `delete`,
+`wipe`, `copyTo` and `Archive.add`. `read` builds on `entryOf` too, so what a
+panel shows and what a walk decides on come from one function rather than two
+that could drift (Q5, TD-019). Each walk then matches on
+`child.Entry.Kind, child.Entry.LinkTarget`, which is the same two questions it
+used to ask the disk, asked of a value.
+
+What pins it is `Fakes.WalkWitness`, a `MockFileSystem` that counts
+enumerations and counts what each path was probed about — stopping while a mock
+operation carries itself out, and while an enumeration builds the infos it
+answers with, so what is left is what Marbas itself asked. Twelve tests, two
+per walk: a tree of three directories is enumerated three times, and nothing is
+asked about a file inside it. Measured over a mock tree of 20,000 files in 200
+directories, measuring cost 700–800 ms with a stat per entry and 400–480 ms
+from the one enumeration.
+
+`Fakes.UnreadableDirectory` had to learn the new road: it denied
+`MockDirectory.EnumerateFileSystemEntries`, which nothing walks through any
+more, so a directory the user may not read was suddenly readable. It now denies
+`MockDirectoryInfo.EnumerateFileSystemInfos` as well, and the four tests that
+depend on a refusing directory pass unchanged.
+
+The other half of the task was Q10, the 200-line `FileSearch.run`.
+`ArchiveScan` is now a private module with the archive scan and the level
+bookkeeping in it: `run` takes a `Scan` — the archive, its kind, the level and
+how deep the walk goes — and one function called per entry, which reports the
+hit and answers whether to keep reading. It answers `Levels` with the directory
+levels it gathered, or `Locked`, `Cancelled` or `Unreadable`; the caller reads
+that and decides what it means for `skipped` and `stopped`. The `while` loop
+with its `locked` and `running` flags is gone, and so is the last boolean
+carried as a field: how deep a walk goes is a `WalkDepth`, `ThisLevelOnly` or
+`EveryLevel`, decided once by `depthOf`.
+
+One behaviour went quietly with it. `consider` used to stat the child it had
+just enumerated and count it skipped when the stat answered nothing — an entry
+deleted between the enumeration and the stat. There is no stat to fail any
+more, so such an entry is considered on what the enumeration said. That is the
+same race every walk in the application already accepts, and one fewer syscall
+to lose it in.
+
+The third copy the task named went with them: `below`, "is this entry under
+that level", written out by hand in `ArchiveListing`, `DirectoryMeasure` and
+`FileSearch`, with `Archive.underPath` as the at-or-below variant.
+`ArchivePath.strictlyUnder` and `atOrUnder` are the one rule now, named the way
+`FileSystemPath`'s pair was named in P15.2, so whether the boundary is strict is
+read off the call rather than out of the body.

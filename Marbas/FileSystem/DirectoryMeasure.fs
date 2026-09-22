@@ -3,6 +3,7 @@ namespace Marbas.FileSystem
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem.Operations
+open Marbas.FileSystem.DirectoryListing
 
 type MeasureTarget =
     { Name: EntryName
@@ -14,14 +15,6 @@ type Measurement =
 
 module DirectoryMeasure =
 
-    let private lengthOf (fs: IFileSystem) (path: FileSystemPath) =
-        (fs.FileInfo.New(FileSystemPath.value path)).Length
-
-    let private entriesUnder (fs: IFileSystem) (path: FileSystemPath) =
-        fs.Directory.EnumerateFileSystemEntries(FileSystemPath.value path)
-        |> Seq.map FileSystemPath.create
-        |> List.ofSeq
-
     let rec private walk (fs: IFileSystem) (control: BatchControl) (path: FileSystemPath) =
         if control.IsCancelled() then
             AtLeast 0L
@@ -29,22 +22,15 @@ module DirectoryMeasure =
             control.Report path
 
             try
-                entriesUnder fs path |> List.map (sized fs control) |> DirectorySize.total
+                children fs path |> List.map (sized fs control) |> DirectorySize.total
             with _ ->
                 AtLeast 0L
 
-    and private sized (fs: IFileSystem) control (path: FileSystemPath) =
-        match FileSystemPath.kind fs path with
-        | FileEntry -> Exact(lengthOf fs path)
-        | DirectoryEntry when FileSystemPath.isLink fs path -> DirectorySize.nothingCounted
-        | DirectoryEntry -> walk fs control path
-        | NoEntry -> DirectorySize.nothingCounted
-
-    let private below (level: ArchivePath) (info: ArchiveEntryInfo) =
-        let names = ArchivePath.segments level
-
-        info.Segments.Length > names.Length
-        && List.truncate names.Length info.Segments = names
+    and private sized (fs: IFileSystem) control (child: Child) =
+        match child.Entry.Kind, child.Entry.LinkTarget with
+        | File, _ -> Exact(child.Entry.Size |> Option.defaultValue 0L)
+        | Directory, Some _ -> DirectorySize.nothingCounted
+        | Directory, None -> walk fs control child.Path
 
     let private directoryOf (info: ArchiveEntryInfo) =
         if ArchiveEntryInfo.isDirectory info then
@@ -53,7 +39,7 @@ module DirectoryMeasure =
             info.Segments |> List.truncate (info.Segments.Length - 1)
 
     let private levelsBelow (level: ArchivePath) items =
-        let depth = ArchivePath.segments level |> List.length
+        let depth = ArchivePath.depth level
 
         items
         |> List.collect (fun info ->
@@ -64,7 +50,7 @@ module DirectoryMeasure =
         |> List.map (List.fold ArchivePath.child ArchivePath.root)
 
     let private scan (fs: IFileSystem) (control: BatchControl) archive level indexed =
-        let items = indexed |> List.filter (below level)
+        let items = indexed |> List.filter (fun info -> ArchivePath.strictlyUnder level info.Segments)
 
         levelsBelow level items
         |> List.iter (ArchivePath.spelled fs archive >> control.Report)

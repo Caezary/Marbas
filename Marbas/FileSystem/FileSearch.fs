@@ -19,45 +19,102 @@ type FindOutcome =
 
 type FindReport = { Hit: FindHit; Counts: FindCounts }
 
-let private childrenOf (fs: IFileSystem) (path: FileSystemPath) =
-    try
-        fs.Directory.EnumerateFileSystemEntries(FileSystemPath.value path)
-        |> Seq.map FileSystemPath.create
-        |> List.ofSeq
-        |> Some
-    with _ ->
-        None
+type private WalkDepth =
+    | ThisLevelOnly
+    | EveryLevel
 
-let private entryOf (fs: IFileSystem) (path: FileSystemPath) =
-    try
-        match FileSystemPath.kind fs path with
-        | DirectoryEntry -> Some(directoryEntry (fs.DirectoryInfo.New(FileSystemPath.value path)))
-        | FileEntry -> Some(fileEntry (fs.FileInfo.New(FileSystemPath.value path)))
-        | NoEntry -> None
-    with _ ->
-        None
-
-let private walksDeep query =
+let private depthOf query =
     match query.Scope with
     | DirectoryOnly
-    | PathDirectories -> false
-    | _ -> true
+    | PathDirectories -> ThisLevelOnly
+    | _ -> EveryLevel
 
 let private pathOf segments =
     segments |> List.fold ArchivePath.child ArchivePath.root
 
-let private below (level: EntryName list) (info: ArchiveEntryInfo) =
-    info.Segments.Length > level.Length
-    && List.truncate level.Length info.Segments = level
-
-let private deepestDirectory (info: ArchiveEntryInfo) =
-    if ArchiveEntryInfo.isDirectory info then
-        info.Segments.Length
-    else
-        info.Segments.Length - 1
-
 let private parentOf segments =
     segments |> List.take (List.length segments - 1) |> pathOf
+
+module private ArchiveScan =
+
+    type Scan =
+        { Archive: FileSystemPath
+          Kind: ArchiveKind
+          Level: ArchivePath
+          Depth: WalkDepth }
+
+    type Outcome =
+        | Levels of (EntryName list * DateTimeOffset) list
+        | Locked
+        | Cancelled
+        | Unreadable
+
+    type private Times = Dictionary<EntryName list, DateTimeOffset>
+
+    let private deepestDirectory (info: ArchiveEntryInfo) =
+        if ArchiveEntryInfo.isDirectory info then
+            info.Segments.Length
+        else
+            info.Segments.Length - 1
+
+    let private wantedLevel (scan: Scan) (key: EntryName list) =
+        scan.Depth = EveryLevel || key.Length = ArchivePath.depth scan.Level + 1
+
+    let private note (scan: Scan) (seen: Times) (stored: Times) (info: ArchiveEntryInfo) =
+        for taken in ArchivePath.depth scan.Level + 1 .. deepestDirectory info do
+            let key = List.truncate taken info.Segments
+
+            if wantedLevel scan key then
+                match seen.TryGetValue key with
+                | true, known when known >= info.Modified -> ()
+                | _ -> seen[key] <- info.Modified
+
+                if ArchiveEntryInfo.isDirectory info && info.Segments = key then
+                    stored[key] <- info.Modified
+
+    let private noted (seen: Times) (stored: Times) =
+        seen
+        |> Seq.map (fun level ->
+            match stored.TryGetValue level.Key with
+            | true, modified -> level.Key, modified
+            | _ -> level.Key, level.Value)
+        |> List.ofSeq
+
+    let private stepping (control: BatchControl) scan seen stored (locked: bool ref) (cancelled: bool ref) onFile =
+        ArchiveStep(fun item ->
+            let info = item.Info
+
+            if ArchiveEntryInfo.isEncrypted info then
+                locked.Value <- true
+                StopReading
+            elif control.IsCancelled() then
+                cancelled.Value <- true
+                StopReading
+            elif ArchivePath.strictlyUnder scan.Level info.Segments then
+                note scan seen stored info
+                onFile info item.WriteTo
+            else
+                KeepReading)
+
+    let run (fs: IFileSystem) (control: BatchControl) (scan: Scan) onFile =
+        let seen = Times()
+        let stored = Times()
+        let locked = ref false
+        let cancelled = ref false
+
+        try
+            ArchiveReader.withItems
+                fs
+                None
+                scan.Kind
+                scan.Archive
+                (stepping control scan seen stored locked cancelled onFile)
+
+            if locked.Value then Locked
+            elif cancelled.Value then Cancelled
+            else Levels(noted seen stored)
+        with _ ->
+            Unreadable
 
 let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (query: FindQuery) (ground: FindGround) =
     let platform = FileSystemPath.platformOf fs
@@ -65,7 +122,8 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
 
     let crosses path =
         ground.OtherRoots |> List.exists (fun root -> FileSystemPath.sameEntry platform root path)
-    let deep = walksDeep query
+
+    let depth = depthOf query
     let wantsDirectories = FindQuery.targets query = FilesAndDirectories
     let mutable files = 0
     let mutable directories = 0
@@ -119,7 +177,8 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
         ContentMatch.inStream control search buffer
 
     let fileInside archive (level: EntryName list) (info: ArchiveEntryInfo) writeTo =
-        if not (ArchiveEntryInfo.isDirectory info) && (deep || info.Segments.Length = level.Length + 1) then
+        if not (ArchiveEntryInfo.isDirectory info)
+           && (depth = EveryLevel || info.Segments.Length = level.Length + 1) then
             let entry = ArchiveListing.fileEntry (List.last info.Segments) info
             let location = InArchive(archive, parentOf info.Segments)
 
@@ -128,17 +187,7 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
                 | None -> hit location entry
                 | Some search -> byAnswer location entry (contentOf writeTo search)
 
-    let noteLevels (levels: Dictionary<EntryName list, DateTimeOffset>) stored (info: ArchiveEntryInfo) (level: EntryName list) =
-        for depth in level.Length + 1 .. deepestDirectory info do
-            let key = List.truncate depth info.Segments
-
-            if deep || key.Length = level.Length + 1 then
-                match levels.TryGetValue key with
-                | true, known when known >= info.Modified -> ()
-                | _ -> levels[key] <- info.Modified
-
-                if ArchiveEntryInfo.isDirectory info && info.Segments = key then
-                    (stored: Dictionary<EntryName list, DateTimeOffset>)[key] <- info.Modified
+        if stopped then StopReading else KeepReading
 
     let rec eachDirectory archive candidates =
         match candidates with
@@ -155,43 +204,23 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
                 if not stopped then
                     eachDirectory archive rest
 
-    let stepping archive (names: EntryName list) levels stored (locked: bool ref) =
-        ArchiveStep(fun item ->
-            if ArchiveEntryInfo.isEncrypted item.Info then
-                locked.Value <- true
-                StopReading
-            elif control.IsCancelled() then
-                stopped <- true
-                StopReading
-            else
-                if below names item.Info then
-                    noteLevels levels stored item.Info names
-                    fileInside archive names item.Info item.WriteTo
-
-                if stopped then StopReading else KeepReading)
-
     let scanArchive archive level kind =
         control.Report archive
         let names = ArchivePath.segments level
-        let levels = Dictionary<EntryName list, DateTimeOffset>()
-        let stored = Dictionary<EntryName list, DateTimeOffset>()
-        let locked = ref false
 
-        try
-            ArchiveReader.withItems fs None kind archive (stepping archive names levels stored locked)
+        let scan: ArchiveScan.Scan =
+            { Archive = archive
+              Kind = kind
+              Level = level
+              Depth = depth }
 
-            if locked.Value then
-                skipped <- skipped + 1
-            elif wantsDirectories && not stopped then
-                levels
-                |> Seq.map (fun level ->
-                    match stored.TryGetValue level.Key with
-                    | true, modified -> level.Key, modified
-                    | _ -> level.Key, level.Value)
-                |> List.ofSeq
-                |> eachDirectory archive
-        with _ ->
-            skipped <- skipped + 1
+        match ArchiveScan.run fs control scan (fileInside archive names) with
+        | ArchiveScan.Cancelled -> stopped <- true
+        | ArchiveScan.Locked
+        | ArchiveScan.Unreadable -> skipped <- skipped + 1
+        | ArchiveScan.Levels found ->
+            if wantsDirectories && not stopped then
+                eachDirectory archive found
 
     let openArchive path =
         match ArchiveReader.kindOf fs path with
@@ -204,12 +233,12 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
         else
             control.Report directory
 
-            match childrenOf fs directory with
-            | None -> skipped <- skipped + 1
-            | Some children -> each directory children
+            match Operations.attempting directory (fun () -> children fs directory) with
+            | Error _ -> skipped <- skipped + 1
+            | Ok below -> each directory below
 
-    and each directory children =
-        match children with
+    and each directory below =
+        match below with
         | [] -> ()
         | child :: rest ->
             if control.IsCancelled() then
@@ -220,24 +249,26 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
                 if not stopped then
                     each directory rest
 
-    and consider directory child =
-        match entryOf fs child with
-        | None -> skipped <- skipped + 1
-        | Some entry when not (HiddenEntries.admits query.Hidden entry.Visibility) -> ()
-        | Some entry ->
+    and consider directory (child: Child) =
+        let entry = child.Entry
+
+        if HiddenEntries.admits query.Hidden entry.Visibility then
             match entry.Kind with
             | File ->
                 if wanted entry then
-                    considerFile directory child entry
+                    considerFile directory child.Path entry
 
-                if deep && query.Archives = SearchArchives then
-                    openArchive child
+                if depth = EveryLevel && query.Archives = SearchArchives then
+                    openArchive child.Path
             | Directory ->
                 if wanted entry && wantsDirectories then
                     hit (OnDisk directory) entry
 
-                if deep && follows entry && not (crosses child) && entered (identityOf entry child) then
-                    walk child
+                if depth = EveryLevel
+                   && follows entry
+                   && not (crosses child.Path)
+                   && entered (identityOf entry child.Path) then
+                    walk child.Path
 
     let rec start places =
         match places with

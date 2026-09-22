@@ -365,3 +365,27 @@ let ``an archive that cannot be finished is not left behind`` () =
     |> ignore
 
     Assert.False(fs.File.Exists target)
+
+let private watched () =
+    let fs = Fakes.WalkWitness()
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "work/notes.txt", MockFileData "notes")
+    fs.AddFile(at "work/docs/inner.txt", MockFileData "inner")
+    fs.AddFile(at "work/docs/deep/leaf.txt", MockFileData "leaf")
+    fs
+
+[<Fact>]
+let ``packing a tree enumerates each directory once`` () =
+    let fs = watched ()
+
+    Archive.write fs unattended (requested zip target) [ fp (at "work") ] |> ignore
+
+    Assert.Equal(3, fs.Enumerations)
+
+[<Fact>]
+let ``packing a tree asks nothing about an entry it enumerated`` () =
+    let fs = watched ()
+
+    Archive.write fs unattended (requested zip target) [ fp (at "work") ] |> ignore
+
+    Assert.Equal(0, fs.AskedAbout(at "work/docs/inner.txt"))

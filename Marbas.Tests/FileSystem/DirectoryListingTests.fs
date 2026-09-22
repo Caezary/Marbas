@@ -114,3 +114,55 @@ let ``unexpected failures map to an error value`` () =
     let listingError = mapException (fp (at "bad")) failure
 
     Assert.Equal(ListingFailed(fp (at "bad"), "boom"), listingError)
+
+let private walked () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "data/docs")
+    fs.AddFile(at "data/notes.txt", MockFileData "hello")
+    fs
+
+let private spelled (children: Child list) =
+    children
+    |> List.map (fun child -> FileSystemPath.value child.Path)
+    |> List.sort
+    |> String.concat ","
+
+[<Fact>]
+let ``a child knows both where it is and what it is`` () =
+    let fs = walked ()
+
+    let walk = children fs (fp (at "data"))
+
+    Assert.Equal($"""{at "data/docs"},{at "data/notes.txt"}""", spelled walk)
+
+[<Fact>]
+let ``a child carries what one enumeration already said`` () =
+    let fs = walked ()
+
+    let notes = children fs (fp (at "data")) |> List.find (fun child -> child.Entry.Kind = File)
+
+    Assert.Equal(Some 5L, notes.Entry.Size)
+
+[<Fact>]
+let ``an entry is answered for the path it stands at`` () =
+    let fs = walked ()
+
+    let entry = entryAt fs (fp (at "data/notes.txt")) |> Expect.some
+
+    Assert.Equal(File, entry.Kind)
+
+[<Fact>]
+let ``a directory is answered for the path it stands at`` () =
+    let fs = walked ()
+
+    let entry = entryAt fs (fp (at "data/docs")) |> Expect.some
+
+    Assert.Equal(Directory, entry.Kind)
+
+[<Fact>]
+let ``a path that stands for nothing has no entry`` () =
+    let fs = walked ()
+
+    let entry = entryAt fs (fp (at "data/gone.txt"))
+
+    Assert.Equal(None, entry)

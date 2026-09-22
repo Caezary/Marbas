@@ -170,3 +170,26 @@ let ``an archive Marbas cannot read answers a lower bound of nothing`` () =
     let size = measured fs (InArchive(fp (at "data/a.txt"), ArchivePath.root))
 
     Assert.Equal(AtLeast 0L, size)
+
+let private watched () =
+    let fs = Fakes.WalkWitness()
+    fs.AddFile(at "work/notes.txt", MockFileData "notes")
+    fs.AddFile(at "work/docs/inner.txt", MockFileData "inner")
+    fs.AddFile(at "work/docs/deep/leaf.txt", MockFileData "leaf")
+    fs
+
+[<Fact>]
+let ``measuring a tree enumerates each directory once`` () =
+    let fs = watched ()
+
+    DirectoryMeasure.measure fs Operations.unattended (OnDisk(fp (at "work"))) |> ignore
+
+    Assert.Equal(3, fs.Enumerations)
+
+[<Fact>]
+let ``measuring a tree asks nothing about an entry it enumerated`` () =
+    let fs = watched ()
+
+    DirectoryMeasure.measure fs Operations.unattended (OnDisk(fp (at "work"))) |> ignore
+
+    Assert.Equal(0, fs.AskedAbout(at "work/docs/inner.txt"))

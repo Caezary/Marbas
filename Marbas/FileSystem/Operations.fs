@@ -5,6 +5,7 @@ open System.ComponentModel
 open System.IO.Abstractions
 open FsToolkit.ErrorHandling
 open Marbas.Domain
+open Marbas.FileSystem.DirectoryListing
 
 type OperationError =
     | SourceNotFound of path: FileSystemPath
@@ -116,7 +117,7 @@ let private moveFile (fs: IFileSystem) overwrite (source: FileSystemPath) (targe
     let rawSource = FileSystemPath.value source
     let rawTarget = FileSystemPath.value target
     fs.File.Move(rawSource, rawTarget, overwrite)
-    
+
 let private getFileSystemEntries (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
     fs.Directory.EnumerateFileSystemEntries raw
@@ -152,22 +153,23 @@ let makeFile (fs: IFileSystem) (parent: FileSystemPath) (name: EntryName) =
     | NoEntry -> attempt fs path createFile |> Result.map (fun () -> path)
 
 let rec private deleteTree (fs: IFileSystem) (path: FileSystemPath) =
-    getFileSystemEntries fs path
-    |> List.ofSeq
+    children fs path
     |> List.iter (fun child ->
-        match FileSystemPath.kind fs child with
-        | DirectoryEntry when FileSystemPath.isLink fs child -> deleteEmptyDirectory fs child
-        | DirectoryEntry -> deleteTree fs child
-        | _ -> deleteFile fs child)
+        match child.Entry.Kind, child.Entry.LinkTarget with
+        | Directory, Some _ -> deleteEmptyDirectory fs child.Path
+        | Directory, None -> deleteTree fs child.Path
+        | File, _ -> deleteFile fs child.Path)
 
     deleteEmptyDirectory fs path
 
 let delete (fs: IFileSystem) (path: FileSystemPath) =
-    match FileSystemPath.kind fs path with
-    | DirectoryEntry when FileSystemPath.isLink fs path -> attempt fs path deleteEmptyDirectory
-    | DirectoryEntry -> attempt fs path deleteTree
-    | FileEntry -> attempt fs path deleteFile
-    | NoEntry -> Error(SourceNotFound path)
+    match entryAt fs path with
+    | None -> Error(SourceNotFound path)
+    | Some entry ->
+        match entry.Kind, entry.LinkTarget with
+        | Directory, Some _ -> attempt fs path deleteEmptyDirectory
+        | Directory, None -> attempt fs path deleteTree
+        | File, _ -> attempt fs path deleteFile
 
 [<Literal>]
 let WipeBufferLength = 65536
@@ -229,56 +231,33 @@ let private wipeFile (fs: IFileSystem) (control: BatchControl) (path: FileSystem
         do! attempt fs anonymous deleteFile
     }
 
-let rec wipe (fs: IFileSystem) (control: BatchControl) (path: FileSystemPath) =
+let rec private wiping (fs: IFileSystem) (control: BatchControl) (child: Child) =
+    if control.IsCancelled() then
+        Error(Cancelled child.Path)
+    else
+        match child.Entry.Kind, child.Entry.LinkTarget with
+        | Directory, Some _ -> attempt fs child.Path deleteEmptyDirectory
+        | File, Some _ -> attempt fs child.Path deleteFile
+        | File, None -> wipeFile fs control child.Path
+        | Directory, None ->
+            result {
+                let! below = attempting child.Path (fun () -> children fs child.Path)
+                do! below |> List.traverseResultM (wiping fs control) |> Result.ignore
+                do! attempt fs child.Path clearReadOnly
+                do! attempt fs child.Path deleteEmptyDirectory
+            }
+
+let wipe (fs: IFileSystem) (control: BatchControl) (path: FileSystemPath) =
     if control.IsCancelled() then
         Error(Cancelled path)
     else
-        match FileSystemPath.kind fs path with
-        | NoEntry -> Error(SourceNotFound path)
-        | DirectoryEntry when FileSystemPath.isLink fs path -> attempt fs path deleteEmptyDirectory
-        | FileEntry when FileSystemPath.isLink fs path -> attempt fs path deleteFile
-        | FileEntry -> wipeFile fs control path
-        | DirectoryEntry ->
-            result {
-                let! children = attempting path (fun () -> getFileSystemEntries fs path |> List.ofSeq)
-                do! children |> List.traverseResultM (wipe fs control) |> Result.ignore
-                do! attempt fs path clearReadOnly
-                do! attempt fs path deleteEmptyDirectory
-            }
+        match entryAt fs path with
+        | None -> Error(SourceNotFound path)
+        | Some entry -> wiping fs control { Path = path; Entry = entry }
 
 let private copyLink (fs: IFileSystem) (pointingAt: FileSystemPath) (target: FileSystemPath) =
     fs.Directory.CreateSymbolicLink(FileSystemPath.value target, FileSystemPath.value pointingAt)
     |> ignore
-
-let rec private copyTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
-    if control.IsCancelled() then
-        Error(Cancelled source)
-    else
-        match FileSystemPath.kind fs source, FileSystemPath.linkTarget fs source with
-        | DirectoryEntry, Some pointingAt ->
-            control.Report source
-            attempting source (fun () -> copyLink fs pointingAt target)
-        | DirectoryEntry, None ->
-            result {
-                do! attempt fs target createDirectory
-
-                let! children =
-                    attempting source (fun () -> getFileSystemEntries fs source |> List.ofSeq)
-
-                do!
-                    children
-                    |> List.traverseResultM (fun entry ->
-                        entry
-                        |> FileSystemPath.name fs
-                        |> EntryName.value
-                        |> FileSystemPath.combine fs target
-                        |> copyTo fs control entry)
-                    |> Result.ignore
-            }
-        | _ ->
-            control.Report source
-            let copyToTarget fs' source' = copyFile fs' true source' target
-            attempt fs source copyToTarget
 
 let private inDirectory (fs: IFileSystem) (targetDirectory: FileSystemPath) (source: FileSystemPath) =
     source
@@ -286,13 +265,39 @@ let private inDirectory (fs: IFileSystem) (targetDirectory: FileSystemPath) (sou
     |> EntryName.value
     |> FileSystemPath.combine fs targetDirectory
 
+let rec private copying (fs: IFileSystem) (control: BatchControl) (child: Child) (target: FileSystemPath) =
+    if control.IsCancelled() then
+        Error(Cancelled child.Path)
+    else
+        match child.Entry.Kind, child.Entry.LinkTarget with
+        | Directory, Some pointingAt ->
+            control.Report child.Path
+            attempting child.Path (fun () -> copyLink fs pointingAt target)
+        | Directory, None ->
+            result {
+                do! attempt fs target createDirectory
+                let! below = attempting child.Path (fun () -> children fs child.Path)
+
+                do!
+                    below
+                    |> List.traverseResultM (fun inner ->
+                        EntryName.value inner.Entry.Name
+                        |> FileSystemPath.combine fs target
+                        |> copying fs control inner)
+                    |> Result.ignore
+            }
+        | File, _ ->
+            control.Report child.Path
+            let copyToTarget fs' source' = copyFile fs' true source' target
+            attempt fs child.Path copyToTarget
+
+let private copyTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
+    match entryAt fs source with
+    | None -> Error(SourceNotFound source)
+    | Some entry -> copying fs control { Path = source; Entry = entry } target
+
 let copy (fs: IFileSystem) control (targetDirectory: FileSystemPath) (source: FileSystemPath) =
-    match FileSystemPath.kind fs source with
-    | NoEntry -> Error(SourceNotFound source)
-    | _ ->
-        source
-        |> inDirectory fs targetDirectory
-        |> copyTo fs control source
+    source |> inDirectory fs targetDirectory |> copyTo fs control source
 
 type private DirectoryMove =
     | Renamed

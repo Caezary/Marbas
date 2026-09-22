@@ -1752,7 +1752,7 @@ let ``a hit the results window asks to view is read out of the file it names`` (
 
     let hit: FindHit =
         { Location = OnDisk(fp (at "start"))
-          Entry = DirectoryListing.fileEntry (fs.FileInfo.New(at "start/notes.txt")) }
+          Entry = DirectoryListing.entryOf (fs.FileInfo.New(at "start/notes.txt")) }
 
     let deps =
         { noDeps () with

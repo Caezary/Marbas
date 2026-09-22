@@ -23,16 +23,40 @@ type private DeniedDirectory(accessor: IMockFileDataAccessor, current: string, d
         else
             base.EnumerateFileSystemEntries path
 
+type private DeniedDirectoryInfo(accessor: IMockFileDataAccessor, path: string, denied: string) =
+    inherit MockDirectoryInfo(accessor, path)
+
+    override this.EnumerateFileSystemInfos() =
+        if path = denied then
+            raise (UnauthorizedAccessException $"Access to the path '{path}' is denied.")
+        else
+            base.EnumerateFileSystemInfos()
+
+type private DeniedDirectories(accessor: IMockFileDataAccessor, denied: string) =
+    let inner = MockDirectoryInfoFactory(accessor)
+
+    interface IDirectoryInfoFactory with
+        member _.FileSystem = (inner :> IDirectoryInfoFactory).FileSystem
+        member _.New(path) = DeniedDirectoryInfo(accessor, path, denied) :> IDirectoryInfo
+        member _.Wrap(info: DirectoryInfo) = (inner :> IDirectoryInfoFactory).Wrap info
+
 type UnreadableDirectory(denied: string) =
     inherit MockFileSystem()
 
     let mutable listing: IDirectory = null
+    let mutable infos: IDirectoryInfoFactory = null
 
     override this.Directory =
         if isNull listing then
             listing <- DeniedDirectory(this, base.Directory.GetCurrentDirectory(), denied)
 
         listing
+
+    override this.DirectoryInfo =
+        if isNull infos then
+            infos <- DeniedDirectories(this, denied)
+
+        infos
 
 [<Literal>]
 let DeepestFollowedPath = 40
@@ -230,6 +254,154 @@ type ExistenceWitness() =
             reading <- AskedFile(this, asked.Add)
 
         reading
+
+type private Watching() =
+    let asked = ResizeArray<string>()
+    let enumerated = ResizeArray<string>()
+    let mutable working = 0
+
+    member _.Ask(path: string) =
+        if working = 0 then
+            asked.Add path
+
+    member _.Enumerate(path: string) = enumerated.Add path
+
+    member _.Enumerations = enumerated.Count
+
+    member _.AskedAbout(path: string) = asked |> Seq.filter ((=) path) |> Seq.length
+
+    member _.Working() =
+        working <- working + 1
+
+        { new IDisposable with
+            member _.Dispose() = working <- working - 1 }
+
+type private WatchedFile(accessor: IMockFileDataAccessor, watching: Watching) =
+    inherit MockFile(accessor)
+
+    override this.Exists(path: string) =
+        watching.Ask path
+        base.Exists path
+
+    override this.Delete(path: string) =
+        use _ = watching.Working()
+        base.Delete path
+
+    override this.Create(path: string) =
+        use _ = watching.Working()
+        base.Create path
+
+    override this.OpenRead(path: string) =
+        use _ = watching.Working()
+        base.OpenRead path
+
+    override this.Copy(source: string, target: string, overwrite: bool) =
+        use _ = watching.Working()
+        base.Copy(source, target, overwrite)
+
+    override this.Move(source: string, target: string, overwrite: bool) =
+        use _ = watching.Working()
+        base.Move(source, target, overwrite)
+
+    override this.Open(path: string, mode: FileMode, access: FileAccess, share: FileShare) =
+        use _ = watching.Working()
+        base.Open(path, mode, access, share)
+
+    override this.GetAttributes(path: string) =
+        use _ = watching.Working()
+        base.GetAttributes path
+
+    override this.SetAttributes(path: string, attributes: FileAttributes) =
+        use _ = watching.Working()
+        base.SetAttributes(path, attributes)
+
+type private WatchedDirectory(accessor: IMockFileDataAccessor, current: string, watching: Watching) =
+    inherit MockDirectory(accessor, current)
+
+    override this.Exists(path: string) =
+        watching.Ask path
+        base.Exists path
+
+    override this.Delete(path: string) =
+        use _ = watching.Working()
+        base.Delete path
+
+    override this.Delete(path: string, recursive: bool) =
+        use _ = watching.Working()
+        base.Delete(path, recursive)
+
+    override this.CreateDirectory(path: string) =
+        use _ = watching.Working()
+        base.CreateDirectory path
+
+type private WatchedFiles(accessor: IMockFileDataAccessor, watching: Watching) =
+    let inner = MockFileInfoFactory(accessor)
+
+    interface IFileInfoFactory with
+        member _.FileSystem = (inner :> IFileInfoFactory).FileSystem
+
+        member _.New(path) =
+            watching.Ask path
+            (inner :> IFileInfoFactory).New path
+
+        member _.Wrap(info: FileInfo) = (inner :> IFileInfoFactory).Wrap info
+
+type private WatchedDirectoryInfo(accessor: IMockFileDataAccessor, path: string, watching: Watching) =
+    inherit MockDirectoryInfo(accessor, path)
+
+    override this.EnumerateFileSystemInfos() =
+        watching.Enumerate path
+        use _ = watching.Working()
+        base.EnumerateFileSystemInfos() |> Array.ofSeq :> IFileSystemInfo seq
+
+type private WatchedDirectories(accessor: IMockFileDataAccessor, watching: Watching) =
+    let inner = MockDirectoryInfoFactory(accessor)
+
+    interface IDirectoryInfoFactory with
+        member _.FileSystem = (inner :> IDirectoryInfoFactory).FileSystem
+
+        member _.New(path) =
+            watching.Ask path
+            WatchedDirectoryInfo(accessor, path, watching) :> IDirectoryInfo
+
+        member _.Wrap(info: DirectoryInfo) = (inner :> IDirectoryInfoFactory).Wrap info
+
+type WalkWitness() =
+    inherit MockFileSystem()
+
+    let watching = Watching()
+    let mutable files: IFile = null
+    let mutable directories: IDirectory = null
+    let mutable fileInfos: IFileInfoFactory = null
+    let mutable directoryInfos: IDirectoryInfoFactory = null
+
+    member _.AskedAbout(path: string) = watching.AskedAbout path
+
+    member _.Enumerations = watching.Enumerations
+
+    override this.File =
+        if isNull files then
+            files <- WatchedFile(this, watching)
+
+        files
+
+    override this.Directory =
+        if isNull directories then
+            directories <- WatchedDirectory(this, base.Directory.GetCurrentDirectory(), watching)
+
+        directories
+
+    override this.FileInfo =
+        if isNull fileInfos then
+            fileInfos <- WatchedFiles(this, watching)
+
+        fileInfos
+
+    override this.DirectoryInfo =
+        if isNull directoryInfos then
+            directoryInfos <- WatchedDirectories(this, watching)
+
+        directoryInfos
 
 [<Literal>]
 let CrossVolumeReason = "Source and destination path must have identical roots."
