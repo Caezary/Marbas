@@ -463,3 +463,63 @@ is there — written for a panel whose directory had been deleted. A results pan
 whose listing failed, which since P15.4 is any results panel holding a hit in a
 damaged archive, was therefore thrown out to a directory by a change in the
 panel beside it. It now stays where it is.
+
+**P15.13 gave the archive reader a scope the compiler enforces, and an index
+the panel does not read twice.** `ArchiveReader.items` answered a lazy sequence
+whose `WriteTo` closed over an `IArchiveEntry` or an `IReader` that the `seq`
+disposed as soon as it ended, and for a tar it was dead the moment the reader
+stepped to the next entry. Every caller happened to use it in time; nothing in
+the types said they had to, and `List.ofSeq` followed by a `WriteTo` compiled
+and threw `ObjectDisposedException` (A5).
+
+The record is now two. `ArchiveEntryInfo` — the segments, the size, the time
+and an `ArchiveEntryKind` where two booleans used to be able to disagree — is
+an ordinary record that a walk may collect and hand on. `ArchiveItem`, which
+carries the `WriteTo` beside it, is a `[<Struct; IsByRefLike>]` record handed
+to an `ArchiveStep` delegate by `ArchiveReader.withItems`, one entry at a time,
+until the step answers `StopReading`. A ref struct cannot be put in a list,
+stored in a field or captured by a closure that outlives the call, so keeping
+an item past its scope is a build error rather than a run-time one; that is
+what `an item handed to the walk may not outlive it` asserts, through
+`Type.IsByRefLike`, since `typeof<ArchiveItem>` is itself an instantiation the
+rules forbid. Where a caller needs the content further down — `FileSearch`
+matching text inside an entry, `Archive` buffering a kept entry — it passes the
+`WriteTo` itself, which is an ordinary function; where it needs a lambda over
+the entry it binds `item.Info` first, because the compiler refuses the capture.
+
+The second half is the index. `ArchiveListing.read` read the whole archive
+through `List.ofSeq` and did it again for every level, so `Enter` inside a zip
+of half a million entries parsed it each time; `SearchListing.heldIn`,
+`DirectoryMeasure.scan` and `Archive.needsPassword` each read it once more for
+their own purposes (perf P7). `ArchiveIndex.read` answers the entries of an
+archive and remembers the last four it was asked about, keyed by path, length
+and last write time, and all four of those callers now ask it. The cache hangs
+off the `IFileSystem` it was read through, in a `ConditionalWeakTable`: the
+application has one file system and every test has its own, so nothing leaks
+between them, which `two file systems keep their own index of one name` pins.
+A file written again under the same name is read again, because its stamp no
+longer matches — `an archive written again under the same name is read again`.
+The task's own "done when" is `an archive is read once for every level a panel
+walks into`, over a new `Fakes.ReadCounting` that counts what `File.OpenRead`
+was asked for.
+
+`needsPassword` was the A9 silent failure P15.4 left for this task: it read a
+damaged archive as "no password needed", so the damage surfaced later, from a
+different path, under a different message. It answers a `Result` now, and both
+its callers say what they want from a failure. `Archive.changeRefusal` reports
+the read error as the refusal, so a broken zip explains itself instead of being
+called unchangeable; `Shell.passwordFor` treats it as "do not ask", because
+`extract` asks again a moment later and reports it there — one refusal, decided
+in one place. `extract` still asks only when no password was given, which
+matters for the kinds that encrypt their own headers: a 7z opened with the
+right password must not be refused by an index read that had none.
+
+`ArchiveNames.legacy` and `reading` became `lazy`, so the code-page provider is
+registered and the OEM encoding resolved once per process instead of once per
+archive open (perf P13).
+
+Measured on a zip of 20,000 entries over a mock file system: reading the index
+costs 80–100 ms, and every level change after it costs 4–8 ms, `needsPassword`
+about 1 ms and `heldIn` about 0.2 ms — each of which used to be another 80–100
+ms. What still opens the file per target is extraction, and it should: content
+is only ever handed out inside a walk, and the streaming reader cannot go back.

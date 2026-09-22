@@ -299,24 +299,40 @@ let ``an archive that refuses as a whole answers for itself under its own name``
 let ``a protected archive is known to need a password`` () =
     let fs = packed (ArchivePassword.tryCreate "letmein")
 
-    Assert.True(Archive.needsPassword fs (fp archive))
+    let needed = Archive.needsPassword fs (fp archive)
+
+    Assert.Equal(Ok true, needed)
 
 [<Fact>]
 let ``an archive with nothing to hide needs no password`` () =
     let fs = packed None
 
-    Assert.False(Archive.needsPassword fs (fp archive))
+    let needed = Archive.needsPassword fs (fp archive)
+
+    Assert.Equal(Ok false, needed)
 
 [<Fact>]
 let ``a kind that carries no password never needs one`` () =
     let fs = tree ()
     Archive.write fs unattended (packing tarGz tarArchive None) sources |> ignore
 
-    Assert.False(Archive.needsPassword fs (fp tarArchive))
+    let needed = Archive.needsPassword fs (fp tarArchive)
+
+    Assert.Equal(Ok false, needed)
 
 [<Fact>]
-let ``an archive that cannot be opened is not asked for a password`` () =
+let ``an archive that is gone says so instead of needing no password`` () =
+    let fs = tree ()
+
+    let refusal = Archive.needsPassword fs (fp archive) |> Expect.error
+
+    Assert.Equal(ArchiveNotFound(fp archive), refusal)
+
+[<Fact>]
+let ``an archive that cannot be opened says so instead of needing no password`` () =
     let fs = tree ()
     fs.AddFile(archive, MockFileData "not an archive at all")
 
-    Assert.False(Archive.needsPassword fs (fp archive))
+    let refused = Archive.needsPassword fs (fp archive) |> Result.isError
+
+    Assert.True refused

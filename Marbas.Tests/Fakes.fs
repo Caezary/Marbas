@@ -189,6 +189,27 @@ type CopyCounting() =
 
         writing
 
+type private ReadCountingFile(accessor: IMockFileDataAccessor, opened: string -> unit) =
+    inherit MockFile(accessor)
+
+    override this.OpenRead(path: string) =
+        opened path
+        base.OpenRead path
+
+type ReadCounting() =
+    inherit MockFileSystem()
+
+    let opened = ResizeArray<string>()
+    let mutable reading: IFile = null
+
+    member _.Reads(path: string) = opened |> Seq.filter ((=) path) |> Seq.length
+
+    override this.File =
+        if isNull reading then
+            reading <- ReadCountingFile(this, opened.Add)
+
+        reading
+
 type private AskedFile(accessor: IMockFileDataAccessor, asked: string -> unit) =
     inherit MockFile(accessor)
 

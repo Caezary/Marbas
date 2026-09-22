@@ -40,34 +40,31 @@ module DirectoryMeasure =
         | DirectoryEntry -> walk fs control path
         | NoEntry -> DirectorySize.nothingCounted
 
-    let private below (level: ArchivePath) (item: ArchiveItem) =
+    let private below (level: ArchivePath) (info: ArchiveEntryInfo) =
         let names = ArchivePath.segments level
 
-        item.Segments.Length > names.Length
-        && List.truncate names.Length item.Segments = names
+        info.Segments.Length > names.Length
+        && List.truncate names.Length info.Segments = names
 
-    let private directoryOf (item: ArchiveItem) =
-        if item.IsDirectory then
-            item.Segments
+    let private directoryOf (info: ArchiveEntryInfo) =
+        if ArchiveEntryInfo.isDirectory info then
+            info.Segments
         else
-            item.Segments |> List.truncate (item.Segments.Length - 1)
+            info.Segments |> List.truncate (info.Segments.Length - 1)
 
     let private levelsBelow (level: ArchivePath) items =
         let depth = ArchivePath.segments level |> List.length
 
         items
-        |> List.collect (fun item ->
-            let holding = directoryOf item
+        |> List.collect (fun info ->
+            let holding = directoryOf info
             [ depth + 1 .. holding.Length ] |> List.map (fun taken -> List.truncate taken holding))
         |> List.distinct
         |> List.sortBy List.length
         |> List.map (List.fold ArchivePath.child ArchivePath.root)
 
-    let private scan (fs: IFileSystem) (control: BatchControl) archive level kind =
-        let items =
-            ArchiveReader.items fs None kind archive
-            |> Seq.filter (below level)
-            |> List.ofSeq
+    let private scan (fs: IFileSystem) (control: BatchControl) archive level indexed =
+        let items = indexed |> List.filter (below level)
 
         levelsBelow level items
         |> List.iter (ArchivePath.spelled fs archive >> control.Report)
@@ -82,13 +79,9 @@ module DirectoryMeasure =
         else
             control.Report(ArchivePath.spelled fs archive level)
 
-            match ArchiveReader.kindOf fs archive with
-            | None -> AtLeast 0L
-            | Some kind ->
-                try
-                    scan fs control archive level kind
-                with _ ->
-                    AtLeast 0L
+            match ArchiveIndex.read fs archive with
+            | Error _ -> AtLeast 0L
+            | Ok indexed -> scan fs control archive level indexed
 
     let measure (fs: IFileSystem) (control: BatchControl) location =
         match location with

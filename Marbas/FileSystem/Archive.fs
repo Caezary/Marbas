@@ -220,10 +220,10 @@ module Archive =
 
         segments.Length >= names.Length && List.truncate names.Length segments = names
 
-    let private under (target: ArchivePath) (item: ArchiveItem) = underPath target item.Segments
+    let private under (target: ArchivePath) (info: ArchiveEntryInfo) = underPath target info.Segments
 
-    let private beneath (target: ArchivePath) (item: ArchiveItem) =
-        item.Segments
+    let private beneath (target: ArchivePath) (info: ArchiveEntryInfo) =
+        info.Segments
         |> List.skip (max 0 (List.length (ArchivePath.segments target) - 1))
 
     let private landingPlace (fs: IFileSystem) (destination: FileSystemPath) segments =
@@ -236,47 +236,50 @@ module Archive =
     let private makeRoom (fs: IFileSystem) (path: FileSystemPath) =
         fs.Directory.CreateDirectory(fs.Path.GetDirectoryName(FileSystemPath.value path)) |> ignore
 
-    let private writeContent (fs: IFileSystem) (item: ArchiveItem) (path: FileSystemPath) =
+    let private writeContent (fs: IFileSystem) (writeTo: Stream -> unit) (path: FileSystemPath) =
         use stream = fs.File.Create(FileSystemPath.value path)
-        item.WriteTo stream
+        writeTo stream
 
-    let private restoreTime (fs: IFileSystem) (item: ArchiveItem) (path: FileSystemPath) =
-        fs.FileInfo.New(FileSystemPath.value path).LastWriteTimeUtc <- item.Modified.UtcDateTime
+    let private restoreTime (fs: IFileSystem) (info: ArchiveEntryInfo) (path: FileSystemPath) =
+        fs.FileInfo.New(FileSystemPath.value path).LastWriteTimeUtc <- info.Modified.UtcDateTime
 
-    let private unpackEntry (fs: IFileSystem) (control: Operations.BatchControl) destination target item =
-        let path = landingPlace fs destination (beneath target item)
+    let private unpackEntry (fs: IFileSystem) (control: Operations.BatchControl) destination target info writeTo =
+        let path = landingPlace fs destination (beneath target info)
 
         if control.IsCancelled() then
             Error(Operations.Cancelled path)
         elif not (FileSystemPath.strictlyUnder (FileSystemPath.platformOf fs) destination path) then
             Error(Operations.EntryOutsideTarget path)
-        elif item.IsDirectory then
+        elif ArchiveEntryInfo.isDirectory info then
             attempt path (fun () -> fs.Directory.CreateDirectory(FileSystemPath.value path) |> ignore)
         else
             control.Report path
 
             attempt path (fun () ->
                 makeRoom fs path
-                writeContent fs item path
-                restoreTime fs item path)
+                writeContent fs writeTo path
+                restoreTime fs info path)
 
-    let private walking step (items: seq<ArchiveItem>) =
-        use walker = items.GetEnumerator()
-
-        let rec run seen =
-            if walker.MoveNext() then
-                match step walker.Current with
-                | Ok() -> run (seen + 1)
-                | Error error -> Error error
+    let private unpacking fs control destination target (unpacked: Result<int, _> ref) =
+        ArchiveStep(fun item ->
+            if not (under target item.Info) then
+                KeepReading
             else
-                Ok seen
-
-        run 0
+                match unpackEntry fs control destination target item.Info item.WriteTo with
+                | Ok() ->
+                    unpacked.Value <- unpacked.Value |> Result.map ((+) 1)
+                    KeepReading
+                | Error error ->
+                    unpacked.Value <- Error error
+                    StopReading)
 
     let private unpackTarget (fs: IFileSystem) control (request: ExtractRequest) kind target =
-        ArchiveReader.items fs request.Password kind request.Archive
-        |> Seq.filter (under target)
-        |> walking (unpackEntry fs control request.Destination target)
+        let unpacked = ref (Ok 0)
+        let step = unpacking fs control request.Destination target unpacked
+
+        ArchiveReader.withItems fs request.Password kind request.Archive step
+
+        unpacked.Value
         |> Result.bind (function
             | 0 -> Error(Operations.SourceNotFound(ArchivePath.spelled fs request.Archive target))
             | _ -> Ok())
@@ -300,21 +303,26 @@ module Archive =
     let needsPassword (fs: IFileSystem) (archive: FileSystemPath) =
         match ArchiveReader.kindOf fs archive with
         | Some kind when ArchiveKind.carriesPassword kind ->
-            try
-                ArchiveReader.items fs None kind archive |> Seq.exists _.IsEncrypted
-            with _ ->
-                false
-        | _ -> false
+            ArchiveIndex.read fs archive |> Result.map (List.exists ArchiveEntryInfo.isEncrypted)
+
+        | _ -> Ok false
+    let private unpackingEach fs control (request: ExtractRequest) kind targets =
+        eachTarget control request.Archive (unpackTarget fs control request kind) targets
+
+    let private whenUnlocked (fs: IFileSystem) control (request: ExtractRequest) kind targets =
+        match needsPassword fs request.Archive with
+        | Error error -> Error error
+        | Ok true -> Error(PasswordNeeded request.Archive)
+        | Ok false -> Ok(unpackingEach fs control request kind targets)
 
     let extract (fs: IFileSystem) control (request: ExtractRequest) (targets: ArchivePath list) =
         match ArchiveReader.kindOf fs request.Archive with
         | None -> Error(KindCannotBeRead request.Archive)
         | Some kind ->
             try
-                if request.Password.IsNone && needsPassword fs request.Archive then
-                    Error(PasswordNeeded request.Archive)
-                else
-                    Ok(eachTarget control request.Archive (unpackTarget fs control request kind) targets)
+                match request.Password with
+                | Some _ -> Ok(unpackingEach fs control request kind targets)
+                | None -> whenUnlocked fs control request kind targets
             with ex ->
                 Error(ArchiveReader.mapException request.Archive ex)
 
@@ -337,8 +345,11 @@ module Archive =
     let changeRefusal (fs: IFileSystem) (archive: FileSystemPath) =
         match changeableKind fs archive with
         | None -> Some(KindCannotBeChanged archive)
-        | Some _ when needsPassword fs archive -> Some(ProtectedArchiveCannotBeChanged archive)
-        | Some _ -> None
+        | Some _ ->
+            match needsPassword fs archive with
+            | Error error -> Some error
+            | Ok true -> Some(ProtectedArchiveCannotBeChanged archive)
+            | Ok false -> None
 
     type private Update<'a> =
         | Commit of 'a
@@ -403,27 +414,35 @@ module Archive =
             zip.AbortUpdate()
             Ok value
 
-    let private buffered (item: ArchiveItem) =
-        { Size = item.Size
-          Modified = known item.Modified
-          Content =
-            fun () ->
-                let content = new MemoryStream()
-                item.WriteTo content
-                content.Position <- 0L
-                content :> Stream }
+    let private buffered (info: ArchiveEntryInfo) (writeTo: Stream -> unit) =
+        let content = new MemoryStream()
+        writeTo content
+        content.Position <- 0L
 
-    let private copyKept (fs: IFileSystem) archive kind (dropped: ArchivePath list) (control: Operations.BatchControl) sink =
-        ArchiveReader.items fs None kind archive
-        |> Seq.filter (fun item -> not (dropped |> List.exists (fun target -> under target item)))
-        |> Seq.iter (fun item ->
-            if not (control.IsCancelled()) then
-                let key = item.Segments |> List.map EntryName.value |> String.concat "/"
+        { Size = info.Size
+          Modified = known info.Modified
+          Content = fun () -> content :> Stream }
 
-                if item.IsDirectory then
-                    sink.AddDirectory key (known item.Modified)
-                else
-                    sink.AddFile key (buffered item))
+    let private keyOf (info: ArchiveEntryInfo) =
+        info.Segments |> List.map EntryName.value |> String.concat "/"
+
+    let private keeping (dropped: ArchivePath list) (control: Operations.BatchControl) sink =
+        ArchiveStep(fun item ->
+            let info = item.Info
+
+            if control.IsCancelled() then
+                StopReading
+            elif dropped |> List.exists (fun target -> under target info) then
+                KeepReading
+            elif ArchiveEntryInfo.isDirectory info then
+                sink.AddDirectory (keyOf info) (known info.Modified)
+                KeepReading
+            else
+                sink.AddFile (keyOf info) (buffered info item.WriteTo)
+                KeepReading)
+
+    let private copyKept (fs: IFileSystem) archive kind dropped control sink =
+        ArchiveReader.withItems fs None kind archive (keeping dropped control sink)
 
     let private workingFile (fs: IFileSystem) (archive: FileSystemPath) =
         let candidate ordinal =
@@ -441,32 +460,31 @@ module Archive =
 
         pick 1
 
+    let private rewritingInto (fs: IFileSystem) archive kind format fresh dropped level control work held =
+        try
+            let outcome =
+                use stream = fs.File.Create(FileSystemPath.value fresh)
+
+                intoArchive format Normal None stream (fun sink ->
+                    copyKept fs archive kind dropped control sink
+                    work { Held = held; Into = at level sink })
+
+            match outcome with
+            | Commit value ->
+                fs.File.Move(FileSystemPath.value fresh, FileSystemPath.value archive, true)
+                Ok value
+            | Abort value -> Ok value
+        finally
+            Operations.delete fs fresh |> ignore
+
     let private rewriting (fs: IFileSystem) archive kind dropped level control work =
         match ArchiveFormat.ofKind kind with
         | None -> Error(KindCannotBeChanged archive)
         | Some format ->
-            let fresh = workingFile fs archive
+            let into =
+                rewritingInto fs archive kind format (workingFile fs archive) dropped level control work
 
-            let held =
-                ArchiveReader.items fs None kind archive
-                |> Seq.map _.Segments
-                |> List.ofSeq
-
-            try
-                let outcome =
-                    use stream = fs.File.Create(FileSystemPath.value fresh)
-
-                    intoArchive format Normal None stream (fun sink ->
-                        copyKept fs archive kind dropped control sink
-                        work { Held = held; Into = at level sink })
-
-                match outcome with
-                | Commit value ->
-                    fs.File.Move(FileSystemPath.value fresh, FileSystemPath.value archive, true)
-                    Ok value
-                | Abort value -> Ok value
-            finally
-                Operations.delete fs fresh |> ignore
+            ArchiveIndex.read fs archive |> Result.map (List.map _.Segments) |> Result.bind into
 
     let private changeWith (fs: IFileSystem) archive control dropped level (work: Changing -> Update<'a>) =
         match changeRefusal fs archive with

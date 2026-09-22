@@ -35,13 +35,15 @@ module ArchiveNames =
             with :? DecoderFallbackException ->
                 legacy.GetString(bytes, index, count)
 
-    let legacy () =
-        CultureInfo.CurrentCulture |> legacyCodePage |> legacyEncoding
+    let private resolved =
+        lazy (CultureInfo.CurrentCulture |> legacyCodePage |> legacyEncoding)
 
-    let reading () =
-        let legacy = legacy ()
+    let legacy () = resolved.Value
 
-        ArchiveEncoding(
-            CustomDecoder =
-                Func<byte array, int, int, EncodingType, string>(decode legacy)
-        )
+    let private decoder =
+        lazy
+            ArchiveEncoding(
+                CustomDecoder = Func<byte array, int, int, EncodingType, string>(decode (legacy ()))
+            )
+
+    let reading () = decoder.Value

@@ -101,16 +101,19 @@ type private PasswordOutcome =
     | NotGiven
     | Given of password: ArchivePassword
 
+let private asking (deps: Dependencies) (archive: FileSystemPath) =
+    FileSystemPath.name deps.FileSystem archive
+    |> PasswordQuestion.describe
+    |> deps.AskPassword PasswordQuestion.Title
+    |> Option.bind ArchivePassword.tryCreate
+    |> Option.map Given
+    |> Option.defaultValue NotGiven
+
 let private passwordFor (deps: Dependencies) (archive: FileSystemPath) =
-    if Archive.needsPassword deps.FileSystem archive then
-        FileSystemPath.name deps.FileSystem archive
-        |> PasswordQuestion.describe
-        |> deps.AskPassword PasswordQuestion.Title
-        |> Option.bind ArchivePassword.tryCreate
-        |> Option.map Given
-        |> Option.defaultValue NotGiven
-    else
-        NotNeeded
+    match Archive.needsPassword deps.FileSystem archive with
+    | Ok true -> asking deps archive
+    | Ok false
+    | Error _ -> NotNeeded
 
 let private approvedEntries (deps: Dependencies) targetDirectory archive entries =
     let spelled =

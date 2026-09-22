@@ -14,16 +14,8 @@ let private prefixes (segments: EntryName list) =
     [ 1 .. segments.Length ] |> List.map (fun length -> List.truncate length segments)
 
 let private heldIn (fs: IFileSystem) (archive: FileSystemPath) =
-    match ArchiveReader.kindOf fs archive with
-    | None -> Error(KindCannotBeRead archive)
-    | Some kind ->
-        try
-            ArchiveReader.items fs None kind archive
-            |> Seq.collect (_.Segments >> prefixes)
-            |> Set.ofSeq
-            |> Ok
-        with ex ->
-            Error(ArchiveReader.mapException archive ex)
+    ArchiveIndex.read fs archive
+    |> Result.map (Seq.collect (_.Segments >> prefixes) >> Set.ofSeq)
 
 let private surviving (fs: IFileSystem) (found: FoundEntries) =
     let archives =

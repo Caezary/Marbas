@@ -230,18 +230,48 @@ ordinary character in a key, so an entry named `a\b.txt` is one entry and not
 two levels, which is what the format says whatever platform reads it.
 
 **One reader under both, with two openers chosen by kind.** `ArchiveReader` is
-where an archive is opened: it answers a lazy sequence of `ArchiveItem`s — the
-names a key is made of, whether the entry is a directory, its size, its time,
-whether it is encrypted, and a `WriteTo` that streams its content — and both
-the listing and the extraction read that one shape. Zip, 7z and rar go through
-`ArchiveFactory.OpenArchive`, which seeks and reads the archive's own table of
-contents; the tar family goes through `ReaderFactory.OpenReader`, which
-streams, because `ArchiveFactory` sees a `tar.gz` as a gzip holding one file
-and stops there while the reader unwraps the compression and hands over the
-tar's own entries. Both read the stream `IFileSystem` opens, so all of it is
-tested on `MockFileSystem` — the archives the tests read are the ones
-`Archive.write` wrote a line earlier. `WriteTo` is only good while the walk
-stands on its entry: the streaming reader has no way back.
+where an archive is opened, and it opens one only for the length of a walk:
+`withItems` takes an `ArchiveStep` and calls it once per entry with an
+`ArchiveItem` — the entry's `ArchiveEntryInfo` and a `WriteTo` that streams its
+content — until the step answers `StopReading` or the entries run out. Zip, 7z
+and rar go through `ArchiveFactory.OpenArchive`, which seeks and reads the
+archive's own table of contents; the tar family goes through
+`ReaderFactory.OpenReader`, which streams, because `ArchiveFactory` sees a
+`tar.gz` as a gzip holding one file and stops there while the reader unwraps
+the compression and hands over the tar's own entries. Both read the stream
+`IFileSystem` opens, so all of it is tested on `MockFileSystem` — the archives
+the tests read are the ones `Archive.write` wrote a line earlier.
+
+**What may be kept is separated from what may not, and the compiler holds the
+line.** `ArchiveEntryInfo` — the names a key is made of, the entry's
+`ArchiveEntryKind`, its size and its time — is an ordinary record: a walk may
+collect every one of them and hand the list on. `ArchiveItem`, which carries
+the `WriteTo` beside it, is a `[<Struct; IsByRefLike>]` record, so it cannot be
+put in a list, stored in a field or captured by a closure that outlives the
+step; the reader for a tar has no way back to a previous entry, and a
+`WriteTo` kept past its step used to compile and throw
+`ObjectDisposedException`. Where a step needs the content elsewhere it passes
+the `WriteTo` itself, which is an ordinary function, and where it needs a
+lambda over the entry it binds `item.Info` first.
+
+**A kind says whether an entry is a directory, a file or an encrypted file.**
+`ArchiveEntryKind` is one value where there used to be two booleans that could
+disagree — `IsDirectory` and `IsEncrypted` — and `ArchiveEntryInfo.isDirectory`
+and `isEncrypted` are the two questions anything asks of it.
+
+**The index of an archive is read once and kept while the file is unchanged.**
+`ArchiveIndex.read` answers every entry's `ArchiveEntryInfo`, and remembers the
+last four archives it was asked about, keyed by path, length and last write
+time. A panel standing in an archive lists a level by filtering that list, so
+walking from level to level reads the file once instead of once per `Enter`;
+`Archive.needsPassword` and `SearchListing.heldIn` are answered from the same
+list, and so are the levels `DirectoryMeasure` reports. The cache hangs off the
+`IFileSystem` it was read through — a `ConditionalWeakTable` — so the
+application has one and every test has its own, and a file written again under
+the same name is read again because its stamp no longer matches. Measured on a
+zip of 20,000 entries over a mock file system: reading the index costs 80–100
+ms, and a level change after it costs 4–8 ms, `needsPassword` about 1 ms and
+`heldIn` about 0.2 ms.
 
 **A name no readable kind owns is refused before the file is opened.** `read`
 asks `ArchiveKind.recognise` and the capability table first, so `notes.txt` and
@@ -275,7 +305,10 @@ it names UTF-8, or when nothing answers to it; Latin-1 because it maps every
 byte to a character and so loses nothing it cannot explain. The UTF-8 test is a
 strict `UTF8Encoding` rather than `TextEncoding.detect`, whose tolerance of a
 sequence cut short by the end of the probe is right for a file's first 8 KB and
-wrong for a name, where a cut sequence means the bytes are not UTF-8.
+wrong for a name, where a cut sequence means the bytes are not UTF-8. The code
+page and the decoder it is wrapped in are resolved once per process —
+`ArchiveNames.legacy` and `reading` are `lazy` — so registering the code-page
+provider and looking the encoding up no longer happen on every archive open.
 
 Writing was never the problem: a zip Marbas writes carries bit 11 and UTF-8
 bytes, so other tools read it back intact. What this fixes is the other
@@ -336,16 +369,22 @@ whole.
 **A password is asked for before anything is unpacked, not after.** When the
 kind can carry a password, none was given and any entry to be written is
 encrypted, `extract` answers `PasswordNeeded` without writing a byte, so
-`Shift+F2` can ask once and run again. A password that is *wrong* is a
-different story: the library throws while reading the entry and the target
-fails with the reason it gave.
+`Shift+F2` can ask once and run again. That question is answered from the
+index, and an archive whose index cannot be read at all answers with the
+reason — `needsPassword` is a `Result`, so a damaged file is no longer read as
+"no password needed" and reported later under a different message. A password
+that is *wrong* is a different story: the library throws while reading the
+entry and the target fails with the reason it gave, and an archive that hides
+its own headers is opened with the password it was given rather than asked
+about first.
 
-**Every target opens the archive again.** `ArchiveReader.items` is a lazy
-sequence that opens the file when it is enumerated, so a batch of five targets
-reads the archive five times. For a zip that is five reads of the table of
-contents; for a `tar.gz` it is five decompressions, which is the price of
-keeping the streaming reader — which can only go forwards — and the per-target
-`ItemResult` in the same design.
+**Every target opens the archive again.** `unpackTarget` opens its own walk
+through `ArchiveReader.withItems`, so a batch of five targets reads the archive
+five times. For a zip that is five reads of the table of contents; for a
+`tar.gz` it is five decompressions, which is the price of keeping the streaming
+reader — which can only go forwards — and the per-target `ItemResult` in the
+same design. The index cache does not help here: extraction needs content, and
+content is only ever handed out inside a walk.
 
 ## The walk from key to unpacking
 

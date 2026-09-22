@@ -72,3 +72,71 @@ let ``a refused file maps to an archive that may not be touched`` () =
     let error = ArchiveReader.mapException (fp archive) failure
 
     Assert.Equal(ArchiveAccessDenied(fp archive), error)
+
+let private en = EntryName.create
+
+let private zip = ArchiveFormat.ofKind Zip |> Expect.some
+
+let private packed () =
+    let tree = MockFileSystem()
+    tree.AddDirectory(at "backup")
+    tree.AddFile(at "work/notes.txt", MockFileData "notes")
+    tree.AddFile(at "work/docs/inner.txt", MockFileData "inner")
+
+    Archive.write
+        tree
+        Operations.unattended
+        { Path = fp archive
+          Format = zip
+          Compression = Normal
+          Password = None }
+        [ fp (at "work/notes.txt"); fp (at "work/docs") ]
+    |> ignore
+
+    tree
+
+let private walking (tree: MockFileSystem) (step: ArchiveStep) =
+    ArchiveReader.withItems tree None Zip (fp archive) step
+
+let private keyOf (info: ArchiveEntryInfo) =
+    info.Segments |> List.map EntryName.value |> String.concat "/"
+
+let private noting (seen: ResizeArray<string>) =
+    ArchiveStep(fun item ->
+        seen.Add(keyOf item.Info)
+        StopReading)
+
+let private writingNotes (content: IO.Stream) =
+    ArchiveStep(fun item ->
+        if item.Info.Segments = [ en "notes.txt" ] then
+            item.WriteTo content
+            StopReading
+        else
+            KeepReading)
+
+let private itemType =
+    typeof<ArchiveEntryInfo>.Assembly.GetType "Marbas.FileSystem.ArchiveItem"
+
+[<Fact>]
+let ``an item handed to the walk may not outlive it`` () =
+    let scoped = itemType.IsByRefLike
+
+    Assert.True scoped
+
+[<Fact>]
+let ``the walk stops where the step says it should`` () =
+    let tree = packed ()
+    let seen = ResizeArray<string>()
+
+    walking tree (noting seen)
+
+    Assert.Equal(1, seen.Count)
+
+[<Fact>]
+let ``the content of an entry is written while the walk stands on it`` () =
+    let tree = packed ()
+    use content = new IO.MemoryStream()
+
+    walking tree (writingNotes content)
+
+    Assert.Equal("notes", Text.Encoding.UTF8.GetString(content.ToArray()))

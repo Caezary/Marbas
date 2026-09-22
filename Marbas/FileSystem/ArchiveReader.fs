@@ -3,17 +3,39 @@ namespace Marbas.FileSystem
 open System
 open System.IO
 open System.IO.Abstractions
+open System.Runtime.CompilerServices
 open SharpCompress.Archives
+open SharpCompress.Common
 open SharpCompress.Readers
 open Marbas.Domain
 
-type ArchiveItem =
+type ArchiveEntryKind =
+    | StoredDirectory
+    | StoredFile
+    | EncryptedFile
+
+type ArchiveEntryInfo =
     { Segments: EntryName list
-      IsDirectory: bool
+      Kind: ArchiveEntryKind
       Size: int64
-      Modified: DateTimeOffset
-      IsEncrypted: bool
+      Modified: DateTimeOffset }
+
+[<Struct; IsByRefLike>]
+type ArchiveItem =
+    { Info: ArchiveEntryInfo
       WriteTo: Stream -> unit }
+
+type ArchiveWalk =
+    | KeepReading
+    | StopReading
+
+type ArchiveStep = delegate of ArchiveItem -> ArchiveWalk
+
+module ArchiveEntryInfo =
+
+    let isDirectory (info: ArchiveEntryInfo) = info.Kind = StoredDirectory
+
+    let isEncrypted (info: ArchiveEntryInfo) = info.Kind = EncryptedFile
 
 module ArchiveReader =
 
@@ -50,42 +72,47 @@ module ArchiveReader =
         |> Option.map DateTimeOffset
         |> Option.defaultValue DateTimeOffset.MinValue
 
-    let private stored (entry: IArchiveEntry) =
+    let private kindOfEntry (entry: IEntry) =
+        if entry.IsDirectory then StoredDirectory
+        elif entry.IsEncrypted then EncryptedFile
+        else StoredFile
+
+    let private infoOf (entry: IEntry) =
         { Segments = segmentsOf (Option.ofObj entry.Key |> Option.defaultValue "")
-          IsDirectory = entry.IsDirectory
+          Kind = kindOfEntry entry
           Size = entry.Size
-          Modified = modifiedAt entry.LastModifiedTime
-          IsEncrypted = entry.IsEncrypted
-          WriteTo =
-            fun target ->
-                use content = entry.OpenEntryStream()
-                content.CopyTo target }
+          Modified = modifiedAt entry.LastModifiedTime }
 
-    let private streamed (reader: IReader) =
-        { Segments = segmentsOf (Option.ofObj reader.Entry.Key |> Option.defaultValue "")
-          IsDirectory = reader.Entry.IsDirectory
-          Size = reader.Entry.Size
-          Modified = modifiedAt reader.Entry.LastModifiedTime
-          IsEncrypted = reader.Entry.IsEncrypted
-          WriteTo = reader.WriteEntryTo }
+    let private writeEntry (entry: IArchiveEntry) (target: Stream) =
+        use content = entry.OpenEntryStream()
+        content.CopyTo target
 
-    let items (fs: IFileSystem) (password: ArchivePassword option) (kind: ArchiveKind) (path: FileSystemPath) =
+    let private streaming (reader: IReader) =
         seq {
-            use stream = fs.File.OpenRead(FileSystemPath.value path)
-
-            match kind with
-            | Tar
-            | TarGz
-            | TarBz2
-            | TarXz ->
-                use reader = ReaderFactory.OpenReader(stream, options password)
-
-                while reader.MoveToNextEntry() do
-                    yield streamed reader
-            | Zip
-            | SevenZip
-            | Rar ->
-                use archive = ArchiveFactory.OpenArchive(stream, options password)
-
-                yield! archive.Entries |> Seq.map stored
+            while reader.MoveToNextEntry() do
+                yield reader.Entry, (reader.WriteEntryTo: Stream -> unit)
         }
+
+    let private walk (step: ArchiveStep) (entries: seq<IEntry * (Stream -> unit)>) =
+        use walker = entries.GetEnumerator()
+        let mutable reading = KeepReading
+
+        while reading = KeepReading && walker.MoveNext() do
+            let entry, writeTo = walker.Current
+            reading <- step.Invoke { Info = infoOf entry; WriteTo = writeTo }
+
+    let withItems (fs: IFileSystem) password (kind: ArchiveKind) (path: FileSystemPath) (step: ArchiveStep) =
+        use stream = fs.File.OpenRead(FileSystemPath.value path)
+
+        match kind with
+        | Tar
+        | TarGz
+        | TarBz2
+        | TarXz ->
+            use reader = ReaderFactory.OpenReader(stream, options password)
+            walk step (streaming reader)
+        | Zip
+        | SevenZip
+        | Rar ->
+            use archive = ArchiveFactory.OpenArchive(stream, options password)
+            walk step (archive.Entries |> Seq.map (fun entry -> entry :> IEntry, writeEntry entry))
