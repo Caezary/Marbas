@@ -231,3 +231,39 @@ let ``the session file keeps the location the results panel returns to`` () =
     let left = (Marbas.Collections.Zipper.current written.Tabs).Left
     Assert.Equal(fp (at "start"), left.Path)
     Assert.Equal(Some(EntryName.create "docs"), left.Cursor)
+
+[<Fact>]
+let ``a hit already gone when the results are shown is left out`` () =
+    let fs = mockFs ()
+    fs.File.Delete(at "start/notes.txt")
+
+    let state = loaded fs |> showing fs
+
+    Assert.Equal<string list>([ ".."; relative "docs/inner.txt" ], named state)
+
+let private watching () =
+    let fs = Fakes.ExistenceWitness()
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "hi")
+    fs.AddDirectory(at "backup")
+    fs
+
+[<Fact>]
+let ``an external change in the other panel asks nothing about the hits`` () =
+    let fs = watching ()
+    let state = loaded fs |> loadPanel fs Right (fp (at "backup")) |> Expect.ok |> showing fs
+    let asked = fs.AskedAbout(at "start/notes.txt")
+
+    update fs ExternalChangeDetected state |> ignore
+
+    Assert.Equal(asked, fs.AskedAbout(at "start/notes.txt"))
+
+[<Fact>]
+let ``an external change leaves the hits of a results panel as they were`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> showing fs
+    fs.File.Delete(at "start/notes.txt")
+
+    let again = update fs ExternalChangeDetected state |> _.State
+
+    Assert.Equal<string list>([ ".."; relative "docs/inner.txt"; "notes.txt" ], named again)

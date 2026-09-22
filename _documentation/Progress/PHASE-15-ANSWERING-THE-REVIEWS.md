@@ -422,3 +422,44 @@ through `showResults` like the application. What is pinned on top of them is the
 index itself, in `PanelLocationTests`: the name a hit is shown under below one
 root, the whole path when there are several, and that `shownBy` keys every hit
 by the name it is shown under.
+
+**P15.12 stopped a results panel from re-checking itself because something
+happened next door.** Every listing of a results panel verifies its hits — a
+`File.Exists` per hit on disk, a full index read per archive — and
+`ExternalChangeDetected` listed a panel through `readTabQuietly`, which read
+*both* panels of the tab. So a file written by another program into the
+directory the *other* panel shows cost a stat per hit, on the UI thread, for a
+set of hits nothing had touched (perf P4).
+
+`readTabQuietly` now re-reads a panel only where `PanelLocation.watched` answers
+a path. That is not a special case bolted on for results panels: it is the same
+rule that decides what is watched in the first place. A change is reported for a
+directory or for an archive file under a panel, and nothing reports on a set of
+hits, so a panel the watch cannot speak about has nothing to learn from the
+message. A results panel is the one location that answers `None`, and it keeps
+what it has.
+
+What still verifies is what asks: the first showing, `Ctrl+R`, `Ctrl+H` and the
+reload after an operation — the last of which is how deleted or moved hits leave
+the listing, so it cannot be dropped. A copy or a move can never land in a
+results panel, because `transferTarget` answers `None` for one, so `finish*`
+never re-verifies a results panel that was merely the panel opposite.
+
+Measured on a panel of 50,000 hits over a mock file system: verifying it took
+265 ms, and an external change now leaves 17.7 ms, which is the directory panel
+that actually changed. A real disk charges more for a stat than a mock does.
+
+Three tests hold it. `a hit already gone when the results are shown is left out`
+and the older `reading the panel again drops a hit that is gone` pin the two
+moments that do check. `an external change leaves the hits of a results panel as
+they were` pins that the moment in between does not. The third is the one the
+task asked for: `Fakes.ExistenceWitness` counts what `File.Exists` was asked
+about, and `an external change in the other panel asks nothing about the hits`
+compares the count for a hit's path before and after the message.
+
+One behaviour went quietly with it, and it was a wrong one. `readTabQuietly`
+answered a failed listing by replanting the panel in the nearest directory that
+is there — written for a panel whose directory had been deleted. A results panel
+whose listing failed, which since P15.4 is any results panel holding a hit in a
+damaged archive, was therefore thrown out to a directory by a change in the
+panel beside it. It now stays where it is.

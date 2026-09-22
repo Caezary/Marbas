@@ -189,6 +189,27 @@ type CopyCounting() =
 
         writing
 
+type private AskedFile(accessor: IMockFileDataAccessor, asked: string -> unit) =
+    inherit MockFile(accessor)
+
+    override this.Exists(path: string) =
+        asked path
+        base.Exists path
+
+type ExistenceWitness() =
+    inherit MockFileSystem()
+
+    let asked = ResizeArray<string>()
+    let mutable reading: IFile = null
+
+    member _.AskedAbout(path: string) = asked |> Seq.filter ((=) path) |> Seq.length
+
+    override this.File =
+        if isNull reading then
+            reading <- AskedFile(this, asked.Add)
+
+        reading
+
 [<Literal>]
 let CrossVolumeReason = "Source and destination path must have identical roots."
 

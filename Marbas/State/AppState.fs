@@ -708,10 +708,15 @@ let private replanted (fs: IFileSystem) side state =
     | None -> state
 
 let readTabQuietly (fs: IFileSystem) state =
-    let keeping side state =
+    let reread side state =
         match readAgain fs side state with
         | Ok updated -> updated
         | Error _ -> replanted fs side state
+
+    let keeping side state =
+        match (panel side state).Path |> PanelLocation.watched with
+        | Some _ -> reread side state
+        | None -> state
 
     state |> keeping Left |> keeping Right
 

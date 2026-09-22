@@ -256,11 +256,20 @@ walked that product at least once, `deleteScope` twice. Marking 20,000 hits and
 reading them all back took ten seconds; through the map it takes nine
 milliseconds.
 
-**Every listing asks what is still there.** A hit on disk survives while its
-path exists; a hit inside an archive survives while the archive's index still
-names it, the index read once per archive per listing. So `Ctrl+R` and the
-reload after an operation drop what was moved or deleted without a rule of
-their own. An archive whose index cannot be read at all is not an answer:
+**A listing asks what is still there; an external change does not.** A hit on
+disk survives while its path exists; a hit inside an archive survives while the
+archive's index still names it, the index read once per archive per listing. So
+`Ctrl+R` and the reload after an operation drop what was moved or deleted
+without a rule of their own. What does *not* ask is
+`ExternalChangeDetected`: `readTabQuietly` re-reads a panel only where
+`PanelLocation.watched` answers a path, and it answers none for a results panel.
+The rule is the same one that decides what is watched at all — a change is
+reported for a directory or an archive under a panel, never for a set of hits —
+so a results panel is checked when it is first shown and when the user asks,
+and a file written into the *other* panel's directory costs it nothing. It used
+to cost a `File.Exists` per hit and a full index read per archive, on the UI
+thread, every time: 265 ms for 50,000 hits over a mock file system, and a real
+disk charges more for a stat than a mock does. An archive whose index cannot be read at all is not an answer:
 `SearchListing.heldIn` hands the `ArchiveError` back, the listing fails as
 `ArchiveUnreadable`, and the panel says so. Keeping those hits would show them
 as verified when nothing verified them, and the damage would surface later

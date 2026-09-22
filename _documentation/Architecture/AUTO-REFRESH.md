@@ -6,10 +6,13 @@ deleted, a memory stick pulled out — each of them reaches the screen on its ow
 without `Ctrl+R`.
 
 **The loop does not change shape: a watch is an effect and a change is a
-message.** `ExternalChangeDetected` answers with both panels of the tab in front
-read again — `AppState.readTabQuietly`, which is `refresh` twice over with the
-cursors kept and the marks that survived — and `WatchLocations` carries the
-paths the adapter should be watching. Neither the state nor `Update` knows that
+message.** `ExternalChangeDetected` answers with the watched panels of the tab in
+front read again — `AppState.readTabQuietly`, which is `refresh` over each of
+them with the cursor kept and the marks that survived — and `WatchLocations`
+carries the paths the adapter should be watching. A panel `PanelLocation.watched`
+answers nothing for is left alone, which is one panel in practice: a results
+panel, whose hits are checked when it is shown and when the user asks, never
+because something happened in the directory beside it. Neither the state nor `Update` knows that
 a `FileSystemWatcher` exists; `Shell.Dependencies.WatchLocations` is the port,
 `Adapters/DirectoryWatch.fs` the only implementation, and the callback it is
 handed dispatches that one message.
