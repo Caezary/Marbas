@@ -1,6 +1,5 @@
 module Marbas.Ui.Find.ResultRow
 
-open System.Collections.Generic
 open System.IO.Abstractions
 open Marbas.FileSystem
 open Marbas.FileSystem.FileSearch
@@ -13,22 +12,18 @@ type ResultRow =
     | GroupHeader of PanelLocation
     | Hit of FindHit
 
-let rows (hits: FindHit list) =
-    let order = ResizeArray<PanelLocation>()
-    let grouped = Dictionary<PanelLocation, ResizeArray<FindHit>>()
+let following (opened: PanelLocation option) (hits: FindHit seq) =
+    let rows = ResizeArray<ResultRow>()
+    let mutable standing = opened
 
     for hit in hits do
-        match grouped.TryGetValue hit.Location with
-        | true, found -> found.Add hit
-        | _ ->
-            grouped[hit.Location] <- ResizeArray [ hit ]
-            order.Add hit.Location
+        if standing <> Some hit.Location then
+            rows.Add(GroupHeader hit.Location)
+            standing <- Some hit.Location
 
-    [ for location in order do
-          yield GroupHeader location
+        rows.Add(Hit hit)
 
-          for hit in grouped[location] do
-              yield Hit hit ]
+    List.ofSeq rows
 
 let describe (fs: IFileSystem) width row =
     match row with

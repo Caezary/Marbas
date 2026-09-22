@@ -156,15 +156,34 @@ bar: `Enter` stands on the row, `F2` sends the list to the panel, `F3` views a
 file, and `Esc` or `F10` leave — the first `Esc` stops a walk still running and
 leaves the list up, the next closes it.
 
-**The list is grouped by where a hit lives.** `ResultRow.rows` is pure: a header
-row spelling the directory — `C:\work\backup.zip\docs` for a level inside an
-archive — and its hits indented beneath it with the name, size and date. Groups
-keep the order the walk reached them, a hit for a group already open joins it,
-and since the list is rebuilt on each tick the cursor is put back on the row it
-stood on rather than the index, so a hit landing in an earlier group cannot move
-it. The summary line says `Searching: <directory>` with the counts so far,
-`Finished` or `Stopped` with the walk's own counts afterwards — counted off the
-hits while it runs and never stored twice.
+**The list is grouped by where a hit lives.** `ResultRow.following` is pure: a
+header row spelling the directory — `C:\work\backup.zip\docs` for a level inside
+an archive — and its hits indented beneath it with the name, size and date. It
+takes the run already open and opens a new one only where the location changes,
+so the rows are the walk read straight through. A directory the walk comes back
+to — which a depth-first walk does whenever a subdirectory stands between two of
+its own hits — heads each run it comes back with, rather than collecting them all
+under the header of the first.
+
+**A tick appends; it does not rebuild.** The rows of a tick's hits are formatted
+once and added to the `ObservableCollection` the `ListView` already holds, which
+Terminal.Gui follows, so a hit's row string is written when it arrives and never
+again, and the cursor does not move because nothing above it changed. That is
+what makes the window linear in the hits rather than quadratic: rebuilding the
+whole list every tick cost H formats per tick, and a whole-disk search with
+200,000 hits was reformatting all of them twenty times a second by the end. The
+collection is replaced only when the panel changes width, which is the one event
+that invalidates every row, and the cursor's index is put back after it — the
+rows are the same rows in the same order, so the index is the identity.
+
+**The summary line is written on its own.** `walking` sets the directory and
+rewrites the one label; it no longer touches the rows. The counts it shows come
+with the hits: `FileSearch.run` already counts files, directories and skipped
+entries, and `FindReport` carries the tally as it stood when each hit was
+reported, so the window keeps the last one instead of scanning its hits twice a
+tick. `Finished` or `Stopped` then carry the walk's own final counts. One rule
+counts, in one place; the skipped entries, which the walking line used to leave
+at zero until the end, now show as they happen.
 
 **While the walk runs, the hits live in the window and not in the state.**
 `RunSearch` is the port and `Adapters/SearchRunner` the only thing that knows a

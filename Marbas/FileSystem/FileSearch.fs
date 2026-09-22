@@ -17,6 +17,8 @@ type FindOutcome =
     | Finished of FindCounts
     | Stopped of FindCounts
 
+type FindReport = { Hit: FindHit; Counts: FindCounts }
+
 let private childrenOf (fs: IFileSystem) (path: FileSystemPath) =
     try
         fs.Directory.EnumerateFileSystemEntries(FileSystemPath.value path)
@@ -57,7 +59,7 @@ let private deepestDirectory (item: ArchiveItem) =
 let private parentOf segments =
     segments |> List.take (List.length segments - 1) |> pathOf
 
-let run (fs: IFileSystem) (control: BatchControl) (report: FindHit -> unit) (query: FindQuery) (ground: FindGround) =
+let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (query: FindQuery) (ground: FindGround) =
     let platform = FileSystemPath.platformOf fs
     let visited = HashSet<string>(FileSystemPath.comparer platform)
 
@@ -76,11 +78,13 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindHit -> unit) (que
           Skipped = skipped }
 
     let hit location entry =
-        report { Location = location; Entry = entry }
-
         match entry.Kind with
         | File -> files <- files + 1
         | Directory -> directories <- directories + 1
+
+        report
+            { Hit = { Location = location; Entry = entry }
+              Counts = counted () }
 
     let wanted (entry: Entry) =
         HiddenEntries.admits query.Hidden entry.Visibility

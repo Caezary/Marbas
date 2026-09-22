@@ -26,10 +26,21 @@ let private nothing =
       Directories = 0
       Skipped = 0 }
 
+let private countsOf (hits: FindHit seq) =
+    let kind wanted =
+        hits |> Seq.filter (fun hit -> hit.Entry.Kind = wanted) |> Seq.length
+
+    { Files = kind DirectoryListing.File
+      Directories = kind DirectoryListing.Directory
+      Skipped = 0 }
+
 type ResultsView(fs: IFileSystem, run: SearchRun) =
     inherit Window(Width = Dim.Fill(), Height = Dim.Fill())
 
     let found = ResizeArray<FindHit>()
+    let shown = ResizeArray<ResultRow.ResultRow>()
+    let mutable opened: PanelLocation option = None
+    let mutable counts = nothing
     let mutable directory = ""
     let mutable ended: FindOutcome option = None
     let mutable asked = false
@@ -39,20 +50,31 @@ type ResultsView(fs: IFileSystem, run: SearchRun) =
         | Walk _ -> None
         | Reopen(results, gone) -> Some(results, gone)
 
+    let openedBy (hits: FindHit list) =
+        hits |> List.tryLast |> Option.map _.Location |> Option.orElse opened
+
     do
         match run with
         | Walk _ -> ()
         | Reopen(results, _) ->
             found.AddRange results.Hits
+            shown.AddRange(ResultRow.following None results.Hits)
+            opened <- openedBy results.Hits
+            counts <- countsOf results.Hits
             ended <- Some results.Outcome
 
     member val Room = 0 with get, set
+
+    member val Lines = ObservableCollection<string>() with get, set
 
     member val Landing: FindLanding option = None with get, set
 
     member _.Hits = List.ofSeq found
 
-    member _.Rows = ResultRow.rows (List.ofSeq found)
+    member _.Rows = List.ofSeq shown
+
+    member _.RowAt index =
+        if index >= 0 && index < shown.Count then Some shown[index] else None
 
     member _.Running = Option.isNone ended
 
@@ -60,27 +82,28 @@ type ResultsView(fs: IFileSystem, run: SearchRun) =
 
     member _.Ask() = asked <- true
 
-    member _.Gather(hits: FindHit list) = found.AddRange hits
+    member _.Arrived(reports: FindReport list) =
+        let hits = reports |> List.map _.Hit
+        let rows = ResultRow.following opened hits
 
-    member _.Counted =
-        let kind wanted =
-            found |> Seq.filter (fun hit -> hit.Entry.Kind = wanted) |> Seq.length
+        found.AddRange hits
+        shown.AddRange rows
+        opened <- openedBy hits
+        reports |> List.tryLast |> Option.iter (fun report -> counts <- report.Counts)
 
-        { Files = kind DirectoryListing.File
-          Directories = kind DirectoryListing.Directory
-          Skipped = 0 }
+        rows
 
-    member this.Progress =
+    member _.Progress =
         match reopened, ended with
         | Some(results, gone), _ ->
-            FindSummary.Reopened(QueryText.describe results.Query, QueryText.where fs results.Ground, this.Counted, gone)
+            FindSummary.Reopened(QueryText.describe results.Query, QueryText.where fs results.Ground, counts, gone)
         | None, Some outcome -> FindSummary.Done outcome
-        | None, None -> FindSummary.Walking(directory, this.Counted)
+        | None, None -> FindSummary.Walking(directory, counts)
 
     member _.Ran = run
 
-    member this.Outcome =
-        ended |> Option.defaultWith (fun () -> Stopped this.Counted)
+    member _.Outcome =
+        ended |> Option.defaultWith (fun () -> Stopped counts)
 
     member _.Walking(place: string) = directory <- place
 
@@ -100,39 +123,26 @@ let summary (window: ResultsView) =
 let keyBar (window: ResultsView) =
     window.SubViews |> Seq.find (fun view -> view.Id = KeyBarId)
 
-let private standingRow (view: ListView) =
-    let standing = view.SelectedItem |> Option.ofNullable |> Option.defaultValue 0
+let private updateSummary (window: ResultsView) =
+    (summary window).Text <- FindSummary.describe window.Progress
 
-    view.Source
-    |> Option.ofObj
-    |> Option.map _.ToList()
-    |> Option.filter (fun rows -> standing >= 0 && standing < rows.Count)
-    |> Option.map (fun rows -> rows[standing].ToString())
-
-let private refresh (window: ResultsView) =
+let private repaint (window: ResultsView) =
     let view = list window
     let standing = view.SelectedItem |> Option.ofNullable |> Option.defaultValue 0
-    let carried = standingRow view
     window.Room <- max 1 view.Viewport.Width
-    let shown = window.Rows |> List.map (window.Describe window.Room)
+    window.Lines <- ObservableCollection(window.Rows |> List.map (window.Describe window.Room))
+    view.SetSource window.Lines
 
-    let landing =
-        carried
-        |> Option.bind (fun row -> shown |> List.tryFindIndex ((=) row))
-        |> Option.defaultValue standing
+    if window.Lines.Count > 0 then
+        view.SelectedItem <- max 0 (min standing (window.Lines.Count - 1))
 
-    view.SetSource(ObservableCollection shown)
-
-    if not (List.isEmpty shown) then
-        view.SelectedItem <- max 0 (min landing (List.length shown - 1))
-
-    (summary window).Text <- FindSummary.describe window.Progress
+    updateSummary window
     view.SetNeedsDraw()
 
 let private rowUnderCursor (window: ResultsView) =
     let standing = (list window).SelectedItem |> Option.ofNullable |> Option.defaultValue 0
 
-    window.Rows |> List.tryItem standing
+    window.RowAt standing
 
 let private viewRow (window: ResultsView) (view: FindHit -> unit) =
     match rowUnderCursor window with
@@ -211,10 +221,10 @@ let create (fs: IFileSystem) (run: SearchRun) (view: FindHit -> unit) (stop: uni
 
     window.SubViewsLaidOut.Add(fun _ ->
         if (list window).Viewport.Width <> window.Room then
-            refresh window)
+            repaint window)
 
     hits.SetFocus() |> ignore
-    refresh window
+    repaint window
 
     match run with
     | Walk _ -> ()
@@ -222,14 +232,17 @@ let create (fs: IFileSystem) (run: SearchRun) (view: FindHit -> unit) (stop: uni
 
     window
 
-let add (window: ResultsView) (hits: FindHit list) =
-    window.Gather hits
-    refresh window
+let add (window: ResultsView) (reports: FindReport list) =
+    for row in window.Arrived reports do
+        window.Lines.Add(window.Describe window.Room row)
+
+    updateSummary window
+    (list window).SetNeedsDraw()
 
 let walking (window: ResultsView) (directory: string) =
     window.Walking directory
-    refresh window
+    updateSummary window
 
 let finish (window: ResultsView) (outcome: FindOutcome) =
     window.Ended outcome
-    refresh window
+    updateSummary window

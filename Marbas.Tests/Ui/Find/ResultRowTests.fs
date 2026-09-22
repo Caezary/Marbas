@@ -35,7 +35,7 @@ let private hitIn location entry = { Location = location; Entry = entry }
 
 let private onDisk where = OnDisk(fp (at where))
 
-let private rowsOf hits = ResultRow.rows hits
+let private rowsOf hits = ResultRow.following None hits
 
 [<Fact>]
 let ``nothing found is no rows at all`` () =
@@ -71,7 +71,7 @@ let ``the groups stand in the order the walk reached them`` () =
     Assert.Equal<PanelLocation list>([ onDisk "start/docs"; onDisk "start" ], headers)
 
 [<Fact>]
-let ``a hit for a group already opened joins it rather than opening a second one`` () =
+let ``a walk coming back to a directory heads the run it comes back with`` () =
     let rows =
         rowsOf
             [ hitIn (onDisk "start") (file "a.txt" 1L)
@@ -81,9 +81,28 @@ let ``a hit for a group already opened joins it rather than opening a second one
     Assert.Equal<ResultRow.ResultRow list>(
         [ ResultRow.GroupHeader(onDisk "start")
           ResultRow.Hit(hitIn (onDisk "start") (file "a.txt" 1L))
-          ResultRow.Hit(hitIn (onDisk "start") (file "c.txt" 3L))
           ResultRow.GroupHeader(onDisk "start/docs")
-          ResultRow.Hit(hitIn (onDisk "start/docs") (file "b.txt" 2L)) ],
+          ResultRow.Hit(hitIn (onDisk "start/docs") (file "b.txt" 2L))
+          ResultRow.GroupHeader(onDisk "start")
+          ResultRow.Hit(hitIn (onDisk "start") (file "c.txt" 3L)) ],
+        rows
+    )
+
+[<Fact>]
+let ``rows following a run already open carry no header of their own`` () =
+    let rows =
+        ResultRow.following (Some(onDisk "start")) [ hitIn (onDisk "start") (file "b.txt" 2L) ]
+
+    Assert.Equal<ResultRow.ResultRow list>([ ResultRow.Hit(hitIn (onDisk "start") (file "b.txt" 2L)) ], rows)
+
+[<Fact>]
+let ``rows following another run open one of their own`` () =
+    let rows =
+        ResultRow.following (Some(onDisk "start/docs")) [ hitIn (onDisk "start") (file "b.txt" 2L) ]
+
+    Assert.Equal<ResultRow.ResultRow list>(
+        [ ResultRow.GroupHeader(onDisk "start")
+          ResultRow.Hit(hitIn (onDisk "start") (file "b.txt" 2L)) ],
         rows
     )
 

@@ -331,3 +331,57 @@ render, four passes over the listing, although it can only change when the
 entries, the marks or the search do. The plan asks for the footer on a
 cursor-only change and it is cheap next to what was removed; folding it into
 the memo is a line of work for whoever needs it.
+
+**P15.10 made a tick cost the hits it brought, not the hits so far.** Every
+100 ms the search runner drained its queue into `ResultsWindow.add`, and `add`
+rebuilt the window from scratch: regroup every hit into a dictionary, format
+every row again, copy the whole source out to read the one row under the cursor,
+and hand the `ListView` a new `ObservableCollection`. A search finding H hits
+over T ticks did O(H·T) formatting on the UI thread, which is why a whole-disk
+search stopped responding as it went on (perf P2).
+
+A tick now formats only what it brought and appends it. Terminal.Gui's
+`ListView` follows an `ObservableCollection` it was already given — that was
+worth checking before designing around it, and it does, including leaving the
+cursor where it stood. So the window keeps the collection, adds the new rows to
+it, and the cursor needs no rescue: nothing above it moved. The whole list is
+rebuilt for one event only, a change of width, and there the cursor's index is
+kept as it is, because the rows are the same rows in the same order. The
+`ToString()` search that used to find the row again is gone with the rebuild
+that needed it.
+
+`ResultRow.rows` became `ResultRow.following`, which takes the run already open
+and opens a new one only where the location changes. **This is a visible
+change, and it is the one thing in this task that is not purely internal.** The
+old grouping was a dictionary: a hit for a directory already seen joined that
+directory's group wherever it stood. Appending cannot do that without inserting
+into the middle of the list, and inserting is what makes it quadratic again — so
+a directory the walk comes back to now heads each run it comes back with. A
+depth-first walk comes back often: it reports a directory's own entries
+interleaved with descending into its subdirectories, so a directory with hits on
+either side of a subdirectory is split. Rendering `*.md` over `_documentation`
+shows it — 48 hits under 8 headers where 5 directories hold them, `_documentation`
+heading four runs. Both the review (P2) and the plan asked for exactly this, and
+the list still reads correctly, directory by directory, in walk order. What
+would remove the split for good is `FileSearch` reporting a directory's own hits
+before descending; that is a change to the walk, and the walks are P15.14's.
+
+The counts stopped being computed twice. `FileSearch.run` already tracks files,
+directories and skipped entries, and `report` now carries a `FindReport` — the
+hit and the tally as it stood — so the window keeps the last tally instead of
+scanning all its hits twice per tick. One consequence is worth naming: the
+walking line used to show `0 skipped` until the walk ended, because the window
+could only count what it could see. It now shows them as they happen, which is
+what the finished line always said.
+
+`walking` writes the summary label and nothing else, which is the whole of perf
+P2's third part.
+
+The tests that pin it: `the ticks after a hit do not format it again` feeds ten
+ticks and asserts the row from the first tick is the *same string instance*
+afterwards — that is "formatted once", observable without a counter; `a tick adds
+to the rows already shown rather than replacing them` and `a step of the walk
+leaves the rows alone` assert the source's identity. All three fail if `add` or
+`walking` goes back to rebuilding. A real search was rendered to a screen to
+check the result: headers flush left, hits indented with size and date, and
+`Finished — 48 files, 0 directories` on the summary line.

@@ -7,6 +7,7 @@ open System.Threading
 open System.Threading.Tasks
 open Terminal.Gui.App
 open Marbas.FileSystem
+open Marbas.FileSystem.FileSearch
 open Marbas.Ui.Find
 
 let private Gathering = TimeSpan.FromMilliseconds 100.0
@@ -20,7 +21,7 @@ let private walk
     query
     ground
     =
-    let pending = ConcurrentQueue<FindHit>()
+    let pending = ConcurrentQueue<FindReport>()
 
     let mutable walking =
         ground.Roots
@@ -34,10 +35,10 @@ let private walk
 
     let gather () =
         let arrived =
-            [ let mutable hit = Unchecked.defaultof<FindHit>
+            [ let mutable report = Unchecked.defaultof<FindReport>
 
-              while pending.TryDequeue &hit do
-                  yield hit ]
+              while pending.TryDequeue &report do
+                  yield report ]
 
         if showing () then
             ResultsWindow.add window arrived

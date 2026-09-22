@@ -55,7 +55,7 @@ let private searchFor raw =
 
 let private hitsOf (fs: IFileSystem) query ground =
     let hits = ResizeArray<FindHit>()
-    let outcome = run fs Operations.unattended hits.Add query ground
+    let outcome = run fs Operations.unattended (fun report -> hits.Add report.Hit) query ground
 
     outcome,
     hits

@@ -35,6 +35,9 @@ let private hitIn where name =
 
 let private counts files = { Files = files; Directories = 0; Skipped = 0 }
 
+let private arriving hits =
+    hits |> List.mapi (fun index hit -> { Hit = hit; Counts = counts (index + 1) })
+
 let private query =
     { What = FindWhat.create (NameMasks.read "*.txt") None FilesOnly
       Scope = FromDirectory
@@ -71,6 +74,18 @@ let private lines window =
     let source = list.Source.ToList()
     [ for index in 0 .. list.Source.Count - 1 -> source[index].ToString().TrimEnd() ]
 
+let private formatted window =
+    let list = ResultsWindow.list window
+    let source = list.Source.ToList()
+    [ for index in 0 .. list.Source.Count - 1 -> source[index] ]
+
+let private tickingOneByOne window hits =
+    hits |> List.iter (fun hit -> ResultsWindow.add window (arriving [ hit ]))
+
+let private nineMore =
+    [ "b.txt"; "c.txt"; "d.txt"; "e.txt"; "f.txt"; "g.txt"; "h.txt"; "i.txt"; "j.txt" ]
+    |> List.map (hitIn "start")
+
 let private summary window = (ResultsWindow.summary window).Text
 
 [<Fact>]
@@ -85,7 +100,7 @@ let ``a window with nothing in it yet shows where the walk is`` () =
 let ``the hits show grouped under their directory while the walk runs`` () =
     use window = laidOut ()
 
-    ResultsWindow.add window [ hitIn "start" "a.txt"; hitIn "start/docs" "b.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt"; hitIn "start/docs" "b.txt" ])
 
     let shown = lines window
 
@@ -99,14 +114,14 @@ let ``the summary counts the hits as they arrive`` () =
     use window = laidOut ()
     ResultsWindow.walking window (at "start")
 
-    ResultsWindow.add window [ hitIn "start" "a.txt"; hitIn "start" "b.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt"; hitIn "start" "b.txt" ])
 
     Assert.Equal(FindSummary.describe (FindSummary.Walking(at "start", counts 2)), summary window)
 
 [<Fact>]
 let ``a finished walk says so with the counts it answered`` () =
     use window = laidOut ()
-    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt" ])
 
     ResultsWindow.finish window (Finished { Files = 1; Directories = 0; Skipped = 2 })
 
@@ -121,14 +136,62 @@ let ``a stopped walk says so`` () =
     Assert.Equal("Stopped — nothing found", summary window)
 
 [<Fact>]
-let ``the row under the cursor stays there when a hit joins an earlier group`` () =
+let ``the row under the cursor stays there while more hits arrive`` () =
     use window = laidOut ()
-    ResultsWindow.add window [ hitIn "start" "a.txt"; hitIn "start/docs" "b.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt"; hitIn "start/docs" "b.txt" ])
     (ResultsWindow.list window).SelectedItem <- 3
 
-    ResultsWindow.add window [ hitIn "start" "c.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "c.txt" ])
 
     Assert.StartsWith("  b.txt", lines window |> List.item (ResultsWindow.list window).SelectedItem.Value)
+
+[<Fact>]
+let ``a walk coming back to a directory heads the run it comes back with`` () =
+    use window = laidOut ()
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt"; hitIn "start/docs" "b.txt" ])
+
+    ResultsWindow.add window (arriving [ hitIn "start" "c.txt" ])
+
+    let shown = lines window
+
+    Assert.Equal(at "start", shown |> List.item 0)
+    Assert.StartsWith("  a.txt", shown |> List.item 1)
+    Assert.Equal(at "start/docs", shown |> List.item 2)
+    Assert.StartsWith("  b.txt", shown |> List.item 3)
+    Assert.Equal(at "start", shown |> List.item 4)
+    Assert.StartsWith("  c.txt", shown |> List.item 5)
+
+[<Fact>]
+let ``the ticks after a hit do not format it again`` () =
+    use window = laidOut ()
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt" ])
+    let painted = formatted window |> List.item 1
+
+    tickingOneByOne window nineMore
+
+    Assert.Same(painted, formatted window |> List.item 1)
+    Assert.Equal(11, (ResultsWindow.list window).Source.Count)
+
+[<Fact>]
+let ``a tick adds to the rows already shown rather than replacing them`` () =
+    use window = laidOut ()
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt" ])
+    let source = (ResultsWindow.list window).Source
+
+    ResultsWindow.add window (arriving [ hitIn "start" "b.txt" ])
+
+    Assert.Same(source, (ResultsWindow.list window).Source)
+
+[<Fact>]
+let ``a step of the walk leaves the rows alone`` () =
+    use window = laidOut ()
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt" ])
+    let source = (ResultsWindow.list window).Source
+
+    ResultsWindow.walking window (at "start/docs")
+
+    Assert.Same(source, (ResultsWindow.list window).Source)
+    Assert.Equal(FindSummary.describe (FindSummary.Walking(at "start/docs", counts 1)), summary window)
 
 [<Fact>]
 let ``Esc stops a running walk and leaves the window up`` () =
@@ -199,7 +262,7 @@ let private directoryIn where name =
 let ``F3 on a file hit views it`` () =
     let seen = ResizeArray<FindHit>()
     use window = viewing seen
-    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt" ])
     (ResultsWindow.list window).SelectedItem <- 1
 
     press (ResultsWindow.list window) Key.F3
@@ -210,7 +273,7 @@ let ``F3 on a file hit views it`` () =
 let ``F3 on a directory hit views nothing`` () =
     let seen = ResizeArray<FindHit>()
     use window = viewing seen
-    ResultsWindow.add window [ directoryIn "start" "docs" ]
+    ResultsWindow.add window (arriving [ directoryIn "start" "docs" ])
     (ResultsWindow.list window).SelectedItem <- 1
 
     press (ResultsWindow.list window) Key.F3
@@ -221,7 +284,7 @@ let ``F3 on a directory hit views nothing`` () =
 let ``F3 on the header of a group views nothing`` () =
     let seen = ResizeArray<FindHit>()
     use window = viewing seen
-    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt" ])
     (ResultsWindow.list window).SelectedItem <- 0
 
     press (ResultsWindow.list window) Key.F3
@@ -232,7 +295,7 @@ let ``F3 on the header of a group views nothing`` () =
 let ``Enter on a hit answers it and closes the window`` () =
     let closed = ref 0
     use window = showing ignore (fun _ -> closed.Value <- closed.Value + 1)
-    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt" ])
     (ResultsWindow.list window).SelectedItem <- 1
 
     press (ResultsWindow.list window) Key.Enter
@@ -243,7 +306,7 @@ let ``Enter on a hit answers it and closes the window`` () =
 [<Fact>]
 let ``Enter on the header of a group answers the directory it names`` () =
     use window = laidOut ()
-    ResultsWindow.add window [ hitIn "start/docs" "a.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start/docs" "a.txt" ])
     (ResultsWindow.list window).SelectedItem <- 0
 
     press (ResultsWindow.list window) Key.Enter
@@ -254,7 +317,7 @@ let ``Enter on the header of a group answers the directory it names`` () =
 let ``the panel key answers with the whole list and closes the window`` () =
     let closed = ref 0
     use window = showing ignore (fun _ -> closed.Value <- closed.Value + 1)
-    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt" ])
     (ResultsWindow.list window).SelectedItem <- 1
 
     press (ResultsWindow.list window) Key.F2
@@ -269,7 +332,7 @@ let ``the panel key names itself in the bar`` () =
 [<Fact>]
 let ``a window left by Esc answers no landing at all`` () =
     use window = laidOut ()
-    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt" ])
     ResultsWindow.finish window (Finished(counts 1))
 
     press (ResultsWindow.list window) Key.Esc
@@ -279,7 +342,7 @@ let ``a window left by Esc answers no landing at all`` () =
 [<Fact>]
 let ``the answer carries what was found and the row it was left on`` () =
     use window = laidOut ()
-    ResultsWindow.add window [ hitIn "start" "a.txt"; hitIn "start" "b.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt"; hitIn "start" "b.txt" ])
     (ResultsWindow.list window).SelectedItem <- 2
 
     let answer = ResultsWindow.answer window
@@ -345,7 +408,7 @@ let ``a reopened window answers the walk it was told about rather than a new one
 [<Fact>]
 let ``a window closed while the walk still ran answers a stopped walk`` () =
     use window = laidOut ()
-    ResultsWindow.add window [ hitIn "start" "a.txt" ]
+    ResultsWindow.add window (arriving [ hitIn "start" "a.txt" ])
 
     let answer = ResultsWindow.answer window
 

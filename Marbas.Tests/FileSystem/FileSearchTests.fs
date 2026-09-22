@@ -54,7 +54,7 @@ let private hitsOf (fs: IFileSystem) control query roots =
     let hits = ResizeArray<FindHit>()
 
     let outcome =
-        run fs control hits.Add query
+        run fs control (fun report -> hits.Add report.Hit) query
             { Roots = roots |> List.map OnDisk
               OtherRoots = [] }
 
@@ -62,7 +62,7 @@ let private hitsOf (fs: IFileSystem) control query roots =
 
 let private hitsWithin (fs: IFileSystem) query ground =
     let hits = ResizeArray<FindHit>()
-    run fs Operations.unattended hits.Add query ground |> ignore
+    run fs Operations.unattended (fun report -> hits.Add report.Hit) query ground |> ignore
     spelled fs hits
 
 let private found fs query roots =

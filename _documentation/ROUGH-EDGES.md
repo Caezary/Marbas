@@ -128,6 +128,16 @@ belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 
 ## Finding files
 
+- A directory whose hits are split by a subdirectory heads a group for each run
+  of them. P15.10 made the results window append its rows instead of rebuilding
+  them every tick, and a group header is opened where the location changes, so
+  the list is the walk read straight through. A depth-first walk reports a
+  directory's own entries interleaved with descending into its subdirectories,
+  so `*.md` over `_documentation` shows 8 headers for the 5 directories that
+  hold the 48 hits. Nothing is missing or mislabelled, but a directory can be
+  named more than once. Removing the split means `FileSearch` reporting a
+  directory's own hits before it descends, which is a change to the walk and
+  belongs with P15.14.
 - One archive whose index cannot be read keeps the whole results panel from
   loading. Since P15.4 a hit inside such an archive is no longer shown as if it
   had been verified — the listing answers `ArchiveUnreadable` instead — but the
