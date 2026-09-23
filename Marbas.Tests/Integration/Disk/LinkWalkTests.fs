@@ -71,7 +71,7 @@ let ``deleting a tree holding a link leaves what the link points at`` () =
     use scratch = looped ()
     Directory.CreateSymbolicLink(scratch.At "backup/twin", scratch.At "data/docs") |> ignore
 
-    delete disk (scratch.Path "backup") |> Expect.ok
+    delete disk unattended (scratch.Path "backup") |> Expect.ok
 
     Assert.False(Directory.Exists(scratch.At "backup"))
     Assert.Equal("inner", File.ReadAllText(scratch.At "data/docs/inner.txt"))

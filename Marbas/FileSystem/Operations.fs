@@ -152,24 +152,26 @@ let makeFile (fs: IFileSystem) (parent: FileSystemPath) (name: EntryName) =
     | FileEntry -> Ok path
     | NoEntry -> attempt fs path createFile |> Result.map (fun () -> path)
 
-let rec private deleteTree (fs: IFileSystem) (path: FileSystemPath) =
-    children fs path
-    |> List.iter (fun child ->
+let rec private deleting (fs: IFileSystem) (control: BatchControl) (child: Child) =
+    if control.IsCancelled() then
+        Error(Cancelled child.Path)
+    else
+        control.Report child.Path
+
         match child.Entry.Kind, child.Entry.LinkTarget with
-        | Directory, Some _ -> deleteEmptyDirectory fs child.Path
-        | Directory, None -> deleteTree fs child.Path
-        | File, _ -> deleteFile fs child.Path)
+        | Directory, Some _ -> attempt fs child.Path deleteEmptyDirectory
+        | File, _ -> attempt fs child.Path deleteFile
+        | Directory, None ->
+            result {
+                let! below = attempting child.Path (fun () -> children fs child.Path)
+                do! below |> List.traverseResultM (deleting fs control) |> Result.ignore
+                do! attempt fs child.Path deleteEmptyDirectory
+            }
 
-    deleteEmptyDirectory fs path
-
-let delete (fs: IFileSystem) (path: FileSystemPath) =
+let delete (fs: IFileSystem) (control: BatchControl) (path: FileSystemPath) =
     match entryAt fs path with
     | None -> Error(SourceNotFound path)
-    | Some entry ->
-        match entry.Kind, entry.LinkTarget with
-        | Directory, Some _ -> attempt fs path deleteEmptyDirectory
-        | Directory, None -> attempt fs path deleteTree
-        | File, _ -> attempt fs path deleteFile
+    | Some entry -> deleting fs control { Path = path; Entry = entry }
 
 [<Literal>]
 let WipeBufferLength = 65536
@@ -312,6 +314,15 @@ let private renameDirectory (fs: IFileSystem) (source: FileSystemPath) (target: 
     | :? IO.IOException -> RenameRefused
     | ex -> RenameFailed(mapException source ex)
 
+let private mustFinish (control: BatchControl) =
+    { control with IsCancelled = fun () -> false }
+
+let moveByCopying (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
+    result {
+        do! copyTo fs control source target
+        do! delete fs (mustFinish control) source
+    }
+
 let moveTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
     match FileSystemPath.kind fs source with
     | NoEntry -> Error(SourceNotFound source)
@@ -322,11 +333,7 @@ let moveTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (t
         match renameDirectory fs source target with
         | Renamed -> Ok()
         | RenameFailed error -> Error error
-        | RenameRefused ->
-            result {
-                do! copyTo fs control source target
-                do! delete fs source
-            }
+        | RenameRefused -> moveByCopying fs control source target
     | FileEntry when control.IsCancelled() -> Error(Cancelled source)
     | FileEntry ->
         control.Report source
@@ -338,29 +345,39 @@ let move (fs: IFileSystem) control (targetDirectory: FileSystemPath) (source: Fi
     |> inDirectory fs targetDirectory
     |> moveTo fs control source
 
-let rename (fs: IFileSystem) (source: FileSystemPath) (newName: EntryName) =
+type RenameStep =
+    | RenameDone
+    | CopyNeeded of target: FileSystemPath
+
+let startRename (fs: IFileSystem) (source: FileSystemPath) (newName: EntryName) =
     let target =
         newName
         |> EntryName.value
         |> FileSystemPath.combine fs (FileSystemPath.directory fs source)
 
-    match FileSystemPath.kind fs target with
-    | NoEntry -> moveTo fs unattended source target
+    match FileSystemPath.kind fs target, FileSystemPath.kind fs source with
+    | NoEntry, NoEntry -> Error(SourceNotFound source)
+    | NoEntry, FileEntry ->
+        let moveToTarget fs' source' = moveFile fs' true source' target
+        attempt fs source moveToTarget |> Result.map (fun () -> RenameDone)
+    | NoEntry, DirectoryEntry ->
+        match renameDirectory fs source target with
+        | Renamed -> Ok RenameDone
+        | RenameFailed error -> Error error
+        | RenameRefused -> Ok(CopyNeeded target)
     | _ -> Error(TargetExists target)
 
 let itemResult source outcome =
     { Source = ItemOnDisk source
       Outcome = outcome }
 
-let private itemResults sources outcome =
-    sources |> List.map (fun source -> itemResult source (outcome source))
-
 let failures (results: ItemResult list) =
     results |> List.filter (_.Outcome >> Result.isError)
 
-let removeAll remove sources = itemResults sources remove
-
-let deleteAll (fs: IFileSystem) sources = removeAll (delete fs) sources
+let wholeOutcome (results: ItemResult list) =
+    match failures results with
+    | [] -> Ok()
+    | failed :: _ -> failed.Outcome
 
 type private StandingAnswer =
     | AskEachTime
@@ -422,3 +439,13 @@ let moveAll (fs: IFileSystem) control sources targetDirectory =
 
 let wipeAll (fs: IFileSystem) control sources =
     allWatched control (wipe fs control) sources
+
+let deleteAll (fs: IFileSystem) control sources =
+    allWatched control (delete fs control) sources
+
+let trashAll send (control: BatchControl) sources =
+    let sending source =
+        control.Report source
+        send source
+
+    allWatched control sending sources

@@ -31,7 +31,7 @@ type private Bin(fs: MockFileSystem) =
 
     member _.Send(path: FileSystemPath) =
         taken.Add(FileSystemPath.value path)
-        Operations.delete fs path
+        Operations.delete fs Operations.unattended path
 
 let private windowWith (fs: MockFileSystem) (bin: Bin) confirm reportError =
     focusedWindow
@@ -124,6 +124,84 @@ let ``Alt and Del wipe the entry behind the progress window after a question of 
     Assert.Empty bin.Taken
     Assert.False(fs.File.Exists(at "start/notes.txt"))
     Assert.Equal(4, (leftList window).Source.Count)
+
+[<Fact>]
+let ``F8 sends the entry to the trash behind the progress window, naming it on the way`` () =
+    let fs = mockFs ()
+    let bin = Bin fs
+    let batches = ResizeArray<string>()
+    let reported = ResizeArray<FileSystemPath>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                Confirm = agreeing
+                SendToTrash = bin.Send
+                RunBatch =
+                    fun title work finish ->
+                        batches.Add title
+                        work { Report = reported.Add; IsCancelled = fun () -> false } |> finish }
+
+    (leftList window).SelectedItem <- 3
+
+    pressKey window Key.F8
+
+    Assert.Equal<string list>([ Shell.DeleteTitle ], List.ofSeq batches)
+    Assert.Equal<FileSystemPath list>([ FileSystemPath.create (at "start/notes.txt") ], List.ofSeq reported)
+
+[<Fact>]
+let ``Shift and F8 name every entry of the tree they remove behind the progress window`` () =
+    let fs = mockFs ()
+    let batches = ResizeArray<string>()
+    let reported = ResizeArray<FileSystemPath>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                Confirm = agreeing
+                RunBatch =
+                    fun title work finish ->
+                        batches.Add title
+                        work { Report = reported.Add; IsCancelled = fun () -> false } |> finish }
+
+    (leftList window).SelectedItem <- 1
+
+    pressKey window Key.F8.WithShift
+
+    Assert.Equal<string list>([ Shell.DeleteTitle ], List.ofSeq batches)
+
+    Assert.Equal<FileSystemPath list>(
+        [ FileSystemPath.create (at "start/docs")
+          FileSystemPath.create (at "start/docs/inner.txt") ],
+        List.ofSeq reported
+    )
+
+[<Fact>]
+let ``a trash stopped with Esc leaves the entries it never reached`` () =
+    let fs = mockFs ()
+    let bin = Bin fs
+
+    let stopped: Operations.BatchControl =
+        { Report = ignore
+          IsCancelled = fun () -> true }
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                Confirm = agreeing
+                ReportError = silent
+                SendToTrash = bin.Send
+                RunBatch = fun _ work finish -> work stopped |> finish }
+
+    let left = leftList window
+    left.SelectedItem <- 3
+    press left KeyMap.insertKey
+    press left KeyMap.insertKey
+
+    pressKey window Key.F8
+
+    Assert.Equal<string list>([ at "start/notes.txt" ], bin.Taken)
+    Assert.True(fs.File.Exists(at "start/readme.txt"))
 
 [<Fact>]
 let ``a wipe stopped with Esc leaves the entries it never reached and says where it stopped`` () =

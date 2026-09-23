@@ -1,21 +1,27 @@
 # Architecture overview
 
 Dependencies flow downward only: `Adapters` → `Ui` → `State` → `FileSystem` →
-`Domain`. `AppState` transitions are pure; the generic `State/Runtime.fs` host
-holds the only mutable cell and drives the update/render/effect loop. The
-outside world (file system, dialogs, quit) is injected through
-`Shell.Dependencies` and run by `Shell.interpret`; `Adapters/` holds the real
-implementations of those ports and `Adapters/Dependencies.fs` is the one place
-that wires them.
+`Domain`. `AppState` transitions are deterministic functions of the state and
+the `IFileSystem` they are given, and `IFileSystem` is the only port they may
+reach: every other way out to the world — a dialog, the trash, a process, the
+clock of a watcher — is an `Effect` the interpreter carries out. Work that can
+take longer than a keystroke is an effect as well, so it runs off the UI thread
+behind the progress window; [State and effects](STATE-AND-EFFECTS.md) draws that
+line where the code draws it. The generic `State/Runtime.fs` host holds the only
+mutable cell and drives the update/render/effect loop. The outside world (file
+system, dialogs, quit) is injected through `Shell.Dependencies` and run by
+`Shell.interpret`; `Adapters/` holds the real implementations of those ports and
+`Adapters/Dependencies.fs` is the one place that wires them.
 
 **Terminal.Gui 2.4 over Spectre.Console and Consolonia.** Only Terminal.Gui is
 a full TUI framework (windows, focus, event loop) with a large, active
 community and an MIT licence. Its v2 API is instance-based
 (`Application.Create()`); the static `Application` model is deprecated.
 
-**Test first.** Every task started with failing tests. Logic modules are pure
-and take `IFileSystem`, so tests run against `MockFileSystem` and never touch
-the disk. See [Testing](TESTING.md) for how the suite itself is organised.
+**Test first.** Every task started with failing tests. Logic modules take
+`IFileSystem`, so tests run against `MockFileSystem`; only the handful under
+`Integration/Disk/`, whose subject is what a real system does, touch the disk.
+See [Testing](TESTING.md) for how the suite itself is organised.
 
 **No code comments.** Intent lives in names, tests and these documents.
 

@@ -38,6 +38,9 @@ let DeleteTitle = "Deleting"
 let WipeTitle = "Wiping"
 
 [<Literal>]
+let RenameTitle = "Renaming"
+
+[<Literal>]
 let MeasureTitle = "Measuring"
 
 [<Literal>]
@@ -295,8 +298,8 @@ let private deletePiece (deps: Dependencies) mode group : Piece option =
     let fs = deps.FileSystem
 
     match group, mode with
-    | FromDisk paths, ToTrash -> Some(fun _ -> Operations.removeAll deps.SendToTrash paths)
-    | FromDisk paths, Permanently -> Some(fun _ -> Operations.removeAll (Operations.delete fs) paths)
+    | FromDisk paths, ToTrash -> Some(fun control -> Operations.trashAll deps.SendToTrash control paths)
+    | FromDisk paths, Permanently -> Some(fun control -> Operations.deleteAll fs control paths)
     | FromDisk paths, ByWiping -> Some(fun control -> Operations.wipeAll fs control paths)
     | FromArchive(archive, entries), _ ->
         gated deps archive (fun () ->
@@ -334,6 +337,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
     | ReportLaunchError error -> deps.ReportError LaunchErrorMessage.Title (LaunchErrorMessage.describe error)
     | ReportItemFailures failures ->
         deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describeFailures deps.FileSystem failures)
+    | InspectDelete(question, mode) -> dispatch (DeleteScopeLoaded(deleteScope deps.FileSystem question, mode))
     | ConfirmDelete request ->
         if deps.Confirm (DeleteConfirmation.title request) (DeleteConfirmation.describe request) then
             dispatch (DeleteConfirmed request.Mode)
@@ -398,9 +402,18 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
                 (fun control -> Archive.extractAll deps.FileSystem control plans)
                 (UnpackFinished >> dispatch)
     | RenameTarget(source, newName) ->
-        Operations.rename deps.FileSystem source newName
-        |> fun outcome -> RenameFinished(newName, outcome)
-        |> dispatch
+        let finished outcome = dispatch (RenameFinished(newName, outcome))
+
+        match Operations.startRename deps.FileSystem source newName with
+        | Error error -> finished (Error error)
+        | Ok Operations.RenameDone -> finished (Ok())
+        | Ok(Operations.CopyNeeded target) ->
+            deps.RunBatch
+                RenameTitle
+                (fun control ->
+                    [ Operations.moveByCopying deps.FileSystem control source target
+                      |> Operations.itemResult source ])
+                (Operations.wholeOutcome >> finished)
     | MeasureTargets targets ->
         deps.RunMeasure
             MeasureTitle

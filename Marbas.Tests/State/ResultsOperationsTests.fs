@@ -168,7 +168,7 @@ let ``the confirmation names the hits by the paths the panel shows`` () =
     let fs = mockFs ()
     let state = marked fs threeDirectories
 
-    let result = update fs (DeleteRequested ByWiping) state
+    let result = update fs (DeleteScopeLoaded(NamedEntriesOnly, ByWiping)) state
 
     Assert.Equal<Effect list>(
         [ ConfirmDelete
@@ -262,12 +262,11 @@ let ``a mark inside an archive turns the trash into deleting for good`` () =
     let result = update fs (DeleteRequested ToTrash) state
 
     Assert.Equal<Effect list>(
-        [ ConfirmDelete
-              { Targets =
-                  [ relative "a/one.txt"; relative "backup.zip/inner.txt"; relative "old.tar/kept.txt" ]
-                  |> List.map EntryName.create
-                Scope = NamedEntriesOnly
-                Mode = Permanently } ],
+        [ InspectDelete(
+              { Probed = [ fp (at "start/a/one.txt") ]
+                ReachesContents = false },
+              Permanently
+          ) ],
         result.Effects
     )
 

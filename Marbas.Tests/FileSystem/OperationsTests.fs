@@ -73,7 +73,7 @@ let ``delete removes a file`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/notes.txt", MockFileData "hello")
 
-    delete fs (fp (at "data/notes.txt")) |> Expect.ok
+    delete fs unattended (fp (at "data/notes.txt")) |> Expect.ok
 
     Assert.False(fs.File.Exists(at "data/notes.txt"))
 
@@ -82,7 +82,7 @@ let ``delete removes a directory with its contents`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/docs/deep/inner.txt", MockFileData "x")
 
-    delete fs (fp (at "data/docs")) |> Expect.ok
+    delete fs unattended (fp (at "data/docs")) |> Expect.ok
 
     Assert.False(fs.Directory.Exists(at "data/docs"))
 
@@ -90,7 +90,7 @@ let ``delete removes a directory with its contents`` () =
 let ``delete reports a missing source`` () =
     let fs = MockFileSystem()
 
-    let failure = delete fs (fp (at "data/gone.txt")) |> Expect.error
+    let failure = delete fs unattended (fp (at "data/gone.txt")) |> Expect.error
 
     Assert.Equal(SourceNotFound(fp (at "data/gone.txt")), failure)
 
@@ -101,7 +101,7 @@ let ``delete reports a file the file system will not let go`` () =
     guarded.Attributes <- IO.FileAttributes.ReadOnly
     fs.AddFile(at "data/notes.txt", guarded)
 
-    let failure = delete fs (fp (at "data/notes.txt")) |> Expect.error
+    let failure = delete fs unattended (fp (at "data/notes.txt")) |> Expect.error
 
     Assert.Equal(AccessDenied(fp (at "data/notes.txt")), failure)
     Assert.True(fs.File.Exists(at "data/notes.txt"))
@@ -113,7 +113,7 @@ let ``delete reports a file that is in use as a failure of its own`` () =
     held.AllowedFileShare <- IO.FileShare.None
     fs.AddFile(at "data/notes.txt", held)
 
-    let failure = delete fs (fp (at "data/notes.txt")) |> Expect.error
+    let failure = delete fs unattended (fp (at "data/notes.txt")) |> Expect.error
 
     Assert.Equal(Some(fp (at "data/notes.txt")), failedPath failure)
 
@@ -243,24 +243,65 @@ let ``move replaces whatever is already there`` () =
     Assert.False(fs.File.Exists(at "data/notes.txt"))
 
 [<Fact>]
-let ``rename keeps the entry in its own directory`` () =
+let ``a renamed file keeps the entry in its own directory and asks for no copy`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/notes.txt", MockFileData "hello")
 
-    rename fs (fp (at "data/notes.txt")) (en "readme.txt") |> Expect.ok
+    let step = startRename fs (fp (at "data/notes.txt")) (en "readme.txt") |> Expect.ok
 
+    Assert.Equal(RenameDone, step)
     Assert.Equal("hello", fs.File.ReadAllText(at "data/readme.txt"))
     Assert.False(fs.File.Exists(at "data/notes.txt"))
 
 [<Fact>]
-let ``rename refuses an existing name`` () =
+let ``a renamed directory the file system can move asks for no copy`` () =
+    let fs = Fakes.CopyCounting()
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "x")
+
+    let step = startRename fs (fp (at "data/docs")) (en "papers") |> Expect.ok
+
+    Assert.Equal(RenameDone, step)
+    Assert.Equal(0, fs.Copies)
+    Assert.Equal("x", fs.File.ReadAllText(at "data/papers/inner.txt"))
+
+[<Fact>]
+let ``a renamed directory the file system refuses to move asks for a copy`` () =
+    let fs = Fakes.DirectoryMoveRefused()
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "x")
+
+    let step = startRename fs (fp (at "data/docs")) (en "papers") |> Expect.ok
+
+    Assert.Equal(CopyNeeded(fp (at "data/papers")), step)
+    Assert.True(fs.Directory.Exists(at "data/docs"))
+
+[<Fact>]
+let ``a rename carried out by copying leaves the source behind it`` () =
+    let fs = Fakes.DirectoryMoveRefused()
+    fs.AddFile(at "data/docs/inner.txt", MockFileData "x")
+
+    moveByCopying fs unattended (fp (at "data/docs")) (fp (at "data/papers")) |> Expect.ok
+
+    Assert.Equal("x", fs.File.ReadAllText(at "data/papers/inner.txt"))
+    Assert.False(fs.Directory.Exists(at "data/docs"))
+
+[<Fact>]
+let ``a rename refuses an existing name`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/notes.txt", MockFileData "hello")
     fs.AddFile(at "data/readme.txt", MockFileData "other")
 
-    let failure = rename fs (fp (at "data/notes.txt")) (en "readme.txt") |> Expect.error
+    let failure = startRename fs (fp (at "data/notes.txt")) (en "readme.txt") |> Expect.error
 
     Assert.Equal(TargetExists(fp (at "data/readme.txt")), failure)
+
+[<Fact>]
+let ``a rename reports a missing source`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "data")
+
+    let failure = startRename fs (fp (at "data/gone.txt")) (en "readme.txt") |> Expect.error
+
+    Assert.Equal(SourceNotFound(fp (at "data/gone.txt")), failure)
 
 [<Fact>]
 let ``batch results carry the source and keep the input order`` () =
@@ -268,7 +309,7 @@ let ``batch results carry the source and keep the input order`` () =
     fs.AddFile(at "data/a.txt", MockFileData "a")
     fs.AddFile(at "data/b.txt", MockFileData "b")
 
-    let results = deleteAll fs [ fp (at "data/a.txt"); fp (at "data/b.txt") ]
+    let results = deleteAll fs unattended [ fp (at "data/a.txt"); fp (at "data/b.txt") ]
 
     Assert.Equal<ItemSource list>(
         [ ItemOnDisk(fp (at "data/a.txt")); ItemOnDisk(fp (at "data/b.txt")) ],
@@ -281,7 +322,7 @@ let ``a failing item does not stop the rest of the batch`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/b.txt", MockFileData "b")
 
-    let results = deleteAll fs [ fp (at "data/gone.txt"); fp (at "data/b.txt") ]
+    let results = deleteAll fs unattended [ fp (at "data/gone.txt"); fp (at "data/b.txt") ]
 
     Assert.Equal(Error(SourceNotFound(fp (at "data/gone.txt"))), results[0].Outcome)
     Assert.Equal(Ok(), results[1].Outcome)
@@ -320,6 +361,77 @@ let private watching cancelAfter =
           IsCancelled = fun () -> reported.Count >= cancelAfter }
 
     reported, control
+
+[<Fact>]
+let ``a deleted tree names every entry it removes`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "work/docs/inner.txt", MockFileData "x")
+    let reported, control = watching Int32.MaxValue
+
+    delete fs control (fp (at "work")) |> Expect.ok
+
+    Assert.Equal<FileSystemPath list>(
+        [ fp (at "work"); fp (at "work/docs"); fp (at "work/docs/inner.txt") ],
+        List.ofSeq reported
+    )
+
+[<Fact>]
+let ``a cancelled delete names where it stopped and leaves the rest of the tree`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "work/docs/inner.txt", MockFileData "x")
+    let _, control = watching 2
+
+    let failure = delete fs control (fp (at "work")) |> Expect.error
+
+    Assert.Equal(Cancelled(fp (at "work/docs/inner.txt")), failure)
+    Assert.True(fs.File.Exists(at "work/docs/inner.txt"))
+
+[<Fact>]
+let ``deleteAll stops where it is cancelled`` () =
+    let fs = twoSources ()
+    let _, control = watching 1
+
+    let results = deleteAll fs control bothSources
+
+    Assert.Equal<ItemSource list>([ ItemOnDisk(fp (at "data/a.txt")) ], sources results)
+    Assert.True(fs.File.Exists(at "data/b.txt"))
+
+[<Fact>]
+let ``trashAll names every source it hands over`` () =
+    let fs = twoSources ()
+    let reported, control = watching Int32.MaxValue
+
+    trashAll (delete fs unattended) control bothSources |> ignore
+
+    Assert.Equal<FileSystemPath list>(bothSources, List.ofSeq reported)
+
+[<Fact>]
+let ``trashAll stops where it is cancelled`` () =
+    let fs = twoSources ()
+    let _, control = watching 1
+
+    let results = trashAll (delete fs unattended) control bothSources
+
+    Assert.Equal<ItemSource list>([ ItemOnDisk(fp (at "data/a.txt")) ], sources results)
+    Assert.True(fs.File.Exists(at "data/b.txt"))
+
+[<Fact>]
+let ``the whole outcome of a batch is its first failure`` () =
+    let fs = twoSources ()
+
+    let outcome =
+        deleteAll fs unattended [ fp (at "data/gone.txt"); fp (at "data/a.txt") ]
+        |> wholeOutcome
+
+    Assert.Equal(Error(SourceNotFound(fp (at "data/gone.txt"))), outcome)
+
+[<Fact>]
+let ``the whole outcome of a batch that went through is Ok`` () =
+    let fs = twoSources ()
+
+    let outcome = deleteAll fs unattended bothSources |> wholeOutcome
+
+    Assert.Equal(Ok(), outcome)
 
 [<Fact>]
 let ``approve keeps every source and asks nothing when nothing collides`` () =
@@ -584,7 +696,7 @@ let ``move takes a directory link as a link and leaves what it pointed at`` () =
 let ``delete of a directory link leaves what it points at`` () =
     let fs = linked ()
 
-    delete fs (fp (at "data/twin")) |> Expect.ok
+    delete fs unattended (fp (at "data/twin")) |> Expect.ok
 
     Assert.False(fs.Directory.Exists(at "data/twin"))
     Assert.Equal("inner", fs.File.ReadAllText(at "data/docs/inner.txt"))
@@ -594,7 +706,7 @@ let ``delete of a tree holding a link leaves what the link points at`` () =
     let fs = linked ()
     fs.Directory.CreateSymbolicLink(at "backup/twin", at "data/docs") |> ignore
 
-    delete fs (fp (at "backup")) |> Expect.ok
+    delete fs unattended (fp (at "backup")) |> Expect.ok
 
     Assert.False(fs.Directory.Exists(at "backup"))
     Assert.Equal("inner", fs.File.ReadAllText(at "data/docs/inner.txt"))
@@ -604,7 +716,7 @@ let ``failures keeps only the items that went wrong`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/b.txt", MockFileData "b")
 
-    let failed = deleteAll fs [ fp (at "data/gone.txt"); fp (at "data/b.txt") ] |> failures
+    let failed = deleteAll fs unattended [ fp (at "data/gone.txt"); fp (at "data/b.txt") ] |> failures
 
     Assert.Equal<ItemSource list>([ ItemOnDisk(fp (at "data/gone.txt")) ], sources failed)
 
@@ -726,7 +838,7 @@ let private watched () =
 let ``deleting a tree enumerates each directory once`` () =
     let fs = watched ()
 
-    delete fs (fp (at "work")) |> Expect.ok
+    delete fs unattended (fp (at "work")) |> Expect.ok
 
     Assert.Equal(3, fs.Enumerations)
 
@@ -734,7 +846,7 @@ let ``deleting a tree enumerates each directory once`` () =
 let ``deleting a tree asks nothing about an entry it enumerated`` () =
     let fs = watched ()
 
-    delete fs (fp (at "work")) |> Expect.ok
+    delete fs unattended (fp (at "work")) |> Expect.ok
 
     Assert.Equal(0, fs.AskedAbout(at "work/docs/inner.txt"))
 

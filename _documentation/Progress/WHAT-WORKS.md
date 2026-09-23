@@ -197,11 +197,13 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   way it first asks for confirmation, in the wording of the mode it will carry
   out, naming a single target or counting several, with an extra warning when a
   target directory is not empty; saying no changes nothing. Directories go with
-  everything inside them, the panel refreshes with the marks of the deleted
-  entries dropped, and whatever failed is listed entry by entry in one dialog
-  while the rest of the batch still goes through. The trash is the recycle bin
-  on Windows and `$XDG_DATA_HOME/Trash` (freedesktop, home trash only) on
-  Linux.
+  everything inside them. Both run behind the progress window, which names each
+  entry as it goes and which `Esc` stops — what was already removed stays gone,
+  and what the batch never reached keeps its mark. The panel refreshes with the
+  marks of the deleted entries dropped, and whatever failed is listed entry by
+  entry in one dialog while the rest of the batch still goes through. The trash
+  is the recycle bin on Windows and `$XDG_DATA_HOME/Trash` (freedesktop, home
+  trash only) on Linux.
 - `F5` copies the same operation targets into the directory shown by the other
   panel. Nothing is asked while nothing collides; a target that already exists
   raises a Yes / No / Yes to all / No to all / Cancel question naming it, where
@@ -215,7 +217,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   and per-item reporting afterwards. Type a bare name instead and, when a
   single entry is being acted on, it is renamed where it stands, with the
   cursor following it to its new place in the listing; a name typed while
-  several entries are marked is read as a directory beside them. An empty
+  several entries are marked is read as a directory beside them. A rename is
+  instant wherever the file system can carry it out itself; where it refuses —
+  a directory whose new name lies across a mount point — the copy it falls back
+  to runs behind the progress window with `Esc`, like any other batch. An empty
   answer or a cancelled prompt does nothing.
 - `Alt+F6` makes a link to the operation targets. The popup offers the other
   panel's directory plus the name of the entry under the cursor — or the

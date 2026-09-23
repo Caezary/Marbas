@@ -26,6 +26,7 @@ type Message =
     | MakeDirectoryRequested
     | NameEntered of name: EntryName
     | DeleteRequested of DeleteMode
+    | DeleteScopeLoaded of scope: DeleteScope * mode: DeleteMode
     | DeleteConfirmed of DeleteMode
     | DeleteFinished of Operations.ItemResult list
     | CopyRequested
@@ -82,6 +83,7 @@ type Effect =
     | ReportOperationError of Operations.OperationError
     | ReportLaunchError of LaunchError
     | ReportItemFailures of Operations.ItemResult list
+    | InspectDelete of question: DeleteQuestion * mode: DeleteMode
     | ConfirmDelete of DeleteRequest
     | ArchiveTargets of sources: FileSystemPath list * request: ArchiveRequest
     | ExtractTargets of archives: FileSystemPath list * targetDirectory: FileSystemPath
@@ -306,18 +308,22 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | DeleteRequested mode ->
         let target = activePanel state
 
-        let confirmed asked =
-            ConfirmDelete
-                { Targets = operationTargets target |> List.map _.Name
-                  Scope = deleteScope fs target
-                  Mode = asked }
+        let inspected asked =
+            InspectDelete(deleteQuestion fs target, asked)
 
         match target.Path, transferSource fs target with
         | _, None -> stay state
         | InArchive(archive, _), _
-        | SearchResults _, Some(FromArchive(archive, _)) -> changing fs state [ archive ] (confirmed Permanently)
-        | _, Some(FromPlaces _) -> request state (confirmed (forGood mode))
-        | _ -> request state (confirmed mode)
+        | SearchResults _, Some(FromArchive(archive, _)) -> changing fs state [ archive ] (inspected Permanently)
+        | _, Some(FromPlaces _) -> request state (inspected (forGood mode))
+        | _ -> request state (inspected mode)
+    | DeleteScopeLoaded(scope, mode) ->
+        request
+            state
+            (ConfirmDelete
+                { Targets = operationTargets (activePanel state) |> List.map _.Name
+                  Scope = scope
+                  Mode = mode })
     | DeleteConfirmed mode ->
         match transferSource fs (activePanel state) with
         | None -> stay state

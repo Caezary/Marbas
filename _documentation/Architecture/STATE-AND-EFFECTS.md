@@ -1,10 +1,31 @@
 # State and effects
 
-**Immutable state, one mutable cell.** `AppState` transitions are pure
-functions; `Update.update` folds a `Message` into a new state plus a list of
-`Effect` values, and the generic `Runtime` holds the only mutable reference,
+**Immutable state, one mutable cell.** `AppState` transitions answer a new state
+from the old one; `Update.update` folds a `Message` into that state plus a list
+of `Effect` values, and the generic `Runtime` holds the only mutable reference,
 re-renders after each dispatch and hands the effects to the interpreter.
 Handlers send messages, they never mutate. See PLAN.md, *State handling*.
+
+**A transition may read and write through `IFileSystem`, and through nothing
+else.** That is the boundary, and it is drawn by kind rather than by cost: a
+transition takes the `IFileSystem` it was given and may list a directory, read
+an archive's index, create a directory or write an entry's properties with it,
+which is what makes every one of them testable against `MockFileSystem` alone.
+Every other port — a dialog, the trash, a process, a link, the search runner,
+the batch runner, quitting — belongs to `Shell.Dependencies`, and the state
+layer reaches it only by raising an `Effect` that `Shell.interpret` carries out.
+
+**Work that outlasts a keystroke is an effect too.** Copy, move, delete, wipe,
+pack, unpack, measure, a rename that fell back to copying and a search all run
+on a background task under a progress window that `Esc` stops, because a
+transition holds the UI thread for as long as it runs. Anything a transition
+does with `IFileSystem` is therefore bounded by what is on screen — one
+directory, one archive level, one entry — and what scales with the data behind
+it is asked for by an effect that answers with a message. `DeleteRequested` is
+the smallest example: it raises `InspectDelete` carrying the paths whose
+contents the warning depends on, the interpreter asks the file system about
+them, and `DeleteScopeLoaded` brings the `DeleteScope` back for the
+confirmation to be built from.
 
 **`Dispatch` enqueues; one loop drains.** Since P15.8 a message is put on a
 queue and, unless a drain is already running, one loop takes messages off it and

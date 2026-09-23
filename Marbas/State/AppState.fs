@@ -571,17 +571,31 @@ let applyMeasurements side (measured: Measurement list) state =
 
     updatePanel side (fun p -> reorder { p with Entries = p.Entries |> Array.map measuredEntry }) state
 
-let deleteScope (fs: IFileSystem) panel =
-    let reachesContents =
-        match panel.Path with
-        | OnDisk _ -> operationPaths fs panel |> List.exists (Operations.isNonEmptyDirectory fs)
-        | InArchive _ -> operationTargets panel |> List.exists (fun entry -> entry.Kind = Directory)
-        | SearchResults _ ->
-            operationPaths fs panel |> List.exists (Operations.isNonEmptyDirectory fs)
-            || operationTargets panel
-               |> List.exists (fun entry -> entry.Kind = Directory && entryInArchive fs panel entry |> Option.isSome)
+type DeleteQuestion =
+    { Probed: FileSystemPath list
+      ReachesContents: bool }
 
-    if reachesContents then
+let private directoryEntriesInArchive (fs: IFileSystem) panel =
+    operationTargets panel
+    |> List.exists (fun entry -> entry.Kind = Directory && entryInArchive fs panel entry |> Option.isSome)
+
+let deleteQuestion (fs: IFileSystem) panel =
+    match panel.Path with
+    | OnDisk _ ->
+        { Probed = operationPaths fs panel
+          ReachesContents = false }
+    | InArchive _ ->
+        { Probed = []
+          ReachesContents = operationTargets panel |> List.exists (fun entry -> entry.Kind = Directory) }
+    | SearchResults _ ->
+        { Probed = operationPaths fs panel
+          ReachesContents = directoryEntriesInArchive fs panel }
+
+let deleteScope (fs: IFileSystem) (question: DeleteQuestion) =
+    if
+        question.ReachesContents
+        || question.Probed |> List.exists (Operations.isNonEmptyDirectory fs)
+    then
         WithDirectoryContents
     else
         NamedEntriesOnly

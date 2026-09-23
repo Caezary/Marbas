@@ -41,6 +41,14 @@ let private capture () =
     let sent = ResizeArray<Message>()
     sent, fun (msg: Message) -> sent.Add msg
 
+let private recording (reported: ResizeArray<FileSystemPath>) =
+    { Report = reported.Add
+      IsCancelled = fun () -> false }
+
+let private stopped =
+    { Report = ignore
+      IsCancelled = fun () -> true }
+
 [<Fact>]
 let ``a supplied name is dispatched as NameEntered`` () =
     let sent, dispatch = capture ()
@@ -288,6 +296,85 @@ let ``targets sent to the trash go through the port, not the file system`` () =
     )
 
 [<Fact>]
+let ``every entry sent to the trash is named while the batch runs`` () =
+    let _, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "start/readme.txt", MockFileData "hi")
+    let reported = ResizeArray<FileSystemPath>()
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            RunBatch = fun _ work finish -> work (recording reported) |> finish }
+
+    Shell.interpret
+        deps
+        dispatch
+        (DeletePlaces([ FromDisk [ fp (at "start/notes.txt"); fp (at "start/readme.txt") ] ], ToTrash))
+
+    Assert.Equal<FileSystemPath list>(
+        [ fp (at "start/notes.txt"); fp (at "start/readme.txt") ],
+        List.ofSeq reported
+    )
+
+[<Fact>]
+let ``a trash stopped with Esc leaves the entries it never reached`` () =
+    let sent, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "start/readme.txt", MockFileData "hi")
+    let trashed = ResizeArray<FileSystemPath>()
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            SendToTrash = fun path -> trashed.Add path; Ok()
+            RunBatch = fun _ work finish -> work stopped |> finish }
+
+    Shell.interpret
+        deps
+        dispatch
+        (DeletePlaces([ FromDisk [ fp (at "start/notes.txt"); fp (at "start/readme.txt") ] ], ToTrash))
+
+    Assert.Equal<FileSystemPath list>([ fp (at "start/notes.txt") ], List.ofSeq trashed)
+
+    Assert.Equal<Message list>(
+        [ DeleteFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
+        List.ofSeq sent
+    )
+
+[<Fact>]
+let ``a permanent delete names every entry of the tree it removes`` () =
+    let _, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
+    let reported = ResizeArray<FileSystemPath>()
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            RunBatch = fun _ work finish -> work (recording reported) |> finish }
+
+    Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/docs") ] ], Permanently))
+
+    Assert.Equal<FileSystemPath list>(
+        [ fp (at "start/docs"); fp (at "start/docs/inner.txt") ],
+        List.ofSeq reported
+    )
+
+[<Fact>]
+let ``a permanent delete stopped with Esc leaves the rest of the tree`` () =
+    let _, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            RunBatch = fun _ work finish -> work stopped |> finish }
+
+    Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/docs") ] ], Permanently))
+
+    Assert.True(fs.File.Exists(at "start/docs/inner.txt"))
+
+[<Fact>]
 let ``a permanent delete removes the target itself`` () =
     let sent, dispatch = capture ()
     let fs = MockFileSystem()
@@ -337,10 +424,6 @@ let ``a stopped wipe hands back the file it stopped at`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "start/notes.txt", MockFileData "hi")
     fs.AddFile(at "start/readme.txt", MockFileData "hi")
-
-    let stopped =
-        { Report = ignore
-          IsCancelled = fun () -> true }
 
     let deps =
         { Fakes.dependencies fs (at "start") with
@@ -526,6 +609,103 @@ let ``a rename is carried out and its outcome dispatched back`` () =
 
     Assert.Equal("new", fs.File.ReadAllText(at "start/readme.txt"))
     Assert.Equal<Message list>([ RenameFinished(en "readme.txt", Ok()) ], List.ofSeq sent)
+
+[<Fact>]
+let ``a rename the file system carries out itself asks for no batch`` () =
+    let _, dispatch = capture ()
+    let fs = copyReadyFs ()
+    let titles = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            RunBatch = fun title work finish -> titles.Add title; work unattended |> finish }
+
+    Shell.interpret deps dispatch (RenameTarget(fp (at "start/notes.txt"), en "readme.txt"))
+
+    Assert.Empty titles
+
+[<Fact>]
+let ``a rename that fell back to copying runs behind the progress window`` () =
+    let sent, dispatch = capture ()
+    let fs = Fakes.DirectoryMoveRefused()
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
+    let titles = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            RunBatch = fun title work finish -> titles.Add title; work unattended |> finish }
+
+    Shell.interpret deps dispatch (RenameTarget(fp (at "start/docs"), en "papers"))
+
+    Assert.Equal<string list>([ Shell.RenameTitle ], List.ofSeq titles)
+    Assert.Equal("x", fs.File.ReadAllText(at "start/papers/inner.txt"))
+    Assert.False(fs.Directory.Exists(at "start/docs"))
+    Assert.Equal<Message list>([ RenameFinished(en "papers", Ok()) ], List.ofSeq sent)
+
+[<Fact>]
+let ``a rename stopped with Esc while it copied leaves the source where it is`` () =
+    let sent, dispatch = capture ()
+    let fs = Fakes.DirectoryMoveRefused()
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            RunBatch = fun _ work finish -> work stopped |> finish }
+
+    Shell.interpret deps dispatch (RenameTarget(fp (at "start/docs"), en "papers"))
+
+    Assert.True(fs.Directory.Exists(at "start/docs"))
+
+    Assert.Equal<Message list>(
+        [ RenameFinished(en "papers", Error(Cancelled(fp (at "start/docs")))) ],
+        List.ofSeq sent
+    )
+
+[<Fact>]
+let ``a non-empty directory among the targets widens the scope that comes back`` () =
+    let sent, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret
+        deps
+        dispatch
+        (InspectDelete({ Probed = [ fp (at "start/docs") ]; ReachesContents = false }, ToTrash))
+
+    Assert.Equal<Message list>([ DeleteScopeLoaded(WithDirectoryContents, ToTrash) ], List.ofSeq sent)
+
+[<Fact>]
+let ``an empty directory keeps the scope that comes back to the named entries`` () =
+    let sent, dispatch = capture ()
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "start/docs")
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret
+        deps
+        dispatch
+        (InspectDelete({ Probed = [ fp (at "start/docs") ]; ReachesContents = false }, Permanently))
+
+    Assert.Equal<Message list>([ DeleteScopeLoaded(NamedEntriesOnly, Permanently) ], List.ofSeq sent)
+
+[<Fact>]
+let ``a question that already reaches the contents asks nothing about its own paths`` () =
+    let sent, dispatch = capture ()
+    let fs = Fakes.WalkWitness()
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret
+        deps
+        dispatch
+        (InspectDelete({ Probed = [ fp (at "start/docs") ]; ReachesContents = true }, Permanently))
+
+    Assert.Equal(0, fs.AskedAbout(at "start/docs"))
+    Assert.Equal<Message list>([ DeleteScopeLoaded(WithDirectoryContents, Permanently) ], List.ofSeq sent)
 
 [<Fact>]
 let ``a viewed file is handed over opened under its own path`` () =

@@ -585,3 +585,54 @@ that level", written out by hand in `ArchiveListing`, `DirectoryMeasure` and
 `ArchivePath.strictlyUnder` and `atOrUnder` are the one rule now, named the way
 `FileSystemPath`'s pair was named in P15.2, so whether the boundary is strict is
 read off the call rather than out of the body.
+
+**P15.15 put the last long walks behind the progress window and drew the
+transition boundary by kind.** Three of them were left. A permanent delete and
+a trash ran inside `RunBatch` since P15.7, but `Operations.removeAll` was a
+plain `List.map` over the sources: it never named what it was working on, so
+the window stood blank, and it never looked at the cancel flag, so `Esc` closed
+a window that went on deleting behind it. `Operations.delete` had no
+`BatchControl` at all, so a tree of half a million files was one uninterruptible
+step. And a rename went through `Operations.rename` straight inside
+`Shell.interpret`, on the UI thread, which since P15.3 matters only when
+`IDirectory.Move` refuses — but that is exactly when a whole tree gets copied.
+
+`delete` takes a control now and walks with it: `deleting` reports every entry
+before it removes it and answers `Cancelled` at the one it stopped at, the same
+shape `wipe` has had since P5.6, and errors name the child that failed rather
+than the root of the walk. `removeAll` is gone; `deleteAll` and a new `trashAll`
+are two lines each over `allWatched`, beside `copyAll`, `moveAll` and `wipeAll`,
+so the five batches now differ only in the verb applied to a source. The one
+removal that deliberately ignores the flag is the one that ends a move which
+fell back to copying: `moveByCopying` runs it under a control whose
+`IsCancelled` is off, because a stop between the copy and the removal would
+leave the tree standing in both places.
+
+The rename split in two. `Operations.startRename` checks the target, tries the
+metadata rename and answers `RenameDone` or `CopyNeeded target`; `Shell`
+dispatches `RenameFinished` there and then for the first, and hands
+`moveByCopying` to `RunBatch` under `Renaming` for the second, turning the
+one-item batch back into the `Result` the message carries with
+`Operations.wholeOutcome`. So the ordinary rename keeps its instant answer and
+no window flashes past, while the one that has to copy behaves like every other
+batch.
+
+`AppState.deleteScope` was the read A1 named that was neither on screen nor
+bounded: it enumerated every marked directory while the transition built the
+confirmation. It is two pieces now. `deleteQuestion` is pure — it answers a
+`DeleteQuestion` holding the paths whose contents have to be looked at and
+whether the targets already reach inside without looking, which is what a
+directory entry inside an archive says by itself — and `deleteScope` takes that
+question and asks the file system, short-circuiting when the answer is already
+settled. `DeleteRequested` raises `InspectDelete`, the interpreter answers with
+`DeleteScopeLoaded`, and that message is what `ConfirmDelete` is built from.
+
+The rule the documents state is now the rule the code follows, which is A12 and
+the honest half of A1: a transition may read and write through the
+`IFileSystem` it was given and may reach no other port, and work that outlasts a
+keystroke is an effect. `OVERVIEW.md` and `CLAUDE.md` say that instead of
+"transitions are pure", `STATE-AND-EFFECTS.md` spells out both halves with
+`InspectDelete` as the worked example, `FILE-OPERATIONS.md` records the delete
+control, the two-step scope and the rename that opens a batch only when it must,
+and `TESTING.md` no longer says on line 6 what it contradicts on line 15 —
+`Integration/Disk/` is named as the one folder that reaches the disk.

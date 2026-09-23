@@ -85,7 +85,7 @@ let ``deleting a tree holding a junction removes the tree and leaves what the ju
     scratch.Directory "backup"
     make (request Junction scratch "data/docs" "backup/twin") |> Expect.ok
 
-    Operations.delete disk (scratch.Path "backup") |> Expect.ok
+    Operations.delete disk Operations.unattended (scratch.Path "backup") |> Expect.ok
 
     Assert.False(Directory.Exists(scratch.At "backup"))
     Assert.Equal("inner", File.ReadAllText(scratch.At "data/docs/inner.txt"))

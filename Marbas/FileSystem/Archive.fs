@@ -188,7 +188,7 @@ module Archive =
                     use stream = created
                     packInto fs control request sources stream)
 
-            let discard () = Operations.delete fs request.Path |> ignore
+            let discard () = Operations.delete fs Operations.unattended request.Path |> ignore
 
             if control.IsCancelled() then
                 discard ()
@@ -463,7 +463,7 @@ module Archive =
                 Ok value
             | Abort value -> Ok value
         finally
-            Operations.delete fs fresh |> ignore
+            Operations.delete fs Operations.unattended fresh |> ignore
 
     let private rewriting (fs: IFileSystem) archive kind dropped level control work =
         match ArchiveFormat.ofKind kind with
@@ -618,7 +618,7 @@ module Archive =
                         |> Result.map (fun added ->
                             carryingOver (arrived |> List.map cameFrom |> Map.ofList) added taken))
                 finally
-                    Operations.delete fs scratch |> ignore
+                    Operations.delete fs Operations.unattended scratch |> ignore
 
     let moveAcross (fs: IFileSystem) control (request: ExtractRequest) targets target level =
         copyAcross fs control request targets target level
@@ -633,4 +633,4 @@ module Archive =
                 | Error _ -> item
                 | Ok() ->
                     { item with
-                        Outcome = Operations.delete fs source }))
+                        Outcome = Operations.delete fs Operations.unattended source }))

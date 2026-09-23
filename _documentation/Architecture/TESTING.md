@@ -2,8 +2,9 @@
 
 Tests live in `Marbas.Tests` (xUnit). Logic modules (`Domain`, `FileSystem`,
 `State`) are covered directly; UI behaviour is covered by driving real
-Terminal.Gui views with an in-memory file system (`MockFileSystem`), so no test
-touches the disk.
+Terminal.Gui views with an in-memory file system (`MockFileSystem`). The disk is
+reached by one folder only, `Integration/Disk/`, and the rule for what may go
+there is below.
 
 ## Running the suite
 

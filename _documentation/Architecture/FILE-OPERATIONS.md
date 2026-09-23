@@ -31,7 +31,7 @@ batch to run; before, it escaped the batch entirely.
 `DirectoryListing.children` enumerates a directory as `IFileSystemInfo`s and
 answers a `Child` per entry — where it is and the `Entry` a listing would show
 for it, kind, size, time, attributes and link target all from that one read.
-`Operations.deleteTree`, `copyTo` and `wipe`, `DirectoryMeasure`, `FileSearch`
+`Operations.delete`, `copyTo` and `wipe`, `DirectoryMeasure`, `FileSearch`
 and `Archive.add` all walk over it, and none of them asks the file system
 anything more about an entry it has already enumerated. They used to: every one
 of them enumerated *paths* and then asked again per entry — two `Exists` calls
@@ -64,7 +64,7 @@ question from then on, so a later collision is settled without asking while a
 source that collides with nothing is still taken. What runs
 afterwards is decision-free: `copy` and `move` carry no overwrite flag any more
 and always replace, because whoever called them has already decided. The only
-refusal left lives in `rename`, which checks its own target. (P5.1 had the
+refusal left lives in `startRename`, which checks its own target. (P5.1 had the
 flag, P5.4 had the batch asking as it went; P5.6 made both untenable, because a
 background thread cannot open a dialog and wait on it.)
 
@@ -76,11 +76,24 @@ settles the item as a whole, every file inside it included, and a refusal stops
 it before anything is written. Sources that were dropped never appear in the
 results, which is what keeps their marks in place.
 
-**Copy and move are the same batch with a different verb.** `copyAll` and
-`moveAll` are two lines over a shared private `allWatched`, which owns the walk
-and the cancellation check; only the operation applied to each source differs.
-A rename is not part of it: it touches one entry, so it stays a plain `Result`
-carried by `RenameFinished` instead of a one-element batch.
+**Copy, move, delete and the trash are the same batch with a different verb.**
+`copyAll`, `moveAll`, `deleteAll`, `trashAll` and `wipeAll` are two lines each
+over a shared `allWatched`, which owns the walk and the cancellation check; only
+the operation applied to each source differs. Every one of them therefore names
+each source on the progress window and stops where `Esc` was pressed, leaving
+the sources it never reached out of the results and so with their marks. A
+rename is not part of it: it touches one entry, so it stays a plain `Result`
+carried by `RenameFinished` — `Operations.wholeOutcome` is what turns the
+one-item batch its fallback does run into that `Result`.
+
+**A delete walks the tree under the same control the batch carries.**
+`Operations.delete` takes a `BatchControl`, names every entry it is about to
+remove and answers `Cancelled` at the entry it stopped at, so `Esc` means the
+same thing inside one large tree as it does between two targets. What it has
+already removed stays removed; the item fails, its mark survives, and pressing
+the key again carries on. The removal that ends a move which fell back to
+copying is the exception: it runs under a control whose cancel flag is off,
+because once the copy is through, stopping would leave the tree in both places.
 
 **A bare name means rename, anything else means a directory.** `F6` suggests
 the other panel's path, and what comes back decides the operation:
@@ -101,7 +114,7 @@ operation whatever the tree weighs, so `F6` between two directories of one
 drive and a rename in place no longer read and write the whole tree, and
 nothing can leave two trees behind halfway. `IDirectory.Move` throws
 `IOException` across volumes — and also when the target directory already
-stands — and only that answer falls back to copy-then-delete, which is how a
+stands — and only that answer falls back to `moveByCopying`, which is how a
 move onto an existing directory still merges into it. Any other exception is
 the move's own failure and is reported as such rather than retried as a copy.
 Files still use `IFile.Move`, which overwrites.
@@ -109,6 +122,18 @@ Files still use `IFile.Move`, which overwrites.
 The fallback is the only path that can be stopped halfway, so `Esc` during a
 same-volume move either arrives before the rename and leaves everything where
 it was, or arrives after it and finds the work already done.
+
+**A rename opens a batch only if the file system refuses to do it itself.**
+`Operations.startRename` checks the target, tries the metadata rename and
+answers `RenameDone` or `CopyNeeded target`; `Shell` dispatches `RenameFinished`
+straight away for the first, and for the second hands `moveByCopying` to
+`RunBatch` under `Renaming`. So the common rename is still one instant `Result`
+with no window flashing past, and the one that has to copy a tree — a rename
+across a mount point, a junction — runs off the UI thread with `Esc` meaning
+what it means everywhere else. This is the second half of "a rename in place
+must not read and write the tree": the first half stopped it copying at all
+where the file system can rename, this one stops the remaining copy freezing the
+screen.
 
 **Marks survive exactly what did not finish.** After a batch, the panel keeps
 the marks of the entries whose `ItemResult` is not `Ok` (and that still exist);
@@ -122,10 +147,17 @@ carries a `DeleteRequest` — the target names, a `DeleteScope` saying
 whether the delete stops at those entries (`NamedEntriesOnly`) or reaches
 inside a directory as well (`WithDirectoryContents`), and the `DeleteMode`
 asked for — and `DeleteConfirmation.describe` turns that into the question,
-`DeleteConfirmation.title` into the title above it. `AppState.deleteScope`
-decides the scope in the state layer, where the file system already is
-(`Operations.isNonEmptyDirectory`); a directory that cannot be enumerated
-counts as non-empty, so the warning errs towards showing up.
+`DeleteConfirmation.title` into the title above it.
+
+The scope is found in two steps, because half of it is a read. `DeleteRequested`
+raises `InspectDelete` carrying an `AppState.DeleteQuestion`: the paths whose
+contents have to be looked at, and whether the targets already reach into a
+directory without looking — which is what a directory entry inside an archive
+says by itself. The interpreter answers it with `AppState.deleteScope`
+(`Operations.isNonEmptyDirectory` per path, and not even that when the question
+is already settled) and dispatches `DeleteScopeLoaded`, which is the message the
+`ConfirmDelete` is built from. A directory that cannot be enumerated counts as
+non-empty, so the warning errs towards showing up.
 
 **Deleting has three meanings, and the key says which.** `DeleteMode` is
 `ToTrash`, `Permanently` or `ByWiping`: `F8` and `Del` ask for the first,
@@ -138,10 +170,10 @@ and the question the user answers is the question that gets carried out: *Move
 **Delete for good**.
 
 **The trash is a port; a permanent delete is not.** `Shell.interpret` picks
-`deps.SendToTrash` for `ToTrash` and `Operations.delete` for `Permanently`, and
-hands either to `Operations.removeAll`, which is `deleteAll` with the removal
-left open. What the port does is the platform's business and
-`Dependencies.create` decides it — the Windows recycle bin through
+`Operations.trashAll` over `deps.SendToTrash` for `ToTrash` and
+`Operations.deleteAll` for `Permanently`; both are `allWatched`, so both name
+their sources and stop at `Esc`. What the port does is the platform's business
+and `Dependencies.create` decides it — the Windows recycle bin through
 `RecycleBin.send` and `Microsoft.VisualBasic.FileIO.FileSystem`
 (`SendToRecycleBin`), the freedesktop trash through `Trash.send` everywhere
 else. Both answer `Result<unit, OperationError>`, so a refusal is reported
@@ -187,10 +219,9 @@ the state layer must not know about. The walk is now `DeleteRequested mode` →
 `Shell` → `DeleteFinished results` → `AppState.finishDelete`, which only
 re-reads the active panel and keeps the marks of what did not finish. Since
 P15.7 every mode goes through `RunBatch`, because the places path always did and
-the two paths became one: the trash and a permanent delete now run off the UI
-thread behind the progress window. Neither reports progress per item yet and
-neither watches the cancel flag — P15.15 is what makes `Esc` mean something
-there.
+the two paths became one: the trash and a permanent delete run off the UI
+thread behind the progress window, and since P15.15 they name what they are
+working on and stop where `Esc` was pressed, like the wipe beside them.
 
 **Per-item failures share one dialog.** `Operations.deleteAll` answers for every
 target, `Operations.failures` keeps the ones that went wrong, and the

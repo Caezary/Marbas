@@ -89,7 +89,7 @@ let ``a move out of a panel inside an archive takes the entries to the other pan
     )
 
 [<Fact>]
-let ``a delete inside an archive is confirmed for good and removes the entries`` () =
+let ``a delete inside an archive is asked for good and removes the entries`` () =
     let fs = packed ()
     let state = standingInside fs Left |> setCursor Left 2
 
@@ -97,10 +97,7 @@ let ``a delete inside an archive is confirmed for good and removes the entries``
     let confirmed = update fs (DeleteConfirmed Permanently) state
 
     Assert.Equal<Effect list>(
-        [ ConfirmDelete
-              { Targets = [ en "notes.txt" ]
-                Scope = NamedEntriesOnly
-                Mode = Permanently } ],
+        [ InspectDelete({ Probed = []; ReachesContents = false }, Permanently) ],
         asked.Effects
     )
 
@@ -110,26 +107,35 @@ let ``a delete inside an archive is confirmed for good and removes the entries``
     )
 
 [<Fact>]
-let ``a wipe inside an archive is confirmed as a delete for good`` () =
+let ``a wipe inside an archive is asked as a delete for good`` () =
     let fs = packed ()
     let state = standingInside fs Left |> setCursor Left 2
 
     let asked = update fs (DeleteRequested ByWiping) state
 
     Assert.Equal<Effect list>(
-        [ ConfirmDelete
-              { Targets = [ en "notes.txt" ]
-                Scope = NamedEntriesOnly
-                Mode = Permanently } ],
+        [ InspectDelete({ Probed = []; ReachesContents = false }, Permanently) ],
         asked.Effects
     )
 
 [<Fact>]
-let ``a directory among the targets inside an archive warns about its contents`` () =
+let ``a directory among the targets inside an archive needs nothing read to warn about its contents`` () =
     let fs = packed ()
     let state = standingInside fs Left |> setCursor Left 1
 
     let result = update fs (DeleteRequested ToTrash) state
+
+    Assert.Equal<Effect list>(
+        [ InspectDelete({ Probed = []; ReachesContents = true }, Permanently) ],
+        result.Effects
+    )
+
+[<Fact>]
+let ``the scope that came back names the entries inside the archive`` () =
+    let fs = packed ()
+    let state = standingInside fs Left |> setCursor Left 1
+
+    let result = update fs (DeleteScopeLoaded(WithDirectoryContents, Permanently)) state
 
     Assert.Equal<Effect list>(
         [ ConfirmDelete

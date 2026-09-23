@@ -23,4 +23,4 @@ type Scratch() =
 
     interface IDisposable with
         member _.Dispose() =
-            Operations.delete (FileSystem()) (FileSystemPath.create root) |> ignore
+            Operations.delete (FileSystem()) Operations.unattended (FileSystemPath.create root) |> ignore

@@ -38,5 +38,5 @@ let scratch (fs: IFileSystem) (workspace: FileSystemPath) =
 
 let release (fs: IFileSystem) (path: FileSystemPath) =
     match FileSystemPath.kind fs path with
-    | DirectoryEntry -> delete fs path |> ignore
+    | DirectoryEntry -> delete fs unattended path |> ignore
     | _ -> ()

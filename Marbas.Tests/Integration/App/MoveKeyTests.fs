@@ -95,6 +95,30 @@ let ``a bare name renames the entry under the cursor`` () =
     Assert.Empty(fs.Directory.GetFileSystemEntries(at "backup"))
 
 [<Fact>]
+let ``a bare name for a directory the file system will not move renames it behind the progress window`` () =
+    let fs = Fakes.DirectoryMoveRefused()
+    fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
+    fs.AddDirectory(at "backup")
+    let batches = ResizeArray<string>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                AskTarget = fun _ _ -> Some "papers"
+                RunBatch =
+                    fun title work finish ->
+                        batches.Add title
+                        work unattended |> finish }
+
+    (leftList window).SelectedItem <- 1
+
+    pressKey window Key.F6
+
+    Assert.Equal<string list>([ Shell.RenameTitle ], List.ofSeq batches)
+    Assert.Equal("x", fs.File.ReadAllText(at "start/papers/inner.txt"))
+    Assert.False(fs.Directory.Exists(at "start/docs"))
+
+[<Fact>]
 let ``the renamed entry keeps the cursor`` () =
     let fs = mockFs ()
     use window = windowWith fs (fun _ _ -> Some "aaa.txt") noQuestion silent

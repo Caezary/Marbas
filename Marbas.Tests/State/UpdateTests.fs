@@ -209,27 +209,28 @@ let ``toggling selection upward marks the entry under the cursor and steps back`
     Assert.Equal(1, result.State.Left.Cursor)
 
 [<Fact>]
-let ``delete requested asks to confirm the cursor entry`` () =
+let ``delete requested asks what the cursor entry reaches into`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
 
     let result = update fs (DeleteRequested ToTrash) state
 
     Assert.Equal<Effect list>(
-        [ ConfirmDelete
-              { Targets = [ en "notes.txt" ]
-                Scope = NamedEntriesOnly
-                Mode = ToTrash } ],
+        [ InspectDelete(
+              { Probed = [ fp (at "start/notes.txt") ]
+                ReachesContents = false },
+              ToTrash
+          ) ],
         result.Effects
     )
 
 [<Fact>]
-let ``delete requested warns when a target directory is not empty`` () =
+let ``the scope that came back is carried into the confirmation`` () =
     let fs = mockFs ()
     fs.AddFile(at "start/docs/inner.txt", MockFileData "x")
     let state = loaded fs |> setCursor Left 1
 
-    let result = update fs (DeleteRequested Permanently) state
+    let result = update fs (DeleteScopeLoaded(WithDirectoryContents, Permanently)) state
 
     Assert.Equal<Effect list>(
         [ ConfirmDelete
@@ -269,17 +270,18 @@ let ``a confirmed permanent delete carries its own mode`` () =
     Assert.Equal<Effect list>([ DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], Permanently) ], result.Effects)
 
 [<Fact>]
-let ``a wipe asks to confirm under its own mode`` () =
+let ``a wipe asks under its own mode`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
 
     let result = update fs (DeleteRequested ByWiping) state
 
     Assert.Equal<Effect list>(
-        [ ConfirmDelete
-              { Targets = [ en "notes.txt" ]
-                Scope = NamedEntriesOnly
-                Mode = ByWiping } ],
+        [ InspectDelete(
+              { Probed = [ fp (at "start/notes.txt") ]
+                ReachesContents = false },
+              ByWiping
+          ) ],
         result.Effects
     )
 
@@ -316,7 +318,7 @@ let ``a finished wipe keeps the marks of what it did not get to`` () =
 let ``a finished delete refreshes the panel and raises no effect`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
-    let results = deleteAll fs [ fp (at "start/notes.txt") ]
+    let results = deleteAll fs unattended [ fp (at "start/notes.txt") ]
 
     let result = update fs (DeleteFinished results) state
 
@@ -328,7 +330,7 @@ let ``a finished delete refreshes the panel and raises no effect`` () =
 let ``a delete that fails is reported item by item`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
-    let results = deleteAll fs [ fp (at "start/gone.txt") ]
+    let results = deleteAll fs unattended [ fp (at "start/gone.txt") ]
 
     let result = update fs (DeleteFinished results) state
 
@@ -483,7 +485,7 @@ let ``a finished move shows the entry in the other panel`` () =
 let ``a finished rename puts the cursor on the new name`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
-    rename fs (fp (at "start/notes.txt")) (en "zzz.txt") |> ignore
+    startRename fs (fp (at "start/notes.txt")) (en "zzz.txt") |> ignore
 
     let result = update fs (RenameFinished(en "zzz.txt", Ok())) state
 

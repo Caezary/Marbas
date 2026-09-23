@@ -31,7 +31,7 @@ let private started () =
 let private targetNames (state: AppState) = operationTargets state.Left |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private deleted (fs: IFileSystem) state =
-    let results = operationPaths fs (panel Left state) |> deleteAll fs
+    let results = operationPaths fs (panel Left state) |> deleteAll fs unattended
     finishDelete fs results state |> Expect.ok
 
 [<Fact>]
@@ -141,7 +141,7 @@ let ``marks are dropped along with the entries they pointed at`` () =
 let ``a non-empty directory among the targets widens the scope`` () =
     let fs, state = started ()
 
-    let scope = deleteScope fs (state |> setCursor Left 1).Left
+    let scope = (state |> setCursor Left 1).Left |> deleteQuestion fs |> deleteScope fs
 
     Assert.Equal(WithDirectoryContents, scope)
 
@@ -149,6 +149,6 @@ let ``a non-empty directory among the targets widens the scope`` () =
 let ``an empty directory keeps the scope to the named entries`` () =
     let fs, state = started ()
 
-    let scope = deleteScope fs (state |> setCursor Left 2).Left
+    let scope = (state |> setCursor Left 2).Left |> deleteQuestion fs |> deleteScope fs
 
     Assert.Equal(NamedEntriesOnly, scope)
