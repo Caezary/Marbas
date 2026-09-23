@@ -224,14 +224,15 @@ module Archive =
     let private makeRoom (fs: IFileSystem) (path: FileSystemPath) =
         fs.Directory.CreateDirectory(fs.Path.GetDirectoryName(FileSystemPath.value path)) |> ignore
 
-    let private writeContent (fs: IFileSystem) (writeTo: Stream -> unit) (path: FileSystemPath) =
+    let private writeContent (fs: IFileSystem) (openContent: unit -> Stream) (path: FileSystemPath) =
         use stream = fs.File.Create(FileSystemPath.value path)
-        writeTo stream
+        use content = openContent ()
+        content.CopyTo stream
 
     let private restoreTime (fs: IFileSystem) (info: ArchiveEntryInfo) (path: FileSystemPath) =
         fs.FileInfo.New(FileSystemPath.value path).LastWriteTimeUtc <- info.Modified.UtcDateTime
 
-    let private unpackEntry (fs: IFileSystem) (control: Operations.BatchControl) destination target info writeTo =
+    let private unpackEntry (fs: IFileSystem) (control: Operations.BatchControl) destination target info openContent =
         let path = landingPlace fs destination (beneath target info)
 
         if control.IsCancelled() then
@@ -245,7 +246,7 @@ module Archive =
 
             attempt path (fun () ->
                 makeRoom fs path
-                writeContent fs writeTo path
+                writeContent fs openContent path
                 restoreTime fs info path)
 
     let private unpacking fs control destination target (unpacked: Result<int, _> ref) =
@@ -253,7 +254,7 @@ module Archive =
             if not (under target item.Info) then
                 KeepReading
             else
-                match unpackEntry fs control destination target item.Info item.WriteTo with
+                match unpackEntry fs control destination target item.Info item.OpenContent with
                 | Ok() ->
                     unpacked.Value <- unpacked.Value |> Result.map ((+) 1)
                     KeepReading
@@ -402,9 +403,10 @@ module Archive =
             zip.AbortUpdate()
             Ok value
 
-    let private buffered (info: ArchiveEntryInfo) (writeTo: Stream -> unit) =
+    let private buffered (info: ArchiveEntryInfo) (openContent: unit -> Stream) =
         let content = new MemoryStream()
-        writeTo content
+        use source = openContent ()
+        source.CopyTo content
         content.Position <- 0L
 
         { Size = info.Size
@@ -426,7 +428,7 @@ module Archive =
                 sink.AddDirectory (keyOf info) (known info.Modified)
                 KeepReading
             else
-                sink.AddFile (keyOf info) (buffered info item.WriteTo)
+                sink.AddFile (keyOf info) (buffered info item.OpenContent)
                 KeepReading)
 
     let private copyKept (fs: IFileSystem) archive kind dropped control sink =

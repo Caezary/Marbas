@@ -34,6 +34,7 @@
     <Compile Include="FileSystem\FileSystemPathTests.fs" />
     <Compile Include="FileSystem\ContentErrorTests.fs" />
     <Compile Include="FileSystem\TextEncodingTests.fs" />
+    <Compile Include="FileSystem\RewindingStreamTests.fs" />
     <Compile Include="FileSystem\FileWindowTests.fs" />
     <Compile Include="FileSystem\LineIndexTests.fs" />
     <Compile Include="FileSystem\DrivesTests.fs" />

@@ -34,22 +34,10 @@ let private probeOf (stream: Stream) =
     stream.ReadExactly(probe, 0, length)
     probe
 
-let private copying (wanted: EntryName list) (content: Stream) (found: bool ref) =
-    ArchiveStep(fun item ->
-        if ArchiveEntryInfo.isDirectory item.Info || item.Info.Segments <> wanted then
-            KeepReading
-        else
-            item.WriteTo content
-            found.Value <- true
-            StopReading)
-
-let private contentOf (fs: IFileSystem) password kind archive (wanted: EntryName list) =
-    let content = new MemoryStream()
-    let found = ref false
-
-    ArchiveReader.withItems fs password kind archive (copying wanted content found)
-
-    if found.Value then Some content else None
+let private opening (fs: IFileSystem) password kind archive segments () =
+    match ArchiveReader.openContent fs password kind archive segments with
+    | Some content -> content
+    | None -> raise (FileNotFoundException(FileSystemPath.value archive))
 
 let openEntry (fs: IFileSystem) password (archive: FileSystemPath) (entry: ArchivePath) : Result<Source, ArchiveError> =
     let spelled = ArchivePath.spelled fs archive entry
@@ -57,11 +45,15 @@ let openEntry (fs: IFileSystem) password (archive: FileSystemPath) (entry: Archi
     match ArchiveReader.kindOf fs archive with
     | None -> Error(KindCannotBeRead archive)
     | Some kind ->
+        let segments = ArchivePath.segments entry
+
         try
-            match contentOf fs password kind archive (ArchivePath.segments entry) with
+            match ArchiveReader.entryInfo fs password kind archive segments with
             | None -> Error(ArchiveNotFound spelled)
-            | Some content ->
-                content.Position <- 0L
+            | Some info ->
+                let content =
+                    new RewindingStream(info.Size, opening fs password kind archive segments)
+
                 Ok(new Source(spelled, content, TextEncoding.detect (probeOf content)))
         with ex ->
             Error(ArchiveReader.mapException archive ex)

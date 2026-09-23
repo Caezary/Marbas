@@ -234,6 +234,54 @@ type ReadCounting() =
 
         reading
 
+type private CountedStream(inner: FileSystemStream, path: string, read: int -> unit, closed: unit -> unit) =
+    inherit FileSystemStream(inner, path, false)
+
+    override this.Read(buffer: byte array, offset: int, count: int) =
+        let got = base.Read(buffer, offset, count)
+        read got
+        got
+
+    override this.Read(buffer: Span<byte>) =
+        let got = base.Read buffer
+        read got
+        got
+
+    override this.ReadByte() =
+        match base.ReadByte() with
+        | -1 -> -1
+        | value ->
+            read 1
+            value
+
+    override this.Dispose(disposing: bool) =
+        if disposing then closed ()
+
+        base.Dispose disposing
+
+type private CountedFile(accessor: IMockFileDataAccessor, read: int -> unit, closed: unit -> unit) =
+    inherit MockFile(accessor)
+
+    override this.OpenRead(path: string) =
+        new CountedStream(base.OpenRead path, path, read, closed)
+
+type ByteCounting() =
+    inherit MockFileSystem()
+
+    let mutable total = 0
+    let mutable shut = 0
+    let mutable reading: IFile = null
+
+    member _.BytesRead = total
+
+    member _.Closed = shut
+
+    override this.File =
+        if isNull reading then
+            reading <- CountedFile(this, (fun got -> total <- total + got), fun () -> shut <- shut + 1)
+
+        reading
+
 type private AskedFile(accessor: IMockFileDataAccessor, asked: string -> unit) =
     inherit MockFile(accessor)
 

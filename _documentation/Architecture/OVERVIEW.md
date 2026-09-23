@@ -114,13 +114,14 @@ Marbas/
     ArchivePath.fs        a place inside an archive: never rooted, never climbing
     ArchiveFormat.fs      which kinds can be created, and what each one carries
     ArchiveName.fs        the name an archive is offered under, and its extension
-    ArchiveReader.fs      opening an archive: its entries, their content, failures as values
+    ArchiveReader.fs      opening an archive: its entries as a walk, one entry as a stream
     ArchiveListing.fs     reading one level of an archive as the entries a directory gives
     SearchListing.fs      search hits as the entries a directory gives, named by their path
     Archive.fs            writing one and taking one apart: the walk, cancelling, the password
     Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     ContentError.fs       what can go wrong reading a file, as values
     TextEncoding.fs       which encoding a file carries, from its mark or its bytes
+    RewindingStream.fs    a forward-only stream seen as one that seeks, by opening it again
     FileWindow.fs         a file held open, read one byte range at a time
     LineIndex.fs          line starts scanned forward on demand, and the line at one
   State/

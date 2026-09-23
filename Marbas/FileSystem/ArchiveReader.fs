@@ -23,13 +23,50 @@ type ArchiveEntryInfo =
 [<Struct; IsByRefLike>]
 type ArchiveItem =
     { Info: ArchiveEntryInfo
-      WriteTo: Stream -> unit }
+      OpenContent: unit -> Stream }
 
 type ArchiveWalk =
     | KeepReading
     | StopReading
 
 type ArchiveStep = delegate of ArchiveItem -> ArchiveWalk
+
+type internal OwningStream(content: Stream, owned: IDisposable list) =
+    inherit Stream()
+
+    let mutable position = 0L
+
+    override _.CanRead = true
+
+    override _.CanSeek = false
+
+    override _.CanWrite = false
+
+    override _.Length = raise (NotSupportedException())
+
+    override _.Position
+        with get () = position
+        and set _ = raise (NotSupportedException())
+
+    override _.Flush() = ()
+
+    override _.SetLength(_: int64) = raise (NotSupportedException())
+
+    override _.Write(_: byte array, _: int, _: int) = raise (NotSupportedException())
+
+    override _.Seek(_: int64, _: SeekOrigin) = raise (NotSupportedException())
+
+    override _.Read(buffer: byte array, offset: int, count: int) =
+        let read = content.Read(buffer, offset, count)
+        position <- position + int64 read
+        read
+
+    override _.Dispose(disposing: bool) =
+        if disposing then
+            content.Dispose()
+            owned |> List.iter _.Dispose()
+
+        base.Dispose disposing
 
 module ArchiveEntryInfo =
 
@@ -83,36 +120,102 @@ module ArchiveReader =
           Size = entry.Size
           Modified = modifiedAt entry.LastModifiedTime }
 
-    let private writeEntry (entry: IArchiveEntry) (target: Stream) =
-        use content = entry.OpenEntryStream()
-        content.CopyTo target
-
     let private streaming (reader: IReader) =
         seq {
             while reader.MoveToNextEntry() do
-                yield reader.Entry, (reader.WriteEntryTo: Stream -> unit)
+                yield reader.Entry, (fun () -> reader.OpenEntryStream() :> Stream)
         }
 
-    let private walk (step: ArchiveStep) (entries: seq<IEntry * (Stream -> unit)>) =
+    let private walk (step: ArchiveStep) (entries: seq<IEntry * (unit -> Stream)>) =
         use walker = entries.GetEnumerator()
         let mutable reading = KeepReading
 
         while reading = KeepReading && walker.MoveNext() do
-            let entry, writeTo = walker.Current
-            reading <- step.Invoke { Info = infoOf entry; WriteTo = writeTo }
+            let entry, openContent = walker.Current
+            reading <- step.Invoke { Info = infoOf entry; OpenContent = openContent }
 
-    let withItems (fs: IFileSystem) password (kind: ArchiveKind) (path: FileSystemPath) (step: ArchiveStep) =
-        use stream = fs.File.OpenRead(FileSystemPath.value path)
+    let private readingSequentially password (step: ArchiveStep) (stream: Stream) =
+        use reader = ReaderFactory.OpenReader(stream, options password)
+        walk step (streaming reader)
 
+    let private readingWholeArchive password (step: ArchiveStep) (stream: Stream) =
+        use archive = ArchiveFactory.OpenArchive(stream, options password)
+        walk step (archive.Entries |> Seq.map (fun entry -> entry :> IEntry, fun () -> entry.OpenEntryStream()))
+
+    let private isSequential kind =
         match kind with
         | Tar
         | TarGz
         | TarBz2
-        | TarXz ->
-            use reader = ReaderFactory.OpenReader(stream, options password)
-            walk step (streaming reader)
+        | TarXz -> true
         | Zip
         | SevenZip
-        | Rar ->
-            use archive = ArchiveFactory.OpenArchive(stream, options password)
-            walk step (archive.Entries |> Seq.map (fun entry -> entry :> IEntry, writeEntry entry))
+        | Rar -> false
+
+    let withItems (fs: IFileSystem) password (kind: ArchiveKind) (path: FileSystemPath) (step: ArchiveStep) =
+        use stream = fs.File.OpenRead(FileSystemPath.value path)
+
+        if isSequential kind then
+            readingSequentially password step stream
+        else
+            readingWholeArchive password step stream
+
+    let entryInfo fs password kind path (segments: EntryName list) =
+        let found = ref None
+
+        let looking =
+            ArchiveStep(fun item ->
+                if ArchiveEntryInfo.isDirectory item.Info || item.Info.Segments <> segments then
+                    KeepReading
+                else
+                    found.Value <- Some item.Info
+                    StopReading)
+
+        withItems fs password kind path looking
+        found.Value
+
+    let private wanted (segments: EntryName list) (entry: IEntry) =
+        not entry.IsDirectory
+        && segmentsOf (Option.ofObj entry.Key |> Option.defaultValue "") = segments
+
+    let private contentInArchive password segments (stream: Stream) =
+        let archive = ArchiveFactory.OpenArchive(stream, options password)
+
+        match archive.Entries |> Seq.tryFind (wanted segments) with
+        | Some entry -> Some(new OwningStream(entry.OpenEntryStream(), [ archive ]) :> Stream)
+        | None ->
+            archive.Dispose()
+            None
+
+    let private contentSequentially password segments (stream: Stream) =
+        let reader = ReaderFactory.OpenReader(stream, options password)
+
+        let rec looking () =
+            if not (reader.MoveToNextEntry()) then
+                reader.Dispose()
+                None
+            elif wanted segments reader.Entry then
+                Some(new OwningStream(reader.OpenEntryStream(), [ reader ]) :> Stream)
+            else
+                looking ()
+
+        looking ()
+
+    let openContent (fs: IFileSystem) password kind (path: FileSystemPath) segments =
+        let stream = fs.File.OpenRead(FileSystemPath.value path)
+
+        let content =
+            try
+                if isSequential kind then
+                    contentSequentially password segments stream
+                else
+                    contentInArchive password segments stream
+            with _ ->
+                stream.Dispose()
+                reraise ()
+
+        match content with
+        | Some found -> Some(new OwningStream(found, [ stream ]) :> Stream)
+        | None ->
+            stream.Dispose()
+            None

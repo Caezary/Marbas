@@ -92,7 +92,7 @@ module private ArchiveScan =
                 StopReading
             elif ArchivePath.strictlyUnder scan.Level info.Segments then
                 note scan seen stored info
-                onFile info item.WriteTo
+                onFile info item.OpenContent
             else
                 KeepReading)
 
@@ -170,13 +170,11 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
         | Some _, StopAtLinks -> false
         | _ -> true
 
-    let contentOf (writeTo: Stream -> unit) search =
-        use buffer = new MemoryStream()
-        writeTo buffer
-        buffer.Position <- 0L
-        ContentMatch.inStream control search buffer
+    let contentOf (openContent: unit -> Stream) search =
+        use content = openContent ()
+        ContentMatch.inStream control search content
 
-    let fileInside archive (level: EntryName list) (info: ArchiveEntryInfo) writeTo =
+    let fileInside archive (level: EntryName list) (info: ArchiveEntryInfo) openContent =
         if not (ArchiveEntryInfo.isDirectory info)
            && (depth = EveryLevel || info.Segments.Length = level.Length + 1) then
             let entry = ArchiveListing.fileEntry (List.last info.Segments) info
@@ -185,7 +183,7 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
             if wanted entry then
                 match FindQuery.text query with
                 | None -> hit location entry
-                | Some search -> byAnswer location entry (contentOf writeTo search)
+                | Some search -> byAnswer location entry (contentOf openContent search)
 
         if stopped then StopReading else KeepReading
 

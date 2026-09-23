@@ -37,6 +37,16 @@ then valid UTF-8 — and reads the rest in buffers of 64 KiB through a `Decoder`
 so a multi-byte sequence split across two reads still decodes. A UTF-16 file is
 searched as text rather than as bytes that happen to spell nothing.
 
+**The probe is the first buffer, not a read taken back.** The probe used to be
+read and then unread — the stream was wound back to just past the preamble and
+the first 8 KiB read a second time. It is now handed to the scan as the buffer
+it already is, minus the byte order mark. That is one read fewer per file, and
+it is what lets the same code search an entry inside an archive, whose stream
+only goes forward: `FileSearch` opens the entry through `ArchiveItem.OpenContent`
+and gives `ContentMatch.inStream` the reader's own stream, so a text found in
+the first buffer of a 4 GB entry stops the search there. It used to copy every
+entry it visited into memory first.
+
 **A match is found wherever it falls.** The last length of the text plus one
 character is carried in front of the next buffer, so a match straddling a
 boundary is seen whole; the tests put one at every offset around 64 KiB and

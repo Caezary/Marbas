@@ -193,3 +193,73 @@ let ``an entry of a locked archive is opened with the password`` () =
         |> Expect.ok
 
     Assert.Equal("notes", Encoding.ASCII.GetString(source.Read(0L, 5)))
+
+[<Literal>]
+let private BigEntryLength = 4194304
+
+[<Literal>]
+let private ReadingBudget = 524288
+
+let private bigEntry () =
+    let fs = Fakes.ByteCounting()
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "work/big.txt", MockFileData(String('x', BigEntryLength)))
+
+    Archive.write
+        fs
+        Operations.unattended
+        { Path = fp archive
+          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Compression = Stored
+          Password = None }
+        [ fp (at "work/big.txt") ]
+    |> ignore
+
+    fs
+
+[<Fact>]
+let ``an entry larger than a buffer is read as a stream, not held whole`` () =
+    let fs = bigEntry ()
+    use source = FileWindow.openEntry fs None (fp archive) (inside "big.txt") |> Expect.ok
+    let before = fs.BytesRead
+
+    let head = source.Read(0L, 16)
+
+    Assert.Equal(int64 BigEntryLength, source.Length)
+    Assert.Equal(String('x', 16), Encoding.ASCII.GetString head)
+    Assert.True(fs.BytesRead - before < ReadingBudget, $"read {fs.BytesRead - before} bytes of the entry")
+
+[<Fact>]
+let ``the end of a large entry is reached without the whole of it being held`` () =
+    let fs = bigEntry ()
+    use source = FileWindow.openEntry fs None (fp archive) (inside "big.txt") |> Expect.ok
+
+    let tail = source.Read(int64 BigEntryLength - 8L, 8)
+
+    Assert.Equal(String('x', 8), Encoding.ASCII.GetString tail)
+
+[<Fact>]
+let ``an entry is read back to front as often as the viewer asks`` () =
+    let fs = packedArchive ()
+    use source = FileWindow.openEntry fs None (fp archive) (inside "notes.txt") |> Expect.ok
+
+    let tail = Encoding.ASCII.GetString(source.Read(3L, 2))
+    let head = Encoding.ASCII.GetString(source.Read(0L, 3))
+
+    Assert.Equal("es", tail)
+    Assert.Equal("not", head)
+
+[<Fact>]
+let ``the lines of an entry are read in whatever order the viewer wants them`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "work/notes.txt", MockFileData "first\nsecond\nthird")
+    Archive.write fs Operations.unattended (request None) [ fp (at "work/notes.txt") ] |> ignore
+    use source = FileWindow.openEntry fs None (fp archive) (inside "notes.txt") |> Expect.ok
+    let index = LineIndex.Index source
+
+    index.ScanAll()
+
+    Assert.Equal(3, index.Known)
+    Assert.Equal(Some "third", index.Text 2)
+    Assert.Equal(Some "first", index.Text 0)

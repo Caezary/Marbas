@@ -241,8 +241,9 @@ and one of the second, all spelled out by hand.
 **One reader under both, with two openers chosen by kind.** `ArchiveReader` is
 where an archive is opened, and it opens one only for the length of a walk:
 `withItems` takes an `ArchiveStep` and calls it once per entry with an
-`ArchiveItem` — the entry's `ArchiveEntryInfo` and a `WriteTo` that streams its
-content — until the step answers `StopReading` or the entries run out. Zip, 7z
+`ArchiveItem` — the entry's `ArchiveEntryInfo` and an `OpenContent` that opens
+its content as a stream — until the step answers `StopReading` or the entries
+run out. Zip, 7z
 and rar go through `ArchiveFactory.OpenArchive`, which seeks and reads the
 archive's own table of contents; the tar family goes through
 `ReaderFactory.OpenReader`, which streams, because `ArchiveFactory` sees a
@@ -255,13 +256,31 @@ the tests read are the ones `Archive.write` wrote a line earlier.
 line.** `ArchiveEntryInfo` — the names a key is made of, the entry's
 `ArchiveEntryKind`, its size and its time — is an ordinary record: a walk may
 collect every one of them and hand the list on. `ArchiveItem`, which carries
-the `WriteTo` beside it, is a `[<Struct; IsByRefLike>]` record, so it cannot be
-put in a list, stored in a field or captured by a closure that outlives the
-step; the reader for a tar has no way back to a previous entry, and a
-`WriteTo` kept past its step used to compile and throw
+the `OpenContent` beside it, is a `[<Struct; IsByRefLike>]` record, so it cannot
+be put in a list, stored in a field or captured by a closure that outlives the
+step; the reader for a tar has no way back to a previous entry, and a content
+function kept past its step used to compile and throw
 `ObjectDisposedException`. Where a step needs the content elsewhere it passes
-the `WriteTo` itself, which is an ordinary function, and where it needs a
+the `OpenContent` itself, which is an ordinary function, and where it needs a
 lambda over the entry it binds `item.Info` first.
+
+**Content is handed over as a stream, not as a block of memory.** `OpenContent`
+answers the reader's own entry stream, and every caller reads it a buffer at a
+time inside the step: unpacking copies it into the file it is writing, the
+content search hands it to `ContentMatch`, which stops at the first match. Only
+the rewrite of a 7z or a tar.gz still buffers, and for a reason of its own that
+[Changing an archive](#changing-an-archive) records. What it replaced was a
+`WriteTo` that every
+caller answered with a `MemoryStream`, so a text search over an archive
+allocated every entry it visited and `F3` on a 4 GB entry allocated 4 GB.
+
+**One entry can also be opened on its own, outside a walk.** `entryInfo` walks
+to an entry and answers its `ArchiveEntryInfo`; `openContent` opens the archive
+and answers a stream over that one entry which *owns* the archive — disposing
+the stream closes the entry, the archive and the file under it. That is the one
+place content outlives a walk, and the type says so: an ordinary `Stream`, not
+an `ArchiveItem`. It exists for the viewer, which has to answer reads for as
+long as the user keeps the entry on screen.
 
 **A kind says whether an entry is a directory, a file or an encrypted file.**
 `ArchiveEntryKind` is one value where there used to be two booleans that could
@@ -547,15 +566,28 @@ inside one.
 
 **`F3` streams an entry into the viewer.** `ViewRequested` raises `ViewFile`
 for a file on disk and `ViewArchiveEntry` for one inside an archive;
-`FileWindow.openEntry` walks the archive to the entry, writes it into a
-`MemoryStream` and hands the viewer a `Source` labelled with the entry's
+`FileWindow.openEntry` asks `ArchiveReader.entryInfo` for the entry's size and
+hands the viewer a `Source` over a `RewindingStream`, labelled with the entry's
 spelled path, so the header names `C:\work\backup.zip\docs\notes.txt` and every
-viewer command works as it does on disk. The content is decompressed whole,
-which the windowed reading of a file on disk deliberately avoids: an archive
-entry has no random access to offer, so the choice is buffering it or not
-showing it. `Shell` asks for a password first when `Archive.needsPassword` says
-the archive carries one, exactly as `Shift+F2` does, and an entry the archive
-no longer holds comes back as `ArchiveNotFound` under its own spelled name.
+viewer command works as it does on disk. `Shell` asks for a password first when
+`Archive.needsPassword` says the archive carries one, exactly as `Shift+F2`
+does, and an entry the archive no longer holds comes back as `ArchiveNotFound`
+under its own spelled name.
+
+**A forward-only entry is made to look like a file, by opening it again.** The
+viewer reads byte ranges in whatever order the user scrolls in, and a
+decompressing entry stream only goes forward. `RewindingStream` takes the
+entry's length and a way to open it from the start: a read ahead of where it
+stands skips forward through a 64 KiB scratch buffer, a read behind it disposes
+the stream and opens a fresh one. Scrolling down a large entry therefore costs
+one pass, and jumping back to the top costs one more — where the old answer was
+to decompress the whole entry into memory before the first line appeared. The
+stream is opened lazily, so an entry the viewer is closed on without reading is
+never decompressed at all, and the `Source` owns it: closing the viewer closes
+the entry, the archive and the file. The one thing this gives up is what an open
+file handle gave: the archive is re-opened during viewing, so an archive deleted
+under the viewer fails a later scroll rather than reading on from a handle
+nobody can see.
 
 **`F4` is the one key that refuses.** Editing an entry in place would mean
 rewriting the archive when the editor returns — and knowing when it returned,

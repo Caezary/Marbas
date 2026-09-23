@@ -217,3 +217,39 @@ let ``one level of an archive is read when only that level is asked for`` () =
     let hits = hitsOf fs query ground |> snd
 
     Assert.Equal<string list>([ at "backup/data.zip/notes.txt" ], hits)
+
+[<Literal>]
+let private BigEntryLength = 4194304
+
+[<Literal>]
+let private ReadingBudget = 524288
+
+let private bigArchive () =
+    let fs = Fakes.ByteCounting()
+    fs.AddDirectory(at "backup")
+    fs.AddFile(at "work/big.txt", MockFileData("needle" + System.String('x', BigEntryLength)))
+
+    Archive.write
+        fs
+        Operations.unattended
+        { Path = fp (at "backup/data.zip")
+          Format = zip
+          Compression = Stored
+          Password = None }
+        [ fp (at "work/big.txt") ]
+    |> ignore
+
+    fs
+
+[<Fact>]
+let ``text found at the head of a large entry is matched without the entry being read whole`` () =
+    let fs = bigArchive ()
+
+    let query =
+        { queryFor "*.txt" with
+            What = FindWhat.create (NameMasks.read "*.txt") (Some(searchFor "needle")) FilesOnly }
+
+    let hits = inBackup fs query
+
+    Assert.Equal<string list>([ at "backup/data.zip/big.txt" ], hits)
+    Assert.True(fs.BytesRead < ReadingBudget, $"read {fs.BytesRead} bytes of the archive")

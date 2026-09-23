@@ -98,7 +98,9 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   the colours work exactly as they do on disk, since what a level of an archive
   answers with is the same list of entries a directory answers with. `F3` views
   a file inside an archive, asking once for the password if the archive carries
-  one; `F4` refuses with a message, because an entry cannot be edited in place.
+  one, and reads it as it scrolls rather than decompressing it whole first, so a
+  huge entry opens as quickly as a small one; `F4` refuses with a message,
+  because an entry cannot be edited in place.
   `F5` copies the targets out into the other panel — a marked directory with
   the tree below it — behind the same progress window, with the same overwrite
   question and the same surviving marks as a copy between two directories, and

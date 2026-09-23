@@ -332,7 +332,10 @@ one byte range at a time, and the only thing read up front is a probe of
 `TextEncoding.ProbeLength` bytes, which settles the encoding. Everything after
 that is pulled as it is needed: the viewer asks for the rows its viewport shows
 and nothing else, so a gigabyte opens as fast as a kilobyte and there is no size
-limit and no truncation notice to write.
+limit and no truncation notice to write. An entry inside an archive holds to the
+same promise since P15.16, through a `RewindingStream` that re-opens the entry
+whenever the viewer reads behind where the decompressor stands;
+[Archives](ARCHIVES.md) explains what that costs.
 
 **Where a line begins is scanned forward, never indexed up front.**
 `LineIndex.Index` holds the byte offset of every line start it has seen and

@@ -636,3 +636,48 @@ keystroke is an effect. `OVERVIEW.md` and `CLAUDE.md` say that instead of
 control, the two-step scope and the rename that opens a batch only when it must,
 and `TESTING.md` no longer says on line 6 what it contradicts on line 15 —
 `Integration/Disk/` is named as the one folder that reaches the disk.
+
+**P15.16 turned an archive entry from a block of memory into a stream.**
+`ArchiveItem` carried a `WriteTo: Stream -> unit`, and both readers of one
+answered it with a `MemoryStream`: `FileWindow.contentOf` copied the whole entry
+in to view it, so `F3` on a 4 GB entry inside a zip allocated 4 GB, and
+`FileSearch.contentOf` did the same for *every* entry a text search visited,
+although `ContentMatch` reads 64 KiB at a time and stops at the first match
+(perf P8). The item now carries `OpenContent: unit -> Stream` — the reader's own
+entry stream, opened inside the step and read a buffer at a time. Unpacking
+copies it into the file it is writing, the search hands it straight to
+`ContentMatch.inStream`, and the rewrite of a 7z or a tar.gz is the one caller
+that still buffers, which was always its documented price.
+
+The search needed one thing removed first. `ContentMatch.answered` read an
+8 KiB probe to settle the encoding and then *wound the stream back* to just past
+the byte order mark to scan it again — which a forward-only entry stream cannot
+do. The probe is now handed to `scan` as the first buffer it works on, minus the
+preamble, so nothing is read twice and nothing seeks. A file on disk gains the
+saved read; an entry inside an archive gains the ability to be searched at all
+without being copied first.
+
+The viewer was the harder half, because a `Source` answers byte ranges in
+whatever order the user scrolls in and has to outlive any one walk.
+`ArchiveReader` grew two functions beside `withItems`: `entryInfo`, which walks
+to one entry and answers its `ArchiveEntryInfo`, and `openContent`, which opens
+the archive and answers a `Stream` over one entry that *owns* the archive
+underneath it — an `OwningStream`, so closing the viewer closes the entry, the
+archive and the file, in that order. `RewindingStream` then makes a forward-only
+stream look like one that seeks: it holds the entry's length and a way to open
+it from the start, skips forward through a 64 KiB scratch buffer for a read
+ahead of where it stands, and disposes and re-opens for a read behind it. It
+opens nothing until the first read, so an entry the viewer never reads is never
+decompressed. `FileWindow.openEntry` keeps the signature it had; `Source`, the
+`LineIndex` above it and the whole viewer are untouched.
+
+What pins it is `Fakes.ByteCounting`, a `MockFileSystem` counting the bytes read
+out of every file it opens and the streams closed again. Over a zip holding one
+*stored* 4 MiB entry — stored, so the bytes on the file are the bytes of the
+entry and compression cannot flatter the count — viewing the first sixteen bytes
+reads 82 KB, and a content search whose text sits at the head of that entry
+answers after the same 82 KB, where both used to read the lot. `RewindingStream`
+has its own tests for the forward skip, the backward re-open and the count of
+opens each costs. Rendered over a real zip on disk, `F3` shows the entry, `End`
+reaches line 40, `F4` switches to hex and `Home` comes back to offset 0 with the
+right bytes — the re-open the design rests on, driven through the real viewer.

@@ -36,19 +36,23 @@ let rec private occursFrom (search: TextSearch) (needle: string) (text: string) 
         | WholeWords when bounded text index needle.Length atStart -> true
         | WholeWords -> occursFrom search needle text atStart atEnd (index + 1)
 
-let private scan (control: BatchControl) (stream: Stream) (search: TextSearch) encoding =
+let private scan (control: BatchControl) (stream: Stream) (search: TextSearch) encoding (leading: byte array) =
     let needle = FindText.value search.Text
     let decoder = TextEncoding.decoder encoding
     let bytes = Array.zeroCreate BufferLength
     let chars = Array.zeroCreate (TextEncoding.maxChars encoding BufferLength)
     let tail = needle.Length + 1
 
-    let rec step (carry: string) atStart =
+    let rec step (carry: string) atStart (held: byte array option) =
         if control.IsCancelled() then
             SearchStopped
         else
-            let read = stream.Read(bytes, 0, BufferLength)
-            let count = decoder.GetChars(bytes, 0, read, chars, 0)
+            let buffer, read =
+                match held with
+                | Some already -> already, already.Length
+                | None -> bytes, stream.Read(bytes, 0, BufferLength)
+
+            let count = decoder.GetChars(buffer, 0, read, chars, 0)
             let text = carry + String(chars, 0, count)
             let atEnd = read = 0
 
@@ -63,14 +67,18 @@ let private scan (control: BatchControl) (stream: Stream) (search: TextSearch) e
                     else
                         text.Substring(text.Length - tail)
 
-                step kept (atStart && kept.Length = text.Length)
+                step kept (atStart && kept.Length = text.Length) None
 
-    step "" true
+    step "" true (Some leading)
 
 let private probeOf (stream: Stream) =
     let probe = Array.zeroCreate TextEncoding.ProbeLength
     let read = stream.Read(probe, 0, probe.Length)
     Array.sub probe 0 read
+
+let private beyondPreamble (probe: byte array) encoding =
+    let preamble = min (TextEncoding.preambleLength encoding) probe.Length
+    Array.sub probe preamble (probe.Length - preamble)
 
 let private answered control (search: TextSearch) (stream: Stream) =
     let probe = probeOf stream
@@ -78,9 +86,7 @@ let private answered control (search: TextSearch) (stream: Stream) =
 
     match TextEncoding.contentOf probe, search.Binary with
     | Binary, Skipped -> FileSkipped
-    | _ ->
-        stream.Position <- int64 (TextEncoding.preambleLength encoding)
-        scan control stream search encoding
+    | _ -> scan control stream search encoding (beyondPreamble probe encoding)
 
 let private searched (fs: IFileSystem) control (search: TextSearch) (path: FileSystemPath) =
     use stream =

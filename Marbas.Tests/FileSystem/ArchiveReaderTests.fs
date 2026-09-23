@@ -77,8 +77,7 @@ let private en = EntryName.create
 
 let private zip = ArchiveFormat.ofKind Zip |> Expect.some
 
-let private packed () =
-    let tree = MockFileSystem()
+let private packedIn (tree: MockFileSystem) =
     tree.AddDirectory(at "backup")
     tree.AddFile(at "work/notes.txt", MockFileData "notes")
     tree.AddFile(at "work/docs/inner.txt", MockFileData "inner")
@@ -95,6 +94,8 @@ let private packed () =
 
     tree
 
+let private packed () = packedIn (MockFileSystem())
+
 let private walking (tree: MockFileSystem) (step: ArchiveStep) =
     ArchiveReader.withItems tree None Zip (fp archive) step
 
@@ -106,10 +107,11 @@ let private noting (seen: ResizeArray<string>) =
         seen.Add(keyOf item.Info)
         StopReading)
 
-let private writingNotes (content: IO.Stream) =
+let private writingNotes (target: IO.Stream) =
     ArchiveStep(fun item ->
         if item.Info.Segments = [ en "notes.txt" ] then
-            item.WriteTo content
+            use content = item.OpenContent()
+            content.CopyTo target
             StopReading
         else
             KeepReading)
@@ -140,3 +142,55 @@ let ``the content of an entry is written while the walk stands on it`` () =
     walking tree (writingNotes content)
 
     Assert.Equal("notes", Text.Encoding.UTF8.GetString(content.ToArray()))
+
+let private textIn (content: IO.Stream) =
+    use reader = new IO.StreamReader(content)
+    reader.ReadToEnd()
+
+[<Fact>]
+let ``one entry is described without its content being touched`` () =
+    let tree = packed ()
+
+    let info =
+        ArchiveReader.entryInfo tree None Zip (fp archive) [ en "docs"; en "inner.txt" ]
+        |> Expect.some
+
+    Assert.Equal(5L, info.Size)
+    Assert.Equal(StoredFile, info.Kind)
+
+[<Fact>]
+let ``an entry the archive does not hold is described by nothing`` () =
+    let tree = packed ()
+
+    let info = ArchiveReader.entryInfo tree None Zip (fp archive) [ en "gone.txt" ]
+
+    Assert.True(Option.isNone info)
+
+[<Fact>]
+let ``one entry is opened as a stream that outlives the walk`` () =
+    let tree = packed ()
+
+    use content =
+        ArchiveReader.openContent tree None Zip (fp archive) [ en "docs"; en "inner.txt" ]
+        |> Expect.some
+
+    Assert.Equal("inner", textIn content)
+
+[<Fact>]
+let ``a directory entry is never opened as content`` () =
+    let tree = packed ()
+
+    let content = ArchiveReader.openContent tree None Zip (fp archive) [ en "docs" ]
+
+    Assert.True(Option.isNone content)
+
+[<Fact>]
+let ``the archive file is closed again with the stream it handed out`` () =
+    let tree = Fakes.ByteCounting()
+    packedIn tree |> ignore
+    let content = ArchiveReader.openContent tree None Zip (fp archive) [ en "notes.txt" ] |> Expect.some
+    let before = tree.Closed
+
+    content.Dispose()
+
+    Assert.Equal(before + 1, tree.Closed)
