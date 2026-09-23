@@ -105,7 +105,14 @@ belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   go forwards and each target answers for itself. Unpacking ten marked entries
   out of a `tar.gz` therefore decompresses it ten times. A single pass that
   keeps a result per target would fix it, at the cost of holding every target's
-  outcome while the entries arrive in the archive's own order.
+  outcome while the entries arrive in the archive's own order. P15.17 measured
+  what it costs and found it the largest thing wrong with `Shift+F2`, which asks
+  for one target per top-level entry: a flat archive of *n* entries is walked *n*
+  times, so unpacking 4 000 of them takes 5.4× what the same content takes under
+  one directory, and the curve is the square. It is the same for zip as for 7z —
+  the container has nothing to do with it. The numbers are in
+  [Measurements](Progress/MEASUREMENTS.md#unpacking-a-solid-7z-p1517-2026-09-24),
+  and P15.25 makes one walk serve every target.
 - A wrong password is reported entry by entry with the library's own wording,
   not as "the password is wrong": `PasswordNeeded` is only answered before an
   extraction starts, when the archive holds an encrypted entry and no password

@@ -143,7 +143,8 @@ polished that a structural task is about to delete.
   thousand small entries is timed against the reference tool; only if the time
   grows quadratically does extraction move to the sequential reader path the tar
   kinds already use (perf P9). *Done when:* the measurement is recorded in
-  `PROGRESS.md`, with the change or the reason none was needed.
+  [Measurements](../Progress/MEASUREMENTS.md), with the change or the reason none
+  was needed.
 
 ## Stage 5 — Readability
 
@@ -207,3 +208,26 @@ polished that a structural task is about to delete.
   archive and one in a damaged archive lists all three, the damaged one is
   visibly marked on a rendered screen, and no listing error is raised; the
   archive error still reaches the user once, not per hit.
+- **P15.25 An unpack walks the archive once, not once per target** —
+  P15.17 went looking for the quadratic perf P9 predicted in the solid 7z
+  decompressor, did not find it there, and found it in `Archive.extract`
+  instead: `unpackTarget` walks the whole archive through
+  `ArchiveReader.withItems` once for *every* target, and `Shift+F2` asks for one
+  target per top-level entry. A flat archive of *n* entries is therefore walked
+  *n* times — 4 000 entries cost 5.4× what the same content costs under one
+  directory, and the curve is the square — identically for zip and for 7z, so
+  the container has nothing to do with it (the numbers are in
+  [Measurements](../Progress/MEASUREMENTS.md#unpacking-a-solid-7z-p1517-2026-09-24)). One walk
+  serves every target: each entry is matched against the targets it falls under
+  and unpacked once, and the per-target `ItemResult`s are built at the end from
+  what that walk saw, in the order the targets were given. Two behaviours have
+  to survive the change, and they are the reason it is its own task rather than
+  part of P15.17. A target that matched no entry still answers `SourceNotFound`
+  under its own spelled name. And `Esc` still leaves the targets it never
+  reached out of the results, so their marks survive — which now has to be
+  decided from entries arriving in the archive's own order rather than from a
+  loop over targets, and a target half unpacked when the walk stopped is a
+  failure, not a success. *Done when:* a counting fake shows one archive read
+  for an unpack of many targets, the timing above is linear over the same
+  sizes, and the `SourceNotFound` and the surviving marks after `Esc` are the
+  tests they are today.

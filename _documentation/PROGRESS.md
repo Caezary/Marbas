@@ -64,12 +64,17 @@ written up as the checklist in
 | 12 — Watching the directories on screen | P12.1–P12.6 | done | [journal](Progress/PHASE-12-WATCHING-THE-DIRECTORIES.md) |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done | [journal](Progress/PHASE-13-DRIVES-LINKS-AND-TRASH.md) |
 | 14 — Finding files | P14.1–P14.14 | done | [journal](Progress/PHASE-14-FINDING-FILES.md) |
-| 15 — Answering the reviews | P15.1–P15.24 | P15.1–P15.16 done | [journal](Progress/PHASE-15-ANSWERING-THE-REVIEWS.md) |
+| 15 — Answering the reviews | P15.1–P15.25 | P15.1–P15.17 done | [journal](Progress/PHASE-15-ANSWERING-THE-REVIEWS.md) |
 
 ## What works today
 
 The catalogue of what the application does — every key, what it acts on and
 what it refuses — is in [What works today](Progress/WHAT-WORKS.md).
+
+## Measurements
+
+What was timed, against what, and what the numbers decided is in
+[Measurements](Progress/MEASUREMENTS.md), one entry per task that turned on one.
 
 ## Architecture
 

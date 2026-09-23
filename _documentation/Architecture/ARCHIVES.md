@@ -252,6 +252,18 @@ the compression and hands over the tar's own entries. Both read the stream
 `IFileSystem` opens, so all of it is tested on `MockFileSystem` — the archives
 the tests read are the ones `Archive.write` wrote a line earlier.
 
+**A solid 7z is read sequentially by the opener it already has.** 7z archives
+share one LZMA2 stream between their entries, so reaching an entry by index
+could in principle mean decompressing every entry before it again, and
+SharpCompress documents `IReader` as the sequential path for that. P15.17 timed
+it rather than assuming: within one walk, extracting a solid 7z is linear in the
+number of entries and costs the same as extracting a zip, which is not solid at
+all — the library keeps the stream open across sequential `OpenEntryStream`
+calls. So 7z stays with zip and rar on `ArchiveFactory`, and the split between
+the two openers remains the one thing that forced it: `ArchiveFactory` cannot
+see inside a `tar.gz`. The measurement is in
+[Measurements](../Progress/MEASUREMENTS.md#unpacking-a-solid-7z-p1517-2026-09-24).
+
 **What may be kept is separated from what may not, and the compiler holds the
 line.** `ArchiveEntryInfo` — the names a key is made of, the entry's
 `ArchiveEntryKind`, its size and its time — is an ordinary record: a walk may

@@ -681,3 +681,40 @@ has its own tests for the forward skip, the backward re-open and the count of
 opens each costs. Rendered over a real zip on disk, `F3` shows the entry, `End`
 reaches line 40, `F4` switches to hex and `Home` comes back to offset 0 with the
 right bytes — the re-open the design rests on, driven through the real viewer.
+
+**P15.17 measured the solid 7z and cleared it, and found the quadratic
+somewhere else.** The performance review's P9 was the one finding it would not
+commit to: 7z archives are solid, every entry shares one LZMA2 stream, and
+reaching entry *k* through `ArchiveFactory.OpenArchive` could mean decompressing
+everything before it again — which would make `Shift+F2` on a few thousand small
+entries O(n²) in decompressed bytes. The review asked for a measurement before
+any change, and the change it had in mind was moving extraction to the
+sequential `IReader` path the tar kinds already take.
+
+The measurement is the table in [Measurements](MEASUREMENTS.md#unpacking-a-solid-7z-p1517-2026-09-24).
+It was taken over archives Marbas wrote itself, unpacked to a real disk through
+the same `Archive.extractAll` the `ExtractTargets` effect calls, against `7z x`
+as the reference. Two variables were crossed rather than one: the kind, zip or
+7z, and the number of targets the unpack is asked for — every entry at the top
+level, which is what `Shift+F2` produces, or every entry under one directory,
+which is one target.
+
+**The suspicion is wrong.** With one target, 16 000 entries cost 15.2× what
+1 000 cost: linear, and a solid 7z costs the same as a zip, which is not solid
+at all. SharpCompress keeps the solid stream open across sequential
+`OpenEntryStream` calls within one walk, so nothing is decompressed twice.
+Extraction stays on `ArchiveFactory`, and the `IReader` rewrite is not written.
+What the measurement does show is a constant factor of about 3.4× against
+`7z x` — the per-file `CreateDirectory` and `LastWriteTimeUtc` that every
+unpacked entry pays through `IFileSystem`, not an algorithm.
+
+**`Shift+F2` is quadratic all the same, and the container has nothing to do with
+it.** `Archive.extract` walks the whole archive once per target, and `Shift+F2`
+asks for one target per top-level entry, so a flat archive of *n* entries is
+walked *n* times: 4 000 entries cost 5.4× what the same content costs under one
+directory, and the curve is the square. Zip shows exactly the same numbers as
+7z, which is what rules solidity out. The review never saw it because it was
+looking for it in the decompressor. The fix is one walk serving every target,
+with the per-target `ItemResult`s built from what that walk saw; it is a
+different change from the one P9 proposed, so P15.17 records it and P15.25,
+added to stage 6, carries it out.
