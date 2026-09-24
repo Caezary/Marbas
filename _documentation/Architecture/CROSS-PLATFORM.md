@@ -600,7 +600,7 @@ popup, since P13.13, is titled *Drives* and shows each row with its sizes.
 - **Only the home trash is written on Unix.** The freedesktop spec puts a trash
   on every volume (`$topdir/.Trash-$uid`) so that deleting never crosses a
   device; `Trash.send` always writes `$XDG_DATA_HOME/Trash` and lets
-  `Operations.moveTo` copy the entry over when the volume differs. It ends up
+  `Operations.moveToPath` copy the entry over when the volume differs. It ends up
   in the right place either way — it is slower for a large tree on another
   disk, and the desktop's *Restore* still works, because the original path is
   recorded in the `.trashinfo` file.

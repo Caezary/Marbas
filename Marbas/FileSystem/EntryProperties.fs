@@ -35,7 +35,7 @@ module EntryProperties =
         | SystemFlag -> FileAttributes.System
         | ArchiveFlag -> FileAttributes.Archive
 
-    let private flagsOf (attributes: FileAttributes) =
+    let private raisedFlags (attributes: FileAttributes) =
         flags |> List.filter (attribute >> attributes.HasFlag) |> Set.ofList
 
     let private attributesOf (existing: FileAttributes) (set: Set<EntryFlag>) =
@@ -73,7 +73,7 @@ module EntryProperties =
             try
                 Ok
                     { Path = path
-                      Flags = flagsOf entry.Attributes
+                      Flags = raisedFlags entry.Attributes
                       Created = DateTimeOffset entry.CreationTime
                       Modified = DateTimeOffset entry.LastWriteTime
                       Accessed = DateTimeOffset entry.LastAccessTime }

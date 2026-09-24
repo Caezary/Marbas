@@ -22,7 +22,7 @@ let private zipped (fs: MockFileSystem) path sources =
         fs
         Operations.unattended
         { Path = fp path
-          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Format = ArchiveFormat.tryCreate Zip |> Expect.some
           Compression = Normal
           Password = None }
         sources

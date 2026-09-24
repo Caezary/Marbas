@@ -75,7 +75,7 @@ let ``a refused file maps to an archive that may not be touched`` () =
 
 let private en = EntryName.create
 
-let private zip = ArchiveFormat.ofKind Zip |> Expect.some
+let private zip = ArchiveFormat.tryCreate Zip |> Expect.some
 
 let private packedIn (tree: MockFileSystem) =
     tree.AddDirectory(at "backup")

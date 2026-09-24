@@ -70,7 +70,7 @@ let private packed format name =
 
     let request =
         { Path = fp (at ("backup/" + name))
-          Format = ArchiveFormat.ofKind format |> Expect.some
+          Format = ArchiveFormat.tryCreate format |> Expect.some
           Compression = Normal
           Password = None }
 

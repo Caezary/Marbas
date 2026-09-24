@@ -71,18 +71,18 @@ let private asking (deps: Dependencies) (archive: FileSystemPath) =
     |> Option.map (Some >> OpenWith)
     |> Option.defaultValue NotGiven
 
-let private passwordFor (deps: Dependencies) (archive: FileSystemPath) =
+let private passwordOutcome (deps: Dependencies) (archive: FileSystemPath) =
     match Archive.needsPassword deps.FileSystem archive with
     | Ok true -> asking deps archive
     | Ok false
     | Error _ -> OpenWith None
 
 let private withPassword (deps: Dependencies) archive show =
-    match passwordFor deps archive with
+    match passwordOutcome deps archive with
     | OpenWith password -> show password
     | NotGiven -> ()
 
-let private approvedEntries (deps: Dependencies) targetDirectory archive entries =
+let private entriesApprovedForDirectory (deps: Dependencies) targetDirectory archive entries =
     let spelled =
         entries
         |> List.map (fun entry -> ArchivePath.spelled deps.FileSystem archive entry, entry)
@@ -99,7 +99,7 @@ let private unpackTargets (deps: Dependencies) targetDirectory (archive: FileSys
     | Ok entries ->
         entries
         |> List.map (_.Name >> ArchivePath.child ArchivePath.root)
-        |> approvedEntries deps targetDirectory archive
+        |> entriesApprovedForDirectory deps targetDirectory archive
 
 let private showPath (deps: Dependencies) path =
     match FileWindow.openFile deps.FileSystem path with
@@ -124,7 +124,7 @@ let private showHit (deps: Dependencies) (hit: FindHit) =
 
         withPassword deps archive (fun password -> showEntry deps archive password entry)
 
-let private approvedInto (deps: Dependencies) archive level sources =
+let private pathsApprovedForArchive (deps: Dependencies) archive level sources =
     let taken =
         ArchiveListing.read deps.FileSystem archive level
         |> Result.map (List.map _.Name >> Set.ofList)
@@ -138,9 +138,9 @@ let private approvedInto (deps: Dependencies) archive level sources =
     let occupied target =
         taken.Contains(FileSystemPath.name deps.FileSystem target)
 
-    Operations.approveInto landing occupied (askOverwrite deps) sources
+    Operations.approveLandings landing occupied (askOverwrite deps) sources
 
-let private approvedAcross (deps: Dependencies) source target level entries =
+let private entriesApprovedForArchive (deps: Dependencies) source target level entries =
     let taken =
         ArchiveListing.read deps.FileSystem target level
         |> Result.map (List.map _.Name >> Set.ofList)
@@ -159,7 +159,7 @@ let private approvedAcross (deps: Dependencies) source target level entries =
         taken.Contains(FileSystemPath.name deps.FileSystem landed)
 
     let allowed =
-        Operations.approveInto landing occupied (askOverwrite deps) (List.map fst spelled)
+        Operations.approveLandings landing occupied (askOverwrite deps) (List.map fst spelled)
         |> Set.ofList
 
     spelled |> List.filter (fst >> allowed.Contains) |> List.map snd
@@ -184,7 +184,7 @@ let private planFor (deps: Dependencies) targetDirectory archive (targets: unit 
               Destination = targetDirectory }
           Targets = approved }
 
-    match passwordFor deps archive with
+    match passwordOutcome deps archive with
     | NotGiven -> None
     | OpenWith password -> targets () |> nonEmpty |> Option.map (planned password)
 
@@ -192,10 +192,10 @@ let private unpackPlan (deps: Dependencies) targetDirectory archive =
     planFor deps targetDirectory archive (fun () -> unpackTargets deps targetDirectory archive)
 
 let private extractPlan (deps: Dependencies) targetDirectory archive entries =
-    planFor deps targetDirectory archive (fun () -> approvedEntries deps targetDirectory archive entries)
+    planFor deps targetDirectory archive (fun () -> entriesApprovedForDirectory deps targetDirectory archive entries)
 
-let private acrossPlan (deps: Dependencies) source target level entries =
-    planFor deps deps.WorkspacePath source (fun () -> approvedAcross deps source target level entries)
+let private archiveToArchivePlan (deps: Dependencies) source target level entries =
+    planFor deps deps.WorkspacePath source (fun () -> entriesApprovedForArchive deps source target level entries)
 
 type private Piece = Operations.BatchControl -> Operations.ItemResult list
 
@@ -204,13 +204,13 @@ let private gated (deps: Dependencies) archive (piece: unit -> Piece option) : P
     | Some refusal -> Some(fun _ -> [ refusedWhole archive refusal ])
     | None -> piece ()
 
-let private approvedOnDisk (deps: Dependencies) paths directory (piece: FileSystemPath list -> Piece) =
+let private pieceApprovedForDirectory (deps: Dependencies) paths directory (piece: FileSystemPath list -> Piece) =
     match Operations.approve deps.FileSystem (askOverwrite deps) paths directory with
     | [] -> None
     | approved -> Some(piece approved)
 
-let private approvedInArchive (deps: Dependencies) archive level paths (piece: FileSystemPath list -> Piece) =
-    match approvedInto deps archive level paths with
+let private pieceApprovedForArchive (deps: Dependencies) archive level paths (piece: FileSystemPath list -> Piece) =
+    match pathsApprovedForArchive deps archive level paths with
     | [] -> None
     | approved -> Some(piece approved)
 
@@ -219,17 +219,18 @@ let private copyPiece (deps: Dependencies) target group : Piece option =
 
     match group, target with
     | FromDisk paths, ToDirectory directory ->
-        approvedOnDisk deps paths directory (fun approved control -> Operations.copyAll fs control approved directory)
+        pieceApprovedForDirectory deps paths directory (fun approved control ->
+            Operations.copyAll fs control approved directory)
     | FromArchive(archive, entries), ToDirectory directory ->
         extractPlan deps directory archive entries
         |> Option.map (fun plan control -> Archive.extractAll fs control [ plan ])
-    | FromDisk paths, ToArchive(into, level) ->
-        approvedInArchive deps into level paths (fun approved control ->
-            Archive.addEntries fs control into level approved |> itemsOf into)
-    | FromArchive(archive, entries), ToArchive(into, level) ->
-        acrossPlan deps archive into level entries
+    | FromDisk paths, ToArchive(targetArchive, level) ->
+        pieceApprovedForArchive deps targetArchive level paths (fun approved control ->
+            Archive.addEntries fs control targetArchive level approved |> itemsOf targetArchive)
+    | FromArchive(archive, entries), ToArchive(targetArchive, level) ->
+        archiveToArchivePlan deps archive targetArchive level entries
         |> Option.map (fun plan control ->
-            Archive.copyAcross fs control plan.Request plan.Targets into level |> itemsOf archive)
+            Archive.copyToArchive fs control plan.Request plan.Targets targetArchive level |> itemsOf archive)
     | FromPlaces _, _ -> None
 
 let private movePiece (deps: Dependencies) target group : Piece option =
@@ -237,20 +238,21 @@ let private movePiece (deps: Dependencies) target group : Piece option =
 
     match group, target with
     | FromDisk paths, ToDirectory directory ->
-        approvedOnDisk deps paths directory (fun approved control -> Operations.moveAll fs control approved directory)
+        pieceApprovedForDirectory deps paths directory (fun approved control ->
+            Operations.moveAll fs control approved directory)
     | FromArchive(archive, entries), ToDirectory directory ->
         gated deps archive (fun () ->
             extractPlan deps directory archive entries
             |> Option.map (fun plan control ->
-                Archive.moveOut fs control plan.Request plan.Targets |> itemsOf archive))
-    | FromDisk paths, ToArchive(into, level) ->
-        approvedInArchive deps into level paths (fun approved control ->
-            Archive.moveIn fs control into level approved |> itemsOf into)
-    | FromArchive(archive, entries), ToArchive(into, level) ->
+                Archive.moveToDirectory fs control plan.Request plan.Targets |> itemsOf archive))
+    | FromDisk paths, ToArchive(targetArchive, level) ->
+        pieceApprovedForArchive deps targetArchive level paths (fun approved control ->
+            Archive.moveFromDisk fs control targetArchive level approved |> itemsOf targetArchive)
+    | FromArchive(archive, entries), ToArchive(targetArchive, level) ->
         gated deps archive (fun () ->
-            acrossPlan deps archive into level entries
+            archiveToArchivePlan deps archive targetArchive level entries
             |> Option.map (fun plan control ->
-                Archive.moveAcross fs control plan.Request plan.Targets into level |> itemsOf archive))
+                Archive.moveToArchive fs control plan.Request plan.Targets targetArchive level |> itemsOf archive))
     | FromPlaces _, _ -> None
 
 let private deletePiece (deps: Dependencies) mode group : Piece option =

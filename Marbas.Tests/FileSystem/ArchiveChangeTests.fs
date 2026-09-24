@@ -19,7 +19,7 @@ let private archive = fp (at "start/data.zip")
 
 let private request format path password =
     { Path = fp path
-      Format = ArchiveFormat.ofKind format |> Expect.some
+      Format = ArchiveFormat.tryCreate format |> Expect.some
       Compression = Normal
       Password = password }
 
@@ -185,7 +185,7 @@ let ``a source moved into an archive is deleted once it is in`` () =
     let fs = packed ()
 
     let results =
-        Archive.moveIn fs Operations.unattended archive ArchivePath.root [ fp (at "loose/added.txt") ]
+        Archive.moveFromDisk fs Operations.unattended archive ArchivePath.root [ fp (at "loose/added.txt") ]
         |> Expect.ok
 
     Assert.Equal<string list>([ "added.txt"; "docs"; "notes.txt" ], names fs ArchivePath.root)
@@ -197,7 +197,7 @@ let ``a source that never arrived is left where it is`` () =
     let fs = packed ()
 
     let results =
-        Archive.moveIn fs Operations.unattended archive ArchivePath.root [ fp (at "loose/gone.txt") ]
+        Archive.moveFromDisk fs Operations.unattended archive ArchivePath.root [ fp (at "loose/gone.txt") ]
         |> Expect.ok
 
     Assert.Equal<string list>([ "docs"; "notes.txt" ], names fs ArchivePath.root)
@@ -212,7 +212,7 @@ let ``an entry moved out of an archive lands on disk and leaves the archive`` ()
     let fs = packed ()
 
     let results =
-        Archive.moveOut fs Operations.unattended (extracting (at "out")) [ inside "notes.txt" ]
+        Archive.moveToDirectory fs Operations.unattended (extracting (at "out")) [ inside "notes.txt" ]
         |> Expect.ok
 
     Assert.Equal("notes", fs.File.ReadAllText(at "out/notes.txt"))
@@ -224,7 +224,7 @@ let ``an entry that never arrived on disk stays in the archive`` () =
     let fs = packed ()
 
     let results =
-        Archive.moveOut fs Operations.unattended (extracting (at "out")) [ inside "gone.txt" ]
+        Archive.moveToDirectory fs Operations.unattended (extracting (at "out")) [ inside "gone.txt" ]
         |> Expect.ok
 
     Assert.Equal<string list>([ "docs"; "notes.txt" ], names fs ArchivePath.root)
@@ -253,7 +253,7 @@ let ``moving out two entries of one name drops only the one that arrived`` () =
     let fs = packedTwins ()
 
     let results =
-        Archive.moveOut fs Operations.unattended (extracting (at "out")) [ inside "a/same.txt"; inside "c/same.txt" ]
+        Archive.moveToDirectory fs Operations.unattended (extracting (at "out")) [ inside "a/same.txt"; inside "c/same.txt" ]
         |> Expect.ok
 
     Assert.Equal<string list>([], names fs (inside "a"))

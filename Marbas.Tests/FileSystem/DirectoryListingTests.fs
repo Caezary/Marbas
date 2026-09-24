@@ -147,7 +147,7 @@ let ``a child carries what one enumeration already said`` () =
 let ``an entry is answered for the path it stands at`` () =
     let fs = walked ()
 
-    let entry = entryAt fs (fp (at "data/notes.txt")) |> Expect.some
+    let entry = existingEntry fs (fp (at "data/notes.txt")) |> Expect.some
 
     Assert.Equal(File, entry.Kind)
 
@@ -155,7 +155,7 @@ let ``an entry is answered for the path it stands at`` () =
 let ``a directory is answered for the path it stands at`` () =
     let fs = walked ()
 
-    let entry = entryAt fs (fp (at "data/docs")) |> Expect.some
+    let entry = existingEntry fs (fp (at "data/docs")) |> Expect.some
 
     Assert.Equal(Directory, entry.Kind)
 
@@ -163,6 +163,6 @@ let ``a directory is answered for the path it stands at`` () =
 let ``a path that stands for nothing has no entry`` () =
     let fs = walked ()
 
-    let entry = entryAt fs (fp (at "data/gone.txt"))
+    let entry = existingEntry fs (fp (at "data/gone.txt"))
 
     Assert.Equal(None, entry)

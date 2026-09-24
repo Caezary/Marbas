@@ -22,7 +22,7 @@ let private window () = focusedWindow (Fakes.dependencies (mockFs ()) (at "start
 
 let private footerOf window id = (FilePanel.footer (panel id window)).Text
 
-let private type' list (text: string) =
+let private typeInto list (text: string) =
     text |> Seq.iter (fun character -> press list (Key character))
 
 [<Fact>]
@@ -30,7 +30,7 @@ let ``typing moves the cursor to the first entry containing the text`` () =
     use window = window ()
     let list = leftList window
 
-    type' list "set"
+    typeInto list "set"
 
     Assert.Equal(4, list.SelectedItem.GetValueOrDefault 0)
 
@@ -39,7 +39,7 @@ let ``the panel footer shows what is being searched for`` () =
     use window = window ()
     let list = leftList window
 
-    type' list "set"
+    typeInto list "set"
 
     Assert.Equal("Search: set", footerOf window FilePanel.LeftId)
 
@@ -47,7 +47,7 @@ let ``the panel footer shows what is being searched for`` () =
 let ``backspace shortens the search and closing it restores the footer`` () =
     use window = window ()
     let list = leftList window
-    type' list "se"
+    typeInto list "se"
 
     press list Key.Backspace
     let shortened = footerOf window FilePanel.LeftId
@@ -60,7 +60,7 @@ let ``backspace shortens the search and closing it restores the footer`` () =
 let ``escape closes the search and leaves the cursor where it landed`` () =
     use window = window ()
     let list = leftList window
-    type' list "readme"
+    typeInto list "readme"
 
     press list Key.Esc
 
@@ -73,7 +73,7 @@ let ``a search is searched for in the panel that has the focus`` () =
     let right = rightList window
     right.SetFocus() |> ignore
 
-    type' right "set"
+    typeInto right "set"
 
     Assert.Equal("Search: set", footerOf window FilePanel.RightId)
     Assert.Contains("3 files", footerOf window FilePanel.LeftId)
@@ -82,7 +82,7 @@ let ``a search is searched for in the panel that has the focus`` () =
 let ``a command key closes the search and still does its job`` () =
     use window = window ()
     let list = leftList window
-    type' list "set"
+    typeInto list "set"
 
     press list KeyMap.selectionKeys.Head
 
@@ -93,7 +93,7 @@ let ``a command key closes the search and still does its job`` () =
 let ``a space typed into an open search is part of the text, not a mark`` () =
     use window = window ()
     let list = leftList window
-    type' list "s"
+    typeInto list "s"
 
     press list KeyMap.spaceKey
 

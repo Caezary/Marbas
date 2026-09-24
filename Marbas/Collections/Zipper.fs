@@ -41,7 +41,7 @@ module Zipper =
               After = [] }
         | [], [] -> zipper
 
-    let at position (zipper: Zipper<'a>) =
+    let refocus position (zipper: Zipper<'a>) =
         let all = items zipper
         let index = position |> max 0 |> min (List.length all - 1)
 
@@ -50,10 +50,10 @@ module Zipper =
           After = all |> List.skip (index + 1) }
 
     let forward (zipper: Zipper<'a>) =
-        at ((position zipper + 1) % count zipper) zipper
+        refocus ((position zipper + 1) % count zipper) zipper
 
     let backward (zipper: Zipper<'a>) =
-        at ((position zipper - 1 + count zipper) % count zipper) zipper
+        refocus ((position zipper - 1 + count zipper) % count zipper) zipper
 
     let ofNonEmpty first rest =
         { Before = []

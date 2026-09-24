@@ -851,3 +851,100 @@ combine-then-kind chain twice, `Settings` has one `numberOf` that both
 are pipelines. `DirectoryMeasure.fs:18`, the one Q3 site that needed nothing,
 had already gone with P15.14's single-pass walk. No behaviour changed and no
 test changed: 2323 passing, 11 skipped, before and after.
+
+**P15.20 named every boundary it found.** The quality review's Q6 listed the
+archive family — `below`, `under`, `beneath`, `within`, `at`, `keyIn`, `into`,
+`insideArchive` — and the verb families `changing` and `opened`, each a word
+that says where something sits and not which rule decides it. P15.2 had already
+put `atOrUnder` and `strictlyUnder` on `FileSystemPath` and `ArchivePath`, and
+P15.6 had removed `guarding`; what was left went in one pass, and the pass was
+extended to the rule the conventions state in general — no two helpers in one
+module differ only by a prime or a preposition — by listing every `let` per
+file with the prepositions and primes stripped and reading each collision.
+
+**The review's own list.** In `Archive`, `keyIn` is `keyAtLevel`, `at` is
+`sinkAtLevel`, `under` is `entryAtOrUnder` and `beneath` is
+`segmentsFromTargetName` — not the `pathAfterTarget` the conventions table had
+proposed, because the segments kept include the target's own name, and the
+table now says so. `changeWith` is `withArchiveOpenForChange`, handing its work
+an `OpenForChange` of `Held` and `Sink` instead of a `Changing` with a field
+called `Into`; `rewriting` and `rewritingInto`, which differed by a preposition,
+are `rewritingWhole` and `writingFreshCopy`. `PanelLocation.into` is
+`PanelLocation.child`, `AppState.insideArchive` is `archivePlace` — and
+`entryInArchive` now binds `placeOf` instead of spelling it again. In `Update`,
+`changing` is the `refuseUnchangeable` the conventions already named, `opened`,
+`opening` and `openedWith` are `openCursorEntry`, `openFile` and
+`openWithHandler`, `refusing` and `refusingInArchive` are
+`reportResultsRefusal` and `reportNotRunnable`, and `standingOn` is
+`rereadAndSave`.
+
+**A direction names both ends.** `Archive.moveIn`, `moveOut`, `moveAcross` and
+`copyAcross` differed only by their prepositions; they are `moveFromDisk`,
+`moveToDirectory`, `moveToArchive` and `copyToArchive`, in the `FromDisk` /
+`ToDirectory` / `ToArchive` vocabulary the transfer types use. `Shell`'s five
+`approved…` helpers say what is approved and for which target:
+`entriesApprovedForDirectory`, `pathsApprovedForArchive`,
+`entriesApprovedForArchive`, `pieceApprovedForDirectory` and
+`pieceApprovedForArchive`, with `acrossPlan` as `archiveToArchivePlan` and the
+pattern variable `into` as `targetArchive`. `Operations.approveInto` beside
+`approve` is `approveLandings`, `copyTo` and `moveTo` beside `copy` and `move`
+are `copyToPath` and `moveToPath`, and `inDirectory` is `landingInDirectory`.
+
+**A name that lied now says what it does.** `toggleSelectionThrough` stopped
+short of its target — the test that pins it is called "marking through an entry
+stops short of it" — so it is `toggleSelectionShortOf`, over the private
+`toggleRunShortOf` and `runShortOf`; `withCursorWithin` clamps, and is
+`withCursorClamped`.
+
+**Pairs across the layers.** `DirectoryListing.entryOf` / `entryAt` /
+`childOf` are `entryFromInfo`, `existingEntry` and `childFromInfo`;
+`FileSystemPath.linkTargetOf` beside `linkTarget` is `linkTargetOfInfo`;
+`Links.refusalFor` beside `refusal` is `refusalForAbsolute`;
+`SearchListing.heldIn` beside the memoising `held` is `indexedPrefixes`;
+`LineIndex.scan` / `scanThrough` are `scanChunk` / `scanUntilKnown`;
+`Settings.numberOf` / `numberIn` are `parsedNumber` / `tabNumberInKey`, and its
+`panelOn` beside `panelFrom` is `defaultPanelAt`, its `association` beside
+`associationFrom` is `validAssociation`; `ArchiveFormat.ofKind` beside `kind` is
+`tryCreate`, the name §3 of the conventions gives a validating constructor;
+`EntryProperties.flagsOf` beside `flags` is `raisedFlags`. In `AppState`,
+`fromSettings` beside `settings` is `restore` with `restoredPanel` and
+`restoredTab` under it, `locationAbove` / `locationOf` / `locationOfName` are
+`parentLocation` / `enteredLocation` / `childLocation`, `navigateUp` /
+`navigateInto` are `navigateToParent` / `navigateToChild`, `focusOn` is
+`focusByNameOrTop` and `searchFor` beside `withoutSearch` is `focusingSearch`.
+`KeyMap.onBar` / `offBar` / `commandOn` are `labelled` / `unlabelled` /
+`labelledCommand`, `PanelWiring.overPage` beside `page` is `pageMessage` and its
+locals `at` and `cursorAt` are `pageCursor` and `panelCursor`,
+`Shell.passwordFor` beside `withPassword` is `passwordOutcome`, and the results
+window's `opened` / `openedBy` are `lastLocation` / `lastLocationAfter`.
+
+**The bare prepositions and the rest of the `opened` family.** `Zipper.at` is
+`Zipper.refocus`, `ContentMatch.inStream` is `searchStream` beside `search`,
+`FindHit.under` is `relativeOrFull`, `Links`' local `inside` is
+`linkInDirectory` and `FileSearch`'s `fileInside` is `archiveFileHit`.
+`DirectoryWatch.opened` / `opening` are `startedWatcher` / `rewatch`,
+`RegistryHandlers.opened` is `subKey` and its `ofProgId` / `ofApplication` are
+`commandOfProgId` / `commandOfApplication`, `FileWindow.opening` is
+`entryStream`, and `RewindingStream`'s `opening` / `opened` are `openSource` /
+`currentStream`.
+
+**The primes went too.** `Operations` bound `let copyToTarget fs' source' =
+copyFile fs' true source' target` in one walk and the same shape twice for
+moving; two named helpers, `copyReplacing target` and `moveReplacing target`,
+replaced all three, and the `fs'` in `anonymize` is a shadowing `fs`. The one
+primed name in the suite, `SearchKeyTests.type'`, is `typeInto`.
+
+**What was left standing, and why.** Two shapes collide under the check and are
+not two helpers. A function and the value it answers bound under its noun —
+`let probe = probeOf stream`, `let depth = depthOf query`,
+`let arrived = arrivedOf taken` — names one thing twice. And `withX` is the
+record-copy idiom: `withCursor` is the panel with its cursor replaced, and stands
+beside `cursor` the way `{ p with Cursor = … }` does. `DriveRow.kind` and
+`Drives.kindOf` share a file but not a module. Test helpers such as
+`window` / `windowWith` were not renamed: they are builders whose second form
+takes one more argument, the review did not reach them, and the rule's reason —
+a preposition hiding a boundary — does not apply to a fixture. The rules and
+their examples are in
+[Names that tell the boundary](../DEVELOPMENT.md#names-that-tell-the-boundary),
+and §2 of the conventions points there. No behaviour changed; the only test
+edits are the renamed names. 2323 passing, 11 skipped, before and after.

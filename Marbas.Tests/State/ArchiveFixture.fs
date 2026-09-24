@@ -18,7 +18,7 @@ let sources = [ fp (at "work/notes.txt"); fp (at "work/docs") ]
 
 let request format path =
     { Path = fp path
-      Format = ArchiveFormat.ofKind format |> Expect.some
+      Format = ArchiveFormat.tryCreate format |> Expect.some
       Compression = Normal
       Password = None }
 

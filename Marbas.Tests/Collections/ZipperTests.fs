@@ -17,7 +17,7 @@ let ``a single item is the current one and the only one`` () =
 
 [<Fact>]
 let ``insert puts the item after the current one and makes it current`` () =
-    let zipper = three () |> Zipper.at 0
+    let zipper = three () |> Zipper.refocus 0
 
     let inserted = zipper |> Zipper.insert 9
 
@@ -27,7 +27,7 @@ let ``insert puts the item after the current one and makes it current`` () =
 
 [<Fact>]
 let ``removing the current item moves to the one after it`` () =
-    let zipper = three () |> Zipper.at 1
+    let zipper = three () |> Zipper.refocus 1
 
     let removed = zipper |> Zipper.remove
 
@@ -63,7 +63,7 @@ let ``the only item cannot be removed`` () =
 let ``moving to a position clamps to the ends`` (position: int) (expected: int) =
     let zipper = three ()
 
-    let moved = zipper |> Zipper.at position
+    let moved = zipper |> Zipper.refocus position
 
     Assert.Equal(expected, Zipper.current moved)
     Assert.Equal<int list>([ 1; 2; 3 ], Zipper.items moved)
@@ -73,7 +73,7 @@ let ``moving to a position clamps to the ends`` (position: int) (expected: int) 
 [<InlineData(1, 3)>]
 [<InlineData(2, 1)>]
 let ``forward moves on and wraps round to the first`` (position: int) (expected: int) =
-    let zipper = three () |> Zipper.at position
+    let zipper = three () |> Zipper.refocus position
 
     let moved = zipper |> Zipper.forward
 
@@ -84,7 +84,7 @@ let ``forward moves on and wraps round to the first`` (position: int) (expected:
 [<InlineData(1, 1)>]
 [<InlineData(2, 2)>]
 let ``backward moves back and wraps round to the last`` (position: int) (expected: int) =
-    let zipper = three () |> Zipper.at position
+    let zipper = three () |> Zipper.refocus position
 
     let moved = zipper |> Zipper.backward
 
@@ -92,7 +92,7 @@ let ``backward moves back and wraps round to the last`` (position: int) (expecte
 
 [<Fact>]
 let ``update replaces the current item and leaves the rest`` () =
-    let zipper = three () |> Zipper.at 1
+    let zipper = three () |> Zipper.refocus 1
 
     let updated = zipper |> Zipper.update (fun item -> item * 10)
 
@@ -109,7 +109,7 @@ let ``a zipper is made of one item and the rest`` () =
 
 [<Fact>]
 let ``map carries every item over and leaves the position where it was`` () =
-    let zipper = three () |> Zipper.at 1
+    let zipper = three () |> Zipper.refocus 1
 
     let mapped = zipper |> Zipper.map string
 

@@ -147,7 +147,7 @@ module Settings =
         | "right" -> Some Right
         | _ -> None
 
-    let private panelOn path =
+    let private defaultPanelAt path =
         { Path = path
           Sort = SortOrder.byName
           Hidden = Concealed
@@ -156,8 +156,8 @@ module Settings =
     let forPath path : Settings =
         { Tabs =
             Zipper.single
-                { Left = panelOn path
-                  Right = panelOn path
+                { Left = defaultPanelAt path
+                  Right = defaultPanelAt path
                   Active = Left }
           LastCreatedDirectory = None
           Programs = ProgramSettings.none }
@@ -242,20 +242,20 @@ module Settings =
           Hidden = token HiddenSetting |> Option.bind hiddenOf |> Option.defaultValue fallback.Hidden
           Cursor = lookup CursorSetting |> Option.bind EntryName.tryCreate }
 
-    let private numberOf (raw: string) =
+    let private parsedNumber (raw: string) =
         match Int32.TryParse raw with
         | true, number -> Some number
         | _ -> None
 
-    let private numberIn (key: string) =
-        (key.Substring TabPrefix.Length).Split('.')[0] |> numberOf
+    let private tabNumberInKey (key: string) =
+        (key.Substring TabPrefix.Length).Split('.')[0] |> parsedNumber
 
     let private tabNumbers (read: Map<string, string>) =
         read
         |> Map.toList
         |> List.map fst
         |> List.filter _.StartsWith(TabPrefix)
-        |> List.choose numberIn
+        |> List.choose tabNumberInKey
         |> List.distinct
         |> List.sort
 
@@ -278,11 +278,11 @@ module Settings =
             | [] -> Zipper.single (tabFrom read "" fallback)
 
         let current =
-            Map.tryFind CurrentSetting read |> Option.bind numberOf |> Option.defaultValue 1
+            Map.tryFind CurrentSetting read |> Option.bind parsedNumber |> Option.defaultValue 1
 
-        tabs |> Zipper.at (current - 1)
+        tabs |> Zipper.refocus (current - 1)
 
-    let private association role extension (value: string) =
+    let private validAssociation role extension (value: string) =
         match FileExtension.tryCreate extension, ProgramPath.tryCreate value with
         | Some extension, Some program ->
             Some
@@ -294,10 +294,10 @@ module Settings =
     let private associationFrom (key: string) (value: string) =
         if key.StartsWith ProgramPrefix then
             match key.Substring(ProgramPrefix.Length).Split('.', 2) with
-            | [| role; extension |] -> roleOf role |> Option.bind (fun role -> association role extension value)
+            | [| role; extension |] -> roleOf role |> Option.bind (fun role -> validAssociation role extension value)
             | _ -> None
         elif key.StartsWith RolelessPrefix then
-            association ForEditing (key.Substring RolelessPrefix.Length) value
+            validAssociation ForEditing (key.Substring RolelessPrefix.Length) value
         else
             None
 

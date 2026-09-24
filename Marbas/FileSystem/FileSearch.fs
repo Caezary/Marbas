@@ -172,9 +172,9 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
 
     let contentOf (openContent: unit -> Stream) search =
         use content = openContent ()
-        ContentMatch.inStream control search content
+        ContentMatch.searchStream control search content
 
-    let fileInside archive (level: EntryName list) (info: ArchiveEntryInfo) openContent =
+    let archiveFileHit archive (level: EntryName list) (info: ArchiveEntryInfo) openContent =
         if not (ArchiveEntryInfo.isDirectory info)
            && (depth = EveryLevel || info.Segments.Length = level.Length + 1) then
             let entry = ArchiveListing.fileEntry (List.last info.Segments) info
@@ -212,7 +212,7 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
               Level = level
               Depth = depth }
 
-        match ArchiveScan.run fs control scan (fileInside archive names) with
+        match ArchiveScan.run fs control scan (archiveFileHit archive names) with
         | ArchiveScan.Cancelled -> stopped <- true
         | ArchiveScan.Locked
         | ArchiveScan.Unreadable -> skipped <- skipped + 1

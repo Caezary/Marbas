@@ -88,7 +88,7 @@ where Windows refuses the user a symbolic link.
 ## Every walk stops at a directory link
 
 **A directory link is a leaf.** A listing entry carries `LinkTarget`, read
-through `FileSystemPath.linkTargetOf` — the one answer to "is this a link" that
+through `FileSystemPath.linkTargetOfInfo` — the one answer to "is this a link" that
 the listing and every walk share. A link is drawn in bright cyan whatever it
 points at, and the status line says `twin -> C:\data\docs` after its name. Then
 every recursive walk in the application takes the link and not the tree behind

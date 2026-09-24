@@ -32,7 +32,7 @@ let private inside raw = ArchivePath.tryCreate raw |> Expect.some
 
 let private request password =
     { Path = fp archive
-      Format = ArchiveFormat.ofKind Zip |> Expect.some
+      Format = ArchiveFormat.tryCreate Zip |> Expect.some
       Compression = Normal
       Password = password }
 
@@ -209,7 +209,7 @@ let private bigEntry () =
         fs
         Operations.unattended
         { Path = fp archive
-          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Format = ArchiveFormat.tryCreate Zip |> Expect.some
           Compression = Stored
           Password = None }
         [ fp (at "work/big.txt") ]

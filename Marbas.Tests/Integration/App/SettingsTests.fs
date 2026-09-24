@@ -133,7 +133,7 @@ let ``a stored session of several tabs opens on the one it was left on`` () =
                     [ { Left = panelOn "backup"
                         Right = panelOn "start"
                         Active = Left } ]
-                |> Zipper.at 1 }
+                |> Zipper.refocus 1 }
 
     use window = focusedWindow (deps fs)
 

@@ -48,7 +48,7 @@ module PanelLocation =
         | InArchive(archive, _) -> Some archive
         | SearchResults _ -> None
 
-    let into (fs: IFileSystem) location (name: EntryName) =
+    let child (fs: IFileSystem) location (name: EntryName) =
         match location with
         | OnDisk path -> Some(OnDisk(FileSystemPath.combine fs path (EntryName.value name)))
         | InArchive(archive, level) -> Some(InArchive(archive, ArchivePath.child level name))
@@ -83,7 +83,7 @@ module FindHit =
         | InArchive(archive, _) -> stands fs archive
         | _ -> stands fs (spelled fs hit)
 
-    let private under (fs: IFileSystem) (root: FileSystemPath) (full: FileSystemPath) =
+    let private relativeOrFull (fs: IFileSystem) (root: FileSystemPath) (full: FileSystemPath) =
         FileSystemPath.pathAfter (FileSystemPath.platformOf fs) root full
         |> Option.defaultValue (FileSystemPath.value full)
 
@@ -91,7 +91,7 @@ module FindHit =
         let full = spelled fs hit
 
         match ground.Roots with
-        | [ single ] -> under fs (PanelLocation.spelled fs single) full
+        | [ single ] -> relativeOrFull fs (PanelLocation.spelled fs single) full
         | _ -> FileSystemPath.value full
         |> EntryName.create
 

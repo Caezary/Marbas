@@ -13,7 +13,7 @@ let private shownAs (fs: IFileSystem) (found: FoundEntries) (hit: FindHit) =
 let private prefixes (segments: EntryName list) =
     [ 1 .. segments.Length ] |> List.map (fun length -> List.truncate length segments)
 
-let private heldIn (fs: IFileSystem) (archive: FileSystemPath) =
+let private indexedPrefixes (fs: IFileSystem) (archive: FileSystemPath) =
     ArchiveIndex.read fs archive
     |> Result.map (Seq.collect (_.Segments >> prefixes) >> Set.ofSeq)
 
@@ -25,7 +25,7 @@ let private surviving (fs: IFileSystem) (found: FoundEntries) =
         match archives.TryGetValue archive with
         | true, known -> known
         | _ ->
-            let read = heldIn fs archive
+            let read = indexedPrefixes fs archive
             archives[archive] <- read
             read
 

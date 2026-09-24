@@ -988,7 +988,7 @@ let private packReadyFs () =
     fs.AddDirectory(at "backup")
     fs
 
-let private zipFormat = ArchiveFormat.ofKind Zip |> Expect.some
+let private zipFormat = ArchiveFormat.tryCreate Zip |> Expect.some
 
 let private packing path =
     { Path = fp path
@@ -1271,7 +1271,7 @@ let ``an entry of an archive is handed over under the name of its place in it`` 
         fs
         unattended
         { Path = fp (at "backup/data.zip")
-          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Format = ArchiveFormat.tryCreate Zip |> Expect.some
           Compression = Normal
           Password = None }
         [ fp (at "work/notes.txt") ]
@@ -1320,7 +1320,7 @@ let ``a locked archive asks for its password before an entry is shown`` () =
         fs
         unattended
         { Path = fp (at "backup/locked.zip")
-          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Format = ArchiveFormat.tryCreate Zip |> Expect.some
           Compression = Normal
           Password = ArchivePassword.tryCreate "opensesame" }
         [ fp (at "work/notes.txt") ]
@@ -1351,7 +1351,7 @@ let ``a locked archive whose password is not given shows nothing`` () =
         fs
         unattended
         { Path = fp (at "backup/locked.zip")
-          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Format = ArchiveFormat.tryCreate Zip |> Expect.some
           Compression = Normal
           Password = ArchivePassword.tryCreate "opensesame" }
         [ fp (at "work/notes.txt") ]
@@ -1910,7 +1910,7 @@ let ``a hit the results window asks to view is read out of the file it names`` (
 
     let hit: FindHit =
         { Location = OnDisk(fp (at "start"))
-          Entry = DirectoryListing.entryOf (fs.FileInfo.New(at "start/notes.txt")) }
+          Entry = DirectoryListing.entryFromInfo (fs.FileInfo.New(at "start/notes.txt")) }
 
     let deps =
         { noDeps () with

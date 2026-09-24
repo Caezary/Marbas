@@ -11,7 +11,7 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private zipFormat = ArchiveFormat.ofKind Zip |> Expect.some
+let private zipFormat = ArchiveFormat.tryCreate Zip |> Expect.some
 
 let private mockFs password =
     let fs = MockFileSystem()

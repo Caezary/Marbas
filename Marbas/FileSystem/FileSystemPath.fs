@@ -23,13 +23,13 @@ module FileSystemPath =
         elif fs.File.Exists path then FileEntry
         else NoEntry
 
-    let linkTargetOf (info: IFileSystemInfo) =
+    let linkTargetOfInfo (info: IFileSystemInfo) =
         try
             info.LinkTarget |> Option.ofObj |> Option.map FileSystemPath
         with _ ->
             None
 
-    let linkTarget (fs: IFileSystem) (FileSystemPath path) = linkTargetOf (fs.FileInfo.New path)
+    let linkTarget (fs: IFileSystem) (FileSystemPath path) = linkTargetOfInfo (fs.FileInfo.New path)
 
     let isLink (fs: IFileSystem) (path: FileSystemPath) = linkTarget fs path |> Option.isSome
 

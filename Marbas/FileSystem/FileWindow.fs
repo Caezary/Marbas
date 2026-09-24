@@ -34,7 +34,7 @@ let private probeOf (stream: Stream) =
     stream.ReadExactly(probe, 0, length)
     probe
 
-let private opening (fs: IFileSystem) password kind archive segments () =
+let private entryStream (fs: IFileSystem) password kind archive segments () =
     match ArchiveReader.openContent fs password kind archive segments with
     | Some content -> content
     | None -> raise (FileNotFoundException(FileSystemPath.value archive))
@@ -52,7 +52,7 @@ let openEntry (fs: IFileSystem) password (archive: FileSystemPath) (entry: Archi
             | None -> Error(ArchiveNotFound spelled)
             | Some info ->
                 let content =
-                    new RewindingStream(info.Size, opening fs password kind archive segments)
+                    new RewindingStream(info.Size, entryStream fs password kind archive segments)
 
                 Ok(new Source(spelled, content, TextEncoding.detect (probeOf content)))
         with ex ->

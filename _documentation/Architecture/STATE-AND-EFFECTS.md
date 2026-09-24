@@ -221,7 +221,7 @@ document or a directory, becomes `ReportLaunchError(NotAProgram …)`, which is 
 of answer as refusing inside it, and putting it in the same type means it is
 worded in the same place. `..` has no path of its own to run and raises nothing.
 A panel *inside an archive* refuses exactly as the open-with key does, through
-the one `refusingInArchive` both share, and the `ElevationDeclined` a real
+the one `reportNotRunnable` both share, and the `ElevationDeclined` a real
 prompt turns down was already silence rather than a dialog.
 
 **The cursor is what runs, not the marks.** `EntryOpened` reads

@@ -106,7 +106,7 @@ let search (fs: IFileSystem) control (query: TextSearch) (path: FileSystemPath) 
     with _ ->
         FileUnreadable
 
-let inStream control (query: TextSearch) (stream: Stream) =
+let searchStream control (query: TextSearch) (stream: Stream) =
     try
         answered control query stream |> sensed query.Sense
     with _ ->

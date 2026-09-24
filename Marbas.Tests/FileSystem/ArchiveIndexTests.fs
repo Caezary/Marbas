@@ -11,7 +11,7 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private zip = ArchiveFormat.ofKind Zip |> Expect.some
+let private zip = ArchiveFormat.tryCreate Zip |> Expect.some
 
 let private archive = at "backup/data.zip"
 

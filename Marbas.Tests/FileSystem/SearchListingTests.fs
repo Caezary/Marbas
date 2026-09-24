@@ -127,7 +127,7 @@ let private packed () =
         fs
         Operations.unattended
         { Path = fp (at "start/data.zip")
-          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Format = ArchiveFormat.tryCreate Zip |> Expect.some
           Compression = Normal
           Password = None }
         [ fp (at "work/notes.txt"); fp (at "work/docs") ]

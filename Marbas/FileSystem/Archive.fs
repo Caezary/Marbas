@@ -109,14 +109,14 @@ module Archive =
                     use content = stored.Content()
                     dated (PaxTarEntry(TarEntryType.RegularFile, name, DataStream = content)) stored.Modified }
 
-    let private keyIn (level: ArchivePath) (name: string) =
+    let private keyAtLevel (level: ArchivePath) (name: string) =
         match ArchivePath.value level with
         | "" -> name
         | prefix -> $"{prefix}/{name}"
 
-    let private at (level: ArchivePath) sink =
-        { AddDirectory = fun name -> sink.AddDirectory (keyIn level name)
-          AddFile = fun name -> sink.AddFile (keyIn level name) }
+    let private sinkAtLevel (level: ArchivePath) sink =
+        { AddDirectory = fun name -> sink.AddDirectory (keyAtLevel level name)
+          AddFile = fun name -> sink.AddFile (keyAtLevel level name) }
 
     let private lzmaLevel compression =
         match compression with
@@ -164,7 +164,7 @@ module Archive =
                 attempt child.Path (fun () -> sink.AddFile (entryName fs root child.Path) (onDisk fs child.Entry child.Path))
 
     let private add (fs: IFileSystem) control sink root source =
-        match entryAt fs source with
+        match existingEntry fs source with
         | None -> Error(Operations.SourceNotFound source)
         | Some entry -> adding fs control sink root { Path = source; Entry = entry }
 
@@ -208,10 +208,10 @@ module Archive =
         sources
         |> List.exists (fun source -> FileSystemPath.atOrUnder platform source target)
 
-    let private under (target: ArchivePath) (info: ArchiveEntryInfo) =
+    let private entryAtOrUnder (target: ArchivePath) (info: ArchiveEntryInfo) =
         ArchivePath.atOrUnder target info.Segments
 
-    let private beneath (target: ArchivePath) (info: ArchiveEntryInfo) =
+    let private segmentsFromTargetName (target: ArchivePath) (info: ArchiveEntryInfo) =
         info.Segments |> List.skip (max 0 (ArchivePath.depth target - 1))
 
     let private landingPlace (fs: IFileSystem) (destination: FileSystemPath) segments =
@@ -233,7 +233,7 @@ module Archive =
         fs.FileInfo.New(FileSystemPath.value path).LastWriteTimeUtc <- info.Modified.UtcDateTime
 
     let private unpackEntry (fs: IFileSystem) (control: Operations.BatchControl) destination target info openContent =
-        let path = landingPlace fs destination (beneath target info)
+        let path = landingPlace fs destination (segmentsFromTargetName target info)
 
         if control.IsCancelled() then
             Error(Operations.Cancelled path)
@@ -251,7 +251,7 @@ module Archive =
 
     let private unpacking fs control destination target (unpacked: Result<int, _> ref) =
         ArchiveStep(fun item ->
-            if not (under target item.Info) then
+            if not (entryAtOrUnder target item.Info) then
                 KeepReading
             else
                 match unpackEntry fs control destination target item.Info item.OpenContent with
@@ -344,9 +344,9 @@ module Archive =
         | Commit of 'a
         | Abort of 'a
 
-    type private Changing =
+    type private OpenForChange =
         { Held: EntryName list list
-          Into: Sink }
+          Sink: Sink }
 
     let private replacing (zip: ZipFile) (key: string) =
         match zip.GetEntry key with
@@ -394,7 +394,7 @@ module Archive =
 
         match work
                   { Held = held |> List.map snd
-                    Into = at level (intoUpdate zip) }
+                    Sink = sinkAtLevel level (intoUpdate zip) }
             with
         | Commit value ->
             zip.CommitUpdate()
@@ -422,7 +422,7 @@ module Archive =
 
             if control.IsCancelled() then
                 StopReading
-            elif dropped |> List.exists (fun target -> under target info) then
+            elif dropped |> List.exists (fun target -> entryAtOrUnder target info) then
                 KeepReading
             elif ArchiveEntryInfo.isDirectory info then
                 sink.AddDirectory (keyOf info) (known info.Modified)
@@ -450,14 +450,14 @@ module Archive =
 
         pick 1
 
-    let private rewritingInto (fs: IFileSystem) archive kind format fresh dropped level control work held =
+    let private writingFreshCopy (fs: IFileSystem) archive kind format fresh dropped level control work held =
         try
             let outcome =
                 use stream = fs.File.Create(FileSystemPath.value fresh)
 
                 intoArchive format Normal None stream (fun sink ->
                     copyKept fs archive kind dropped control sink
-                    work { Held = held; Into = at level sink })
+                    work { Held = held; Sink = sinkAtLevel level sink })
 
             match outcome with
             | Commit value ->
@@ -467,23 +467,30 @@ module Archive =
         finally
             Operations.delete fs Operations.unattended fresh |> ignore
 
-    let private rewriting (fs: IFileSystem) archive kind dropped level control work =
-        match ArchiveFormat.ofKind kind with
+    let private rewritingWhole (fs: IFileSystem) archive kind dropped level control work =
+        match ArchiveFormat.tryCreate kind with
         | None -> Error(KindCannotBeChanged archive)
         | Some format ->
-            let into =
-                rewritingInto fs archive kind format (workingFile fs archive) dropped level control work
+            let rewriteHeld =
+                writingFreshCopy fs archive kind format (workingFile fs archive) dropped level control work
 
-            ArchiveIndex.read fs archive |> Result.map (List.map _.Segments) |> Result.bind into
+            ArchiveIndex.read fs archive |> Result.map (List.map _.Segments) |> Result.bind rewriteHeld
 
-    let private changeWith (fs: IFileSystem) archive control dropped level (work: Changing -> Update<'a>) =
+    let private withArchiveOpenForChange
+        (fs: IFileSystem)
+        archive
+        control
+        dropped
+        level
+        (work: OpenForChange -> Update<'a>)
+        =
         match changeRefusal fs archive with
         | Some refusal -> Error refusal
         | None ->
             try
                 match changeableKind fs archive with
                 | Some Zip -> updatingZip fs archive dropped level work
-                | Some kind -> rewriting fs archive kind dropped level control work
+                | Some kind -> rewritingWhole fs archive kind dropped level control work
                 | None -> Error(KindCannotBeChanged archive)
             with ex ->
                 Error(ArchiveReader.mapException archive ex)
@@ -499,8 +506,8 @@ module Archive =
             sources
             |> List.map (fun source -> ArchivePath.child level (FileSystemPath.name fs source))
 
-        changeWith fs archive control replaced level (fun changing ->
-            let added = packAll fs control sources changing.Into
+        withArchiveOpenForChange fs archive control replaced level (fun change ->
+            let added = packAll fs control sources change.Sink
 
             if control.IsCancelled() then
                 Abort(
@@ -511,13 +518,13 @@ module Archive =
                 Commit added)
 
     let removeEntries (fs: IFileSystem) (control: Operations.BatchControl) (archive: FileSystemPath) targets =
-        changeWith fs archive control targets ArchivePath.root (fun changing ->
+        withArchiveOpenForChange fs archive control targets ArchivePath.root (fun change ->
             let dropped =
                 targets
                 |> eachTarget control archive (fun target ->
                     control.Report(ArchivePath.spelled fs archive target)
 
-                    if changing.Held |> List.exists (ArchivePath.atOrUnder target) then
+                    if change.Held |> List.exists (ArchivePath.atOrUnder target) then
                         Ok()
                     else
                         ArchivePath.spelled fs archive target |> Operations.SourceNotFound |> Error)
@@ -535,8 +542,8 @@ module Archive =
         | Ok entries when entries |> List.exists (fun entry -> entry.Name = name) ->
             Error(Operations.TargetExists target)
         | Ok _ ->
-            changeWith fs archive Operations.unattended [] level (fun changing ->
-                changing.Into.AddDirectory (EntryName.value name) None
+            withArchiveOpenForChange fs archive Operations.unattended [] level (fun change ->
+                change.Sink.AddDirectory (EntryName.value name) None
                 Commit())
             |> Result.mapError Operations.ArchiveFailed
 
@@ -567,7 +574,7 @@ module Archive =
             | Ok(), Operations.ItemInArchive(_, entry) -> Some entry
             | _ -> None)
 
-    let moveOut (fs: IFileSystem) control (request: ExtractRequest) (targets: ArchivePath list) =
+    let moveToDirectory (fs: IFileSystem) control (request: ExtractRequest) (targets: ArchivePath list) =
         extract fs control request targets
         |> Result.bind (fun results -> droppingArrived fs control request.Archive (arrivedOf results) results)
 
@@ -616,7 +623,7 @@ module Archive =
             return carryingOver (arrived |> List.map cameFrom |> Map.ofList) added taken
         }
 
-    let copyAcross (fs: IFileSystem) control (request: ExtractRequest) targets (target: FileSystemPath) level =
+    let copyToArchive (fs: IFileSystem) control (request: ExtractRequest) targets (target: FileSystemPath) level =
         let released scratch =
             try
                 carriedInto fs control request targets target level scratch
@@ -630,11 +637,11 @@ module Archive =
             | Error error -> Ok(refusedEntries request.Archive error targets)
             | Ok scratch -> released scratch
 
-    let moveAcross (fs: IFileSystem) control (request: ExtractRequest) targets target level =
-        copyAcross fs control request targets target level
+    let moveToArchive (fs: IFileSystem) control (request: ExtractRequest) targets target level =
+        copyToArchive fs control request targets target level
         |> Result.bind (fun results -> droppingArrived fs control request.Archive (arrivedOf results) results)
 
-    let moveIn (fs: IFileSystem) control archive level (sources: FileSystemPath list) =
+    let moveFromDisk (fs: IFileSystem) control archive level (sources: FileSystemPath list) =
         addEntries fs control archive level sources
         |> Result.map (fun results ->
             List.zip (List.truncate results.Length sources) results

@@ -33,7 +33,7 @@ let private tree () =
 let private formatFor (fs: IFileSystem) path =
     FileSystemPath.name fs path
     |> ArchiveKind.recognise
-    |> Option.bind ArchiveFormat.ofKind
+    |> Option.bind ArchiveFormat.tryCreate
     |> Expect.some
 
 let private packed (fs: IFileSystem) path =

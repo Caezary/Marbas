@@ -63,7 +63,7 @@ let private filter target =
     | EveryEntryIn directory -> FileSystemPath.value directory, "*"
     | OneEntryIn(directory, name) -> FileSystemPath.value directory, EntryName.value name
 
-let private opened (fs: IFileSystem) touched failed target =
+let private startedWatcher (fs: IFileSystem) touched failed target =
     let directory, name = filter target
 
     try
@@ -96,15 +96,15 @@ let watching (app: IApplication) (fs: IFileSystem) =
 
     let failed () = app.Invoke(fun () -> broken.Value <- true)
 
-    let opening () =
+    let rewatch () =
         watchers.Value |> List.iter _.Dispose()
-        watchers.Value <- paths.Value |> List.map (target fs) |> List.choose (opened fs touched failed)
+        watchers.Value <- paths.Value |> List.map (target fs) |> List.choose (startedWatcher fs touched failed)
         seen.Value <- standing fs paths.Value
 
     let looking () =
         if broken.Value || standing fs paths.Value <> seen.Value then
             broken.Value <- false
-            opening ()
+            rewatch ()
             touched ()
 
         true
@@ -115,4 +115,4 @@ let watching (app: IApplication) (fs: IFileSystem) =
         collapse.Value <- collapsing (fun () -> DateTimeOffset.Now) quiet scheduling panelsInFront report
         paths.Value <- wanted
         broken.Value <- false
-        opening ()
+        rewatch ()

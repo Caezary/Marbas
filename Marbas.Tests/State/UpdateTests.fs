@@ -804,7 +804,7 @@ let ``the name prompt is asked for with the name of the last directory created``
 
     Assert.Equal<Effect list>([ PromptForName(Some(en "work")) ], result.Effects)
 
-let private zipFormat = ArchiveFormat.ofKind Zip |> Expect.some
+let private zipFormat = ArchiveFormat.tryCreate Zip |> Expect.some
 
 let private packRequest path =
     { Path = fp path

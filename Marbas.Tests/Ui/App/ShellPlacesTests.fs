@@ -23,7 +23,7 @@ let private tarAt = fp (at "start/old.tar")
 
 let private entry raw = ArchivePath.tryCreate raw |> Expect.some
 
-let private zipFormat = ArchiveFormat.ofKind Zip |> Expect.some
+let private zipFormat = ArchiveFormat.tryCreate Zip |> Expect.some
 
 let private stopped =
     { Report = ignore

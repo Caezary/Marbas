@@ -12,9 +12,9 @@ let private en = EntryName.create
 
 let private path raw = FileSystemPath.create (Root.at raw)
 
-let private zip = ArchiveFormat.ofKind Zip |> Expect.some
+let private zip = ArchiveFormat.tryCreate Zip |> Expect.some
 
-let private tarGz = ArchiveFormat.ofKind TarGz |> Expect.some
+let private tarGz = ArchiveFormat.tryCreate TarGz |> Expect.some
 
 let private suggested format directory targets =
     ArchiveName.suggest fs format (path directory) targets |> EntryName.value

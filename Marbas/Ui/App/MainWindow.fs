@@ -17,7 +17,7 @@ let create (deps: Ports.Dependencies) =
     let settings =
         Settings.load deps.FileSystem (Settings.forPath deps.StartPath) deps.SettingsPath
 
-    let appState = AppState.fromSettings settings
+    let appState = AppState.restore settings
 
     let runtime = Runtime(
         appState,

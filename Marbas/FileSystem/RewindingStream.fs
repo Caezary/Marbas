@@ -8,16 +8,16 @@ module private Rewinding =
     [<Literal>]
     let SkipLength = 65536
 
-type RewindingStream(length: int64, opening: unit -> Stream) =
+type RewindingStream(length: int64, openSource: unit -> Stream) =
     inherit Stream()
 
     let mutable current: Stream = null
     let mutable position = 0L
     let scratch = lazy Array.zeroCreate<byte> Rewinding.SkipLength
 
-    let opened () =
+    let currentStream () =
         if isNull current then
-            current <- opening ()
+            current <- openSource ()
             position <- 0L
 
         current
@@ -42,7 +42,7 @@ type RewindingStream(length: int64, opening: unit -> Stream) =
     member private _.Reach(target: int64) =
         if target < position then closed ()
 
-        skipping (opened ()) (target - position)
+        skipping (currentStream ()) (target - position)
 
     override _.CanRead = true
 
@@ -63,7 +63,7 @@ type RewindingStream(length: int64, opening: unit -> Stream) =
     override _.Write(_: byte array, _: int, _: int) = raise (NotSupportedException())
 
     override _.Read(buffer: byte array, offset: int, count: int) =
-        let read = opened().Read(buffer, offset, count)
+        let read = currentStream().Read(buffer, offset, count)
         position <- position + int64 read
         read
 

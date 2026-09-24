@@ -27,7 +27,7 @@ let private windowWith (fs: MockFileSystem) askArchive =
     press (leftList window) KeyMap.rightRootKey
     window
 
-let private zipFormat = ArchiveFormat.ofKind Zip |> Expect.some
+let private zipFormat = ArchiveFormat.tryCreate Zip |> Expect.some
 
 let private answering target =
     fun (_: Ports.PackPrompt) ->

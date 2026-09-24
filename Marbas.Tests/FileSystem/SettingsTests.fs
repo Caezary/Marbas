@@ -48,7 +48,7 @@ let private secondTab =
         Right
 
 let private stored: Settings =
-    { Tabs = Zipper.ofNonEmpty firstTab [ secondTab ] |> Zipper.at 1
+    { Tabs = Zipper.ofNonEmpty firstTab [ secondTab ] |> Zipper.refocus 1
       LastCreatedDirectory = Some(en "work")
       Programs =
         { DefaultEditor = ProgramPath.tryCreate "code.exe"

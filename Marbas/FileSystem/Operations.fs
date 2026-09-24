@@ -118,6 +118,10 @@ let private moveFile (fs: IFileSystem) overwrite (source: FileSystemPath) (targe
     let rawTarget = FileSystemPath.value target
     fs.File.Move(rawSource, rawTarget, overwrite)
 
+let private copyReplacing target fs source = copyFile fs true source target
+
+let private moveReplacing target fs source = moveFile fs true source target
+
 let private getFileSystemEntries (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
     fs.Directory.EnumerateFileSystemEntries raw
@@ -169,7 +173,7 @@ let rec private deleting (fs: IFileSystem) (control: BatchControl) (child: Child
             }
 
 let delete (fs: IFileSystem) (control: BatchControl) (path: FileSystemPath) =
-    match entryAt fs path with
+    match existingEntry fs path with
     | None -> Error(SourceNotFound path)
     | Some entry -> deleting fs control { Path = path; Entry = entry }
 
@@ -221,7 +225,7 @@ let private anonymousName (fs: IFileSystem) (path: FileSystemPath) =
 let private anonymize (fs: IFileSystem) (path: FileSystemPath) =
     match anonymousName fs path with
     | Some target ->
-        attempt fs path (fun fs' source -> moveFile fs' false source target)
+        attempt fs path (fun fs source -> moveFile fs false source target)
         |> Result.map (fun () -> target)
     | None -> Ok path
 
@@ -253,7 +257,7 @@ let wipe (fs: IFileSystem) (control: BatchControl) (path: FileSystemPath) =
     if control.IsCancelled() then
         Error(Cancelled path)
     else
-        match entryAt fs path with
+        match existingEntry fs path with
         | None -> Error(SourceNotFound path)
         | Some entry -> wiping fs control { Path = path; Entry = entry }
 
@@ -261,7 +265,7 @@ let private copyLink (fs: IFileSystem) (pointingAt: FileSystemPath) (target: Fil
     fs.Directory.CreateSymbolicLink(FileSystemPath.value target, FileSystemPath.value pointingAt)
     |> ignore
 
-let private inDirectory (fs: IFileSystem) (targetDirectory: FileSystemPath) (source: FileSystemPath) =
+let private landingInDirectory (fs: IFileSystem) (targetDirectory: FileSystemPath) (source: FileSystemPath) =
     source
     |> FileSystemPath.name fs
     |> EntryName.value
@@ -290,16 +294,15 @@ let rec private copying (fs: IFileSystem) (control: BatchControl) (child: Child)
             }
         | File, _ ->
             control.Report child.Path
-            let copyToTarget fs' source' = copyFile fs' true source' target
-            attempt fs child.Path copyToTarget
+            attempt fs child.Path (copyReplacing target)
 
-let private copyTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
-    match entryAt fs source with
+let private copyToPath (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
+    match existingEntry fs source with
     | None -> Error(SourceNotFound source)
     | Some entry -> copying fs control { Path = source; Entry = entry } target
 
 let copy (fs: IFileSystem) control (targetDirectory: FileSystemPath) (source: FileSystemPath) =
-    source |> inDirectory fs targetDirectory |> copyTo fs control source
+    source |> landingInDirectory fs targetDirectory |> copyToPath fs control source
 
 type private DirectoryMove =
     | Renamed
@@ -319,11 +322,11 @@ let private mustFinish (control: BatchControl) =
 
 let moveByCopying (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
     result {
-        do! copyTo fs control source target
+        do! copyToPath fs control source target
         do! delete fs (mustFinish control) source
     }
 
-let moveTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
+let moveToPath (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
     match FileSystemPath.kind fs source with
     | NoEntry -> Error(SourceNotFound source)
     | DirectoryEntry when control.IsCancelled() -> Error(Cancelled source)
@@ -337,13 +340,12 @@ let moveTo (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (t
     | FileEntry when control.IsCancelled() -> Error(Cancelled source)
     | FileEntry ->
         control.Report source
-        let moveToTarget fs' source' = moveFile fs' true source' target
-        attempt fs source moveToTarget
+        attempt fs source (moveReplacing target)
 
 let move (fs: IFileSystem) control (targetDirectory: FileSystemPath) (source: FileSystemPath) =
     source
-    |> inDirectory fs targetDirectory
-    |> moveTo fs control source
+    |> landingInDirectory fs targetDirectory
+    |> moveToPath fs control source
 
 type RenameStep =
     | RenameDone
@@ -358,8 +360,7 @@ let startRename (fs: IFileSystem) (source: FileSystemPath) (newName: EntryName) 
     match FileSystemPath.kind fs target, FileSystemPath.kind fs source with
     | NoEntry, NoEntry -> Error(SourceNotFound source)
     | NoEntry, FileEntry ->
-        let moveToTarget fs' source' = moveFile fs' true source' target
-        attempt fs source moveToTarget |> Result.map (fun () -> RenameDone)
+        attempt fs source (moveReplacing target) |> Result.map (fun () -> RenameDone)
     | NoEntry, DirectoryEntry ->
         match renameDirectory fs source target with
         | Renamed -> Ok RenameDone
@@ -384,7 +385,7 @@ type private StandingAnswer =
     | OverwriteEverything
     | SkipEverything
 
-let approveInto
+let approveLandings
     (landing: FileSystemPath -> FileSystemPath)
     (occupied: FileSystemPath -> bool)
     (ask: FileSystemPath -> OverwriteAnswer)
@@ -417,7 +418,7 @@ let approveInto
 let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources targetDirectory =
     let occupied target = FileSystemPath.kind fs target <> NoEntry
 
-    approveInto (inDirectory fs targetDirectory) occupied ask sources
+    approveLandings (landingInDirectory fs targetDirectory) occupied ask sources
 
 let allWatched (control: BatchControl) apply sources =
     let rec run finished remaining =

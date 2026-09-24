@@ -7,7 +7,7 @@ open Marbas.Tests
 
 let private recognised raw = ArchiveKind.recognise (EntryName.create raw)
 
-let private format kind = ArchiveFormat.ofKind kind |> Expect.some
+let private format kind = ArchiveFormat.tryCreate kind |> Expect.some
 
 let private readWriteChange =
     { CanRead = true
@@ -109,10 +109,10 @@ let ``the formats are the kinds that claim they can be created`` () =
 
 [<Fact>]
 let ``a kind that cannot be created is no format`` () =
-    Assert.Equal(None, ArchiveFormat.ofKind Tar)
-    Assert.Equal(None, ArchiveFormat.ofKind TarBz2)
-    Assert.Equal(None, ArchiveFormat.ofKind TarXz)
-    Assert.Equal(None, ArchiveFormat.ofKind Rar)
+    Assert.Equal(None, ArchiveFormat.tryCreate Tar)
+    Assert.Equal(None, ArchiveFormat.tryCreate TarBz2)
+    Assert.Equal(None, ArchiveFormat.tryCreate TarXz)
+    Assert.Equal(None, ArchiveFormat.tryCreate Rar)
 
 [<Fact>]
 let ``a format remembers the kind it was made of`` () =

@@ -31,13 +31,13 @@ batch to run; before, it escaped the batch entirely.
 `DirectoryListing.children` enumerates a directory as `IFileSystemInfo`s and
 answers a `Child` per entry — where it is and the `Entry` a listing would show
 for it, kind, size, time, attributes and link target all from that one read.
-`Operations.delete`, `copyTo` and `wipe`, `DirectoryMeasure`, `FileSearch`
+`Operations.delete`, `copyToPath` and `wipe`, `DirectoryMeasure`, `FileSearch`
 and `Archive.add` all walk over it, and none of them asks the file system
 anything more about an entry it has already enumerated. They used to: every one
 of them enumerated *paths* and then asked again per entry — two `Exists` calls
 for the kind, a `FileInfo` for the link target, another for the length — three
 to four system calls for every file in the tree, each one a round trip on a
-network share. `DirectoryListing.entryAt` is the same answer for a single path,
+network share. `DirectoryListing.existingEntry` is the same answer for a single path,
 and it is what `delete`, `wipe` and `Archive.add` ask at the root of a walk,
 where there is nothing enumerated yet. Measured over a mock tree of 20,000
 files in 200 directories, measuring cost 700–800 ms with a stat per entry and
@@ -108,7 +108,7 @@ without a mode switch, the way the orthodox managers do it.
 reorders around it. Every other reload focuses whatever the cursor was on.
 
 **Moving a directory is a rename first, a copy only when it has to be.**
-`Operations.moveTo` asks `IDirectory.Move` and answers `Renamed`,
+`Operations.moveToPath` asks `IDirectory.Move` and answers `Renamed`,
 `RenameRefused` or `RenameFailed`. On one volume the rename is a metadata
 operation whatever the tree weighs, so `F6` between two directories of one
 drive and a rename in place no longer read and write the whole tree, and
@@ -186,7 +186,7 @@ like any other item failure and the marks of what did not go survive.
 checked, since either one being taken makes the name unusable). The info file
 is written first, as the spec asks, and removed again if the move fails, so a
 failed delete leaves no phantom entry behind. Because every step goes through
-`IFileSystem` — the move is `Operations.moveTo`, which copies and deletes a
+`IFileSystem` — the move is `Operations.moveToPath`, which copies and deletes a
 directory rather than renaming it across volumes — the whole thing is tested on
 `MockFileSystem`, on both platforms, without a real trash anywhere.
 `Trash.location` picks `$XDG_DATA_HOME/Trash` or falls back to

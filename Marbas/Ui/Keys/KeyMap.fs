@@ -120,66 +120,66 @@ type Binding =
       Label: string option
       Message: Message }
 
-let private onBar key label message =
+let private labelled key label message =
     { Key = key
       Label = Some label
       Message = message }
 
-let private offBar key message =
+let private unlabelled key message =
     { Key = key
       Label = None
       Message = message }
 
 let bindings =
-    [ onBar Key.F3 "View" ViewRequested
-      onBar Key.F4 "Edit" EditRequested
-      onBar Key.F5 "Copy" CopyRequested
-      onBar Key.F6 "RenMov" MoveRequested
-      onBar Key.F7 "Mkdir" MakeDirectoryRequested
-      onBar Key.F8 "Delete" (DeleteRequested ToTrash)
-      onBar packKey "Pack" PackRequested
-      onBar unpackKey "Unpack" UnpackRequested
-      onBar newFileKey "NewFile" NewFileRequested
-      onBar Key.F8.WithShift "Erase" (DeleteRequested Permanently)
-      onBar tabsKey "Tabs" TabsRequested
-      onBar newTabKey "NewTab" TabOpened
-      onBar closeTabKey "ShutTab" TabClosed
-      onBar saveSessionKey "Save" SessionSaveRequested
-      onBar Key.F10 "Quit" QuitRequested
-      onBar settingsKey "Setup" SettingsRequested
-      onBar nameSortKey "Name" (SortRequested SortKey.ByName)
-      onBar extensionSortKey "Ext" (SortRequested SortKey.ByExtension)
-      onBar dateSortKey "Date" (SortRequested SortKey.ByDate)
-      onBar sizeSortKey "Size" (SortRequested SortKey.BySize)
-      onBar leftRootKey "Left" (RootRequested Left)
-      onBar rightRootKey "Right" (RootRequested Right)
-      onBar linkKey "Link" LinkRequested
-      onBar findKey "Find" FindRequested
-      offBar spareFindKey FindRequested
-      offBar trashKey (DeleteRequested ToTrash)
-      offBar permanentDeleteKey (DeleteRequested Permanently)
-      offBar wipeKey (DeleteRequested ByWiping)
-      offBar hiddenKey HiddenToggled
-      offBar quitKey QuitRequested
-      offBar classicHiddenKey HiddenToggled
-      offBar refreshKey RefreshRequested
-      offBar volumeRootKey VolumeRootRequested
-      offBar classicVolumeRootKey VolumeRootRequested
-      offBar spareTabsKey TabsRequested
-      offBar nextTabKey (TabCycled Forward)
-      offBar previousTabKey (TabCycled Backward)
-      offBar walkIntoKey WalkIntoRequested
-      offBar classicWalkIntoKey WalkIntoRequested
-      offBar openWithKey OpenWithRequested
-      offBar classicOpenWithKey OpenWithRequested
-      offBar elevatedRunKey ElevatedRunRequested
-      offBar classicElevatedRunKey ElevatedRunRequested
-      offBar selectPatternKey (PatternRequested Select)
-      offBar deselectPatternKey (PatternRequested Deselect)
-      offBar insertKey (SelectionToggled Downward)
-      offBar spaceKey (SelectionToggled Downward)
-      offBar selectionDownKey (SelectionToggled Downward)
-      offBar selectionUpKey (SelectionToggled Upward) ]
+    [ labelled Key.F3 "View" ViewRequested
+      labelled Key.F4 "Edit" EditRequested
+      labelled Key.F5 "Copy" CopyRequested
+      labelled Key.F6 "RenMov" MoveRequested
+      labelled Key.F7 "Mkdir" MakeDirectoryRequested
+      labelled Key.F8 "Delete" (DeleteRequested ToTrash)
+      labelled packKey "Pack" PackRequested
+      labelled unpackKey "Unpack" UnpackRequested
+      labelled newFileKey "NewFile" NewFileRequested
+      labelled Key.F8.WithShift "Erase" (DeleteRequested Permanently)
+      labelled tabsKey "Tabs" TabsRequested
+      labelled newTabKey "NewTab" TabOpened
+      labelled closeTabKey "ShutTab" TabClosed
+      labelled saveSessionKey "Save" SessionSaveRequested
+      labelled Key.F10 "Quit" QuitRequested
+      labelled settingsKey "Setup" SettingsRequested
+      labelled nameSortKey "Name" (SortRequested SortKey.ByName)
+      labelled extensionSortKey "Ext" (SortRequested SortKey.ByExtension)
+      labelled dateSortKey "Date" (SortRequested SortKey.ByDate)
+      labelled sizeSortKey "Size" (SortRequested SortKey.BySize)
+      labelled leftRootKey "Left" (RootRequested Left)
+      labelled rightRootKey "Right" (RootRequested Right)
+      labelled linkKey "Link" LinkRequested
+      labelled findKey "Find" FindRequested
+      unlabelled spareFindKey FindRequested
+      unlabelled trashKey (DeleteRequested ToTrash)
+      unlabelled permanentDeleteKey (DeleteRequested Permanently)
+      unlabelled wipeKey (DeleteRequested ByWiping)
+      unlabelled hiddenKey HiddenToggled
+      unlabelled quitKey QuitRequested
+      unlabelled classicHiddenKey HiddenToggled
+      unlabelled refreshKey RefreshRequested
+      unlabelled volumeRootKey VolumeRootRequested
+      unlabelled classicVolumeRootKey VolumeRootRequested
+      unlabelled spareTabsKey TabsRequested
+      unlabelled nextTabKey (TabCycled Forward)
+      unlabelled previousTabKey (TabCycled Backward)
+      unlabelled walkIntoKey WalkIntoRequested
+      unlabelled classicWalkIntoKey WalkIntoRequested
+      unlabelled openWithKey OpenWithRequested
+      unlabelled classicOpenWithKey OpenWithRequested
+      unlabelled elevatedRunKey ElevatedRunRequested
+      unlabelled classicElevatedRunKey ElevatedRunRequested
+      unlabelled selectPatternKey (PatternRequested Select)
+      unlabelled deselectPatternKey (PatternRequested Deselect)
+      unlabelled insertKey (SelectionToggled Downward)
+      unlabelled spaceKey (SelectionToggled Downward)
+      unlabelled selectionDownKey (SelectionToggled Downward)
+      unlabelled selectionUpKey (SelectionToggled Upward) ]
 
 type BarSlot =
     { Name: string
@@ -187,7 +187,7 @@ type BarSlot =
       Label: string
       Message: Message option }
 
-let private commandOn key =
+let private labelledCommand key =
     bindings
     |> List.tryPick (fun binding ->
         match binding.Label with
@@ -198,7 +198,7 @@ let bar modifiers =
     functionKeys
     |> List.mapi (fun index functionKey ->
         let key = Modifiers.apply modifiers functionKey
-        let command = commandOn key
+        let command = labelledCommand key
 
         { Name = $"F{index + 1}"
           Key = key

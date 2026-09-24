@@ -103,12 +103,12 @@ without arguing.
 of two `Result.bind`s or `Option.bind`s reads fine as a pipeline. At the third
 step, or as soon as a `match` on a `Result` or an `Option` contains another
 one, the block becomes `result { }` or `option { }` (FsToolkit), with one
-`let!` per step. `Links.create`, `Archive.copyAcross`, `Workspace.scratch` and
-`AppState.finishTransfer` / `finishPack` / `finishLinks` / `makeFile` are what
-the rule looks like applied.
+`let!` per step. `Links.create`, `Archive.copyToArchive`, `Workspace.scratch`
+and `AppState.finishTransfer` / `finishPack` / `finishLinks` / `makeFile` are
+what the rule looks like applied.
 
 A computation expression is the wrong answer when what the chain really needs is
-one fewer case. `Shell.passwordFor` answered three — not needed, given, turned
+one fewer case. `Shell.passwordOutcome` answered three — not needed, given, turned
 down — and feeding that to `option { }` meant mapping it to
 `ArchivePassword option option`, where "not needed" is written `Some None`.
 Nothing downstream told the first two apart, so the union says
@@ -121,7 +121,7 @@ one type; name the answer instead of wrapping it.
 eagerly, so a question that touches the disk or creates something stays behind
 its own arm. What is left after that goes into a named helper — the inner block
 of `Update.editing` is `showingProperties`, the third level of `Links.create`
-is `make`, the body of `Archive.copyAcross` is `carriedInto`.
+is `make`, the body of `Archive.copyToArchive` is `carriedInto`.
 
 **A chain of three constructors becomes a pipeline.** `request state
 (ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged path)))` is
@@ -135,6 +135,68 @@ once.
 empty `None` arm.** Every prompt in `Shell.interpret` answers an option; the
 ones with a single `Some` arm are `|> Option.iter (Message >> dispatch)`, and
 the ones whose answer is a union of their own keep the `match`.
+
+## Names that tell the boundary
+
+A preposition says where something sits and nothing about the rule: `under`
+does not say whether the target itself counts, `into` does not say what it
+answers, and two helpers that differ only by `Of`, `In` or a prime have to be
+opened to be told apart. Four rules decide a name, and P15.20 applied them to
+every module.
+
+**A name is never only a preposition.** `Archive.at` is `sinkAtLevel`,
+`Archive.under` is `entryAtOrUnder`, `PanelLocation.into` is
+`PanelLocation.child`, `Zipper.at` is `Zipper.refocus`, and
+`ContentMatch.inStream` is `searchStream` beside `search`. A preposition may
+stay when the words beside it carry the rule — `atOrUnder` and `strictlyUnder`
+say whether the boundary is strict, `keyAtLevel` says what is keyed.
+
+**Two helpers in one module differ by a noun, not by a preposition or a
+prime.** `DirectoryListing.entryOf` and `entryAt` are `entryFromInfo` and
+`existingEntry`; `Links.refusal` and `refusalFor` are `refusal` and
+`refusalForAbsolute`; `Settings.numberOf` and `numberIn` are `parsedNumber`
+and `tabNumberInKey`; `LineIndex.scan` and `scanThrough` are `scanChunk` and
+`scanUntilKnown`; `ArchiveFormat.kind` and `ofKind` are `kind` and
+`tryCreate`, the name §3 of the conventions gives a constructor that validates;
+`AppState.settings` and `fromSettings` are `settings` and `restore`, with
+`restoredPanel` and `restoredTab` under it; `locationAbove`, `locationOf` and
+`locationOfName` are `parentLocation`, `enteredLocation` and `childLocation`;
+`navigateUp` and `navigateInto` are `navigateToParent` and `navigateToChild`;
+`KeyMap.onBar` and `offBar` are `labelled` and `unlabelled`, which is what
+they build. A local closure counts when it is a helper of its own —
+`SearchListing`'s memoising `held` kept its name and the module-level `heldIn`
+it wrapped became `indexedPrefixes`. A primed parameter is an alias too:
+`Operations` lost `let copyToTarget fs' source' = copyFile fs' true source'
+target` to a named `copyReplacing target`.
+
+Two shapes do *not* count. A function and the value it answers, bound under the
+function's noun — `let probe = probeOf stream` names one thing twice, not two
+helpers. And `withX` is the record-copy idiom — `withCursor index panel` is the
+panel with its cursor replaced — so it stands beside `cursor` the way
+`{ p with Cursor = … }` does.
+
+**A direction names both ends.** `Archive.moveIn`, `moveOut`, `moveAcross` and
+`copyAcross` said the direction and left the other side implied; they are
+`moveFromDisk`, `moveToDirectory`, `moveToArchive` and `copyToArchive`, the
+vocabulary `FromDisk` / `ToDirectory` / `ToArchive` the transfer types already
+spoke. `Shell`'s `approvedOnDisk` / `approvedInArchive` / `approvedInto` /
+`approvedAcross` became `pieceApprovedForDirectory`, `pieceApprovedForArchive`,
+`pathsApprovedForArchive` and `entriesApprovedForArchive` — what is approved,
+and for which kind of target.
+
+**A name that lied about its boundary says the real one.**
+`toggleSelectionThrough` stopped *short* of its target, which the tests had to
+spell out ("marking through an entry stops short of it"); it is
+`toggleSelectionShortOf`. `Archive.beneath` kept the target's own name, so it
+is `segmentsFromTargetName`, not a path after the target. `withCursorWithin`
+clamped the index to the listing, and is `withCursorClamped`.
+
+The `changing` and `opened` families are named for what they do rather than
+the verb they share: `Update.refuseUnchangeable`, `openCursorEntry`,
+`openFile`, `openWithHandler`, `reportNotRunnable`, `reportResultsRefusal`,
+`rereadAndSave`; `Archive.withArchiveOpenForChange` hands its work an
+`OpenForChange` of `Held` entries and a `Sink`, and dispatches to
+`updatingZip` or `rewritingWhole`, which writes through `writingFreshCopy`.
 
 ## Documentation map
 

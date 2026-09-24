@@ -13,7 +13,7 @@ handled, so the built-in SPACE marking never runs and cannot disagree with the
 state.
 
 **One transition marks, however far it reaches.**
-`AppState.toggleSelectionThrough side target` is the whole rule: take the run
+`AppState.toggleSelectionShortOf side target` is the whole rule: take the run
 from the cursor to `target`, mark or unmark all of it, put the cursor on
 `target`. Everything else is a caller that works out `target` —
 `toggleSelectionMoving` adds ±1 for `Insert`, `Space` and the shift arrows,
@@ -34,7 +34,7 @@ behaviour still matches `Shift+↓` pressed at the bottom.
 
 **A run goes by the entry under the cursor, not entry by entry.** Toggling each
 entry of a half-marked page separately would invert it, which is unpredictable
-in exactly the case a user reaches for a page key. So `toggleSelectionThrough`
+in exactly the case a user reaches for a page key. So `toggleSelectionShortOf`
 reads the mark under the cursor once and applies that one decision to the whole
 run. Over a run of one entry it is plain toggling, which is why the same
 function serves `Insert` as serves `Shift+PgDn`. And because there is one
@@ -633,7 +633,7 @@ every function key rather than a filter over the table.
 
 **Only a function key carries a label, because only a function key has a
 place.** `Alt+H` used to be labelled `Hidden` and rode the `Alt` row; the bar
-now has no slot to put it in, so it is `offBar` like `Ctrl+H` and `Ctrl+R`. A
+now has no slot to put it in, so it is `unlabelled` like `Ctrl+H` and `Ctrl+R`. A
 test asserts that every labelled binding is some function key with modifiers on
 it, so a label on a key with nowhere to go fails the suite rather than
 disappearing quietly.

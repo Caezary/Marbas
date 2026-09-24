@@ -16,7 +16,7 @@ let private fp = FileSystemPath.create
 
 let private request path =
     { Path = fp path
-      Format = ArchiveFormat.ofKind Zip |> Expect.some
+      Format = ArchiveFormat.tryCreate Zip |> Expect.some
       Compression = Normal
       Password = None }
 

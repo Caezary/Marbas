@@ -16,9 +16,9 @@ let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
-let private zip = ArchiveFormat.ofKind Zip |> Expect.some
+let private zip = ArchiveFormat.tryCreate Zip |> Expect.some
 
-let private tarGz = ArchiveFormat.ofKind TarGz |> Expect.some
+let private tarGz = ArchiveFormat.tryCreate TarGz |> Expect.some
 
 let private target = at "backup/data.zip"
 

@@ -125,7 +125,7 @@ let private request state effect = { State = state; Effects = [ effect ] }
 
 let private reporting state error = request state (ReportOperationError error)
 
-let private changing (fs: IFileSystem) state archives effect =
+let private refuseUnchangeable (fs: IFileSystem) state archives effect =
     match archives |> List.tryFind (Archive.changeableKind fs >> Option.isNone) with
     | None -> request state effect
     | Some unchangeable ->
@@ -153,7 +153,7 @@ let private targetArchives target =
 let private saving (fs: IFileSystem) state =
     request state (SaveSettings(settings fs state))
 
-let private standingOn (fs: IFileSystem) state =
+let private rereadAndSave (fs: IFileSystem) state =
     match readTabAgain fs state with
     | Ok updated -> saving fs updated
     | Error error ->
@@ -202,7 +202,7 @@ let private handedOver state row =
     let root = DriveRow.root row
     running state root None root
 
-let private opening (fs: IFileSystem) state directory path =
+let private openFile (fs: IFileSystem) state directory path =
     match programFor ForOpening (FileSystemPath.name fs path) state with
     | Some program -> running state directory (Some program) path
     | None ->
@@ -210,7 +210,7 @@ let private opening (fs: IFileSystem) state directory path =
         | Some _ -> enter fs state |> applyListing state
         | None -> running state directory None path
 
-let private opened (fs: IFileSystem) state =
+let private openCursorEntry (fs: IFileSystem) state =
     let panel = activePanel state
 
     match cursorFileInArchive fs panel with
@@ -220,7 +220,7 @@ let private opened (fs: IFileSystem) state =
         |> reporting state
     | None ->
         match cursorFilePath fs panel, cursorDirectory fs panel with
-        | Some path, Some directory -> opening fs state directory path
+        | Some path, Some directory -> openFile fs state directory path
         | _ -> enter fs state |> applyListing state
 
 let private revealed (fs: IFileSystem) panel directory =
@@ -228,7 +228,7 @@ let private revealed (fs: IFileSystem) panel directory =
     | Some entry when entry.Name = ParentName -> Some directory
     | _ -> cursorDirectoryPath fs panel
 
-let private refusingInArchive (fs: IFileSystem) state panel archive level =
+let private reportNotRunnable (fs: IFileSystem) state panel archive level =
     let named =
         cursorEntryInArchive fs panel
         |> Option.map snd
@@ -238,11 +238,11 @@ let private refusingInArchive (fs: IFileSystem) state panel archive level =
     |> Operations.ArchiveEntryNotRunnable
     |> reporting state
 
-let private openedWith (fs: IFileSystem) state =
+let private openWithHandler (fs: IFileSystem) state =
     let panel = activePanel state
 
     match panel.Path with
-    | InArchive(archive, level) -> refusingInArchive fs state panel archive level
+    | InArchive(archive, level) -> reportNotRunnable fs state panel archive level
     | SearchResults _ -> stay state
     | OnDisk directory ->
         match cursorFilePath fs panel with
@@ -256,7 +256,7 @@ let private runElevated (fs: IFileSystem) state =
     let panel = activePanel state
 
     match panel.Path with
-    | InArchive(archive, level) -> refusingInArchive fs state panel archive level
+    | InArchive(archive, level) -> reportNotRunnable fs state panel archive level
     | SearchResults _ -> stay state
     | OnDisk directory ->
         match cursorExecutablePath fs panel with
@@ -278,7 +278,7 @@ let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
     | Some directory -> running remembered directory (Some choice.Program) path
     | None -> stay remembered
 
-let private refusing state refusal =
+let private reportResultsRefusal state refusal =
     Operations.NotInSearchResults refusal |> reporting state
 
 let private showingProperties state properties =
@@ -310,12 +310,12 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     match msg with
     | CursorMoved cursor -> stay (setCursor cursor.Side cursor.Index state)
     | PanelFocused side -> stay (activate side state)
-    | EntryOpened -> opened fs state
+    | EntryOpened -> openCursorEntry fs state
     | WalkIntoRequested -> enter fs state |> applyListing state
     | RefreshRequested -> refresh fs state |> applyListing state
     | ExternalChangeDetected -> state |> readTabQuietly fs |> stay
     | SelectionToggled direction -> stay (toggleSelectionMoving direction state.Active state)
-    | SelectionToggledTo cursor -> stay (toggleSelectionThrough cursor.Side cursor.Index state)
+    | SelectionToggledTo cursor -> stay (toggleSelectionShortOf cursor.Side cursor.Index state)
     | SortRequested key -> stay (sortBy key state.Active state)
     | HiddenToggled -> toggleHidden fs state.Active state |> applyListing state
     | SearchTyped character -> stay (typeIntoSearch state.Active character state)
@@ -326,7 +326,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | MakeDirectoryRequested ->
         match (activePanel state).Path with
         | OnDisk _ -> request state (PromptForName state.LastCreatedDirectory)
-        | InArchive(archive, _) -> changing fs state [ archive ] (PromptForName state.LastCreatedDirectory)
+        | InArchive(archive, _) -> refuseUnchangeable fs state [ archive ] (PromptForName state.LastCreatedDirectory)
         | SearchResults _ -> stay state
     | NameEntered name ->
         match (activePanel state).Path with
@@ -343,7 +343,8 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         match target.Path, transferSource fs target with
         | _, None -> stay state
         | InArchive(archive, _), _
-        | SearchResults _, Some(FromArchive(archive, _)) -> changing fs state [ archive ] (inspected Permanently)
+        | SearchResults _, Some(FromArchive(archive, _)) ->
+            refuseUnchangeable fs state [ archive ] (inspected Permanently)
         | _, Some(FromPlaces _) -> request state (inspected (forGood mode))
         | _ -> request state (inspected mode)
     | DeleteScopeLoaded(scope, mode) ->
@@ -362,19 +363,20 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         match transferSource fs (activePanel state), transferTarget state with
         | None, _
         | _, None -> stay state
-        | Some source, Some target -> changing fs state (targetArchives target) (CopyPlaces(places source, target))
+        | Some source, Some target ->
+            refuseUnchangeable fs state (targetArchives target) (CopyPlaces(places source, target))
     | CopyFinished results -> finishTransfer fs results state |> applyBatch state
     | MoveRequested ->
         match transferSource fs (activePanel state), transferTarget state with
         | None, _
         | _, None -> stay state
         | Some(FromArchive _ as group), Some(ToDirectory target) ->
-            changing fs state (sourceArchives [ group ]) (MovePlaces([ group ], ToDirectory target))
+            refuseUnchangeable fs state (sourceArchives [ group ]) (MovePlaces([ group ], ToDirectory target))
         | Some _, Some(ToDirectory target) -> request state (PromptForTarget target)
         | Some source, Some target ->
             let groups = places source
 
-            changing fs state (targetArchives target @ sourceArchives groups) (MovePlaces(groups, target))
+            refuseUnchangeable fs state (targetArchives target @ sourceArchives groups) (MovePlaces(groups, target))
     | TargetEntered text ->
         let panel = activePanel state
 
@@ -387,7 +389,8 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | "", _, _
         | _, None, _
         | _, _, None -> stay state
-        | trimmed, _, _ when showsResults panel && FileSystemPath.isBareName fs trimmed -> refusing state Renaming
+        | trimmed, _, _ when showsResults panel && FileSystemPath.isBareName fs trimmed ->
+            reportResultsRefusal state Renaming
         | trimmed, Some(FromDisk [ single ]), _ when FileSystemPath.isBareName fs trimmed ->
             request state (RenameTarget(single, EntryName.create trimmed))
         | _, Some(FromArchive _), _ -> stay state
@@ -520,7 +523,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | Error(ElevationDeclined _) -> stay state
         | Error error -> request state (ReportLaunchError error)
         | Ok() -> stay state
-    | OpenWithRequested -> openedWith fs state
+    | OpenWithRequested -> openWithHandler fs state
     | HandlerChosen(path, choice) -> chosen fs state path choice
     | ElevatedRunRequested -> runElevated fs state
     | RootRequested side -> request state (PromptForRoot side)
@@ -531,8 +534,8 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | TabOpened -> openTab fs state |> saving fs
     | TabClosed -> closeTab state |> saving fs
     | TabsRequested -> state.Tabs |> ShowTabs |> request state
-    | TabSwitched position -> switchTab position state |> standingOn fs
-    | TabCycled step -> cycleTab step state |> standingOn fs
+    | TabSwitched position -> switchTab position state |> rereadAndSave fs
+    | TabCycled step -> cycleTab step state |> rereadAndSave fs
     | SessionSaveRequested -> state |> saving fs
     | QuitRequested ->
         { State = state
@@ -571,7 +574,7 @@ let private resultsRefusal (state: AppState) msg =
 let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     let result =
         match resultsRefusal state msg with
-        | Some refusal -> refusing state refusal
+        | Some refusal -> reportResultsRefusal state refusal
         | None -> transition fs msg state
 
     result |> watching state

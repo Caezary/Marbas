@@ -26,7 +26,7 @@ type Index(source: FileWindow.Source) =
         else
             complete <- true
 
-    let scan () =
+    let scanChunk () =
         let chunk = source.Read(scanned, ChunkLength)
 
         if chunk.Length < feed.Length then
@@ -52,9 +52,9 @@ type Index(source: FileWindow.Source) =
             scanned <- scanned + int64 chunk.Length
             complete <- scanned >= source.Length
 
-    let scanThrough line =
+    let scanUntilKnown line =
         while not complete && starts.Count <= line do
-            scan ()
+            scanChunk ()
 
     let withoutReturn (line: string) =
         if line.EndsWith '\r' then line[.. line.Length - 2] else line
@@ -65,10 +65,10 @@ type Index(source: FileWindow.Source) =
 
     member _.ScanAll() =
         while not complete do
-            scan ()
+            scanChunk ()
 
     member _.Start(line: int) =
-        scanThrough line
+        scanUntilKnown line
 
         if line < starts.Count then Some starts[line] else None
 
@@ -97,7 +97,7 @@ type Index(source: FileWindow.Source) =
 
     member _.LineAt(offset: int64) =
         while not complete && starts[starts.Count - 1] < offset do
-            scan ()
+            scanChunk ()
 
         if starts.Count = 0 then
             0

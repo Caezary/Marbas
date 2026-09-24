@@ -26,7 +26,7 @@ let private mockFs () =
         fs
         Operations.unattended
         { Path = archive
-          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Format = ArchiveFormat.tryCreate Zip |> Expect.some
           Compression = Normal
           Password = None }
         [ fp (at "work/notes.txt"); fp (at "work/docs") ]
@@ -144,7 +144,7 @@ let private twoArchives () =
         fs
         Operations.unattended
         { Path = other
-          Format = ArchiveFormat.ofKind Zip |> Expect.some
+          Format = ArchiveFormat.tryCreate Zip |> Expect.some
           Compression = Normal
           Password = None }
         [ fp (at "start/loose.txt") ]

@@ -14,7 +14,7 @@ and rar are read.
 `Tar`, `TarGz`, `TarBz2`, `TarXz`, `SevenZip`, `Rar` — and
 `ArchiveKind.extension` owns the suffix each one answers to. `ArchiveFormat` is
 that set narrowed to the kinds that can be written: its case is private and
-`ArchiveFormat.ofKind` answers `None` for a kind whose capabilities say it
+`ArchiveFormat.tryCreate` answers `None` for a kind whose capabilities say it
 cannot be created, so a rar target cannot be built even by mistake.
 `ArchiveFormat.all` is the projection itself, in the order the kinds are
 declared, and it is what the pack dialog offers; `ArchiveFormat.initial` is its
@@ -304,14 +304,14 @@ and `isEncrypted` are the two questions anything asks of it.
 last four archives it was asked about, keyed by path, length and last write
 time. A panel standing in an archive lists a level by filtering that list, so
 walking from level to level reads the file once instead of once per `Enter`;
-`Archive.needsPassword` and `SearchListing.heldIn` are answered from the same
+`Archive.needsPassword` and `SearchListing.indexedPrefixes` are answered from the same
 list, and so are the levels `DirectoryMeasure` reports. The cache hangs off the
 `IFileSystem` it was read through — a `ConditionalWeakTable` — so the
 application has one and every test has its own, and a file written again under
 the same name is read again because its stamp no longer matches. Measured on a
 zip of 20,000 entries over a mock file system: reading the index costs 80–100
 ms, and a level change after it costs 4–8 ms, `needsPassword` about 1 ms and
-`heldIn` about 0.2 ms.
+`indexedPrefixes` about 0.2 ms.
 
 **A name no readable kind owns is refused before the file is opened.** `read`
 asks `ArchiveKind.recognise` and the capability table first, so `notes.txt` and
@@ -648,7 +648,7 @@ to expand it.
 **`Shift+F2` and `F5` are the same machinery with different targets.**
 `Shell.planFor` asks the password once and then the overwrite question, and
 answers an `ExtractPlan` or `None`; `Shift+F2` feeds it the archive's top-level
-entries, `F5` feeds it the panel's targets. `approvedEntries` is where the
+entries, `F5` feeds it the panel's targets. `entriesApprovedForDirectory` is where the
 five-answer question is asked for both: each `ArchivePath` is spelled
 `…\backup.zip\docs\inner.txt`, the spelled paths go through the same
 `Operations.approve` that copying and moving use — which computes the landing
@@ -678,7 +678,7 @@ the very stream `IFileSystem` hands out, with `MemoryArchiveStorage` in its
 default direct mode, so the archive on disk is edited where it lies and the
 whole feature is tested on `MockFileSystem` like everything else. Adding an
 entry to a large archive therefore costs the entry, not the archive. `Archive`
-wraps it in one private `changing` helper that opens the file, hands the
+wraps it in one private `updatingZip` helper that opens the file, hands the
 `ZipFile` to the work, and then either commits or aborts; nothing is written
 until the commit, which is what makes cancelling free.
 
@@ -687,13 +687,13 @@ level — reusing the very `Sink` and tree walk `Archive.write` packs with, so a
 directory brings everything below it and the entry names are relative to the
 source's own parent. `Archive.removeEntries` drops every entry under each
 target, so removing a directory takes its tree. `Archive.makeEntryDirectory`
-adds one directory entry. `Archive.moveIn` and `Archive.moveOut` are the two
-compositions: in is add-then-delete-the-source, out is extract-then-remove-the-
-entry. All of them answer one `ItemResult` per target the way copying does, and
+adds one directory entry. `Archive.moveFromDisk` and `Archive.moveToDirectory` are the two
+compositions: the first is add-then-delete-the-source, the second is
+extract-then-remove-the-entry. All of them answer one `ItemResult` per target the way copying does, and
 `Esc` stops them.
 
-**A move drops one side only once the other side has it.** `moveIn` deletes a
-source only for the results that came back `Ok`, and `moveOut` removes an entry
+**A move drops one side only once the other side has it.** `moveFromDisk` deletes a
+source only for the results that came back `Ok`, and `moveToDirectory` removes an entry
 only for the targets that actually landed on disk; a failure therefore loses
 nothing — the entry is in exactly one of the two places, never neither.
 Matching a removal failure back to the entry it belongs to goes by name, which
@@ -719,7 +719,7 @@ clear — and that question needs the file read, so `Shell` asks
 whoever calls them.
 
 **The overwrite question is the same five answers, asked about a place inside
-an archive.** `Operations.approveInto` is the standing-answer walk lifted out of
+an archive.** `Operations.approveLandings` is the standing-answer walk lifted out of
 `Operations.approve`: it takes a function from a source to its landing place
 and a function that says whether that landing place is occupied, so the disk
 version passes `FileSystemPath.kind` and the archive version passes membership
@@ -737,7 +737,7 @@ silently does nothing.
 ## Crossing between two archives
 
 **An entry crosses through the workspace, because neither library hands one
-archive to another.** `Archive.copyAcross` takes a scratch directory out of the
+archive to another.** `Archive.copyToArchive` takes a scratch directory out of the
 session workspace, extracts the targets into it with the very
 `Archive.extract` that `F5` out of an archive uses, adds what arrived to the
 other archive with the very `Archive.addEntries` that `F5` into one uses, and
@@ -747,8 +747,8 @@ the crossing is per-kind: a zip entry lands in a tar.gz and a 7z entry in a zip,
 because both halves were already written against the capability table.
 
 **A target that did not arrive is never dropped from the source.**
-`Archive.moveAcross` is `copyAcross` followed by the same `droppingArrived`
-that `moveOut` uses, so an entry is removed from the archive it came from only
+`Archive.moveToArchive` is `copyToArchive` followed by the same `droppingArrived`
+that `moveToDirectory` uses, so an entry is removed from the archive it came from only
 once the other archive holds it — the rule every move in Marbas follows. What
 failed on the way out keeps that failure; what failed on the way in replaces
 it, which is what `carryingOver` is for: the two halves answer one `ItemResult`
@@ -758,7 +758,7 @@ outcomes.
 
 **Both archives are gated, and each for its own reason.** `F5` needs only the
 *target* to be changeable — copying out of a rar into a zip is fine. `F6` needs
-the source as well, since it removes from it, which is why `Update.changing`
+the source as well, since it removes from it, which is why `Update.refuseUnchangeable`
 now takes a list of archives and names the first that refuses. `Shell` asks the
 source archive for its password once before the batch and puts the target
 level's own names through the same five-answer overwrite question, spelled
@@ -798,7 +798,7 @@ the half-written file, marks are kept and every source answers, exactly as zip
 and tar.gz do — none of that is per-format code.
 
 **Everything but zip is changed by being written again.** A zip has an update
-API and is edited where it lies; nothing else here does, so `Archive.rewriting`
+API and is edited where it lies; nothing else here does, so `Archive.rewritingWhole`
 opens a second archive beside the first (`<name>.marbas-new`), copies over every
 entry that is not being dropped, writes the new ones through the same `Sink` the
 packing walk uses, and moves the result over the original. Committing is that
@@ -829,7 +829,7 @@ from a file the user owns, and another Marbas may be writing it this minute, so
 it is stepped over rather than deleted.
 
 **One rewriter serves every writable kind, because nothing in it is per-format
-but the writer it opens.** `rewriting` takes the kind, asks `ArchiveFormat` for
+but the writer it opens.** `rewritingWhole` takes the kind, asks `ArchiveFormat` for
 it and hands the whole job to `intoArchive` — the very function packing goes
 through. That is what makes tar.gz changeable: it was never the gzip stream that
 stood in the way, only the absence of a rewriter, and 7z had already proved the
@@ -843,12 +843,12 @@ that opens the content — so the packing walk hands it a file on disk and the
 rewriter hands it an entry buffered out of the old archive, and neither writer
 knows the difference. `Sink.AddDirectory` takes the time the same way, which is
 how a rewritten archive keeps directory times a fresh one has none of. The keys
-a sink is given are the archive's own; `Archive.at` derives the level-scoped view
+a sink is given are the archive's own; `Archive.sinkAtLevel` derives the level-scoped view
 that `F5` and `F7` write through, so one writer serves both the survivors,
 copied at their own keys, and the additions, prefixed with the level.
 
 **Both changers answer the same shape, so nothing above them knows which one
-ran.** `Archive.changeWith` takes the entries to drop, the level to write at
+ran.** `Archive.withArchiveOpenForChange` takes the entries to drop, the level to write at
 and a piece of work, and hands that work what the archive holds and a `Sink` to
 write into; `addEntries`, `removeEntries` and `makeEntryDirectory` are written
 once against it. The kind picks the changer — zip updates, everything else

@@ -53,12 +53,12 @@ let private jumpDirection (key: Key) =
     elif key = Key.CursorLeft then Some Upward
     else None
 
-let private overPage side (list: ListView) (key: Key) =
-    let at direction = { Side = side; Index = pageTarget list direction }
+let private pageMessage side (list: ListView) (key: Key) =
+    let pageCursor direction = { Side = side; Index = pageTarget list direction }
 
     match KeyMap.selectionPageDirection key with
-    | Some direction -> Some(SelectionToggledTo(at direction))
-    | None -> jumpDirection key |> Option.map (at >> CursorMoved)
+    | Some direction -> Some(SelectionToggledTo(pageCursor direction))
+    | None -> jumpDirection key |> Option.map (pageCursor >> CursorMoved)
 
 let private command (host: Host) side (list: ListView) (key: Key) =
     match KeyMap.messageFor key with
@@ -66,7 +66,7 @@ let private command (host: Host) side (list: ListView) (key: Key) =
         host.Dispatch message
         true
     | None ->
-        match overPage side list key with
+        match pageMessage side list key with
         | Some message ->
             if count list > 0 then
                 host.Dispatch message
@@ -95,13 +95,13 @@ let private handle (host: Host) side (list: ListView) (key: Key) =
 
 let attach (host: Host) (side: PanelSide) (view: View) =
     let list = FilePanel.listView view
-    let cursorAt index = { Side = side; Index = index }
+    let panelCursor index = { Side = side; Index = index }
 
     list.FrameChanged.Add(fun _ -> host.Refresh())
 
     list.ValueChanged.Add(fun args ->
         if not (host.IsRendering()) then
-            host.Dispatch(CursorMoved(cursorAt (args.NewValue.GetValueOrDefault 0))))
+            host.Dispatch(CursorMoved(panelCursor (args.NewValue.GetValueOrDefault 0))))
 
     view.HasFocusChanged.Add(fun _ ->
         if view.HasFocus then

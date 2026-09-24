@@ -36,7 +36,7 @@ let private FriendlyName = "FriendlyAppName"
 [<Literal>]
 let private IndirectString = '@'
 
-let private opened (root: RegistryKey) (path: string) =
+let private subKey (root: RegistryKey) (path: string) =
     try
         root.OpenSubKey path |> Option.ofObj
     with _ ->
@@ -48,7 +48,7 @@ let private textOf (key: RegistryKey) (name: string) =
     | _ -> None
 
 let private reading root path pick =
-    opened root path
+    subKey root path
     |> Option.map (fun key ->
         use key = key
         pick key)
@@ -73,10 +73,10 @@ let private commandUnder root path =
     |> Option.map Environment.ExpandEnvironmentVariables
     |> Option.bind ProgramCommand.programOf
 
-let private ofProgId (progId: string) =
+let private commandOfProgId (progId: string) =
     commandUnder Registry.ClassesRoot $@"{progId}\{OpenCommand}"
 
-let private ofApplication (application: string) =
+let private commandOfApplication (application: string) =
     commandUnder Registry.ClassesRoot $@"{Applications}\{application}\{OpenCommand}"
 
 let private described (program: ProgramPath) =
@@ -115,8 +115,8 @@ let read (name: EntryName) =
         try
             let spelled = FileExtension.value extension
 
-            (progIds spelled |> List.map ofProgId)
-            @ (applications spelled |> List.map ofApplication)
+            (progIds spelled |> List.map commandOfProgId)
+            @ (applications spelled |> List.map commandOfApplication)
             |> List.choose id
             |> List.choose (fun program -> Handler.tryCreate (friendly program) (Some program))
             |> Handler.distinct

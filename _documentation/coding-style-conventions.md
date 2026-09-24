@@ -33,8 +33,9 @@ schedules the fix. A rule here beats a habit found in an older file.
 
 | Write | Not | Why |
 |-------|-----|-----|
-| `strictlyBelow`, `atOrBelow` | `below`, `under` | a preposition alone hides whether the boundary is strict |
-| `pathAfterTarget` | `beneath` | say what is compared, not where it sits |
+| `strictlyUnder`, `atOrUnder` | `below`, `under` | a preposition alone hides whether the boundary is strict |
+| `segmentsFromTargetName` | `beneath` | say what is compared, not where it sits |
+| `moveFromDisk`, `moveToArchive` | `moveIn`, `moveAcross` | a direction names both ends |
 | `refuseUnchangeable` | `guarding` | a gate is named for what it refuses |
 | `makeDirectory fs state name` | `makeDirectory'` | no primed aliases; pass the argument |
 | `cursorEntry` | `getCursorEntry` | a function is named for what it answers |
@@ -42,6 +43,8 @@ schedules the fix. A rule here beats a habit found in an older file.
 
 - [ ] A reader should not have to open the body to learn the rule.
 - [ ] Two helpers in one module never differ only by a prime or a preposition.
+      [Names that tell the boundary](DEVELOPMENT.md#names-that-tell-the-boundary)
+      works the rules through the renames of P15.20.
 - [ ] Module-level helpers are `private` unless a test or another module needs
       them.
 - [ ] English everywhere in the repository. Conversation with the user is in

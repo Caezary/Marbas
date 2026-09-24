@@ -42,7 +42,7 @@ let private kindOf (info: IFileSystemInfo) =
     else
         File
 
-let entryOf (info: IFileSystemInfo) =
+let entryFromInfo (info: IFileSystemInfo) =
     let name = EntryName.create info.Name
 
     match kindOf info with
@@ -54,7 +54,7 @@ let entryOf (info: IFileSystemInfo) =
           Modified = DateTimeOffset info.LastWriteTime
           Visibility = EntryVisibility.classify name info.Attributes
           Executability = NotExecutable
-          LinkTarget = FileSystemPath.linkTargetOf info }
+          LinkTarget = FileSystemPath.linkTargetOfInfo info }
     | File ->
         { Name = name
           Kind = File
@@ -63,31 +63,31 @@ let entryOf (info: IFileSystemInfo) =
           Modified = DateTimeOffset info.LastWriteTime
           Visibility = EntryVisibility.classify name info.Attributes
           Executability = Executability.classify name info.UnixFileMode
-          LinkTarget = FileSystemPath.linkTargetOf info }
+          LinkTarget = FileSystemPath.linkTargetOfInfo info }
 
 type Child =
     { Path: FileSystemPath
       Entry: Entry }
 
-let private childOf (info: IFileSystemInfo) =
+let private childFromInfo (info: IFileSystemInfo) =
     { Path = FileSystemPath.create info.FullName
-      Entry = entryOf info }
+      Entry = entryFromInfo info }
 
 let children (fs: IFileSystem) (path: FileSystemPath) =
     fs.DirectoryInfo.New(FileSystemPath.value path).EnumerateFileSystemInfos()
-    |> Seq.map childOf
+    |> Seq.map childFromInfo
     |> List.ofSeq
 
-let entryAt (fs: IFileSystem) (path: FileSystemPath) =
+let existingEntry (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
     let file = fs.FileInfo.New raw
 
     if file.Exists then
-        Some(entryOf file)
+        Some(entryFromInfo file)
     else
         let directory = fs.DirectoryInfo.New raw
 
-        if directory.Exists then Some(entryOf directory) else None
+        if directory.Exists then Some(entryFromInfo directory) else None
 
 let read (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingError> =
     try
@@ -96,7 +96,7 @@ let read (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingEr
         if not directory.Exists then
             Error(DirectoryNotFound path)
         else
-            Ok(directory.EnumerateFileSystemInfos() |> Seq.map entryOf |> List.ofSeq)
+            Ok(directory.EnumerateFileSystemInfos() |> Seq.map entryFromInfo |> List.ofSeq)
     with ex ->
         Error(mapException path ex)
 

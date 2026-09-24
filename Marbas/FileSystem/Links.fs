@@ -41,7 +41,7 @@ module Links =
     let private onOneVolume platform fs (target: FileSystemPath) (location: FileSystemPath) =
         FileSystemPath.sameEntry platform (volumeOf platform fs target) (volumeOf platform fs location)
 
-    let private refusalFor platform fs (request: LinkRequest) target =
+    let private refusalForAbsolute platform fs (request: LinkRequest) target =
         match request.Kind, FileSystemPath.kind fs target with
         | Symbolic, _ -> None
         | Hard, DirectoryEntry -> Some HardLinkToDirectory
@@ -51,7 +51,7 @@ module Links =
         | Junction, _ -> None
 
     let refusal (platform: Platform) (fs: IFileSystem) (request: LinkRequest) =
-        refusalFor platform fs request (absolute fs request)
+        refusalForAbsolute platform fs request (absolute fs request)
 
     let private makeSymbolic (fs: IFileSystem) (location: FileSystemPath) (target: FileSystemPath) targetKind =
         let rawLocation = FileSystemPath.value location
@@ -84,7 +84,7 @@ module Links =
         result {
             do! Result.requireTrue (TargetExists location) (FileSystemPath.kind fs location = NoEntry)
             do! Result.requireFalse (SourceNotFound target) (targetKind = NoEntry)
-            do! refusalFor platform fs request target |> refusing location
+            do! refusalForAbsolute platform fs request target |> refusing location
             return! make native fs request target targetKind
         }
 
@@ -96,7 +96,7 @@ module Links =
               Target = source
               Location = location }
 
-        let inside source =
+        let linkInDirectory source =
             let location = FileSystemPath.name fs source |> EntryName.value |> FileSystemPath.combine fs typed
             linking location source
 
@@ -104,7 +104,7 @@ module Links =
         | "", _
         | _, [] -> []
         | _, [ source ] when FileSystemPath.kind fs typed <> DirectoryEntry -> [ linking typed source ]
-        | _ -> sources |> List.map inside
+        | _ -> sources |> List.map linkInDirectory
 
     let sharedRefusal (refuse: LinkRequest -> LinkRefusal option) (requests: LinkRequest list) =
         match requests |> List.map refuse with

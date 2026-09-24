@@ -12,9 +12,9 @@ type ResultRow =
     | GroupHeader of PanelLocation
     | Hit of FindHit
 
-let following (opened: PanelLocation option) (hits: FindHit seq) =
+let following (lastLocation: PanelLocation option) (hits: FindHit seq) =
     let rows = ResizeArray<ResultRow>()
-    let mutable standing = opened
+    let mutable standing = lastLocation
 
     for hit in hits do
         if standing <> Some hit.Location then

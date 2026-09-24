@@ -107,10 +107,10 @@ Four lines have no test and cannot get one from here: the `with ex ->` in
 behind a directory enumeration that throws, and `MockFileSystem` has no way to
 make one throw — a file can be locked or made read-only, a directory cannot.
 What each of them maps is unit-tested directly through `mapException`, so the
-gap is the plumbing, not the rule. The `with _ ->` in `FileSystemPath.linkTargetOf`
+gap is the plumbing, not the rule. The `with _ ->` in `FileSystemPath.linkTargetOfInfo`
 is the same kind of line: it keeps one reparse point the
 system will not read from failing the whole listing, and the mock has no such
-entry. `AppState.navigateUp`'s `None` branch is
+entry. `AppState.navigateToParent`'s `None` branch is
 unreachable by construction: only `..` leads there and a root directory is never
 listed with one.
 

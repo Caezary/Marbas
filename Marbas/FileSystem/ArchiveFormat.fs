@@ -39,7 +39,7 @@ module ArchiveFormat =
 
     let kind (ArchiveFormat kind) = kind
 
-    let ofKind wanted = all |> List.tryFind (kind >> (=) wanted)
+    let tryCreate wanted = all |> List.tryFind (kind >> (=) wanted)
 
     let initial = List.head all
 

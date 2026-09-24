@@ -50,7 +50,7 @@ let private stored: Settings =
 
 [<Fact>]
 let ``a state built from settings gives each panel its own path, sort and hidden`` () =
-    let state = fromSettings stored
+    let state = restore stored
 
     Assert.Equal(OnDisk(fp (at "backup")), state.Left.Path)
     Assert.Equal(SortOrder.create BySize Descending, state.Left.Sort)
@@ -68,9 +68,9 @@ let ``a state built from settings has one tab for every stored tab`` () =
             Active = Right }
 
     let state =
-        fromSettings
+        restore
             { stored with
-                Tabs = Zipper.ofNonEmpty storedTab [ second ] |> Zipper.at 1 }
+                Tabs = Zipper.ofNonEmpty storedTab [ second ] |> Zipper.refocus 1 }
 
     Assert.Equal(2, Zipper.count state.Tabs)
     Assert.Equal(1, Zipper.position state.Tabs)
@@ -102,14 +102,14 @@ let ``the settings of a state name every tab it holds`` () =
 let ``an initial state is the default settings for the start path`` () =
     let state = create (fp (at "start"))
 
-    Assert.Equal(fromSettings (Settings.forPath (fp (at "start"))), state)
+    Assert.Equal(restore (Settings.forPath (fp (at "start"))), state)
 
 [<Fact>]
 let ``the settings of a state are what its panels are set to`` () =
     let fs = mockFs ()
 
     let state =
-        fromSettings stored
+        restore stored
         |> loadPanel fs Left (fp (at "backup"))
         |> Expect.ok
         |> loadPanel fs Right (fp (at "start"))
@@ -158,13 +158,13 @@ let ``a panel inside an archive says the directory holding it in the settings`` 
 
 [<Fact>]
 let ``a state built from settings remembers the name the last directory was given`` () =
-    let state = fromSettings stored
+    let state = restore stored
 
     Assert.Equal(Some(en "work"), state.LastCreatedDirectory)
 
 [<Fact>]
 let ``a state built from settings carries the programs it names`` () =
-    let state = fromSettings stored
+    let state = restore stored
 
     Assert.Equal(stored.Programs, state.Programs)
 
@@ -180,7 +180,7 @@ let ``programs that have been changed go into the settings`` () =
 
 [<Fact>]
 let ``the editor a name is opened with comes from the state`` () =
-    let state = fromSettings stored
+    let state = restore stored
 
     Assert.Equal(ProgramPath.tryCreate "notepad.exe", programFor ForEditing (en "notes.txt") state)
     Assert.Equal(ProgramPath.tryCreate "code.exe", programFor ForEditing (en "Program.fs") state)
@@ -223,7 +223,7 @@ let ``a tab that was never read keeps the cursor the file remembered`` () =
                     [ { storedTab with
                           TabSettings.Left.Cursor = Some(en "docs") } ] }
 
-    let written = fromSettings remembered |> settings fs
+    let written = restore remembered |> settings fs
 
     Assert.Equal<EntryName option list>(
         [ Some(en "notes.txt"); Some(en "docs") ],
@@ -235,7 +235,7 @@ let ``a panel opens on the entry the session remembered`` () =
     let fs = mockFs ()
 
     let state =
-        fromSettings
+        restore
             { stored with
                 Tabs =
                     stored.Tabs
@@ -252,7 +252,7 @@ let ``a remembered entry that is gone leaves the cursor at the top`` () =
     let fs = mockFs ()
 
     let state =
-        fromSettings
+        restore
             { stored with
                 Tabs =
                     stored.Tabs
@@ -269,7 +269,7 @@ let ``once a panel has been read it remembers its own cursor`` () =
     let fs = mockFs ()
 
     let state =
-        fromSettings
+        restore
             { stored with
                 Tabs =
                     stored.Tabs

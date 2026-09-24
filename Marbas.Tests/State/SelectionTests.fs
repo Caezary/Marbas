@@ -145,7 +145,7 @@ let ``the cursor stops at the first entry`` () =
 let ``marking through an entry stops short of it, the way a single step does`` () =
     let _, state = started ()
 
-    let updated = state |> setCursor Left 1 |> toggleSelectionThrough Left 3
+    let updated = state |> setCursor Left 1 |> toggleSelectionShortOf Left 3
 
     Assert.Equal<string list>([ "docs"; "notes.txt" ], selectedNames updated.Left)
     Assert.Equal(3, updated.Left.Cursor)
@@ -154,7 +154,7 @@ let ``marking through an entry stops short of it, the way a single step does`` (
 let ``marking back through an entry stops short of it too`` () =
     let _, state = started ()
 
-    let updated = state |> setCursor Left 3 |> toggleSelectionThrough Left 1
+    let updated = state |> setCursor Left 3 |> toggleSelectionShortOf Left 1
 
     Assert.Equal<string list>([ "notes.txt"; "readme.txt" ], selectedNames updated.Left)
     Assert.Equal(1, updated.Left.Cursor)
@@ -163,7 +163,7 @@ let ``marking back through an entry stops short of it too`` () =
 let ``a run never takes the parent entry it passes over`` () =
     let _, state = started ()
 
-    let updated = toggleSelectionThrough Left 3 state
+    let updated = toggleSelectionShortOf Left 3 state
 
     Assert.Equal<string list>([ "docs"; "notes.txt" ], selectedNames updated.Left)
 
@@ -171,7 +171,7 @@ let ``a run never takes the parent entry it passes over`` () =
 let ``a run that cannot move on marks the entry it stands on`` () =
     let _, state = started ()
 
-    let updated = state |> setCursor Left 3 |> toggleSelectionThrough Left 3
+    let updated = state |> setCursor Left 3 |> toggleSelectionShortOf Left 3
 
     Assert.Equal<string list>([ "readme.txt" ], selectedNames updated.Left)
     Assert.Equal(3, updated.Left.Cursor)
@@ -182,7 +182,7 @@ let ``one run after another marks page by page and never gives the last one back
     let pageAfterPage = [ 4; 9; 11; 11 ]
 
     let updated =
-        pageAfterPage |> List.fold (fun state target -> toggleSelectionThrough Left target state) state
+        pageAfterPage |> List.fold (fun state target -> toggleSelectionShortOf Left target state) state
 
     Assert.Equal(11, (selectedEntries updated.Left).Length)
 
@@ -195,7 +195,7 @@ let ``an unmarked entry under the cursor marks the whole run, whatever it holds`
         |> setCursor Left 3
         |> toggleSelectionMoving Downward Left
         |> setCursor Left 1
-        |> toggleSelectionThrough Left 3
+        |> toggleSelectionShortOf Left 3
 
     Assert.Equal<string list>([ "docs"; "notes.txt"; "readme.txt" ], selectedNames updated.Left)
 
@@ -208,7 +208,7 @@ let ``a marked entry under the cursor clears the whole run, whatever it holds`` 
         |> setCursor Left 2
         |> toggleSelectionMoving Downward Left
         |> setCursor Left 2
-        |> toggleSelectionThrough Left 3
+        |> toggleSelectionShortOf Left 3
 
     Assert.Empty(selectedEntries updated.Left)
     Assert.Equal(3, updated.Left.Cursor)
@@ -217,7 +217,7 @@ let ``a marked entry under the cursor clears the whole run, whatever it holds`` 
 let ``a run that reaches past the last entry stops at it`` () =
     let _, state = started ()
 
-    let updated = state |> setCursor Left 2 |> toggleSelectionThrough Left 9
+    let updated = state |> setCursor Left 2 |> toggleSelectionShortOf Left 9
 
     Assert.Equal<string list>([ "notes.txt"; "readme.txt" ], selectedNames updated.Left)
     Assert.Equal(3, updated.Left.Cursor)

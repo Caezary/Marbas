@@ -115,6 +115,6 @@ let send (fs: IFileSystem) (trash: FileSystemPath) (now: unit -> DateTimeOffset)
 
             return!
                 FileSystemPath.combine fs (storedFiles fs trash) name
-                |> moveTo fs unattended source
+                |> moveToPath fs unattended source
                 |> Result.teeError (fun _ -> discard fs info)
         }

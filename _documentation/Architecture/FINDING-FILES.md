@@ -43,7 +43,7 @@ the first 8 KiB read a second time. It is now handed to the scan as the buffer
 it already is, minus the byte order mark. That is one read fewer per file, and
 it is what lets the same code search an entry inside an archive, whose stream
 only goes forward: `FileSearch` opens the entry through `ArchiveItem.OpenContent`
-and gives `ContentMatch.inStream` the reader's own stream, so a text found in
+and gives `ContentMatch.searchStream` the reader's own stream, so a text found in
 the first buffer of a 4 GB entry stops the search there. It used to copy every
 entry it visited into memory first.
 
@@ -298,7 +298,7 @@ and a file written into the *other* panel's directory costs it nothing. It used
 to cost a `File.Exists` per hit and a full index read per archive, on the UI
 thread, every time: 265 ms for 50,000 hits over a mock file system, and a real
 disk charges more for a stat than a mock does. An archive whose index cannot be read at all is not an answer:
-`SearchListing.heldIn` hands the `ArchiveError` back, the listing fails as
+`SearchListing.indexedPrefixes` hands the `ArchiveError` back, the listing fails as
 `ArchiveUnreadable`, and the panel says so. Keeping those hits would show them
 as verified when nothing verified them, and the damage would surface later
 under a different message from whichever operation tripped over it.

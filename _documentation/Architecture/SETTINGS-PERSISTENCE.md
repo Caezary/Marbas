@@ -4,9 +4,9 @@
 exactly what survives a restart — path, sort order and hidden toggle, per panel,
 and the name the last directory made was given — in the panel's own domain
 types, so nothing has to be converted twice.
-`AppState.fromSettings` builds a state from one and `AppState.settings` reads one
+`AppState.restore` builds a state from one and `AppState.settings` reads one
 back, which makes `AppState.create path` simply
-`fromSettings (Settings.forPath path)`. The first-start defaults therefore live
+`restore (Settings.forPath path)`. The first-start defaults therefore live
 in one place, `Settings`, rather than in the state constructor.
 
 **Settings go through `IFileSystem`, not through a port of their own.** The plan

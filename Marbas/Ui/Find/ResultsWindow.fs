@@ -39,7 +39,7 @@ type ResultsView(fs: IFileSystem, run: SearchRun) =
 
     let found = ResizeArray<FindHit>()
     let shown = ResizeArray<ResultRow.ResultRow>()
-    let mutable opened: PanelLocation option = None
+    let mutable lastLocation: PanelLocation option = None
     let mutable counts = nothing
     let mutable directory = ""
     let mutable ended: FindOutcome option = None
@@ -50,8 +50,8 @@ type ResultsView(fs: IFileSystem, run: SearchRun) =
         | Walk _ -> None
         | Reopen(results, gone) -> Some(results, gone)
 
-    let openedBy (hits: FindHit list) =
-        hits |> List.tryLast |> Option.map _.Location |> Option.orElse opened
+    let lastLocationAfter (hits: FindHit list) =
+        hits |> List.tryLast |> Option.map _.Location |> Option.orElse lastLocation
 
     do
         match run with
@@ -59,7 +59,7 @@ type ResultsView(fs: IFileSystem, run: SearchRun) =
         | Reopen(results, _) ->
             found.AddRange results.Hits
             shown.AddRange(ResultRow.following None results.Hits)
-            opened <- openedBy results.Hits
+            lastLocation <- lastLocationAfter results.Hits
             counts <- countsOf results.Hits
             ended <- Some results.Outcome
 
@@ -84,11 +84,11 @@ type ResultsView(fs: IFileSystem, run: SearchRun) =
 
     member _.Arrived(reports: FindReport list) =
         let hits = reports |> List.map _.Hit
-        let rows = ResultRow.following opened hits
+        let rows = ResultRow.following lastLocation hits
 
         found.AddRange hits
         shown.AddRange rows
-        opened <- openedBy hits
+        lastLocation <- lastLocationAfter hits
         reports |> List.tryLast |> Option.iter (fun report -> counts <- report.Counts)
 
         rows

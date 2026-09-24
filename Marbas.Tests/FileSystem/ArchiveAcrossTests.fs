@@ -29,7 +29,7 @@ let private packing path format sources (fs: MockFileSystem) =
         fs
         Operations.unattended
         { Path = fp path
-          Format = ArchiveFormat.ofKind format |> Expect.some
+          Format = ArchiveFormat.tryCreate format |> Expect.some
           Compression = Normal
           Password = None }
         sources
@@ -70,7 +70,7 @@ let ``an entry copied between archives lands in the other and stays in its own``
     let fs = pair ()
 
     let results =
-        Archive.copyAcross fs Operations.unattended (request source) [ inside "notes.txt" ] target ArchivePath.root
+        Archive.copyToArchive fs Operations.unattended (request source) [ inside "notes.txt" ] target ArchivePath.root
         |> Expect.ok
 
     Assert.Equal<string list>([ "kept.txt"; "notes.txt" ], names fs target ArchivePath.root)
@@ -81,7 +81,7 @@ let ``an entry copied between archives lands in the other and stays in its own``
 let ``a directory copied between archives brings the tree below it`` () =
     let fs = pair ()
 
-    Archive.copyAcross fs Operations.unattended (request source) [ inside "docs" ] target ArchivePath.root
+    Archive.copyToArchive fs Operations.unattended (request source) [ inside "docs" ] target ArchivePath.root
     |> Expect.ok
     |> ignore
 
@@ -94,7 +94,7 @@ let ``an entry copied into a level below the top lands there`` () =
     let fs = both Zip Zip
     Archive.makeEntryDirectory fs target ArchivePath.root (EntryName.create "held") |> Expect.ok
 
-    Archive.copyAcross fs Operations.unattended (request source) [ inside "notes.txt" ] target (inside "held")
+    Archive.copyToArchive fs Operations.unattended (request source) [ inside "notes.txt" ] target (inside "held")
     |> Expect.ok
     |> ignore
 
@@ -119,7 +119,7 @@ let ``an entry crosses between kinds that are not the same`` extension =
     packing (at "start/from.zip") Zip [ fp (at "work/notes.txt") ] fs |> ignore
     packing (at $"start/into.{extension}") intoKind [ fp (at "other/kept.txt") ] fs |> ignore
 
-    Archive.copyAcross fs Operations.unattended (request source) [ inside "notes.txt" ] into ArchivePath.root
+    Archive.copyToArchive fs Operations.unattended (request source) [ inside "notes.txt" ] into ArchivePath.root
     |> Expect.ok
     |> ignore
 
@@ -130,7 +130,7 @@ let ``an entry moved between archives leaves the archive it came from`` () =
     let fs = pair ()
 
     let results =
-        Archive.moveAcross fs Operations.unattended (request source) [ inside "notes.txt" ] target ArchivePath.root
+        Archive.moveToArchive fs Operations.unattended (request source) [ inside "notes.txt" ] target ArchivePath.root
         |> Expect.ok
 
     Assert.Equal<string list>([ "kept.txt"; "notes.txt" ], names fs target ArchivePath.root)
@@ -142,7 +142,7 @@ let ``an entry the source archive does not hold is reported and moves nothing`` 
     let fs = pair ()
 
     let results =
-        Archive.moveAcross fs Operations.unattended (request source) [ inside "gone.txt" ] target ArchivePath.root
+        Archive.moveToArchive fs Operations.unattended (request source) [ inside "gone.txt" ] target ArchivePath.root
         |> Expect.ok
 
     Assert.Equal<string list>([ "kept.txt" ], names fs target ArchivePath.root)
@@ -160,7 +160,7 @@ let ``a target archive that cannot be changed refuses the whole crossing`` () =
     let unchangeable = fp (at "start/into.rar")
 
     let refusal =
-        Archive.copyAcross fs Operations.unattended (request source) [ inside "notes.txt" ] unchangeable ArchivePath.root
+        Archive.copyToArchive fs Operations.unattended (request source) [ inside "notes.txt" ] unchangeable ArchivePath.root
         |> Expect.error
 
     Assert.Equal(KindCannotBeChanged unchangeable, refusal)
@@ -170,7 +170,7 @@ let ``a target archive that cannot be changed refuses the whole crossing`` () =
 let ``a crossing leaves the workspace empty`` () =
     let fs = pair ()
 
-    Archive.copyAcross fs Operations.unattended (request source) [ inside "docs" ] target ArchivePath.root
+    Archive.copyToArchive fs Operations.unattended (request source) [ inside "docs" ] target ArchivePath.root
     |> Expect.ok
     |> ignore
 
@@ -181,7 +181,7 @@ let ``a cancelled crossing leaves both archives as they were`` () =
     let fs = pair ()
     let before = fs.File.ReadAllBytes(at "start/into.zip")
 
-    Archive.moveAcross fs (stopped ()) (request source) [ inside "notes.txt" ] target ArchivePath.root
+    Archive.moveToArchive fs (stopped ()) (request source) [ inside "notes.txt" ] target ArchivePath.root
     |> Expect.ok
     |> ignore
 
