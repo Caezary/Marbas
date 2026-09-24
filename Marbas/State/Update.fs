@@ -123,10 +123,15 @@ let private stay state = { State = state; Effects = [] }
 
 let private request state effect = { State = state; Effects = [ effect ] }
 
+let private reporting state error = request state (ReportOperationError error)
+
 let private changing (fs: IFileSystem) state archives effect =
     match archives |> List.tryFind (Archive.changeableKind fs >> Option.isNone) with
     | None -> request state effect
-    | Some unchangeable -> request state (ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged unchangeable)))
+    | Some unchangeable ->
+        KindCannotBeChanged unchangeable
+        |> Operations.ArchiveFailed
+        |> reporting state
 
 let private places source =
     match source with
@@ -163,11 +168,11 @@ let private applyListing state result =
 let private applyOperation state result =
     match result with
     | Ok updated -> stay updated
-    | Error error -> request state (ReportOperationError error)
+    | Error error -> reporting state error
 
 let private applyBatch state result =
     match result with
-    | Error error -> request state (ReportOperationError error)
+    | Error error -> reporting state error
     | Ok(updated, results) ->
         match Operations.failures results with
         | [] -> stay updated
@@ -210,7 +215,9 @@ let private opened (fs: IFileSystem) state =
 
     match cursorFileInArchive fs panel with
     | Some(archive, entry) ->
-        request state (ReportOperationError(Operations.ArchiveEntryNotRunnable(ArchivePath.spelled fs archive entry)))
+        ArchivePath.spelled fs archive entry
+        |> Operations.ArchiveEntryNotRunnable
+        |> reporting state
     | None ->
         match cursorFilePath fs panel, cursorDirectory fs panel with
         | Some path, Some directory -> opening fs state directory path
@@ -227,7 +234,9 @@ let private refusingInArchive (fs: IFileSystem) state panel archive level =
         |> Option.map snd
         |> Option.defaultValue level
 
-    request state (ReportOperationError(Operations.ArchiveEntryNotRunnable(ArchivePath.spelled fs archive named)))
+    ArchivePath.spelled fs archive named
+    |> Operations.ArchiveEntryNotRunnable
+    |> reporting state
 
 let private openedWith (fs: IFileSystem) state =
     let panel = activePanel state
@@ -239,9 +248,9 @@ let private openedWith (fs: IFileSystem) state =
         match cursorFilePath fs panel with
         | Some path -> request state (ShowHandlers(path, programFor ForOpening (FileSystemPath.name fs path) state))
         | None ->
-            match revealed fs panel directory with
-            | Some target -> running state directory None target
-            | None -> stay state
+            revealed fs panel directory
+            |> Option.map (running state directory None)
+            |> Option.defaultValue (stay state)
 
 let private runElevated (fs: IFileSystem) state =
     let panel = activePanel state
@@ -253,9 +262,10 @@ let private runElevated (fs: IFileSystem) state =
         match cursorExecutablePath fs panel with
         | Some path -> startingAs AsAdministrator state directory None path
         | None ->
-            match cursorFilePath fs panel |> Option.orElseWith (fun () -> cursorDirectoryPath fs panel) with
-            | Some path -> request state (ReportLaunchError(NotAProgram path))
-            | None -> stay state
+            cursorFilePath fs panel
+            |> Option.orElseWith (fun () -> cursorDirectoryPath fs panel)
+            |> Option.map (NotAProgram >> ReportLaunchError >> request state)
+            |> Option.defaultValue (stay state)
 
 let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
     let remembered =
@@ -269,7 +279,26 @@ let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
     | None -> stay remembered
 
 let private refusing state refusal =
-    request state (ReportOperationError(Operations.NotInSearchResults refusal))
+    Operations.NotInSearchResults refusal |> reporting state
+
+let private showingProperties state properties =
+    match properties with
+    | Ok found -> request state (ShowProperties found)
+    | Error error -> reporting state error
+
+let private editing (fs: IFileSystem) state =
+    let target = activePanel state
+
+    match cursorEntryInArchive fs target with
+    | Some(archive, entry) ->
+        ArchivePath.spelled fs archive entry
+        |> Operations.ArchiveEntryNotEditable
+        |> reporting state
+    | None ->
+        match cursorFilePath fs target, cursorDirectoryPath fs target with
+        | Some path, _ -> request state (EditFile(path, programFor ForEditing (FileSystemPath.name fs path) state))
+        | _, Some path -> EntryProperties.read fs path |> showingProperties state
+        | None, None -> stay state
 
 let private forGood mode =
     match mode with
@@ -427,7 +456,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             let target = FileSystemPath.combine fs source trimmed
 
             if Archive.wouldPackItself fs target paths then
-                request state (ReportOperationError(Operations.TargetWithinSource target))
+                Operations.TargetWithinSource target |> reporting state
             else
                 request
                     state
@@ -447,7 +476,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | UnpackFinished results -> finishTransfer fs results state |> applyBatch state
     | RenameFinished(newName, outcome) ->
         match outcome with
-        | Error error -> request state (ReportOperationError error)
+        | Error error -> reporting state error
         | Ok() -> finishRename fs newName state |> applyOperation state
     | ViewRequested ->
         let target = activePanel state
@@ -460,23 +489,8 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             | [] -> stay state
             | targets -> request state (MeasureTargets targets)
     | MeasureFinished(Ok measured) -> stay (applyMeasurements state.Active measured state)
-    | MeasureFinished(Error error) -> request state (ReportOperationError error)
-    | EditRequested ->
-        let target = activePanel state
-
-        match cursorEntryInArchive fs target with
-        | Some(archive, entry) ->
-            request
-                state
-                (ReportOperationError(Operations.ArchiveEntryNotEditable(ArchivePath.spelled fs archive entry)))
-        | None ->
-            match cursorFilePath fs target, cursorDirectoryPath fs target with
-            | Some path, _ -> request state (EditFile(path, programFor ForEditing (FileSystemPath.name fs path) state))
-            | _, Some path ->
-                match EntryProperties.read fs path with
-                | Ok properties -> request state (ShowProperties properties)
-                | Error error -> request state (ReportOperationError error)
-            | None, None -> stay state
+    | MeasureFinished(Error error) -> reporting state error
+    | EditRequested -> editing fs state
     | NewFileRequested ->
         match activeDirectory state with
         | None -> stay state
@@ -486,7 +500,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | None -> stay state
         | Some directory ->
             match makeFile fs state.Active directory name state with
-            | Error error -> request state (ReportOperationError error)
+            | Error error -> reporting state error
             | Ok(updated, path) -> request updated (EditFile(path, programFor ForEditing name updated))
     | PropertiesEntered properties -> applyProperties fs properties state |> applyOperation state
     | SettingsRequested ->
@@ -499,7 +513,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | EditFinished outcome ->
         match outcome with
         | Error(Operations.StartDeclined _) -> stay state
-        | Error error -> request state (ReportOperationError error)
+        | Error error -> reporting state error
         | Ok() -> refresh fs state |> applyListing state
     | LaunchFinished outcome ->
         match outcome with

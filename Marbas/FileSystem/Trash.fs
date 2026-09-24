@@ -55,8 +55,10 @@ let private ensureDirectory (fs: IFileSystem) (path: FileSystemPath) =
     guard path (fun () -> fs.Directory.CreateDirectory(FileSystemPath.value path) |> ignore)
 
 let private taken (fs: IFileSystem) trash (name: string) =
-    FileSystemPath.kind fs (FileSystemPath.combine fs (storedFiles fs trash) name) <> NoEntry
-    || FileSystemPath.kind fs (FileSystemPath.combine fs (storedInfo fs trash) (name + InfoSuffix)) <> NoEntry
+    let holds directory entry =
+        FileSystemPath.combine fs directory entry |> FileSystemPath.kind fs <> NoEntry
+
+    holds (storedFiles fs trash) name || holds (storedInfo fs trash) (name + InfoSuffix)
 
 let private numbered (fs: IFileSystem) (name: string) ordinal =
     let stem = fs.Path.GetFileNameWithoutExtension name

@@ -415,7 +415,9 @@ let approveInto
     run AskEachTime [] sources
 
 let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources targetDirectory =
-    approveInto (inDirectory fs targetDirectory) (fun target -> FileSystemPath.kind fs target <> NoEntry) ask sources
+    let occupied target = FileSystemPath.kind fs target <> NoEntry
+
+    approveInto (inDirectory fs targetDirectory) occupied ask sources
 
 let allWatched (control: BatchControl) apply sources =
     let rec run finished remaining =

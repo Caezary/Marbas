@@ -93,6 +93,49 @@ Keep the build outputs apart from the Windows ones with
   explaining goes into `_documentation/*.md`.
 - Dependencies flow downward only: `Ui` → `State` → `FileSystem` → `Domain`.
 
+## Flat decisions
+
+Three rules decide when a decision is written out and when it is folded into
+one expression. They are about shape, not about taste, so they can be applied
+without arguing.
+
+**Three binds or one nested match becomes a computation expression.** A chain
+of two `Result.bind`s or `Option.bind`s reads fine as a pipeline. At the third
+step, or as soon as a `match` on a `Result` or an `Option` contains another
+one, the block becomes `result { }` or `option { }` (FsToolkit), with one
+`let!` per step. `Links.create`, `Archive.copyAcross`, `Workspace.scratch` and
+`AppState.finishTransfer` / `finishPack` / `finishLinks` / `makeFile` are what
+the rule looks like applied.
+
+A computation expression is the wrong answer when what the chain really needs is
+one fewer case. `Shell.passwordFor` answered three — not needed, given, turned
+down — and feeding that to `option { }` meant mapping it to
+`ArchivePassword option option`, where "not needed" is written `Some None`.
+Nothing downstream told the first two apart, so the union says
+`OpenWith of password: ArchivePassword option | NotGiven` and the consumers are
+a two-arm match. A nested option is a sign that two questions were forced into
+one type; name the answer instead of wrapping it.
+
+**A `match` never nests three deep.** Two independent questions become one
+`match` over the tuple, provided both are cheap to ask: a tuple is evaluated
+eagerly, so a question that touches the disk or creates something stays behind
+its own arm. What is left after that goes into a named helper — the inner block
+of `Update.editing` is `showingProperties`, the third level of `Links.create`
+is `make`, the body of `Archive.copyAcross` is `carriedInto`.
+
+**A chain of three constructors becomes a pipeline.** `request state
+(ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged path)))` is
+read inside-out; the same thing as
+`KindCannotBeChanged path |> Operations.ArchiveFailed |> reporting state` is
+read left to right. Where the innermost two are always the same pair, a helper
+named after the whole — `Update.reporting` — removes a level everywhere at
+once.
+
+**An `Option` consumed for its effect is `Option.iter`, not a `match` with an
+empty `None` arm.** Every prompt in `Shell.interpret` answers an option; the
+ones with a single `Some` arm are `|> Option.iter (Message >> dispatch)`, and
+the ones whose answer is a union of their own keep the `match`.
+
 ## Documentation map
 
 - [Implementation plan](PLAN.md) — the index of the phases, one file per phase

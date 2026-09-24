@@ -2,6 +2,7 @@ module Marbas.FileSystem.Workspace
 
 open System
 open System.IO.Abstractions
+open FsToolkit.ErrorHandling
 open Marbas.FileSystem.Operations
 
 [<Literal>]
@@ -29,12 +30,12 @@ let scratch (fs: IFileSystem) (workspace: FileSystemPath) =
 
         if FileSystemPath.kind fs path = NoEntry then path else free root (ordinal + 1)
 
-    ensure fs workspace
-    |> Result.bind (fun root ->
+    result {
+        let! root = ensure fs workspace
         let path = free root 1
-
-        attempting path (fun () -> fs.Directory.CreateDirectory(FileSystemPath.value path))
-        |> Result.map (fun _ -> path))
+        do! attempting path (fun () -> fs.Directory.CreateDirectory(FileSystemPath.value path) |> ignore)
+        return path
+    }
 
 let release (fs: IFileSystem) (path: FileSystemPath) =
     match FileSystemPath.kind fs path with

@@ -778,3 +778,76 @@ directly.
 override as short as it was: `{ Fakes.dependencies fs start with
 Prompts.AskName = fun _ -> Some name }`. Around 220 override sites across 34
 test files changed shape; the suite is 2323 passing, 11 skipped.
+
+**P15.19 flattened the decisions and wrote the cut-off down.** The quality
+review's Q2, Q3 and Q4 were three views of one habit: a decision written as a
+`match` inside a `match` inside a `match` (Q2), a value built by nesting three
+constructors so it reads inside-out (Q3), and `Result`/`Option` chains written
+as `bind` lambdas where a computation expression says the same in one line per
+step (Q4). Six `result { }` blocks existed; the rest of the code had not caught
+up with them.
+
+**The cut-off is three binds, or one nested match.** It is in
+[Flat decisions](../DEVELOPMENT.md#flat-decisions), with the sites it was first
+applied to, and the style checklist points at it. Two binds still read fine as
+a pipeline, so `finishDelete` and `moveOut` were left alone; the rule fires at
+the third step or as soon as a `match` on a `Result` or an `Option` contains
+another one.
+
+**`Links.create` is what the rule looks like.** Three levels — the two path
+kinds, the refusal crossed with the kind, then the junction the platform may
+not have — became a `result { }` of three guards and one `return!`, with the
+last level lifted into `make` as a flat match over `kind, native.MakeJunction`.
+`Result.requireTrue` and `Result.requireFalse` from FsToolkit carry the two
+path checks, and `refusing` turns the refusal option into a `Result`.
+`Archive.copyAcross` went the same way: the walk into the scratch directory is
+`carriedInto` as a `result { }`, the entry list it refuses with is
+`refusedEntries`, and what is left is the `try/finally` around the scratch and
+two arms. `Workspace.scratch`, `AppState.finishTransfer`, `finishPack`,
+`finishLinks` and `makeFile` are each a `result { }` of two `let!`s and a
+`return`, which also killed the 130-character `Result.bind` line `finishPack`
+carried.
+
+**A tuple match is not always the answer.** Two questions become one `match`
+over the pair only when both are cheap to ask, because a tuple is evaluated
+eagerly. `copyAcross` keeps its two levels for exactly that reason: asking
+`Workspace.scratch` before `changeRefusal` has answered would create a
+temporary directory nobody then releases. That caveat is in the rule.
+
+**`Update` gained `reporting` and lost a level everywhere.** `request state
+(ReportOperationError …)` appeared thirteen times, six of them wrapping two
+more constructors. One `let private reporting state error` collapsed the pair,
+and the six that nested now read
+`ArchivePath.spelled fs archive entry |> Operations.ArchiveEntryNotRunnable |> reporting state`.
+The `EditRequested` arm — a three-deep cascade written inline in `transition` —
+is `editing` beside `opened`, `openedWith` and `runElevated`, with its
+properties arm named `showingProperties`; `openedWith` and `runElevated` lost
+their innermost `match` to `Option.map`/`Option.defaultValue`.
+
+**Every prompt in `Shell.interpret` is `Option.iter` now.** Eleven arms were
+`match ask () with | Some x -> dispatch … | None -> ()`; the ones with a single
+`Some` arm are a pipeline into `Option.iter`, and only `PromptForFind` and
+`PromptForRoot`, whose answers are unions of their own, keep the `match`.
+The password cascade that `showHit` and the `ViewArchiveEntry` arm each spelled
+out is one `withPassword` — a Q5 copy that fell out of the flattening.
+
+**The password outcome lost a case instead of gaining a wrapper.** The first
+attempt kept the three-case `NotNeeded | NotGiven | Given` and mapped it to
+`ArchivePassword option option` so that `Option.iter` and `option { }` could
+consume it — which is `Some None` at the call site, a nested option wearing a
+function name. Nothing needed the distinction between "no password is needed"
+and "this password was given": both mean *open it with this
+`ArchivePassword option`*. So the union says that instead —
+`OpenWith of password: ArchivePassword option | NotGiven` — and both consumers
+are a two-arm match with no wrapping at all. `planFor` is a match over the two
+cases with one `Option.map` over the approved targets, which is why `Shell`
+needs no computation expression and no `FsToolkit` open.
+
+The smaller sites went with them: `Operations.approve` names its `occupied`
+predicate, `Trash.taken` asks one `holds` twice instead of spelling the
+combine-then-kind chain twice, `Settings` has one `numberOf` that both
+`numberIn` and the current-tab lookup use, and the two
+`Error(Operations.SourceNotFound(ArchivePath.spelled …))` chains in `Archive`
+are pipelines. `DirectoryMeasure.fs:18`, the one Q3 site that needed nothing,
+had already gone with P15.14's single-pass walk. No behaviour changed and no
+test changed: 2323 passing, 11 skipped, before and after.

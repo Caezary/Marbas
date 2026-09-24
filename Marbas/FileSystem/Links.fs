@@ -1,6 +1,7 @@
 namespace Marbas.FileSystem
 
 open System.IO.Abstractions
+open FsToolkit.ErrorHandling
 open Marbas
 open Marbas.Domain
 open Marbas.FileSystem.Operations
@@ -61,23 +62,31 @@ module Links =
             | DirectoryEntry -> fs.Directory.CreateSymbolicLink(rawLocation, rawTarget) |> ignore
             | _ -> fs.File.CreateSymbolicLink(rawLocation, rawTarget) |> ignore)
 
+    let private refusing location refusal =
+        match refusal with
+        | Some refused -> Error(LinkRefused(refused, location))
+        | None -> Ok()
+
+    let private make (native: NativeLinks) fs (request: LinkRequest) target targetKind =
+        let location = request.Location
+
+        match request.Kind, native.MakeJunction with
+        | Symbolic, _ -> makeSymbolic fs location target targetKind
+        | Hard, _ -> attempting location (fun () -> native.MakeHard target location)
+        | Junction, Some makeJunction -> attempting location (fun () -> makeJunction target location)
+        | Junction, None -> Error(LinkRefused(KindUnavailable, location))
+
     let create (native: NativeLinks) (platform: Platform) (fs: IFileSystem) (request: LinkRequest) =
         let target = absolute fs request
         let location = request.Location
+        let targetKind = FileSystemPath.kind fs target
 
-        match FileSystemPath.kind fs location, FileSystemPath.kind fs target with
-        | FileEntry, _
-        | DirectoryEntry, _ -> Error(TargetExists location)
-        | NoEntry, NoEntry -> Error(SourceNotFound target)
-        | NoEntry, targetKind ->
-            match refusalFor platform fs request target, request.Kind with
-            | Some refused, _ -> Error(LinkRefused(refused, location))
-            | None, Symbolic -> makeSymbolic fs location target targetKind
-            | None, Hard -> attempting location (fun () -> native.MakeHard target location)
-            | None, Junction ->
-                match native.MakeJunction with
-                | Some makeJunction -> attempting location (fun () -> makeJunction target location)
-                | None -> Error(LinkRefused(KindUnavailable, location))
+        result {
+            do! Result.requireTrue (TargetExists location) (FileSystemPath.kind fs location = NoEntry)
+            do! Result.requireFalse (SourceNotFound target) (targetKind = NoEntry)
+            do! refusalFor platform fs request target |> refusing location
+            return! make native fs request target targetKind
+        }
 
     let requests (fs: IFileSystem) kind (sources: FileSystemPath list) (directory: FileSystemPath) (text: string) =
         let typed = FileSystemPath.combine fs directory (text.Trim())

@@ -77,6 +77,7 @@ schedules the fix. A rule here beats a habit found in an older file.
 | `match a with … -> match b, c with … -> match d with …` | a match over the tuple, or a `result {}` / `option {}` with the refusals as guards |
 | three or more `Result.bind (fun x -> …)` | `result { let! … }` |
 | `request state (Report (Error (spelled fs a b)))` | `spelled fs a b \|> Error \|> Report \|> request state` |
+| `match ask () with \| Some x -> act x \| None -> ()` | `ask () \|> Option.iter act` |
 | a `bool` parameter | a two-case union |
 | a continuation passed in to avoid repeating a guard | decide the guard once, before the match |
 | forty partial applications at the top of a function | pass the argument at the call site |
@@ -88,6 +89,9 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] Computation-expression cut-off: three binds, or one nested match.
       FsToolkit.ErrorHandling is already referenced — `result`, `option`,
       `Result.requireTrue` and friends are in scope.
+      [Flat decisions](DEVELOPMENT.md#flat-decisions) works the rules through
+      the sites they were first applied to, and says when a tuple match is the
+      wrong answer.
 - [ ] Mutation is allowed inside a walk that needs an early exit, and nowhere
       else; even there it is threaded, not scattered.
 - [ ] A function that grows past one screen has lost a seam — lift the inner

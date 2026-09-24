@@ -62,21 +62,25 @@ let private askOverwrite (deps: Dependencies) target =
     deps.Prompts.AskOverwrite { Target = target }
 
 type private PasswordOutcome =
-    | NotNeeded
+    | OpenWith of password: ArchivePassword option
     | NotGiven
-    | Given of password: ArchivePassword
 
 let private asking (deps: Dependencies) (archive: FileSystemPath) =
     { Archive = FileSystemPath.name deps.FileSystem archive }
     |> deps.Prompts.AskPassword
-    |> Option.map Given
+    |> Option.map (Some >> OpenWith)
     |> Option.defaultValue NotGiven
 
 let private passwordFor (deps: Dependencies) (archive: FileSystemPath) =
     match Archive.needsPassword deps.FileSystem archive with
     | Ok true -> asking deps archive
     | Ok false
-    | Error _ -> NotNeeded
+    | Error _ -> OpenWith None
+
+let private withPassword (deps: Dependencies) archive show =
+    match passwordFor deps archive with
+    | OpenWith password -> show password
+    | NotGiven -> ()
 
 let private approvedEntries (deps: Dependencies) targetDirectory archive entries =
     let spelled =
@@ -118,10 +122,7 @@ let private showHit (deps: Dependencies) (hit: FindHit) =
     | InArchive(archive, level) ->
         let entry = ArchivePath.child level hit.Entry.Name
 
-        match passwordFor deps archive with
-        | NotGiven -> ()
-        | NotNeeded -> showEntry deps archive None entry
-        | Given password -> showEntry deps archive (Some password) entry
+        withPassword deps archive (fun password -> showEntry deps archive password entry)
 
 let private approvedInto (deps: Dependencies) archive level sources =
     let taken =
@@ -172,22 +173,20 @@ let private itemsOf archive result =
     | Ok items -> items
     | Error error -> [ refusedWhole archive error ]
 
+let private nonEmpty items =
+    if List.isEmpty items then None else Some items
+
 let private planFor (deps: Dependencies) targetDirectory archive (targets: unit -> ArchivePath list) =
-    let planned password =
-        match targets () with
-        | [] -> None
-        | approved ->
-            Some
-                { Request =
-                    { Archive = archive
-                      Password = password
-                      Destination = targetDirectory }
-                  Targets = approved }
+    let planned password approved =
+        { Request =
+            { Archive = archive
+              Password = password
+              Destination = targetDirectory }
+          Targets = approved }
 
     match passwordFor deps archive with
-    | NotNeeded -> planned None
-    | Given password -> planned (Some password)
     | NotGiven -> None
+    | OpenWith password -> targets () |> nonEmpty |> Option.map (planned password)
 
 let private unpackPlan (deps: Dependencies) targetDirectory archive =
     planFor deps targetDirectory archive (fun () -> unpackTargets deps targetDirectory archive)
@@ -306,9 +305,8 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         then
             dispatch (DeleteConfirmed request.Mode)
     | PromptForArchive suggestion ->
-        match deps.Prompts.AskArchive { Suggestion = suggestion } with
-        | Some choice -> dispatch (ArchiveEntered choice)
-        | None -> ()
+        deps.Prompts.AskArchive { Suggestion = suggestion }
+        |> Option.iter (ArchiveEntered >> dispatch)
     | PromptForFind(ground, hidden, found) ->
         match deps.Prompts.AskFind { Ground = ground; Hidden = hidden; Found = found } with
         | Some(Search query) -> dispatch (FindEntered query)
@@ -326,14 +324,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
             Links.requests deps.FileSystem kind sources directory text
             |> Links.sharedRefusal deps.Processes.RefuseLink
 
-        match
-            deps.Prompts.AskLink
-                { Kinds = deps.Processes.LinkKinds
-                  Suggestion = suggestion
-                  Refusal = refusalOf }
-            with
-        | Some choice -> dispatch (LinkEntered choice)
-        | None -> ()
+        deps.Prompts.AskLink
+            { Kinds = deps.Processes.LinkKinds
+              Suggestion = suggestion
+              Refusal = refusalOf }
+        |> Option.iter (LinkEntered >> dispatch)
     | MakeLinks requests ->
         let outcomes = requests |> List.map (fun link -> link, deps.Processes.MakeLink link)
 
@@ -394,51 +389,35 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
             (MeasureFinished >> dispatch)
     | ViewFile path -> showPath deps path
     | ViewArchiveEntry(archive, entry) ->
-        match passwordFor deps archive with
-        | NotGiven -> ()
-        | NotNeeded -> showEntry deps archive None entry
-        | Given password -> showEntry deps archive (Some password) entry
+        withPassword deps archive (fun password -> showEntry deps archive password entry)
     | EditFile(path, editor) -> deps.Processes.RunEditor editor path |> EditFinished |> dispatch
     | RunProgram request -> deps.Processes.Launch request |> LaunchFinished |> dispatch
     | ShowHandlers(path, chosen) ->
         let name = FileSystemPath.name deps.FileSystem path
 
-        match
-            deps.Prompts.AskHandler
-                { Name = name
-                  Handlers = deps.Processes.HandlersFor name
-                  Chosen = chosen }
-            with
-        | Some choice -> dispatch (HandlerChosen(path, choice))
-        | None -> ()
-    | ShowTabs tabs ->
-        match deps.Prompts.ChooseTab tabs with
-        | Some position -> dispatch (TabSwitched position)
-        | None -> ()
+        deps.Prompts.AskHandler
+            { Name = name
+              Handlers = deps.Processes.HandlersFor name
+              Chosen = chosen }
+        |> Option.iter (fun choice -> dispatch (HandlerChosen(path, choice)))
+    | ShowTabs tabs -> deps.Prompts.ChooseTab tabs |> Option.iter (TabSwitched >> dispatch)
     | ShowProperties properties ->
-        match deps.Prompts.EditProperties properties with
-        | Some changed -> dispatch (PropertiesEntered changed)
-        | None -> ()
+        deps.Prompts.EditProperties properties |> Option.iter (PropertiesEntered >> dispatch)
     | ShowSettings(programs, candidate) ->
-        match deps.Prompts.EditPrograms { Programs = programs; Candidate = candidate } with
-        | Some changed -> dispatch (ProgramsEntered changed)
-        | None -> ()
+        deps.Prompts.EditPrograms { Programs = programs; Candidate = candidate }
+        |> Option.iter (ProgramsEntered >> dispatch)
     | PromptForTarget suggestion ->
-        match deps.Prompts.AskTarget { Title = MovePrompt; Suggestion = suggestion } with
-        | Some text -> dispatch (TargetEntered text)
-        | None -> ()
+        deps.Prompts.AskTarget { Title = MovePrompt; Suggestion = suggestion }
+        |> Option.iter (TargetEntered >> dispatch)
     | PromptForName suggestion ->
-        match deps.Prompts.AskName { Title = MkdirPrompt; Suggestion = suggestion } with
-        | Some name -> dispatch (NameEntered name)
-        | None -> ()
+        deps.Prompts.AskName { Title = MkdirPrompt; Suggestion = suggestion }
+        |> Option.iter (NameEntered >> dispatch)
     | PromptForFileName ->
-        match deps.Prompts.AskName { Title = NewFilePrompt; Suggestion = None } with
-        | Some name -> dispatch (FileNameEntered name)
-        | None -> ()
+        deps.Prompts.AskName { Title = NewFilePrompt; Suggestion = None }
+        |> Option.iter (FileNameEntered >> dispatch)
     | PromptForPattern mode ->
-        match deps.Prompts.AskPattern { Title = patternTitle mode } with
-        | Some pattern -> dispatch (PatternEntered(mode, pattern))
-        | None -> ()
+        deps.Prompts.AskPattern { Title = patternTitle mode }
+        |> Option.iter (fun pattern -> dispatch (PatternEntered(mode, pattern)))
     | PromptForRoot side ->
         match deps.Prompts.ChooseDrive(deps.Processes.ListDrives()) with
         | Some(StandOn row) -> dispatch (DriveChosen(side, row))

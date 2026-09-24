@@ -1,6 +1,7 @@
 module Marbas.State.AppState
 
 open System.IO.Abstractions
+open FsToolkit.ErrorHandling
 open Marbas.Collections
 open Marbas.Domain
 open Marbas.FileSystem
@@ -631,15 +632,21 @@ let private reloadFocusing (fs: IFileSystem) side focus keep state =
 let private reload (fs: IFileSystem) side keep state =
     reloadFocusing fs side (cursorFocus (panel side state)) keep state
 
+let private keepingUnfinished (fs: IFileSystem) results (previous: PanelState) =
+    keepUnfinished fs results previous.Selected
+
+let private keepingSelected (previous: PanelState) = keepSurviving previous.Selected
+
 let finishDelete (fs: IFileSystem) results (state: AppState) =
-    reload fs state.Active (fun previous -> keepUnfinished fs results previous.Selected) state
+    reload fs state.Active (keepingUnfinished fs results) state
     |> Result.map (fun updated -> updated, results)
 
 let finishTransfer (fs: IFileSystem) results (state: AppState) =
-    reload fs state.Active (fun previous -> keepUnfinished fs results previous.Selected) state
-    |> Result.bind (reload fs (opposite state.Active) (fun previous -> keepSurviving previous.Selected))
-    |> Result.map (fun updated -> updated, results)
-
+    result {
+        let! active = reload fs state.Active (keepingUnfinished fs results) state
+        let! updated = reload fs (opposite state.Active) keepingSelected active
+        return updated, results
+    }
 
 let archiveSuggestion (fs: IFileSystem) format state =
     let named directory =
@@ -652,9 +659,11 @@ let archiveSuggestion (fs: IFileSystem) format state =
     ||> Option.map2 (fun source target -> FileSystemPath.combine fs target (named source))
 
 let finishPack (fs: IFileSystem) (archive: EntryName) results (state: AppState) =
-    reload fs state.Active (fun previous -> keepUnfinished fs results previous.Selected) state
-    |> Result.bind (reloadFocusing fs (opposite state.Active) (ByName archive) (fun previous -> keepSurviving previous.Selected))
-    |> Result.map (fun updated -> updated, results)
+    result {
+        let! active = reload fs state.Active (keepingUnfinished fs results) state
+        let! updated = reloadFocusing fs (opposite state.Active) (ByName archive) keepingSelected active
+        return updated, results
+    }
 
 let finishLinks (fs: IFileSystem) (made: FileSystemPath list) results (state: AppState) =
     let showing side keep state =
@@ -664,12 +673,14 @@ let finishLinks (fs: IFileSystem) (made: FileSystemPath list) results (state: Ap
         | Some location -> reloadFocusing fs side (ByName(FileSystemPath.name fs location)) keep state
         | None -> reload fs side keep state
 
-    showing state.Active (fun previous -> keepUnfinished fs results previous.Selected) state
-    |> Result.bind (showing (opposite state.Active) (fun previous -> keepSurviving previous.Selected))
-    |> Result.map (fun updated -> updated, results)
+    result {
+        let! active = showing state.Active (keepingUnfinished fs results) state
+        let! updated = showing (opposite state.Active) keepingSelected active
+        return updated, results
+    }
 
 let finishRename (fs: IFileSystem) newName (state: AppState) =
-    reloadFocusing fs state.Active (ByName newName) (fun previous -> keepSurviving previous.Selected) state
+    reloadFocusing fs state.Active (ByName newName) keepingSelected state
 
 let private madeDirectory (fs: IFileSystem) side location name state =
     let previous = panel side state
@@ -692,12 +703,11 @@ let makeEntryDirectory (fs: IFileSystem) side archive level name state : Result<
 let makeFile (fs: IFileSystem) side directory name state : Result<AppState * FileSystemPath, Operations.OperationError> =
     let previous = panel side state
 
-    Operations.makeFile fs directory name
-    |> Result.bind (fun path ->
-        loadPanelFocusing fs side directory (ByName name) state
-        |> Result.mapError asOperationError
-        |> Result.map (updatePanel side (keepSurviving previous.Selected))
-        |> Result.map (fun updated -> updated, path))
+    result {
+        let! path = Operations.makeFile fs directory name
+        let! loaded = loadPanelFocusing fs side directory (ByName name) state |> Result.mapError asOperationError
+        return updatePanel side (keepSurviving previous.Selected) loaded, path
+    }
 
 let private readAgain (fs: IFileSystem) side state =
     let panel = panel side state

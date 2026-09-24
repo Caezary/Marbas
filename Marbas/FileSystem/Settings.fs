@@ -242,10 +242,13 @@ module Settings =
           Hidden = token HiddenSetting |> Option.bind hiddenOf |> Option.defaultValue fallback.Hidden
           Cursor = lookup CursorSetting |> Option.bind EntryName.tryCreate }
 
-    let private numberIn (key: string) =
-        match Int32.TryParse((key.Substring TabPrefix.Length).Split('.')[0]) with
+    let private numberOf (raw: string) =
+        match Int32.TryParse raw with
         | true, number -> Some number
         | _ -> None
+
+    let private numberIn (key: string) =
+        (key.Substring TabPrefix.Length).Split('.')[0] |> numberOf
 
     let private tabNumbers (read: Map<string, string>) =
         read
@@ -275,9 +278,7 @@ module Settings =
             | [] -> Zipper.single (tabFrom read "" fallback)
 
         let current =
-            match Map.tryFind CurrentSetting read |> Option.map Int32.TryParse with
-            | Some(true, number) -> number
-            | _ -> 1
+            Map.tryFind CurrentSetting read |> Option.bind numberOf |> Option.defaultValue 1
 
         tabs |> Zipper.at (current - 1)
 

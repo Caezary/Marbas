@@ -270,7 +270,7 @@ module Archive =
 
         unpacked.Value
         |> Result.bind (function
-            | 0 -> Error(Operations.SourceNotFound(ArchivePath.spelled fs request.Archive target))
+            | 0 -> ArchivePath.spelled fs request.Archive target |> Operations.SourceNotFound |> Error
             | _ -> Ok())
 
     let private eachTarget (control: Operations.BatchControl) (archive: FileSystemPath) unpack targets =
@@ -520,7 +520,7 @@ module Archive =
                     if changing.Held |> List.exists (ArchivePath.atOrUnder target) then
                         Ok()
                     else
-                        Error(Operations.SourceNotFound(ArchivePath.spelled fs archive target)))
+                        ArchivePath.spelled fs archive target |> Operations.SourceNotFound |> Error)
 
             if control.IsCancelled() then
                 Abort(cancelledEntries fs archive targets)
@@ -593,34 +593,42 @@ module Archive =
             | Ok(), Some outcome -> { item with Outcome = outcome }
             | _ -> item)
 
+    let private refusedEntries archive error targets : Operations.ItemResult list =
+        targets
+        |> List.map (fun entry ->
+            { Source = Operations.ItemInArchive(archive, entry)
+              Outcome = Error error })
+
+    let private carriedInto fs control (request: ExtractRequest) targets target level scratch =
+        let cameFrom entry =
+            Operations.ItemOnDisk(landedAs fs request.Archive scratch entry),
+            Operations.ItemInArchive(request.Archive, entry)
+
+        result {
+            let! taken = extract fs control { request with Destination = scratch } targets
+            let arrived = arrivedOf taken
+
+            let! added =
+                arrived
+                |> List.map (landedAs fs request.Archive scratch)
+                |> addEntries fs control target level
+
+            return carryingOver (arrived |> List.map cameFrom |> Map.ofList) added taken
+        }
+
     let copyAcross (fs: IFileSystem) control (request: ExtractRequest) targets (target: FileSystemPath) level =
+        let released scratch =
+            try
+                carriedInto fs control request targets target level scratch
+            finally
+                Operations.delete fs Operations.unattended scratch |> ignore
+
         match changeRefusal fs target with
         | Some refusal -> Error refusal
         | None ->
             match Workspace.scratch fs request.Destination with
-            | Error error ->
-                targets
-                |> List.map (fun entry ->
-                    { Source = Operations.ItemInArchive(request.Archive, entry)
-                      Outcome = Error error }: Operations.ItemResult)
-                |> Ok
-            | Ok scratch ->
-                let cameFrom entry =
-                    Operations.ItemOnDisk(landedAs fs request.Archive scratch entry),
-                    Operations.ItemInArchive(request.Archive, entry)
-
-                try
-                    extract fs control { request with Destination = scratch } targets
-                    |> Result.bind (fun taken ->
-                        let arrived = arrivedOf taken
-
-                        arrived
-                        |> List.map (landedAs fs request.Archive scratch)
-                        |> addEntries fs control target level
-                        |> Result.map (fun added ->
-                            carryingOver (arrived |> List.map cameFrom |> Map.ofList) added taken))
-                finally
-                    Operations.delete fs Operations.unattended scratch |> ignore
+            | Error error -> Ok(refusedEntries request.Archive error targets)
+            | Ok scratch -> released scratch
 
     let moveAcross (fs: IFileSystem) control (request: ExtractRequest) targets target level =
         copyAcross fs control request targets target level
