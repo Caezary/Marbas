@@ -21,10 +21,6 @@ let ScopeId = "findScope"
 [<Literal>]
 let LastResultsTitle = "_Last results"
 
-type FindChoice =
-    | Search of FindQuery
-    | LastResults
-
 type FindView(count: int option) =
     inherit Dialog()
 

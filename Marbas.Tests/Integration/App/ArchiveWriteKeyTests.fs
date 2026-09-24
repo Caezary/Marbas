@@ -38,9 +38,9 @@ let private mockFs () =
 let private windowOn (fs: MockFileSystem) =
     focusedWindow
         { Fakes.dependencies fs (at "start") with
-            AskOverwrite = fun _ _ -> Operations.Yes
-            Confirm = fun _ _ -> true
-            AskName = fun _ _ -> Some "fresh" }
+            Prompts.AskOverwrite = fun _ -> Operations.Yes
+            Prompts.Confirm = fun _ -> true
+            Prompts.AskName = fun _ -> Some(EntryName.create "fresh") }
 
 let private rows (list: ListView) =
     let source = list.Source.ToList()

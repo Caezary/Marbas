@@ -24,8 +24,8 @@ let private mockFs () =
 let private windowWith (fs: MockFileSystem) launch =
     focusedWindow
         { Fakes.dependencies fs (at "start") with
-            Launch = launch
-            ReportError = fun _ _ -> () }
+            Processes.Launch = launch
+            Prompts.ReportError = ignore }
 
 let private Notes = 2
 
@@ -102,7 +102,7 @@ let private askedThrough key =
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                AskHandler = fun name _ _ -> asked.Add name; None }
+                Prompts.AskHandler = fun request -> asked.Add request.Name; None }
 
     (leftList window).SelectedItem <- Page
 
@@ -127,9 +127,9 @@ let ``the open-with key offers the programs the system knows and starts the one 
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Launch = fun request -> started.Add request; Ok()
-                HandlersFor = fun name -> offered.Add name; []
-                AskHandler = fun _ _ _ -> Some { Program = chosen; Remember = false } }
+                Processes.Launch = fun request -> started.Add request; Ok()
+                Processes.HandlersFor = fun name -> offered.Add name; []
+                Prompts.AskHandler = fun _ -> Some { Program = chosen; Remember = false } }
 
     (leftList window).SelectedItem <- Page
 
@@ -146,8 +146,8 @@ let ``the open-with key on a directory reaches the desktop without asking`` () =
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Launch = fun request -> started.Add request; Ok()
-                AskHandler = fun name _ _ -> asked.Add name; None }
+                Processes.Launch = fun request -> started.Add request; Ok()
+                Prompts.AskHandler = fun request -> asked.Add request.Name; None }
 
     (leftList window).SelectedItem <- 1
 
@@ -164,8 +164,8 @@ let ``a launch that fails is reported`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Launch = fun _ -> Error(NothingAssociated(fp (at "start/notes.txt")))
-                ReportError = fun _ -> reported.Add }
+                Processes.Launch = fun _ -> Error(NothingAssociated(fp (at "start/notes.txt")))
+                Prompts.ReportError = fun report -> reported.Add report.Message }
 
     (leftList window).SelectedItem <- Notes
 
@@ -194,8 +194,8 @@ let ``the elevated key on a document starts nothing and says why`` () =
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Launch = fun request -> started.Add request; Ok()
-                ReportError = fun _ -> reported.Add }
+                Processes.Launch = fun request -> started.Add request; Ok()
+                Prompts.ReportError = fun report -> reported.Add report.Message }
 
     (leftList window).SelectedItem <- Notes
 
@@ -211,8 +211,8 @@ let ``an elevation the user turns down leaves no trace on the screen`` () =
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Launch = fun request -> Error(ElevationDeclined request.Target)
-                ReportError = fun _ -> reported.Add }
+                Processes.Launch = fun request -> Error(ElevationDeclined request.Target)
+                Prompts.ReportError = fun report -> reported.Add report.Message }
 
     (leftList window).SelectedItem <- Tool
 

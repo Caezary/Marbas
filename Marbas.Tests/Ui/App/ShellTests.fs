@@ -52,29 +52,11 @@ let private stopped =
 [<Fact>]
 let ``a supplied name is dispatched as NameEntered`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with AskName = fun _ _ -> Some "work" }
+    let deps = { noDeps () with Prompts.AskName = fun _ -> Some(EntryName.create "work") }
 
     Shell.interpret deps dispatch (PromptForName None)
 
     Assert.Equal<Message list>([ NameEntered(en "work") ], List.ofSeq sent)
-
-[<Fact>]
-let ``a name is trimmed before it becomes a message`` () =
-    let sent, dispatch = capture ()
-    let deps = { noDeps () with AskName = fun _ _ -> Some "  work  " }
-
-    Shell.interpret deps dispatch (PromptForName None)
-
-    Assert.Equal<Message list>([ NameEntered(en "work") ], List.ofSeq sent)
-
-[<Fact>]
-let ``a blank name never becomes a message`` () =
-    let sent, dispatch = capture ()
-    let deps = { noDeps () with AskName = fun _ _ -> Some "   " }
-
-    Shell.interpret deps dispatch (PromptForName None)
-
-    Assert.Empty sent
 
 [<Fact>]
 let ``a cancelled name prompt dispatches nothing`` () =
@@ -88,7 +70,7 @@ let ``a cancelled name prompt dispatches nothing`` () =
 let ``the name prompt uses the mkdir label`` () =
     let _, dispatch = capture ()
     let mutable asked = ""
-    let deps = { noDeps () with AskName = fun title _ -> asked <- title; None }
+    let deps = { noDeps () with Prompts.AskName = fun request -> asked <- request.Title; None }
 
     Shell.interpret deps dispatch (PromptForName None)
 
@@ -98,7 +80,9 @@ let ``the name prompt uses the mkdir label`` () =
 let ``a selecting pattern uses the select label and carries the answer back`` () =
     let sent, dispatch = capture ()
     let mutable asked = ""
-    let deps = { noDeps () with AskPattern = fun title -> asked <- title; Some "*.fs" }
+    let deps =
+        { noDeps () with
+            Prompts.AskPattern = fun request -> asked <- request.Title; NamePattern.tryCreate "*.fs" }
 
     Shell.interpret deps dispatch (PromptForPattern Select)
 
@@ -113,25 +97,16 @@ let ``a selecting pattern uses the select label and carries the answer back`` ()
 let ``a deselecting pattern uses the deselect label`` () =
     let _, dispatch = capture ()
     let mutable asked = ""
-    let deps = { noDeps () with AskPattern = fun title -> asked <- title; None }
+    let deps = { noDeps () with Prompts.AskPattern = fun request -> asked <- request.Title; None }
 
     Shell.interpret deps dispatch (PromptForPattern Deselect)
 
     Assert.Equal(Shell.DeselectPrompt, asked)
 
 [<Fact>]
-let ``an empty pattern never becomes a message`` () =
-    let sent, dispatch = capture ()
-    let deps = { noDeps () with AskPattern = fun _ -> Some "" }
-
-    Shell.interpret deps dispatch (PromptForPattern Select)
-
-    Assert.Empty sent
-
-[<Fact>]
 let ``a chosen drive is dispatched with the side it was asked for`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with ChooseDrive = Fakes.choosingDrive (at "elsewhere") }
+    let deps = { noDeps () with Prompts.ChooseDrive = Fakes.choosingDrive (at "elsewhere") }
 
     Shell.interpret deps dispatch (PromptForRoot Right)
 
@@ -141,7 +116,7 @@ let ``a chosen drive is dispatched with the side it was asked for`` () =
 let ``a drive handed over is dispatched without a side`` () =
     let sent, dispatch = capture ()
     let stick = MountedDrive(Fakes.driveAt (at "media/stick"))
-    let deps = { noDeps () with ChooseDrive = fun _ -> Some(HandOver stick) }
+    let deps = { noDeps () with Prompts.ChooseDrive = fun _ -> Some(HandOver stick) }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
 
@@ -150,7 +125,7 @@ let ``a drive handed over is dispatched without a side`` () =
 [<Fact>]
 let ``a chosen home directory is dispatched as it was chosen`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with ChooseDrive = fun _ -> Some(StandOn(HomeDirectory(fp (at "home/user")))) }
+    let deps = { noDeps () with Prompts.ChooseDrive = fun _ -> Some(StandOn(HomeDirectory(fp (at "home/user")))) }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
 
@@ -172,8 +147,8 @@ let ``the chooser is offered every drive row as it was listed`` () =
 
     let deps =
         { noDeps () with
-            ListDrives = fun () -> rows
-            ChooseDrive = fun offering -> offered <- offering; None }
+            Processes.ListDrives = fun () -> rows
+            Prompts.ChooseDrive = fun offering -> offered <- offering; None }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
 
@@ -194,7 +169,7 @@ let ``the drives are listed again each time the chooser opens`` () =
 
     let deps =
         { noDeps () with
-            ListDrives = fun () -> listings <- listings + 1; [] }
+            Processes.ListDrives = fun () -> listings <- listings + 1; [] }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
     Shell.interpret deps dispatch (PromptForRoot Right)
@@ -204,7 +179,7 @@ let ``the drives are listed again each time the chooser opens`` () =
 [<Fact>]
 let ``a listing error is reported under the listing title`` () =
     let mutable reported = ("", "")
-    let deps = { noDeps () with ReportError = fun title message -> reported <- (title, message) }
+    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     Shell.interpret deps ignore (ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "gone"))))
 
@@ -214,7 +189,7 @@ let ``a listing error is reported under the listing title`` () =
 [<Fact>]
 let ``an operation error is reported under the operation title`` () =
     let mutable reported = ("", "")
-    let deps = { noDeps () with ReportError = fun title message -> reported <- (title, message) }
+    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     Shell.interpret deps ignore (ReportOperationError(TargetExists(fp (at "start/docs"))))
 
@@ -224,7 +199,7 @@ let ``an operation error is reported under the operation title`` () =
 [<Fact>]
 let ``a confirmed delete is dispatched back`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Confirm = fun _ _ -> true }
+    let deps = { noDeps () with Prompts.Confirm = fun _ -> true }
 
     Shell.interpret deps dispatch (ConfirmDelete(deleteRequest [ en "notes.txt" ] NamedEntriesOnly))
 
@@ -242,7 +217,7 @@ let ``a refused delete dispatches nothing`` () =
 let ``the delete question carries its own title and the warning`` () =
     let _, dispatch = capture ()
     let mutable asked = ("", "")
-    let deps = { noDeps () with Confirm = fun title message -> asked <- (title, message); false }
+    let deps = { noDeps () with Prompts.Confirm = fun question -> asked <- (question.Title, question.Question); false }
 
     Shell.interpret deps dispatch (ConfirmDelete(deleteRequest [ en "docs" ] WithDirectoryContents))
 
@@ -253,7 +228,7 @@ let ``the delete question carries its own title and the warning`` () =
 let ``a permanent delete asks under its own title`` () =
     let _, dispatch = capture ()
     let mutable asked = ("", "")
-    let deps = { noDeps () with Confirm = fun title message -> asked <- (title, message); false }
+    let deps = { noDeps () with Prompts.Confirm = fun question -> asked <- (question.Title, question.Question); false }
 
     let request =
         { deleteRequest [ en "notes.txt" ] NamedEntriesOnly with Mode = Permanently }
@@ -265,7 +240,7 @@ let ``a permanent delete asks under its own title`` () =
 [<Fact>]
 let ``a confirmed permanent delete is dispatched back with its mode`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Confirm = fun _ _ -> true }
+    let deps = { noDeps () with Prompts.Confirm = fun _ -> true }
 
     let request =
         { deleteRequest [ en "notes.txt" ] NamedEntriesOnly with Mode = Permanently }
@@ -283,7 +258,7 @@ let ``targets sent to the trash go through the port, not the file system`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            SendToTrash = fun path -> trashed.Add path; Ok() }
+            Processes.SendToTrash = fun path -> trashed.Add path; Ok() }
 
     Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToTrash))
 
@@ -305,7 +280,7 @@ let ``every entry sent to the trash is named while the batch runs`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            RunBatch = fun _ work finish -> work (recording reported) |> finish }
+            Runners.Batch = fun _ work finish -> work (recording reported) |> finish }
 
     Shell.interpret
         deps
@@ -327,8 +302,8 @@ let ``a trash stopped with Esc leaves the entries it never reached`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            SendToTrash = fun path -> trashed.Add path; Ok()
-            RunBatch = fun _ work finish -> work stopped |> finish }
+            Processes.SendToTrash = fun path -> trashed.Add path; Ok()
+            Runners.Batch = fun _ work finish -> work stopped |> finish }
 
     Shell.interpret
         deps
@@ -351,7 +326,7 @@ let ``a permanent delete names every entry of the tree it removes`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            RunBatch = fun _ work finish -> work (recording reported) |> finish }
+            Runners.Batch = fun _ work finish -> work (recording reported) |> finish }
 
     Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/docs") ] ], Permanently))
 
@@ -368,7 +343,7 @@ let ``a permanent delete stopped with Esc leaves the rest of the tree`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            RunBatch = fun _ work finish -> work stopped |> finish }
+            Runners.Batch = fun _ work finish -> work stopped |> finish }
 
     Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/docs") ] ], Permanently))
 
@@ -382,7 +357,7 @@ let ``a permanent delete removes the target itself`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            SendToTrash = fun path -> failwith $"the trash was asked for {FileSystemPath.value path}" }
+            Processes.SendToTrash = fun path -> failwith $"the trash was asked for {FileSystemPath.value path}" }
 
     Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], Permanently))
 
@@ -402,8 +377,8 @@ let ``a wipe runs behind the progress window under a title of its own`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            SendToTrash = fun path -> failwith $"the trash was asked for {FileSystemPath.value path}"
-            RunBatch =
+            Processes.SendToTrash = fun path -> failwith $"the trash was asked for {FileSystemPath.value path}"
+            Runners.Batch =
                 fun title work finish ->
                     titles.Add title
                     work unattended |> finish }
@@ -427,7 +402,7 @@ let ``a stopped wipe hands back the file it stopped at`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            RunBatch = fun _ work finish -> work stopped |> finish }
+            Runners.Batch = fun _ work finish -> work stopped |> finish }
 
     Shell.interpret
         deps
@@ -452,7 +427,7 @@ let ``what the trash refused is reported item by item`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            SendToTrash = fun _ -> Error refusal }
+            Processes.SendToTrash = fun _ -> Error refusal }
 
     Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToTrash))
 
@@ -464,7 +439,7 @@ let ``what the trash refused is reported item by item`` () =
 [<Fact>]
 let ``item failures are reported under the operation title`` () =
     let mutable reported = ("", "")
-    let deps = { noDeps () with ReportError = fun title message -> reported <- (title, message) }
+    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     let failed =
         [ { Source = ItemOnDisk(fp (at "start/gone.txt"))
@@ -505,7 +480,7 @@ let ``a batch is handed to the runner under its own title`` () =
     let deps () =
         { noDeps () with
             FileSystem = copyReadyFs ()
-            RunBatch = fun title work finish -> titles.Add title; work unattended |> finish }
+            Runners.Batch = fun title work finish -> titles.Add title; work unattended |> finish }
 
     Shell.interpret
         (deps ())
@@ -527,8 +502,8 @@ let ``nothing is run when every collision is refused`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskOverwrite = (fun _ _ -> No)
-            RunBatch = fun _ work finish -> started <- true; work unattended |> finish }
+            Prompts.AskOverwrite = (fun _ -> No)
+            Runners.Batch = fun _ work finish -> started <- true; work unattended |> finish }
 
     Shell.interpret
         deps
@@ -540,23 +515,23 @@ let ``nothing is run when every collision is refused`` () =
     Assert.Equal("old", fs.File.ReadAllText(at "backup/notes.txt"))
 
 [<Fact>]
-let ``a collision asks the overwrite question under its own title`` () =
+let ``a collision asks about the target that is already there`` () =
     let _, dispatch = capture ()
     let fs = copyReadyFs ()
     fs.AddFile(at "backup/notes.txt", MockFileData "old")
-    let mutable asked = ("", "")
+    let asked = ResizeArray<FileSystemPath>()
+
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskOverwrite = fun title message -> asked <- (title, message); No }
+            Prompts.AskOverwrite = fun request -> asked.Add request.Target; No }
 
     Shell.interpret
         deps
         dispatch
         (CopyPlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))))
 
-    Assert.Equal(OverwriteQuestion.Title, fst asked)
-    Assert.Contains(at "backup/notes.txt", snd asked)
+    Assert.Equal(at "backup/notes.txt", FileSystemPath.value (Assert.Single asked))
     Assert.Equal("old", fs.File.ReadAllText(at "backup/notes.txt"))
 
 [<Fact>]
@@ -565,7 +540,10 @@ let ``the target prompt suggests a path and carries back what was typed`` () =
     let mutable offered = ("", "")
     let deps =
         { noDeps () with
-            AskTarget = fun title suggestion -> offered <- (title, suggestion); Some "readme.txt" }
+            Prompts.AskTarget =
+                fun request ->
+                    offered <- (request.Title, FileSystemPath.value request.Suggestion)
+                    Some "readme.txt" }
 
     Shell.interpret deps dispatch (PromptForTarget(fp (at "backup")))
 
@@ -619,7 +597,7 @@ let ``a rename the file system carries out itself asks for no batch`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            RunBatch = fun title work finish -> titles.Add title; work unattended |> finish }
+            Runners.Batch = fun title work finish -> titles.Add title; work unattended |> finish }
 
     Shell.interpret deps dispatch (RenameTarget(fp (at "start/notes.txt"), en "readme.txt"))
 
@@ -635,7 +613,7 @@ let ``a rename that fell back to copying runs behind the progress window`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            RunBatch = fun title work finish -> titles.Add title; work unattended |> finish }
+            Runners.Batch = fun title work finish -> titles.Add title; work unattended |> finish }
 
     Shell.interpret deps dispatch (RenameTarget(fp (at "start/docs"), en "papers"))
 
@@ -653,7 +631,7 @@ let ``a rename stopped with Esc while it copied leaves the source where it is`` 
     let deps =
         { noDeps () with
             FileSystem = fs
-            RunBatch = fun _ work finish -> work stopped |> finish }
+            Runners.Batch = fun _ work finish -> work stopped |> finish }
 
     Shell.interpret deps dispatch (RenameTarget(fp (at "start/docs"), en "papers"))
 
@@ -719,7 +697,7 @@ let ``a viewed file is handed over opened under its own path`` () =
         let lines = [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
         shown <- (FileSystemPath.value source.Path, lines)
 
-    let deps = { noDeps () with FileSystem = fs; ShowFile = readOut }
+    let deps = { noDeps () with FileSystem = fs; Prompts.ShowFile = readOut }
 
     Shell.interpret deps ignore (ViewFile(fp (at "start/notes.txt")))
 
@@ -733,8 +711,8 @@ let ``a file that cannot be read is reported instead of shown`` () =
 
     let deps =
         { noDeps () with
-            ShowFile = fun _ -> shown <- true
-            ReportError = fun title message -> reported <- (title, message) }
+            Prompts.ShowFile = fun _ -> shown <- true
+            Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     Shell.interpret deps ignore (ViewFile(fp (at "start/gone.txt")))
 
@@ -746,7 +724,7 @@ let ``a file that cannot be read is reported instead of shown`` () =
 let ``an edited file is handed to the editor and its outcome dispatched back`` () =
     let sent, dispatch = capture ()
     let edited = ResizeArray<FileSystemPath>()
-    let deps = { noDeps () with RunEditor = fun _ path -> edited.Add path; Ok() }
+    let deps = { noDeps () with Processes.RunEditor = fun _ path -> edited.Add path; Ok() }
 
     Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), None))
 
@@ -757,7 +735,7 @@ let ``an edited file is handed to the editor and its outcome dispatched back`` (
 let ``the editor the effect names is the one that is started`` () =
     let _, dispatch = capture ()
     let started = ResizeArray<ProgramPath option>()
-    let deps = { noDeps () with RunEditor = fun chosen _ -> started.Add chosen; Ok() }
+    let deps = { noDeps () with Processes.RunEditor = fun chosen _ -> started.Add chosen; Ok() }
     let chosen = ProgramPath.tryCreate "code.exe"
 
     Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), chosen))
@@ -768,7 +746,7 @@ let ``the editor the effect names is the one that is started`` () =
 let ``an editor that fails dispatches its failure back`` () =
     let sent, dispatch = capture ()
     let failure = OperationFailed(fp (at "start/notes.txt"), "no editor")
-    let deps = { noDeps () with RunEditor = fun _ _ -> Error failure }
+    let deps = { noDeps () with Processes.RunEditor = fun _ _ -> Error failure }
 
     Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), None))
 
@@ -777,7 +755,7 @@ let ``an editor that fails dispatches its failure back`` () =
 [<Fact>]
 let ``a name for a new file is dispatched as FileNameEntered`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with AskName = fun _ _ -> Some "draft.md" }
+    let deps = { noDeps () with Prompts.AskName = fun _ -> Some(EntryName.create "draft.md") }
 
     Shell.interpret deps dispatch PromptForFileName
 
@@ -786,7 +764,7 @@ let ``a name for a new file is dispatched as FileNameEntered`` () =
 [<Fact>]
 let ``a cancelled new file prompt dispatches nothing`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with AskName = fun _ _ -> None }
+    let deps = { noDeps () with Prompts.AskName = fun _ -> None }
 
     Shell.interpret deps dispatch PromptForFileName
 
@@ -794,12 +772,12 @@ let ``a cancelled new file prompt dispatches nothing`` () =
 
 [<Fact>]
 let ``the new file prompt opens on nothing`` () =
-    let offered = ResizeArray<string>()
-    let deps = { noDeps () with AskName = fun _ suggestion -> offered.Add suggestion; None }
+    let offered = ResizeArray<EntryName option>()
+    let deps = { noDeps () with Prompts.AskName = fun request -> offered.Add request.Suggestion; None }
 
     Shell.interpret deps ignore PromptForFileName
 
-    Assert.Equal("", Assert.Single offered)
+    Assert.Equal(None, Assert.Single offered)
 
 [<Fact>]
 let ``changed properties are dispatched back`` () =
@@ -811,7 +789,7 @@ let ``changed properties are dispatched back`` () =
           Modified = DateTimeOffset(DateTime(2024, 1, 1))
           Accessed = DateTimeOffset(DateTime(2024, 1, 1)) }
     let changed = EntryProperties.setFlag HiddenFlag true shown
-    let deps = { noDeps () with EditProperties = fun _ -> Some changed }
+    let deps = { noDeps () with Prompts.EditProperties = fun _ -> Some changed }
 
     Shell.interpret deps dispatch (ShowProperties shown)
 
@@ -835,7 +813,7 @@ let ``a dismissed properties dialog dispatches nothing`` () =
 let ``a program the effect names is handed to the launcher and its outcome dispatched back`` () =
     let sent, dispatch = capture ()
     let asked = ResizeArray<LaunchRequest>()
-    let deps = { noDeps () with Launch = fun request -> asked.Add request; Ok() }
+    let deps = { noDeps () with Processes.Launch = fun request -> asked.Add request; Ok() }
 
     Shell.interpret deps dispatch (RunProgram(launching (at "start/notes.txt")))
 
@@ -846,7 +824,7 @@ let ``a program the effect names is handed to the launcher and its outcome dispa
 let ``a launch that fails dispatches its failure back`` () =
     let sent, dispatch = capture ()
     let failure = NothingAssociated(fp (at "start/notes.odd"))
-    let deps = { noDeps () with Launch = fun _ -> Error failure }
+    let deps = { noDeps () with Processes.Launch = fun _ -> Error failure }
 
     Shell.interpret deps dispatch (RunProgram(launching (at "start/notes.odd")))
 
@@ -855,7 +833,7 @@ let ``a launch that fails dispatches its failure back`` () =
 [<Fact>]
 let ``a launch failure is reported under its own title`` () =
     let mutable reported = ("", "")
-    let deps = { noDeps () with ReportError = fun title text -> reported <- (title, text) }
+    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     Shell.interpret deps ignore (ReportLaunchError(NothingAssociated(fp (at "start/notes.odd"))))
 
@@ -869,8 +847,8 @@ let ``the handlers of the file the effect names are the ones offered`` () =
 
     let deps =
         { noDeps () with
-            HandlersFor = fun _ -> [ firefox ]
-            AskHandler = fun name handlers chosen -> asked.Add(name, handlers, chosen); None }
+            Processes.HandlersFor = fun _ -> [ firefox ]
+            Prompts.AskHandler = fun request -> asked.Add(request.Name, request.Handlers, request.Chosen); None }
 
     Shell.interpret deps ignore (ShowHandlers(fp (at "start/page.html"), ProgramPath.tryCreate "code.exe"))
 
@@ -888,7 +866,7 @@ let ``a program picked out of the popup is dispatched back with the file it open
         { Program = Expect.some (ProgramPath.tryCreate "firefox.exe")
           Remember = true }
 
-    let deps = { noDeps () with AskHandler = fun _ _ _ -> Some choice }
+    let deps = { noDeps () with Prompts.AskHandler = fun _ -> Some choice }
 
     Shell.interpret deps dispatch (ShowHandlers(fp (at "start/page.html"), None))
 
@@ -908,7 +886,7 @@ let ``changed programs are dispatched back`` () =
     let changed =
         { ProgramSettings.none with
             DefaultEditor = ProgramPath.tryCreate "code.exe" }
-    let deps = { noDeps () with EditPrograms = fun _ _ -> Some changed }
+    let deps = { noDeps () with Prompts.EditPrograms = fun _ -> Some changed }
 
     Shell.interpret deps dispatch (ShowSettings(ProgramSettings.none, None))
 
@@ -917,7 +895,7 @@ let ``changed programs are dispatched back`` () =
 [<Fact>]
 let ``the executable the effect names is offered to the settings popup`` () =
     let offered = ResizeArray<ProgramPath option>()
-    let deps = { noDeps () with EditPrograms = fun _ candidate -> offered.Add candidate; None }
+    let deps = { noDeps () with Prompts.EditPrograms = fun request -> offered.Add request.Candidate; None }
     let candidate = ProgramPath.tryCreate (at "start/rider64.exe")
 
     Shell.interpret deps ignore (ShowSettings(ProgramSettings.none, candidate))
@@ -954,7 +932,7 @@ let ``a session that could not be written is reported`` () =
         { noDeps () with
             FileSystem = fs
             SettingsPath = fp (at "blocked/marbas.conf")
-            ReportError = fun title message -> reported <- (title, message) }
+            Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     Shell.interpret deps ignore (SaveSettings(Settings.forPath (fp (at "start"))))
 
@@ -987,22 +965,22 @@ let ``quit takes the workspace of the session with it`` () =
 [<Fact>]
 let ``the name prompt offers the name that was remembered`` () =
     let _, dispatch = capture ()
-    let mutable offered = ""
-    let deps = { noDeps () with AskName = fun _ suggestion -> offered <- suggestion; None }
+    let mutable offered = None
+    let deps = { noDeps () with Prompts.AskName = fun request -> offered <- request.Suggestion; None }
 
     Shell.interpret deps dispatch (PromptForName(Some(en "work")))
 
-    Assert.Equal("work", offered)
+    Assert.Equal(Some(en "work"), offered)
 
 [<Fact>]
 let ``the name prompt starts empty when nothing was remembered`` () =
     let _, dispatch = capture ()
-    let mutable offered = "something"
-    let deps = { noDeps () with AskName = fun _ suggestion -> offered <- suggestion; None }
+    let mutable offered = Some(en "something")
+    let deps = { noDeps () with Prompts.AskName = fun request -> offered <- request.Suggestion; None }
 
     Shell.interpret deps dispatch (PromptForName None)
 
-    Assert.Equal("", offered)
+    Assert.Equal(None, offered)
 
 let private packReadyFs () =
     let fs = MockFileSystem()
@@ -1031,9 +1009,9 @@ let ``the archive prompt offers the suggestion and carries back the choice`` () 
 
     let deps =
         { noDeps () with
-            AskArchive =
-                fun suggestion ->
-                    offered <- suggestion
+            Prompts.AskArchive =
+                fun request ->
+                    offered <- FileSystemPath.value request.Suggestion
                     Some choice }
 
     Shell.interpret deps dispatch (PromptForArchive(fp (at "backup/notes.zip")))
@@ -1072,7 +1050,7 @@ let ``packing runs under its own title`` () =
     let deps =
         { noDeps () with
             FileSystem = packReadyFs ()
-            RunBatch =
+            Runners.Batch =
                 fun title work finish ->
                     titles.Add title
                     work unattended |> finish }
@@ -1091,9 +1069,9 @@ let ``an archive that already exists is asked about first`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            Confirm =
-                fun title message ->
-                    asked <- (title, message)
+            Prompts.Confirm =
+                fun question ->
+                    asked <- (question.Title, question.Question)
                     false }
 
     Shell.interpret deps dispatch (ArchiveTargets([ fp (at "start/notes.txt") ], packing (at "backup/notes.zip")))
@@ -1107,7 +1085,7 @@ let ``a refused overwrite packs nothing`` () =
     let sent, dispatch = capture ()
     let fs = packReadyFs ()
     fs.AddFile(at "backup/notes.zip", MockFileData "old")
-    let deps = { noDeps () with FileSystem = fs; Confirm = fun _ _ -> false }
+    let deps = { noDeps () with FileSystem = fs; Prompts.Confirm = fun _ -> false }
 
     Shell.interpret deps dispatch (ArchiveTargets([ fp (at "start/notes.txt") ], packing (at "backup/notes.zip")))
 
@@ -1118,7 +1096,7 @@ let ``an accepted overwrite replaces the archive`` () =
     let sent, dispatch = capture ()
     let fs = packReadyFs ()
     fs.AddFile(at "backup/notes.zip", MockFileData "old")
-    let deps = { noDeps () with FileSystem = fs; Confirm = fun _ _ -> true }
+    let deps = { noDeps () with FileSystem = fs; Prompts.Confirm = fun _ -> true }
 
     Shell.interpret deps dispatch (ArchiveTargets([ fp (at "start/notes.txt") ], packing (at "backup/notes.zip")))
 
@@ -1172,7 +1150,7 @@ let ``unpacking runs under its own title`` () =
     let deps =
         { noDeps () with
             FileSystem = unpackReadyFs None
-            RunBatch =
+            Runners.Batch =
                 fun title work finish ->
                     titles.Add title
                     work unattended |> finish }
@@ -1186,20 +1164,20 @@ let ``an entry already in the target directory is asked about`` () =
     let _, dispatch = capture ()
     let fs = unpackReadyFs None
     fs.AddFile(at "backup/notes.txt", MockFileData "old")
-    let asked = ResizeArray<string>()
+    let asked = ResizeArray<FileSystemPath>()
 
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskOverwrite =
-                fun _ message ->
-                    asked.Add message
+            Prompts.AskOverwrite =
+                fun request ->
+                    asked.Add request.Target
                     No }
 
     Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
 
     Assert.Equal(1, asked.Count)
-    Assert.Contains(at "backup/notes.txt", asked[0])
+    Assert.Equal(at "backup/notes.txt", FileSystemPath.value asked[0])
     Assert.Equal("old", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.Equal("inner", fs.File.ReadAllText(at "backup/docs/inner.txt"))
 
@@ -1207,20 +1185,20 @@ let ``an entry already in the target directory is asked about`` () =
 let ``a protected archive is asked for its password once`` () =
     let fs = unpackReadyFs (ArchivePassword.tryCreate "letmein")
     let _, dispatch = capture ()
-    let asked = ResizeArray<string>()
+    let asked = ResizeArray<EntryName>()
 
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskPassword =
-                fun _ label ->
-                    asked.Add label
-                    Some "letmein" }
+            Prompts.AskPassword =
+                fun request ->
+                    asked.Add request.Archive
+                    ArchivePassword.tryCreate "letmein" }
 
     Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
 
     Assert.Equal(1, asked.Count)
-    Assert.Contains("data.zip", asked[0])
+    Assert.Equal(en "data.zip", asked[0])
     Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
 
 [<Fact>]
@@ -1231,8 +1209,8 @@ let ``an archive that needs no password is never asked for one`` () =
     let deps =
         { noDeps () with
             FileSystem = unpackReadyFs None
-            AskPassword =
-                fun _ _ ->
+            Prompts.AskPassword =
+                fun _ ->
                     asked <- true
                     None }
 
@@ -1276,7 +1254,7 @@ let ``a password prompt answered with nothing leaves the archive alone`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskPassword = fun _ _ -> Some "" }
+            Prompts.AskPassword = fun _ -> None }
 
     Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
 
@@ -1307,7 +1285,7 @@ let ``an entry of an archive is handed over under the name of its place in it`` 
         let lines = [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
         shown <- (FileSystemPath.value source.Path, lines)
 
-    let deps = { noDeps () with FileSystem = fs; ShowFile = readOut }
+    let deps = { noDeps () with FileSystem = fs; Prompts.ShowFile = readOut }
     let entry = ArchivePath.tryCreate "notes.txt" |> Expect.some
 
     Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/data.zip"), entry))
@@ -1323,8 +1301,8 @@ let ``an entry that cannot be read is reported under the archive title`` () =
 
     let deps =
         { noDeps () with
-            ShowFile = fun _ -> shown <- true
-            ReportError = fun title message -> reported <- (title, message) }
+            Prompts.ShowFile = fun _ -> shown <- true
+            Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/gone.zip"), entry))
 
@@ -1355,8 +1333,8 @@ let ``a locked archive asks for its password before an entry is shown`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskPassword = fun _ _ -> asked <- asked + 1; Some "opensesame"
-            ShowFile = fun source -> shown <- Text.Encoding.ASCII.GetString(source.Read(0L, 6)) }
+            Prompts.AskPassword = fun _ -> asked <- asked + 1; ArchivePassword.tryCreate "opensesame"
+            Prompts.ShowFile = fun source -> shown <- Text.Encoding.ASCII.GetString(source.Read(0L, 6)) }
 
     Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/locked.zip"), entry))
 
@@ -1385,8 +1363,8 @@ let ``a locked archive whose password is not given shows nothing`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskPassword = fun _ _ -> None
-            ShowFile = fun _ -> shown <- true }
+            Prompts.AskPassword = fun _ -> None
+            Prompts.ShowFile = fun _ -> shown <- true }
 
     Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/locked.zip"), entry))
 
@@ -1435,7 +1413,7 @@ let ``copying out of an archive runs under the copying title and leaves the arch
     let deps =
         { noDeps () with
             FileSystem = fs
-            RunBatch =
+            Runners.Batch =
                 fun title work finish ->
                     titles.Add title
                     work unattended |> finish }
@@ -1453,14 +1431,14 @@ let ``an entry copied over one already there is asked about by its landing place
     let _, dispatch = capture ()
     let fs = unpackReadyFs None
     fs.AddFile(at "backup/notes.txt", MockFileData "old")
-    let asked = ResizeArray<string>()
+    let asked = ResizeArray<FileSystemPath>()
 
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskOverwrite =
-                fun _ message ->
-                    asked.Add message
+            Prompts.AskOverwrite =
+                fun request ->
+                    asked.Add request.Target
                     No }
 
     Shell.interpret
@@ -1468,7 +1446,7 @@ let ``an entry copied over one already there is asked about by its landing place
         dispatch
         (CopyPlaces([ FromArchive(dataZip, [ entry "notes.txt" ]) ], ToDirectory(fp (at "backup"))))
 
-    Assert.Contains(at "backup/notes.txt", Assert.Single asked)
+    Assert.Equal(at "backup/notes.txt", FileSystemPath.value (Assert.Single asked))
     Assert.Equal("old", fs.File.ReadAllText(at "backup/notes.txt"))
 
 [<Fact>]
@@ -1481,8 +1459,8 @@ let ``a refused overwrite copies nothing and starts no batch`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskOverwrite = fun _ _ -> No
-            RunBatch =
+            Prompts.AskOverwrite = fun _ -> No
+            Runners.Batch =
                 fun title work finish ->
                     batches.Add title
                     work unattended |> finish }
@@ -1499,15 +1477,15 @@ let ``a refused overwrite copies nothing and starts no batch`` () =
 let ``copying out of a locked archive asks for the password once`` () =
     let _, dispatch = capture ()
     let fs = unpackReadyFs (ArchivePassword.tryCreate "opensesame")
-    let asked = ResizeArray<string>()
+    let asked = ResizeArray<EntryName>()
 
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskPassword =
-                fun _ message ->
-                    asked.Add message
-                    Some "opensesame" }
+            Prompts.AskPassword =
+                fun request ->
+                    asked.Add request.Archive
+                    ArchivePassword.tryCreate "opensesame" }
 
     Shell.interpret
         deps
@@ -1521,7 +1499,7 @@ let ``copying out of a locked archive asks for the password once`` () =
 let ``copying out of a locked archive whose password is not given copies nothing`` () =
     let sent, dispatch = capture ()
     let fs = unpackReadyFs (ArchivePassword.tryCreate "opensesame")
-    let deps = { noDeps () with FileSystem = fs; AskPassword = fun _ _ -> None }
+    let deps = { noDeps () with FileSystem = fs; Prompts.AskPassword = fun _ -> None }
 
     Shell.interpret
         deps
@@ -1566,14 +1544,14 @@ let ``a name already at that level of the archive is asked about`` () =
     let _, dispatch = capture ()
     let fs = withLooseFile ()
     fs.AddFile(at "backup/notes.txt", MockFileData "fresher")
-    let asked = ResizeArray<string>()
+    let asked = ResizeArray<FileSystemPath>()
 
     let deps =
         { noDeps () with
             FileSystem = fs
-            AskOverwrite =
-                fun _ message ->
-                    asked.Add message
+            Prompts.AskOverwrite =
+                fun request ->
+                    asked.Add request.Target
                     No }
 
     Shell.interpret
@@ -1581,7 +1559,7 @@ let ``a name already at that level of the archive is asked about`` () =
         dispatch
         (CopyPlaces([ FromDisk [ fp (at "backup/notes.txt") ] ], ToArchive(zipAt, ArchivePath.root)))
 
-    Assert.Contains(at "start/data.zip/notes.txt", Assert.Single asked)
+    Assert.Equal(at "start/data.zip/notes.txt", FileSystemPath.value (Assert.Single asked))
 
 [<Fact>]
 let ``a kind that cannot be changed comes back as a failed item`` () =
@@ -1594,8 +1572,8 @@ let ``a kind that cannot be changed comes back as a failed item`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            ReportError = fun title message -> reported <- (title, message)
-            RunBatch = fun _ work finish -> work unattended |> finish }
+            Prompts.ReportError = fun report -> reported <- (report.Title, report.Message)
+            Runners.Batch = fun _ work finish -> work unattended |> finish }
 
     Shell.interpret
         deps
@@ -1621,8 +1599,8 @@ let ``an archive behind a password comes back as a failed item`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            ReportError = fun title message -> reported <- (title, message)
-            RunBatch = fun _ work finish -> work unattended |> finish }
+            Prompts.ReportError = fun report -> reported <- (report.Title, report.Message)
+            Runners.Batch = fun _ work finish -> work unattended |> finish }
 
     Shell.interpret
         deps
@@ -1647,7 +1625,7 @@ let ``a source moved into an archive is gone from disk once it is in`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            RunBatch =
+            Runners.Batch =
                 fun title work finish ->
                     titles.Add title
                     work unattended |> finish }
@@ -1692,7 +1670,7 @@ let ``entries removed from an archive are gone and the outcome is dispatched bac
     let deps =
         { noDeps () with
             FileSystem = fs
-            RunBatch =
+            Runners.Batch =
                 fun title work finish ->
                     titles.Add title
                     work unattended |> finish }
@@ -1774,15 +1752,15 @@ let ``an entry moved across archives leaves the one it came from`` () =
 let ``a name already at the target level of the other archive is asked about`` () =
     let _, dispatch = capture ()
     let fs = twoArchives ()
-    let asked = ResizeArray<string>()
+    let asked = ResizeArray<FileSystemPath>()
 
     let deps =
         { noDeps () with
             FileSystem = fs
             WorkspacePath = fp (at "temp/Marbas/session")
-            AskOverwrite =
-                fun _ message ->
-                    asked.Add message
+            Prompts.AskOverwrite =
+                fun request ->
+                    asked.Add request.Target
                     No }
 
     Shell.interpret
@@ -1790,7 +1768,7 @@ let ``a name already at the target level of the other archive is asked about`` (
         dispatch
         (CopyPlaces([ FromArchive(zipAt, [ entry "notes.txt" ]) ], ToArchive(otherAt, ArchivePath.root)))
 
-    Assert.Contains(at "start/other.zip/notes.txt", Assert.Single asked)
+    Assert.Equal(at "start/other.zip/notes.txt", FileSystemPath.value (Assert.Single asked))
 
 [<Fact>]
 let ``the workspace is empty once a crossing has finished`` () =
@@ -1824,16 +1802,16 @@ let ``a crossing out of a locked archive asks for its password once`` () =
         [ fp (at "start/work/notes.txt") ]
     |> ignore
 
-    let asked = ResizeArray<string>()
+    let asked = ResizeArray<EntryName>()
 
     let deps =
         { noDeps () with
             FileSystem = fs
             WorkspacePath = fp (at "temp/Marbas/session")
-            AskPassword =
-                fun _ message ->
-                    asked.Add message
-                    Some "opensesame" }
+            Prompts.AskPassword =
+                fun request ->
+                    asked.Add request.Archive
+                    ArchivePassword.tryCreate "opensesame" }
 
     Shell.interpret
         deps
@@ -1850,7 +1828,7 @@ let ``the paths under watch are handed to the watch`` () =
 
     let deps =
         { noDeps () with
-            WatchLocations = fun paths _ -> watched <- paths }
+            Watches.Locations = fun paths _ -> watched <- paths }
 
     Shell.interpret deps dispatch (WatchLocations [ fp (at "start"); fp (at "backup") ])
 
@@ -1863,7 +1841,7 @@ let ``what the watch reports is dispatched as an external change`` () =
 
     let deps =
         { noDeps () with
-            WatchLocations = fun _ reported -> report <- reported }
+            Watches.Locations = fun _ reported -> report <- reported }
 
     Shell.interpret deps dispatch (WatchLocations [ fp (at "start") ])
     report ()
@@ -1892,7 +1870,7 @@ let ``the search runs over the ground its scope names`` () =
 
     let deps =
         { noDeps () with
-            RunSearch = fun run _ _ -> asked <- SearchRun.ground run }
+            Runners.Search = fun run _ _ -> asked <- SearchRun.ground run }
 
     Shell.interpret deps ignore (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
 
@@ -1904,8 +1882,8 @@ let ``the directories of PATH are the ground of the scope that names them`` () =
 
     let deps =
         { noDeps () with
-            PathDirectories = [ fp (at "tools") ]
-            RunSearch = fun run _ _ -> asked <- SearchRun.ground run }
+            Processes.PathDirectories = [ fp (at "tools") ]
+            Runners.Search = fun run _ _ -> asked <- SearchRun.ground run }
 
     Shell.interpret deps ignore (RunSearch(searchFor PathDirectories, OnDisk(fp (at "start")), []))
 
@@ -1918,7 +1896,7 @@ let ``what the results window answered becomes a message`` () =
 
     let deps =
         { noDeps () with
-            RunSearch = fun _ _ finished -> finished (answering (Some landing)) }
+            Runners.Search = fun _ _ finished -> finished (answering (Some landing)) }
 
     Shell.interpret deps dispatch (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
 
@@ -1937,8 +1915,8 @@ let ``a hit the results window asks to view is read out of the file it names`` (
     let deps =
         { noDeps () with
             FileSystem = fs
-            ShowFile = fun source -> shown <- FileSystemPath.value source.Path
-            RunSearch = fun _ view _ -> view hit }
+            Prompts.ShowFile = fun source -> shown <- FileSystemPath.value source.Path
+            Runners.Search = fun _ view _ -> view hit }
 
     Shell.interpret deps ignore (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
 

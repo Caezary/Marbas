@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
 open Marbas.FileSystem
+open Marbas.Ui.App
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
@@ -18,10 +19,10 @@ let private mockFs () =
 let private windowWith (fs: MockFileSystem) showFile reportError =
     focusedWindow
         { Fakes.dependencies fs (at "start") with
-            ShowFile = showFile
-            ReportError = reportError }
+            Prompts.ShowFile = showFile
+            Prompts.ReportError = reportError }
 
-let private silent = fun (_: string) (_: string) -> ()
+let private silent = ignore<Ports.ErrorReport>
 
 let private recording (shown: ResizeArray<string>) =
     fun (source: FileWindow.Source) -> shown.Add(FileSystemPath.value source.Path)
@@ -75,7 +76,7 @@ let ``a file that vanished is reported instead of shown`` () =
     let fs = mockFs ()
     let shown = ResizeArray<string>()
     let reported = ResizeArray<string>()
-    use window = windowWith fs (recording shown) (fun _ -> reported.Add)
+    use window = windowWith fs (recording shown) (fun report -> reported.Add report.Message)
     (leftList window).SelectedItem <- 2
     fs.File.Delete(at "start/notes.txt")
 

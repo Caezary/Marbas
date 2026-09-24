@@ -2,6 +2,8 @@ module Marbas.Ui.Dialogs.PromptDialog
 
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
+open Marbas.Domain
+open Marbas.FileSystem
 open Marbas.Ui.Theme
 
 let create title label (suggestion: string) =
@@ -35,3 +37,8 @@ let secret (dialog: Dialog) =
 
 let text (dialog: Dialog) =
     if dialog.Canceled then None else Some (field dialog).Text
+
+let name (dialog: Dialog) = text dialog |> Option.bind EntryName.tryCreate
+
+let password (dialog: Dialog) =
+    text dialog |> Option.bind ArchivePassword.tryCreate

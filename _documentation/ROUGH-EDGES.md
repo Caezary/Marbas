@@ -55,7 +55,7 @@ belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   what the reserved space is for — `F1` help and `F2` a user menu are the
   classic fillers. All three carry a command with a modifier (`Shift+F1` packs,
   `Shift+F2` unpacks, `Shift+F9` saves the session).
-- The modifier row only appears on Windows. `WatchModifiers` registers nothing
+- The modifier row only appears on Windows. `Watches.Modifiers` registers nothing
   elsewhere, because no Unix driver in Terminal.Gui 2.4.17 reports a standalone
   modifier outside the kitty keyboard protocol. If that protocol is ever wired
   through, the fix is one more implementation of the same port.
@@ -212,11 +212,11 @@ belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 ## Operations
 
 - Delete goes through an effect, like copy and move, but it still runs on the UI
-  thread rather than behind `RunBatch`, so removing a huge tree blocks. Neither
+  thread rather than behind `Runners.Batch`, so removing a huge tree blocks. Neither
   `Directory.Delete` nor the recycle bin reports progress, so a progress window
   would have nothing to show; cancelling is what it would buy. Wiping, the one
   delete that has something to report, is the exception: it runs behind
-  `RunBatch` and `Esc` stops it. P15.15 puts the rest there too.
+  `Runners.Batch` and `Esc` stops it. P15.15 puts the rest there too.
 - Only the home trash is written on Unix, never the per-volume
   `$topdir/.Trash-$uid` the freedesktop spec asks for. Deleting from another
   disk therefore copies the entry across rather than renaming it — correct, but
@@ -249,7 +249,7 @@ belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 
 - The viewer is opened by `Shell` through the `ShowFile` port, which hands over
   an opened `FileWindow.Source` rather than a list of lines, so the modal run
-  itself (`app.Run viewer` in `Prompts.showFile`) is only exercised by running
+  itself (the `running` helper in `Prompts.showFile`) is only exercised by running
   the app — the same blind spot the progress dialog has. What the tests do
   cover is every key the viewer takes and every row it would draw.
 - The viewer shows one encoding per file and offers no way to override it. Where

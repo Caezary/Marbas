@@ -7,6 +7,7 @@ open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Keys
 open Marbas.Ui.Messages
+open Marbas.Ui.App
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
@@ -27,19 +28,19 @@ let private windowWith (fs: MockFileSystem) askLink reportError =
     let window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseDrive = Fakes.choosingDrive (at "backup")
-                AskLink = askLink
-                RefuseLink = Links.refusal Windows fs
-                MakeLink = Links.create unreachable Windows fs
-                ReportError = reportError }
+                Prompts.ChooseDrive = Fakes.choosingDrive (at "backup")
+                Prompts.AskLink = askLink
+                Processes.RefuseLink = Links.refusal Windows fs
+                Processes.MakeLink = Links.create unreachable Windows fs
+                Prompts.ReportError = reportError }
 
     press (leftList window) KeyMap.rightRootKey
     window
 
 let private answering target kind =
-    fun (_: LinkKind list) (_: string) (_: string -> LinkKind -> LinkRefusal option) -> Some { Target = target; Kind = kind }
+    fun (_: Ports.LinkPrompt) -> Some { Target = target; Kind = kind }
 
-let private silent (_: string) (_: string) = ()
+let private silent = ignore<Ports.ErrorReport>
 
 [<Fact>]
 let ``Alt+F6 makes a link in the other panel and shows it there as a link under the cursor`` () =
@@ -58,8 +59,8 @@ let ``Alt+F6 offers the other panel's directory and the name of the entry under 
     let fs = mockFs ()
     let mutable offered = ""
 
-    let asking _ suggestion _ =
-        offered <- suggestion
+    let asking (request: Ports.LinkPrompt) =
+        offered <- FileSystemPath.value request.Suggestion
         None
 
     use window = windowWith fs asking silent
@@ -74,8 +75,8 @@ let ``the popup is told which kinds the place typed cannot carry`` () =
     let fs = mockFs ()
     let mutable refusalOf = fun (_: string) (_: LinkKind) -> None
 
-    let asking _ _ refusal =
-        refusalOf <- refusal
+    let asking (request: Ports.LinkPrompt) =
+        refusalOf <- request.Refusal
         None
 
     use window = windowWith fs asking silent
@@ -90,7 +91,7 @@ let ``the popup is told which kinds the place typed cannot carry`` () =
 let ``a kind the entry cannot carry is refused with a sentence`` () =
     let fs = mockFs ()
     let reported = ResizeArray<string>()
-    use window = windowWith fs (answering (at "backup/docs") Hard) (fun _ -> reported.Add)
+    use window = windowWith fs (answering (at "backup/docs") Hard) (fun report -> reported.Add report.Message)
     (leftList window).SelectedItem <- 1
 
     pressKey window KeyMap.linkKey
@@ -101,7 +102,7 @@ let ``a kind the entry cannot carry is refused with a sentence`` () =
 [<Fact>]
 let ``a cancelled link popup leaves the disk alone`` () =
     let fs = mockFs ()
-    use window = windowWith fs (fun _ _ _ -> None) silent
+    use window = windowWith fs (fun _ -> None) silent
     (leftList window).SelectedItem <- 2
 
     pressKey window KeyMap.linkKey

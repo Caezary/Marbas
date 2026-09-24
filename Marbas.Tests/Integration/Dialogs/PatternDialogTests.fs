@@ -2,6 +2,7 @@ module Marbas.Tests.Integration.Dialogs.PatternDialogTests
 
 open System.Drawing
 open Xunit
+open Marbas.Domain
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Ui.App
@@ -40,10 +41,19 @@ let ``a dismissed dialog yields no pattern`` () =
     Assert.Equal(None, pattern)
 
 [<Fact>]
-let ``confirming yields the text that was typed`` () =
+let ``confirming yields the pattern that was typed`` () =
     use dialog = laidOut Shell.SelectPrompt
 
     (PatternDialog.field dialog).Text <- "*.fs"
     dialog.Result <- 1
 
-    Assert.Equal(Some "*.fs", PatternDialog.pattern dialog)
+    Assert.Equal(NamePattern.tryCreate "*.fs", PatternDialog.pattern dialog)
+
+[<Fact>]
+let ``an empty pattern is no pattern at all`` () =
+    use dialog = laidOut Shell.SelectPrompt
+
+    (PatternDialog.field dialog).Text <- ""
+    dialog.Result <- 1
+
+    Assert.Equal(None, PatternDialog.pattern dialog)

@@ -38,7 +38,7 @@ directory the link will stand in.
 logic.** `NativeLinks` is a record of two functions — `MakeHard`, and
 `MakeJunction` as an option. Windows supplies both and Unix supplies no junction,
 so no code on Unix can make one, and `Links.available` reads the kinds off that
-record into `Shell.Dependencies.LinkKinds`, from which the popup is built. On
+record into `Ports.Processes.LinkKinds`, from which the popup is built. On
 Linux the junction is not a greyed row; it is not there. `LinkKind.Junction`
 stays a value every platform can spell, because it travels as data, and
 `Links.create` handed one with nothing to make it answers `KindUnavailable` — a

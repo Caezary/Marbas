@@ -127,7 +127,7 @@ it was, or arrives after it and finds the work already done.
 `Operations.startRename` checks the target, tries the metadata rename and
 answers `RenameDone` or `CopyNeeded target`; `Shell` dispatches `RenameFinished`
 straight away for the first, and for the second hands `moveByCopying` to
-`RunBatch` under `Renaming`. So the common rename is still one instant `Result`
+`Runners.Batch` under `Renaming`. So the common rename is still one instant `Result`
 with no window flashing past, and the one that has to copy a tree — a rename
 across a mount point, a junction — runs off the UI thread with `Esc` meaning
 what it means everywhere else. This is the second half of "a rename in place
@@ -170,7 +170,7 @@ and the question the user answers is the question that gets carried out: *Move
 **Delete for good**.
 
 **The trash is a port; a permanent delete is not.** `Shell.interpret` picks
-`Operations.trashAll` over `deps.SendToTrash` for `ToTrash` and
+`Operations.trashAll` over `deps.Processes.SendToTrash` for `ToTrash` and
 `Operations.deleteAll` for `Permanently`; both are `allWatched`, so both name
 their sources and stop at `Esc`. What the port does is the platform's business
 and `Dependencies.create` decides it — the Windows recycle bin through
@@ -218,7 +218,7 @@ the state layer must not know about. The walk is now `DeleteRequested mode` →
 `ConfirmDelete` → `DeleteConfirmed mode` → `DeletePlaces` → the removal in
 `Shell` → `DeleteFinished results` → `AppState.finishDelete`, which only
 re-reads the active panel and keeps the marks of what did not finish. Since
-P15.7 every mode goes through `RunBatch`, because the places path always did and
+P15.7 every mode goes through `Runners.Batch`, because the places path always did and
 the two paths became one: the trash and a permanent delete run off the UI
 thread behind the progress window, and since P15.15 they name what they are
 working on and stop where `Esc` was pressed, like the wipe beside them.
@@ -269,7 +269,7 @@ implied otherwise would be the one untrue sentence in the application.
 already overwritten, because its contents are gone whatever `Esc` says and
 pretending otherwise would be untrue. Unlike the other deletes, wiping has
 something to report, so it leaves the synchronous path and runs through
-`RunBatch` under *Wiping*; what comes back is the same `DeleteFinished`, so the
+`Runners.Batch` under *Wiping*; what comes back is the same `DeleteFinished`, so the
 panel is read again and the marks of what was not wiped stay.
 
 **A link is removed, never written through.** Overwriting a link would destroy
@@ -301,7 +301,7 @@ directory in it. A directory link is counted as nothing and never entered.
 **It runs behind the progress window, through a port of its own.** Each
 directory entered is reported through the `BatchControl` copying uses, so the
 window has something to show and `Esc` something to answer. The port is
-`RunMeasure`, not `RunBatch`, because the batch runner speaks in the item
+`Runners.Measure`, not `Runners.Batch`, because the batch runner speaks in the item
 results copying and deleting answer with, and measuring answers with sizes.
 A walk that falls over answers `Error` rather than an empty measurement:
 `BatchRunner.measured` wraps the work the way `Operations.guarded` wraps a
@@ -377,7 +377,7 @@ key handled so the `F3` binding on the main window cannot reopen a viewer on
 top of the one being closed.
 
 **The editor is a port, and its failure is an operation failure.**
-`Dependencies.RunEditor` takes the path and answers
+`Processes.RunEditor` takes the path and answers
 `Result<unit, Operations.OperationError>`; `EditorProcess.run` is the only
 place that knows about `Process.Start`, `WaitForExit` and repainting the
 screen afterwards, and it maps whatever the start threw through
@@ -406,7 +406,7 @@ and the marks survive; only the active panel is re-read, because that is the
 directory the editor was pointed into.
 
 **Running a program is a second port, and its failures are their own
-vocabulary.** `Dependencies.Launch` takes a `LaunchRequest` and answers
+vocabulary.** `Processes.Launch` takes a `LaunchRequest` and answers
 `Result<unit, LaunchError>`. It is not `RunEditor` and it does not reuse
 `OperationError`, because nothing here is an operation on a file: the four ways
 it fails — nothing associated with the name, the named program missing, the
@@ -430,7 +430,7 @@ bit and nothing else, because a name that looks like a Windows program is not
 one a Linux kernel will run.
 
 **What the system already knows is a port too, and the parsing is not.**
-`Dependencies.HandlersFor` takes an `EntryName` and answers a `Handler list` —
+`Processes.HandlersFor` takes an `EntryName` and answers a `Handler list` —
 never an error, because "this platform knows nothing about `.zzq`" and "there is
 no registry here at all" are the same answer to the caller: an empty list. What
 sits behind it is deliberately split. The *reading* is platform code and lives in

@@ -4,6 +4,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.Ui.Keys
 open Marbas.Ui.Panels
+open Marbas.Ui.App
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
@@ -20,10 +21,10 @@ let private chooserFs () =
 let private windowWith (fs: Fakes.MountedFileSystem) chooseDrive reportError =
     focusedWindow
         { Fakes.dependencies fs (at "start") with
-            ReportError = reportError
-            ChooseDrive = chooseDrive }
+            Prompts.ReportError = reportError
+            Prompts.ChooseDrive = chooseDrive }
 
-let private silent = fun (_: string) (_: string) -> ()
+let private silent = ignore<Ports.ErrorReport>
 
 let private offeredRoots (offered: ResizeArray<DriveRow list>) =
     offered |> Seq.map (List.map (DriveRow.root >> FileSystemPath.value)) |> List.ofSeq
@@ -94,8 +95,8 @@ let ``a drive handed over opens outside and moves neither panel`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseDrive = fun _ -> Some(HandOver stick)
-                Launch = fun request -> started.Add request; Ok() }
+                Prompts.ChooseDrive = fun _ -> Some(HandOver stick)
+                Processes.Launch = fun request -> started.Add request; Ok() }
 
     press (leftList window) KeyMap.rightRootKey
 
@@ -115,7 +116,7 @@ let ``cancelling the chooser leaves both panels untouched`` () =
 [<Fact>]
 let ``a root that cannot be read is reported and the panel stays put`` () =
     let reported = ResizeArray<string>()
-    use window = windowWith (chooserFs ()) (Fakes.choosingDrive (at "gone")) (fun _ -> reported.Add)
+    use window = windowWith (chooserFs ()) (Fakes.choosingDrive (at "gone")) (fun report -> reported.Add report.Message)
 
     press (leftList window) KeyMap.leftRootKey
 

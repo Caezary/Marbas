@@ -3,6 +3,7 @@ module Marbas.Tests.Integration.App.PackKeyTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.Ui.App
 open Marbas.Ui.Keys
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
@@ -20,8 +21,8 @@ let private windowWith (fs: MockFileSystem) askArchive =
     let window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseDrive = Fakes.choosingDrive (at "backup")
-                AskArchive = askArchive }
+                Prompts.ChooseDrive = Fakes.choosingDrive (at "backup")
+                Prompts.AskArchive = askArchive }
 
     press (leftList window) KeyMap.rightRootKey
     window
@@ -29,7 +30,7 @@ let private windowWith (fs: MockFileSystem) askArchive =
 let private zipFormat = ArchiveFormat.ofKind Zip |> Expect.some
 
 let private answering target =
-    fun (_: string) ->
+    fun (_: Ports.PackPrompt) ->
         Some
             { Target = target
               Format = zipFormat
@@ -55,8 +56,8 @@ let ``Shift+F1 offers an archive named after the entry under the cursor`` () =
     use window =
         windowWith
             fs
-            (fun suggestion ->
-                offered <- suggestion
+            (fun request ->
+                offered <- FileSystemPath.value request.Suggestion
                 None)
 
     (leftList window).SelectedItem <- 2

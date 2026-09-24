@@ -46,7 +46,7 @@ let ``what a session was set to is what the next one starts with`` () =
     use first =
         focusedWindow
             { deps fs with
-                ChooseDrive = Fakes.choosingDrive (at "backup") }
+                Prompts.ChooseDrive = Fakes.choosingDrive (at "backup") }
 
     press (leftList first) KeyMap.sizeSortKey
     press (leftList first) KeyMap.hiddenKey
@@ -180,7 +180,7 @@ let ``a stored directory that is gone starts the panel on the start path without
     use window =
         focusedWindow
             { deps fs with
-                ReportError = fun _ message -> reported.Add message }
+                Prompts.ReportError = fun report -> reported.Add report.Message }
 
     Assert.Equal(at "start" + " [size ↑]", panelTitle FilePanel.LeftId window)
     Assert.Empty reported

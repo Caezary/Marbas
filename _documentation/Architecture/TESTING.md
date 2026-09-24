@@ -156,7 +156,7 @@ Six modules sit outside the folders because everything uses them: `Root` (the
 platform's root, and paths built on it), `WindowsFact` and `UnixFact` (the `Fact`
 that skips where drive letters do not exist, and the one that skips where they
 do), `Expect` (result unwrapping), `Fakes` (the
-do-nothing `Shell.Dependencies`) and `AssemblyInfo`. `Integration/Gui.fs` adds the view helpers — `focusedWindow`,
+do-nothing `Ports.Dependencies`) and `AssemblyInfo`. `Integration/Gui.fs` adds the view helpers — `focusedWindow`,
 `leftList`, `rightList`, `press`, `panel`, `panelTitle`, `shownPath`, which
 is the path part of a panel title, so a navigation test says which directory a
 panel shows without repeating the sort indicator that follows it, and
@@ -198,20 +198,26 @@ the key back, for the tests whose subject is whether it was handled.
 
 ## Injecting the outside world
 
-`MainWindow.create` takes a `Shell.Dependencies` record — file system, start
-path, settings path, quit callback, error reporter, root chooser, pattern
-prompt, name prompt, confirmation, overwrite question, batch runner, file
-viewer, editor and modifier watch.
+`MainWindow.create` takes a `Ports.Dependencies` record — the file system and
+the three paths at the top, then four sub-records: `Prompts` (error reporter,
+confirmation, overwrite question, the name, target, pattern and password
+prompts, the drive, tab, find, link, handler, properties and settings popups,
+the file viewer), `Processes` (trash, editor, launch, links, handlers, drives),
+`Watches` (modifiers, directories) and `Runners` (batch, measure, search).
 Everything that would open a modal dialog, start a process or end the process
 is a function, so tests pass fakes and assert on what was requested.
 `Adapters/Prompts.fs` is the only place that supplies the real `MessageBox` dialogs.
 `Fakes.dependencies` gives every port a do-nothing default — a
 confirmation that answers no, an overwrite question that skips, prompts that
-cancel — so a test only overrides the one it cares about. A prompt that carries
-a suggestion (`AskTarget`) is easiest to fake as `fun _ suggestion -> Some
-suggestion`, which is exactly "the user pressed Ok".
+cancel — so a test only overrides the one it cares about, naming it through its
+sub-record:
+`{ Fakes.dependencies fs start with Prompts.AskName = fun _ -> Some name }`.
+Each prompt takes one request record, so a fake reads the field it cares about
+and ignores the rest; the prompt that carries a suggestion (`AskTarget`) is
+easiest to fake as `fun request -> Some (FileSystemPath.value request.Suggestion)`,
+which is exactly "the user pressed Ok".
 
-**Background work is a port, so tests stay synchronous.** `RunBatch` is the
+**Background work is a port, so tests stay synchronous.** `Runners.Batch` is the
 dependency that copies and moves go through; `Fakes` supplies one that
 runs the work inline with `Operations.unattended`, so a test presses `F5` and
 finds the files already copied when the call returns. Nothing in the suite
@@ -219,7 +225,7 @@ waits on a thread. What that does *not* cover is `BatchRunner` — the real
 runner, its progress dialog and the `Application.Invoke` marshalling are only
 ever exercised by running the app.
 
-**Held modifiers are a port too.** `WatchModifiers` is handed a callback at
+**Held modifiers are a port too.** `Watches.Modifiers` is handed a callback at
 startup; a test keeps the callback and calls it with the modifiers it wants
 held, which is how `Integration/Keys/ModifierRowTests.fs` presses no key at all and
 still asserts what the bottom bar shows. The polling itself lives in

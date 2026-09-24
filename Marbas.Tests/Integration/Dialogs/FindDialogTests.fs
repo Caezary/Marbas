@@ -42,8 +42,8 @@ let private answered (dialog: FindDialog.FindView) =
 
 let private accepted (dialog: FindDialog.FindView) =
     match answered dialog with
-    | FindDialog.Search query -> query
-    | FindDialog.LastResults -> failwith "expected a query, got the last results"
+    | Search query -> query
+    | LastResults -> failwith "expected a query, got the last results"
 
 let private scopeChosen index =
     use dialog = fresh ()
@@ -280,4 +280,4 @@ let ``asking for the last results is what the popup answers`` () =
 
     (FindDialog.lastResults dialog).InvokeCommand Terminal.Gui.Input.Command.Accept |> ignore
 
-    Assert.Equal(Some FindDialog.LastResults, FindDialog.choice dialog)
+    Assert.Equal(Some LastResults, FindDialog.choice dialog)

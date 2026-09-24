@@ -41,7 +41,7 @@ let private windowWith deps =
 
 let private opening (fs: MockFileSystem) =
     { Fakes.dependencies fs (at "start") with
-        ChooseDrive = Fakes.choosingDrive (at "backup") }
+        Prompts.ChooseDrive = Fakes.choosingDrive (at "backup") }
 
 [<Fact>]
 let ``Shift+F2 empties the archive under the cursor into the other panel`` () =
@@ -61,7 +61,7 @@ let ``Shift+F2 on a protected archive asks for the password first`` () =
     use window =
         windowWith
             { opening fs with
-                AskPassword = (fun _ _ -> Some "letmein") }
+                Prompts.AskPassword = (fun _ -> ArchivePassword.tryCreate "letmein") }
 
     pressKey window KeyMap.unpackKey
 

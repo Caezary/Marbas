@@ -718,3 +718,63 @@ looking for it in the decompressor. The fix is one walk serving every target,
 with the per-target `ItemResult`s built from what that walk saw; it is a
 different change from the one P9 proposed, so P15.17 records it and P15.25,
 added to stage 6, carries it out.
+
+**P15.18 split the one port record into four and gave every prompt a type of
+its own.** `Shell.Dependencies` was a flat record of 36 fields that mixed the
+file system and three paths with eleven prompts, three process ports, two
+watches and two runners (A4). Four prompts had the type
+`string -> string -> string option` and three more were `string -> string -> …`,
+so wiring `AskTarget` where `AskName` was meant compiled, and `AskFind` answered
+a `FindDialog.FindChoice` — a port whose contract was owned by a view module.
+
+The record now lives in `Ui/App/Ports.fs`, which holds nothing else: the file
+system, the start, settings and workspace paths and `OnQuit` at the top, then
+`Prompts`, `Processes`, `Watches` and `Runners`. The grouping is by what a port
+does to the world rather than by who calls it — `Prompts` asks the person
+something, `Processes` reaches the operating system, `Watches` subscribes to it,
+`Runners` puts work on a background task — and `Shell.fs` is left with the
+interpreter. A field inside a sub-record no longer repeats it: `WatchModifiers`
+and `WatchLocations` are `Watches.Modifiers` and `Watches.Locations`, `RunBatch`,
+`RunMeasure` and `RunSearch` are `Runners.Batch`, `Runners.Measure` and
+`Runners.Search`.
+
+**No two prompts share a type any more.** Each takes a request record named
+after the question — `ErrorReport`, `Confirmation`, `OverwritePrompt`,
+`PatternPrompt`, `NamePrompt`, `TargetPrompt`, `PasswordPrompt`, `PackPrompt`,
+`FindPrompt`, `LinkPrompt`, `HandlerPrompt`, `ProgramsPrompt` — and answers a
+domain value: `AskName` an `EntryName option`, `AskPattern` a `NamePattern
+option`, `AskPassword` an `ArchivePassword option`. Records are nominal in F#,
+so `AskTarget`, the one prompt that still answers a bare `string option`, and
+`ReportError` and `Confirm`, the two that still take a title and a message,
+cannot be swapped either. The requests that used to be assembled as text in
+`Shell` now carry what the question is about:
+`AskOverwrite` takes the `FileSystemPath` it would replace and `AskPassword` the
+`EntryName` of the archive, and `OverwriteQuestion` and `PasswordQuestion` do
+the phrasing in the adapter, where the `MessageBox` and the dialog are.
+
+**The parse went to the dialog, not to the adapter.** A typed answer has to be
+built somewhere, and putting `EntryName.tryCreate` in `Adapters/Prompts.fs` would
+have moved the blank-name guard into the one folder no test reaches. It went one
+step lower instead: `PromptDialog.name` answers an `EntryName option`,
+`PromptDialog.password` an `ArchivePassword option`, `PatternDialog.pattern` a
+`NamePattern option`, all in `Ui.Dialogs` where the integration tests already
+lay dialogs out. Three tests moved with it — the trimmed name, the blank name
+and the empty pattern are now asserted against the dialog that read them — and
+`PasswordQuestion` gained the tests it never had, since its phrasing is no
+longer visible from `Shell`.
+
+**`FindChoice` moved to `Domain/FindQuery.fs`,** beside the query it carries, so
+`FindDialog` reads a domain union rather than defining the port's answer.
+
+**One helper runs every popup.** `Adapters/Prompts.fs` had eleven copies of
+`use d = create (); app.Run d; read d` (Q5). It now has `running app create
+read` once, and each prompt is the two functions it passes — the `Ui.Dialogs`
+builder and the answer function beside it. The generic is constrained to
+`IRunnable and IDisposable`, which is what `app.Run` and the `use` need; the
+three message boxes are not dialogs of ours and still call `MessageBox`
+directly.
+
+**The tests name the sub-record.** F# 8's nested copy-and-update makes the
+override as short as it was: `{ Fakes.dependencies fs start with
+Prompts.AskName = fun _ -> Some name }`. Around 220 override sites across 34
+test files changed shape; the suite is 2323 passing, 11 skipped.

@@ -139,3 +139,7 @@ module FindQuery =
 
     let matchesName query name =
         NameMasks.matches (masks query) name
+
+type FindChoice =
+    | Search of FindQuery
+    | LastResults

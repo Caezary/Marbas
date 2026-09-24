@@ -140,6 +140,7 @@
     <Compile Include="Ui\Messages\LaunchErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\DeleteConfirmationTests.fs" />
     <Compile Include="Ui\Messages\OverwriteQuestionTests.fs" />
+    <Compile Include="Ui\Messages\PasswordQuestionTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

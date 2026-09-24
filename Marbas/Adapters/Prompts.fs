@@ -1,92 +1,102 @@
 module Marbas.Adapters.Prompts
 
+open System
 open System.IO.Abstractions
 open Terminal.Gui.App
 open Terminal.Gui.Views
 open Marbas.Collections
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.State.AppState
 open Marbas.Ui.Messages
 open Marbas.Ui.Viewer
 open Marbas.Ui.Dialogs
+open Marbas.Ui.App.Ports
 
-let reportError (app: IApplication) title message =
-    MessageBox.ErrorQuery(app, title, message, "Ok") |> ignore
+let private running<'view, 'answer when 'view :> IRunnable and 'view :> IDisposable>
+    (app: IApplication)
+    (create: unit -> 'view)
+    (read: 'view -> 'answer)
+    =
+    use dialog = create ()
+    app.Run dialog |> ignore
+    read dialog
+
+let reportError (app: IApplication) (report: ErrorReport) =
+    MessageBox.ErrorQuery(app, report.Title, report.Message, "Ok") |> ignore
+
+let confirm (app: IApplication) (question: Confirmation) =
+    let answer = MessageBox.Query(app, question.Title, question.Question, "_Yes", "_No")
+    answer.HasValue && answer.Value = 0
+
+let askOverwrite (app: IApplication) (request: OverwritePrompt) =
+    let answer =
+        MessageBox.Query(
+            app,
+            OverwriteQuestion.Title,
+            OverwriteQuestion.describe request.Target,
+            Array.ofList OverwriteQuestion.Answers
+        )
+
+    OverwriteQuestion.answerAt (if answer.HasValue then answer.Value else -1)
 
 let chooseDrive (app: IApplication) (rows: DriveRow list) =
     match rows with
     | [] -> None
-    | _ ->
-        use dialog = DriveDialog.create rows
-        app.Run dialog |> ignore
-        DriveDialog.choice dialog
+    | _ -> running app (fun () -> DriveDialog.create rows) DriveDialog.choice
 
-let confirm (app: IApplication) (title: string) (message: string) =
-    let answer = MessageBox.Query(app, title, message, "_Yes", "_No")
-    answer.HasValue && answer.Value = 0
+let askPattern (app: IApplication) (request: PatternPrompt) =
+    running app (fun () -> PatternDialog.create request.Title) PatternDialog.pattern
 
-let askOverwrite (app: IApplication) (title: string) (message: string) =
-    let answer = MessageBox.Query(app, title, message, Array.ofList OverwriteQuestion.Answers)
-    OverwriteQuestion.answerAt (if answer.HasValue then answer.Value else -1)
+let askName (app: IApplication) (request: NamePrompt) =
+    let offered =
+        request.Suggestion |> Option.map EntryName.value |> Option.defaultValue ""
 
-let askPattern (app: IApplication) title =
-    use dialog = PatternDialog.create title
-    app.Run dialog |> ignore
-    PatternDialog.pattern dialog
+    let asking () =
+        PromptDialog.create request.Title "Name:" offered |> PromptDialog.selecting
 
-let askName (app: IApplication) title suggestion =
-    use dialog = PromptDialog.create title "Name:" suggestion |> PromptDialog.selecting
-    app.Run dialog |> ignore
-    PromptDialog.text dialog
+    running app asking PromptDialog.name
 
-let askTarget (app: IApplication) title suggestion =
-    use dialog = PromptDialog.create title "To:" suggestion
-    app.Run dialog |> ignore
-    PromptDialog.text dialog
+let askTarget (app: IApplication) (request: TargetPrompt) =
+    let offered = FileSystemPath.value request.Suggestion
 
-let askPassword (app: IApplication) title label =
-    use dialog = PromptDialog.create title label "" |> PromptDialog.secret
-    app.Run dialog |> ignore
-    PromptDialog.text dialog
+    running app (fun () -> PromptDialog.create request.Title "To:" offered) PromptDialog.text
+
+let askPassword (app: IApplication) (request: PasswordPrompt) =
+    let label = PasswordQuestion.describe request.Archive
+
+    running
+        app
+        (fun () -> PromptDialog.create PasswordQuestion.Title label "" |> PromptDialog.secret)
+        PromptDialog.password
 
 let showFile (app: IApplication) (source: FileWindow.Source) =
-    use viewer = FileViewer.create _.RequestStop() source
-    app.Run viewer |> ignore
+    running app (fun () -> FileViewer.create _.RequestStop() source) ignore
 
 let editProperties (app: IApplication) properties =
-    use dialog = PropertiesDialog.create properties
-    app.Run dialog |> ignore
-    PropertiesDialog.properties properties dialog
+    running app (fun () -> PropertiesDialog.create properties) (PropertiesDialog.properties properties)
 
-let askArchive (app: IApplication) retarget suggestion =
-    use dialog = PackDialog.create retarget suggestion
-    app.Run dialog |> ignore
-    PackDialog.choice dialog
+let askArchive (app: IApplication) retarget (request: PackPrompt) =
+    let offered = FileSystemPath.value request.Suggestion
 
-let askFind (app: IApplication) ground hidden found =
-    use dialog = FindDialog.create ground hidden found
-    app.Run dialog |> ignore
-    FindDialog.choice dialog
+    running app (fun () -> PackDialog.create retarget offered) PackDialog.choice
 
-let askLink (app: IApplication) kinds suggestion refusal =
-    use dialog = LinkDialog.create kinds refusal suggestion
-    app.Run dialog |> ignore
-    LinkDialog.choice dialog
+let askFind (app: IApplication) (request: FindPrompt) =
+    running app (fun () -> FindDialog.create request.Ground request.Hidden request.Found) FindDialog.choice
 
-let askHandler (app: IApplication) name handlers chosen =
-    use dialog = OpenWithDialog.create name handlers chosen
-    app.Run dialog |> ignore
-    OpenWithDialog.choice dialog
+let askLink (app: IApplication) (request: LinkPrompt) =
+    let offered = FileSystemPath.value request.Suggestion
 
-let editPrograms (app: IApplication) programs candidate =
-    use dialog = SettingsDialog.create programs candidate
-    app.Run dialog |> ignore
-    SettingsDialog.programs dialog
+    running app (fun () -> LinkDialog.create request.Kinds request.Refusal offered) LinkDialog.choice
+
+let askHandler (app: IApplication) (request: HandlerPrompt) =
+    running app (fun () -> OpenWithDialog.create request.Name request.Handlers request.Chosen) OpenWithDialog.choice
+
+let editPrograms (app: IApplication) (request: ProgramsPrompt) =
+    running app (fun () -> SettingsDialog.create request.Programs request.Candidate) SettingsDialog.programs
 
 let chooseTab (app: IApplication) (fs: IFileSystem) (tabs: Zipper<Tab>) =
     let rows =
         tabs |> Zipper.items |> List.mapi (fun index -> TabRow.describe fs (index + 1))
 
-    use dialog = TabDialog.create rows (Zipper.position tabs)
-    app.Run dialog |> ignore
-    TabDialog.choice dialog
+    running app (fun () -> TabDialog.create rows (Zipper.position tabs)) TabDialog.choice

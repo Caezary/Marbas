@@ -9,6 +9,7 @@ open Marbas.State.Update
 open Marbas.Ui.Keys
 open Marbas.Ui.Messages
 open Marbas.Ui.Dialogs
+open Marbas.Ui.App.Ports
 
 [<Literal>]
 let SelectPrompt = "Select"
@@ -49,55 +50,16 @@ let PackTitle = "Packing"
 [<Literal>]
 let UnpackTitle = "Unpacking"
 
-type Dependencies =
-    { FileSystem: IFileSystem
-      StartPath: FileSystemPath
-      SettingsPath: FileSystemPath
-      WorkspacePath: FileSystemPath
-      ListDrives: unit -> DriveRow list
-      OnQuit: unit -> unit
-      ReportError: string -> string -> unit
-      ChooseDrive: DriveRow list -> DriveChoice option
-      AskPattern: string -> string option
-      AskName: string -> string -> string option
-      AskTarget: string -> string -> string option
-      Confirm: string -> string -> bool
-      SendToTrash: FileSystemPath -> Result<unit, Operations.OperationError>
-      ShowFile: FileWindow.Source -> unit
-      RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
-      Launch: LaunchRequest -> Result<unit, LaunchError>
-      AskFind: MarkedGround -> HiddenEntries -> int option -> FindDialog.FindChoice option
-      PathDirectories: FileSystemPath list
-      RunSearch: SearchRun -> (FindHit -> unit) -> (FindAnswer -> unit) -> unit
-      LinkKinds: LinkKind list
-      AskLink: LinkKind list -> string -> (string -> LinkKind -> LinkRefusal option) -> LinkChoice option
-      RefuseLink: LinkRequest -> LinkRefusal option
-      MakeLink: LinkRequest -> Result<unit, Operations.OperationError>
-      HandlersFor: EntryName -> Handler list
-      AskHandler: EntryName -> Handler list -> ProgramPath option -> OpenWithChoice option
-      ChooseTab: Zipper<Tab> -> int option
-      EditProperties: EntryProperties -> EntryProperties option
-      EditPrograms: ProgramSettings -> ProgramPath option -> ProgramSettings option
-      AskOverwrite: string -> string -> Operations.OverwriteAnswer
-      AskArchive: string -> ArchiveChoice option
-      AskPassword: string -> string -> string option
-      WatchModifiers: (Set<Modifier> -> unit) -> unit
-      WatchLocations: FileSystemPath list -> (unit -> unit) -> unit
-      RunBatch:
-          string -> (Operations.BatchControl -> Operations.ItemResult list) -> (Operations.ItemResult list -> unit) -> unit
-      RunMeasure:
-          string
-              -> (Operations.BatchControl -> Measurement list)
-              -> (Result<Measurement list, Operations.OperationError> -> unit)
-              -> unit }
-
-let private patternPrompt mode =
+let private patternTitle mode =
     match mode with
     | Select -> SelectPrompt
     | Deselect -> DeselectPrompt
 
+let private report (deps: Dependencies) title message =
+    deps.Prompts.ReportError { Title = title; Message = message }
+
 let private askOverwrite (deps: Dependencies) target =
-    deps.AskOverwrite OverwriteQuestion.Title (OverwriteQuestion.describe target)
+    deps.Prompts.AskOverwrite { Target = target }
 
 type private PasswordOutcome =
     | NotNeeded
@@ -105,10 +67,8 @@ type private PasswordOutcome =
     | Given of password: ArchivePassword
 
 let private asking (deps: Dependencies) (archive: FileSystemPath) =
-    FileSystemPath.name deps.FileSystem archive
-    |> PasswordQuestion.describe
-    |> deps.AskPassword PasswordQuestion.Title
-    |> Option.bind ArchivePassword.tryCreate
+    { Archive = FileSystemPath.name deps.FileSystem archive }
+    |> deps.Prompts.AskPassword
     |> Option.map Given
     |> Option.defaultValue NotGiven
 
@@ -141,15 +101,15 @@ let private showPath (deps: Dependencies) path =
     match FileWindow.openFile deps.FileSystem path with
     | Ok source ->
         use source = source
-        deps.ShowFile source
-    | Error error -> deps.ReportError ContentErrorMessage.Title (ContentErrorMessage.describe error)
+        deps.Prompts.ShowFile source
+    | Error error -> report deps ContentErrorMessage.Title (ContentErrorMessage.describe error)
 
 let private showEntry (deps: Dependencies) archive password entry =
     match FileWindow.openEntry deps.FileSystem password archive entry with
     | Ok source ->
         use source = source
-        deps.ShowFile source
-    | Error error -> deps.ReportError ArchiveErrorMessage.Title (ArchiveErrorMessage.describe error)
+        deps.Prompts.ShowFile source
+    | Error error -> report deps ArchiveErrorMessage.Title (ArchiveErrorMessage.describe error)
 
 let private showHit (deps: Dependencies) (hit: FindHit) =
     match hit.Location with
@@ -298,7 +258,7 @@ let private deletePiece (deps: Dependencies) mode group : Piece option =
     let fs = deps.FileSystem
 
     match group, mode with
-    | FromDisk paths, ToTrash -> Some(fun control -> Operations.trashAll deps.SendToTrash control paths)
+    | FromDisk paths, ToTrash -> Some(fun control -> Operations.trashAll deps.Processes.SendToTrash control paths)
     | FromDisk paths, Permanently -> Some(fun control -> Operations.deleteAll fs control paths)
     | FromDisk paths, ByWiping -> Some(fun control -> Operations.wipeAll fs control paths)
     | FromArchive(archive, entries), _ ->
@@ -320,7 +280,7 @@ let private untilStopped (control: Operations.BatchControl) (pieces: Piece list)
 let private runPlaces (deps: Dependencies) title (pieces: Piece option list) finished =
     match List.choose id pieces with
     | [] -> ()
-    | ready -> deps.RunBatch title (fun control -> untilStopped control ready) finished
+    | ready -> deps.Runners.Batch title (fun control -> untilStopped control ready) finished
 
 let private deleteTitle mode =
     match mode with
@@ -331,42 +291,51 @@ let private deleteTitle mode =
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
     | ReportListingError error ->
-        deps.ReportError (ListingErrorMessage.title error) (ListingErrorMessage.describe error)
+        report deps (ListingErrorMessage.title error) (ListingErrorMessage.describe error)
     | ReportOperationError error ->
-        deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describe error)
-    | ReportLaunchError error -> deps.ReportError LaunchErrorMessage.Title (LaunchErrorMessage.describe error)
+        report deps OperationErrorMessage.Title (OperationErrorMessage.describe error)
+    | ReportLaunchError error -> report deps LaunchErrorMessage.Title (LaunchErrorMessage.describe error)
     | ReportItemFailures failures ->
-        deps.ReportError OperationErrorMessage.Title (OperationErrorMessage.describeFailures deps.FileSystem failures)
+        report deps OperationErrorMessage.Title (OperationErrorMessage.describeFailures deps.FileSystem failures)
     | InspectDelete(question, mode) -> dispatch (DeleteScopeLoaded(deleteScope deps.FileSystem question, mode))
     | ConfirmDelete request ->
-        if deps.Confirm (DeleteConfirmation.title request) (DeleteConfirmation.describe request) then
+        if
+            deps.Prompts.Confirm
+                { Title = DeleteConfirmation.title request
+                  Question = DeleteConfirmation.describe request }
+        then
             dispatch (DeleteConfirmed request.Mode)
     | PromptForArchive suggestion ->
-        match deps.AskArchive(FileSystemPath.value suggestion) with
+        match deps.Prompts.AskArchive { Suggestion = suggestion } with
         | Some choice -> dispatch (ArchiveEntered choice)
         | None -> ()
     | PromptForFind(ground, hidden, found) ->
-        match deps.AskFind ground hidden found with
-        | Some(FindDialog.Search query) -> dispatch (FindEntered query)
-        | Some FindDialog.LastResults -> dispatch LastResultsRequested
+        match deps.Prompts.AskFind { Ground = ground; Hidden = hidden; Found = found } with
+        | Some(Search query) -> dispatch (FindEntered query)
+        | Some LastResults -> dispatch LastResultsRequested
         | None -> ()
     | RunSearch(query, location, marked) ->
         let ground =
-            FindGround.resolve deps.FileSystem location marked deps.PathDirectories query.Scope
+            FindGround.resolve deps.FileSystem location marked deps.Processes.PathDirectories query.Scope
 
-        deps.RunSearch (Walk(query, ground)) (showHit deps) (SearchAnswered >> dispatch)
+        deps.Runners.Search (Walk(query, ground)) (showHit deps) (SearchAnswered >> dispatch)
     | ShowLastResults(results, gone) ->
-        deps.RunSearch (Reopen(results, gone)) (showHit deps) (SearchAnswered >> dispatch)
+        deps.Runners.Search (Reopen(results, gone)) (showHit deps) (SearchAnswered >> dispatch)
     | PromptForLink(sources, directory, suggestion) ->
         let refusalOf text kind =
             Links.requests deps.FileSystem kind sources directory text
-            |> Links.sharedRefusal deps.RefuseLink
+            |> Links.sharedRefusal deps.Processes.RefuseLink
 
-        match deps.AskLink deps.LinkKinds (FileSystemPath.value suggestion) refusalOf with
+        match
+            deps.Prompts.AskLink
+                { Kinds = deps.Processes.LinkKinds
+                  Suggestion = suggestion
+                  Refusal = refusalOf }
+            with
         | Some choice -> dispatch (LinkEntered choice)
         | None -> ()
     | MakeLinks requests ->
-        let outcomes = requests |> List.map (fun link -> link, deps.MakeLink link)
+        let outcomes = requests |> List.map (fun link -> link, deps.Processes.MakeLink link)
 
         let made =
             outcomes
@@ -382,11 +351,15 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
 
         let allowed =
             FileSystemPath.kind deps.FileSystem target = NoEntry
-            || deps.Confirm OverwriteQuestion.Title (OverwriteQuestion.describe target)
+            || deps.Prompts.Confirm
+                { Title = OverwriteQuestion.Title
+                  Question = OverwriteQuestion.describe target }
 
         if allowed then
-            deps.RunBatch PackTitle (fun control -> Archive.write deps.FileSystem control archive sources) (fun results ->
-                dispatch (PackFinished(FileSystemPath.name deps.FileSystem target, results)))
+            deps.Runners.Batch
+                PackTitle
+                (fun control -> Archive.write deps.FileSystem control archive sources)
+                (fun results -> dispatch (PackFinished(FileSystemPath.name deps.FileSystem target, results)))
     | CopyPlaces(groups, target) ->
         runPlaces deps CopyTitle (groups |> List.map (copyPiece deps target)) (CopyFinished >> dispatch)
     | MovePlaces(groups, target) ->
@@ -397,7 +370,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match archives |> List.choose (unpackPlan deps targetDirectory) with
         | [] -> ()
         | plans ->
-            deps.RunBatch
+            deps.Runners.Batch
                 UnpackTitle
                 (fun control -> Archive.extractAll deps.FileSystem control plans)
                 (UnpackFinished >> dispatch)
@@ -408,14 +381,14 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Error error -> finished (Error error)
         | Ok Operations.RenameDone -> finished (Ok())
         | Ok(Operations.CopyNeeded target) ->
-            deps.RunBatch
+            deps.Runners.Batch
                 RenameTitle
                 (fun control ->
                     [ Operations.moveByCopying deps.FileSystem control source target
                       |> Operations.itemResult source ])
                 (Operations.wholeOutcome >> finished)
     | MeasureTargets targets ->
-        deps.RunMeasure
+        deps.Runners.Measure
             MeasureTitle
             (fun control -> DirectoryMeasure.measureAll deps.FileSystem control targets)
             (MeasureFinished >> dispatch)
@@ -425,54 +398,57 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | NotGiven -> ()
         | NotNeeded -> showEntry deps archive None entry
         | Given password -> showEntry deps archive (Some password) entry
-    | EditFile(path, editor) -> deps.RunEditor editor path |> EditFinished |> dispatch
-    | RunProgram request -> deps.Launch request |> LaunchFinished |> dispatch
+    | EditFile(path, editor) -> deps.Processes.RunEditor editor path |> EditFinished |> dispatch
+    | RunProgram request -> deps.Processes.Launch request |> LaunchFinished |> dispatch
     | ShowHandlers(path, chosen) ->
         let name = FileSystemPath.name deps.FileSystem path
 
-        match deps.AskHandler name (deps.HandlersFor name) chosen with
+        match
+            deps.Prompts.AskHandler
+                { Name = name
+                  Handlers = deps.Processes.HandlersFor name
+                  Chosen = chosen }
+            with
         | Some choice -> dispatch (HandlerChosen(path, choice))
         | None -> ()
     | ShowTabs tabs ->
-        match deps.ChooseTab tabs with
+        match deps.Prompts.ChooseTab tabs with
         | Some position -> dispatch (TabSwitched position)
         | None -> ()
     | ShowProperties properties ->
-        match deps.EditProperties properties with
+        match deps.Prompts.EditProperties properties with
         | Some changed -> dispatch (PropertiesEntered changed)
         | None -> ()
     | ShowSettings(programs, candidate) ->
-        match deps.EditPrograms programs candidate with
+        match deps.Prompts.EditPrograms { Programs = programs; Candidate = candidate } with
         | Some changed -> dispatch (ProgramsEntered changed)
         | None -> ()
     | PromptForTarget suggestion ->
-        match deps.AskTarget MovePrompt (FileSystemPath.value suggestion) with
+        match deps.Prompts.AskTarget { Title = MovePrompt; Suggestion = suggestion } with
         | Some text -> dispatch (TargetEntered text)
         | None -> ()
     | PromptForName suggestion ->
-        let offered = suggestion |> Option.map EntryName.value |> Option.defaultValue ""
-
-        match deps.AskName MkdirPrompt offered |> Option.bind EntryName.tryCreate with
+        match deps.Prompts.AskName { Title = MkdirPrompt; Suggestion = suggestion } with
         | Some name -> dispatch (NameEntered name)
         | None -> ()
     | PromptForFileName ->
-        match deps.AskName NewFilePrompt "" |> Option.bind EntryName.tryCreate with
+        match deps.Prompts.AskName { Title = NewFilePrompt; Suggestion = None } with
         | Some name -> dispatch (FileNameEntered name)
         | None -> ()
     | PromptForPattern mode ->
-        match deps.AskPattern (patternPrompt mode) |> Option.bind NamePattern.tryCreate with
+        match deps.Prompts.AskPattern { Title = patternTitle mode } with
         | Some pattern -> dispatch (PatternEntered(mode, pattern))
         | None -> ()
     | PromptForRoot side ->
-        match deps.ChooseDrive(deps.ListDrives()) with
+        match deps.Prompts.ChooseDrive(deps.Processes.ListDrives()) with
         | Some(StandOn row) -> dispatch (DriveChosen(side, row))
         | Some(HandOver row) -> dispatch (DriveHandedOver row)
         | None -> ()
-    | WatchLocations paths -> deps.WatchLocations paths (fun () -> dispatch ExternalChangeDetected)
+    | WatchLocations paths -> deps.Watches.Locations paths (fun () -> dispatch ExternalChangeDetected)
     | SaveSettings settings ->
         match Settings.save deps.FileSystem deps.SettingsPath settings with
         | Ok() -> ()
-        | Error error -> deps.ReportError SettingsErrorMessage.Title (SettingsErrorMessage.describe error)
+        | Error error -> report deps SettingsErrorMessage.Title (SettingsErrorMessage.describe error)
     | Quit ->
         Workspace.release deps.FileSystem deps.WorkspacePath
         deps.OnQuit()

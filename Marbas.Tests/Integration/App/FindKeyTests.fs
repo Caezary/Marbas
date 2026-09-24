@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.Ui.Keys
+open Marbas.Ui.App
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
@@ -18,11 +19,11 @@ let private mockFs () =
 let private windowAsking asking =
     focusedWindow
         { Fakes.dependencies (mockFs ()) (at "start") with
-            AskFind = asking }
+            Prompts.AskFind = asking }
 
 let private recording (answers: (MarkedGround * HiddenEntries) list ref) =
-    fun ground hidden (_: int option) ->
-        answers.Value <- answers.Value @ [ ground, hidden ]
+    fun (request: Ports.FindPrompt) ->
+        answers.Value <- answers.Value @ [ request.Ground, request.Hidden ]
         None
 
 [<Fact>]

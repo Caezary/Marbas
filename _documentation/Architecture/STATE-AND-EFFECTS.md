@@ -12,7 +12,7 @@ transition takes the `IFileSystem` it was given and may list a directory, read
 an archive's index, create a directory or write an entry's properties with it,
 which is what makes every one of them testable against `MockFileSystem` alone.
 Every other port — a dialog, the trash, a process, a link, the search runner,
-the batch runner, quitting — belongs to `Shell.Dependencies`, and the state
+the batch runner, quitting — belongs to `Ports.Dependencies`, and the state
 layer reaches it only by raising an `Effect` that `Shell.interpret` carries out.
 
 **Work that outlasts a keystroke is an effect too.** Copy, move, delete, wipe,
@@ -35,16 +35,27 @@ to completion — its own effects included — in the middle of the outer effect
 list. Two things follow from the loop. An effect is always interpreted against
 the state it was raised from, so the `WatchLocations` that `Update.watching`
 appends can no longer be overtaken by a nested one and then re-armed on the
-older directories. And a batch that finishes inside `deps.RunBatch`, which
+older directories. And a batch that finishes inside `deps.Runners.Batch`, which
 dispatches from within the dialog's own event loop, no longer re-enters the
 runtime several dispatches deep. The drain is still synchronous: `Dispatch`
 returns with the queue empty, which is what lets `MainWindow.create` read
 `Runtime.State` straight after seeding the panels.
 
-**The outside world is injected.** `Shell.Dependencies` names every port (file
-system, start path, quit callback, error reporter, root chooser, pattern
-prompt, name prompt, confirmation) and `Shell.interpret` is the only place that
-turns an `Effect` into a call on one of them.
+**The outside world is injected.** `Ports.Dependencies` names every port and
+groups them by what they do to the world: `Prompts` asks the person something
+(errors, confirmations, names, patterns, passwords, the find and link popups),
+`Processes` reaches the operating system (trash, editor, launch, links,
+handlers), `Watches` subscribes to it and `Runners` puts work on a background
+task. `Shell.interpret` is the only place that turns an `Effect` into a call on
+one of them. **Every prompt has a type of its own:** each takes a request record
+(`ErrorReport`, `Confirmation`, `NamePrompt`, `TargetPrompt`, …) and answers a
+domain value, so wiring the target prompt where the name prompt was meant no
+longer compiles, and the two that used to share `string -> string -> string
+option` now cannot be swapped. Where a prompt answers a domain type, the parse
+lives with the dialog that read the text — `PromptDialog.name` answers an
+`EntryName`, `PromptDialog.password` an `ArchivePassword`, `PatternDialog.pattern`
+a `NamePattern` — which keeps it inside the tested `Ui` layer instead of the
+adapter.
 `Adapters/Prompts.fs` is the only place that opens real dialogs, which keeps
 dialog-triggering behaviour testable. The dialogs themselves are built in `Ui`
 modules (`PatternDialog`) so their layout can be tested too — a field placed
@@ -104,7 +115,7 @@ closes the search before being handled normally. `PanelWiring.Host` grew an
 alternative, letting `KeyMap` always win, would have made a file name with a
 space unsearchable.
 
-**The background thread is a port, not a thread.** `Dependencies.RunBatch`
+**The background thread is a port, not a thread.** `Runners.Batch`
 takes the progress title, the work to do (handed a `BatchControl` to report
 through and to ask whether it should stop) and what to do with the results.
 `BatchRunner` is the only place that knows about `Task.Run`, `app.Invoke` and
@@ -152,7 +163,7 @@ directory.** `EditRequested` reads them (`EntryProperties.read`, mapped to
 `ReportOperationError` when the entry is gone) and `PropertiesEntered` writes
 them and re-reads the panel, so a directory that has just been marked hidden
 disappears from a panel that conceals hidden entries without anyone asking for a
-refresh. The popup itself is a port — `Dependencies.EditProperties` takes the
+refresh. The popup itself is a port — `Prompts.EditProperties` takes the
 properties it should show and answers with the ones the user accepted, or
 `None` — which is what lets every one of those paths be tested with no dialog on
 screen.
@@ -232,7 +243,7 @@ it, the way it turns the code for "nothing is associated" into
 `NoProgramAssociated` rather than into a sentence the system wrote.
 
 **The settings popup is a port too, and what it returns is state.**
-`SettingsRequested` hands `state.Programs` to `Dependencies.EditPrograms` through
+`SettingsRequested` hands `state.Programs` to `Prompts.EditPrograms` through
 the `ShowSettings` effect, along with the executable under the panel cursor if
 there is one — the popup has no panel to look at, so what it can offer has to be
 read before it opens; `ProgramsEntered` puts the answer back into the state
@@ -308,7 +319,7 @@ tab that was asked for, and the effects are the save *and* a
 
 **The tab popup is a port like every other dialog.** `ShowTabs` carries the
 `Zipper<Tab>` — the rows and which one is current in one value — and
-`Dependencies.ChooseTab` answers with a position or with nothing, which
+`Prompts.ChooseTab` answers with a position or with nothing, which
 `Shell.interpret` turns into `TabSwitched`. `Adapters/Prompts.chooseTab` is the
 only place that builds the dialog, and it needs the file system for one reason:
 `TabRow.describe` spells a `PanelLocation` with `PanelLocation.value`.
@@ -325,7 +336,7 @@ panel's top border rather than beside it.
 `ExternalChangeDetected` re-reads both panels of the tab in front and raises
 nothing, because a change nobody asked for must not answer with a dialog;
 `WatchLocations` carries the paths that should be under watch, and
-`Shell.Dependencies.WatchLocations` is the port `Adapters/DirectoryWatch` fills.
+`Ports.Watches.Locations` is the port `Adapters/DirectoryWatch` fills.
 What is unusual is how the effect is raised: `update` is the former body, now
 `transition`, followed by `watching`, which compares `AppState.watchedLocations`
 before and after the message and appends the effect only when the pair moved.
@@ -334,11 +345,11 @@ Raising it arm by arm would have meant seven places to keep in step — and
 every other transition silent. The first watch of a session is not a transition
 at all: at startup the panels already stand where the settings put them, so
 `MainWindow` arms it by interpreting one `WatchLocations` itself, next to the
-`WatchModifiers` it already wires. See [Auto-refresh](AUTO-REFRESH.md).
+`Watches.Modifiers` it already wires. See [Auto-refresh](AUTO-REFRESH.md).
 
 **A search reaches the state once, finished.** `FindEntered` raises `RunSearch`
 with the query, the location the panel returns to and its marked directories;
-`Shell` resolves the ground and hands both to the `RunSearch` port, and while the
+`Shell` resolves the ground and hands both to the `Runners.Search` port, and while the
 walk runs its hits live in the results window, not in `AppState`. The window
 answers a `FindAnswer` when it closes, which comes back as `SearchAnswered`: the
 `FindResults` in it become `AppState.LastSearch`, and the `FindLanding` beside

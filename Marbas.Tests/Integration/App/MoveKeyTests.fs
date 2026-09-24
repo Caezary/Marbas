@@ -3,6 +3,7 @@ module Marbas.Tests.Integration.App.MoveKeyTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
+open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Ui.Keys
 open Marbas.Ui.App
@@ -23,27 +24,34 @@ let private windowWith (fs: MockFileSystem) askTarget askOverwrite reportError =
     let window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseDrive = Fakes.choosingDrive (at "backup")
-                AskTarget = askTarget
-                AskOverwrite = askOverwrite
-                ReportError = reportError }
+                Prompts.ChooseDrive = Fakes.choosingDrive (at "backup")
+                Prompts.AskTarget = askTarget
+                Prompts.AskOverwrite = askOverwrite
+                Prompts.ReportError = reportError }
 
     press (leftList window) KeyMap.rightRootKey
     window
 
-let private silent = fun (_: string) (_: string) -> ()
+let private silent = ignore<Ports.ErrorReport>
 
-let private accepting = fun _ -> Some
+let private accepting =
+    fun (request: Ports.TargetPrompt) -> Some(FileSystemPath.value request.Suggestion)
 
-let private refusing = fun _ _ -> None
+let private refusing = fun (_: Ports.TargetPrompt) -> None
 
-let private noQuestion = fun (_: string) (_: string) -> Yes
+let private noQuestion = fun (_: Ports.OverwritePrompt) -> Yes
 
 [<Fact>]
 let ``F6 offers the other panel's path`` () =
     let fs = mockFs ()
     let offered = ResizeArray<string * string>()
-    use window = windowWith fs (fun title suggestion -> offered.Add(title, suggestion); None) noQuestion silent
+
+    use window =
+        windowWith
+            fs
+            (fun request -> offered.Add(request.Title, FileSystemPath.value request.Suggestion); None)
+            noQuestion
+            silent
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F6
@@ -85,7 +93,7 @@ let ``F6 moves every marked entry`` () =
 [<Fact>]
 let ``a bare name renames the entry under the cursor`` () =
     let fs = mockFs ()
-    use window = windowWith fs (fun _ _ -> Some "aaa.txt") noQuestion silent
+    use window = windowWith fs (fun _ -> Some "aaa.txt") noQuestion silent
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F6
@@ -104,8 +112,8 @@ let ``a bare name for a directory the file system will not move renames it behin
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                AskTarget = fun _ _ -> Some "papers"
-                RunBatch =
+                Prompts.AskTarget = fun _ -> Some "papers"
+                Runners.Batch =
                     fun title work finish ->
                         batches.Add title
                         work unattended |> finish }
@@ -121,7 +129,7 @@ let ``a bare name for a directory the file system will not move renames it behin
 [<Fact>]
 let ``the renamed entry keeps the cursor`` () =
     let fs = mockFs ()
-    use window = windowWith fs (fun _ _ -> Some "aaa.txt") noQuestion silent
+    use window = windowWith fs (fun _ -> Some "aaa.txt") noQuestion silent
     let left = leftList window
     left.SelectedItem <- 2
 
@@ -145,7 +153,12 @@ let ``cancelling the prompt moves nothing`` () =
 let ``F6 on the parent entry asks nothing`` () =
     let fs = mockFs ()
     let asked = ResizeArray<string>()
-    use window = windowWith fs (fun title suggestion -> asked.Add title; Some suggestion) noQuestion silent
+    use window =
+        windowWith
+            fs
+            (fun request -> asked.Add request.Title; Some(FileSystemPath.value request.Suggestion))
+            noQuestion
+            silent
     (leftList window).SelectedItem <- 0
 
     pressKey window Key.F6
@@ -158,7 +171,8 @@ let ``a collision is asked about before the target is replaced`` () =
     let fs = mockFs ()
     fs.AddFile(at "backup/notes.txt", MockFileData "old")
     let asked = ResizeArray<string>()
-    use window = windowWith fs accepting (fun _ message -> asked.Add message; No) silent
+    use window =
+        windowWith fs accepting (fun request -> asked.Add(FileSystemPath.value request.Target); No) silent
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F6
@@ -171,7 +185,7 @@ let ``a collision is asked about before the target is replaced`` () =
 let ``a failed move is reported`` () =
     let fs = mockFs ()
     let reported = ResizeArray<string>()
-    use window = windowWith fs accepting noQuestion (fun _ message -> reported.Add message)
+    use window = windowWith fs accepting noQuestion (fun report -> reported.Add report.Message)
     (leftList window).SelectedItem <- 2
     fs.File.Delete(at "start/notes.txt")
 
@@ -183,7 +197,7 @@ let ``a failed move is reported`` () =
 let ``a rename onto an existing name is reported`` () =
     let fs = mockFs ()
     let reported = ResizeArray<string>()
-    use window = windowWith fs (fun _ _ -> Some "readme.txt") noQuestion (fun _ message -> reported.Add message)
+    use window = windowWith fs (fun _ -> Some "readme.txt") noQuestion (fun report -> reported.Add report.Message)
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F6

@@ -75,6 +75,6 @@ let ``the directories the panels start in are put under watch`` () =
     use _ =
         MainWindow.create
             { Fakes.dependencies fs (Root.at "start") with
-                WatchLocations = fun paths _ -> watched.Add paths }
+                Watches.Locations = fun paths _ -> watched.Add paths }
 
     Assert.Equal<FileSystemPath list list>([ [ FileSystemPath.create (Root.at "start") ] ], List.ofSeq watched)

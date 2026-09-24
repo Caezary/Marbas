@@ -129,7 +129,7 @@ the identity of `ListView.Source`, which a new `SetSource` would replace.
 **A held modifier repaints the bottom bar alone.** `ModifierWatch` polls every
 100 ms, and a change used to go through `Runtime.Refresh` — the whole screen,
 for two rows of labels. `MainWindow` now hands `FunctionKeyBar.show` straight to
-`WatchModifiers`; the bar marks itself for drawing and no panel is painted
+`Watches.Modifiers`; the bar marks itself for drawing and no panel is painted
 again.
 
 **Which `VisualRole` a view draws with was measured, not guessed.** A view asks
@@ -335,6 +335,18 @@ either, and `[` `]` for the brackets drawn around a button. It also registers
 and runs a dialog of its own, so nothing outside it can call `SetScheme`. After
 `Init` rather than before, because the configuration manager fills those
 statics in as the application starts and would overwrite an earlier call.
+
+**One helper runs every popup.** `Adapters/Prompts.fs` holds `running app create
+read`, which builds the dialog, hands it to `app.Run` and reads the answer out of
+it inside a `use`, so the eleven popups differ only in the two functions they
+pass. `create` is the `Ui.Dialogs` builder and `read` the answer function beside
+it, and because the answer is typed the reader lives with the dialog rather than
+in the adapter: `PromptDialog.name` answers an `EntryName`,
+`PromptDialog.password` an `ArchivePassword`, `PatternDialog.pattern` a
+`NamePattern`. The three message boxes — the error report, the confirmation and
+the overwrite question — are not dialogs of ours, so they call `MessageBox`
+directly, and the overwrite one is where `OverwriteQuestion` turns a path into
+the sentence and an index back into an answer.
 
 **What it replaces was not a matter of taste.** 2.4.17 ships a `Heavy` frame,
 an opaque shadow under every button and `⟦ ⟧` (U+27E6/7) for the brackets. Those
@@ -659,7 +671,7 @@ Terminal.Gui 2.4.17 has the vocabulary for it — `Key.IsModifierOnly`,
 Windows input processor returns from every key-up before anything is raised
 (`if (!inputEvent.KeyEvent.bKeyDown) { return; }`) and never surfaces a
 standalone `Ctrl`, so there is no event to listen to on the platform Marbas is
-developed on. `Dependencies.WatchModifiers` is therefore a port that hands over
+developed on. `Watches.Modifiers` is therefore a port that hands over
 a callback; `ModifierWatch` is the only place that knows about
 `GetAsyncKeyState` and `app.AddTimeout`, polls ten times a second and reports
 only when the set changes. On anything but Windows it registers nothing and

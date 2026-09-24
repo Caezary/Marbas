@@ -24,8 +24,8 @@ let ``the tabs key asks which tab to stand on and goes there`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseDrive = Fakes.choosingDrive (at "backup")
-                ChooseTab = fun _ -> Some 0 }
+                Prompts.ChooseDrive = Fakes.choosingDrive (at "backup")
+                Prompts.ChooseTab = fun _ -> Some 0 }
 
     press (leftList window) KeyMap.newTabKey
     press (leftList window) KeyMap.leftRootKey
@@ -41,7 +41,7 @@ let ``the spare tabs key asks the same question`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseTab =
+                Prompts.ChooseTab =
                     fun tabs ->
                         asked.Add(Zipper.count tabs)
                         None }
@@ -57,8 +57,8 @@ let ``a tab the popup did not pick leaves the panels alone`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseDrive = Fakes.choosingDrive (at "backup")
-                ChooseTab = fun _ -> None }
+                Prompts.ChooseDrive = Fakes.choosingDrive (at "backup")
+                Prompts.ChooseTab = fun _ -> None }
 
     press (leftList window) KeyMap.newTabKey
     press (leftList window) KeyMap.leftRootKey
@@ -73,7 +73,7 @@ let ``Alt and an arrow walk round the tabs without a popup`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseDrive = Fakes.choosingDrive (at "backup") }
+                Prompts.ChooseDrive = Fakes.choosingDrive (at "backup") }
 
     press (leftList window) KeyMap.newTabKey
     press (leftList window) KeyMap.leftRootKey
@@ -92,7 +92,7 @@ let ``a tab is read again when it is stood on`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseTab = fun _ -> Some 0 }
+                Prompts.ChooseTab = fun _ -> Some 0 }
 
     press (leftList window) KeyMap.newTabKey
     fs.AddFile(at "start/added.txt", MockFileData "new")

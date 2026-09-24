@@ -2,6 +2,8 @@ module Marbas.Tests.Integration.Dialogs.PromptDialogTests
 
 open System.Drawing
 open Xunit
+open Marbas.Domain
+open Marbas.FileSystem
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Ui.App
@@ -71,3 +73,53 @@ let ``a prompt can hide what is typed into it`` () =
     use dialog = laidOut "" |> PromptDialog.secret
 
     Assert.True((PromptDialog.field dialog).Secret)
+
+[<Fact>]
+let ``a confirmed name comes back as an entry name`` () =
+    use dialog = laidOut "work"
+
+    (PromptDialog.field dialog).Text <- "reports"
+    dialog.Result <- 1
+
+    Assert.Equal(Some(EntryName.create "reports"), PromptDialog.name dialog)
+
+[<Fact>]
+let ``a name is trimmed of the spaces around it`` () =
+    use dialog = laidOut ""
+
+    (PromptDialog.field dialog).Text <- "  reports  "
+    dialog.Result <- 1
+
+    Assert.Equal(Some(EntryName.create "reports"), PromptDialog.name dialog)
+
+[<Fact>]
+let ``a blank name is no name at all`` () =
+    use dialog = laidOut ""
+
+    (PromptDialog.field dialog).Text <- "   "
+    dialog.Result <- 1
+
+    Assert.Equal(None, PromptDialog.name dialog)
+
+[<Fact>]
+let ``a dismissed prompt yields no name`` () =
+    use dialog = laidOut "work"
+
+    Assert.Equal(None, PromptDialog.name dialog)
+
+[<Fact>]
+let ``a confirmed secret comes back as an archive password`` () =
+    use dialog = laidOut "" |> PromptDialog.secret
+
+    (PromptDialog.field dialog).Text <- "hunter2"
+    dialog.Result <- 1
+
+    Assert.Equal(ArchivePassword.tryCreate "hunter2", PromptDialog.password dialog)
+
+[<Fact>]
+let ``an empty secret is no password at all`` () =
+    use dialog = laidOut "" |> PromptDialog.secret
+
+    dialog.Result <- 1
+
+    Assert.Equal(None, PromptDialog.password dialog)

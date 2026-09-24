@@ -169,7 +169,9 @@ conceals. A *Last results (123)* button sits before *Cancel* and *Ok*, open only
 when there is something to reopen; because Terminal.Gui reads every button but
 the last as a dismissal, it sets a flag of its own the way the drive popup's
 hand-over key does, and the popup answers a `FindChoice` — a query, or the last
-results. It measures 56 by 17 columns, rendered, and the greying was read off the
+results. `FindChoice` lives in `Domain/FindQuery.fs` beside the query it carries,
+so the `AskFind` port promises a domain value rather than something a dialog
+module owns. It measures 56 by 17 columns, rendered, and the greying was read off the
 screen: a closed option is grey where an open one wears its hot key in yellow.
 
 ## The results window
@@ -212,7 +214,7 @@ counts, in one place; the skipped entries, which the walking line used to leave
 at zero until the end, now show as they happen.
 
 **While the walk runs, the hits live in the window and not in the state.**
-`RunSearch` is the port and `Adapters/SearchRunner` the only thing that knows a
+`Runners.Search` is the port and `Adapters/SearchRunner` the only thing that knows a
 thread exists: the walk runs on a `Task` with the batches' `BatchControl`, hits
 are queued, and a timer on the UI thread drains the queue ten times a second —
 one `app.Invoke` per tick rather than one per hit. Putting them into `AppState`

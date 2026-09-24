@@ -23,7 +23,7 @@ let ``the UI reports listing failures and stays in the current directory`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ReportError = fun _ -> reported.Add }
+                Prompts.ReportError = fun report -> reported.Add report.Message }
 
     let panelView = panel FilePanel.LeftId window
     let list = FilePanel.listView panelView

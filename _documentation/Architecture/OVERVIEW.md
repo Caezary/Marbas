@@ -9,7 +9,8 @@ take longer than a keystroke is an effect as well, so it runs off the UI thread
 behind the progress window; [State and effects](STATE-AND-EFFECTS.md) draws that
 line where the code draws it. The generic `State/Runtime.fs` host holds the only
 mutable cell and drives the update/render/effect loop. The outside world (file
-system, dialogs, quit) is injected through `Shell.Dependencies` and run by
+system, dialogs, quit) is injected through `Ports.Dependencies` — four
+sub-records, `Prompts`, `Processes`, `Watches` and `Runners` — and run by
 `Shell.interpret`; `Adapters/` holds the real implementations of those ports and
 `Adapters/Dependencies.fs` is the one place that wires them.
 
@@ -36,7 +37,7 @@ the layer acyclic without any tooling. `Ui` is still one layer of `Adapters` →
 `Ui` → `State` → `FileSystem` → `Domain`; the folders divide it by subject, not
 by rank.
 
-**`Adapters` is where the operating system is allowed in.** `Shell.Dependencies`
+**`Adapters` is where the operating system is allowed in.** `Ui/App/Ports.fs`
 declares the ports; every real implementation of one lives in `Adapters/`, and
 nothing below that folder opens `System.Diagnostics`, imports `user32.dll` or
 asks which operating system it is running on. The answer to that last question
@@ -205,10 +206,11 @@ Marbas/
       StatusLine.fs         the status line view
       TabCounter.fs         which tab is in front, of how many, in the corner
       AppView.fs            window, both panels, the status line and the counter
-      Shell.fs              Dependencies and the effect interpreter
+      Ports.fs              the ports: prompts, processes, watches and runners
+      Shell.fs              the effect interpreter
       EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
       MainWindow.fs         composition: views, runtime, event wiring
-  Adapters/               the real implementations of Shell.Dependencies;
+  Adapters/               the real implementations of Ports.Dependencies;
                           the only folder allowed to touch the OS
     HostEnvironment.fs    platform, home directories and `$EDITOR`, read once
     Prompts.fs            the message boxes and popups the application runs
@@ -232,7 +234,7 @@ Marbas.Tests/
   Root.fs                 the root every test path is built on, per platform
   WindowsFact.fs          a Fact that skips where drive letters do not exist
   Expect.fs               Result unwrapping, so act and assert stay apart
-  Fakes.fs                the do-nothing Shell.Dependencies every test starts from
+  Fakes.fs                the do-nothing Ports.Dependencies every test starts from
   FileSystem/             unit tests, one module per FileSystem module
   State/                  unit tests, one module per State module
   Ui/                     unit tests of the pure Ui modules and the Shell

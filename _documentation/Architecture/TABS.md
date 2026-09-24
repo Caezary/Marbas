@@ -68,7 +68,7 @@ measured where.
 
 **The popup is a port, and the row is Ui's business.** `TabsRequested` raises
 `ShowTabs` carrying the `Zipper<Tab>` itself — the tabs and which is current in
-one value, so nothing has to be paired up again — and `Dependencies.ChooseTab`
+one value, so nothing has to be paired up again — and `Prompts.ChooseTab`
 answers with the position that was picked or with nothing. `TabRow.describe`
 turns one tab into `2.   C:\projects\Marbas          C:\backup`, and
 `TabDialog` is a list with `Cancel` and `Ok`; `Enter` on the list accepts

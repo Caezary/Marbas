@@ -74,8 +74,8 @@ let ``F5 inside an archive copies the entry under the cursor into the other pane
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseDrive = Fakes.choosingDrive (at "backup")
-                AskOverwrite = fun _ _ -> Operations.Yes }
+                Prompts.ChooseDrive = Fakes.choosingDrive (at "backup")
+                Prompts.AskOverwrite = fun _ -> Operations.Yes }
 
     let list = leftList window
     press list KeyMap.rightRootKey
@@ -96,8 +96,8 @@ let ``F5 inside an archive takes the tree of a marked directory`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                ChooseDrive = Fakes.choosingDrive (at "backup")
-                AskOverwrite = fun _ _ -> Operations.Yes }
+                Prompts.ChooseDrive = Fakes.choosingDrive (at "backup")
+                Prompts.AskOverwrite = fun _ -> Operations.Yes }
 
     let list = leftList window
     press list KeyMap.rightRootKey

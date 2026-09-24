@@ -13,7 +13,7 @@ schedules the fix. A rule here beats a habit found in an older file.
 | `Domain/` | the vocabulary: `EntryName`, `FileSystemPath`, `NamePattern`, `SortOrder`, `HiddenEntries`, `FindQuery` | `Collections` |
 | `FileSystem/` | reading and writing disks and archives, every call through `IFileSystem` | `Domain` |
 | `State/` | `AppState`, messages, transitions, `Effect`; `Runtime` holds the one mutable cell | `FileSystem`, `Domain` |
-| `Ui/` | views, key maps, `Shell.Dependencies` as ports, `Shell.interpret` | `State` and below |
+| `Ui/` | views, key maps, `Ports.Dependencies` as ports, `Shell.interpret` | `State` and below |
 | `Adapters/` | the real ports: dialogs, processes, registry, watches, runners | everything above it |
 | `Program.fs` | starts the application, nothing else | `Adapters` |
 
@@ -21,7 +21,7 @@ schedules the fix. A rule here beats a habit found in an older file.
       the enforcement; if a reference needs to point up, the type is in the
       wrong layer.
 - [ ] Only `Adapters` touches the operating system directly. Everything else
-      reaches it through `IFileSystem` or a port on `Shell.Dependencies`.
+      reaches it through `IFileSystem` or a port on `Ports.Dependencies`.
 - [ ] A type belongs to the lowest layer that speaks it, not the one that needed
       it first.
 - [ ] One folder is one namespace, and a folder may only depend on folders above
@@ -180,7 +180,7 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] Dialogs wear the classic scheme through `DialogStyle`; no view sets its
       own colours.
 - [ ] Long work does not run on the UI thread: it is an effect behind
-      `RunBatch`, with a progress window and `Esc`.
+      `Runners.Batch`, with a progress window and `Esc`.
 
 ## 10. Before handing work back
 

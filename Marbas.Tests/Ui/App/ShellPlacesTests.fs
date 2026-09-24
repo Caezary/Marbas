@@ -69,7 +69,7 @@ let private capture () =
 
 let private recording (fs: MockFileSystem) (titles: ResizeArray<string>) =
     { Fakes.dependencies fs (at "start") with
-        RunBatch =
+        Runners.Batch =
             fun title work finish ->
                 titles.Add title
                 work unattended |> finish }
@@ -160,7 +160,7 @@ let ``a batch stopped before it starts touches none of the places`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            RunBatch = fun _ work finish -> work stopped |> finish }
+            Runners.Batch = fun _ work finish -> work stopped |> finish }
 
     Shell.interpret deps dispatch (MovePlaces(places, ToDirectory(fp (at "backup"))))
 
@@ -175,10 +175,10 @@ let ``a protected archive is asked for its password once for all its marks`` () 
 
     let deps =
         { recording fs (ResizeArray()) with
-            AskPassword =
-                fun _ _ ->
+            Prompts.AskPassword =
+                fun _ ->
                     asked <- asked + 1
-                    Some "opensesame" }
+                    ArchivePassword.tryCreate "opensesame" }
 
     let marks = [ FromArchive(zipAt, [ entry "notes.txt"; entry "docs/inner.txt" ]) ]
 
@@ -194,7 +194,7 @@ let ``a password turned down leaves its archive out and the rest still runs`` ()
 
     let deps =
         { recording fs (ResizeArray()) with
-            AskPassword = fun _ _ -> None }
+            Prompts.AskPassword = fun _ -> None }
 
     Shell.interpret deps dispatch (CopyPlaces(places, ToDirectory(fp (at "backup"))))
 
@@ -210,7 +210,7 @@ let ``a copy into a tar is refused as a failed item from one place and from two`
 
     let deps =
         { recording fs (ResizeArray()) with
-            ReportError = fun title message -> reported <- (title, message) }
+            Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     let intoTar = ToArchive(tarAt, ArchivePath.root)
 

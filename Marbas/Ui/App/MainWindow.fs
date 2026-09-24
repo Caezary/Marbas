@@ -11,7 +11,7 @@ open Marbas.Ui.Panels
 let configureQuitKey () =
     Application.SetDefaultKeyBinding(Command.Quit, Bind.All(KeyMap.quitKey, Key.F10, KeyMap.cancelKey))
 
-let create (deps: Shell.Dependencies) =
+let create (deps: Ports.Dependencies) =
     let view = AppView.create ()
 
     let settings =
@@ -49,6 +49,6 @@ let create (deps: Shell.Dependencies) =
     for side, panel in AppView.panels view do
         PanelWiring.attach host side panel
 
-    deps.WatchModifiers(FunctionKeyBar.show keyBar)
+    deps.Watches.Modifiers(FunctionKeyBar.show keyBar)
 
     view.Window

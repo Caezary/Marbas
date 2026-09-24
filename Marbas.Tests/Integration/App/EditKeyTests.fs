@@ -7,6 +7,7 @@ open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Ui.Keys
+open Marbas.Ui.App
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
@@ -21,10 +22,10 @@ let private mockFs () =
 let private windowWith (fs: MockFileSystem) runEditor reportError =
     focusedWindow
         { Fakes.dependencies fs (at "start") with
-            RunEditor = runEditor
-            ReportError = reportError }
+            Processes.RunEditor = runEditor
+            Prompts.ReportError = reportError }
 
-let private silent = fun (_: string) (_: string) -> ()
+let private silent = ignore<Ports.ErrorReport>
 
 [<Fact>]
 let ``F4 hands the file under the cursor to the editor`` () =
@@ -53,7 +54,7 @@ let ``F4 on a directory opens its properties`` () =
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                EditProperties =
+                Prompts.EditProperties =
                     fun properties ->
                         shown.Add properties
                         None }
@@ -71,7 +72,7 @@ let ``properties that come back from the popup reach the directory`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                EditProperties = fun properties -> Some(EntryProperties.setFlag ReadOnlyFlag true properties) }
+                Prompts.EditProperties = fun properties -> Some(EntryProperties.setFlag ReadOnlyFlag true properties) }
 
     (leftList window).SelectedItem <- 1
 
@@ -97,7 +98,7 @@ let ``F4 opens the editor its extension is associated with`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                RunEditor = fun editor _ -> started.Add editor; Ok() }
+                Processes.RunEditor = fun editor _ -> started.Add editor; Ok() }
 
     (leftList window).SelectedItem <- 2
 
@@ -124,7 +125,7 @@ let ``F4 opens the editor a settings file written before the role named`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                RunEditor = fun editor _ -> started.Add editor; Ok() }
+                Processes.RunEditor = fun editor _ -> started.Add editor; Ok() }
 
     (leftList window).SelectedItem <- 2
 
@@ -147,7 +148,7 @@ let ``what the editor left behind shows up when it returns`` () =
 let ``an editor that could not be started is reported`` () =
     let reported = ResizeArray<string>()
     let failure = OperationFailed(FileSystemPath.create (at "start/notes.txt"), "no editor")
-    use window = windowWith (mockFs ()) (fun _ _ -> Error failure) (fun _ -> reported.Add)
+    use window = windowWith (mockFs ()) (fun _ _ -> Error failure) (fun report -> reported.Add report.Message)
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F4
@@ -162,8 +163,8 @@ let ``Shift+F4 creates the named file in the panel directory and opens it`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                AskName = fun _ _ -> Some "draft.md"
-                RunEditor = fun _ path -> edited.Add path; Ok() }
+                Prompts.AskName = fun _ -> Some(EntryName.create "draft.md")
+                Processes.RunEditor = fun _ path -> edited.Add path; Ok() }
 
     pressKey window KeyMap.newFileKey
 
@@ -177,7 +178,7 @@ let ``a cancelled Shift+F4 creates nothing`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                AskName = fun _ _ -> None }
+                Prompts.AskName = fun _ -> None }
 
     pressKey window KeyMap.newFileKey
 
@@ -193,11 +194,11 @@ let ``F12 hands the programs in force to the settings popup and takes back what 
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                EditPrograms =
-                    fun programs _ ->
-                        shown.Add programs
-                        Some { programs with DefaultEditor = Some chosen }
-                RunEditor = fun editor _ -> started.Add editor; Ok() }
+                Prompts.EditPrograms =
+                    fun request ->
+                        shown.Add request.Programs
+                        Some { request.Programs with DefaultEditor = Some chosen }
+                Processes.RunEditor = fun editor _ -> started.Add editor; Ok() }
 
     pressKey window KeyMap.settingsKey
     (leftList window).SelectedItem <- 2
@@ -215,7 +216,7 @@ let ``F12 offers the executable under the cursor to the settings popup`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                EditPrograms = fun _ candidate -> offered.Add candidate; None }
+                Prompts.EditPrograms = fun request -> offered.Add request.Candidate; None }
 
     (leftList window).SelectedItem <- 3
 
@@ -231,7 +232,7 @@ let ``F12 offers nothing when the cursor is not on an executable`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                EditPrograms = fun _ candidate -> offered.Add candidate; None }
+                Prompts.EditPrograms = fun request -> offered.Add request.Candidate; None }
 
     (leftList window).SelectedItem <- 2
 

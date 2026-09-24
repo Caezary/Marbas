@@ -20,9 +20,9 @@ let private mockFs () =
     fs.AddFile(at "start/readme.txt", MockFileData "hi")
     fs
 
-let private silent = fun (_: string) (_: string) -> ()
+let private silent = ignore<Ports.ErrorReport>
 
-let private agreeing = fun (_: string) (_: string) -> true
+let private agreeing = fun (_: Ports.Confirmation) -> true
 
 type private Bin(fs: MockFileSystem) =
     let taken = ResizeArray<string>()
@@ -36,9 +36,9 @@ type private Bin(fs: MockFileSystem) =
 let private windowWith (fs: MockFileSystem) (bin: Bin) confirm reportError =
     focusedWindow
         { Fakes.dependencies fs (at "start") with
-            Confirm = confirm
-            ReportError = reportError
-            SendToTrash = bin.Send }
+            Prompts.Confirm = confirm
+            Prompts.ReportError = reportError
+            Processes.SendToTrash = bin.Send }
 
 let private onNotes (fs: MockFileSystem) bin confirm =
     let window = windowWith fs bin confirm silent
@@ -50,7 +50,8 @@ let ``F8 asks for confirmation and sends the entry under the cursor to the trash
     let fs = mockFs ()
     let bin = Bin fs
     let asked = ResizeArray<string * string>()
-    use window = onNotes fs bin (fun title message -> asked.Add(title, message); true)
+    use window =
+        onNotes fs bin (fun question -> asked.Add(question.Title, question.Question); true)
 
     pressKey window Key.F8
 
@@ -75,7 +76,8 @@ let ``Shift and Del delete for good, leaving the trash out of it`` () =
     let fs = mockFs ()
     let bin = Bin fs
     let asked = ResizeArray<string * string>()
-    use window = onNotes fs bin (fun title message -> asked.Add(title, message); true)
+    use window =
+        onNotes fs bin (fun question -> asked.Add(question.Title, question.Question); true)
 
     pressKey window KeyMap.permanentDeleteKey
 
@@ -106,9 +108,9 @@ let ``Alt and Del wipe the entry behind the progress window after a question of 
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Confirm = fun title message -> asked.Add(title, message); true
-                SendToTrash = bin.Send
-                RunBatch =
+                Prompts.Confirm = fun question -> asked.Add(question.Title, question.Question); true
+                Processes.SendToTrash = bin.Send
+                Runners.Batch =
                     fun title work finish ->
                         batches.Add title
                         work Operations.unattended |> finish }
@@ -135,9 +137,9 @@ let ``F8 sends the entry to the trash behind the progress window, naming it on t
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Confirm = agreeing
-                SendToTrash = bin.Send
-                RunBatch =
+                Prompts.Confirm = agreeing
+                Processes.SendToTrash = bin.Send
+                Runners.Batch =
                     fun title work finish ->
                         batches.Add title
                         work { Report = reported.Add; IsCancelled = fun () -> false } |> finish }
@@ -158,8 +160,8 @@ let ``Shift and F8 name every entry of the tree they remove behind the progress 
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Confirm = agreeing
-                RunBatch =
+                Prompts.Confirm = agreeing
+                Runners.Batch =
                     fun title work finish ->
                         batches.Add title
                         work { Report = reported.Add; IsCancelled = fun () -> false } |> finish }
@@ -188,10 +190,10 @@ let ``a trash stopped with Esc leaves the entries it never reached`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Confirm = agreeing
-                ReportError = silent
-                SendToTrash = bin.Send
-                RunBatch = fun _ work finish -> work stopped |> finish }
+                Prompts.Confirm = agreeing
+                Prompts.ReportError = silent
+                Processes.SendToTrash = bin.Send
+                Runners.Batch = fun _ work finish -> work stopped |> finish }
 
     let left = leftList window
     left.SelectedItem <- 3
@@ -215,9 +217,9 @@ let ``a wipe stopped with Esc leaves the entries it never reached and says where
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Confirm = agreeing
-                ReportError = fun _ -> reported.Add
-                RunBatch = fun _ work finish -> work stopped |> finish }
+                Prompts.Confirm = agreeing
+                Prompts.ReportError = fun report -> reported.Add report.Message
+                Runners.Batch = fun _ work finish -> work stopped |> finish }
 
     (leftList window).SelectedItem <- 3
 
@@ -231,7 +233,7 @@ let ``a wipe stopped with Esc leaves the entries it never reached and says where
 let ``a refused confirmation deletes nothing`` () =
     let fs = mockFs ()
     let bin = Bin fs
-    use window = onNotes fs bin (fun _ _ -> false)
+    use window = onNotes fs bin (fun _ -> false)
 
     pressKey window Key.F8
 
@@ -243,7 +245,7 @@ let ``a refused confirmation deletes nothing`` () =
 let ``F8 on the parent entry asks nothing`` () =
     let fs = mockFs ()
     let asked = ResizeArray<string>()
-    use window = windowWith fs (Bin fs) (fun title _ -> asked.Add title; true) silent
+    use window = windowWith fs (Bin fs) (fun (question: Ports.Confirmation) -> asked.Add question.Title; true) silent
 
     pressKey window Key.F8
 
@@ -253,7 +255,7 @@ let ``F8 on the parent entry asks nothing`` () =
 let ``a failed delete is reported`` () =
     let fs = mockFs ()
     let reported = ResizeArray<string>()
-    let window = windowWith fs (Bin fs) agreeing (fun _ -> reported.Add)
+    let window = windowWith fs (Bin fs) agreeing (fun report -> reported.Add report.Message)
     use window = window
     (leftList window).SelectedItem <- 3
     fs.File.Delete(at "start/notes.txt")

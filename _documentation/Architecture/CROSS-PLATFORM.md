@@ -181,7 +181,7 @@ drive still reads as hidden there.
 | A deleted entry can be put back by the desktop's own tool | Explorer's *Restore* | the file manager's *Restore* | **manual** |
 | A trash that refuses is reported entry by entry, marks kept | same | same | suite |
 
-`Shell` asks `deps.SendToTrash`, and `Dependencies.create` decides what that is:
+`Shell` asks `deps.Processes.SendToTrash`, and `Dependencies.create` decides what that is:
 `RecycleBin.send` on Windows, which is
 `Microsoft.VisualBasic.FileIO.FileSystem.DeleteFile` /
 `DeleteDirectory` with `RecycleOption.SendToRecycleBin` — the VB
