@@ -7,6 +7,7 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.State
+open Marbas.Ui
 open Marbas.Ui.Theme
 open Marbas.Ui.Format
 
@@ -24,16 +25,10 @@ type PanelView() =
     member val Painted: PanelRows.Painting option = None with get, set
 
 let listView (panel: View) =
-    panel.SubViews
-    |> Seq.pick (function
-        | :? ListView as list -> Some list
-        | _ -> None)
+    SubView.byType<ListView> panel
 
 let footer (panel: View) =
-    panel.SubViews
-    |> Seq.pick (function
-        | :? Label as label -> Some label
-        | _ -> None)
+    SubView.byType<Label> panel
 
 let private rowColor (panel: PanelView) row =
     panel.RowColors |> Array.tryItem row

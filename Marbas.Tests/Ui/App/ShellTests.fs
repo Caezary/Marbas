@@ -788,7 +788,7 @@ let ``changed properties are dispatched back`` () =
           Created = DateTimeOffset(DateTime(2024, 1, 1))
           Modified = DateTimeOffset(DateTime(2024, 1, 1))
           Accessed = DateTimeOffset(DateTime(2024, 1, 1)) }
-    let changed = EntryProperties.setFlag HiddenFlag true shown
+    let changed = EntryProperties.withFlag HiddenFlag shown
     let deps = { noDeps () with Prompts.EditProperties = fun _ -> Some changed }
 
     Shell.interpret deps dispatch (ShowProperties shown)
@@ -864,7 +864,7 @@ let ``a program picked out of the popup is dispatched back with the file it open
 
     let choice =
         { Program = Expect.some (ProgramPath.tryCreate "firefox.exe")
-          Remember = true }
+          Use = AlwaysThisWay }
 
     let deps = { noDeps () with Prompts.AskHandler = fun _ -> Some choice }
 

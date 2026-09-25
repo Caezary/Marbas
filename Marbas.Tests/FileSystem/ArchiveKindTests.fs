@@ -9,15 +9,9 @@ let private recognised raw = ArchiveKind.recognise (EntryName.create raw)
 
 let private format kind = ArchiveFormat.tryCreate kind |> Expect.some
 
-let private readWriteChange =
-    { CanRead = true
-      CanCreate = true
-      CanChange = true }
+let private readWriteChange = Set [ Readable; Creatable; Changeable ]
 
-let private readAlone =
-    { CanRead = true
-      CanCreate = false
-      CanChange = false }
+let private readAlone = Set [ Readable ]
 
 [<Theory>]
 [<InlineData("backup.zip", "zip")>]
@@ -47,37 +41,37 @@ let ``a name no kind owns is no archive`` name = Assert.Equal(None, recognised n
 
 [<Fact>]
 let ``zip is read, created and changed`` () =
-    Assert.Equal(readWriteChange, ArchiveKind.capabilities Zip)
+    Assert.Equal<Set<ArchiveCapability>>(readWriteChange, ArchiveKind.capabilities Zip)
 
 [<Fact>]
 let ``tar gz is read, created and changed by being written again`` () =
-    Assert.Equal(readWriteChange, ArchiveKind.capabilities TarGz)
+    Assert.Equal<Set<ArchiveCapability>>(readWriteChange, ArchiveKind.capabilities TarGz)
 
 [<Fact>]
 let ``a kind that can be created can be changed`` () =
     let creatable =
         ArchiveKind.all
-        |> List.filter (ArchiveKind.capabilities >> _.CanCreate)
+        |> List.filter (ArchiveKind.capabilities >> Set.contains Creatable)
 
     let changeable =
         ArchiveKind.all
-        |> List.filter (ArchiveKind.capabilities >> _.CanChange)
+        |> List.filter (ArchiveKind.capabilities >> Set.contains Changeable)
 
     Assert.Equal<ArchiveKind list>(creatable, changeable)
 
 [<Fact>]
 let ``7z is read, created and changed, like zip`` () =
-    Assert.Equal(readWriteChange, ArchiveKind.capabilities SevenZip)
+    Assert.Equal<Set<ArchiveCapability>>(readWriteChange, ArchiveKind.capabilities SevenZip)
 
 [<Fact>]
 let ``rar is read and nothing more, ever`` () =
-    Assert.Equal(readAlone, ArchiveKind.capabilities Rar)
+    Assert.Equal<Set<ArchiveCapability>>(readAlone, ArchiveKind.capabilities Rar)
 
 [<Fact>]
 let ``the rest of the tar family is read and nothing more`` () =
-    Assert.Equal(readAlone, ArchiveKind.capabilities Tar)
-    Assert.Equal(readAlone, ArchiveKind.capabilities TarBz2)
-    Assert.Equal(readAlone, ArchiveKind.capabilities TarXz)
+    Assert.Equal<Set<ArchiveCapability>>(readAlone, ArchiveKind.capabilities Tar)
+    Assert.Equal<Set<ArchiveCapability>>(readAlone, ArchiveKind.capabilities TarBz2)
+    Assert.Equal<Set<ArchiveCapability>>(readAlone, ArchiveKind.capabilities TarXz)
 
 [<Fact>]
 let ``the kinds are the seven Marbas has a name for`` () =

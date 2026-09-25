@@ -11,6 +11,18 @@ open Marbas.Tests
 
 let private at = Root.at
 
+[<AllowNullLiteral>]
+type private Replaced<'port when 'port: null>() =
+    member val Made: 'port = null with get, set
+
+let private once (replaced: Replaced<'port>) (make: unit -> 'port) =
+    match replaced with
+    | null -> make ()
+    | _ when isNull replaced.Made ->
+        replaced.Made <- make ()
+        replaced.Made
+    | _ -> replaced.Made
+
 [<Literal>]
 let DiskFullReason = "There is not enough space on the disk."
 
@@ -43,20 +55,14 @@ type private DeniedDirectories(accessor: IMockFileDataAccessor, denied: string) 
 type UnreadableDirectory(denied: string) =
     inherit MockFileSystem()
 
-    let mutable listing: IDirectory = null
-    let mutable infos: IDirectoryInfoFactory = null
+    let listing = Replaced<IDirectory>()
+    let infos = Replaced<IDirectoryInfoFactory>()
 
     override this.Directory =
-        if isNull listing then
-            listing <- DeniedDirectory(this, base.Directory.GetCurrentDirectory(), denied)
+        let current = base.Directory.GetCurrentDirectory()
+        once listing (fun () -> DeniedDirectory(this, current, denied) :> IDirectory)
 
-        listing
-
-    override this.DirectoryInfo =
-        if isNull infos then
-            infos <- DeniedDirectories(this, denied)
-
-        infos
+    override this.DirectoryInfo = once infos (fun () -> DeniedDirectories(this, denied) :> IDirectoryInfoFactory)
 
 [<Literal>]
 let DeepestFollowedPath = 40
@@ -90,13 +96,11 @@ type private LinkFollowingDirectory(fileSystem: IFileSystem, accessor: IMockFile
 type LinkFollowing() =
     inherit MockFileSystem()
 
-    let mutable following: IDirectory = null
+    let following = Replaced<IDirectory>()
 
     override this.Directory =
-        if isNull following then
-            following <- LinkFollowingDirectory(this, this, base.Directory.GetCurrentDirectory())
-
-        following
+        let current = base.Directory.GetCurrentDirectory()
+        once following (fun () -> LinkFollowingDirectory(this, this, current) :> IDirectory)
 
 type private UncreatableDirectory(accessor: IMockFileDataAccessor, current: string, denied: string) =
     inherit MockDirectory(accessor, current)
@@ -110,13 +114,11 @@ type private UncreatableDirectory(accessor: IMockFileDataAccessor, current: stri
 type UnwritableDirectory(denied: string) =
     inherit MockFileSystem()
 
-    let mutable making: IDirectory = null
+    let making = Replaced<IDirectory>()
 
     override this.Directory =
-        if isNull making then
-            making <- UncreatableDirectory(this, base.Directory.GetCurrentDirectory(), denied)
-
-        making
+        let current = base.Directory.GetCurrentDirectory()
+        once making (fun () -> UncreatableDirectory(this, current, denied) :> IDirectory)
 
 type private RefusedStream(path: string) =
     inherit FileSystemStream(new MemoryStream(), path, false)
@@ -138,17 +140,13 @@ type private RefusingFile(accessor: IMockFileDataAccessor, denied: string option
 type FullDisk(denied: string option) =
     inherit MockFileSystem()
 
-    let mutable writing: IFile = null
+    let writing = Replaced<IFile>()
 
     new() = FullDisk None
 
     new(path: string) = FullDisk(Some path)
 
-    override this.File =
-        if isNull writing then
-            writing <- RefusingFile(this, denied)
-
-        writing
+    override this.File = once writing (fun () -> RefusingFile(this, denied) :> IFile)
 
 type private WitnessedStream(inner: FileSystemStream, path: string, witness: unit -> unit) =
     inherit FileSystemStream(inner, path, false)
@@ -180,17 +178,13 @@ type WipeWitness() =
 
     let flushed = ResizeArray<byte array>()
     let renamed = ResizeArray<string * string>()
-    let mutable writing: IFile = null
+    let writing = Replaced<IFile>()
 
     member _.Flushed = List.ofSeq flushed
 
     member _.Renamed = List.ofSeq renamed
 
-    override this.File =
-        if isNull writing then
-            writing <- WitnessedFile(this, flushed, renamed)
-
-        writing
+    override this.File = once writing (fun () -> WitnessedFile(this, flushed, renamed) :> IFile)
 
 type private CountingFile(accessor: IMockFileDataAccessor, copied: unit -> unit) =
     inherit MockFile(accessor)
@@ -203,15 +197,11 @@ type CopyCounting() =
     inherit MockFileSystem()
 
     let mutable copies = 0
-    let mutable writing: IFile = null
+    let writing = Replaced<IFile>()
 
     member _.Copies = copies
 
-    override this.File =
-        if isNull writing then
-            writing <- CountingFile(this, fun () -> copies <- copies + 1)
-
-        writing
+    override this.File = once writing (fun () -> CountingFile(this, fun () -> copies <- copies + 1) :> IFile)
 
 type private ReadCountingFile(accessor: IMockFileDataAccessor, opened: string -> unit) =
     inherit MockFile(accessor)
@@ -224,15 +214,11 @@ type ReadCounting() =
     inherit MockFileSystem()
 
     let opened = ResizeArray<string>()
-    let mutable reading: IFile = null
+    let reading = Replaced<IFile>()
 
     member _.Reads(path: string) = opened |> Seq.filter ((=) path) |> Seq.length
 
-    override this.File =
-        if isNull reading then
-            reading <- ReadCountingFile(this, opened.Add)
-
-        reading
+    override this.File = once reading (fun () -> ReadCountingFile(this, opened.Add) :> IFile)
 
 type private CountedStream(inner: FileSystemStream, path: string, read: int -> unit, closed: unit -> unit) =
     inherit FileSystemStream(inner, path, false)
@@ -270,17 +256,15 @@ type ByteCounting() =
 
     let mutable total = 0
     let mutable shut = 0
-    let mutable reading: IFile = null
+    let reading = Replaced<IFile>()
 
     member _.BytesRead = total
 
     member _.Closed = shut
 
     override this.File =
-        if isNull reading then
-            reading <- CountedFile(this, (fun got -> total <- total + got), fun () -> shut <- shut + 1)
-
-        reading
+        once reading (fun () ->
+            CountedFile(this, (fun got -> total <- total + got), fun () -> shut <- shut + 1) :> IFile)
 
 type private AskedFile(accessor: IMockFileDataAccessor, asked: string -> unit) =
     inherit MockFile(accessor)
@@ -293,15 +277,11 @@ type ExistenceWitness() =
     inherit MockFileSystem()
 
     let asked = ResizeArray<string>()
-    let mutable reading: IFile = null
+    let reading = Replaced<IFile>()
 
     member _.AskedAbout(path: string) = asked |> Seq.filter ((=) path) |> Seq.length
 
-    override this.File =
-        if isNull reading then
-            reading <- AskedFile(this, asked.Add)
-
-        reading
+    override this.File = once reading (fun () -> AskedFile(this, asked.Add) :> IFile)
 
 type private Watching() =
     let asked = ResizeArray<string>()
@@ -418,38 +398,25 @@ type WalkWitness() =
     inherit MockFileSystem()
 
     let watching = Watching()
-    let mutable files: IFile = null
-    let mutable directories: IDirectory = null
-    let mutable fileInfos: IFileInfoFactory = null
-    let mutable directoryInfos: IDirectoryInfoFactory = null
+    let files = Replaced<IFile>()
+    let directories = Replaced<IDirectory>()
+    let fileInfos = Replaced<IFileInfoFactory>()
+    let directoryInfos = Replaced<IDirectoryInfoFactory>()
 
     member _.AskedAbout(path: string) = watching.AskedAbout path
 
     member _.Enumerations = watching.Enumerations
 
-    override this.File =
-        if isNull files then
-            files <- WatchedFile(this, watching)
-
-        files
+    override this.File = once files (fun () -> WatchedFile(this, watching) :> IFile)
 
     override this.Directory =
-        if isNull directories then
-            directories <- WatchedDirectory(this, base.Directory.GetCurrentDirectory(), watching)
+        let current = base.Directory.GetCurrentDirectory()
+        once directories (fun () -> WatchedDirectory(this, current, watching) :> IDirectory)
 
-        directories
-
-    override this.FileInfo =
-        if isNull fileInfos then
-            fileInfos <- WatchedFiles(this, watching)
-
-        fileInfos
+    override this.FileInfo = once fileInfos (fun () -> WatchedFiles(this, watching) :> IFileInfoFactory)
 
     override this.DirectoryInfo =
-        if isNull directoryInfos then
-            directoryInfos <- WatchedDirectories(this, watching)
-
-        directoryInfos
+        once directoryInfos (fun () -> WatchedDirectories(this, watching) :> IDirectoryInfoFactory)
 
 [<Literal>]
 let CrossVolumeReason = "Source and destination path must have identical roots."
@@ -463,13 +430,11 @@ type private UnmovableDirectory(accessor: IMockFileDataAccessor, current: string
 type DirectoryMoveRefused() =
     inherit MockFileSystem()
 
-    let mutable listing: IDirectory = null
+    let listing = Replaced<IDirectory>()
 
     override this.Directory =
-        if isNull listing then
-            listing <- UnmovableDirectory(this, base.Directory.GetCurrentDirectory())
-
-        listing
+        let current = base.Directory.GetCurrentDirectory()
+        once listing (fun () -> UnmovableDirectory(this, current) :> IDirectory)
 
 let dependencies (fs: IFileSystem) (startPath: string) : Ports.Dependencies =
     { FileSystem = fs
@@ -539,20 +504,14 @@ type private LinkRefusingFile(accessor: IMockFileDataAccessor, refusedUnder: str
 type SymbolicLinksRefused(refusedUnder: string) =
     inherit MockFileSystem()
 
-    let mutable making: IDirectory = null
-    let mutable writing: IFile = null
+    let making = Replaced<IDirectory>()
+    let writing = Replaced<IFile>()
 
     override this.Directory =
-        if isNull making then
-            making <- LinkRefusingDirectory(this, base.Directory.GetCurrentDirectory(), refusedUnder)
+        let current = base.Directory.GetCurrentDirectory()
+        once making (fun () -> LinkRefusingDirectory(this, current, refusedUnder) :> IDirectory)
 
-        making
-
-    override this.File =
-        if isNull writing then
-            writing <- LinkRefusingFile(this, refusedUnder)
-
-        writing
+    override this.File = once writing (fun () -> LinkRefusingFile(this, refusedUnder) :> IFile)
 
 type Mount =
     { MountPoint: string

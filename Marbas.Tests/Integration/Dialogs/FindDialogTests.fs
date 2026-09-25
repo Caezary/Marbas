@@ -51,6 +51,12 @@ let private scopeChosen index =
     (accepted dialog).Scope
 
 [<Fact>]
+let ``every box answers to an id of its own`` () =
+    let ids = FindDialog.boxes |> List.map FindDialog.boxId
+
+    Assert.Equal(FindDialog.boxes.Length, ids |> List.distinct |> List.length)
+
+[<Fact>]
 let ``a fresh popup asks for every name, no text, from the directory the panel stands in`` () =
     use dialog = fresh ()
 

@@ -72,7 +72,7 @@ let ``properties that come back from the popup reach the directory`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Prompts.EditProperties = fun properties -> Some(EntryProperties.setFlag ReadOnlyFlag true properties) }
+                Prompts.EditProperties = fun properties -> Some(EntryProperties.withFlag ReadOnlyFlag properties) }
 
     (leftList window).SelectedItem <- 1
 

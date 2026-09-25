@@ -3,6 +3,7 @@ module Marbas.Ui.Dialogs.TabDialog
 open System.Collections.ObjectModel
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
+open Marbas.Ui
 open Marbas.Ui.Theme
 
 [<Literal>]
@@ -27,10 +28,7 @@ let create (rows: string list) (current: int) =
     dialog
 
 let tabs (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? ListView as list -> Some list
-        | _ -> None)
+    SubView.byType<ListView> dialog
 
 let choice (dialog: Dialog) =
     if dialog.Canceled then

@@ -81,7 +81,7 @@ let ``the program in the field is the one chosen`` () =
     let answered = OpenWithDialog.choice dialog |> Expect.some
 
     Assert.Equal(program "/opt/tools/viewer", answered.Program)
-    Assert.False answered.Remember
+    Assert.Equal(ThisTimeOnly, answered.Use)
 
 [<Fact>]
 let ``a ticked box asks for the choice to be remembered`` () =
@@ -91,7 +91,7 @@ let ``a ticked box asks for the choice to be remembered`` () =
 
     let answered = OpenWithDialog.choice dialog |> Expect.some
 
-    Assert.True answered.Remember
+    Assert.Equal(AlwaysThisWay, answered.Use)
 
 [<Fact>]
 let ``a blank program chooses nothing`` () =

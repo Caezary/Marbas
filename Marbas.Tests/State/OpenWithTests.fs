@@ -37,9 +37,9 @@ let private ran effect =
 let private launched (result: UpdateResult) =
     Assert.Single result.Effects |> ran |> Expect.some
 
-let private choosing raw remember =
+let private choosing raw handlerUse =
     { Program = program raw
-      Remember = remember }
+      Use = handlerUse }
 
 [<Fact>]
 let ``a file under the cursor asks which program should open it`` () =
@@ -122,7 +122,7 @@ let ``the program that was picked is the one started`` () =
     let fs = tree ()
     let state = loaded fs |> setCursor Left Page
 
-    let result = update fs (HandlerChosen(fp (at "start/page.html"), choosing "firefox.exe" false)) state
+    let result = update fs (HandlerChosen(fp (at "start/page.html"), choosing "firefox.exe" ThisTimeOnly)) state
 
     let request = launched result
 
@@ -135,7 +135,7 @@ let ``a choice that is not remembered leaves the table alone`` () =
     let fs = tree ()
     let state = loaded fs |> setCursor Left Page
 
-    let result = update fs (HandlerChosen(fp (at "start/page.html"), choosing "firefox.exe" false)) state
+    let result = update fs (HandlerChosen(fp (at "start/page.html"), choosing "firefox.exe" ThisTimeOnly)) state
 
     Assert.Equal(ProgramSettings.none, result.State.Programs)
 
@@ -144,7 +144,7 @@ let ``a remembered choice becomes the row the next Enter reads`` () =
     let fs = tree ()
     let state = loaded fs |> setCursor Left Page
 
-    let result = update fs (HandlerChosen(fp (at "start/page.html"), choosing "firefox.exe" true)) state
+    let result = update fs (HandlerChosen(fp (at "start/page.html"), choosing "firefox.exe" AlwaysThisWay)) state
 
     Assert.Equal(
         Some(program "firefox.exe"),
@@ -156,7 +156,7 @@ let ``a remembered choice goes into the settings the session is written from`` (
     let fs = tree ()
     let state = loaded fs |> setCursor Left Page
 
-    let result = update fs (HandlerChosen(fp (at "start/page.html"), choosing "firefox.exe" true)) state
+    let result = update fs (HandlerChosen(fp (at "start/page.html"), choosing "firefox.exe" AlwaysThisWay)) state
 
     Assert.Contains("program.opening.html=firefox.exe", Settings.format (settings fs result.State))
 
@@ -166,7 +166,7 @@ let ``a name with no extension is started but remembered against nothing`` () =
     fs.AddFile(at "start/README", MockFileData "hi")
     let state = loaded fs |> setCursor Left Page
 
-    let result = update fs (HandlerChosen(fp (at "start/README"), choosing "vi" true)) state
+    let result = update fs (HandlerChosen(fp (at "start/README"), choosing "vi" AlwaysThisWay)) state
 
     Assert.Equal(ProgramSettings.none, result.State.Programs)
     Assert.Equal(fp (at "start/README"), (launched result).Target)

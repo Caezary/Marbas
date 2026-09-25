@@ -5,6 +5,7 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Ui
 open Marbas.Ui.Messages
 open Marbas.Ui.Theme
 
@@ -26,17 +27,22 @@ let kindLabel kind =
     | Hard -> "_Hard link"
     | Junction -> "_Junction"
 
-let private kindsOf (selector: OptionSelector) =
-    selector.Labels
-    |> Seq.map (fun label -> [ Symbolic; Hard; Junction ] |> List.find (kindLabel >> (=) label))
-    |> List.ofSeq
+type LinkView(kinds: LinkKind list) =
+    inherit Dialog()
 
-let private chosenKind (selector: OptionSelector) =
+    member _.Kinds = kinds
+
+let private chosenKind kinds (selector: OptionSelector) =
     let index = selector.Value |> Option.ofNullable |> Option.defaultValue 0
-    kindsOf selector |> List.tryItem index |> Option.defaultValue Symbolic
+    kinds |> List.tryItem index |> Option.defaultValue Symbolic
 
-let private offer (refusal: string -> LinkKind -> LinkRefusal option) (target: TextField) (selector: OptionSelector) (reason: Label) =
-    let kinds = kindsOf selector
+let private offer
+    kinds
+    (refusal: string -> LinkKind -> LinkRefusal option)
+    (target: TextField)
+    (selector: OptionSelector)
+    (reason: Label)
+    =
     let refusals = kinds |> List.map (refusal target.Text)
 
     Seq.zip selector.SubViews refusals
@@ -44,14 +50,14 @@ let private offer (refusal: string -> LinkKind -> LinkRefusal option) (target: T
 
     reason.Text <- refusals |> List.choose (Option.map LinkRefusalMessage.describe) |> String.concat "\n"
 
-    let chosen = chosenKind selector
+    let chosen = chosenKind kinds selector
 
     if List.zip kinds refusals |> List.exists (fun (kind, refused) -> kind = chosen && refused.IsSome) then
         selector.Value <- Nullable 0
 
 let create (kinds: LinkKind list) (refusal: string -> LinkKind -> LinkRefusal option) (suggestion: string) =
-    let dialog =
-        new Dialog(Title = Title, Width = 64, Height = 14) |> DialogStyle.dress
+    let dialog = new LinkView(kinds, Title = Title, Width = 64, Height = 14)
+    DialogStyle.dress dialog |> ignore
 
     let target =
         new TextField(X = 1, Y = 1, Width = Dim.Fill 1, Height = 1, Text = suggestion, Id = TargetId)
@@ -76,35 +82,26 @@ let create (kinds: LinkKind list) (refusal: string -> LinkKind -> LinkRefusal op
     )
     |> ignore
 
-    offer refusal target selector reason
-    target.TextChanged.Add(fun _ -> offer refusal target selector reason)
+    offer kinds refusal target selector reason
+    target.TextChanged.Add(fun _ -> offer kinds refusal target selector reason)
 
     dialog.AddButton(DialogStyle.button "_Cancel")
     dialog.AddButton(DialogStyle.button "_Ok")
     dialog
 
 let field (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? TextField as input when input.Id = TargetId -> Some input
-        | _ -> None)
+    SubView.byId<TextField> TargetId dialog
 
 let selector (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? OptionSelector as options when options.Id = KindId -> Some options
-        | _ -> None)
+    SubView.byId<OptionSelector> KindId dialog
 
 let reason (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? Label as label when label.Id = ReasonId -> Some label
-        | _ -> None)
+    SubView.byId<Label> ReasonId dialog
 
-let choice (dialog: Dialog) =
+let choice (dialog: LinkView) =
     if dialog.Canceled then
         None
     else
         Some
             { Target = (field dialog).Text
-              Kind = dialog |> selector |> chosenKind }
+              Kind = dialog |> selector |> chosenKind dialog.Kinds }

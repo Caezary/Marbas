@@ -132,8 +132,10 @@ let ``a kind that can be changed keeps what it already held`` extension =
 let ``a kind that can be read is no kind to create`` extension =
     let kind = ArchiveKind.recognise (en $"data.{extension}") |> Expect.some
 
-    Assert.True (ArchiveKind.capabilities kind).CanRead
-    Assert.False (ArchiveKind.capabilities kind).CanChange
+    let capabilities = ArchiveKind.capabilities kind
+
+    Assert.Contains(Readable, capabilities)
+    Assert.DoesNotContain(Changeable, capabilities)
 
 let private tarred (fs: IFileSystem) (write: Stream -> Stream) path =
     use file = fs.File.Create(FileSystemPath.value path)

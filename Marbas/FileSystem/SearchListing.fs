@@ -42,7 +42,7 @@ let private surviving (fs: IFileSystem) (found: FoundEntries) =
 
 let hitFor (found: FoundEntries) (name: EntryName) = found.Shown |> Map.tryFind name
 
-let private parentEntry (fs: IFileSystem) (found: FoundEntries) =
+let private resultsParent (fs: IFileSystem) (found: FoundEntries) =
     let holding = PanelLocation.holding fs found.Origin
 
     let modified =
@@ -51,14 +51,7 @@ let private parentEntry (fs: IFileSystem) (found: FoundEntries) =
         with _ ->
             DateTimeOffset.MinValue
 
-    { Name = ParentName
-      Kind = Directory
-      Size = None
-      Measured = None
-      Modified = modified
-      Visibility = Plain
-      Executability = NotExecutable
-      LinkTarget = None }
+    parentEntry modified
 
 let read (fs: IFileSystem) (found: FoundEntries) =
     surviving fs found |> Result.map (List.map (shownAs fs found))
@@ -66,4 +59,4 @@ let read (fs: IFileSystem) (found: FoundEntries) =
 let listForDisplay (fs: IFileSystem) (sort: SortOrder) (hidden: HiddenEntries) (found: FoundEntries) =
     read fs found
     |> Result.mapError ArchiveUnreadable
-    |> Result.map (fun entries -> order sort (parentEntry fs found :: shown hidden entries))
+    |> Result.map (fun entries -> order sort (resultsParent fs found :: shown hidden entries))

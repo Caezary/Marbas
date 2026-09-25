@@ -150,25 +150,26 @@ let order (sort: SortOrder) (entries: Entry seq) =
 let shown (hidden: HiddenEntries) (entries: Entry list) =
     entries |> List.filter (_.Visibility >> HiddenEntries.admits hidden)
 
-let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
-    match fs.DirectoryInfo.New(FileSystemPath.value path).Parent with
-    | null -> None
-    | parent ->
-        Some
-            { Name = ParentName
-              Kind = Directory
-              Size = None
-              Measured = None
-              Modified = DateTimeOffset parent.LastWriteTime
-              Visibility = Plain
-              Executability = NotExecutable
-              LinkTarget = None }
+let parentEntry modified =
+    { Name = ParentName
+      Kind = Directory
+      Size = None
+      Measured = None
+      Modified = modified
+      Visibility = Plain
+      Executability = NotExecutable
+      LinkTarget = None }
+
+let private parentIfAny (fs: IFileSystem) (path: FileSystemPath) =
+    fs.DirectoryInfo.New(FileSystemPath.value path).Parent
+    |> Option.ofObj
+    |> Option.map (fun parent -> DateTimeOffset parent.LastWriteTime |> parentEntry)
 
 let listForDisplay (fs: IFileSystem) (sort: SortOrder) (hidden: HiddenEntries) (path: FileSystemPath) =
     read fs path
     |> Result.map (fun entries ->
         let listed = shown hidden entries
 
-        match parentEntry fs path with
+        match parentIfAny fs path with
         | Some parent -> order sort (parent :: listed)
         | None -> order sort listed)

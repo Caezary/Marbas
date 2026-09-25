@@ -2,6 +2,7 @@ module Marbas.Ui.Dialogs.ProgressDialog
 
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
+open Marbas.Ui
 open Marbas.Ui.Theme
 open Marbas.Ui.Format
 
@@ -22,9 +23,6 @@ let create title =
     dialog
 
 let line (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? Label as label when label.Id = LineId -> Some label
-        | _ -> None)
+    SubView.byId<Label> LineId dialog
 
 let report (dialog: Dialog) (text: string) = (line dialog).Text <- text

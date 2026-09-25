@@ -25,6 +25,19 @@ disk is reached for only when the subject *is* what the real system does and no
 mock can say it. Such tests are integration tests and live in
 `Integration/Disk/`.
 
+**A fake replaces one member of the mock, once, through `once`.** Every
+subclass in `Fakes` swaps a port — `File`, `Directory`, `FileInfo`,
+`DirectoryInfo` — for a subclass of its own, built on first use because the
+replacement needs `this`. `MockFileSystem`'s own constructor reads `Directory`
+before the subclass's fields exist, so the field that remembers the replacement
+is still `null` at that moment: `Fakes.once` answers a fresh replacement then,
+remembers one once the object is built, and every override is one line —
+`override this.File = once writing (fun () -> CountingFile(…) :> IFile)`. It
+replaced seventeen hand-written copies of the same `if isNull … then … <- …` in
+P15.21; a `Replaced` held as an ordinary object was tried first and failed with
+a `NullReferenceException` inside the base constructor, which is why the null
+case is part of the helper and not of each fake.
+
 Symbolic links were the first case that needed it. Enumerating a directory link
 on a real system walks into what it points at, and on the mock it answers
 nothing, so a walk that would spin for ever on a disk passes on the mock without

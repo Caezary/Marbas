@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
+open Marbas.Ui
 open Marbas.Ui.Panels
 open Marbas.Ui.App
 open Marbas.Tests
@@ -11,7 +12,7 @@ open Marbas.Tests
 let private at = Root.at
 
 let panel id (window: Window) =
-    window.SubViews |> Seq.find (fun v -> v.Id = id)
+    SubView.byId<View> id window
 
 let panelView id window = panel id window :?> FilePanel.PanelView
 

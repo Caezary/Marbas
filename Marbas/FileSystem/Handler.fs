@@ -2,9 +2,13 @@ namespace Marbas.FileSystem
 
 open Marbas.Domain
 
+type HandlerUse =
+    | AlwaysThisWay
+    | ThisTimeOnly
+
 type OpenWithChoice =
     { Program: ProgramPath
-      Remember: bool }
+      Use: HandlerUse }
 
 type Handler =
     { Name: string

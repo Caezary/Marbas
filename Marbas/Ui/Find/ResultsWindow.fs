@@ -8,6 +8,7 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.FileSystem
 open Marbas.FileSystem.FileSearch
+open Marbas.Ui
 open Marbas.Ui.Theme
 open Marbas.Ui.Format
 open Marbas.Ui.Keys
@@ -112,16 +113,13 @@ type ResultsView(fs: IFileSystem, run: SearchRun) =
     member _.Describe width row = ResultRow.describe fs width row
 
 let list (window: ResultsView) =
-    window.SubViews
-    |> Seq.pick (function
-        | :? ListView as view when view.Id = ListId -> Some view
-        | _ -> None)
+    SubView.byId<ListView> ListId window
 
 let summary (window: ResultsView) =
-    window.SubViews |> Seq.find (fun view -> view.Id = SummaryId)
+    SubView.byId<View> SummaryId window
 
 let keyBar (window: ResultsView) =
-    window.SubViews |> Seq.find (fun view -> view.Id = KeyBarId)
+    SubView.byId<View> KeyBarId window
 
 let private updateSummary (window: ResultsView) =
     (summary window).Text <- FindSummary.describe window.Progress

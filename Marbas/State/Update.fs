@@ -269,8 +269,8 @@ let private runElevated (fs: IFileSystem) state =
 
 let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
     let remembered =
-        match FileExtension.ofName (FileSystemPath.name fs path) with
-        | Some extension when choice.Remember ->
+        match FileExtension.ofName (FileSystemPath.name fs path), choice.Use with
+        | Some extension, AlwaysThisWay ->
             withPrograms (ProgramSettings.associate ForOpening extension choice.Program state.Programs) state
         | _ -> state
 

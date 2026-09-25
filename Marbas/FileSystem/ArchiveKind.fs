@@ -12,10 +12,10 @@ type ArchiveKind =
     | SevenZip
     | Rar
 
-type ArchiveCapabilities =
-    { CanRead: bool
-      CanCreate: bool
-      CanChange: bool }
+type ArchiveCapability =
+    | Readable
+    | Creatable
+    | Changeable
 
 module ArchiveKind =
 
@@ -36,16 +36,12 @@ module ArchiveKind =
         | Zip
         | TarGz
         | SevenZip ->
-            { CanRead = true
-              CanCreate = true
-              CanChange = true }
+            Set [ Readable; Creatable; Changeable ]
         | Tar
         | TarBz2
         | TarXz
         | Rar ->
-            { CanRead = true
-              CanCreate = false
-              CanChange = false }
+            Set [ Readable ]
 
     let carriesPassword kind =
         match kind with

@@ -42,7 +42,7 @@ let private enabled dialog =
 
 let private reason dialog = (LinkDialog.reason dialog).Text
 
-let private accepted (dialog: Dialog) =
+let private accepted (dialog: LinkDialog.LinkView) =
     dialog.Result <- 1
     LinkDialog.choice dialog |> Expect.some
 
@@ -60,6 +60,14 @@ let ``every kind is offered`` () =
     Assert.Equal<string list>([ "_Symbolic link"; "_Hard link"; "_Junction" ], List.ofSeq (kinds dialog).Labels)
     Assert.Equal<bool list>([ true; true; true ], enabled dialog)
     Assert.Equal("", reason dialog)
+
+[<Fact>]
+let ``the dialog keeps the kinds it was built from`` () =
+    DialogStyle.apply ()
+
+    use dialog = LinkDialog.create [ Junction; Symbolic ] nothingRefused suggestion
+
+    Assert.Equal<LinkKind list>([ Junction; Symbolic ], dialog.Kinds)
 
 [<Fact>]
 let ``only the kinds this system can make are offered`` () =

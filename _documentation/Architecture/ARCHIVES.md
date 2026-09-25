@@ -18,22 +18,24 @@ that set narrowed to the kinds that can be written: its case is private and
 cannot be created, so a rar target cannot be built even by mistake.
 `ArchiveFormat.all` is the projection itself, in the order the kinds are
 declared, and it is what the pack dialog offers; `ArchiveFormat.initial` is its
-head, zip. There is no second list to keep in step: turning one flag on in the
-table adds a format to the popup.
+head, zip. There is no second list to keep in step: adding `Creatable` to a
+kind in the table adds a format to the popup.
 
-**One record says what can be done to a kind.** `ArchiveKind.capabilities`
-answers an `ArchiveCapabilities` — `CanRead`, `CanCreate`, `CanChange` — and
-every place that has to decide asks it rather than naming a format. **A kind
+**One set says what can be done to a kind.** `ArchiveKind.capabilities`
+answers a `Set<ArchiveCapability>` — `Readable`, `Creatable`, `Changeable` —
+and every place that has to decide asks it rather than naming a format. **A kind
 that can be created can be changed**: zip, tar.gz and 7z are all three, and what
 differs is only how — zip is edited where it lies, the other two are written
 again from what they held. Tar, tar.bz2 and tar.xz are read and nothing more,
 because nothing here writes them and a changer has nothing to write into; rar
 never gains one either, since its compression is proprietary and the licence of
-the unrar sources forbids building a compressor from them. The flags are
-what every layer above is built against — the pack dialog offers the creatable
-half, `Update` refuses a key that would change an unchangeable kind, and
-`ArchiveReader` opens nothing whose `CanRead` is false — so a kind gains a
-feature by turning one flag on, once the code behind it exists.
+the unrar sources forbids building a compressor from them. The
+capabilities are what every layer above is built against — the pack dialog
+offers the creatable half, `Update` refuses a key that would change an
+unchangeable kind, and `ArchiveReader` opens nothing whose set lacks
+`Readable` — so a kind gains a feature by adding one case to its set, once the
+code behind it exists. The set replaced a record of three booleans in P15.21,
+so the rule reads as `capabilities kind |> Set.contains Changeable`.
 
 **Recognition reads a compound suffix whole.** `ArchiveKind.recognise` takes an
 `EntryName` and matches the longest suffix first, so `release.tar.gz` is a
@@ -856,7 +858,7 @@ rewrites — and `changeableKind` is what says a kind picks neither.
 
 **The tar family is read, not written.** Tar, tar.bz2 and tar.xz reach
 `ReaderFactory`, which sniffs the compression and hands over the tar's own
-entries, so turning `CanRead` on was the whole of the work; there is no writer
+entries, so adding `Readable` was the whole of the work; there is no writer
 for them because tar.gz already covers "a tar with compression" on the writing
 side, and a second one would be a format list, not a feature. The tests write a
 plain tar with `System.Formats.Tar` and a tar.bz2 with `SharpZipLib`'s
@@ -866,7 +868,7 @@ the mock file system like any other archive.
 
 **Rar is the one kind no test creates.** Nothing in the toolchain writes rar —
 that is the point of the format's licence — so the read side rests on
-`SharpCompress` and on the capability table saying `CanRead` and nothing else.
+`SharpCompress` and on the capability table saying `Readable` and nothing else.
 A small rar dropped into `Marbas.Tests/Fixtures` would close that gap with one
 test shaped like the tar.xz one; until then rar is declared, not demonstrated.
 

@@ -588,7 +588,7 @@ let ``properties that come back are written and the panel re-read`` () =
     let changed =
         EntryProperties.read fs (fp (at "start/docs"))
         |> Expect.ok
-        |> EntryProperties.setFlag ReadOnlyFlag true
+        |> EntryProperties.withFlag ReadOnlyFlag
 
     let result = update fs (PropertiesEntered changed) state
 

@@ -4,6 +4,7 @@ open System
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
+open Marbas.Ui
 open Marbas.Ui.Theme
 
 [<Literal>]
@@ -95,7 +96,18 @@ let private placement =
       LinksBox, SecondColumn, 9
       ArchivesBox, SecondColumn, 10 ]
 
-let private boxId box = $"find%O{box}"
+let boxes = placement |> List.map (fun (box, _, _) -> box)
+
+let boxId box =
+    match box with
+    | CaseBox -> "findCase"
+    | WordsBox -> "findWords"
+    | SenseBox -> "findSense"
+    | BinaryBox -> "findBinary"
+    | DirectoriesBox -> "findDirectories"
+    | HiddenBox -> "findHidden"
+    | LinksBox -> "findLinks"
+    | ArchivesBox -> "findArchives"
 
 let private label x y text =
     new Label(X = Pos.Absolute x, Y = Pos.Absolute y, Height = 1, Text = text)
@@ -108,22 +120,13 @@ let private checking (box, x, y) =
     new CheckBox(X = Pos.Absolute x, Y = Pos.Absolute y, Height = 1, Id = boxId box, Text = boxLabel box)
 
 let field (dialog: Dialog) id =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? TextField as input when input.Id = id -> Some input
-        | _ -> None)
+    SubView.byId<TextField> id dialog
 
 let selector (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? OptionSelector as options when options.Id = ScopeId -> Some options
-        | _ -> None)
+    SubView.byId<OptionSelector> ScopeId dialog
 
 let checkBox (dialog: Dialog) box =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? CheckBox as found when found.Id = boxId box -> Some found
-        | _ -> None)
+    SubView.byId<CheckBox> (boxId box) dialog
 
 let lastResults (dialog: Dialog) = dialog.Buttons |> Seq.head
 

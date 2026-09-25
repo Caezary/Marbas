@@ -34,7 +34,7 @@ module ArchiveFormat =
 
     let all =
         ArchiveKind.all
-        |> List.filter (fun kind -> (ArchiveKind.capabilities kind).CanCreate)
+        |> List.filter (ArchiveKind.capabilities >> Set.contains Creatable)
         |> List.map ArchiveFormat
 
     let kind (ArchiveFormat kind) = kind

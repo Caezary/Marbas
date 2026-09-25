@@ -4,6 +4,7 @@ open System
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.FileSystem
+open Marbas.Ui
 open Marbas.Ui.Theme
 open Marbas.Ui.Format
 
@@ -86,36 +87,27 @@ let create (properties: EntryProperties) =
     dialog
 
 let name (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? Label as label when label.Id = NameId -> Some label
-        | _ -> None)
+    SubView.byId<Label> NameId dialog
 
 let checkBox (dialog: Dialog) flag =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? CheckBox as box when box.Id = flagId flag -> Some box
-        | _ -> None)
+    SubView.byId<CheckBox> (flagId flag) dialog
 
 let field (dialog: Dialog) id =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? TextField as input when input.Id = id -> Some input
-        | _ -> None)
+    SubView.byId<TextField> id dialog
 
 let private stampOf (dialog: Dialog) id fallback =
     TimestampText.tryParse (field dialog id).Text |> Option.defaultValue fallback
+
+let private marking (dialog: Dialog) properties flag =
+    match (checkBox dialog flag).Value with
+    | CheckState.Checked -> EntryProperties.withFlag flag properties
+    | _ -> EntryProperties.withoutFlag flag properties
 
 let properties (original: EntryProperties) (dialog: Dialog) =
     if dialog.Canceled then
         None
     else
-        let marked =
-            EntryProperties.flags
-            |> List.fold
-                (fun properties flag ->
-                    EntryProperties.setFlag flag ((checkBox dialog flag).Value = CheckState.Checked) properties)
-                original
+        let marked = EntryProperties.flags |> List.fold (marking dialog) original
 
         Some
             { marked with

@@ -4,6 +4,7 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Ui
 open Marbas.Ui.Theme
 
 let create title label (suggestion: string) =
@@ -22,10 +23,7 @@ let create title label (suggestion: string) =
     dialog
 
 let field (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? TextField as input -> Some input
-        | _ -> None)
+    SubView.byType<TextField> dialog
 
 let selecting (dialog: Dialog) =
     (field dialog).SelectAll() |> ignore

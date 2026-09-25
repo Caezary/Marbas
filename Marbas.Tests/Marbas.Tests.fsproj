@@ -114,6 +114,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Ui\SubViewTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Ui\Theme\ClassicSchemeTests.fs" />
   </ItemGroup>
 

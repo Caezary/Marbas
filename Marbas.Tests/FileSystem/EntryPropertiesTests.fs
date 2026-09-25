@@ -58,14 +58,22 @@ let ``an entry that is not there has no properties`` () =
     Assert.Equal(Error(Operations.SourceNotFound(fp (at "start/gone"))), outcome)
 
 [<Fact>]
-let ``a flag that is set can be cleared and set again`` () =
+let ``a raised flag is held by the properties`` () =
     let fs = mockFs ()
     let properties = read fs (fp (at "start/docs"))
 
-    let hidden = EntryProperties.setFlag HiddenFlag true properties
+    let hidden = EntryProperties.withFlag HiddenFlag properties
 
     Assert.True(EntryProperties.has HiddenFlag hidden)
-    Assert.False(EntryProperties.has HiddenFlag (EntryProperties.setFlag HiddenFlag false hidden))
+
+[<Fact>]
+let ``a lowered flag is held no longer`` () =
+    let fs = mockFs ()
+    let hidden = read fs (fp (at "start/docs")) |> EntryProperties.withFlag HiddenFlag
+
+    let lowered = EntryProperties.withoutFlag HiddenFlag hidden
+
+    Assert.False(EntryProperties.has HiddenFlag lowered)
 
 [<Fact>]
 let ``the flags written to a directory are read back from it`` () =
@@ -73,8 +81,8 @@ let ``the flags written to a directory are read back from it`` () =
     let path = fp (at "start/docs")
 
     read fs path
-    |> EntryProperties.setFlag HiddenFlag true
-    |> EntryProperties.setFlag ReadOnlyFlag true
+    |> EntryProperties.withFlag HiddenFlag
+    |> EntryProperties.withFlag ReadOnlyFlag
     |> EntryProperties.write fs
     |> Expect.ok
 
@@ -87,10 +95,10 @@ let ``the flags written to a directory are read back from it`` () =
 let ``clearing a flag takes it off the entry`` () =
     let fs = mockFs ()
     let path = fp (at "start/docs")
-    read fs path |> EntryProperties.setFlag HiddenFlag true |> EntryProperties.write fs |> Expect.ok
+    read fs path |> EntryProperties.withFlag HiddenFlag |> EntryProperties.write fs |> Expect.ok
 
     read fs path
-    |> EntryProperties.setFlag HiddenFlag false
+    |> EntryProperties.withoutFlag HiddenFlag
     |> EntryProperties.write fs
     |> Expect.ok
 
@@ -101,7 +109,7 @@ let ``writing the properties keeps the entry a directory`` () =
     let fs = mockFs ()
     let path = fp (at "start/docs")
 
-    read fs path |> EntryProperties.setFlag ArchiveFlag true |> EntryProperties.write fs |> Expect.ok
+    read fs path |> EntryProperties.withFlag ArchiveFlag |> EntryProperties.write fs |> Expect.ok
 
     Assert.Equal(DirectoryEntry, FileSystemPath.kind fs path)
 

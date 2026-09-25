@@ -5,6 +5,7 @@ open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.FileSystem
+open Marbas.Ui
 open Marbas.Ui.Theme
 open Marbas.Ui.Format
 open Marbas.Ui.Keys
@@ -236,13 +237,10 @@ let create (close: Window -> unit) (source: FileWindow.Source) =
     window
 
 let content (window: Window) =
-    window.SubViews
-    |> Seq.pick (function
-        | :? ContentView as view -> Some view
-        | _ -> None)
+    SubView.byType<ContentView> window
 
 let header (window: Window) =
-    window.SubViews |> Seq.find (fun view -> view.Id = HeaderId)
+    SubView.byId<View> HeaderId window
 
 let keyBar (window: Window) =
-    window.SubViews |> Seq.find (fun view -> view.Id = KeyBarId)
+    SubView.byId<View> KeyBarId window

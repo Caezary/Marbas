@@ -203,7 +203,8 @@ before the effect, so the popup and the launcher never have to know about `..`
 at all.
 
 **Remembering happens in the transition, not in the popup.** `HandlerChosen`
-carries the file and an `OpenWithChoice` — a program and whether to keep it —
+carries the file and an `OpenWithChoice` — a program and a `HandlerUse`,
+`AlwaysThisWay` or `ThisTimeOnly`, rather than the `bool` it was until P15.21 —
 and `Update` writes the `ForOpening` row into `state.Programs` before raising
 `RunProgram`. The popup never touches the table, which is what lets the same
 `ProgramSettings.associate` serve `F12` and the open-with key, and what puts the

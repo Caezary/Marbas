@@ -179,7 +179,9 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] Terminal.Gui v2 instance API (`Application.Create()`); the static API is
       deprecated and not used.
 - [ ] Views are built by a `create` function and read by a typed accessor; no
-      reaching into `SubViews` by index at a call site.
+      reaching into `SubViews` by index at a call site. The accessor is one
+      line over `SubView.byId<T> id parent`, or `SubView.byType<T> parent`
+      for the one view of its type.
 - [ ] Every command is reachable by a key without a mouse, and the key lives in
       `KeyMap` — one table, one row per binding.
 - [ ] A key that a terminal or a desktop may swallow carries a second binding,

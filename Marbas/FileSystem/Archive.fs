@@ -329,7 +329,7 @@ module Archive =
     let changeableKind (fs: IFileSystem) (archive: FileSystemPath) =
         FileSystemPath.name fs archive
         |> ArchiveKind.recognise
-        |> Option.filter (ArchiveKind.capabilities >> _.CanChange)
+        |> Option.filter (ArchiveKind.capabilities >> Set.contains Changeable)
 
     let changeRefusal (fs: IFileSystem) (archive: FileSystemPath) =
         match changeableKind fs archive with

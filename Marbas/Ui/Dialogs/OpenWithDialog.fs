@@ -5,6 +5,7 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Ui
 open Marbas.Ui.Theme
 
 [<Literal>]
@@ -72,22 +73,18 @@ let create (name: EntryName) (handlers: Handler list) (chosen: ProgramPath optio
     dialog
 
 let field (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? TextField as input when input.Id = ProgramId -> Some input
-        | _ -> None)
+    SubView.byId<TextField> ProgramId dialog
 
 let checkBox (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? CheckBox as box when box.Id = RememberId -> Some box
-        | _ -> None)
+    SubView.byId<CheckBox> RememberId dialog
 
 let known (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? ListView as list -> Some list
-        | _ -> None)
+    SubView.byType<ListView> dialog
+
+let private handlerUse (dialog: Dialog) =
+    match (checkBox dialog).Value with
+    | CheckState.Checked -> AlwaysThisWay
+    | _ -> ThisTimeOnly
 
 let choice (dialog: Dialog) =
     if dialog.Canceled then
@@ -96,4 +93,4 @@ let choice (dialog: Dialog) =
         ProgramPath.tryCreate (field dialog).Text
         |> Option.map (fun program ->
             { Program = program
-              Remember = (checkBox dialog).Value = CheckState.Checked })
+              Use = handlerUse dialog })

@@ -4,6 +4,7 @@ open System
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.FileSystem
+open Marbas.Ui
 open Marbas.Ui.Theme
 
 [<Literal>]
@@ -102,16 +103,10 @@ let create (retarget: ArchiveFormat -> string -> string) (suggestion: string) =
     dialog
 
 let field (dialog: Dialog) id =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? TextField as input when input.Id = id -> Some input
-        | _ -> None)
+    SubView.byId<TextField> id dialog
 
 let selector (dialog: Dialog) id =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? OptionSelector as options when options.Id = id -> Some options
-        | _ -> None)
+    SubView.byId<OptionSelector> id dialog
 
 let choice (dialog: Dialog) =
     if dialog.Canceled then

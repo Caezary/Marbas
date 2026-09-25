@@ -58,7 +58,7 @@ let ``properties that are applied reach the entry`` () =
     let path = fp (at "start/docs")
 
     let properties =
-        EntryProperties.read fs path |> Expect.ok |> EntryProperties.setFlag HiddenFlag true
+        EntryProperties.read fs path |> Expect.ok |> EntryProperties.withFlag HiddenFlag
 
     applyProperties fs properties state |> Expect.ok |> ignore
 
@@ -72,7 +72,7 @@ let ``a directory that has just been hidden leaves a panel that conceals it`` ()
     let properties =
         EntryProperties.read fs (fp (at "start/docs"))
         |> Expect.ok
-        |> EntryProperties.setFlag HiddenFlag true
+        |> EntryProperties.withFlag HiddenFlag
 
     let applied = applyProperties fs properties state |> Expect.ok
 

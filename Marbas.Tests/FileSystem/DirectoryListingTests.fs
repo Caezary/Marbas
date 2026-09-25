@@ -166,3 +166,21 @@ let ``a path that stands for nothing has no entry`` () =
     let entry = existingEntry fs (fp (at "data/gone.txt"))
 
     Assert.Equal(None, entry)
+
+[<Fact>]
+let ``the entry leading up is a plain directory named two dots, dated as it is told`` () =
+    let moment = DateTimeOffset(2024, 3, 1, 9, 5, 7, TimeSpan.Zero)
+
+    let entry = parentEntry moment
+
+    Assert.Equal(
+        { Name = ParentName
+          Kind = Directory
+          Size = None
+          Measured = None
+          Modified = moment
+          Visibility = Plain
+          Executability = NotExecutable
+          LinkTarget = None },
+        entry
+    )

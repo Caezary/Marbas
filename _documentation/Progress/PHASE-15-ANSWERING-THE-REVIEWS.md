@@ -948,3 +948,75 @@ their examples are in
 [Names that tell the boundary](../DEVELOPMENT.md#names-that-tell-the-boundary),
 and §2 of the conventions points there. No behaviour changed; the only test
 edits are the renamed names. 2323 passing, 11 skipped, before and after.
+
+**P15.21 left every copy the quality review counted with one definition.** Q5
+listed nine helpers written more than once; five had already gone with earlier
+tasks — the strictly-below test with P15.2, the child enumeration with P15.14,
+the dialog runner with P15.18, the password-then-show pair with P15.19 — and
+this task took the rest, together with the Q8 booleans and strings still
+standing.
+
+**One lookup for a sub-view.** Thirty accessors across thirteen `Ui` files
+each spelled `dialog.SubViews |> Seq.pick (function :? T as v when v.Id = id
+-> Some v | _ -> None)`. `Marbas.Ui.SubView` holds it once, as
+`SubView.byId<T> id parent` and — for the seven accessors that find the one
+view of its type, a panel's list or a viewer's content — `SubView.byType<T>
+parent`; every accessor is now one line over it, and `Gui.panel` in the tests
+uses the same. Its tests build a plain `View` with two children sharing an id
+and show that the type tells them apart.
+
+**One `..` entry.** `DirectoryListing`, `ArchiveListing` and `SearchListing`
+each built the same eight-field record for the entry that leads up, differing
+only in the date. `DirectoryListing.parentEntry modified` is the record, and
+the three listings supply the date they have — the parent directory's
+(`parentIfAny`, which answers nothing at a root), the archive file's
+(`archiveParent`) and the directory the search stood in (`resultsParent`).
+
+**Two copies in `Shell`.** `showPath` and `showEntry` opened a source and
+showed it, or reported the error, word for word; `showOpened` is the one
+`match`, and each of them is the open piped into it with its own error title
+and message. The three approval helpers of P15.20 shared a walk — spell the
+archive entries, approve the spelled paths, map the approved paths back — and
+a landing check: `entriesApprovedBySpelling` is the walk, and
+`entriesApprovedForArchive` turned out to be exactly that walk over
+`pathsApprovedForArchive`, so its twenty lines became one.
+
+**One helper for a replaced mock member.** Twelve fakes in `Fakes` swapped
+seventeen `MockFileSystem` ports through a `let mutable x = null` and an
+`if isNull x then x <- … ; x` override. `Fakes.once` does it, over a
+`Replaced<'port>` that remembers what was made. The first version held the
+replacement in an ordinary object and every fake of `Directory` threw a
+`NullReferenceException`: `MockFileSystem`'s constructor reads `Directory`
+before the subclass has any fields, which is the reason the originals checked
+for `null` at all. The helper now answers a fresh replacement while its own
+holder is still `null`, and [Testing](../Architecture/TESTING.md) says why.
+
+**The capabilities are a set.** `ArchiveCapabilities` was a record of three
+booleans; `ArchiveKind.capabilities` answers a `Set<ArchiveCapability>` of
+`Readable`, `Creatable` and `Changeable`, and the three places that ask it read
+`ArchiveKind.capabilities >> Set.contains Changeable`. The test of a kind that
+can only be read asserts `Readable` in and `Changeable` out, with its act on a
+line of its own.
+
+**The last booleans of Q8.** `EntryProperties.setFlag flag wanted` is
+`withFlag` and `withoutFlag`, and the properties dialog folds the check boxes
+through a `marking` that picks one by the box's state; the one test that set
+and cleared in the same assertion is two tests. `OpenWithChoice.Remember: bool`
+is `Use: HandlerUse` — `AlwaysThisWay` or `ThisTimeOnly`, after the check box's
+own label — and `Update.chosen` matches the extension and the use as a pair.
+`ArchiveItem.IsDirectory` and `IsEncrypted` had already become an `EntryKind`
+with P15.13, and `ResultsWindow.standingRow` had gone with P15.10.
+
+**A dialog keeps what it was built from, and an id is not a rendering.**
+`LinkDialog` recovered its kinds by looking each selector label up among all
+three kinds, so a choice depended on how its label was spelled. The dialog is
+now a `LinkView` carrying the `Kinds` it was given, the way `FindView` carries
+its count, and `choice` reads the chosen kind off that list by position.
+`FindDialog.boxId` was `$"find%O{box}"`; it is a match with one literal per
+box, public beside a `boxes` list, and a test holds that no two boxes share an
+id.
+
+**Left for later.** Two booleans outside Q8's list remain —
+`TextEncoding.HasBom` and `DeleteQuestion.ReachesContents` — and fall under the
+general rule of §3 that P15.23 applies as files are touched. 2330 passing, 11
+skipped; seven of the tests are new.

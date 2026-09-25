@@ -88,7 +88,7 @@ module ArchiveReader =
     let kindOf (fs: IFileSystem) (path: FileSystemPath) =
         FileSystemPath.name fs path
         |> ArchiveKind.recognise
-        |> Option.filter (ArchiveKind.capabilities >> _.CanRead)
+        |> Option.filter (ArchiveKind.capabilities >> Set.contains Readable)
 
     let segmentsOf (key: string) =
         key.Split '/'

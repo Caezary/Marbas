@@ -83,6 +83,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="Ui\SubView.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Compile Include="Ui\Theme\ClassicScheme.fs" />
         <Compile Include="Ui\Theme\DialogStyle.fs" />
     </ItemGroup>

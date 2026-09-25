@@ -129,7 +129,7 @@ let ``the open-with key offers the programs the system knows and starts the one 
             { Fakes.dependencies (mockFs ()) (at "start") with
                 Processes.Launch = fun request -> started.Add request; Ok()
                 Processes.HandlersFor = fun name -> offered.Add name; []
-                Prompts.AskHandler = fun _ -> Some { Program = chosen; Remember = false } }
+                Prompts.AskHandler = fun _ -> Some { Program = chosen; Use = ThisTimeOnly } }
 
     (leftList window).SelectedItem <- Page
 

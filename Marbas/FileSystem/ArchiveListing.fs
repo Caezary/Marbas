@@ -46,17 +46,10 @@ let private atLevel (level: ArchivePath) (items: ArchiveEntryInfo list) =
 let read (fs: IFileSystem) (path: FileSystemPath) (level: ArchivePath) : Result<Entry list, ArchiveError> =
     ArchiveIndex.read fs path |> Result.map (atLevel level)
 
-let private parentEntry (fs: IFileSystem) (path: FileSystemPath) =
-    { Name = ParentName
-      Kind = Directory
-      Size = None
-      Measured = None
-      Modified = DateTimeOffset(fs.FileInfo.New(FileSystemPath.value path).LastWriteTime)
-      Visibility = Plain
-      Executability = NotExecutable
-      LinkTarget = None }
+let private archiveParent (fs: IFileSystem) (path: FileSystemPath) =
+    DateTimeOffset(fs.FileInfo.New(FileSystemPath.value path).LastWriteTime) |> parentEntry
 
 let listForDisplay (fs: IFileSystem) (sort: SortOrder) (hidden: HiddenEntries) path level =
     read fs path level
     |> Result.mapError ArchiveUnreadable
-    |> Result.map (fun entries -> order sort (parentEntry fs path :: shown hidden entries))
+    |> Result.map (fun entries -> order sort (archiveParent fs path :: shown hidden entries))

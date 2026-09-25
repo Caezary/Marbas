@@ -6,6 +6,7 @@ open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
+open Marbas.Ui
 open Marbas.Ui.Theme
 
 [<Literal>]
@@ -220,28 +221,16 @@ type SettingsView(programs: ProgramSettings, candidate: ProgramPath option) as t
 let create (programs: ProgramSettings) (candidate: ProgramPath option) = new SettingsView(programs, candidate)
 
 let field (dialog: Dialog) id =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? TextField as input when input.Id = id -> Some input
-        | _ -> None)
+    SubView.byId<TextField> id dialog
 
 let button (dialog: Dialog) id =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? Button as pressed when pressed.Id = id -> Some pressed
-        | _ -> None)
+    SubView.byId<Button> id dialog
 
 let selector (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? OptionSelector as chooser when chooser.Id = RoleId -> Some chooser
-        | _ -> None)
+    SubView.byId<OptionSelector> RoleId dialog
 
 let known (dialog: Dialog) role =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? ListView as list when list.Id = listId role -> Some list
-        | _ -> None)
+    SubView.byId<ListView> (listId role) dialog
 
 let programs (dialog: SettingsView) =
     if dialog.Canceled then None else Some dialog.Programs

@@ -82,16 +82,20 @@ let private withPassword (deps: Dependencies) archive show =
     | OpenWith password -> show password
     | NotGiven -> ()
 
-let private entriesApprovedForDirectory (deps: Dependencies) targetDirectory archive entries =
+let private entriesApprovedBySpelling (deps: Dependencies) archive approvePaths entries =
     let spelled =
         entries
         |> List.map (fun entry -> ArchivePath.spelled deps.FileSystem archive entry, entry)
 
-    let allowed =
-        Operations.approve deps.FileSystem (askOverwrite deps) (List.map fst spelled) targetDirectory
-        |> Set.ofList
+    let allowed = spelled |> List.map fst |> approvePaths |> Set.ofList
 
     spelled |> List.filter (fst >> allowed.Contains) |> List.map snd
+
+let private entriesApprovedForDirectory (deps: Dependencies) targetDirectory archive entries =
+    let approvePaths paths =
+        Operations.approve deps.FileSystem (askOverwrite deps) paths targetDirectory
+
+    entriesApprovedBySpelling deps archive approvePaths entries
 
 let private unpackTargets (deps: Dependencies) targetDirectory (archive: FileSystemPath) =
     match ArchiveListing.read deps.FileSystem archive ArchivePath.root with
@@ -101,19 +105,20 @@ let private unpackTargets (deps: Dependencies) targetDirectory (archive: FileSys
         |> List.map (_.Name >> ArchivePath.child ArchivePath.root)
         |> entriesApprovedForDirectory deps targetDirectory archive
 
-let private showPath (deps: Dependencies) path =
-    match FileWindow.openFile deps.FileSystem path with
+let private showOpened (deps: Dependencies) title describe opened =
+    match opened with
     | Ok source ->
         use source = source
         deps.Prompts.ShowFile source
-    | Error error -> report deps ContentErrorMessage.Title (ContentErrorMessage.describe error)
+    | Error error -> report deps title (describe error)
+
+let private showPath (deps: Dependencies) path =
+    FileWindow.openFile deps.FileSystem path
+    |> showOpened deps ContentErrorMessage.Title ContentErrorMessage.describe
 
 let private showEntry (deps: Dependencies) archive password entry =
-    match FileWindow.openEntry deps.FileSystem password archive entry with
-    | Ok source ->
-        use source = source
-        deps.Prompts.ShowFile source
-    | Error error -> report deps ArchiveErrorMessage.Title (ArchiveErrorMessage.describe error)
+    FileWindow.openEntry deps.FileSystem password archive entry
+    |> showOpened deps ArchiveErrorMessage.Title ArchiveErrorMessage.describe
 
 let private showHit (deps: Dependencies) (hit: FindHit) =
     match hit.Location with
@@ -141,28 +146,7 @@ let private pathsApprovedForArchive (deps: Dependencies) archive level sources =
     Operations.approveLandings landing occupied (askOverwrite deps) sources
 
 let private entriesApprovedForArchive (deps: Dependencies) source target level entries =
-    let taken =
-        ArchiveListing.read deps.FileSystem target level
-        |> Result.map (List.map _.Name >> Set.ofList)
-        |> Result.defaultValue Set.empty
-
-    let spelled =
-        entries
-        |> List.map (fun entry -> ArchivePath.spelled deps.FileSystem source entry, entry)
-
-    let landing entry =
-        FileSystemPath.name deps.FileSystem entry
-        |> ArchivePath.child level
-        |> ArchivePath.spelled deps.FileSystem target
-
-    let occupied landed =
-        taken.Contains(FileSystemPath.name deps.FileSystem landed)
-
-    let allowed =
-        Operations.approveLandings landing occupied (askOverwrite deps) (List.map fst spelled)
-        |> Set.ofList
-
-    spelled |> List.filter (fst >> allowed.Contains) |> List.map snd
+    entriesApprovedBySpelling deps source (pathsApprovedForArchive deps target level) entries
 
 let private refusedWhole archive error : Operations.ItemResult =
     { Source = Operations.ItemOnDisk archive

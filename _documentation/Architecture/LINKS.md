@@ -42,7 +42,10 @@ record into `Ports.Processes.LinkKinds`, from which the popup is built. On
 Linux the junction is not a greyed row; it is not there. `LinkKind.Junction`
 stays a value every platform can spell, because it travels as data, and
 `Links.create` handed one with nothing to make it answers `KindUnavailable` — a
-branch no popup reaches.
+branch no popup reaches. The popup is a `LinkDialog.LinkView` that keeps the
+kinds it was built from, so the option chosen is read off that list by
+position; until P15.21 the kinds were recovered from the selector's label
+strings, which tied a choice to how its label was spelled.
 
 ## Which system carries which
 

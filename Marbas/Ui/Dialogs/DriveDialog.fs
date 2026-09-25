@@ -6,6 +6,7 @@ open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.FileSystem
+open Marbas.Ui
 open Marbas.Ui.Keys
 open Marbas.Ui.Theme
 
@@ -63,10 +64,7 @@ let create (rows: DriveRow list) =
     dialog
 
 let drives (dialog: Dialog) =
-    dialog.SubViews
-    |> Seq.pick (function
-        | :? ListView as list -> Some list
-        | _ -> None)
+    SubView.byType<ListView> dialog
 
 let choice (dialog: DriveView) =
     let row () = dialog.Rows[(drives dialog).SelectedItem.Value]

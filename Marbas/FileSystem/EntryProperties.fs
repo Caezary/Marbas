@@ -50,13 +50,13 @@ module EntryProperties =
 
     let has flag (properties: EntryProperties) = Set.contains flag properties.Flags
 
-    let setFlag flag wanted (properties: EntryProperties) =
+    let withFlag flag (properties: EntryProperties) =
         { properties with
-            Flags =
-                if wanted then
-                    Set.add flag properties.Flags
-                else
-                    Set.remove flag properties.Flags }
+            Flags = Set.add flag properties.Flags }
+
+    let withoutFlag flag (properties: EntryProperties) =
+        { properties with
+            Flags = Set.remove flag properties.Flags }
 
     let private info (fs: IFileSystem) (path: FileSystemPath) : IFileSystemInfo option =
         let raw = FileSystemPath.value path
