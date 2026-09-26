@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -155,7 +156,7 @@ let ``a directory made inside an archive is in it and under the cursor`` () =
 
     Assert.Equal<Effect list>([ PromptForName None ], asked.Effects)
     Assert.Equal<string list>([ ".."; "docs"; "fresh"; "notes.txt" ], names made.State.Left)
-    Assert.Equal(Some(en "fresh"), cursorEntry made.State.Left |> Option.map _.Name)
+    Assert.Equal(Some(en "fresh"), PanelState.cursorEntry made.State.Left |> Option.map _.Name)
     Assert.Equal(Some(en "fresh"), made.State.LastCreatedDirectory)
 
     Assert.Contains(

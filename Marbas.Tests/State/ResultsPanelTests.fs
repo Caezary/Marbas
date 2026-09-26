@@ -7,6 +7,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -72,7 +73,7 @@ let private named state =
     (activePanel state).Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private cursorName state =
-    cursorEntry (activePanel state) |> Option.map (_.Name >> EntryName.value)
+    PanelState.cursorEntry (activePanel state) |> Option.map (_.Name >> EntryName.value)
 
 let private standingAt name state =
     let index =

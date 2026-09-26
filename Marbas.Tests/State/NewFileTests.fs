@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -37,7 +38,7 @@ let ``the panel comes back with the cursor on the new file`` () =
 
     let state, _ = makeFile fs Left (fp (at "start")) (en "draft.md") (loaded fs) |> Expect.ok
 
-    Assert.Equal(Some(en "draft.md"), cursorEntry state.Left |> Option.map _.Name)
+    Assert.Equal(Some(en "draft.md"), PanelState.cursorEntry state.Left |> Option.map _.Name)
 
 [<Fact>]
 let ``a name a file already carries opens that file untouched`` () =

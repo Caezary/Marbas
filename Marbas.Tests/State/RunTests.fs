@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -159,7 +160,7 @@ let ``the entry under the cursor runs, whatever is marked`` () =
 
     Assert.Equal<string list>(
         [ "notes.txt" ],
-        selectedEntries marked.State.Left |> List.map (_.Name >> EntryName.value)
+        PanelState.selectedEntries marked.State.Left |> List.map (_.Name >> EntryName.value)
     )
 
     Assert.Equal(fp (at "start/page.html"), request.Target)

@@ -7,6 +7,7 @@ open Marbas.Collections
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -115,7 +116,7 @@ let ``a valid name creates the directory on the active side`` () =
     let result = update fs (NameEntered(en "work")) state
 
     Assert.True(fs.Directory.Exists(at "start/work"))
-    Assert.Equal(Some "work", cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
+    Assert.Equal(Some "work", PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -145,7 +146,7 @@ let ``an entered pattern marks the matching entries`` () =
 
     let result = update fs (PatternEntered(Select, pattern)) state
 
-    Assert.Equal<string list>([ "setup.fs" ], selectedEntries result.State.Left |> names)
+    Assert.Equal<string list>([ "setup.fs" ], PanelState.selectedEntries result.State.Left |> names)
 
 [<Fact>]
 let ``drive requested defers to a drive prompt`` () =
@@ -195,7 +196,7 @@ let ``toggling selection marks the entry under the cursor and advances`` () =
 
     let result = update fs (SelectionToggled Downward) state
 
-    Assert.Equal<string list>([ "notes.txt" ], selectedEntries result.State.Left |> names)
+    Assert.Equal<string list>([ "notes.txt" ], PanelState.selectedEntries result.State.Left |> names)
     Assert.Equal(3, result.State.Left.Cursor)
 
 [<Fact>]
@@ -205,7 +206,7 @@ let ``toggling selection upward marks the entry under the cursor and steps back`
 
     let result = update fs (SelectionToggled Upward) state
 
-    Assert.Equal<string list>([ "notes.txt" ], selectedEntries result.State.Left |> names)
+    Assert.Equal<string list>([ "notes.txt" ], PanelState.selectedEntries result.State.Left |> names)
     Assert.Equal(1, result.State.Left.Cursor)
 
 [<Fact>]
@@ -312,7 +313,7 @@ let ``a finished wipe keeps the marks of what it did not get to`` () =
 
     let result = update fs (DeleteFinished results) state
 
-    Assert.Equal<string list>([ "notes.txt"; "setup.fs" ], selectedEntries result.State.Left |> names)
+    Assert.Equal<string list>([ "notes.txt"; "setup.fs" ], PanelState.selectedEntries result.State.Left |> names)
 
 [<Fact>]
 let ``a finished delete refreshes the panel and raises no effect`` () =
@@ -489,7 +490,7 @@ let ``a finished rename puts the cursor on the new name`` () =
 
     let result = update fs (RenameFinished(en "zzz.txt", Ok())) state
 
-    Assert.Equal(Some "zzz.txt", cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
+    Assert.Equal(Some "zzz.txt", PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -627,7 +628,7 @@ let ``a named new file is created and handed to its editor`` () =
 
     Assert.True(fs.File.Exists(at "start/draft.md"))
     Assert.Equal<Effect list>([ EditFile(fp (at "start/draft.md"), Some chosen) ], result.Effects)
-    Assert.Equal(Some "draft.md", cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
+    Assert.Equal(Some "draft.md", PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
 
 [<Fact>]
 let ``a new file a directory already answers to is reported`` () =
@@ -694,7 +695,7 @@ let ``a finished edit re-reads the panel it was started from`` () =
     let result = update fs (EditFinished(Ok())) state
 
     Assert.Contains("notes.txt.bak", names result.State.Left.Entries)
-    Assert.Equal(Some "notes.txt", cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
+    Assert.Equal(Some "notes.txt", PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -905,7 +906,7 @@ let ``a finished pack puts the cursor on the archive in the other panel`` () =
     let result = update fs (PackFinished(en "notes.zip", results)) state
 
     Assert.Contains("notes.zip", names result.State.Right.Entries)
-    Assert.Equal(Some "notes.zip", cursorEntry result.State.Right |> Option.map (_.Name >> EntryName.value))
+    Assert.Equal(Some "notes.zip", PanelState.cursorEntry result.State.Right |> Option.map (_.Name >> EntryName.value))
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -934,7 +935,7 @@ let ``a finished pack keeps the marks of what did not make it`` () =
 
     Assert.Equal<string list>(
         [ "notes.txt" ],
-        selectedEntries result.State.Left |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+        PanelState.selectedEntries result.State.Left |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
     )
 
 [<Fact>]

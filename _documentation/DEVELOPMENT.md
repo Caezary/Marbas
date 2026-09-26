@@ -201,7 +201,7 @@ the verb they share: `Update.refuseUnchangeable`, `openCursorEntry`,
 ## Documentation map
 
 - [Implementation plan](PLAN.md) — the index of the phases, one file per phase
-  in [Plan/](Plan) (P1.1 … P15.23)
+  in [Plan/](Plan) (P1.1 … P15.26)
 - [Progress](PROGRESS.md) — current status, with the journal of each phase in
   [Progress/](Progress) and the catalogue in
   [What works today](Progress/WHAT-WORKS.md)

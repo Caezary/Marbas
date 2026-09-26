@@ -6,6 +6,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -144,7 +145,7 @@ let private answer landing = { Landing = landing; Results = results [] 0 }
 let private landing where = answer (Some where)
 
 let private cursorName state =
-    cursorEntry (activePanel state) |> Option.map (_.Name >> EntryName.value)
+    PanelState.cursorEntry (activePanel state) |> Option.map (_.Name >> EntryName.value)
 
 [<Fact>]
 let ``Enter on a file stands the panel in the directory holding it, on the file`` () =

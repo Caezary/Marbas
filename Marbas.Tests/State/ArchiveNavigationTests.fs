@@ -6,6 +6,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -22,7 +23,7 @@ let private inside raw = ArchivePath.tryCreate raw |> Expect.some
 let private names panel = panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private cursorName panel =
-    cursorEntry panel |> Option.map (_.Name >> EntryName.value)
+    PanelState.cursorEntry panel |> Option.map (_.Name >> EntryName.value)
 
 let private opened (fs: IFileSystem) state = enter fs state |> Expect.ok
 

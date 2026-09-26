@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -27,7 +28,7 @@ let private typeText (text: string) side state =
     text |> Seq.fold (fun current character -> typeIntoSearch side character current) state
 
 let private cursorName state =
-    (panel Left state) |> cursorEntry |> Option.map (_.Name >> EntryName.value)
+    (panel Left state) |> PanelState.cursorEntry |> Option.map (_.Name >> EntryName.value)
 
 [<Fact>]
 let ``the first character opens a search and moves the cursor to what it matches`` () =

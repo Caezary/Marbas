@@ -3,6 +3,7 @@ module Marbas.Tests.State.ArchivePanelTests
 open Xunit
 open Marbas.FileSystem
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests

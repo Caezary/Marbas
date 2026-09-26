@@ -231,3 +231,18 @@ polished that a structural task is about to delete.
   for an unpack of many targets, the timing above is linear over the same
   sizes, and the `SourceNotFound` and the surviving marks after `Esc` are the
   tests they are today.
+- **P15.26 An unused value does not build** — P15.22 moved every panel
+  function whose body never touched `fs`, and left three behind that declared
+  an `fs` they only handed on; nothing flagged them, because the F# compiler
+  says nothing about an unused parameter unless warning FS1182 is turned on.
+  `Directory.Build.props` turns it on (`--warnon:1182`), and with
+  `TreatWarningsAsErrors` already set, every unused parameter, binding and
+  pattern variable becomes a build failure. What it finds is fixed where it
+  is: a parameter the body does not use is dropped from the signature and from
+  every caller, a value bound and never read is removed, and a name the code
+  keeps on purpose — a handler signature Terminal.Gui dictates, a pattern that
+  must bind — is spelled `_` or `_name`. Where dropping `fs` leaves a function
+  that no longer needs its layer, it moves the way P15.22's did. *Done when:*
+  `dotnet build Marbas.slnx` is clean with the warning on for both projects,
+  the suite passes unchanged, and [Coding style](../coding-style-conventions.md)
+  §6 names the warning next to `TreatWarningsAsErrors`.

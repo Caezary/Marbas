@@ -1020,3 +1020,58 @@ id.
 `TextEncoding.HasBom` and `DeleteQuestion.ReachesContents` — and fall under the
 general rule of §3 that P15.23 applies as files are touched. 2330 passing, 11
 skipped; seven of the tests are new.
+
+**P15.22 gave the panel a module of its own.** A11 found three roles in the 812
+lines of `AppState.fs`: panel manipulation that never mentions `fs`, the
+`IFileSystem`-backed loaders and `finish*` transitions, and the queries `Update`
+asks before raising an effect. The first role is now `State/PanelState.fs` —
+the `PanelState` record, `FocusTarget` beside it because `cursorFocus` answers
+one, and a companion `PanelState` module of functions from one panel to the
+next: the cursor and its focus, the incremental search, sorting and the
+measured sizes a sort by size reads, marking a run short of its target,
+patterns, the marks that survive a reload, and the pure questions —
+`cursorEntry`, `selectedEntries`, `operationTargets`, `showsResults`,
+`markedGround`, `directory`, `standingName`.
+
+**It has tests of its own, and they need no file system.** `PanelStateTests`
+builds one panel by hand — `..`, a directory and two files — and asks nineteen
+questions of it: the cursor entry and the empty panel, a search that finds and
+one that does not, sorting that keeps the cursor on its entry, a run that stops
+short and never marks `..`, patterns both ways, the operation targets with and
+without marks, the surviving marks, the search ground, the remembered name, a
+cleared panel and a measured directory. Before this, every one of those rules
+was reached only through an `AppState` and a `MockFileSystem`.
+
+**`AppState` keeps a one-line face for each panel function.** `setCursor`,
+`typeIntoSearch`, `sortBy`, `toggleSelection…`, `applyPattern` and
+`applyMeasurements` are each `updatePanel side (PanelState.…)`: the message and
+the two hundred test lines that address a panel by its side still read as one
+call, and the rule behind them lives in one place. What is left in
+`AppState.fs` — 640 lines — is the tabs, the loaders, the `finish*`
+transitions, the queries and `enter`, which is what the task asked it to hold.
+The queries that moved are called as `PanelState.cursorEntry` and so on from
+`Update`, `AppView`, `PanelFooter` and the tests.
+
+**Moving a type out of a module changes what an `open` shadows.** Defined
+inside `AppState`, `FocusTarget.ByName` and the `PanelState` labels were the
+last names in scope and won. From the namespace, they lost: `ByName` resolved
+to `SortKey.ByName` from `Marbas.Domain`, and `{ Path = … }` to
+`DirectoryListing.Child`. `AppState` therefore opens `Marbas.State` last, and
+the twenty-three test files that build a panel or name a focus open it before
+`Marbas.State.AppState` — found by removing the line everywhere and adding it
+back where the compiler asked, so no file opens it for nothing. 2349 passing,
+11 skipped; nineteen of the tests are new.
+
+**Three queries stayed behind for an `fs` they never used.** The first pass
+moved what did not *mention* `fs`; `entryInArchive` declared it and only handed
+it on, and with it `cursorEntryInArchive`, `cursorFileInArchive` and the
+delete question's `directoryEntriesInArchive`, so `Update` passed a file system
+four times to functions that read none. They are `PanelState` queries now, the
+last one named for what it answers, `targetsDirectoryInArchive`. The place of
+a name inside an archive, which they and `transferSource` share, belongs to
+neither module: `PanelLocation.archivePlace` answers it for a location and a
+name, `FindHit.archivePlace` for a hit, beside `FindHit.spelled`. Twelve tests
+pin them — four for the two places, eight for the panel queries, on a panel
+standing inside an archive and one on disk. The compiler did not flag the
+unused parameter because FS1182 is off; turning it on is P15.26. 2361 passing,
+11 skipped.

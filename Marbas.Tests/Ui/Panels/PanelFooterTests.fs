@@ -5,6 +5,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Ui.Panels
 open Marbas.Tests

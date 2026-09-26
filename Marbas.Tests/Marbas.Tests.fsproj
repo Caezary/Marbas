@@ -76,6 +76,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="State\PanelStateTests.fs" />
     <Compile Include="State\AppStateTests.fs" />
     <Compile Include="State\TabTests.fs" />
     <Compile Include="State\NavigationTests.fs" />

@@ -42,5 +42,5 @@ let render (fs: IFileSystem) (view: AppView) (state: AppState.AppState) =
     for side, panel in panels view do
         FilePanel.render fs (taken side) (AppState.panel side state) panel
 
-    let entry = state |> AppState.activePanel |> AppState.cursorEntry
+    let entry = state |> AppState.activePanel |> PanelState.cursorEntry
     view.StatusLine |> StatusLine.render entry

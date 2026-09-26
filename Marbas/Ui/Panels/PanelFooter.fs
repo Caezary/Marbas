@@ -22,10 +22,10 @@ let private describeContents (entries: Entry array) =
     let size = EntrySize.grouped (totalBytes files)
     $"{fileCount}, {folderCount}   {size} bytes"
 
-let describe (panel: AppState.PanelState) =
+let describe (panel: PanelState) =
     match panel.Search with
     | Some text -> $"Search: {SearchText.value text}"
     | None ->
-        match AppState.selectedEntries panel with
+        match PanelState.selectedEntries panel with
         | [] -> describeContents panel.Entries
         | selected -> SelectionSummary.describe selected

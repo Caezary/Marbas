@@ -213,7 +213,7 @@ let private openFile (fs: IFileSystem) state directory path =
 let private openCursorEntry (fs: IFileSystem) state =
     let panel = activePanel state
 
-    match cursorFileInArchive fs panel with
+    match PanelState.cursorFileInArchive panel with
     | Some(archive, entry) ->
         ArchivePath.spelled fs archive entry
         |> Operations.ArchiveEntryNotRunnable
@@ -224,13 +224,13 @@ let private openCursorEntry (fs: IFileSystem) state =
         | _ -> enter fs state |> applyListing state
 
 let private revealed (fs: IFileSystem) panel directory =
-    match cursorEntry panel with
+    match PanelState.cursorEntry panel with
     | Some entry when entry.Name = ParentName -> Some directory
     | _ -> cursorDirectoryPath fs panel
 
 let private reportNotRunnable (fs: IFileSystem) state panel archive level =
     let named =
-        cursorEntryInArchive fs panel
+        PanelState.cursorEntryInArchive panel
         |> Option.map snd
         |> Option.defaultValue level
 
@@ -289,7 +289,7 @@ let private showingProperties state properties =
 let private editing (fs: IFileSystem) state =
     let target = activePanel state
 
-    match cursorEntryInArchive fs target with
+    match PanelState.cursorEntryInArchive target with
     | Some(archive, entry) ->
         ArchivePath.spelled fs archive entry
         |> Operations.ArchiveEntryNotEditable
@@ -351,7 +351,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         request
             state
             (ConfirmDelete
-                { Targets = operationTargets (activePanel state) |> List.map _.Name
+                { Targets = PanelState.operationTargets (activePanel state) |> List.map _.Name
                   Scope = scope
                   Mode = mode })
     | DeleteConfirmed mode ->
@@ -389,7 +389,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | "", _, _
         | _, None, _
         | _, _, None -> stay state
-        | trimmed, _, _ when showsResults panel && FileSystemPath.isBareName fs trimmed ->
+        | trimmed, _, _ when PanelState.showsResults panel && FileSystemPath.isBareName fs trimmed ->
             reportResultsRefusal state Renaming
         | trimmed, Some(FromDisk [ single ]), _ when FileSystemPath.isBareName fs trimmed ->
             request state (RenameTarget(single, EntryName.create trimmed))
@@ -402,7 +402,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
 
         let found = state.LastSearch |> Option.map (_.Hits >> List.length)
 
-        request state (PromptForFind(markedGround panel, panel.Hidden, found))
+        request state (PromptForFind(PanelState.markedGround panel, panel.Hidden, found))
     | FindEntered query ->
         let panel = activePanel state
 
@@ -446,7 +446,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             | requests -> request state (MakeLinks requests)
     | LinksMade(made, results) -> finishLinks fs made results state |> applyBatch state
     | PackRequested ->
-        match operationTargets (activePanel state), archiveSuggestion fs ArchiveFormat.initial state with
+        match PanelState.operationTargets (activePanel state), archiveSuggestion fs ArchiveFormat.initial state with
         | [], _
         | _, None -> stay state
         | _, Some suggestion -> request state (PromptForArchive suggestion)
@@ -484,7 +484,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | ViewRequested ->
         let target = activePanel state
 
-        match cursorFilePath fs target, cursorFileInArchive fs target with
+        match cursorFilePath fs target, PanelState.cursorFileInArchive target with
         | Some path, _ -> request state (ViewFile path)
         | _, Some(archive, entry) -> request state (ViewArchiveEntry(archive, entry))
         | None, None ->
@@ -567,8 +567,8 @@ let private refusedAsTarget msg =
 
 let private resultsRefusal (state: AppState) msg =
     match refusedAsSource msg, refusedAsTarget msg with
-    | Some refusal, _ when showsResults (activePanel state) -> Some refusal
-    | _, Some refusal when showsResults (panel (opposite state.Active) state) -> Some refusal
+    | Some refusal, _ when PanelState.showsResults (activePanel state) -> Some refusal
+    | _, Some refusal when PanelState.showsResults (panel (opposite state.Active) state) -> Some refusal
     | _ -> None
 
 let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =

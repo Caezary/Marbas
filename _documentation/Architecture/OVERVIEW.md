@@ -126,8 +126,9 @@ Marbas/
     FileWindow.fs         a file held open, read one byte range at a time
     LineIndex.fs          line starts scanned forward on demand, and the line at one
   State/
-    AppState.fs           immutable panel, tab and app state and its transitions,
-                          built from and read back as Settings
+    PanelState.fs         one panel: cursor, marks, search and sort, never the disk
+    AppState.fs           tabs and app state: loaders, finish* transitions and the
+                          queries Update asks, built from and read back as Settings
     Update.fs             messages and effects: message + state -> state + effects
     Runtime.fs            generic host: the single mutable cell, the message
                           queue, one drain loop over update/render/interpret

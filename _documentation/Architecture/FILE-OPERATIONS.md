@@ -1,7 +1,7 @@
 # File operations
 
 **Operation targets are one rule, shared by every operation key.**
-`AppState.operationTargets` answers with the marked entries in listing order,
+`PanelState.operationTargets` answers with the marked entries in listing order,
 or with the cursor entry when nothing is marked, and never with `..` — so a
 function key pressed on the parent entry has nothing to do and asks nothing.
 `F5`, `F6`, `F8`, `Shift+F1` and `Shift+F2` all take their sources from it.

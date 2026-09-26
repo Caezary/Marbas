@@ -7,6 +7,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -77,7 +78,7 @@ let ``the cursor stays on the entry it was on`` () =
 
     let toggled = toggleHidden fs Left state |> Expect.ok
 
-    Assert.Equal(Some(en "notes.txt"), cursorEntry toggled.Left |> Option.map _.Name)
+    Assert.Equal(Some(en "notes.txt"), PanelState.cursorEntry toggled.Left |> Option.map _.Name)
     Assert.Equal(3, toggled.Left.Cursor)
 
 [<Fact>]
@@ -87,7 +88,7 @@ let ``the marks of the entries that stay survive`` () =
 
     let toggled = toggleHidden fs Left state |> Expect.ok
 
-    Assert.Equal<EntryName list>([ en "notes.txt" ], selectedEntries toggled.Left |> List.map _.Name)
+    Assert.Equal<EntryName list>([ en "notes.txt" ], PanelState.selectedEntries toggled.Left |> List.map _.Name)
 
 [<Fact>]
 let ``concealing an entry drops its mark`` () =
@@ -98,7 +99,7 @@ let ``concealing an entry drops its mark`` () =
 
     let toggled = toggleHidden fs Left state |> Expect.ok
 
-    Assert.Equal<EntryName list>([], selectedEntries toggled.Left |> List.map _.Name)
+    Assert.Equal<EntryName list>([], PanelState.selectedEntries toggled.Left |> List.map _.Name)
 
 [<Fact>]
 let ``toggling one panel leaves the other one alone`` () =

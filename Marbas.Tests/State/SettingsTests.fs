@@ -5,6 +5,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.Collections
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -245,7 +246,7 @@ let ``a panel opens on the entry the session remembered`` () =
         |> loadPanel fs Left (fp (at "start"))
         |> Expect.ok
 
-    Assert.Equal(Some(en "notes.txt"), cursorEntry state.Left |> Option.map _.Name)
+    Assert.Equal(Some(en "notes.txt"), PanelState.cursorEntry state.Left |> Option.map _.Name)
 
 [<Fact>]
 let ``a remembered entry that is gone leaves the cursor at the top`` () =
@@ -288,5 +289,5 @@ let ``a cursor resting on the way out remembers nothing`` () =
 
     let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
-    Assert.Equal(Some "..", cursorEntry state.Left |> Option.map (_.Name >> EntryName.value))
+    Assert.Equal(Some "..", PanelState.cursorEntry state.Left |> Option.map (_.Name >> EntryName.value))
     Assert.Equal(None, (settings fs state).Left.Cursor)

@@ -54,6 +54,12 @@ module PanelLocation =
         | InArchive(archive, level) -> Some(InArchive(archive, ArchivePath.child level name))
         | SearchResults _ -> None
 
+    let archivePlace location (name: EntryName) =
+        match location with
+        | InArchive(archive, level) -> Some(archive, ArchivePath.child level name)
+        | OnDisk _
+        | SearchResults _ -> None
+
     let combine (fs: IFileSystem) location (name: string) =
         directory location |> Option.map (fun path -> FileSystemPath.combine fs path name)
 
@@ -66,6 +72,9 @@ module PanelLocation =
     let value (fs: IFileSystem) location = spelled fs location |> FileSystemPath.value
 
 module FindHit =
+
+    let archivePlace (hit: FindHit) =
+        PanelLocation.archivePlace hit.Location hit.Entry.Name
 
     let spelled (fs: IFileSystem) hit =
         match hit.Location with

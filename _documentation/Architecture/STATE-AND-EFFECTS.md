@@ -15,6 +15,27 @@ Every other port — a dialog, the trash, a process, a link, the search runner,
 the batch runner, quitting — belongs to `Ports.Dependencies`, and the state
 layer reaches it only by raising an `Effect` that `Shell.interpret` carries out.
 
+**A panel is changed on its own; the state only says which one.** Everything
+that moves a cursor, marks, searches, sorts or reads the marks back without
+touching the disk is in the `PanelState` module (`State/PanelState.fs`), a
+function from one `PanelState` to the next with tests of its own that build a
+panel by hand and need no file system. `AppState` holds the rest: the loaders
+that read a location into a panel, the `finish*` transitions that reload after
+a batch, the queries `Update` asks before raising an effect — `transferSource`,
+`operationPaths`, `cursorFilePath`, `measureTargets`, `deleteQuestion` — and
+the tabs. What it keeps of the panel functions is one line each that says which
+side they apply to, `setCursor side index = updatePanel side
+(PanelState.withCursor index)`, so a test or a message that addresses a side
+still reads as one call. The split was P15.22's answer to A11; `FocusTarget`
+moved with the panel type because `PanelState.cursorFocus` answers one.
+The test for which side a query belongs to is whether it *uses* `fs`, not
+whether it declares it: `cursorEntryInArchive`, `cursorFileInArchive` and
+`targetsDirectoryInArchive` carried an `fs` they only handed on, stayed behind
+in the first pass for it, and moved after it. The place of a name inside an
+archive, which they and `transferSource` both need, is not a panel's at all —
+it is `PanelLocation.archivePlace` and `FindHit.archivePlace` in the
+file-system layer.
+
 **Work that outlasts a keystroke is an effect too.** Copy, move, delete, wipe,
 pack, unpack, measure, a rename that fell back to copying and a search all run
 on a background task under a progress window that `Esc` stops, because a

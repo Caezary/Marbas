@@ -5,6 +5,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -26,7 +27,7 @@ let private loaded (fs: IFileSystem) =
     create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
 let private selectedNames panel =
-    selectedEntries panel |> List.map (_.Name >> EntryName.value)
+    PanelState.selectedEntries panel |> List.map (_.Name >> EntryName.value)
 
 [<Fact>]
 let ``a pattern selects every matching entry in one step`` () =

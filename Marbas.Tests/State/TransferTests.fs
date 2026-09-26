@@ -6,6 +6,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -56,7 +57,7 @@ let ``marks are dropped from the entries that were copied`` () =
 
     let updated = finished fs results (markedNotes state)
 
-    Assert.Empty(selectedEntries updated.Left)
+    Assert.Empty(PanelState.selectedEntries updated.Left)
 
 [<Fact>]
 let ``a mark stays on an entry whose copy failed`` () =
@@ -68,7 +69,7 @@ let ``a mark stays on an entry whose copy failed`` () =
 
     let updated = finished fs results (markedNotes state)
 
-    Assert.Equal<string list>([ "notes.txt" ], selectedEntries updated.Left |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
+    Assert.Equal<string list>([ "notes.txt" ], PanelState.selectedEntries updated.Left |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
 
 [<Fact>]
 let ``a transfer whose other panel vanished answers with an operation error`` () =

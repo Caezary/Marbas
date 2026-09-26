@@ -6,6 +6,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -26,7 +27,7 @@ let private loaded (fs: IFileSystem) =
 
 let private names panel = panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
-let private selectedNames panel = selectedEntries panel |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+let private selectedNames panel = PanelState.selectedEntries panel |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 [<Fact>]
 let ``making a directory adds it and lands the cursor on it`` () =
@@ -37,7 +38,7 @@ let ``making a directory adds it and lands the cursor on it`` () =
 
     Assert.True(fs.Directory.Exists(at "start/work"))
     Assert.Contains("work", names updated.Left)
-    Assert.Equal(Some "work", cursorEntry updated.Left |> Option.map (_.Name >> EntryName.value))
+    Assert.Equal(Some "work", PanelState.cursorEntry updated.Left |> Option.map (_.Name >> EntryName.value))
 
 [<Fact>]
 let ``making a directory keeps the existing selection`` () =

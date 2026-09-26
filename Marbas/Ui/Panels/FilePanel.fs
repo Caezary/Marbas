@@ -96,7 +96,7 @@ let private fill (panel: PanelView) (list: ListView) (painting: PanelRows.Painti
     painting.Entries
     |> Array.iteri (fun index entry -> list.Source.SetMark(index, painting.Selected.Contains entry.Name))
 
-let render (fs: IFileSystem) (taken: int) (state: AppState.PanelState) (panel: PanelView) =
+let render (fs: IFileSystem) (taken: int) (state: PanelState) (panel: PanelView) =
     panel.Title <- PanelTitle.describe fs (roomForTitle panel taken) state.Path state.Sort state.Hidden
     let list = listView panel
     let painting = PanelRows.painting list.Viewport.Width state

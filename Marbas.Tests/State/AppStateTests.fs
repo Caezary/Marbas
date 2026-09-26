@@ -5,6 +5,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -62,8 +63,8 @@ let ``the cursor entry is the one at the cursor index`` () =
     let fs = mockFs ()
     let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
-    let atStart = cursorEntry state.Left
-    let atThirdRow = state |> setCursor Left 2 |> activePanel |> cursorEntry
+    let atStart = PanelState.cursorEntry state.Left
+    let atThirdRow = state |> setCursor Left 2 |> activePanel |> PanelState.cursorEntry
 
     Assert.Equal(Some "..", atStart |> Option.map (_.Name >> EntryName.value))
     Assert.Equal(Some "readme.txt", atThirdRow |> Option.map (_.Name >> EntryName.value))
@@ -72,7 +73,7 @@ let ``the cursor entry is the one at the cursor index`` () =
 let ``an empty panel has no cursor entry`` () =
     let state = create (fp (at "start"))
 
-    let entry = cursorEntry state.Left
+    let entry = PanelState.cursorEntry state.Left
 
     Assert.Equal(None, entry)
 

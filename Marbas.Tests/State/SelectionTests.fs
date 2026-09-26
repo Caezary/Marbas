@@ -5,6 +5,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -27,7 +28,7 @@ let private started () =
     fs, create (fp (at "start")) |> loaded Left (fp (at "start")) fs
 
 let private selectedNames panel =
-    selectedEntries panel |> List.map (_.Name >> EntryName.value)
+    PanelState.selectedEntries panel |> List.map (_.Name >> EntryName.value)
 
 let private startedWith fileCount =
     let fs = MockFileSystem()
@@ -41,7 +42,7 @@ let private startedWith fileCount =
 let ``a fresh panel has nothing selected`` () =
     let _, state = started ()
 
-    Assert.Empty(selectedEntries state.Left)
+    Assert.Empty(PanelState.selectedEntries state.Left)
 
 [<Fact>]
 let ``toggling selects the entry under the cursor and advances the cursor`` () =
@@ -63,7 +64,7 @@ let ``toggling an already selected entry deselects it`` () =
         |> setCursor Left 1
         |> toggleSelectionMoving Downward Left
 
-    Assert.Empty(selectedEntries updated.Left)
+    Assert.Empty(PanelState.selectedEntries updated.Left)
 
 [<Fact>]
 let ``selecting several entries keeps them in listing order`` () =
@@ -84,7 +85,7 @@ let ``the parent entry is never selectable but the cursor still advances`` () =
 
     let updated = toggleSelectionMoving Downward Left state
 
-    Assert.Empty(selectedEntries updated.Left)
+    Assert.Empty(PanelState.selectedEntries updated.Left)
     Assert.Equal(1, updated.Left.Cursor)
 
 [<Fact>]
@@ -116,7 +117,7 @@ let ``marking upward over a selected entry unmarks it`` () =
         |> setCursor Left 3
         |> toggleSelectionMoving Upward Left
 
-    Assert.Empty(selectedEntries updated.Left)
+    Assert.Empty(PanelState.selectedEntries updated.Left)
     Assert.Equal(2, updated.Left.Cursor)
 
 [<Fact>]
@@ -184,7 +185,7 @@ let ``one run after another marks page by page and never gives the last one back
     let updated =
         pageAfterPage |> List.fold (fun state target -> toggleSelectionShortOf Left target state) state
 
-    Assert.Equal(11, (selectedEntries updated.Left).Length)
+    Assert.Equal(11, (PanelState.selectedEntries updated.Left).Length)
 
 [<Fact>]
 let ``an unmarked entry under the cursor marks the whole run, whatever it holds`` () =
@@ -210,7 +211,7 @@ let ``a marked entry under the cursor clears the whole run, whatever it holds`` 
         |> setCursor Left 2
         |> toggleSelectionShortOf Left 3
 
-    Assert.Empty(selectedEntries updated.Left)
+    Assert.Empty(PanelState.selectedEntries updated.Left)
     Assert.Equal(3, updated.Left.Cursor)
 
 [<Fact>]
@@ -242,7 +243,7 @@ let ``selection belongs to one panel only`` () =
     let updated = state |> setCursor Left 1 |> toggleSelectionMoving Downward Left
 
     Assert.Equal<string list>([ "docs" ], selectedNames updated.Left)
-    Assert.Empty(selectedEntries updated.Right)
+    Assert.Empty(PanelState.selectedEntries updated.Right)
 
 [<Fact>]
 let ``entering a directory clears the selection`` () =
@@ -252,7 +253,7 @@ let ``entering a directory clears the selection`` () =
     let updated = selected |> setCursor Left 1 |> enter fs |> Expect.ok
 
     Assert.Equal(OnDisk(fp (at "start/docs")), updated.Left.Path)
-    Assert.Empty(selectedEntries updated.Left)
+    Assert.Empty(PanelState.selectedEntries updated.Left)
 
 [<Fact>]
 let ``refresh keeps the selection and drops entries that disappeared`` () =

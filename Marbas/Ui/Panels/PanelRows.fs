@@ -13,7 +13,7 @@ type Rows =
     | Kept
     | Rebuilt
 
-let painting (width: int) (panel: AppState.PanelState) =
+let painting (width: int) (panel: PanelState) =
     { Entries = panel.Entries
       Selected = panel.Selected
       Width = width }

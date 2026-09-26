@@ -115,3 +115,35 @@ let ``the hits are indexed by the name each is shown under`` () =
 
     Assert.Equal(Some hit, index |> Map.tryFind (EntryName.create (Root.relative "docs/inner.txt")))
     Assert.Equal(2, index.Count)
+
+[<Fact>]
+let ``a name at a level inside an archive has its place in that archive`` () =
+    let location = InArchive(archive, inside "docs")
+
+    let place = PanelLocation.archivePlace location (EntryName.create "notes.txt")
+
+    Assert.Equal(Some(archive, inside "docs/notes.txt"), place)
+
+[<Fact>]
+let ``a name on disk has no place in an archive`` () =
+    let location = OnDisk(fp (at "start"))
+
+    let place = PanelLocation.archivePlace location (EntryName.create "notes.txt")
+
+    Assert.Equal(None, place)
+
+[<Fact>]
+let ``a hit inside an archive has its place in that archive`` () =
+    let hit =
+        { Location = InArchive(archive, ArchivePath.root)
+          Entry = entry "notes.txt" }
+
+    let place = FindHit.archivePlace hit
+
+    Assert.Equal(Some(archive, inside "notes.txt"), place)
+
+[<Fact>]
+let ``a hit on disk has no place in an archive`` () =
+    let place = FindHit.archivePlace (hitIn "start" "notes.txt")
+
+    Assert.Equal(None, place)

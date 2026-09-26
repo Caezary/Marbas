@@ -6,6 +6,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -67,13 +68,13 @@ let ``choosing the same key again reverses the panel`` () =
 let ``the cursor stays on the entry it was on`` () =
     let fs = mockFs ()
     let state = both fs |> setCursor Left 3
-    let before = cursorEntry state.Left
+    let before = PanelState.cursorEntry state.Left
 
     let sorted = sortBy SortKey.BySize Left state
 
     Assert.Equal(Some(en "small.md"), before |> Option.map _.Name)
     Assert.Equal(2, sorted.Left.Cursor)
-    Assert.Equal(before |> Option.map _.Name, cursorEntry sorted.Left |> Option.map _.Name)
+    Assert.Equal(before |> Option.map _.Name, PanelState.cursorEntry sorted.Left |> Option.map _.Name)
 
 [<Fact>]
 let ``sorting keeps the marks`` () =
@@ -82,7 +83,7 @@ let ``sorting keeps the marks`` () =
 
     let sorted = sortBy SortKey.ByExtension Left state
 
-    Assert.Equal<EntryName list>([ en "big.txt" ], selectedEntries sorted.Left |> List.map _.Name)
+    Assert.Equal<EntryName list>([ en "big.txt" ], PanelState.selectedEntries sorted.Left |> List.map _.Name)
 
 [<Fact>]
 let ``sorting one panel leaves the other one alone`` () =
