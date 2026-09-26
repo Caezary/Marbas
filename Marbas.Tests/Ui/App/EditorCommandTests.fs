@@ -1,7 +1,7 @@
 module Marbas.Tests.Ui.App.EditorCommandTests
 
 open Xunit
-open Marbas
+open Marbas.Domain
 open Marbas.Ui.App
 
 [<Fact>]

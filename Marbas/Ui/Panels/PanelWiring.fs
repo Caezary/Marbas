@@ -23,8 +23,12 @@ let private page (list: ListView) =
       PageJump.Height = list.Viewport.Height
       PageJump.Count = count list }
 
-let private printable (key: Key) =
-    not key.IsCtrl && not key.IsAlt && key.AsRune.Value >= 32 && key.AsRune.Value <> 127
+let private unmodified (key: Key) = not key.IsCtrl && not key.IsAlt
+
+let private visibleCharacter (key: Key) =
+    key.AsRune.Value >= 32 && key.AsRune.Value <> 127
+
+let private printable key = unmodified key && visibleCharacter key
 
 let private searchMessage (key: Key) =
     if key = KeyMap.cancelKey then Some SearchCancelled

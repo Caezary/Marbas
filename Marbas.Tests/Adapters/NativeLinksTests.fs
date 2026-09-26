@@ -1,7 +1,6 @@
 module Marbas.Tests.Adapters.NativeLinksTests
 
 open Xunit
-open Marbas
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Adapters

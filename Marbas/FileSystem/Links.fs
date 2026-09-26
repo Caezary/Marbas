@@ -2,7 +2,6 @@ namespace Marbas.FileSystem
 
 open System.IO.Abstractions
 open FsToolkit.ErrorHandling
-open Marbas
 open Marbas.Domain
 open Marbas.FileSystem.Operations
 
@@ -29,17 +28,8 @@ module Links =
         let target = fs.Path.Combine(standing, FileSystemPath.value request.Target)
         FileSystemPath.create (fs.Path.GetFullPath target)
 
-    let private volumeOf (platform: Platform) (fs: IFileSystem) (path: FileSystemPath) =
-        fs.DriveInfo.GetDrives()
-        |> Seq.map _.Name
-        |> Seq.filter (fun root -> FileSystemPath.atOrUnder platform (FileSystemPath.create root) path)
-        |> Seq.sortByDescending String.length
-        |> Seq.tryHead
-        |> Option.defaultWith (fun () -> fs.Path.GetPathRoot(FileSystemPath.value path))
-        |> FileSystemPath.create
-
     let private onOneVolume platform fs (target: FileSystemPath) (location: FileSystemPath) =
-        FileSystemPath.sameEntry platform (volumeOf platform fs target) (volumeOf platform fs location)
+        FileSystemPath.sameEntry platform (Drives.volumeOf platform fs target) (Drives.volumeOf platform fs location)
 
     let private refusalForAbsolute platform fs (request: LinkRequest) target =
         match request.Kind, FileSystemPath.kind fs target with
@@ -108,6 +98,5 @@ module Links =
 
     let sharedRefusal (refuse: LinkRequest -> LinkRefusal option) (requests: LinkRequest list) =
         match requests |> List.map refuse with
-        | [] -> None
-        | refusals when List.forall Option.isSome refusals -> List.head refusals
+        | (Some _ as first) :: rest when List.forall Option.isSome rest -> first
         | _ -> None

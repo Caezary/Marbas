@@ -652,7 +652,7 @@ let ``a non-empty directory among the targets widens the scope that comes back``
     Shell.interpret
         deps
         dispatch
-        (InspectDelete({ Probed = [ fp (at "start/docs") ]; ReachesContents = false }, ToTrash))
+        (InspectDelete({ Probed = [ fp (at "start/docs") ]; AtLeast = NamedEntriesOnly }, ToTrash))
 
     Assert.Equal<Message list>([ DeleteScopeLoaded(WithDirectoryContents, ToTrash) ], List.ofSeq sent)
 
@@ -666,7 +666,7 @@ let ``an empty directory keeps the scope that comes back to the named entries`` 
     Shell.interpret
         deps
         dispatch
-        (InspectDelete({ Probed = [ fp (at "start/docs") ]; ReachesContents = false }, Permanently))
+        (InspectDelete({ Probed = [ fp (at "start/docs") ]; AtLeast = NamedEntriesOnly }, Permanently))
 
     Assert.Equal<Message list>([ DeleteScopeLoaded(NamedEntriesOnly, Permanently) ], List.ofSeq sent)
 
@@ -680,7 +680,7 @@ let ``a question that already reaches the contents asks nothing about its own pa
     Shell.interpret
         deps
         dispatch
-        (InspectDelete({ Probed = [ fp (at "start/docs") ]; ReachesContents = true }, Permanently))
+        (InspectDelete({ Probed = [ fp (at "start/docs") ]; AtLeast = WithDirectoryContents }, Permanently))
 
     Assert.Equal(0, fs.AskedAbout(at "start/docs"))
     Assert.Equal<Message list>([ DeleteScopeLoaded(WithDirectoryContents, Permanently) ], List.ofSeq sent)

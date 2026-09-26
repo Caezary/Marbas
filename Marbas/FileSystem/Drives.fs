@@ -77,9 +77,12 @@ module Drives =
         else
             Some label
 
+    let private holdsStorage (info: IDriveInfo) =
+        info.IsReady && not (notStorage.Contains info.DriveFormat)
+
     let private read (info: IDriveInfo) =
         try
-            if info.IsReady && not (notStorage.Contains info.DriveFormat) then
+            if holdsStorage info then
                 Some
                     { Root = FileSystemPath.create info.Name
                       Label = labelOf info.Name info.VolumeLabel
@@ -100,14 +103,23 @@ module Drives =
         |> Seq.map MountedDrive
         |> List.ofSeq
 
-    let holding (fs: IFileSystem) (path: FileSystemPath) =
-        let platform = FileSystemPath.platformOf fs
-
-        mounted fs
-        |> List.map DriveRow.root
+    let private deepestHolding platform (roots: FileSystemPath list) path =
+        roots
         |> List.filter (fun root -> FileSystemPath.atOrUnder platform root path)
         |> List.sortByDescending (FileSystemPath.value >> String.length)
         |> List.tryHead
+
+    let holding (fs: IFileSystem) (path: FileSystemPath) =
+        let roots = mounted fs |> List.map DriveRow.root
+        deepestHolding (FileSystemPath.platformOf fs) roots path
+
+    let volumeOf platform (fs: IFileSystem) (path: FileSystemPath) =
+        let roots =
+            fs.DriveInfo.GetDrives() |> Seq.map (_.Name >> FileSystemPath.create) |> List.ofSeq
+
+        deepestHolding platform roots path
+        |> Option.orElse (FileSystemPath.root fs path)
+        |> Option.defaultValue path
 
     let list (fs: IFileSystem) (home: FileSystemPath option) =
         let drives = mounted fs

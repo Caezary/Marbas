@@ -180,7 +180,7 @@ should adopt is "three binds or one nested match → CE".
 | --- | --- |
 | "item is strictly below level" (`below`) | `DirectoryMeasure.fs:43`, `ArchiveListing.fs:9`, `FileSearch.fs:47`; plus the `>=` variant `Archive.underPath` (`Archive.fs:222`) |
 | `parentEntry` record for `..` | `DirectoryListing.fs:121`, `ArchiveListing.fs:59`, `SearchListing.fs:68` |
-| enumerate children as `FileSystemPath list` | `Operations.fs:106`, `DirectoryMeasure.fs:20`, `FileSearch.fs:20`, `Archive.fs:163-167` (TD-019) |
+| enumerate children as `FileSystemPath list` | `Operations.fs:106`, `DirectoryMeasure.fs:20`, `FileSearch.fs:20`, `Archive.fs:163-167` |
 | `dialog.SubViews \|> Seq.pick (function :? T as v when v.Id = id -> Some v \| _ -> None)` | 26 occurrences in 13 `Ui` files |
 | "which sources are approved to land in an archive level" | `Shell.approvedInto` (`161-175`), `approvedAcross` (`177-199`), `approvedEntries` (`116-125`) |
 | open a `Source` and show it | `Shell.showPath` (`135-140`), `showEntry` (`142-147`) |
@@ -222,15 +222,14 @@ segments, disk or archive) can only be learned by opening it. The same holds
 for the verb family `changing` (`Update.fs:142`), `changing'`,
 `changingArchive` (`Shell.fs:210`), `changeWith` and the record `Changing`
 (`Archive.fs:354`, `478`), and for `opened` / `opened'` / `opening` /
-`openedWith` (`Update.fs:201-245`). `guarding` is already on the tech-debt
-list (TD-021).
+`openedWith` (`Update.fs:201-245`). `guarding` is Q7.
 
 Fix. Encode the boundary in the name: `strictlyBelow`, `atOrBelow`,
 `pathAfterTarget`, `sinkAtLevel`; for the gates, `refuseUnchangeable`
 (`Update`), `reportIfUnchangeable` (`Shell`), `withArchiveOpenForChange`
 (`Archive`).
 
-### Q7. `guarding` (TD-021) — a flat replacement — Medium
+### Q7. `guarding` — a flat replacement — Medium
 
 `Update.guarding state source receives proceed` (`Update.fs:275-282`) takes a
 bare `bool`, a continuation, and is called from seven arms, each of which
@@ -376,7 +375,7 @@ right reason to make that change now rather than later.
 | Q4 | Computation expressions under-used | Medium |
 | Q5 | Helpers copied 3-26 times | Medium |
 | Q6 | Prepositional names that do not discriminate | Medium |
-| Q7 | `guarding` (TD-021): decide the gate once, before `transition` | Medium |
+| Q7 | `guarding`: decide the gate once, before `transition` | Medium |
 | Q8 | Booleans and strings where a type carries the meaning | Medium |
 | Q10 | `FileSearch.run` monolith | Medium |
 | Q9 | Dense one-liners | Low |

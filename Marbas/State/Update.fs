@@ -385,16 +385,18 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             | SearchResults _ -> Some(PanelLocation.holding fs panel.Path)
             | location -> PanelLocation.directory location
 
-        match text.Trim(), transferSource fs panel, standing with
+        let trimmed = text.Trim()
+        let renamesInPlace = FileSystemPath.isBareName fs trimmed
+
+        match trimmed, transferSource fs panel, standing with
         | "", _, _
         | _, None, _
         | _, _, None -> stay state
-        | trimmed, _, _ when PanelState.showsResults panel && FileSystemPath.isBareName fs trimmed ->
-            reportResultsRefusal state Renaming
-        | trimmed, Some(FromDisk [ single ]), _ when FileSystemPath.isBareName fs trimmed ->
+        | _ when renamesInPlace && PanelState.showsResults panel -> reportResultsRefusal state Renaming
+        | _, Some(FromDisk [ single ]), _ when renamesInPlace ->
             request state (RenameTarget(single, EntryName.create trimmed))
         | _, Some(FromArchive _), _ -> stay state
-        | trimmed, Some source, Some place ->
+        | _, Some source, Some place ->
             request state (MovePlaces(places source, ToDirectory(FileSystemPath.combine fs place trimmed)))
     | MoveFinished results -> finishTransfer fs results state |> applyBatch state
     | FindRequested ->

@@ -8,7 +8,11 @@ type Charset =
     | Utf16Be
     | Latin1
 
-type TextEncoding = { Charset: Charset; HasBom: bool }
+type ByteOrderMark =
+    | WithBom
+    | WithoutBom
+
+type TextEncoding = { Charset: Charset; Bom: ByteOrderMark }
 
 type Content =
     | Textual
@@ -66,11 +70,11 @@ module TextEncoding =
         else None
 
     let private examine (probe: byte array) =
-        let plain charset = { Charset = charset; HasBom = false }
+        let plain charset = { Charset = charset; Bom = WithoutBom }
 
-        if startsWith utf8Mark probe then { Charset = Utf8; HasBom = true }, Textual
-        elif startsWith utf16LeMark probe then { Charset = Utf16Le; HasBom = true }, Textual
-        elif startsWith utf16BeMark probe then { Charset = Utf16Be; HasBom = true }, Textual
+        if startsWith utf8Mark probe then { Charset = Utf8; Bom = WithBom }, Textual
+        elif startsWith utf16LeMark probe then { Charset = Utf16Le; Bom = WithBom }, Textual
+        elif startsWith utf16BeMark probe then { Charset = Utf16Be; Bom = WithBom }, Textual
         else
             match wideCharset probe with
             | Some charset -> plain charset, Textual
@@ -96,14 +100,12 @@ module TextEncoding =
         | Latin1 -> 1
 
     let preambleLength encoding =
-        if not encoding.HasBom then
-            0
-        else
-            match encoding.Charset with
-            | Utf8 -> utf8Mark.Length
-            | Utf16Le
-            | Utf16Be -> utf16LeMark.Length
-            | Latin1 -> 0
+        match encoding.Bom, encoding.Charset with
+        | WithoutBom, _ -> 0
+        | WithBom, Utf8 -> utf8Mark.Length
+        | WithBom, Utf16Le
+        | WithBom, Utf16Be -> utf16LeMark.Length
+        | WithBom, Latin1 -> 0
 
     let lineFeed encoding =
         match encoding.Charset with

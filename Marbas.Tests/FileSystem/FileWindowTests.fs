@@ -101,7 +101,7 @@ let ``the encoding is settled when the file is opened`` () =
 
     use source = opened fs
 
-    Assert.Equal({ Charset = Utf16Le; HasBom = true }, source.Encoding)
+    Assert.Equal({ Charset = Utf16Le; Bom = WithBom }, source.Encoding)
 
 [<Fact>]
 let ``an empty file opens and reads as nothing`` () =
@@ -119,7 +119,7 @@ let ``a file larger than the probe is opened without reading it whole`` () =
     use source = opened fs
 
     Assert.Equal(int64 TextEncoding.ProbeLength * 4L, source.Length)
-    Assert.Equal({ Charset = Utf8; HasBom = false }, source.Encoding)
+    Assert.Equal({ Charset = Utf8; Bom = WithoutBom }, source.Encoding)
 
 [<Fact>]
 let ``a missing file is an error value, not an exception`` () =

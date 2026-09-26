@@ -19,18 +19,24 @@ let private queryFor what =
       Archives = SkipArchives }
 
 [<Theory>]
-[<InlineData("*.jpg", "photo.jpg", true)>]
-[<InlineData("*.jpg", "photo.png", false)>]
-[<InlineData("*.jpg", "PHOTO.JPG", true)>]
-[<InlineData("*.jpg;*.png", "photo.png", true)>]
-[<InlineData("*.jpg;*.png", "photo.gif", false)>]
-[<InlineData(" *.jpg ; *.png ", "photo.png", true)>]
-[<InlineData("a?c.txt", "abc.txt", true)>]
-[<InlineData("a?c.txt", "ac.txt", false)>]
-let ``a mask matches the names it names`` raw name expected =
+[<InlineData("*.jpg", "photo.jpg")>]
+[<InlineData("*.jpg", "PHOTO.JPG")>]
+[<InlineData("*.jpg;*.png", "photo.png")>]
+[<InlineData(" *.jpg ; *.png ", "photo.png")>]
+[<InlineData("a?c.txt", "abc.txt")>]
+let ``a mask matches the names it names`` raw name =
     let matched = NameMasks.matches (NameMasks.read raw) (EntryName.create name)
 
-    Assert.Equal(expected, matched)
+    Assert.True matched
+
+[<Theory>]
+[<InlineData("*.jpg", "photo.png")>]
+[<InlineData("*.jpg;*.png", "photo.gif")>]
+[<InlineData("a?c.txt", "ac.txt")>]
+let ``a mask passes over the names it does not name`` raw name =
+    let matched = NameMasks.matches (NameMasks.read raw) (EntryName.create name)
+
+    Assert.False matched
 
 [<Theory>]
 [<InlineData("*.*", "photo.jpg")>]
@@ -46,45 +52,62 @@ let ``everything means everything, dot or no dot`` raw name =
     Assert.True matched
 
 [<Theory>]
-[<InlineData("report", "annual report 2026.txt", true)>]
-[<InlineData("report", "REPORT.md", true)>]
-[<InlineData("report", "summary.txt", false)>]
-[<InlineData("notes;draft", "second draft.md", true)>]
-let ``a mask with no wildcard is a fragment`` raw name expected =
+[<InlineData("report", "annual report 2026.txt")>]
+[<InlineData("report", "REPORT.md")>]
+[<InlineData("notes;draft", "second draft.md")>]
+let ``a mask with no wildcard matches a name containing it`` raw name =
     let matched = NameMasks.matches (NameMasks.read raw) (EntryName.create name)
 
-    Assert.Equal(expected, matched)
+    Assert.True matched
+
+[<Theory>]
+[<InlineData("report", "summary.txt")>]
+[<InlineData("notes;draft", "final.md")>]
+let ``a mask with no wildcard passes over a name without it`` raw name =
+    let matched = NameMasks.matches (NameMasks.read raw) (EntryName.create name)
+
+    Assert.False matched
 
 [<Fact>]
 let ``a query without text keeps the targets it was given`` () =
     let query = queryFor (FindWhat.create (NameMasks.read "*.fs") None FilesAndDirectories)
 
-    Assert.Equal<FindTargets>(FilesAndDirectories, FindQuery.targets query)
+    let targets = FindQuery.targets query
+
+    Assert.Equal<FindTargets>(FilesAndDirectories, targets)
 
 [<Fact>]
 let ``a query with text finds files alone`` () =
     let query = queryFor (FindWhat.create (NameMasks.read "*.fs") (Some(searchFor "let")) FilesAndDirectories)
 
-    Assert.Equal<FindTargets>(FilesOnly, FindQuery.targets query)
+    let targets = FindQuery.targets query
+
+    Assert.Equal<FindTargets>(FilesOnly, targets)
 
 [<Fact>]
 let ``a query without text carries no text options`` () =
     let query = queryFor (FindWhat.create (NameMasks.read "*.fs") None FilesOnly)
 
-    Assert.Equal<TextSearch option>(None, FindQuery.text query)
+    let text = FindQuery.text query
+
+    Assert.Equal<TextSearch option>(None, text)
 
 [<Fact>]
 let ``a query with text carries the search it was given`` () =
     let search = searchFor "let"
     let query = queryFor (FindWhat.create (NameMasks.read "*.fs") (Some search) FilesOnly)
 
-    Assert.Equal<TextSearch option>(Some search, FindQuery.text query)
+    let text = FindQuery.text query
+
+    Assert.Equal<TextSearch option>(Some search, text)
 
 [<Fact>]
 let ``the masks survive a query with text`` () =
     let query = queryFor (FindWhat.create (NameMasks.read "*.fs") (Some(searchFor "let")) FilesOnly)
 
-    Assert.True(NameMasks.matches (FindQuery.masks query) (EntryName.create "AppState.fs"))
+    let matched = NameMasks.matches (FindQuery.masks query) (EntryName.create "AppState.fs")
+
+    Assert.True matched
 
 [<Fact>]
 let ``an empty text is no text at all`` () =

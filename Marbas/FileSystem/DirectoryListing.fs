@@ -52,7 +52,7 @@ let entryFromInfo (info: IFileSystemInfo) =
           Size = None
           Measured = None
           Modified = DateTimeOffset info.LastWriteTime
-          Visibility = EntryVisibility.classify name info.Attributes
+          Visibility = EntryVisibility.classify name (EntryAttributes.visibility info.Attributes)
           Executability = NotExecutable
           LinkTarget = FileSystemPath.linkTargetOfInfo info }
     | File ->
@@ -61,8 +61,8 @@ let entryFromInfo (info: IFileSystemInfo) =
           Size = lengthOf info
           Measured = None
           Modified = DateTimeOffset info.LastWriteTime
-          Visibility = EntryVisibility.classify name info.Attributes
-          Executability = Executability.classify name info.UnixFileMode
+          Visibility = EntryVisibility.classify name (EntryAttributes.visibility info.Attributes)
+          Executability = Executability.classify name (EntryAttributes.executability info.UnixFileMode)
           LinkTarget = FileSystemPath.linkTargetOfInfo info }
 
 type Child =

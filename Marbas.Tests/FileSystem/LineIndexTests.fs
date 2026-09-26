@@ -171,3 +171,85 @@ let ``an unbroken file is one line however long it is`` () =
 
     Assert.Equal(1, index.Known)
     Assert.Equal(Some(String('x', 5000)), index.Text 0)
+
+let private numbered count =
+    [ for line in 0 .. count - 1 -> $"line-%03d{line}\n" ] |> String.concat ""
+
+[<Fact>]
+let ``the index remembers one start for every checkpoint's worth of lines`` () =
+    let index = indexing (String.replicate (100 * LineIndex.LinesPerCheckpoint) "line\n")
+
+    index.ScanAll()
+
+    Assert.Equal(100, index.Checkpoints)
+
+[<Theory>]
+[<InlineData(0, 0L)>]
+[<InlineData(63, 567L)>]
+[<InlineData(64, 576L)>]
+[<InlineData(65, 585L)>]
+[<InlineData(128, 1152L)>]
+[<InlineData(199, 1791L)>]
+let ``a line between two checkpoints begins where the one before it ended`` line expected =
+    let index = indexing (numbered 200)
+
+    let start = index.Start line
+
+    Assert.Equal(Some expected, start)
+
+[<Theory>]
+[<InlineData(64)>]
+[<InlineData(150)>]
+[<InlineData(199)>]
+let ``a line between two checkpoints reads as itself`` line =
+    let index = indexing (numbered 200)
+
+    let text = index.Text line
+
+    Assert.Equal(Some $"line-%03d{line}", text)
+
+[<Theory>]
+[<InlineData(1353L, 150)>]
+[<InlineData(1350L, 150)>]
+[<InlineData(1349L, 149)>]
+[<InlineData(576L, 64)>]
+let ``the line holding an offset past a checkpoint is the one that started before it`` offset expected =
+    let index = indexing (numbered 200)
+
+    let line = index.LineAt offset
+
+    Assert.Equal(expected, line)
+
+[<Fact>]
+let ``a wide line past a checkpoint reads in its own encoding`` () =
+    let wide = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes(numbered 200))
+    let index = over (MockFileData wide) |> snd
+
+    let text = index.Text 150
+
+    Assert.Equal(Some "line-150", text)
+
+[<Fact>]
+let ``a whole file of many checkpoints knows every line`` () =
+    let index = indexing (numbered 200)
+
+    index.ScanAll()
+
+    Assert.Equal(200, index.Known)
+
+[<Fact>]
+let ``the last line ends before a feed at the very end`` () =
+    let index = indexing "first\nsecond\n"
+
+    let last = index.Text 1
+
+    Assert.Equal(Some "second", last)
+
+[<Fact>]
+let ``a wide last line ends before a feed at the very end`` () =
+    let wide = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "first\r\nsecond\r\n")
+    let index = over (MockFileData wide) |> snd
+
+    let last = index.Text 1
+
+    Assert.Equal(Some "second", last)

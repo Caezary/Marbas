@@ -7,17 +7,6 @@ open Marbas.Domain
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module FindGround =
 
-    let private separatorsOf (fs: IFileSystem) =
-        [| fs.Path.DirectorySeparatorChar; fs.Path.AltDirectorySeparatorChar |]
-
-    let private withoutTrailingSeparator (fs: IFileSystem) (raw: string) =
-        match raw.TrimEnd(separatorsOf fs) with
-        | "" -> raw
-        | trimmed -> trimmed
-
-    let private sameRoot (fs: IFileSystem) a b =
-        FileSystemPath.sameEntry (FileSystemPath.platformOf fs) a b
-
     let private allRoots (fs: IFileSystem) =
         Drives.list fs None |> List.map DriveRow.root
 
@@ -29,8 +18,8 @@ module FindGround =
             |> Array.toList
             |> List.map (fun piece -> piece.Trim().Trim '"')
             |> List.filter (String.IsNullOrEmpty >> not)
-            |> List.distinctBy (withoutTrailingSeparator fs)
             |> List.map FileSystemPath.create
+            |> FileSystemPath.distinctEntries (FileSystemPath.platformOf fs)
             |> List.filter (fun path -> fs.Directory.Exists(FileSystemPath.value path))
 
     let private onDisk paths = paths |> List.map OnDisk
@@ -43,9 +32,10 @@ module FindGround =
         | FromVolumeRoot ->
             let start = PanelLocation.holding fs location
             let root = Drives.holding fs start |> Option.defaultValue start
+            let isRoot = FileSystemPath.sameEntry (FileSystemPath.platformOf fs) root
 
             { Roots = [ OnDisk root ]
-              OtherRoots = allRoots fs |> List.filter (sameRoot fs root >> not) }
+              OtherRoots = allRoots fs |> List.filter (isRoot >> not) }
         | AllDrives ->
             { Roots = allRoots fs |> onDisk
               OtherRoots = [] }

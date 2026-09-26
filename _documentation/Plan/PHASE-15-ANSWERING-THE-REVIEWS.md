@@ -35,8 +35,8 @@ polished that a structural task is about to delete.
   `FileSystemPath.isUnder` that takes the platform's case rule replaces
   `Archive.within`, `Drives.holding`, `SearchListing.relativeTo`, the boundaries
   of `FileSearch.run`, `FindGround.sameRoot` and the comparison in
-  `Links.volumeOf`, and `FileSearch.visited` compares with the same rule (A7,
-  TD-020 in part). Whether the boundary is strict is in the name, not in the
+  `Links.volumeOf`, and `FileSearch.visited` compares with the same rule (A7).
+  Whether the boundary is strict is in the name, not in the
   body (Q6 in part). *Done when:* `[<Theory>]` rows for both platforms cover
   equal, strictly-below and differently-cased paths, and packing a directory
   into a differently-cased sibling on Linux is no longer refused.
@@ -64,7 +64,7 @@ polished that a structural task is about to delete.
 - **P15.6 The results gate is decided once** — the refusal that `guarding`
   computes today is a value derived from the message and the two panels before
   `transition` runs, and the seven arms lose their continuation and one level of
-  indentation (Q7, TD-021). *Done when:* `guarding` is gone, the rule reads in
+  indentation (Q7). *Done when:* `guarding` is gone, the rule reads in
   one place, and every refusal from P14.12 still has its test.
 - **P15.7 Three effects instead of thirteen** — `CopyPlaces`, `MovePlaces` and
   `DeletePlaces` stay and the ten single-place cases go; `Update` builds a
@@ -124,7 +124,7 @@ polished that a structural task is about to delete.
   explicit results (Q10); then one helper enumerates a directory's children as
   `IFileSystemInfo`, and `Operations.deleteTree`, `copyTo`, `wipe`,
   `DirectoryMeasure`, `FileSearch` and `Archive.add` walk over it (perf P6,
-  TD-019, Q5 `below`). *Done when:* a counting fake shows one enumeration and no
+  Q5 `below`). *Done when:* a counting fake shows one enumeration and no
   extra stat per entry for every walk.
 - **P15.15 Nothing long runs on the UI thread** — permanent delete, trash and a
   directory rename that fell back to copying run through `RunBatch` with a
@@ -186,7 +186,7 @@ polished that a structural task is about to delete.
   each, the way §8 of the conventions now asks. *Done when:* every finding of
   the three reports is either done or written down with the reason it is not,
   no `[<Theory>]` in the suite carries a boolean expectation, and the three
-  duplications the tech-debt notes describe — the repeated path helpers, the
+  duplications named here — the repeated path helpers, the
   repeated drive and separator handling, and `guarding` — are gone.
 
 ## Stage 6 — What an answer opened

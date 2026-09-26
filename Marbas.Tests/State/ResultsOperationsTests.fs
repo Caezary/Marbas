@@ -264,7 +264,7 @@ let ``a mark inside an archive turns the trash into deleting for good`` () =
     Assert.Equal<Effect list>(
         [ InspectDelete(
               { Probed = [ fp (at "start/a/one.txt") ]
-                ReachesContents = false },
+                AtLeast = NamedEntriesOnly },
               Permanently
           ) ],
         result.Effects

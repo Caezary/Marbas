@@ -263,3 +263,21 @@ let ``a marked directory on disk is no directory inside an archive`` () =
     let reaches = PanelState.targetsDirectoryInArchive (marked [ "docs" ])
 
     Assert.False reaches
+
+[<Fact>]
+let ``a marked directory among the targets is a directory target`` () =
+    let targets = PanelState.targetsDirectory (marked [ "docs"; "notes.txt" ])
+
+    Assert.True targets
+
+[<Fact>]
+let ``the directory under the cursor is a directory target when nothing is marked`` () =
+    let targets = PanelState.targetsDirectory (standingAt 1)
+
+    Assert.True targets
+
+[<Fact>]
+let ``marked files alone are no directory target`` () =
+    let targets = PanelState.targetsDirectory (marked [ "notes.txt"; "readme.txt" ])
+
+    Assert.False targets

@@ -26,13 +26,16 @@ let private bounded (text: string) index length atStart =
 
     before && after
 
+let private runsIntoUnreadText (text: string) index length atEnd =
+    not atEnd && index + length = text.Length
+
 let rec private occursFrom (search: TextSearch) (needle: string) (text: string) atStart atEnd from =
     match text.IndexOf(needle, from, comparisonFor search.Case) with
     | -1 -> false
     | index ->
         match search.Words with
         | Anywhere -> true
-        | WholeWords when not atEnd && index + needle.Length = text.Length -> false
+        | WholeWords when runsIntoUnreadText text index needle.Length atEnd -> false
         | WholeWords when bounded text index needle.Length atStart -> true
         | WholeWords -> occursFrom search needle text atStart atEnd (index + 1)
 

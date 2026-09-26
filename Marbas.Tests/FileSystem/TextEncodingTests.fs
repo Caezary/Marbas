@@ -16,7 +16,7 @@ let ``plain ascii is read as utf-8`` () =
 
     let encoding = TextEncoding.detect probe
 
-    Assert.Equal({ Charset = Utf8; HasBom = false }, encoding)
+    Assert.Equal({ Charset = Utf8; Bom = WithoutBom }, encoding)
 
 [<Fact>]
 let ``a utf-8 byte order mark is recognised`` () =
@@ -24,7 +24,7 @@ let ``a utf-8 byte order mark is recognised`` () =
 
     let encoding = TextEncoding.detect probe
 
-    Assert.Equal({ Charset = Utf8; HasBom = true }, encoding)
+    Assert.Equal({ Charset = Utf8; Bom = WithBom }, encoding)
 
 [<Fact>]
 let ``multi-byte utf-8 without a mark is still utf-8`` () =
@@ -32,7 +32,7 @@ let ``multi-byte utf-8 without a mark is still utf-8`` () =
 
     let encoding = TextEncoding.detect probe
 
-    Assert.Equal({ Charset = Utf8; HasBom = false }, encoding)
+    Assert.Equal({ Charset = Utf8; Bom = WithoutBom }, encoding)
 
 [<Fact>]
 let ``a sequence cut off by the end of the probe does not disqualify utf-8`` () =
@@ -41,7 +41,7 @@ let ``a sequence cut off by the end of the probe does not disqualify utf-8`` () 
 
     let encoding = TextEncoding.detect probe
 
-    Assert.Equal({ Charset = Utf8; HasBom = false }, encoding)
+    Assert.Equal({ Charset = Utf8; Bom = WithoutBom }, encoding)
 
 [<Fact>]
 let ``bytes that no utf-8 sequence allows fall back to latin-1`` () =
@@ -49,7 +49,7 @@ let ``bytes that no utf-8 sequence allows fall back to latin-1`` () =
 
     let encoding = TextEncoding.detect probe
 
-    Assert.Equal({ Charset = Latin1; HasBom = false }, encoding)
+    Assert.Equal({ Charset = Latin1; Bom = WithoutBom }, encoding)
 
 [<Fact>]
 let ``a little endian utf-16 mark is recognised`` () =
@@ -57,7 +57,7 @@ let ``a little endian utf-16 mark is recognised`` () =
 
     let encoding = TextEncoding.detect probe
 
-    Assert.Equal({ Charset = Utf16Le; HasBom = true }, encoding)
+    Assert.Equal({ Charset = Utf16Le; Bom = WithBom }, encoding)
 
 [<Fact>]
 let ``a big endian utf-16 mark is recognised`` () =
@@ -65,7 +65,7 @@ let ``a big endian utf-16 mark is recognised`` () =
 
     let encoding = TextEncoding.detect probe
 
-    Assert.Equal({ Charset = Utf16Be; HasBom = true }, encoding)
+    Assert.Equal({ Charset = Utf16Be; Bom = WithBom }, encoding)
 
 [<Fact>]
 let ``little endian utf-16 without a mark is recognised by its zero bytes`` () =
@@ -73,7 +73,7 @@ let ``little endian utf-16 without a mark is recognised by its zero bytes`` () =
 
     let encoding = TextEncoding.detect probe
 
-    Assert.Equal({ Charset = Utf16Le; HasBom = false }, encoding)
+    Assert.Equal({ Charset = Utf16Le; Bom = WithoutBom }, encoding)
 
 [<Fact>]
 let ``big endian utf-16 without a mark is recognised by its zero bytes`` () =
@@ -81,7 +81,7 @@ let ``big endian utf-16 without a mark is recognised by its zero bytes`` () =
 
     let encoding = TextEncoding.detect probe
 
-    Assert.Equal({ Charset = Utf16Be; HasBom = false }, encoding)
+    Assert.Equal({ Charset = Utf16Be; Bom = WithoutBom }, encoding)
 
 [<Fact>]
 let ``zero bytes on both sides of a pair are no text at all`` () =
@@ -97,19 +97,19 @@ let ``an empty probe is read as utf-8`` () =
 
     let encoding = TextEncoding.detect probe
 
-    Assert.Equal({ Charset = Utf8; HasBom = false }, encoding)
+    Assert.Equal({ Charset = Utf8; Bom = WithoutBom }, encoding)
 
 [<Fact>]
 let ``every charset says its name`` () =
     let names =
         [ Utf8; Utf16Le; Utf16Be; Latin1 ]
-        |> List.map (fun charset -> TextEncoding.name { Charset = charset; HasBom = false })
+        |> List.map (fun charset -> TextEncoding.name { Charset = charset; Bom = WithoutBom })
 
     Assert.Equal<string list>([ "UTF-8"; "UTF-16 LE"; "UTF-16 BE"; "Latin-1" ], names)
 
 [<Fact>]
 let ``a mark is not part of the content`` () =
-    let marked = { Charset = Utf8; HasBom = true }
+    let marked = { Charset = Utf8; Bom = WithBom }
 
     let length = TextEncoding.preambleLength marked
 
@@ -117,7 +117,7 @@ let ``a mark is not part of the content`` () =
 
 [<Fact>]
 let ``a utf-16 mark is two bytes long`` () =
-    let marked = { Charset = Utf16Le; HasBom = true }
+    let marked = { Charset = Utf16Le; Bom = WithBom }
 
     let length = TextEncoding.preambleLength marked
 
@@ -125,7 +125,7 @@ let ``a utf-16 mark is two bytes long`` () =
 
 [<Fact>]
 let ``without a mark the content starts at the first byte`` () =
-    let plain = { Charset = Utf16Le; HasBom = false }
+    let plain = { Charset = Utf16Le; Bom = WithoutBom }
 
     let length = TextEncoding.preambleLength plain
 
@@ -135,7 +135,7 @@ let ``without a mark the content starts at the first byte`` () =
 let ``a wide charset counts two bytes to the character`` () =
     let sizes =
         [ Utf8; Utf16Le; Utf16Be; Latin1 ]
-        |> List.map (fun charset -> TextEncoding.unitSize { Charset = charset; HasBom = false })
+        |> List.map (fun charset -> TextEncoding.unitSize { Charset = charset; Bom = WithoutBom })
 
     Assert.Equal<int list>([ 1; 2; 2; 1 ], sizes)
 
@@ -143,13 +143,13 @@ let ``a wide charset counts two bytes to the character`` () =
 let ``a line feed is one byte in utf-8 and two in utf-16`` () =
     let feeds =
         [ Utf8; Utf16Le; Utf16Be ]
-        |> List.map (fun charset -> TextEncoding.lineFeed { Charset = charset; HasBom = false })
+        |> List.map (fun charset -> TextEncoding.lineFeed { Charset = charset; Bom = WithoutBom })
 
     Assert.Equal<byte array list>([ [| 0x0Auy |]; [| 0x0Auy; 0x00uy |]; [| 0x00uy; 0x0Auy |] ], feeds)
 
 [<Fact>]
 let ``utf-16 bytes decode to the text they carry`` () =
-    let encoding = { Charset = Utf16Le; HasBom = false }
+    let encoding = { Charset = Utf16Le; Bom = WithoutBom }
 
     let text = TextEncoding.decode encoding (wide "first")
 
@@ -157,7 +157,7 @@ let ``utf-16 bytes decode to the text they carry`` () =
 
 [<Fact>]
 let ``latin-1 bytes decode one character to the byte`` () =
-    let encoding = { Charset = Latin1; HasBom = false }
+    let encoding = { Charset = Latin1; Bom = WithoutBom }
 
     let text = TextEncoding.decode encoding [| 0x41uy; 0xE9uy |]
 

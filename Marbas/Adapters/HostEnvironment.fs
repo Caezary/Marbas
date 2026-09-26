@@ -1,7 +1,7 @@
 namespace Marbas.Adapters
 
 open System
-open Marbas
+open Marbas.Domain
 
 type HostEnvironment =
     { Platform: Platform

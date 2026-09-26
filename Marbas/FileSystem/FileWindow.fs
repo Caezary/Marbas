@@ -7,6 +7,13 @@ open Marbas.Domain
 
 type Source(path: FileSystemPath, stream: Stream, encoding: TextEncoding) =
 
+    let available (offset: int64) (count: int) =
+        int (min (int64 (max 0 count)) (max 0L (stream.Length - max 0L offset)))
+
+    let fill (offset: int64) (bytes: byte array) length =
+        stream.Seek(max 0L offset, SeekOrigin.Begin) |> ignore
+        stream.ReadExactly(bytes, 0, length)
+
     member _.Path = path
 
     member _.Encoding = encoding
@@ -14,16 +21,20 @@ type Source(path: FileSystemPath, stream: Stream, encoding: TextEncoding) =
     member _.Length = stream.Length
 
     member _.Read(offset: int64, count: int) =
-        let start = max 0L offset
-        let length = int (min (int64 (max 0 count)) (max 0L (stream.Length - start)))
-
-        if length = 0 then
-            Array.empty
-        else
+        match available offset count with
+        | 0 -> Array.empty
+        | length ->
             let bytes = Array.zeroCreate length
-            stream.Seek(start, SeekOrigin.Begin) |> ignore
-            stream.ReadExactly(bytes, 0, length)
+            fill offset bytes length
             bytes
+
+    member _.ReadInto(offset: int64, buffer: byte array) =
+        let length = available offset buffer.Length
+
+        if length > 0 then
+            fill offset buffer length
+
+        length
 
     interface IDisposable with
         member _.Dispose() = stream.Dispose()

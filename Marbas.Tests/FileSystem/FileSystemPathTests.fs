@@ -2,7 +2,6 @@ module Marbas.Tests.FileSystem.FileSystemPathTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
-open Marbas
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Tests
@@ -348,3 +347,12 @@ let ``on Unix a path that is not under the root has nothing after it`` root path
     let result = FileSystemPath.pathAfter Unix (fp root) (fp path)
 
     Assert.Equal(None, result)
+
+[<Fact>]
+let ``distinct entries keep the first spelling of each entry`` () =
+    let platform = FileSystemPath.platformOf (MockFileSystem())
+    let paths = [ fp (at "bin"); fp (at "tools"); fp (at "bin" + string System.IO.Path.DirectorySeparatorChar) ]
+
+    let distinct = FileSystemPath.distinctEntries platform paths
+
+    Assert.Equal<FileSystemPath list>([ fp (at "bin"); fp (at "tools") ], distinct)

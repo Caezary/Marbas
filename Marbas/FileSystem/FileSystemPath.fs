@@ -2,7 +2,6 @@ namespace Marbas.FileSystem
 
 open System
 open System.IO.Abstractions
-open Marbas
 open Marbas.Domain
 
 type FileSystemPath = private FileSystemPath of string
@@ -64,6 +63,12 @@ module FileSystemPath =
             withoutTrailingSeparator platform other,
             caseRule platform
         )
+
+    let distinctEntries platform (paths: FileSystemPath list) =
+        let keep kept path =
+            if kept |> List.exists (sameEntry platform path) then kept else path :: kept
+
+        paths |> List.fold keep [] |> List.rev
 
     let strictlyUnder platform root (FileSystemPath path) =
         let above = withoutTrailingSeparator platform root

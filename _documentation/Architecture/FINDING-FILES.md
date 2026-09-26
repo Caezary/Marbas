@@ -19,8 +19,8 @@ popup's directories box was left on, because a directory holds no text.
 
 **`NameMasks` reads the field the way a user of the classic managers expects.**
 The text is split at `;`, each piece trimmed and empty pieces dropped. `*` and
-`*.*` both mean every name — which `FileSystemName.MatchesSimpleExpression` does
-not do on its own, since `*.*` there wants a dot and passes `Makefile` over —
+`*.*` both mean every name — which `NamePattern` does not do on its own, since
+`*.*` there wants a dot and passes `Makefile` over —
 and a piece with neither `*` nor `?` is a fragment, so `report` is `*report*`.
 An empty field matches everything. The pieces become `NamePattern` values, so a
 mask is matched by the same function `+` and `-` have always used. A mask sees

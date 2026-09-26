@@ -175,3 +175,13 @@ let ``an empty path answers no directories`` () =
     let directories = FindGround.pathDirectories fs ';' ""
 
     Assert.Empty directories
+
+[<WindowsFact("drive paths are compared without case on Windows alone")>]
+let ``a directory named twice on the path in two cases is walked once`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "bin")
+    let raw = $"""{at "bin"};{at "BIN"}"""
+
+    let directories = FindGround.pathDirectories fs ';' raw
+
+    Assert.Equal<string list>([ at "bin" ], directories |> List.map FileSystemPath.value)

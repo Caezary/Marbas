@@ -14,11 +14,8 @@ let run
     (chosen: ProgramPath option)
     path
     =
-    let editorCommand =
-        chosen
-        |> Option.map ProgramPath.value
-        |> Option.orElse configured
-        |> fun editor -> EditorCommand.choose editor platform
+    let editor = chosen |> Option.map ProgramPath.value |> Option.orElse configured
+    let editorCommand = EditorCommand.choose editor platform
 
     try
         let start = ProcessStartInfo(editorCommand, UseShellExecute = false)

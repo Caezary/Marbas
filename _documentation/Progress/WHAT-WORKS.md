@@ -173,7 +173,8 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   all — so the result never depends on what the run happens to contain. `..` is
   skipped as always, and a run that reaches past the last entry stops at it.
 - `+` and `-` ask for a wildcard pattern and mark or unmark everything it
-  matches, so `*.fs` is one step. Matching ignores case and never touches `..`.
+  matches, so `*.fs` is one step. Matching ignores case and never touches `..`;
+  a `\` before `*` or `?` matches that character itself.
   There is one selection per panel, so a pattern and the keys above add to and
   take from the same set: `*.txt` and then `Shift+↓` over one of the matches
   leaves the rest marked.
@@ -251,7 +252,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   wraps and unwraps, `F4` switches to the hex dump and back at the same place in
   the file, and `F3`, `F10` or `Esc` closes. A directory or `..` under the
   cursor opens nothing. Nothing is read but the rows on screen, so a file of any
-  size opens at once and there is no length limit; the encoding is settled from
+  size opens at once and there is no length limit, and `End` on a file of a
+  hundred million lines keeps one line start in sixty-four rather than all of
+  them. A line feed that ends the file shows as nothing, not as a `.` on the
+  last line. The encoding is settled from
   the byte order mark, the zero-byte pattern of UTF-16, or whether the bytes are
   valid UTF-8, falling back to Latin-1. A file that cannot be read (it vanished,
   or the OS refused) is reported in a dialog.

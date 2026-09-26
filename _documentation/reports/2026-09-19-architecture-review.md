@@ -188,7 +188,7 @@ On Linux, `wouldPackItself` refuses to pack `/home/u/Docs` into
 `/media/Stick` also refuses to enter `/media/stick`. Conversely
 `FileSearch.visited` (`FileSearch.fs:61`) is a case-*sensitive* `HashSet`, so
 on Windows a link whose target is spelled in a different case is entered
-twice. TD-020 records the duplication; the inconsistency is the trap.
+twice. The duplication is one cost; the inconsistency is the trap.
 
 Recommendation. One `FileSystemPath.isUnder platform` (or a `PathComparison`
 value carried in `Dependencies`) used by all six.

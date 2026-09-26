@@ -4,7 +4,6 @@ open System.ComponentModel
 open System.Diagnostics
 open System.IO
 open System.IO.Abstractions
-open Marbas
 open Marbas.Domain
 open Marbas.FileSystem
 
@@ -62,7 +61,7 @@ let private ofItsOwn (fs: IFileSystem) (request: LaunchRequest) =
     | Some program -> detached (ProgramPath.value program) [ target ]
     | None when fs.Directory.Exists target -> detached DesktopOpener [ target ]
     | None ->
-        match Executability.ofMode (fs.FileInfo.New target).UnixFileMode with
+        match EntryAttributes.executability (fs.FileInfo.New target).UnixFileMode with
         | Executable -> detached target []
         | NotExecutable -> detached DesktopOpener [ target ]
 

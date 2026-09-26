@@ -1,7 +1,6 @@
 module Marbas.FileSystem.ArchiveListing
 
 open System
-open System.IO
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
@@ -12,8 +11,8 @@ let fileEntry (name: EntryName) (info: ArchiveEntryInfo) =
       Size = Some info.Size
       Measured = None
       Modified = info.Modified
-      Visibility = EntryVisibility.classify name FileAttributes.None
-      Executability = Executability.classify name UnixFileMode.None
+      Visibility = EntryVisibility.ofName name
+      Executability = Executability.ofName name
       LinkTarget = None }
 
 let directoryEntry (name: EntryName) (modified: DateTimeOffset) =
@@ -22,7 +21,7 @@ let directoryEntry (name: EntryName) (modified: DateTimeOffset) =
       Size = None
       Measured = None
       Modified = modified
-      Visibility = EntryVisibility.classify name FileAttributes.None
+      Visibility = EntryVisibility.ofName name
       Executability = NotExecutable
       LinkTarget = None }
 

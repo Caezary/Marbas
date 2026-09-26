@@ -219,7 +219,7 @@ let ``delete requested asks what the cursor entry reaches into`` () =
     Assert.Equal<Effect list>(
         [ InspectDelete(
               { Probed = [ fp (at "start/notes.txt") ]
-                ReachesContents = false },
+                AtLeast = NamedEntriesOnly },
               ToTrash
           ) ],
         result.Effects
@@ -280,7 +280,7 @@ let ``a wipe asks under its own mode`` () =
     Assert.Equal<Effect list>(
         [ InspectDelete(
               { Probed = [ fp (at "start/notes.txt") ]
-                ReachesContents = false },
+                AtLeast = NamedEntriesOnly },
               ByWiping
           ) ],
         result.Effects
@@ -623,7 +623,7 @@ let ``a named new file is created and handed to its editor`` () =
     let programs =
         ProgramSettings.associate ForEditing (Expect.some (FileExtension.tryCreate "md")) chosen ProgramSettings.none
     let state = loaded fs |> withPrograms programs
-    
+
     let result = update fs (FileNameEntered(en "draft.md")) state
 
     Assert.True(fs.File.Exists(at "start/draft.md"))

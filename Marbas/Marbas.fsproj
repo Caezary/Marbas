@@ -6,14 +6,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Compile Include="Platform.fs" />
-    </ItemGroup>
-
-    <ItemGroup>
         <Compile Include="Collections\Zipper.fs" />
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="Domain\Platform.fs" />
         <Compile Include="Domain\PanelSide.fs" />
         <Compile Include="Domain\PanelCursor.fs" />
         <Compile Include="Domain\TabStep.fs" />
@@ -37,6 +34,7 @@
 
     <ItemGroup>
         <Compile Include="FileSystem\FileSystemPath.fs" />
+        <Compile Include="FileSystem\EntryAttributes.fs" />
         <Compile Include="FileSystem\ContentError.fs" />
         <Compile Include="FileSystem\ArchiveError.fs" />
         <Compile Include="FileSystem\TextEncoding.fs" />

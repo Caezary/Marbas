@@ -144,11 +144,15 @@ the managers Marbas follows do anyway.
 
 **An entry says whether it is a program; `Ui` says what colour that is.**
 `Executability.classify` mirrors `EntryVisibility.classify`: it takes the name
-and the `UnixFileMode` and answers `Executable` for a Windows program extension
-*or* for any execute bit, so both platforms' conventions are asked about on
-both. `IFileSystemInfo.UnixFileMode` answers `None` on Windows rather than
-throwing, and `MockFileSystem` lets a test set it, which is what makes the Unix
-half testable from a Windows machine. Which colour an entry then gets is
+and what the mode bits said, and answers `Executable` for a Windows program
+extension *or* for an executable mode, so both platforms' conventions are asked
+about on both. The mode bits themselves are read in `FileSystem`, by
+`EntryAttributes.executability` over a `UnixFileMode`, because since P15.23 no
+`Domain` type or function takes a `System.IO` enum; an archive entry, which has
+no mode, is classified by `Executability.ofName` alone.
+`IFileSystemInfo.UnixFileMode` answers `None` on Windows rather than throwing,
+and `MockFileSystem` lets a test set it, which is what makes the Unix half
+testable from a Windows machine. Which colour an entry then gets is
 `EntryColor.classify` — directory, archive (by extension), executable, plain —
 and it is `Ui`'s alone, because an archive is a display grouping and not a fact
 about the file.
@@ -164,8 +168,8 @@ the rare double click it would serve. `ps1` is out for the opposite reason —
 Windows opens it in an editor rather than running it.
 
 **Asking about a mode bit is a separate question from asking about a name.**
-`Executability.ofMode` answers from the `UnixFileMode` alone and `classify` is
-the name-or-mode pair built on it. The split exists because `LaunchProcess`
+`EntryAttributes.executability` answers from the `UnixFileMode` alone and
+`Executability.classify` is the name-or-mode pair that takes its answer. The split exists because `LaunchProcess`
 needs the Unix half by itself: a `setup.exe` sitting on a Linux disk without an
 execute bit is worth colouring as a program and is *not* worth handing to
 `exec`, and one function answering both questions could only be wrong about one
@@ -238,10 +242,12 @@ to and no test outside `PanelTitleTests` has to know its wording. The tests that
 care about the directory a panel shows read it back through `Gui.shownPath`.
 
 **An entry says whether it is hidden; the panel says whether that matters.**
-`EntryVisibility.classify` is a pure function of a name and its
-`FileAttributes` — `Hidden` for a leading dot, for `FileAttributes.Hidden` and
-for `FileAttributes.System`, `Plain` otherwise — so both conventions are asked
-about on both platforms rather than one rule per OS. `read` puts the answer on
+`EntryVisibility.classify` is a pure function of a name and of what the
+attributes marked — `Hidden` for a leading dot or for an entry
+`EntryAttributes.visibility` found carrying `FileAttributes.Hidden` or
+`FileAttributes.System`, `Plain` otherwise — so both conventions are asked
+about on both platforms rather than one rule per OS. The attributes are read in
+`FileSystem`; the `Domain` rule sees only the name and an `EntryVisibility`. `read` puts the answer on
 every `Entry`, which keeps the listing a statement of what is there;
 `HiddenEntries` (`Shown`/`Concealed`) is the panel's setting, and
 `DirectoryListing.shown` is the one place the two meet, filtering before `order`

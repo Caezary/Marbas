@@ -247,6 +247,14 @@ file system and on one with a journal, further passes buy nothing the first did
 not — the controller or the file system decides where the bytes land, not the
 writer — and each costs the whole length of the file again.
 
+**The pass is cryptographic random, and that sets its speed.** Each 64 KiB
+block is filled by `RandomNumberGenerator.Fill`, which runs at a few hundred
+megabytes a second, so a wipe is slower than a copy of the same file by that
+bound (perf P15 of the 2026-09-19 review). A non-cryptographic generator would
+make the wipe as fast as the disk, and would write a pattern that can be
+predicted from a few blocks of it; the one pass there is should not be the
+predictable one, so the generator stays as it is.
+
 **The name is as much of a leak as the contents.** A deleted file's name can
 outlive it in the directory, so before the delete the file is renamed to a
 random name of its own length in the same directory, and nothing about the old
@@ -338,13 +346,25 @@ whenever the viewer reads behind where the decompressor stands;
 [Archives](ARCHIVES.md) explains what that costs.
 
 **Where a line begins is scanned forward, never indexed up front.**
-`LineIndex.Index` holds the byte offset of every line start it has seen and
-scans on in `ChunkLength` steps only when asked for a line it has not reached.
-Opening a file of a hundred thousand lines therefore indexes one chunk, not the
-file. `ScanAll` is the one call that reads to the end, and only `End` makes it.
-The scan works in the encoding's own code units, so a line feed in UTF-16 is
-`0A 00` and not a stray byte, and the byte order mark is skipped as a preamble
-rather than shown as content.
+`LineIndex.Index` scans on in `ChunkLength` steps only when asked for a line it
+has not reached. Opening a file of a hundred thousand lines therefore indexes
+one chunk, not the file. `ScanAll` is the one call that reads to the end, and
+only `End` makes it. The scan works in the encoding's own code units, so a line
+feed in UTF-16 is `0A 00` and not a stray byte, and the byte order mark is
+skipped as a preamble rather than shown as content. A feed that ends the file
+ends the last line too, so that line is shown without it.
+
+**The index keeps one line start in every `LinesPerCheckpoint`.** Keeping an
+`int64` for every line cost 800 MB on a log of a hundred million lines once
+`End` was pressed. Since P15.23 the scan counts every line but remembers only
+the start of every sixty-fourth — a checkpoint — and the starts between two
+checkpoints are found again by reading forward from the earlier one when a line
+there is asked for. The viewer asks for the rows on screen, so the block they
+fall in is rescanned once and kept; sixteen such blocks are cached, and a block
+still being scanned is not cached until it is whole. The same memory now holds
+sixty-four times as many lines, and a line anywhere costs at most one read of
+sixty-four lines. Both the scan and the rescans read into one buffer the index
+owns (`Source.ReadInto`) instead of allocating a fresh 64 KiB array per chunk.
 
 **The encoding decides, the content does not.** The old rule — a zero byte
 anywhere means binary — turned every UTF-16 file into a hex dump, which is what
@@ -425,7 +445,7 @@ instead of letting it write over the panels, and `runas` is the same call with
 one field set. On Unix there is no shell verb: an executable entry is started
 directly with both its streams redirected and drained into `Stream.Null` — the
 terminal belongs to the panels — and anything else is handed to `xdg-open`.
-Which of the two an entry is comes from `Executability.ofMode` — the execute
+Which of the two an entry is comes from `EntryAttributes.executability` — the execute
 bit and nothing else, because a name that looks like a Windows program is not
 one a Linux kernel will run.
 

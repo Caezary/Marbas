@@ -3,7 +3,6 @@ module Marbas.Tests.FileSystem.LinksTests
 open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
-open Marbas
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations

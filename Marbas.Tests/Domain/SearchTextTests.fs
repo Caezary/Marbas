@@ -33,13 +33,20 @@ let ``backspace over the last character ends the search`` () =
     Assert.Equal<SearchText option>(None, search)
 
 [<Theory>]
-[<InlineData("set", "setup.exe", true)>]
-[<InlineData("up", "setup.exe", true)>]
-[<InlineData("EXE", "setup.exe", true)>]
-[<InlineData("set", "SETUP.EXE", true)>]
-[<InlineData("sup", "setup.exe", false)>]
-[<InlineData(".", "..", true)>]
-let ``a search matches any name containing it, whatever the case`` raw name expected =
+[<InlineData("set", "setup.exe")>]
+[<InlineData("up", "setup.exe")>]
+[<InlineData("EXE", "setup.exe")>]
+[<InlineData("set", "SETUP.EXE")>]
+[<InlineData(".", "..")>]
+let ``a search matches any name containing it, whatever the case`` raw name =
     let matched = SearchText.matches (text raw) (EntryName.create name)
 
-    Assert.Equal(expected, matched)
+    Assert.True matched
+
+[<Theory>]
+[<InlineData("sup", "setup.exe")>]
+[<InlineData("exe.", "setup.exe")>]
+let ``a search passes over a name that does not contain it`` raw name =
+    let matched = SearchText.matches (text raw) (EntryName.create name)
+
+    Assert.False matched

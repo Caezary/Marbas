@@ -1,4 +1,4 @@
-namespace Marbas
+namespace Marbas.Domain
 
 type Platform =
     | Windows

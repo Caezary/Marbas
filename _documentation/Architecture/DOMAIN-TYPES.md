@@ -18,6 +18,21 @@ knows a view exists, which is what keeps the dependency arrows pointing one
 way, and it is why `FileSystemPath` stays where it is — its type is a bare
 string, but `combine`/`name`/`directory`/`parent` are not.
 
+**`Domain` speaks no `System.IO`.** Since P15.23 no type or function there takes
+a `FileAttributes`, a `UnixFileMode` or `FileSystemName`. What the attributes
+and the mode bits say is read in `FileSystem`, by `EntryAttributes.visibility`
+and `EntryAttributes.executability`, and handed down as the `Domain`'s own
+`EntryVisibility` and `Executability`; `EntryVisibility.classify` and
+`Executability.classify` then combine that answer with what the name says, and
+`ofName` answers from the name alone — which is what an archive entry, having
+no attributes, is classified by, instead of passing `FileAttributes.None` and
+`UnixFileMode.None` as it used to. `NamePattern` matches `*`, `?` and a `\` that
+escapes the next character itself, ignoring case, instead of calling
+`FileSystemName.MatchesSimpleExpression`; its theories pin the escape and
+several stars in one pattern. `Platform`, the two-case union describing the
+host, moved from the root `Marbas` namespace into `Domain` with it, so every
+type the application defines now lives in a layer.
+
 **Paths are a type, not a string**. `FileSystemPath` is a
 single-case union with a private constructor and a companion module; the
 fs-dependent helpers (`combine`/`name`/`directory`/`parent`) take `IFileSystem`
@@ -41,6 +56,19 @@ rule replaced six copies with two different case conventions between them —
 of `FileSearch.run`, `FindGround.sameRoot` and `Links.volumeOf` — and
 `FileSearch`'s record of the directories it has entered now folds case wherever
 the file system does.
+
+**The drive and the separator are asked about in one place each.** P15.23 took
+what P15.2 left of the drive and separator handling. `Drives.volumeOf` answers
+the deepest mount holding a path, over every mount the system reports, and
+`Drives.holding` the same over
+the usable drives a panel can be sent to — both through one private
+`deepestHolding`, so `Links` no longer enumerates drives of its own.
+`FindGround` lost its private separator list and trailing-separator trim:
+`FileSystemPath.distinctEntries` drops a `PATH` entry that is the same entry as
+an earlier one by the platform's rule, which also folds case on Windows, where
+`C:\Tools` and `c:\tools` used to be walked twice. `ProgramCommand` takes the
+program's file name through `Handler.fileName` instead of splitting at a second
+copy of the same two separators.
 
 **Every value a `Message` or `Effect` carries says what it is**.
 `EntryName` for an entry's name, `NamePattern` for a wildcard, `FileSystemPath`

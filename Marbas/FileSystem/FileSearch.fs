@@ -161,7 +161,7 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
         | None -> hit (OnDisk directory) entry
         | Some search -> byAnswer (OnDisk directory) entry (ContentMatch.search fs control search path)
 
-    let entered (identity: FileSystemPath) = visited.Add(FileSystemPath.value identity)
+    let firstVisit (identity: FileSystemPath) = visited.Add(FileSystemPath.value identity)
 
     let identityOf (entry: Entry) path = entry.LinkTarget |> Option.defaultValue path
 
@@ -170,13 +170,20 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
         | Some _, StopAtLinks -> false
         | _ -> true
 
+    let stepsInto (child: Child) =
+        depth = EveryLevel && follows child.Entry && not (crosses child.Path)
+
+    let looksIntoArchives = depth = EveryLevel && query.Archives = SearchArchives
+
     let contentOf (openContent: unit -> Stream) search =
         use content = openContent ()
         ContentMatch.searchStream control search content
 
-    let archiveFileHit archive (level: EntryName list) (info: ArchiveEntryInfo) openContent =
-        if not (ArchiveEntryInfo.isDirectory info)
-           && (depth = EveryLevel || info.Segments.Length = level.Length + 1) then
+    let atSearchedDepth (level: EntryName list) (info: ArchiveEntryInfo) =
+        depth = EveryLevel || info.Segments.Length = level.Length + 1
+
+    let archiveFileHit archive level (info: ArchiveEntryInfo) openContent =
+        if not (ArchiveEntryInfo.isDirectory info) && atSearchedDepth level info then
             let entry = ArchiveListing.fileEntry (List.last info.Segments) info
             let location = InArchive(archive, parentOf info.Segments)
 
@@ -256,16 +263,13 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
                 if wanted entry then
                     considerFile directory child.Path entry
 
-                if depth = EveryLevel && query.Archives = SearchArchives then
+                if looksIntoArchives then
                     openArchive child.Path
             | Directory ->
                 if wanted entry && wantsDirectories then
                     hit (OnDisk directory) entry
 
-                if depth = EveryLevel
-                   && follows entry
-                   && not (crosses child.Path)
-                   && entered (identityOf entry child.Path) then
+                if stepsInto child && firstVisit (identityOf entry child.Path) then
                     walk child.Path
 
     let rec start places =
@@ -274,7 +278,7 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
         | place :: rest ->
             match place with
             | OnDisk directory ->
-                if entered directory then
+                if firstVisit directory then
                     walk directory
             | InArchive(archive, level) ->
                 match ArchiveReader.kindOf fs archive with

@@ -1,7 +1,5 @@
 namespace Marbas.Domain
 
-open System.IO
-
 type Executability =
     | Executable
     | NotExecutable
@@ -23,16 +21,13 @@ module Executability =
               "wsf"
               "wsh" ]
 
-    let private namedExecutable (name: EntryName) =
-        extensions.Contains((EntryName.extension name).ToLowerInvariant())
+    let ofName (name: EntryName) =
+        if extensions.Contains((EntryName.extension name).ToLowerInvariant()) then
+            Executable
+        else
+            NotExecutable
 
-    let private markedExecutable (mode: UnixFileMode) =
-        mode.HasFlag UnixFileMode.UserExecute
-        || mode.HasFlag UnixFileMode.GroupExecute
-        || mode.HasFlag UnixFileMode.OtherExecute
-
-    let ofMode (mode: UnixFileMode) =
-        if markedExecutable mode then Executable else NotExecutable
-
-    let classify (name: EntryName) (mode: UnixFileMode) =
-        if namedExecutable name then Executable else ofMode mode
+    let classify name byMode =
+        match ofName name with
+        | Executable -> Executable
+        | NotExecutable -> byMode

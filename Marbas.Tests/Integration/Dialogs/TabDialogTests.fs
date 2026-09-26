@@ -1,5 +1,6 @@
 module Marbas.Tests.Integration.Dialogs.TabDialogTests
 
+open System
 open System.Drawing
 open Xunit
 open Terminal.Gui.Views
@@ -55,3 +56,14 @@ let ``the list stays inside the frame`` () =
 
     Assert.True(list.Right <= dialog.Viewport.Width, $"the tab list at %A{list} runs past the frame")
     Assert.True(list.Bottom <= dialog.Viewport.Height, $"the tab list at %A{list} runs past the frame")
+
+[<Fact>]
+let ``an accepted dialog with no tab under the cursor picks nothing`` () =
+    use dialog = laidOutOn 0
+    (TabDialog.tabs dialog).SelectedItem <- Nullable()
+
+    dialog.Result <- 1
+
+    let chosen = TabDialog.choice dialog
+
+    Assert.Equal(None, chosen)

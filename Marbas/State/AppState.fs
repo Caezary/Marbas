@@ -378,28 +378,27 @@ let applyMeasurements side (measured: Measurement list) state =
 
 type DeleteQuestion =
     { Probed: FileSystemPath list
-      ReachesContents: bool }
+      AtLeast: DeleteScope }
+
+let private reachingContents targetsDirectory =
+    if targetsDirectory then WithDirectoryContents else NamedEntriesOnly
 
 let deleteQuestion (fs: IFileSystem) panel =
     match panel.Path with
     | OnDisk _ ->
         { Probed = operationPaths fs panel
-          ReachesContents = false }
+          AtLeast = NamedEntriesOnly }
     | InArchive _ ->
         { Probed = []
-          ReachesContents = PanelState.operationTargets panel |> List.exists (fun entry -> entry.Kind = Directory) }
+          AtLeast = PanelState.targetsDirectory panel |> reachingContents }
     | SearchResults _ ->
         { Probed = operationPaths fs panel
-          ReachesContents = PanelState.targetsDirectoryInArchive panel }
+          AtLeast = PanelState.targetsDirectoryInArchive panel |> reachingContents }
 
 let deleteScope (fs: IFileSystem) (question: DeleteQuestion) =
-    if
-        question.ReachesContents
-        || question.Probed |> List.exists (Operations.isNonEmptyDirectory fs)
-    then
-        WithDirectoryContents
-    else
-        NamedEntriesOnly
+    match question.AtLeast with
+    | WithDirectoryContents -> WithDirectoryContents
+    | NamedEntriesOnly -> question.Probed |> List.exists (Operations.isNonEmptyDirectory fs) |> reachingContents
 
 let private sourceOf (fs: IFileSystem) panel (name: EntryName) =
     childLocation fs panel name

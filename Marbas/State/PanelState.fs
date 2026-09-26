@@ -183,6 +183,9 @@ module PanelState =
         |> Option.filter (fun entry -> entry.Kind = File)
         |> Option.bind (entryInArchive p)
 
+    let targetsDirectory (p: PanelState) =
+        operationTargets p |> List.exists (fun entry -> entry.Kind = Directory)
+
     let targetsDirectoryInArchive (p: PanelState) =
         let directoryInArchive (entry: Entry) =
             entry.Kind = Directory && entryInArchive p entry |> Option.isSome

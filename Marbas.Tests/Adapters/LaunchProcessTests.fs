@@ -2,7 +2,7 @@ module Marbas.Tests.Adapters.LaunchProcessTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
-open Marbas
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Adapters
 open Marbas.Tests

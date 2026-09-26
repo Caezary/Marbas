@@ -1,11 +1,9 @@
 module Marbas.Tests.Domain.ExecutabilityTests
 
-open System.IO
 open Xunit
 open Marbas.Domain
 
-let private classify name mode =
-    Executability.classify (EntryName.create name) mode
+let private en = EntryName.create
 
 [<Theory>]
 [<InlineData("setup.exe")>]
@@ -21,8 +19,8 @@ let private classify name mode =
 [<InlineData("install.vbe")>]
 [<InlineData("deploy.wsf")>]
 [<InlineData("deploy.wsh")>]
-let ``a windows program extension makes an entry executable`` name =
-    let executability = classify name UnixFileMode.None
+let ``a windows program extension makes a name executable`` name =
+    let executability = Executability.ofName (en name)
 
     Assert.Equal(Executable, executability)
 
@@ -32,34 +30,25 @@ let ``a windows program extension makes an entry executable`` name =
 [<InlineData("noextension")>]
 [<InlineData("bundle.js")>]
 [<InlineData("script.ps1")>]
-let ``anything else without an execute bit is not executable`` name =
-    let executability = classify name UnixFileMode.None
+let ``any other name is not executable by itself`` name =
+    let executability = Executability.ofName (en name)
 
     Assert.Equal(NotExecutable, executability)
 
-[<Theory>]
-[<InlineData(UnixFileMode.UserExecute)>]
-[<InlineData(UnixFileMode.GroupExecute)>]
-[<InlineData(UnixFileMode.OtherExecute)>]
-let ``an execute bit alone is what the mode is read for`` mode =
-    Assert.Equal(Executable, Executability.ofMode mode)
-
 [<Fact>]
-let ``the mode knows nothing of a windows program extension`` () =
-    Assert.Equal(NotExecutable, Executability.ofMode UnixFileMode.None)
-
-[<Theory>]
-[<InlineData(UnixFileMode.UserExecute)>]
-[<InlineData(UnixFileMode.GroupExecute)>]
-[<InlineData(UnixFileMode.OtherExecute)>]
-let ``a unix execute bit makes an entry executable whatever its name`` mode =
-    let executability = classify "build" mode
+let ``a program name is executable whatever its mode says`` () =
+    let executability = Executability.classify (en "setup.exe") NotExecutable
 
     Assert.Equal(Executable, executability)
 
 [<Fact>]
-let ``read and write bits alone leave an entry unexecutable`` () =
-    let executability =
-        classify "notes" (UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+let ``an executable mode makes an entry executable whatever its name`` () =
+    let executability = Executability.classify (en "build") Executable
+
+    Assert.Equal(Executable, executability)
+
+[<Fact>]
+let ``neither the name nor the mode leaves an entry unexecutable`` () =
+    let executability = Executability.classify (en "notes") NotExecutable
 
     Assert.Equal(NotExecutable, executability)

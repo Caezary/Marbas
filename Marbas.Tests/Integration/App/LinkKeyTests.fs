@@ -2,7 +2,6 @@ module Marbas.Tests.Integration.App.LinkKeyTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
-open Marbas
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Keys

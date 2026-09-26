@@ -55,7 +55,7 @@ let create (rows: DriveRow list) =
         new ListView(X = 1, Y = 1, Width = Dim.Fill 1, Height = Dim.Absolute listHeight, KeystrokeNavigator = null)
 
     drives.SetSource(ObservableCollection lines)
-    drives.SelectedItem <- 0
+    drives.SelectedItem <- if List.isEmpty rows then Nullable() else Nullable 0
 
     dialog.KeyDown.Add(handOver dialog)
     dialog.Add drives |> ignore
@@ -66,10 +66,14 @@ let create (rows: DriveRow list) =
 let drives (dialog: Dialog) =
     SubView.byType<ListView> dialog
 
-let choice (dialog: DriveView) =
-    let row () = dialog.Rows[(drives dialog).SelectedItem.Value]
+let private rowUnderCursor (dialog: DriveView) =
+    (drives dialog).SelectedItem
+    |> Option.ofNullable
+    |> Option.bind (fun index -> List.tryItem index dialog.Rows)
 
-    match dialog.Canceled, dialog.HandingOver with
-    | true, _ -> None
-    | false, true -> Some(HandOver(row ()))
-    | false, false -> Some(StandOn(row ()))
+let choice (dialog: DriveView) =
+    match dialog.Canceled, dialog.HandingOver, rowUnderCursor dialog with
+    | true, _, _
+    | _, _, None -> None
+    | false, true, Some row -> Some(HandOver row)
+    | false, false, Some row -> Some(StandOn row)

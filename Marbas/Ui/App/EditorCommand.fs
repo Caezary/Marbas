@@ -1,6 +1,6 @@
 module Marbas.Ui.App.EditorCommand
 
-open Marbas
+open Marbas.Domain
 
 [<Literal>]
 let WindowsDefault = "notepad"

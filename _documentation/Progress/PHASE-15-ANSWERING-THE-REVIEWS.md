@@ -157,8 +157,8 @@ repeats a call often enough to earn a name back.
 **P15.6 turned a gate into a rule, and the rule now reads in one place.**
 `guarding state source receives proceed` took a `ResultsRefusal option`, a bare
 `bool` and a continuation, and eight arms — not the seven the task counted —
-passed it their whole body, each paying an indentation level for it (Q7,
-TD-021). Nothing in it depended on anything `transition` computes: the refusal
+passed it their whole body, each paying an indentation level for it (Q7).
+Nothing in it depended on anything `transition` computes: the refusal
 follows from the message and from whether each of the two panels shows results.
 
 So it is decided before `transition` runs. `refusedAsSource` answers what a
@@ -542,7 +542,7 @@ root of a walk where nothing has been enumerated yet, and it replaced
 `FileSearch.entryOf` and the `kind`-then-`isLink` pairs at the head of `delete`,
 `wipe`, `copyTo` and `Archive.add`. `read` builds on `entryOf` too, so what a
 panel shows and what a walk decides on come from one function rather than two
-that could drift (Q5, TD-019). Each walk then matches on
+that could drift (Q5). Each walk then matches on
 `child.Entry.Kind, child.Entry.LinkTarget`, which is the same two questions it
 used to ask the disk, asked of a value.
 
@@ -1075,3 +1075,167 @@ pin them — four for the two places, eight for the panel queries, on a panel
 standing inside an archive and one on disk. The compiler did not flag the
 unused parameter because FS1182 is off; turning it on is P15.26. 2361 passing,
 11 skipped.
+
+**P15.23 took what was left, file by file, and closed the ledger.** Stage 5
+had four named tasks and this one for everything the reviews listed as "worth
+fixing when the file is next touched". It touched them.
+
+**`Domain` speaks no `System.IO` (A10).** `EntryVisibility.classify` took a
+`FileAttributes`, `Executability.classify` a `UnixFileMode`, and
+`NamePattern.matches` called `FileSystemName.MatchesSimpleExpression`, so the
+innermost layer knew the BCL's file model and `ArchiveListing` had to pass
+`FileAttributes.None` and `UnixFileMode.None` for entries that have neither.
+What the attributes and the mode bits say is now read in `FileSystem`, by the
+new `EntryAttributes.visibility` and `executability`, and handed down as the
+`Domain`'s own `EntryVisibility` and `Executability`; `classify` combines that
+answer with what the name says, and `ofName` answers from the name alone, which
+is what an archive entry and `ProgramCommand` use. `LaunchProcess` asks
+`EntryAttributes.executability` where it asked `Executability.ofMode`.
+`NamePattern` matches `*`, `?` and a `\` that escapes the next character on its
+own — a token list and a greedy walk that backtracks to the last star — and its
+theories gained rows for several stars, `??`, a double extension and both
+escapes, the way `FileSystemName` answers them.
+
+**`Platform` lives in `Domain`.** `Marbas/Platform.fs` is
+`Marbas/Domain/Platform.fs`, in `namespace Marbas.Domain`, first in that folder.
+Nine files opened the root `Marbas` namespace for it and nothing else; the ones
+that already opened `Marbas.Domain` lost the line, the rest had it replaced.
+Three of them were missed by a first search for `^open Marbas$` because their
+lines end in CRLF, so the check that no bare `open Marbas` is left is a search
+that allows the `\r`.
+
+**No theory takes its answer as a column (§8).** `FindQueryTests`,
+`NamePatternTests` and `SearchTextTests` each had one `[<Theory>]` whose last
+column was `true` or `false`; each is now an affirming and a denying theory,
+named for what it claims — "a mask matches the names it names" beside "a mask
+passes over the names it does not name". The facts in those files and in
+`HiddenEntriesTests` that folded the act into `Assert.Equal`, or asserted two
+things at once, were split into one act on its own line each.
+
+**Dense one-liners got a name per clause (Q9).** `FileSearch.consider` read
+`depth = EveryLevel && follows entry && not (crosses …) && entered (…)`, the
+last clause adding to the visited set; it is `stepsInto child && firstVisit …`,
+with the side effect last and named for what it records. `archiveFileHit`
+names `atSearchedDepth`, the archive switch is `looksIntoArchives`,
+`PanelWiring.printable` is `unmodified && visibleCharacter`, `Drives` names
+`holdsStorage`, `ContentMatch` names `runsIntoUnreadText`, `SearchListing`
+binds the segments it looks up before piping into `Set.contains`, and
+`Update`'s `TargetEntered` decides `renamesInPlace` once instead of in two
+guards.
+
+**The last two booleans of Q8.** `TextEncoding.HasBom` is
+`Bom: ByteOrderMark` — `WithBom` or `WithoutBom` — and `preambleLength` a match
+over the pair. `DeleteQuestion.ReachesContents` is `AtLeast: DeleteScope`: the
+scope the targets reach without the file system being asked, which probing may
+widen and never narrow, so `deleteScope` asks only when the answer is
+`NamedEntriesOnly`. `PanelState.targetsDirectory` gives the archive case its
+name, and three tests pin it.
+
+**Partial access (Q12).** `DriveDialog.choice` and `TabDialog.choice` read
+`SelectedItem.Value`; both answer `None` now when nothing is under the cursor,
+and `DriveDialog.create []` no longer throws setting a cursor on an empty list —
+three tests, all red first. `Links.sharedRefusal` matches its first refusal
+instead of taking `List.head`, `ProgramCommand` falls back to `firstWord` rather
+than `words[0]`, and `PathText.shortenings` binds the root in the pattern that
+knows the list is long enough. Left standing, each beside what guarantees it:
+`ArchiveFormat.initial = List.head all`, one line below the `all` built from a
+fixed list whose first kind is creatable; `String.Split` indexed or taken last
+in `Settings` and `Handler`, which always answers at least one piece;
+`FindDialog.lastResults` and `PackDialog.chosen`, over buttons and options the
+same file creates; `SubView.byId`, whose failing loudly on a missing view is
+the contract §9 states. `Zipper.refocus` still clamps rather than answering
+`None`, on purpose: its callers are a tab number read from a config file, which
+is tolerated rather than refused, and the tab dialog's own row, and the test
+"moving to a position clamps to the ends" says so.
+
+**Style (Q13).** Two lines carried trailing whitespace and are clean;
+`EditorProcess` had the one `|> fun … ->` left in the code and binds `editor`
+instead. The other Q13 items had gone with earlier tasks — the double blank
+line, `getRoot` with P15.5, the parenthesised lambdas in `Fakes` — and the
+`module` / `namespace` rule is §6 of the conventions.
+
+**The line index and the viewer (perf P11).** `LineIndex` kept an `int64` per
+line; it now counts every line and keeps the start of every
+`LinesPerCheckpoint`-th (64), and finds the starts in between by reading forward
+from the checkpoint before them — once per block, which is then cached, sixteen
+blocks at a time, and only when the block is whole. `Source.ReadInto` fills a
+buffer the index owns, so neither the scan nor a rescan allocates a chunk. New
+tests cover starts, texts and offsets on both sides of a checkpoint, in UTF-8
+and UTF-16, and the count of checkpoints. `FileViewer` computes its rows once
+per place — mode, wrap, top, left and size — so the header's percentage and the
+draw that follows share them, and wrapping gathers each line's segments into a
+list of lists rather than appending with `@` per line. The memo has no test of
+its own: the second computation it saves never reached the file, because
+`LineIndex` already caches the decoded lines.
+
+**A defect the new tests found.** `Text` of the last line ran to the end of the
+file, so a file ending in a line feed showed that feed as the `.` placeholder on
+its last line. The index now knows where the content ends, and two tests pin it
+in both encodings. The render probe showed it before and after on the same file:
+
+```
+before                 after
+first                  first
+second word word …     second word word …
+d word … ENDS          d word … ENDS
+third.                 third
+```
+
+**The drive and the separator, once each.** `Drives.volumeOf` answers
+the deepest mount holding a path over every mount the system reports, and
+`Drives.holding` the same over the usable drives, through one private
+`deepestHolding`; `Links` no longer enumerates drives. `FindGround`'s own
+separator list and trim went for `FileSystemPath.distinctEntries`, which drops
+a `PATH` entry that is the same entry as an earlier one by the platform's rule
+— and so folds case on Windows, which it did not (a Windows-only test, red
+first). `ProgramCommand` takes the file name through `Handler.fileName` instead
+of its own copy of the two separators. With `guarding` gone in P15.6 and the
+path helpers in P15.14, the three duplications the task named are gone.
+
+**Every finding, and where it went.**
+
+| Finding | Answered by |
+|---------|-------------|
+| A1 I/O inside transitions | P15.15 — the documents say what a transition may do, and `deleteScope` became an effect. The archive index and the hit verification stay in transitions: P15.13 caches the index by path, length and write time, and P15.12 verifies only when asked, so neither scales with a keystroke. |
+| A2 ten special-case effects | P15.7 |
+| A3 re-entrant dispatch | P15.8 |
+| A4 the port record | P15.18 |
+| A5 `WriteTo` outliving its scope | P15.13 |
+| A6 `ItemResult` by bare name | P15.1 |
+| A7 six "lies under" rules | P15.2 |
+| A8 long work on the UI thread | P15.3, P15.15 |
+| A9 silent failures | P15.4, P15.13 |
+| A10 `Domain` on `System.IO` | P15.23 |
+| A11 three roles in `AppState` | P15.22 |
+| A12 documentation drift | P15.15 |
+| A13 undisposed runners | P15.4 |
+| A14 render coupled to every message | P15.9 |
+| Q1 primed aliases | P15.5 |
+| Q2–Q4 cascades, parentheses, CEs | P15.19 |
+| Q5 copies | P15.2, P15.14, P15.18, P15.19, P15.21 |
+| Q6 prepositional names | P15.20 |
+| Q7 `guarding` | P15.6 |
+| Q8 booleans and strings | P15.10, P15.13, P15.18, P15.21, P15.23 |
+| Q9 dense one-liners | P15.23 |
+| Q10 `FileSearch.run` | P15.14 |
+| Q11 broad `with _ ->` | P15.4, P15.13; what one damaged archive does to a results panel is P15.24 |
+| Q12 partial access | P15.23; what stands is listed above with its guarantee |
+| Q13 small inconsistencies | P15.5, P15.18, P15.22, P15.23 |
+| Q14 tests | P15.9, P15.21 |
+| perf P1 full re-render | P15.9 |
+| perf P2 results window | P15.10 |
+| perf P3 quadratic hit lookup | P15.11 |
+| perf P4 re-verification | P15.12, P15.13 |
+| perf P5 a move that copies | P15.3, P15.15 |
+| perf P6 stat calls per entry | P15.14 |
+| perf P7 blocking work | P15.13, P15.15 |
+| perf P8 buffered entries | P15.16; the 7z and tar.gz rewrite keeps its documented buffering |
+| perf P9 solid 7z | P15.17 measured it linear; the quadratic it found in `Archive.extract` is P15.25 |
+| perf P10 closures per message | P15.5 |
+| perf P11 line index and viewer | P15.23 |
+| perf P12 sort keys | P15.9 |
+| perf P13 encoding per open | P15.13 |
+| perf P14 modifier repaint | P15.9 |
+| perf P15 wipe bound by the CSPRNG | not done, by design: why the one pass is cryptographic is now written in [File operations](../Architecture/FILE-OPERATIONS.md) |
+
+2411 passing, 11 skipped, from 2361; the build is clean.

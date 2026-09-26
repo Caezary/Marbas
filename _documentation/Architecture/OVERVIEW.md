@@ -68,10 +68,10 @@ root. `Program.fs` is left with the handful of lines that start the application.
 
 ```
 Marbas/
-  Platform.fs             which operating system this is, as a value
   Collections/            data structures below every layer, tied to nothing
     Zipper.fs             a non-empty list with one item in front: the tabs
-  Domain/                 the words the whole application speaks
+  Domain/                 the words the whole application speaks, no System.IO in them
+    Platform.fs           which operating system this is, as a value
     PanelSide.fs          left or right, needed as low as the settings file
     PanelCursor.fs        a side and the row it points at, as one value
     TabStep.fs            forward or backward, for the key that walks the tabs
@@ -93,6 +93,7 @@ Marbas/
     ResultsRefusal.fs     which command a panel of search results cannot carry out
   FileSystem/
     FileSystemPath.fs     single-case path type wrapping a raw string
+    EntryAttributes.fs    what FileAttributes and UnixFileMode say, in the Domain's words
     LaunchRequest.fs      what to start, with what, where, and with which rights
     Handler.fs            a program the system offers for a name, and its display name
     ProgramCommand.fs     a command line -> the program it starts
@@ -124,7 +125,7 @@ Marbas/
     TextEncoding.fs       which encoding a file carries, from its mark or its bytes
     RewindingStream.fs    a forward-only stream seen as one that seeks, by opening it again
     FileWindow.fs         a file held open, read one byte range at a time
-    LineIndex.fs          line starts scanned forward on demand, and the line at one
+    LineIndex.fs          line starts scanned on demand, one in 64 kept, and the line at an offset
   State/
     PanelState.fs         one panel: cursor, marks, search and sort, never the disk
     AppState.fs           tabs and app state: loaders, finish* transitions and the

@@ -34,4 +34,4 @@ let choice (dialog: Dialog) =
     if dialog.Canceled then
         None
     else
-        Some (tabs dialog).SelectedItem.Value
+        (tabs dialog).SelectedItem |> Option.ofNullable

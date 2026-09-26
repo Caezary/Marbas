@@ -1,5 +1,6 @@
 module Marbas.Tests.Integration.Dialogs.DriveDialogTests
 
+open System
 open System.Drawing
 open Xunit
 open Terminal.Gui.Views
@@ -97,3 +98,25 @@ let ``the widest line fits inside the frame`` () =
     Assert.True(list.Width >= widest, $"the drive list at %A{list} cuts its lines")
     Assert.True(list.Right <= dialog.Viewport.Width, $"the drive list at %A{list} runs past the frame")
     Assert.True(list.Bottom <= dialog.Viewport.Height, $"the drive list at %A{list} runs past the frame")
+
+[<Fact>]
+let ``an accepted dialog with no drive under the cursor picks nothing`` () =
+    use dialog = laidOut ()
+    (DriveDialog.drives dialog).SelectedItem <- Nullable()
+
+    dialog.Result <- 1
+
+    let chosen = DriveDialog.choice dialog
+
+    Assert.Equal(None, chosen)
+
+[<Fact>]
+let ``an accepted dialog listing no drive picks nothing`` () =
+    DialogStyle.apply ()
+    use dialog = DriveDialog.create []
+
+    dialog.Result <- 1
+
+    let chosen = DriveDialog.choice dialog
+
+    Assert.Equal(None, chosen)

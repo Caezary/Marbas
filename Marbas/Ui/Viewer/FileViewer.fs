@@ -55,29 +55,42 @@ type ContentView(source: FileWindow.Source) as this =
     let lineHeight line =
         textLine line |> Option.map (LineWrap.height (width ())) |> Option.defaultValue 1
 
+    let wrappedRows room =
+        let rec gather line count (wrapped: string list list) =
+            match count >= room, textLine line with
+            | true, _
+            | _, None -> wrapped, line - top
+            | false, Some text ->
+                let segments = LineWrap.segments (width ()) text
+                gather (line + 1) (count + List.length segments) (segments :: wrapped)
+
+        let wrapped, lines = gather top 0 []
+        wrapped |> List.rev |> List.concat |> List.truncate room, max 1 lines
+
+    let plainRows room =
+        let rows =
+            [ for row in top .. top + room - 1 do
+                  match rowAt row with
+                  | Some text -> yield LineWrap.visible (width ()) left text
+                  | None -> () ]
+
+        rows, max 1 (List.length rows)
+
+    let mutable shown = None
+
     let visible () =
-        let room = height ()
+        let place = mode, wrap, top, left, width (), height ()
 
-        match mode, wrap with
-        | TextMode, Wrapped ->
-            let rec gather line rows =
-                if List.length rows >= room then
-                    rows, line - top
-                else
-                    match textLine line with
-                    | None -> rows, line - top
-                    | Some text -> gather (line + 1) (rows @ LineWrap.segments (width ()) text)
-
-            let rows, lines = gather top []
-            List.truncate room rows, max 1 lines
+        match shown with
+        | Some(shownAt, rows) when shownAt = place -> rows
         | _ ->
             let rows =
-                [ for row in top .. top + room - 1 do
-                      match rowAt row with
-                      | Some text -> yield LineWrap.visible (width ()) left text
-                      | None -> () ]
+                match mode, wrap with
+                | TextMode, Wrapped -> wrappedRows (height ())
+                | _ -> plainRows (height ())
 
-            rows, max 1 (List.length rows)
+            shown <- Some(place, rows)
+            rows
 
     let lastRow () =
         match mode with

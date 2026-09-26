@@ -3,7 +3,7 @@ module Marbas.Adapters.Dependencies
 open System
 open System.IO.Abstractions
 open Terminal.Gui.App
-open Marbas
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.App
 

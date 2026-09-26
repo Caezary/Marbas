@@ -1,7 +1,5 @@
 namespace Marbas.Domain
 
-open System.IO
-
 type EntryVisibility =
     | Plain
     | Hidden
@@ -12,14 +10,13 @@ type HiddenEntries =
 
 module EntryVisibility =
 
-    let private marked (attributes: FileAttributes) =
-        attributes.HasFlag FileAttributes.Hidden || attributes.HasFlag FileAttributes.System
+    let ofName (name: EntryName) =
+        if (EntryName.value name).StartsWith '.' then Hidden else Plain
 
-    let classify (name: EntryName) (attributes: FileAttributes) =
-        if (EntryName.value name).StartsWith '.' || marked attributes then
-            Hidden
-        else
-            Plain
+    let classify name marked =
+        match ofName name with
+        | Hidden -> Hidden
+        | Plain -> marked
 
 module HiddenEntries =
 

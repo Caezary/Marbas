@@ -32,8 +32,8 @@ let private surviving (fs: IFileSystem) (found: FoundEntries) =
     let survives (hit: FindHit) =
         match hit.Location with
         | InArchive(archive, level) when FindHit.exists fs hit ->
-            held archive
-            |> Result.map (fun names -> names.Contains(ArchivePath.segments level @ [ hit.Entry.Name ]))
+            let segments = ArchivePath.segments level @ [ hit.Entry.Name ]
+            held archive |> Result.map (Set.contains segments)
         | _ -> Ok(FindHit.exists fs hit)
 
     found.Hits

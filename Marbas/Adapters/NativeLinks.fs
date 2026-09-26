@@ -5,7 +5,7 @@ open System.IO
 open System.Runtime.InteropServices
 open System.Text
 open Microsoft.Win32.SafeHandles
-open Marbas
+open Marbas.Domain
 open Marbas.FileSystem
 
 module private Kernel32 =

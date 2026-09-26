@@ -98,7 +98,7 @@ let ``a delete inside an archive is asked for good and removes the entries`` () 
     let confirmed = update fs (DeleteConfirmed Permanently) state
 
     Assert.Equal<Effect list>(
-        [ InspectDelete({ Probed = []; ReachesContents = false }, Permanently) ],
+        [ InspectDelete({ Probed = []; AtLeast = NamedEntriesOnly }, Permanently) ],
         asked.Effects
     )
 
@@ -115,7 +115,7 @@ let ``a wipe inside an archive is asked as a delete for good`` () =
     let asked = update fs (DeleteRequested ByWiping) state
 
     Assert.Equal<Effect list>(
-        [ InspectDelete({ Probed = []; ReachesContents = false }, Permanently) ],
+        [ InspectDelete({ Probed = []; AtLeast = NamedEntriesOnly }, Permanently) ],
         asked.Effects
     )
 
@@ -127,7 +127,7 @@ let ``a directory among the targets inside an archive needs nothing read to warn
     let result = update fs (DeleteRequested ToTrash) state
 
     Assert.Equal<Effect list>(
-        [ InspectDelete({ Probed = []; ReachesContents = true }, Permanently) ],
+        [ InspectDelete({ Probed = []; AtLeast = WithDirectoryContents }, Permanently) ],
         result.Effects
     )
 

@@ -39,42 +39,69 @@ let private mockFs () =
 
 [<Fact>]
 let ``an ordinary name is plain`` () =
-    let visibility = EntryVisibility.classify (en "notes.txt") FileAttributes.Normal
+    let visibility = EntryVisibility.ofName (en "notes.txt")
 
     Assert.Equal(Plain, visibility)
 
 [<Fact>]
-let ``a leading dot hides an entry`` () =
-    let visibility = EntryVisibility.classify (en ".gitignore") FileAttributes.Normal
+let ``a leading dot hides a name`` () =
+    let visibility = EntryVisibility.ofName (en ".gitignore")
 
     Assert.Equal(Hidden, visibility)
 
 [<Fact>]
-let ``the hidden attribute hides an entry`` () =
-    let visibility = EntryVisibility.classify (en "desktop.ini") FileAttributes.Hidden
+let ``a leading dot hides an entry the system left plain`` () =
+    let visibility = EntryVisibility.classify (en ".gitignore") Plain
 
     Assert.Equal(Hidden, visibility)
 
 [<Fact>]
-let ``the system attribute hides an entry`` () =
-    let visibility = EntryVisibility.classify (en "swap.sys") FileAttributes.System
+let ``an entry the system marked hidden is hidden whatever its name`` () =
+    let visibility = EntryVisibility.classify (en "desktop.ini") Hidden
 
     Assert.Equal(Hidden, visibility)
 
 [<Fact>]
-let ``toggling switches between showing and concealing`` () =
-    Assert.Equal(Shown, HiddenEntries.toggle Concealed)
-    Assert.Equal(Concealed, HiddenEntries.toggle Shown)
+let ``an ordinary name the system left plain is plain`` () =
+    let visibility = EntryVisibility.classify (en "notes.txt") Plain
+
+    Assert.Equal(Plain, visibility)
 
 [<Fact>]
-let ``concealing admits plain entries only`` () =
-    Assert.True(HiddenEntries.admits Concealed Plain)
-    Assert.False(HiddenEntries.admits Concealed Hidden)
+let ``toggling a concealing panel shows the hidden entries`` () =
+    let hidden = HiddenEntries.toggle Concealed
+
+    Assert.Equal(Shown, hidden)
 
 [<Fact>]
-let ``showing admits every entry`` () =
-    Assert.True(HiddenEntries.admits Shown Plain)
-    Assert.True(HiddenEntries.admits Shown Hidden)
+let ``toggling a showing panel conceals the hidden entries`` () =
+    let hidden = HiddenEntries.toggle Shown
+
+    Assert.Equal(Concealed, hidden)
+
+[<Fact>]
+let ``concealing admits a plain entry`` () =
+    let admitted = HiddenEntries.admits Concealed Plain
+
+    Assert.True admitted
+
+[<Fact>]
+let ``concealing turns a hidden entry away`` () =
+    let admitted = HiddenEntries.admits Concealed Hidden
+
+    Assert.False admitted
+
+[<Fact>]
+let ``showing admits a plain entry`` () =
+    let admitted = HiddenEntries.admits Shown Plain
+
+    Assert.True admitted
+
+[<Fact>]
+let ``showing admits a hidden entry`` () =
+    let admitted = HiddenEntries.admits Shown Hidden
+
+    Assert.True admitted
 
 [<Fact>]
 let ``reading a directory says which entries are hidden`` () =
