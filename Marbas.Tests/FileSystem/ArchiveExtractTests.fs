@@ -38,8 +38,7 @@ let private unpacking path password =
 
 let private sources = [ fp (at "work/notes.txt"); fp (at "work/docs") ]
 
-let private tree () =
-    let fs = MockFileSystem()
+let private planted (fs: #MockFileSystem) =
     fs.AddDirectory(at "backup")
     fs.AddDirectory(at "out")
     fs.AddFile(at "work/notes.txt", MockFileData "notes")
@@ -47,6 +46,8 @@ let private tree () =
     fs.AddFile(at "work/docs/deep/leaf.txt", MockFileData "leaf")
     fs.AddDirectory(at "work/docs/empty")
     fs
+
+let private tree () = planted (MockFileSystem())
 
 let private packed password =
     let fs = tree ()
@@ -184,6 +185,74 @@ let ``a cancelled run stops where it stood and keeps what it wrote`` () =
     Assert.False(fs.Directory.Exists(at "out/docs"))
 
 [<Fact>]
+let ``a cancelled run stops inside a directory target and answers it as unfinished`` () =
+    let fs = packed None
+    let _, control = watching 1
+
+    let results = extracted fs control (unpacking archive None) [ inside "docs" ]
+
+    Assert.Equal<(string * Result<unit, OperationError>) list>(
+        [ "docs", Error(Cancelled(fp (at "out/docs"))) ],
+        outcomes fs results
+    )
+
+[<Fact>]
+let ``a file target written before the run was cancelled counts as unpacked`` () =
+    let fs = packed None
+    let _, control = watching 1
+
+    let results = extracted fs control (unpacking archive None) [ inside "notes.txt"; inside "docs" ]
+
+    Assert.Equal<(string * Result<unit, OperationError>) list>([ "notes.txt", Ok() ], outcomes fs results)
+
+[<Fact>]
+let ``a cancelled run leaves out the targets the archive had not reached, whatever order they were given in`` () =
+    let fs = packed None
+    let _, control = watching 1
+
+    let results = extracted fs control (unpacking archive None) [ inside "docs"; inside "notes.txt" ]
+
+    Assert.Equal<string list>([ "notes.txt" ], itemNames fs results)
+    Assert.False(fs.Directory.Exists(at "out/docs"))
+
+[<Fact>]
+let ``the targets answer in the order they were given, not in the archive's`` () =
+    let fs = packed None
+
+    let results = extracted fs unattended (unpacking archive None) [ inside "docs"; inside "notes.txt" ]
+
+    Assert.Equal<(string * Result<unit, OperationError>) list>(
+        [ "docs", Ok(); "notes.txt", Ok() ],
+        outcomes fs results
+    )
+
+[<Fact>]
+let ``a target the archive does not hold is not found beside the ones it does`` () =
+    let fs = packed None
+
+    let results = extracted fs unattended (unpacking archive None) [ inside "missing.txt"; inside "notes.txt" ]
+
+    Assert.Equal<(string * Result<unit, OperationError>) list>(
+        [ "missing.txt", Error(SourceNotFound(fp (at "backup/data.zip/missing.txt"))); "notes.txt", Ok() ],
+        outcomes fs results
+    )
+
+[<Theory>]
+[<InlineData("data.zip")>]
+[<InlineData("data.tar.gz")>]
+let ``an unpack of many targets reads the archive once`` name =
+    let fs = planted (Fakes.ReadCounting())
+    let path = at ("backup/" + name)
+    let format = ArchiveKind.recognise (EntryName.create name) |> Option.bind ArchiveFormat.tryCreate |> Expect.some
+    Archive.write fs unattended (packing format path None) (sources @ [ fp (at "work/docs/deep") ]) |> ignore
+    ArchiveIndex.read fs (fp path) |> ignore
+    let before = fs.Reads path
+
+    extracted fs unattended (unpacking path None) [ inside "notes.txt"; inside "docs"; inside "deep" ] |> ignore
+
+    Assert.Equal(1, fs.Reads path - before)
+
+[<Fact>]
 let ``a target the archive does not hold is not found`` () =
     let fs = packed None
 
@@ -207,6 +276,18 @@ let ``an entry that would climb out of the destination is refused`` () =
     )
 
     Assert.False(fs.File.Exists(at "evil.txt"))
+
+[<Fact>]
+let ``a target that fails leaves the others in the same walk to be unpacked`` () =
+    let fs = tree ()
+    keyedByHand fs archive [ "docs/../../evil.txt"; "notes.txt" ]
+
+    let results = extracted fs unattended (unpacking archive None) [ inside "docs"; inside "notes.txt" ]
+
+    Assert.Equal<(string * Result<unit, OperationError>) list>(
+        [ "docs", Error(EntryOutsideTarget(fp (at "evil.txt"))); "notes.txt", Ok() ],
+        outcomes fs results
+    )
 
 [<Fact>]
 let ``a protected archive says a password is needed`` () =

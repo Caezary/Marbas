@@ -45,3 +45,28 @@ nothing to do with it. Unpacking the same content held under one directory is
 linear, which is why the review's own measurement never saw it. The fix is one
 walk that serves every target; it is not the fix P9 proposed, so P15.17 recorded
 it and P15.25 carries it out.
+
+## One walk for every target (P15.25, 2026-09-27)
+
+P15.25 replaced the walk per target with one walk for all of them, and was done
+when the *n*-target rows of the table above came out linear. The same kind of
+archives as in P15.17 — *n* entries of 400 bytes, written by Marbas — unpacked to
+a real disk through `Archive.extractAll`: *n* targets is the flat archive with
+one target per entry, as `Shift+F2` asks for it; 1 target is the same content
+under one directory. Milliseconds, one run per cell, the same Windows machine.
+
+| Archive | Targets | n=1000 | n=2000 | n=4000 | n=8000 |
+|---|---|---|---|---|---|
+| 7z | *n* | 2 923 | 5 419 | 10 473 | 21 513 |
+| 7z | 1 | 2 786 | 5 177 | 10 310 | 20 489 |
+| zip | *n* | 2 969 | 5 810 | 10 847 | 20 870 |
+| zip | 1 | 2 772 | 5 420 | 10 422 | 21 150 |
+
+**The square is gone.** Doubling the entries doubles the time on every row, and
+*n* targets now cost what one does, within 5 %: at n=4000 a flat 7z takes
+10.5 s where it took 49.9 s, and a flat zip 10.8 s where it took 40.9 s. n=8000,
+which P15.17 did not try with *n* targets, takes 21 s. The targets are found by
+looking up each entry's own prefixes rather than by comparing it with every
+target, so matching does not bring the square back either. What is left is the
+constant factor against `7z x` that P15.17 put down to writing through
+`IFileSystem`.

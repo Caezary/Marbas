@@ -1287,3 +1287,39 @@ integration tests in `PanelPaintingTests`, which read the painted rows and count
 the reports. The rough edge it answered is gone from [Rough edges](../ROUGH-EDGES.md).
 
 2430 passing, 11 skipped, from 2411; the build is clean.
+
+**P15.25 made one walk serve every target of an unpack.** P15.17 found the
+square that perf P9 predicted, but not where the review put it: `unpackTarget`
+opened a walk of the whole archive for each target, and `Shift+F2` asks for one
+target per top-level entry. `Archive.unpackingEach` now opens one walk. Each
+entry looks its own prefixes up in the targets grouped by their segments, is
+unpacked under every target it falls under that has not failed, and advances
+that target's `TargetProgress` — not reached, unpacking, whole or failed — in
+one `UnpackWalk` record threaded through the walk. The record also counts the
+targets not yet settled, and the walk stops when none is left, so taking one
+file out of a large archive no longer reads past it. The `ItemResult`s are
+built at the end, in the order the targets were given.
+
+The two behaviours the plan named kept their tests. A target no entry answered
+to is still `SourceNotFound` under its spelled name, now beside targets that
+were found in the same walk. `Esc` still leaves out what it never reached, but
+what counts as reached is decided by the archive's order now: with `docs` and
+`notes.txt` asked for in that order and `notes.txt` stored first, a stop after
+the first file leaves `notes.txt` unpacked and `docs` out, where the loop over
+targets answered the opposite. A directory target the walk had entered when it
+stopped is `Cancelled` under its landing place rather than a success, since the
+rest of its tree may have been ahead; a file target whose one entry was written
+is whole and answers `Ok`. `eachTarget` stays for `removeEntries`, which checks
+targets against a list it already holds and reads nothing per target.
+
+`Fakes.ReadCounting` pins the point of the task: an unpack of three targets
+opens a zip or a `tar.gz` once. The timing is in
+[Measurements](MEASUREMENTS.md#one-walk-for-every-target-p1525-2026-09-27):
+at n=4000 a flat 7z unpacks in 10.5 s instead of 49.9 s, *n* targets cost what
+one does, and every row doubles with the entries. Matching an entry against
+every target would have brought the square back through the comparisons, which
+is why the targets are looked up by prefix. The rough edge is gone from
+[Rough edges](../ROUGH-EDGES.md), and [Archives](../Architecture/ARCHIVES.md)
+describes the walk.
+
+2438 passing, 11 skipped, from 2430; the build is clean.

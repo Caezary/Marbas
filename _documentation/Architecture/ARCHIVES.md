@@ -396,15 +396,19 @@ resolved path rather than on the key, so a key that climbs and comes back
 tools put in an archive.
 
 **The first failure ends that target and no other.** Entries are walked one by
-one and the first `Error` stops the walk for that target, leaving the rest of
-the targets to run — the rule `Operations.allWatched` follows for copy and
-move. A target no entry answers to is `SourceNotFound`, spelled the way a place
+one and the first `Error` settles that target as failed: no later entry is
+unpacked for it, and the rest of the targets go on in the same walk — the rule
+`Operations.allWatched` follows for copy and move. A target no entry answers to is `SourceNotFound`, spelled the way a place
 inside an archive will be spelled from P9.10 on: `…\backup.zip\docs`.
 
 **Cancelling stops where it stood.** Each file reports its landing place
-through `BatchControl` before it is written, `Esc` in the progress window makes
-the next entry answer `Cancelled`, and the batch stops after the target it was
-in. What was already written stays on disk — unlike packing, where the archive
+through `BatchControl` before it is written, and `Esc` in the progress window
+stops the walk at the next entry. What a target answers is then decided from
+what the walk saw, in the archive's own order rather than in the order the
+targets were given: a target no entry had reached yet is left out of the
+results, so its mark survives; a file target whose one entry was written is
+unpacked; a directory target the walk had entered is `Cancelled` under its
+landing place, because the rest of its tree may still have been ahead. What was already written stays on disk — unlike packing, where the archive
 is deleted, there is nothing half-made to remove: the files that arrived are
 whole.
 
@@ -420,13 +424,22 @@ entry and the target fails with the reason it gave, and an archive that hides
 its own headers is opened with the password it was given rather than asked
 about first.
 
-**Every target opens the archive again.** `unpackTarget` opens its own walk
-through `ArchiveReader.withItems`, so a batch of five targets reads the archive
-five times. For a zip that is five reads of the table of contents; for a
-`tar.gz` it is five decompressions, which is the price of keeping the streaming
-reader — which can only go forwards — and the per-target `ItemResult` in the
-same design. The index cache does not help here: extraction needs content, and
-content is only ever handed out inside a walk.
+**One walk serves every target.** `unpackingEach` opens one walk through
+`ArchiveReader.withItems` for the whole list. The targets are grouped by their
+segments once, so each entry finds the targets it falls under by looking up its
+own prefixes — as many lookups as the entry is deep, however many targets were
+asked for. Every target keeps a `TargetProgress` — not reached, unpacking,
+whole (a file target whose entry is written) or failed — in one `UnpackWalk`
+record threaded through the walk, with a count of the targets not yet settled,
+so the walk stops as soon as every target is whole or failed and a single file
+taken out of a large archive does not read the rest of it. The `ItemResult`s are
+built at the end from that record, in the order the targets were given. The
+streaming reader of the tar kinds, which can only go forwards, is served the
+same way, so ten targets out of a `tar.gz` are one decompression. Until P15.25
+each target opened a walk of its own, so `Shift+F2` on a flat archive of *n*
+entries — one target per top-level entry — read it *n* times; the numbers before
+and after are in
+[Measurements](../Progress/MEASUREMENTS.md#one-walk-for-every-target-p1525-2026-09-27).
 
 ## The walk from key to unpacking
 
