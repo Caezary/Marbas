@@ -424,7 +424,7 @@ let CrossVolumeReason = "Source and destination path must have identical roots."
 type private UnmovableDirectory(accessor: IMockFileDataAccessor, current: string) =
     inherit MockDirectory(accessor, current)
 
-    override this.Move(source: string, target: string) =
+    override this.Move(_source: string, _target: string) =
         raise (IOException CrossVolumeReason)
 
 type DirectoryMoveRefused() =

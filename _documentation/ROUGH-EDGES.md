@@ -1,9 +1,9 @@
 # Rough edges
 
 What is known to be wrong, missing or merely awkward, and why it stands. Each
-entry was checked against the code on 2026-09-20; the ones a later task closes
-name that task in [the plan](PLAN.md). What is a deliberate design decision
-belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
+entry was checked against the code on 2026-09-27, when phase 15 closed; none is
+scheduled by [the plan](PLAN.md). What is a deliberate design decision belongs
+in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 
 ## Keys and the terminal
 
@@ -96,11 +96,6 @@ belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 
 ## Archives
 
-- Reading an archive lists it whole for every level: `ArchiveListing.read` walks
-  all of the entries and keeps the one level asked for. For the archives a
-  panel will show that costs nothing measurable, but an archive of a hundred
-  thousand entries pays the walk on every step into it. P15.13 caches the index
-  and answers the levels from it.
 - A wrong password is reported entry by entry with the library's own wording,
   not as "the password is wrong": `PasswordNeeded` is only answered before an
   extraction starts, when the archive holds an encrypted entry and no password
@@ -131,8 +126,9 @@ belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   so `*.md` over `_documentation` shows 8 headers for the 5 directories that
   hold the 48 hits. Nothing is missing or mislabelled, but a directory can be
   named more than once. Removing the split means `FileSearch` reporting a
-  directory's own hits before it descends, which is a change to the walk and
-  belongs with P15.14.
+  directory's own hits before it descends into any subdirectory — a change to
+  the order of the walk that P15.14's rewrite of `FileSearch.run` left as it
+  was.
 - A search *from the root of the volume* on Linux walks into `/proc`, `/sys`,
   `/run` and the other pseudo file systems. The walk is bounded by the other
   listed drives, and P13.12 keeps exactly those mounts off the list, so nothing
@@ -194,12 +190,6 @@ belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 
 ## Operations
 
-- Delete goes through an effect, like copy and move, but it still runs on the UI
-  thread rather than behind `Runners.Batch`, so removing a huge tree blocks. Neither
-  `Directory.Delete` nor the recycle bin reports progress, so a progress window
-  would have nothing to show; cancelling is what it would buy. Wiping, the one
-  delete that has something to report, is the exception: it runs behind
-  `Runners.Batch` and `Esc` stops it. P15.15 puts the rest there too.
 - Only the home trash is written on Unix, never the per-volume
   `$topdir/.Trash-$uid` the freedesktop spec asks for. Deleting from another
   disk therefore copies the entry across rather than renaming it — correct, but

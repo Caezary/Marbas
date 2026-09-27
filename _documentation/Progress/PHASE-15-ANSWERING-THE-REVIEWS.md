@@ -1323,3 +1323,22 @@ is why the targets are looked up by prefix. The rough edge is gone from
 describes the walk.
 
 2438 passing, 11 skipped, from 2430; the build is clean.
+
+**P15.26 made an unused value a build failure.** `Directory.Build.props` passes
+`--warnon:1182` to both projects, and with `TreatWarningsAsErrors` already on,
+an unused parameter, binding or pattern variable no longer builds. The switch
+found less than the plan expected. The three panel queries it was written for —
+`cursorEntryInArchive`, `cursorFileInArchive` and `targetsDirectoryInArchive`,
+with their `entryInArchive` — had already lost their `fs` in P15.22, and the
+application itself compiled clean. The test project had one finding: the
+`Move` override of the fake that refuses a directory move, whose two
+parameters the overridden `MockDirectory` member dictates and the fake never
+reads. They are `_source` and `_target`, the spelling §6 of
+[Coding style](../coding-style-conventions.md) now gives a name that has to stay,
+beside the rule itself; [Development](../DEVELOPMENT.md) says where the flag is
+set. An incremental build does not recompile for a changed `OtherFlags`, so the
+first run with the flag needs `--no-incremental` to see anything at all.
+
+2438 passing, 11 skipped, unchanged; the build is clean with the warning on.
+With it the phase is done: every finding of the three reviews is answered in
+the ledger above, and stage 6 closed what the answers opened.

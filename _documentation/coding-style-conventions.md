@@ -123,6 +123,11 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] Fantomas defaults, no per-file overrides.
 - [ ] `TreatWarningsAsErrors` is on in every configuration: a warning is a build
       failure, not a note.
+- [ ] Warning FS1182 is on (`--warnon:1182` in `Directory.Build.props`), so with
+      the rule above an unused parameter, binding or pattern variable does not
+      build. A name the code must keep — a signature an overridden member or a
+      Terminal.Gui handler dictates — is spelled `_name`; anything else unused
+      is removed, from the signature and from every caller.
 - [ ] Lines stay under about 120 characters. Longer usually means a missing
       pipeline or a missing name.
 - [ ] No trailing whitespace, no double blank lines.

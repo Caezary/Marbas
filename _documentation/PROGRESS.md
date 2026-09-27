@@ -7,7 +7,7 @@ what the application does today is in
 
 ## Where we are
 
-**Fourteen phases are complete** (97 of 97 tasks). Marbas
+**Fifteen phases are complete** (123 of 123 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -64,7 +64,7 @@ written up as the checklist in
 | 12 — Watching the directories on screen | P12.1–P12.6 | done | [journal](Progress/PHASE-12-WATCHING-THE-DIRECTORIES.md) |
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done | [journal](Progress/PHASE-13-DRIVES-LINKS-AND-TRASH.md) |
 | 14 — Finding files | P14.1–P14.14 | done | [journal](Progress/PHASE-14-FINDING-FILES.md) |
-| 15 — Answering the reviews | P15.1–P15.26 | P15.1–P15.25 done | [journal](Progress/PHASE-15-ANSWERING-THE-REVIEWS.md) |
+| 15 — Answering the reviews | P15.1–P15.26 | done | [journal](Progress/PHASE-15-ANSWERING-THE-REVIEWS.md) |
 
 ## What works today
 
@@ -87,5 +87,6 @@ cross-platform behaviour.
 
 What is known to be wrong, missing or awkward is in
 [Rough edges](ROUGH-EDGES.md), checked against the code and grouped by the part
-of the application it belongs to. What the next phase will do about the largest
-of them is [phase 15](Plan/PHASE-15-ANSWERING-THE-REVIEWS.md).
+of the application it belongs to. What
+[phase 15](Plan/PHASE-15-ANSWERING-THE-REVIEWS.md) did about the largest of them
+is in [its journal](Progress/PHASE-15-ANSWERING-THE-REVIEWS.md).

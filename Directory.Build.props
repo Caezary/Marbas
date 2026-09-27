@@ -9,6 +9,7 @@
   <PropertyGroup>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <MSBuildTreatWarningsAsErrors>true</MSBuildTreatWarningsAsErrors>
+    <OtherFlags>$(OtherFlags) --warnon:1182</OtherFlags>
   </PropertyGroup>
 
 </Project>
