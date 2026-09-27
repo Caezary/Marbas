@@ -125,7 +125,8 @@ let private entry name kind visibility =
       Modified = System.DateTimeOffset.MinValue
       Visibility = visibility
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private hitIn where name kind visibility : FindHit =
     { Location = OnDisk(fp (at where))

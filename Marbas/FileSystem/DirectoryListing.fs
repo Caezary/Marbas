@@ -16,7 +16,8 @@ type Entry =
       Modified: DateTimeOffset
       Visibility: EntryVisibility
       Executability: Executability
-      LinkTarget: FileSystemPath option }
+      LinkTarget: FileSystemPath option
+      Verification: EntryVerification }
 
 let ParentName = EntryName.create ".."
 
@@ -54,7 +55,8 @@ let entryFromInfo (info: IFileSystemInfo) =
           Modified = DateTimeOffset info.LastWriteTime
           Visibility = EntryVisibility.classify name (EntryAttributes.visibility info.Attributes)
           Executability = NotExecutable
-          LinkTarget = FileSystemPath.linkTargetOfInfo info }
+          LinkTarget = FileSystemPath.linkTargetOfInfo info
+          Verification = Verified }
     | File ->
         { Name = name
           Kind = File
@@ -63,7 +65,8 @@ let entryFromInfo (info: IFileSystemInfo) =
           Modified = DateTimeOffset info.LastWriteTime
           Visibility = EntryVisibility.classify name (EntryAttributes.visibility info.Attributes)
           Executability = Executability.classify name (EntryAttributes.executability info.UnixFileMode)
-          LinkTarget = FileSystemPath.linkTargetOfInfo info }
+          LinkTarget = FileSystemPath.linkTargetOfInfo info
+          Verification = Verified }
 
 type Child =
     { Path: FileSystemPath
@@ -158,7 +161,8 @@ let parentEntry modified =
       Modified = modified
       Visibility = Plain
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private parentIfAny (fs: IFileSystem) (path: FileSystemPath) =
     fs.DirectoryInfo.New(FileSystemPath.value path).Parent

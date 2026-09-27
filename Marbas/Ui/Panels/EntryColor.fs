@@ -10,6 +10,7 @@ type EntryColor =
     | ArchiveColor
     | ExecutableColor
     | LinkColor
+    | UnverifiedColor
 
 let private archiveExtensions =
     set
@@ -33,13 +34,18 @@ let private archiveExtensions =
 let private isArchive (name: EntryName) =
     archiveExtensions.Contains((EntryName.extension name).ToLowerInvariant())
 
-let classify (entry: Entry) =
+let private byKind (entry: Entry) =
     match entry.LinkTarget, entry.Kind with
     | Some _, _ -> LinkColor
     | None, Directory -> DirectoryColor
     | None, File when isArchive entry.Name -> ArchiveColor
     | None, File when entry.Executability = Executable -> ExecutableColor
     | None, File -> PlainColor
+
+let classify (entry: Entry) =
+    match entry.Verification with
+    | Unverified -> UnverifiedColor
+    | Verified -> byKind entry
 
 let attribute color =
     match color with
@@ -48,3 +54,4 @@ let attribute color =
     | ArchiveColor -> ClassicScheme.archiveEntry
     | ExecutableColor -> ClassicScheme.executableEntry
     | LinkColor -> ClassicScheme.linkEntry
+    | UnverifiedColor -> ClassicScheme.unverifiedEntry

@@ -15,3 +15,7 @@ let describe error =
     | ArchiveAccessDenied path -> $"Access denied to '{FileSystemPath.value path}'."
     | PasswordNeeded path -> $"'{FileSystemPath.value path}' needs a password."
     | ArchiveDamaged(path, reason) -> $"'{FileSystemPath.value path}' cannot be read: {reason}"
+
+let describeUnverified (refused: ArchiveError list) =
+    (refused |> List.map describe) @ [ "The hits inside are listed unverified." ]
+    |> String.concat "\n"

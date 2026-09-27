@@ -187,6 +187,19 @@ let ``a listing error is reported under the listing title`` () =
     Assert.Contains(at "gone", snd reported)
 
 [<Fact>]
+let ``archives that cannot be read are reported in one message under the archive title`` () =
+    let reported = ResizeArray<string * string>()
+    let deps = { noDeps () with Prompts.ReportError = fun report -> reported.Add(report.Title, report.Message) }
+    let other = fp (at "start/other.zip")
+
+    Shell.interpret deps ignore (ReportUnverifiedHits [ ArchiveDamaged(dataZip, "bad header"); ArchiveDamaged(other, "bad header") ])
+
+    let title, message = Assert.Single reported
+    Assert.Equal(ArchiveErrorMessage.Title, title)
+    Assert.Contains(at "start/data.zip", message)
+    Assert.Contains(at "start/other.zip", message)
+
+[<Fact>]
 let ``an operation error is reported under the operation title`` () =
     let mutable reported = ("", "")
     let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }

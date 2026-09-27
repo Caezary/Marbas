@@ -146,19 +146,27 @@ let typeIntoSearch side character state =
 let backspaceSearch side state =
     updatePanel side PanelState.backspaceSearch state
 
+let private everythingRead entries =
+    { SearchListing.Listed = entries
+      SearchListing.Refused = [] }
+
 let private listing (fs: IFileSystem) sort hidden location =
     match location with
-    | OnDisk path -> DirectoryListing.listForDisplay fs sort hidden path
-    | InArchive(archive, level) -> ArchiveListing.listForDisplay fs sort hidden archive level
-    | SearchResults found -> SearchListing.listForDisplay fs sort hidden found
+    | OnDisk path -> DirectoryListing.listForDisplay fs sort hidden path |> Result.map everythingRead
+    | InArchive(archive, level) ->
+        ArchiveListing.listForDisplay fs sort hidden archive level
+        |> Result.map everythingRead
+    | SearchResults found -> SearchListing.listForDisplay fs sort hidden found |> Ok
 
-let loadLocationFocusing (fs: IFileSystem) side (location: PanelLocation) focus state =
+let private loadLocationWithRefusals (fs: IFileSystem) side (location: PanelLocation) focus state =
     let previous = panel side state
     let sort = previous.Sort
     let hidden = previous.Hidden
 
     listing fs sort hidden location
-    |> Result.map (fun entries ->
+    |> Result.map (fun listing ->
+        let entries = listing.Listed
+
         let cursor =
             match focus with
             | ByName name -> entries |> Array.tryFindIndex (fun e -> e.Name = name) |> Option.defaultValue 0
@@ -175,7 +183,11 @@ let loadLocationFocusing (fs: IFileSystem) side (location: PanelLocation) focus 
                   Sort = sort
                   Hidden = hidden
                   Search = None })
-            state)
+            state,
+        listing.Refused)
+
+let loadLocationFocusing (fs: IFileSystem) side (location: PanelLocation) focus state =
+    loadLocationWithRefusals fs side location focus state |> Result.map fst
 
 let loadPanelFocusing (fs: IFileSystem) side (path: FileSystemPath) focus state =
     loadLocationFocusing fs side (OnDisk path) focus state
@@ -278,7 +290,7 @@ let showResults (fs: IFileSystem) side (results: FindResults) state =
           Origin = PanelLocation.origin previous.Path
           Returning = PanelState.standingName previous }
 
-    loadLocationFocusing fs side (SearchResults found) Top state
+    loadLocationWithRefusals fs side (SearchResults found) Top state
 
 let markedDirectories (fs: IFileSystem) panel =
     PanelState.selectedEntries panel
@@ -508,13 +520,19 @@ let makeFile (fs: IFileSystem) side directory name state : Result<AppState * Fil
         return updatePanel side (PanelState.keepSurviving previous.Selected) loaded, path
     }
 
-let private readAgain (fs: IFileSystem) side state =
+let private readAgainWithRefusals (fs: IFileSystem) side state =
     let panel = panel side state
 
-    loadLocationFocusing fs side panel.Path (PanelState.cursorFocus panel) state
-    |> Result.map (updatePanel side (PanelState.keepSurviving panel.Selected))
+    loadLocationWithRefusals fs side panel.Path (PanelState.cursorFocus panel) state
+    |> Result.map (fun (loaded, refused) -> updatePanel side (PanelState.keepSurviving panel.Selected) loaded, refused)
+
+let private readAgain (fs: IFileSystem) side state =
+    readAgainWithRefusals fs side state |> Result.map fst
 
 let refresh (fs: IFileSystem) (state: AppState) = readAgain fs state.Active state
+
+let refreshWithRefusals (fs: IFileSystem) (state: AppState) =
+    readAgainWithRefusals fs state.Active state
 
 let readTabAgain (fs: IFileSystem) state =
     readAgain fs Left state |> Result.bind (readAgain fs Right)

@@ -6,6 +6,15 @@ open FsToolkit.ErrorHandling
 open Marbas.Domain
 open Marbas.FileSystem.DirectoryListing
 
+type ResultsListing =
+    { Listed: Entry array
+      Refused: ArchiveError list }
+
+type private Survival =
+    | Standing
+    | Gone
+    | Unconfirmed of ArchiveError
+
 let private shownAs (fs: IFileSystem) (found: FoundEntries) (hit: FindHit) =
     { hit.Entry with
         Name = FindHit.displayName fs found.Ground hit }
@@ -17,7 +26,13 @@ let private indexedPrefixes (fs: IFileSystem) (archive: FileSystemPath) =
     ArchiveIndex.read fs archive
     |> Result.map (Seq.collect (_.Segments >> prefixes) >> Set.ofSeq)
 
-let private surviving (fs: IFileSystem) (found: FoundEntries) =
+let private survivalIn (held: Result<Set<EntryName list>, ArchiveError>) segments =
+    match held with
+    | Ok indexed when indexed.Contains segments -> Standing
+    | Ok _ -> Gone
+    | Error error -> Unconfirmed error
+
+let private survivals (fs: IFileSystem) (found: FoundEntries) =
     let archives =
         Collections.Generic.Dictionary<FileSystemPath, Result<Set<EntryName list>, ArchiveError>>()
 
@@ -29,16 +44,14 @@ let private surviving (fs: IFileSystem) (found: FoundEntries) =
             archives[archive] <- read
             read
 
-    let survives (hit: FindHit) =
+    let survival (hit: FindHit) =
         match hit.Location with
-        | InArchive(archive, level) when FindHit.exists fs hit ->
-            let segments = ArchivePath.segments level @ [ hit.Entry.Name ]
-            held archive |> Result.map (Set.contains segments)
-        | _ -> Ok(FindHit.exists fs hit)
+        | _ when not (FindHit.exists fs hit) -> Gone
+        | InArchive(archive, level) -> survivalIn (held archive) (ArchivePath.segments level @ [ hit.Entry.Name ])
+        | OnDisk _
+        | SearchResults _ -> Standing
 
-    found.Hits
-    |> List.traverseResultM (fun hit -> survives hit |> Result.map (fun kept -> hit, kept))
-    |> Result.map (List.filter snd >> List.map fst)
+    found.Hits |> List.map (fun hit -> hit, survival hit)
 
 let hitFor (found: FoundEntries) (name: EntryName) = found.Shown |> Map.tryFind name
 
@@ -53,10 +66,32 @@ let private resultsParent (fs: IFileSystem) (found: FoundEntries) =
 
     parentEntry modified
 
+let private strictly (hit, survival) =
+    match survival with
+    | Standing -> Ok(Some hit)
+    | Gone -> Ok None
+    | Unconfirmed error -> Error error
+
 let read (fs: IFileSystem) (found: FoundEntries) =
-    surviving fs found |> Result.map (List.map (shownAs fs found))
+    survivals fs found
+    |> List.traverseResultM strictly
+    |> Result.map (List.choose id >> List.map (shownAs fs found))
+
+let private leniently (fs: IFileSystem) (found: FoundEntries) (hit, survival) =
+    match survival with
+    | Standing -> Some(shownAs fs found hit)
+    | Gone -> None
+    | Unconfirmed _ -> Some { shownAs fs found hit with Verification = Unverified }
+
+let private refusal (_, survival) =
+    match survival with
+    | Unconfirmed error -> Some error
+    | Standing
+    | Gone -> None
 
 let listForDisplay (fs: IFileSystem) (sort: SortOrder) (hidden: HiddenEntries) (found: FoundEntries) =
-    read fs found
-    |> Result.mapError ArchiveUnreadable
-    |> Result.map (fun entries -> order sort (resultsParent fs found :: shown hidden entries))
+    let survivals = survivals fs found
+    let entries = survivals |> List.choose (leniently fs found)
+
+    { Listed = order sort (resultsParent fs found :: shown hidden entries)
+      Refused = survivals |> List.choose refusal |> List.distinct }

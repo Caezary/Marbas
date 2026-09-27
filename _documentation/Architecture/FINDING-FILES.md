@@ -297,11 +297,33 @@ so a results panel is checked when it is first shown and when the user asks,
 and a file written into the *other* panel's directory costs it nothing. It used
 to cost a `File.Exists` per hit and a full index read per archive, on the UI
 thread, every time: 265 ms for 50,000 hits over a mock file system, and a real
-disk charges more for a stat than a mock does. An archive whose index cannot be read at all is not an answer:
-`SearchListing.indexedPrefixes` hands the `ArchiveError` back, the listing fails as
-`ArchiveUnreadable`, and the panel says so. Keeping those hits would show them
-as verified when nothing verified them, and the damage would surface later
-under a different message from whichever operation tripped over it.
+disk charges more for a stat than a mock does. An archive whose index cannot be read at all
+confirms nothing and refutes nothing, and its hits are listed anyway —
+`Verification = Unverified` on the entry — beside everything else the listing
+could check.
+
+**A damaged archive loses its own hits' certainty, not the whole listing.**
+P15.4 made the listing fail as `ArchiveUnreadable` when an index could not be
+read, which stopped a hit being shown as checked when nothing checked it, and
+cost every other hit on the panel along with it. Since P15.24
+`SearchListing.listForDisplay` answers a `ResultsListing`: the entries, and in
+`Refused` the `ArchiveError` of each archive that could not be read, once per
+archive however many hits it holds. It cannot fail, so it answers no `Result`;
+`SearchListing.read` keeps the strict answer — the first refusal as an error —
+for a caller that wants nothing it could not verify. On screen an unverified hit
+wears its own colour, `ClassicScheme.unverifiedEntry` (bright red on blue),
+whatever its kind, because it is the warning that matters and not whether it is
+an archive or a program; the footer adds `2 unverified` beside the counts,
+which a panel too narrow to show much of a name still shows. The refusal
+reaches the user as one message, `ReportUnverifiedHits`, naming each archive
+and why, and only where the user asked for the listing: when the hits are sent
+to the panel and on `Ctrl+R`. The reloads nobody asked for — after an
+operation, toggling hidden entries, a finished edit — go through
+`loadLocationFocusing`, which drops the refusals, because the colour and the
+footer already say it and a dialog after every `F5` would say it again for
+nothing. `loadLocationWithRefusals` is the one load that keeps them, and
+`showResults` and `refreshWithRefusals` are the two transitions that hand them
+on.
 
 **A results panel is a place to look at, never a place to come back to.** It is
 not watched — `PanelLocation.watched` answers nothing for it — since a result can

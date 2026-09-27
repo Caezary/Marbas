@@ -182,7 +182,8 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   is never blank: it summarises the marks — how many entries and how many bytes
   they add up to — and falls back to what the directory holds (`3 files, 2
   folders   1,234 bytes`; `..` counts as neither, and only the files add to the
-  total) while nothing is marked. An open search takes it over from both.
+  total) while nothing is marked. A results panel holding hits nothing could
+  verify says how many (`4 files, 0 folders, 2 unverified   8 bytes`). An open search takes it over from both.
 - A status line above the function-key bar describes the entry under the cursor
   of the active panel — untruncated name, exact size in bytes (`<DIR>` for
   directories) and modification date; a link adds what it points at after its

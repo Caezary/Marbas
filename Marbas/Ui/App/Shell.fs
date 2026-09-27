@@ -277,6 +277,8 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
     match effect with
     | ReportListingError error ->
         report deps (ListingErrorMessage.title error) (ListingErrorMessage.describe error)
+    | ReportUnverifiedHits refused ->
+        report deps ArchiveErrorMessage.Title (ArchiveErrorMessage.describeUnverified refused)
     | ReportOperationError error ->
         report deps OperationErrorMessage.Title (OperationErrorMessage.describe error)
     | ReportLaunchError error -> report deps LaunchErrorMessage.Title (LaunchErrorMessage.describe error)

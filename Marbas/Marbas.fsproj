@@ -18,6 +18,7 @@
         <Compile Include="Domain\SortOrder.fs" />
         <Compile Include="Domain\HiddenEntries.fs" />
         <Compile Include="Domain\Executability.fs" />
+        <Compile Include="Domain\EntryVerification.fs" />
         <Compile Include="Domain\SearchText.fs" />
         <Compile Include="Domain\NamePattern.fs" />
         <Compile Include="Domain\SelectionMode.fs" />

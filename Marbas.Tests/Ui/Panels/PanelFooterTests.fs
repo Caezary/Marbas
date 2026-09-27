@@ -20,7 +20,8 @@ let private file name size =
       Modified = modified
       Visibility = Plain
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private directory name =
     { Name = EntryName.create name
@@ -30,7 +31,8 @@ let private directory name =
       Modified = modified
       Visibility = Plain
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private entries =
     [| directory ".."; directory "docs"; file "a.txt" 1000L; file "b.txt" 234L |]
@@ -96,3 +98,20 @@ let ``an open search takes the footer over from everything else`` () =
     let text = PanelFooter.describe searching
 
     Assert.Equal("Search: a.", text)
+
+let private unverified entry = { entry with Verification = Unverified }
+
+[<Fact>]
+let ``the footer counts the entries listed unverified`` () =
+    let text =
+        PanelFooter.describe
+            { panel with
+                Entries = [| directory ".."; unverified (file "a.txt" 1L); unverified (directory "docs"); file "b.txt" 2L |] }
+
+    Assert.Contains("2 files, 1 folder, 2 unverified", text)
+
+[<Fact>]
+let ``a footer over entries that were all verified says nothing of verification`` () =
+    let text = PanelFooter.describe panel
+
+    Assert.DoesNotContain("unverified", text)

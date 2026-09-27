@@ -41,7 +41,8 @@ let private entry name kind =
       Modified = DateTimeOffset.MinValue
       Visibility = Plain
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private hitIn where name kind =
     { Location = OnDisk(fp (at where))
@@ -268,3 +269,84 @@ let ``an external change leaves the hits of a results panel as they were`` () =
     let again = update fs ExternalChangeDetected state |> _.State
 
     Assert.Equal<string list>([ ".."; relative "docs/inner.txt"; "notes.txt" ], named again)
+
+let private broken = fp (at "start/broken.zip")
+
+let private withArchives () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "hi")
+    fs.AddFile(at "work/inner.txt", MockFileData "inner")
+    fs.AddFile(at "start/broken.zip", MockFileData "not a zip")
+
+    Archive.write
+        fs
+        Operations.unattended
+        { Path = fp (at "start/data.zip")
+          Format = ArchiveFormat.tryCreate Zip |> Expect.some
+          Compression = Normal
+          Password = None }
+        [ fp (at "work/inner.txt") ]
+    |> ignore
+
+    fs :> IFileSystem
+
+let private archivedIn (archive: FileSystemPath) name =
+    { Location = InArchive(archive, ArchivePath.root)
+      Entry = entry name File }
+
+let private acrossArchives =
+    [ hitIn "start" "notes.txt" File
+      archivedIn (fp (at "start/data.zip")) "inner.txt"
+      archivedIn broken "lost.txt"
+      archivedIn broken "other.txt" ]
+
+let private damagedArchive error =
+    match error with
+    | ArchiveDamaged(path, _) -> Some path
+    | _ -> None
+
+let private unverifiedReports (effects: Effect list) =
+    effects
+    |> List.choose (function
+        | ReportUnverifiedHits refused -> Some(refused |> List.choose damagedArchive)
+        | _ -> None)
+
+let private showingAcross fs state =
+    update fs (SearchAnswered { Landing = Some InPanel; Results = results acrossArchives }) state
+
+[<Fact>]
+let ``hits inside an archive that cannot be read are listed with the hits that could be checked`` () =
+    let fs = withArchives ()
+
+    let state = loaded fs |> showingAcross fs |> _.State
+
+    Assert.Equal<string list>(
+        [ ".."; relative "broken.zip/lost.txt"; relative "broken.zip/other.txt"; relative "data.zip/inner.txt"; "notes.txt" ],
+        named state
+    )
+
+[<Fact>]
+let ``showing the hits reports an archive that cannot be read once, not once per hit`` () =
+    let fs = withArchives ()
+
+    let result = loaded fs |> showingAcross fs
+
+    Assert.Equal<FileSystemPath list list>([ [ broken ] ], unverifiedReports result.Effects)
+
+[<Fact>]
+let ``reading the results again reports the archive that cannot be read again`` () =
+    let fs = withArchives ()
+    let state = loaded fs |> showingAcross fs |> _.State
+
+    let result = update fs RefreshRequested state
+
+    Assert.Equal<FileSystemPath list list>([ [ broken ] ], unverifiedReports result.Effects)
+
+[<Fact>]
+let ``a reload the user did not ask for leaves the archive that cannot be read unreported`` () =
+    let fs = withArchives ()
+    let state = loaded fs |> showingAcross fs |> _.State
+
+    let result = update fs HiddenToggled state
+
+    Assert.Empty result.Effects

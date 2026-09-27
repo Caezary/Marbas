@@ -181,6 +181,7 @@ let ``the entry leading up is a plain directory named two dots, dated as it is t
           Modified = moment
           Visibility = Plain
           Executability = NotExecutable
-          LinkTarget = None },
+          LinkTarget = None
+          Verification = Verified },
         entry
     )

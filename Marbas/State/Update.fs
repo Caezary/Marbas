@@ -80,6 +80,7 @@ type DeleteRequest =
 
 type Effect =
     | ReportListingError of ListingError
+    | ReportUnverifiedHits of refused: ArchiveError list
     | ReportOperationError of Operations.OperationError
     | ReportLaunchError of LaunchError
     | ReportItemFailures of Operations.ItemResult list
@@ -163,6 +164,12 @@ let private rereadAndSave (fs: IFileSystem) state =
 let private applyListing state result =
     match result with
     | Ok updated -> stay updated
+    | Error error -> request state (ReportListingError error)
+
+let private applyListingWithRefusals state result =
+    match result with
+    | Ok(updated, []) -> stay updated
+    | Ok(updated, refused) -> request updated (ReportUnverifiedHits refused)
     | Error error -> request state (ReportListingError error)
 
 let private applyOperation state result =
@@ -312,7 +319,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | PanelFocused side -> stay (activate side state)
     | EntryOpened -> openCursorEntry fs state
     | WalkIntoRequested -> enter fs state |> applyListing state
-    | RefreshRequested -> refresh fs state |> applyListing state
+    | RefreshRequested -> refreshWithRefusals fs state |> applyListingWithRefusals state
     | ExternalChangeDetected -> state |> readTabQuietly fs |> stay
     | SelectionToggled direction -> stay (toggleSelectionMoving direction state.Active state)
     | SelectionToggledTo cursor -> stay (toggleSelectionShortOf cursor.Side cursor.Index state)
@@ -423,7 +430,9 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | None -> stay remembered
         | Some(AtHit hit) -> standOnHit fs state.Active hit remembered |> applyListing remembered
         | Some(AtDirectory location) -> standInside fs state.Active location remembered |> applyListing remembered
-        | Some InPanel -> showResults fs state.Active answer.Results remembered |> applyListing remembered
+        | Some InPanel ->
+            showResults fs state.Active answer.Results remembered
+            |> applyListingWithRefusals remembered
     | LinkRequested ->
         let panel = activePanel state
 

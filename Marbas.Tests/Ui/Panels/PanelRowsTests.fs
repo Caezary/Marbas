@@ -20,7 +20,8 @@ let private file name =
       Modified = modified
       Visibility = Plain
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private panelOf entries =
     { Path = OnDisk(FileSystemPath.create (Root.at "start"))

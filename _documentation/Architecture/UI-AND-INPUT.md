@@ -153,7 +153,8 @@ no mode, is classified by `Executability.ofName` alone.
 `IFileSystemInfo.UnixFileMode` answers `None` on Windows rather than throwing,
 and `MockFileSystem` lets a test set it, which is what makes the Unix half
 testable from a Windows machine. Which colour an entry then gets is
-`EntryColor.classify` — directory, archive (by extension), executable, plain —
+`EntryColor.classify` — directory, archive (by extension), executable, plain,
+or unverified for a search hit nothing could check, which wins over the rest —
 and it is `Ui`'s alone, because an archive is a display grouping and not a fact
 about the file.
 

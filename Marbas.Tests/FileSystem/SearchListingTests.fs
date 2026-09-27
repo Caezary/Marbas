@@ -38,7 +38,8 @@ let private entry name visibility =
       Modified = DateTimeOffset.MinValue
       Visibility = visibility
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private hitIn where name =
     { Location = OnDisk(fp (at where))
@@ -60,13 +61,21 @@ let private fromStart fs hits =
 let private named (entries: Entry seq) =
     entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
-let private listed fs hidden found =
-    SearchListing.listForDisplay fs SortOrder.byName hidden found |> Expect.ok
+let private listing fs hidden found =
+    SearchListing.listForDisplay fs SortOrder.byName hidden found
+
+let private listed fs hidden found = (listing fs hidden found).Listed
+
+let private unverified (entries: Entry seq) =
+    entries |> Seq.filter (fun e -> e.Verification = Unverified) |> named
 
 let private damagedArchive error =
     match error with
-    | ArchiveUnreadable(ArchiveDamaged(path, _)) -> Some path
+    | ArchiveDamaged(path, _) -> Some path
     | _ -> None
+
+let private refusedArchives (listing: SearchListing.ResultsListing) =
+    listing.Refused |> List.choose damagedArchive
 
 [<Fact>]
 let ``a hit is named by its path below where the search started`` () =
@@ -135,9 +144,22 @@ let private packed () =
 
     fs
 
-let private archived level name kind =
-    { Location = InArchive(fp (at "start/data.zip"), ArchivePath.tryCreate level |> Expect.some)
+let private archivedIn archive level name kind =
+    { Location = InArchive(fp (at archive), ArchivePath.tryCreate level |> Expect.some)
       Entry = { entry name Plain with Kind = kind } }
+
+let private archived level name kind = archivedIn "start/data.zip" level name kind
+
+let private broken = "start/broken.zip"
+
+let private mixed () =
+    let fs = packed ()
+    fs.AddFile(at "start/plain.txt", MockFileData "plain")
+    fs.AddFile(at broken, MockFileData "not a zip")
+    fs
+
+let private mixedHits =
+    [ hitIn "start" "plain.txt"; archived "" "notes.txt" File; archivedIn broken "" "lost.txt" File ]
 
 [<Fact>]
 let ``a hit inside an archive stays while the archive still holds it`` () =
@@ -164,14 +186,48 @@ let ``a hit inside an archive that no longer holds it is left out`` () =
     Assert.Equal<string list>([ ".."; relative "data.zip/docs/inner.txt" ], named entries)
 
 [<Fact>]
-let ``a hit inside an archive whose index cannot be read is reported instead of shown`` () =
-    let fs = MockFileSystem()
-    fs.AddFile(at "start/data.zip", MockFileData "not a zip")
+let ``a hit inside an archive whose index cannot be read is listed beside the hits that could be checked`` () =
+    let fs = mixed ()
 
-    let listing =
-        SearchListing.listForDisplay fs SortOrder.byName Concealed (fromStart fs [ archived "" "notes.txt" File ])
+    let entries = listed fs Concealed (fromStart fs mixedHits)
 
-    Assert.Equal(Some(fp (at "start/data.zip")), damagedArchive (Expect.error listing))
+    Assert.Equal<string list>(
+        [ ".."; relative "broken.zip/lost.txt"; relative "data.zip/notes.txt"; "plain.txt" ],
+        named entries
+    )
+
+[<Fact>]
+let ``only the hits inside an archive whose index cannot be read are listed unverified`` () =
+    let fs = mixed ()
+
+    let entries = listed fs Concealed (fromStart fs mixedHits)
+
+    Assert.Equal<string list>([ relative "broken.zip/lost.txt" ], unverified entries)
+
+[<Fact>]
+let ``an archive whose index cannot be read is named once however many hits it holds`` () =
+    let fs = mixed ()
+    let hits = [ archivedIn broken "" "lost.txt" File; archivedIn broken "" "other.txt" File ]
+
+    let listing = listing fs Concealed (fromStart fs hits)
+
+    Assert.Equal<FileSystemPath list>([ fp (at broken) ], refusedArchives listing)
+
+[<Fact>]
+let ``a listing whose archives can all be read names none`` () =
+    let fs = packed ()
+
+    let listing = listing fs Concealed (fromStart fs [ archived "" "notes.txt" File ])
+
+    Assert.Empty listing.Refused
+
+[<Fact>]
+let ``the strict reading of a hit inside an archive whose index cannot be read is an error`` () =
+    let fs = mixed ()
+
+    let read = SearchListing.read fs (fromStart fs mixedHits)
+
+    Assert.Equal(Some(fp (at broken)), damagedArchive (Expect.error read))
 
 [<Fact>]
 let ``the name a hit is shown under leads back to that hit`` () =

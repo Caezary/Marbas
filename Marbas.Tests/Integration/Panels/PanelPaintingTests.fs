@@ -5,6 +5,9 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Drawing
 open Terminal.Gui.Views
+open Marbas.Domain
+open Marbas.FileSystem
+open Marbas.FileSystem.DirectoryListing
 open Marbas.Ui.Theme
 open Marbas.Ui.Keys
 open Marbas.Ui.Panels
@@ -143,3 +146,94 @@ let ``a directory opened paints the rows again`` () =
     press list Terminal.Gui.Input.Key.Enter
 
     Assert.NotSame(painted, list.Source)
+
+let private fp = FileSystemPath.create
+
+let private withArchives () =
+    let fs = mockFs ()
+    fs.AddFile(at "work/inner.txt", MockFileData "inner")
+    fs.AddFile(at "start/broken.zip", MockFileData "not a zip")
+
+    Archive.write
+        fs
+        Operations.unattended
+        { Path = fp (at "start/data.zip")
+          Format = ArchiveFormat.tryCreate Zip |> Expect.some
+          Compression = Normal
+          Password = None }
+        [ fp (at "work/inner.txt") ]
+    |> ignore
+
+    fs
+
+let private query =
+    { What = FindWhat.create (NameMasks.read "*.txt") None FilesOnly
+      Scope = FromDirectory
+      Hidden = Concealed
+      Links = StopAtLinks
+      Archives = SearchArchives }
+
+let private hit location name =
+    { Location = location
+      Entry =
+        { Name = EntryName.create name
+          Kind = File
+          Size = Some 2L
+          Measured = None
+          Modified = DateTimeOffset.MinValue
+          Visibility = Plain
+          Executability = NotExecutable
+          LinkTarget = None
+          Verification = Verified } }
+
+let private acrossArchives =
+    [ hit (OnDisk(fp (at "start"))) "readme.txt"
+      hit (InArchive(fp (at "start/data.zip"), ArchivePath.root)) "inner.txt"
+      hit (InArchive(fp (at "start/broken.zip"), ArchivePath.root)) "lost.txt"
+      hit (InArchive(fp (at "start/broken.zip"), ArchivePath.root)) "other.txt" ]
+
+let private sentToPanel =
+    { Landing = Some InPanel
+      Results =
+        { Query = query
+          Ground =
+            { Roots = [ OnDisk(fp (at "start")) ]
+              OtherRoots = [] }
+          Hits = acrossArchives
+          Outcome = FileSearch.Finished { Files = 4; Directories = 0; Skipped = 0 }
+          Cursor = 0 } }
+
+let private resultsWindow (reported: ResizeArray<string>) =
+    let window =
+        focusedWindow
+            { Fakes.dependencies (withArchives ()) (at "start") with
+                Prompts.AskFind = fun _ -> Some(Search query)
+                Prompts.ReportError = fun report -> reported.Add report.Message
+                Runners.Search = fun _ _ answer -> answer sentToPanel }
+
+    pressKey window KeyMap.findKey
+    window
+
+[<Fact>]
+let ``hits inside an archive that cannot be read are painted unverified among the hits that could be checked`` () =
+    use window = resultsWindow (ResizeArray())
+    let list = leftList window
+    list.SelectedItem <- 0
+
+    let painted = [ 1..4 ] |> List.map (paintedRow list)
+
+    Assert.Equal<Nullable<Attribute> list>(
+        [ Nullable ClassicScheme.unverifiedEntry
+          Nullable ClassicScheme.unverifiedEntry
+          Nullable ClassicScheme.plainEntry
+          Nullable ClassicScheme.plainEntry ],
+        painted
+    )
+
+[<Fact>]
+let ``an archive that cannot be read is reported once when its hits are shown`` () =
+    let reported = ResizeArray<string>()
+
+    use window = resultsWindow reported
+
+    Assert.Contains(at "start/broken.zip", Assert.Single reported)

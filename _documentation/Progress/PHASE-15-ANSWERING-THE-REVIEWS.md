@@ -1239,3 +1239,51 @@ path helpers in P15.14, the three duplications the task named are gone.
 | perf P15 wipe bound by the CSPRNG | not done, by design: why the one pass is cryptographic is now written in [File operations](../Architecture/FILE-OPERATIONS.md) |
 
 2411 passing, 11 skipped, from 2361; the build is clean.
+
+**P15.24 let a damaged archive lose its own hits' certainty, not the whole
+listing.** Stage 6 opened with the one answer of stage 1 that was right about
+the silence and wrong about the blast radius: since P15.4 a results panel with
+one hit inside an archive whose index could not be read did not load at all.
+`SearchListing` now decides each hit's survival once — standing, gone, or
+unconfirmed with the `ArchiveError` that stopped it — and reads that list two
+ways. `read` stays strict and answers the first refusal as an error;
+`listForDisplay` answers a `ResultsListing` that cannot fail: the entries, the
+unconfirmed ones among them carrying `Verification = Unverified`, and in
+`Refused` each archive that could not be read, once however many hits it holds.
+`EntryVerification` is a new two-case union in `Domain`, and every `Entry` a
+directory or an archive lists is `Verified`.
+
+Where the mark lives was the design question the plan left open, and the answer
+is both places it named. `EntryColor.classify` answers `UnverifiedColor` —
+`ClassicScheme.unverifiedEntry`, bright red on blue — before it asks about the
+kind, so an unverified archive or link reads as unverified first; the footer
+adds `2 unverified` after the counts, where a narrow panel still shows it. When
+the user hears about it was the second question: once per listing they asked
+for — the hits sent to the panel and `Ctrl+R` — through one
+`ReportUnverifiedHits` message that names every refusing archive and says the
+hits inside are listed unverified. The reloads nobody asked for, after an
+operation, a hidden-entries toggle or an edit, drop the refusals, since the
+colour and the footer already say it. `AppState.loadLocationWithRefusals` is
+the load that keeps them; `loadLocationFocusing` is it with the refusals dropped,
+and `showResults` and `refreshWithRefusals` hand them to `Update`.
+
+The render probe drove the real window — `Alt+F7`, a runner answering four hits
+into the panel — and read the cells back:
+
+```
+╔╡Find: *.txt in C:\...\tree\start [name ↑]╞═══════════════╗
+║..                                  <DIR> 2026-09-27 01:44║   Black on Aqua (cursor)
+║broken.zip\lost.txt                     2 2026-09-27 01:44║   BrightRed on Blue
+║broken.zip\other.txt                    2 2026-09-27 01:44║   BrightRed on Blue
+║data.zip\inner.txt                      2 2026-09-27 01:44║   BrightBlue on Blue
+║readme.txt                              2 2026-09-27 01:44║   BrightBlue on Blue
+║──────────────────────────────────────────────────────────║
+║4 files, 0 folders, 2 unverified   8 bytes                ║
+```
+
+and one error reported, under `Archive`: the path, the reader's reason, and
+"The hits inside are listed unverified." The same scene is a pair of
+integration tests in `PanelPaintingTests`, which read the painted rows and count
+the reports. The rough edge it answered is gone from [Rough edges](../ROUGH-EDGES.md).
+
+2430 passing, 11 skipped, from 2411; the build is clean.

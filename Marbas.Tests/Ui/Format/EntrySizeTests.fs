@@ -18,7 +18,8 @@ let private entry kind size =
       Modified = modified
       Visibility = Plain
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private measured size =
     { entry Directory None with Measured = Some size }

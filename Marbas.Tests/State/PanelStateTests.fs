@@ -20,7 +20,8 @@ let private file name size =
       Modified = modified
       Visibility = Plain
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private directory name =
     { file name 0L with

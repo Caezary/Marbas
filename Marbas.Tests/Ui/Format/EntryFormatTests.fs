@@ -17,7 +17,8 @@ let private file name size =
       Modified = modified
       Visibility = Plain
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private dir name =
     { Name = EntryName.create name
@@ -27,7 +28,8 @@ let private dir name =
       Modified = modified
       Visibility = Plain
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 [<Fact>]
 let ``file row has name, right-aligned size and date columns`` () =

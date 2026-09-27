@@ -13,14 +13,20 @@ let private counted noun (entries: Entry array) =
     | 1 -> $"1 {noun}"
     | count -> $"{count} {noun}s"
 
+let private unverifiedCount (entries: Entry array) =
+    match entries |> Array.filter (fun e -> e.Verification = Unverified) with
+    | [||] -> ""
+    | unverified -> $", {unverified.Length} unverified"
+
 let private describeContents (entries: Entry array) =
     let listed = entries |> Array.filter (fun e -> e.Name <> ParentName)
     let files = listed |> Array.filter (fun e -> e.Kind = File)
     let folders = listed |> Array.filter (fun e -> e.Kind = Directory)
     let fileCount = counted "file" files
     let folderCount = counted "folder" folders
+    let unverified = unverifiedCount listed
     let size = EntrySize.grouped (totalBytes files)
-    $"{fileCount}, {folderCount}   {size} bytes"
+    $"{fileCount}, {folderCount}{unverified}   {size} bytes"
 
 let describe (panel: PanelState) =
     match panel.Search with

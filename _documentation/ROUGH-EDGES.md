@@ -145,11 +145,6 @@ belongs in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   named more than once. Removing the split means `FileSearch` reporting a
   directory's own hits before it descends, which is a change to the walk and
   belongs with P15.14.
-- One archive whose index cannot be read keeps the whole results panel from
-  loading. Since P15.4 a hit inside such an archive is no longer shown as if it
-  had been verified — the listing answers `ArchiveUnreadable` instead — but the
-  refusal takes every other hit down with it, including the ones on disk that
-  were verified fine. P15.24 shows what could be verified and marks the rest.
 - A search *from the root of the volume* on Linux walks into `/proc`, `/sys`,
   `/run` and the other pseudo file systems. The walk is bounded by the other
   listed drives, and P13.12 keeps exactly those mounts off the list, so nothing

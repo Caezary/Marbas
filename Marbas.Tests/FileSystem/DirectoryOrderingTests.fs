@@ -22,7 +22,8 @@ let private entry name kind =
       Modified = DateTimeOffset(DateTime(2026, 1, 1))
       Visibility = Plain
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private sized name size =
     { entry name File with Size = Some size }

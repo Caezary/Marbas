@@ -79,6 +79,7 @@ Marbas/
     SortOrder.fs          which key a panel sorts by, in which direction
     HiddenEntries.fs      what makes an entry hidden, and whether a panel lists it
     Executability.fs      what makes an entry a program, by name or by mode bit alone
+    EntryVerification.fs  whether a listed entry was checked, or stands for a hit nothing could check
     SearchText.fs         the text a panel is being searched for, and what it matches
     NamePattern.fs        wildcard matching for `+` / `-`
     SelectionMode.fs      marking or unmarking, instead of a boolean

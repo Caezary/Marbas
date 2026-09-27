@@ -41,6 +41,18 @@ let ``a damaged archive carries the reason it gave`` () =
     Assert.Contains("unknown header", message)
 
 [<Fact>]
+let ``archives that cannot be read are each named, with the hits inside them said to be unverified`` () =
+    let other = at "backup/other.zip"
+
+    let message =
+        ArchiveErrorMessage.describeUnverified [ ArchiveDamaged(fp archive, "unknown header"); PasswordNeeded(fp other) ]
+
+    Assert.Contains(archive, message)
+    Assert.Contains("unknown header", message)
+    Assert.Contains(other, message)
+    Assert.Contains("unverified", message)
+
+[<Fact>]
 let ``the password prompt names the archive it is for`` () =
     let label = PasswordQuestion.describe (EntryName.create "data.zip")
 

@@ -13,7 +13,8 @@ let fileEntry (name: EntryName) (info: ArchiveEntryInfo) =
       Modified = info.Modified
       Visibility = EntryVisibility.ofName name
       Executability = Executability.ofName name
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let directoryEntry (name: EntryName) (modified: DateTimeOffset) =
     { Name = name
@@ -23,7 +24,8 @@ let directoryEntry (name: EntryName) (modified: DateTimeOffset) =
       Modified = modified
       Visibility = EntryVisibility.ofName name
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private storedAt depth (group: ArchiveEntryInfo list) =
     group |> List.tryFind (fun info -> info.Segments.Length = depth + 1)

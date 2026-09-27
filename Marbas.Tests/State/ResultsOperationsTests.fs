@@ -63,7 +63,8 @@ let private file name =
       Modified = DateTimeOffset.MinValue
       Visibility = Plain
       Executability = NotExecutable
-      LinkTarget = None }
+      LinkTarget = None
+      Verification = Verified }
 
 let private hitIn where name =
     { Location = OnDisk(fp (at where))
