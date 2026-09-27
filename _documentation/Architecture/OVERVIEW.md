@@ -59,6 +59,7 @@ root. `Program.fs` is left with the handful of lines that start the application.
 - [UI and input](UI-AND-INPUT.md) — colour, sorting, hidden entries, search, popups and the drive popup, the key table
 - [Settings persistence](SETTINGS-PERSISTENCE.md) — the config file and what survives a restart
 - [Tabs](TABS.md) — a tab as a pair of panels, the zipper, switching, the counter
+- [History](HISTORY.md) — what is remembered, where it is kept, the popup and the drop-down fields
 - [Auto-refresh](AUTO-REFRESH.md) — watching the directories on screen, the burst, what the watcher cannot say
 - [Testing](TESTING.md) — suite layout, conventions, Terminal.Gui pitfalls
 - [Packaging](PACKAGING.md) — publish profiles and the release pipeline

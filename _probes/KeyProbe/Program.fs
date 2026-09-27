@@ -1,6 +1,7 @@
 module KeyProbe.Program
 
 open System
+open System.Collections.ObjectModel
 open System.Text
 open Terminal.Gui.App
 open Terminal.Gui.Input
@@ -14,10 +15,10 @@ let private NoHotKey = 0xffff
 let private LogLength = 12
 
 [<Literal>]
-let private PopupTitle = "Popup — the two keys below, then Esc or Close"
+let private PopupTitle = "Popup, buttons without hot keys — the keys below, then Esc"
 
 [<Literal>]
-let private ResultsTitle = "Full-screen window, viewer-shaped, no buttons — F3, Enter, then Esc twice"
+let private FieldTitle = "Popup with a drop-down field — the keys below, then Esc"
 
 let private literal (view: #View) =
     view.HotKeySpecifier <- Rune NoHotKey
@@ -27,31 +28,22 @@ let private quitKey = Key.Q.WithCtrl
 
 let private popupKey = Key.F1
 
-let private resultsKey = Key.F2
+let private fieldKey = Key.F2
 
-let private wanted =
-    [ "Alt+Del wipe", Key.Delete.WithAlt
-      "Ctrl+Backslash root", (Key '\\').WithCtrl
-      "Alt+F7 find", Key.F7.WithAlt ]
+let private wanted = [ "Alt+F12 history", Key.F12.WithAlt ]
 
-let private candidates =
-    [ "Alt+Backslash root", (Key '\\').WithAlt
-      "Alt+Shift+Del wipe", Key.Delete.WithAlt.WithShift
-      "Alt+Shift+F find", Key.F.WithAlt.WithShift ]
+let private candidates = [ "Alt+Shift+H history", Key.H.WithAlt.WithShift ]
 
 let private inPopup =
-    [ "Shift+Enter reveal", Key.Enter.WithShift
-      "Alt+R reveal", Key.R.WithAlt ]
+    [ "Ctrl+PgUp tab", Key.PageUp.WithCtrl
+      "Ctrl+PgDn tab", Key.PageDown.WithCtrl
+      "Del forget", Key.Delete
+      "Shift+Del clear", Key.Delete.WithShift
+      "Alt+G go to", Key.G.WithAlt ]
 
-let private alreadyBound =
-    [ "Alt+F1 drives", Key.F1.WithAlt
-      "Alt+F2 drives", Key.F2.WithAlt
-      "Alt+F6 link", Key.F6.WithAlt ]
-
-let private inResults =
-    [ "F3 view", Key.F3
-      "Enter choose", Key.Enter
-      "Esc stop", Key.Esc ]
+let private inField =
+    [ "Alt+Down list", Key.CursorDown.WithAlt
+      "F4 list", Key.F4 ]
 
 let private modifiersOf (key: Key) =
     [ if key.IsCtrl then "ctrl"
@@ -83,35 +75,23 @@ let private rows (heading: string) keys =
             | Some arrival -> $"  [x] %-20s{name} %s{arrival}"
             | None -> $"  [ ] %-20s{name}"))
 
-let mutable private escapes = 0
-
 let private checklist () =
     rows "Wanted:" wanted
     @ [ "" ]
     @ rows "Stand-ins:" candidates
     @ [ "" ]
-    @ rows "Already bound, no stand-in yet:" alreadyBound
-    @ [ "" ]
     @ rows "Inside a popup (F1 opens one):" inPopup
     @ [ "" ]
-    @ rows "Inside a full-screen modal (F2 opens one):" inResults
-    @ [ $"  Escapes taken there: %d{escapes} (the first is held, the second closes)" ]
+    @ rows "In a drop-down field inside a popup (F2 opens one):" inField
 
 let private screen () =
     checklist ()
     @ [ ""; "Last keys, newest first:" ]
     @ (log |> List.map (fun line -> "  " + line))
 
-let private popupScreen () =
-    rows "Inside a popup:" inPopup
+let private insideScreen heading keys =
+    rows heading keys
     @ [ ""; "Anything else arriving here:" ]
-    @ (log |> List.truncate 3 |> List.map (fun line -> "  " + line))
-
-let private resultsScreen () =
-    rows "Inside a full-screen modal:" inResults
-    @ [ $"  Escapes taken here: %d{escapes} (the first is held, the second closes)"
-        ""
-        "Anything else arriving here:" ]
     @ (log |> List.truncate 3 |> List.map (fun line -> "  " + line))
 
 let private environmentOf (name: string) =
@@ -128,61 +108,60 @@ let private report (driver: string) =
       "" ]
     @ screen ()
 
+let mutable private listening: ((Key -> unit) option) = None
+
 let private runPopup (app: IApplication) =
-    use dialog = new Dialog(Title = PopupTitle, Width = 70, Height = 12)
+    use dialog = new Dialog(Title = PopupTitle, Width = 76, Height = 14)
 
     let inside =
-        new Label(X = 1, Y = 0, Width = Dim.Fill 1, Height = Dim.Fill 2, Text = String.concat "\n" (popupScreen ()))
+        new Label(X = 1, Y = 0, Width = Dim.Fill 1, Height = Dim.Fill 2, Text = String.concat "\n" (insideScreen "Inside a popup:" inPopup))
         |> literal
 
     dialog.Add inside |> ignore
-    dialog.AddButton(new Button(Title = "_Close"))
+    dialog.AddButton(new Button(Title = "Close") |> literal)
+    dialog.AddButton(new Button(Title = "Go to") |> literal)
 
-    dialog.KeyDown.Add(fun key ->
-        record inPopup key
-        inside.Text <- String.concat "\n" (popupScreen ())
+    listening <-
+        Some(fun key ->
+            record inPopup key
+            inside.Text <- String.concat "\n" (insideScreen "Inside a popup:" inPopup)
 
-        if inPopup |> List.exists (fun (_, wantedKey) -> key = wantedKey) then
-            key.Handled <- true)
+            if inPopup |> List.exists (fun (_, wantedKey) -> key = wantedKey) then
+                key.Handled <- true)
 
     app.Run dialog |> ignore
+    listening <- None
 
-let private runResults (app: IApplication) =
-    use window = new Window(Title = ResultsTitle, Width = Dim.Fill(), Height = Dim.Fill())
+let private runField (app: IApplication) =
+    use dialog = new Dialog(Title = FieldTitle, Width = 76, Height = 14)
+
+    let field = new DropDownList(X = 1, Y = 1, Width = Dim.Fill 1, ReadOnly = false)
+    field.Source <- new ListWrapper<string>(ObservableCollection [ "first remembered"; "second remembered" ])
 
     let inside =
-        new Label(X = 1, Y = 0, Width = Dim.Fill 1, Height = Dim.Fill 1, Text = String.concat "\n" (resultsScreen ()))
+        new Label(X = 1, Y = 3, Width = Dim.Fill 1, Height = Dim.Fill 2, Text = String.concat "\n" (insideScreen "In the field:" inField))
         |> literal
 
-    window.Add inside |> ignore
+    dialog.Add(new Label(X = 1, Y = 0, Text = "Field:") |> literal, field, inside) |> ignore
+    dialog.AddButton(new Button(Title = "Close") |> literal)
 
-    escapes <- 0
+    listening <-
+        Some(fun key ->
+            record inField key
+            inside.Text <- String.concat "\n" (insideScreen "In the field:" inField))
 
-    window.KeyDown.Add(fun key ->
-        record inResults key
-
-        if key = Key.Esc then
-            escapes <- escapes + 1
-            key.Handled <- true
-
-            if escapes >= 2 then
-                window.RequestStop()
-        elif inResults |> List.exists (fun (_, wantedKey) -> key = wantedKey) then
-            key.Handled <- true
-
-        inside.Text <- String.concat "\n" (resultsScreen ()))
-
-    app.Run window |> ignore
+    app.Run dialog |> ignore
+    listening <- None
 
 [<EntryPoint>]
 let main _ =
-    Application.SetDefaultKeyBinding(Command.Quit, Bind.All quitKey)
+    Application.SetDefaultKeyBinding(Command.Quit, Bind.All(quitKey, Key.Esc))
     let app = Application.Create().Init()
     let driver = app.Driver.GetType().Name
 
     let window =
         new Window(
-            Title = "Marbas key probe — press the keys below, F1 a popup, F2 a full-screen one, Ctrl+Q quits",
+            Title = "Marbas key probe — press the keys below, F1 a popup, F2 a drop-down field, Ctrl+Q quits",
             Width = Dim.Fill(),
             Height = Dim.Fill()
         )
@@ -193,19 +172,16 @@ let main _ =
 
     window.Add board |> ignore
 
-    let mutable popupIsUp = false
-
     app.Keyboard.KeyDown.Add(fun key ->
-        if popupIsUp || key = quitKey then
-            ()
-        elif key = popupKey || key = resultsKey then
+        match listening with
+        | Some listen -> listen key
+        | None when key = quitKey -> ()
+        | None when key = popupKey || key = fieldKey ->
             key.Handled <- true
-            popupIsUp <- true
-            (if key = popupKey then runPopup app else runResults app)
-            popupIsUp <- false
+            (if key = popupKey then runPopup app else runField app)
             board.Text <- String.concat "\n" (screen ())
-        else
-            record (wanted @ candidates @ alreadyBound) key
+        | None ->
+            record (wanted @ candidates) key
             board.Text <- String.concat "\n" (screen ())
             key.Handled <- true)
 

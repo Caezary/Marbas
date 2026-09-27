@@ -65,6 +65,7 @@ written up as the checklist in
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done | [journal](Progress/PHASE-13-DRIVES-LINKS-AND-TRASH.md) |
 | 14 — Finding files | P14.1–P14.14 | done | [journal](Progress/PHASE-14-FINDING-FILES.md) |
 | 15 — Answering the reviews | P15.1–P15.26 | done | [journal](Progress/PHASE-15-ANSWERING-THE-REVIEWS.md) |
+| 16 — History | P16.1–P16.10 | P16.1 done | [journal](Progress/PHASE-16-HISTORY.md) |
 
 ## What works today
 

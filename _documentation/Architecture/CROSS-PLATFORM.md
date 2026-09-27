@@ -292,6 +292,11 @@ tested and was confirmed by running the app.
 | `Esc` can be taken by a full-screen window and close it on the second press | yes | yes | probe |
 | `Alt+F1`, `Alt+F2` and `Alt+F6`, already bound, reach the terminal | yes | yes | probe |
 | `Alt+F1`, `Alt+F2` and `Alt+F6` reach the application on a desktop | n/a | **no** under GNOME: `panel-main-menu`, `panel-run-dialog` and `cycle-group` | desktop defaults |
+| `Alt+F12`, the key phase 16 opens the history with | yes | yes | probe |
+| `Alt+Shift+H`, its stand-in | yes | yes | probe |
+| `Ctrl+PgUp`, `Ctrl+PgDn`, `Del`, `Shift+Del` and `Alt+G` reach a popup that is up | yes | yes | probe |
+| `Alt+↓` and `F4` reach a drop-down field inside a popup | yes | yes | probe |
+| `Alt+F12`, `Alt+Shift+H`, `Ctrl+PgUp`, `Ctrl+PgDn`, `Alt+G`, `Alt+↓`, `F4`, `Del` and `Shift+Del`, the keys of phase 16, are claimed by a desktop | n/a | no, none of them under GNOME; its only `Page_Up` bindings carry `<Super>` and its only `Down` bindings `<Control><Alt>` | desktop defaults, read 2026-09-28; **manual** for KDE and Xfce |
 
 `Ctrl+Q` deserves a note: it is `0x11`, which is also `XON`, so a terminal doing
 software flow control could in principle eat it. Terminal.Gui puts the terminal
@@ -377,6 +382,25 @@ handler in all four terminals, `F3` with it, and `Esc` can be taken on the first
 press and close the window on the second. So the shape of the window is what
 decides, not the terminal: a window that wants the keys of a panel must be
 built like the viewer and reach its commands with keys rather than buttons.
+
+**Every key of phase 16 travels, and the one surprise was the probe's own.**
+P16.1 ran `_probes/KeyProbe` on 2026-09-28 in the five terminals of P13.1 —
+cmder, Windows Terminal, the Windows console, WSL inside cmder and
+`gnome-terminal` under WSLg — and all five agree to the code: `Alt+F12` is
+`0x8011007A`, `Alt+Shift+H` `0x90000048`, `Ctrl+PgUp` and `Ctrl+PgDn`
+`0x40110020` and `0x40110021`, and `Del`, `Shift+Del`, `Alt+G`, `Alt+↓` and
+`F4` arrive as themselves, inside a dialog and inside a drop-down field alike.
+Each run had one terminal tab open, so a terminal that walks its own tabs on
+`Ctrl+PgUp` once there are several is not ruled out; `←` and `→` walk the
+history's tabs as well and need no binding of ours. The stand-in is therefore not needed
+anywhere measured; it stays bound because a terminal or a desktop not in this
+list may still take `Alt+F12`. `Esc` did not close the probe's popups, which is
+the probe and not the terminals: it bound `Command.Quit` to `Ctrl+Q` alone,
+where `MainWindow.configureQuitKey` binds `Esc` beside it. The probe now binds
+both, as the application does. What the same run showed about `Enter` on an
+open drop-down list — that it closes the popup as well as choosing the row — is
+the control's doing, not the terminal's, and is taken up in
+[History](HISTORY.md).
 
 ## Watching the directories on screen
 

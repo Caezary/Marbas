@@ -98,10 +98,15 @@ allows and a line-based file cannot hold — is not remembered.
   the moment and the place, newest first. Opening reads the file afresh, so what
   another copy remembered in the meantime is there. It opens on the tab last
   used in the session, Folder history the first time; `Ctrl+PgUp` and
-  `Ctrl+PgDn` walk the tabs. The buttons are `[Open]` — the default, so `Enter`
-  presses it — `[Go to]`, `[Delete]` and `[Close]`; on this tab `[Open]` sends
-  the active panel to the place and `[Go to]` is disabled. Choosing an entry
-  closes the popup. *Done when:* the popup is rendered and driven through a real
+  `Ctrl+PgDn` walk the tabs, bound in the dialog since `Tabs` does not take
+  them, beside the `←`/`→` it does. The buttons are `[Open]` — the default, so
+  `Enter` presses it — `[Go to]`, `[Delete]` and `[Close]`, and none of them
+  carries a hot key: P16.1 measured that a bare letter presses the button it
+  names once the tables stop taking letters, and the filter of P16.8 needs every
+  letter. `Alt+G` is bound in the dialog instead, and which button was pressed
+  is read from `Dialog.Result`, not `Canceled`. On this tab `[Open]` sends the
+  active panel to the place and `[Go to]` is disabled. Choosing an entry closes
+  the popup. *Done when:* the popup is rendered and driven through a real
   `Application`, and a directory chosen from it is where the active panel
   stands.
 - **P16.5 The files started** — `LaunchFinished` carries the request it
@@ -138,7 +143,14 @@ allows and a line-based file cannot hold — is not remembered.
 - **P16.9 The fields that ask one question** — the `To:` of `F5` and `F6`, one
   list between them; the name of `F7`; the name of `Shift+F4`; and the pattern
   of `+` and `-`, one list between them. Each field becomes an editable
-  `DropDownList` whose list is its history, opened with `Alt+↓` or `F4`. What
+  `DropDownList` whose list is its history, opened with `Alt+↓` or `F4`. P16.1
+  found four things the control does that the field must not: `Space` opens
+  the list, so that binding is removed; `Enter` on a row of the open list also
+  presses the dialog's default button, so the field's `Accepting` is stopped
+  while the list has focus; `Esc` on the open list closes the dialog, so an
+  application-level `Esc` closes only the list while it is open; and a chosen
+  row leaves the insertion point where it was, so it is moved to the end. The
+  list is given the dialog's colours. What
   was typed is remembered when the popup is confirmed, whether or not the
   operation then succeeds, except for `F7`, which remembers a name only once the
   directory exists, so a refused name does not take the suggestion's place. `F7`
