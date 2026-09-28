@@ -31,6 +31,17 @@ let launchHow (request: LaunchRequest) =
     |> List.choose id
     |> String.concat ", "
 
+[<Literal>]
+let ViewedMark = "V"
+
+[<Literal>]
+let EditedMark = "E"
+
+let visitHow how =
+    match how with
+    | Viewed -> ViewedMark
+    | Edited -> EditedMark
+
 let place (fs: IFileSystem) (place: Place) =
     match place with
     | Place.OnDisk path -> FileSystemPath.value path

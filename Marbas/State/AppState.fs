@@ -25,6 +25,7 @@ type HistoryTab =
 type HistoryChoice =
     | OpenPlace of Place
     | RunAgain of LaunchRequest
+    | Revisit of FileVisit
     | GoTo of Place
 
 type HistoryAnswer =

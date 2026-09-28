@@ -262,6 +262,14 @@ panel in the file's directory with the cursor on the file. A directory or a
 drive shown in the system file manager is not listed, nor is a file that could
 not be started.
 
+*View history* lists the files opened with `F3`, marked `V`, and with `F4` or
+`Shift+F4`, marked `E` — a file viewed and later edited is one row, now `E`. A
+file inside an archive is listed with the archive's path in front of it. `Enter`
+does again what the row says; `F3` views the file and `F4` edits it whatever
+the row says, except that a file inside an archive can only be viewed. `Alt+G`
+puts the active panel beside the file, inside the archive if that is where it
+is. A directory measured with `F3` is not listed.
+
 ## Things that differ by platform
 
 - **Drives.** Windows lists the ready drives; Unix lists the mounts that hold

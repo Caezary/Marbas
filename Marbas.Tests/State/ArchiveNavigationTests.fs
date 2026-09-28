@@ -141,7 +141,11 @@ let ``the file under the cursor inside an archive is viewed out of it`` () =
 
     let result = update fs ViewRequested state
 
-    Assert.Equal<Effect list>([ ViewArchiveEntry(archive, inside "notes.txt") ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ ChangeHistory(Remember(Opened { Where = Place.InArchive(archive, inside "notes.txt"); How = Viewed }))
+          ViewArchiveEntry(archive, inside "notes.txt") ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a directory inside an archive is measured rather than viewed`` () =

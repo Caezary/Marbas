@@ -107,3 +107,23 @@ since a start that succeeds no longer asks for nothing. In the real window, with
 the launcher replaced by a recorder so nothing ran on the machine, `Enter` on
 `readme.txt`, `Enter` on its row in the popup and `Alt+G` on it gave two
 identical requests and a left panel in `alpha` with the cursor on the file.
+
+**P16.6 remembered the files viewed and edited on the way in, and found that
+`Dialog.Result` takes only a button.** `F3`, `F4` and `Shift+F4` raise the
+history change in front of `ViewFile`, `ViewArchiveEntry` or `EditFile`, from
+one function that turns a `FileVisit` into its effect — so the file is written
+before a console editor takes the screen, and the popup, choosing a row, goes
+through the same function the panel does. A directory measured with `F3`, the
+properties `F4` shows for one and an archive entry `F4` refuses are not
+remembered, and a visit chosen from the popup whose file is gone is not moved
+to the top. *View history* gained its `V`/`E` column and three answers:
+`[Open]` repeats the row, `F3` and `F4` view or edit it whatever it says, and
+`[Go to]` stands beside it, inside its archive where it is one. The first try
+gave `F3` and `F4` result codes of their own past the last button;
+`Dialog.Result` threw `ArgumentOutOfRangeException` at the first one, so the
+keys press `[Open]` and leave the use they asked for on the dialog. Ten existing
+tests compared whole effect lists that now open with the history change, and
+name it. Rendered through a real `Application` with an entry on disk, one
+edited and one inside a zip, the tab read `V`, `E`, `V` newest first; `F4` on
+the viewed row answered editing it, `Enter` on the edited one editing it again,
+and `Alt+G` on the zip entry going to its level inside the archive.

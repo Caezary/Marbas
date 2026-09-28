@@ -300,17 +300,37 @@ let private showingProperties state properties =
     | Ok found -> request state (ShowProperties found)
     | Error error -> reporting state error
 
+let private notEditable (fs: IFileSystem) archive entry =
+    ArchivePath.spelled fs archive entry |> Operations.ArchiveEntryNotEditable
+
+let private reopening (fs: IFileSystem) state (visit: FileVisit) =
+    match visit.Where, visit.How with
+    | Place.OnDisk path, Viewed -> Ok(ViewFile path)
+    | Place.InArchive(archive, entry), Viewed -> Ok(ViewArchiveEntry(archive, entry))
+    | Place.OnDisk path, Edited -> Ok(EditFile(path, programFor ForEditing (FileSystemPath.name fs path) state))
+    | Place.InArchive(archive, entry), Edited -> Error(notEditable fs archive entry)
+
+let private stillOnDisk (fs: IFileSystem) place =
+    match place with
+    | Place.OnDisk path
+    | Place.InArchive(path, _) -> FileSystemPath.kind fs path = FileEntry
+
+let private visiting (fs: IFileSystem) state (visit: FileVisit) =
+    match reopening fs state visit with
+    | Error error -> reporting state error
+    | Ok effect when stillOnDisk fs visit.Where ->
+        { State = state
+          Effects = [ ChangeHistory(Remember(Opened visit)); effect ] }
+    | Ok effect -> request state effect
+
 let private editing (fs: IFileSystem) state =
     let target = activePanel state
 
     match PanelState.cursorEntryInArchive target with
-    | Some(archive, entry) ->
-        ArchivePath.spelled fs archive entry
-        |> Operations.ArchiveEntryNotEditable
-        |> reporting state
+    | Some(archive, entry) -> notEditable fs archive entry |> reporting state
     | None ->
         match cursorFilePath fs target, cursorDirectoryPath fs target with
-        | Some path, _ -> request state (EditFile(path, programFor ForEditing (FileSystemPath.name fs path) state))
+        | Some path, _ -> visiting fs state { Where = Place.OnDisk path; How = Edited }
         | _, Some path -> EntryProperties.read fs path |> showingProperties state
         | None, None -> stay state
 
@@ -319,6 +339,7 @@ let private chosenFromHistory (fs: IFileSystem) state choice =
     | None -> stay state
     | Some(OpenPlace place) -> standInside fs state.Active (Place.toLocation place) state |> applyListing state
     | Some(RunAgain started) -> request state (RunProgram started)
+    | Some(Revisit visit) -> visiting fs state visit
     | Some(GoTo place) ->
         match Place.beside fs place with
         | Some(location, name) -> standBeside fs state.Active location name state |> applyListing state
@@ -513,8 +534,8 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         let target = activePanel state
 
         match cursorFilePath fs target, PanelState.cursorFileInArchive target with
-        | Some path, _ -> request state (ViewFile path)
-        | _, Some(archive, entry) -> request state (ViewArchiveEntry(archive, entry))
+        | Some path, _ -> visiting fs state { Where = Place.OnDisk path; How = Viewed }
+        | _, Some(archive, entry) -> visiting fs state { Where = Place.InArchive(archive, entry); How = Viewed }
         | None, None ->
             match measureTargets fs target with
             | [] -> stay state
@@ -532,7 +553,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | Some directory ->
             match makeFile fs state.Active directory name state with
             | Error error -> reporting state error
-            | Ok(updated, path) -> request updated (EditFile(path, programFor ForEditing name updated))
+            | Ok(updated, path) -> visiting fs updated { Where = Place.OnDisk path; How = Edited }
     | PropertiesEntered properties -> applyProperties fs properties state |> applyOperation state
     | SettingsRequested ->
         let candidate =

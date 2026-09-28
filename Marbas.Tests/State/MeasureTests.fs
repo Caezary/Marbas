@@ -72,7 +72,11 @@ let ``the view key on a file still opens the viewer`` () =
 
     let result = update fs ViewRequested state
 
-    Assert.Equal<Effect list>([ ViewFile(fp (at "start/notes.txt")) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ ChangeHistory(Remember(Opened { Where = Place.OnDisk(fp (at "start/notes.txt")); How = Viewed }))
+          ViewFile(fp (at "start/notes.txt")) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``every marked directory is measured, the one under the cursor left alone`` () =

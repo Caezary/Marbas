@@ -504,6 +504,11 @@ let ``a failed rename is reported and leaves the panel alone`` () =
     Assert.Equal(state, result.State)
     Assert.Equal<Effect list>([ ReportOperationError taken ], result.Effects)
 
+let private opened path how =
+    ChangeHistory(Remember(Opened { Where = Place.OnDisk(fp (at path)); How = how }))
+
+let private notesOpened how = opened "start/notes.txt" how
+
 [<Fact>]
 let ``view requested aims at the file under the cursor`` () =
     let fs = mockFs ()
@@ -511,7 +516,7 @@ let ``view requested aims at the file under the cursor`` () =
 
     let result = update fs ViewRequested state
 
-    Assert.Equal<Effect list>([ ViewFile(fp (at "start/notes.txt")) ], result.Effects)
+    Assert.Equal<Effect list>([ notesOpened Viewed; ViewFile(fp (at "start/notes.txt")) ], result.Effects)
 
 [<Fact>]
 let ``view requested on a directory leaves the panel until the measurement is in`` () =
@@ -536,7 +541,7 @@ let ``view requested ignores what is marked and takes the cursor entry`` () =
 
     let result = update fs ViewRequested state
 
-    Assert.Equal<Effect list>([ ViewFile(fp (at "start/notes.txt")) ], result.Effects)
+    Assert.Equal<Effect list>([ notesOpened Viewed; ViewFile(fp (at "start/notes.txt")) ], result.Effects)
 
 [<Fact>]
 let ``edit requested aims at the file under the cursor`` () =
@@ -545,7 +550,7 @@ let ``edit requested aims at the file under the cursor`` () =
 
     let result = update fs EditRequested state
 
-    Assert.Equal<Effect list>([ EditFile(fp (at "start/notes.txt"), None) ], result.Effects)
+    Assert.Equal<Effect list>([ notesOpened Edited; EditFile(fp (at "start/notes.txt"), None) ], result.Effects)
 
 [<Fact>]
 let ``edit requested names the editor the extension is associated with`` () =
@@ -559,7 +564,10 @@ let ``edit requested names the editor the extension is associated with`` () =
 
     let result = update fs EditRequested state
 
-    Assert.Equal<Effect list>([ EditFile(fp (at "start/setup.fs"), Some chosen) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ opened "start/setup.fs" Edited; EditFile(fp (at "start/setup.fs"), Some chosen) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``edit requested on a directory asks for its properties`` () =
@@ -627,7 +635,10 @@ let ``a named new file is created and handed to its editor`` () =
     let result = update fs (FileNameEntered(en "draft.md")) state
 
     Assert.True(fs.File.Exists(at "start/draft.md"))
-    Assert.Equal<Effect list>([ EditFile(fp (at "start/draft.md"), Some chosen) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ opened "start/draft.md" Edited; EditFile(fp (at "start/draft.md"), Some chosen) ],
+        result.Effects
+    )
     Assert.Equal(Some "draft.md", PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
 
 [<Fact>]

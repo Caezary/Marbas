@@ -209,6 +209,42 @@ from the `Id` of `Tabs.Value` rather than by finding the tables again.
 chosen, and *as administrator* when it ran so. The *What* column is shortened
 to what is left of the table after that column.
 
+## Remembering the files viewed and edited
+
+**A file is remembered when it is asked for, not when it is closed.** The
+transition that raises `ViewFile`, `ViewArchiveEntry` or `EditFile` raises
+`ChangeHistory(Remember(Opened visit))` in front of it, so `Shell` writes the
+file before the viewer or the editor runs — a console editor holds the screen
+until it is closed, and a crash inside it loses nothing. Unlike a start, which
+learns only afterwards whether it happened, viewing and editing are remembered
+on the way in. `F3` on a file remembers it `Viewed`, inside an archive as
+`Place.InArchive`; `F4` and `Shift+F4` remember it `Edited`. `F3` on a directory
+measures it, `F4` on one shows its properties, and `F4` on an archive entry is
+refused: none of the three hands a file to anyone, and none is remembered.
+
+**One function turns a visit into its effect, from the panel and from the
+popup alike.** `Update.reopening` maps a `FileVisit` to `ViewFile`,
+`ViewArchiveEntry` or `EditFile` with the editor the extension names, or to the
+`ArchiveEntryNotEditable` refusal the panel already reports. `visiting` puts the
+history change in front of that effect, but only while the file — or the
+archive holding the entry — is still on disk: a visit chosen from the popup
+whose file is gone is handed to the viewer or the editor all the same, and is
+not moved to the top of the list with a fresh moment for a file that is no
+longer there. From the panel the file is there unless it vanished since the
+listing, so the check costs one look at the disk and settles only that case.
+
+**The popup answers `Revisit visit`, with the use the key asked for.** The
+*View history* tab gains the *How* column, `V` or `E` from `HistoryRow.visitHow`.
+`[Open]` answers the row as it is; `F3` and `F4` answer it as `Viewed` or
+`Edited` whatever it says. `Dialog.Result` refuses any value that is not the
+index of a button — P16.6 tried an index past the last one and got
+`ArgumentOutOfRangeException` — so the two keys press `[Open]` and leave the use
+they asked for in `HistoryView.AskedUse`, the way `DriveDialog` keeps
+`HandingOver`, and `answer` reads it beside `Result`. They act only while *View
+history* is in front and has a row; elsewhere they are passed over and the popup
+stays open. `[Go to]` and `Alt+G` answer `GoTo` with the visit's place, which
+`Place.beside` already turns into the archive level above an entry.
+
 ## The controls, measured before use
 
 P16.1 rendered the controls the phase leans on — `Tabs` holding a `TableView`

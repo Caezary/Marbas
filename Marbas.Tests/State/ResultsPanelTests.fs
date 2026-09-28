@@ -180,7 +180,11 @@ let ``F3 views the file a hit stands for`` () =
 
     let result = update fs ViewRequested state
 
-    Assert.Equal<Effect list>([ ViewFile(fp (at "start/docs/inner.txt")) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ ChangeHistory(Remember(Opened { Where = Place.OnDisk(fp (at "start/docs/inner.txt")); How = Viewed }))
+          ViewFile(fp (at "start/docs/inner.txt")) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a search from a results panel starts where that panel returns to`` () =

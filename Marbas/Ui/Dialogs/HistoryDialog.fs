@@ -60,6 +60,8 @@ type HistoryView(history: History) =
 
     member _.History = history
 
+    member val AskedUse: FileUse option = None with get, set
+
 let private tabOrder = [ RunHistoryTab; ViewHistoryTab; FolderHistoryTab ]
 
 let private tabId tab =
@@ -87,7 +89,8 @@ let private rowsOf (fs: IFileSystem) now (history: History) tab =
             row entry.At (FileSystemPath.value entry.Item.Target) (HistoryRow.launchHow entry.Item))
     | ViewHistoryTab ->
         history.FileVisits
-        |> List.map (fun entry -> row entry.At (HistoryRow.place fs entry.Item.Where) "")
+        |> List.map (fun entry ->
+            row entry.At (HistoryRow.place fs entry.Item.Where) (HistoryRow.visitHow entry.Item.How))
     | FolderHistoryTab -> history.Folders |> List.map (fun entry -> row entry.At (HistoryRow.place fs entry.Item) "")
 
 let private saysHow tab =
@@ -157,6 +160,15 @@ let private pressing index (dialog: HistoryView) =
     dialog.Result <- Nullable index
     dialog.RequestStop()
 
+let private offersFiles (dialog: HistoryView) =
+    front dialog = ViewHistoryTab && not dialog.History.FileVisits.IsEmpty
+
+let private openingAs how (key: Key) (dialog: HistoryView) =
+    if offersFiles dialog then
+        key.Handled <- true
+        dialog.AskedUse <- Some how
+        pressing OpenButton dialog
+
 let private answerKey (dialog: HistoryView) (key: Key) =
     if key = KeyMap.nextHistoryTabKey then
         key.Handled <- true
@@ -169,13 +181,17 @@ let private answerKey (dialog: HistoryView) (key: Key) =
 
         if (button GoToButton dialog).Enabled then
             pressing GoToButton dialog
+    elif key = KeyMap.historyViewKey then
+        openingAs Viewed key dialog
+    elif key = KeyMap.historyEditKey then
+        openingAs Edited key dialog
 
 let private plainButton title = DialogStyle.button title |> LiteralText.showing
 
 let private offersGoTo (history: History) tab =
     match tab with
     | RunHistoryTab -> not history.Launches.IsEmpty
-    | ViewHistoryTab
+    | ViewHistoryTab -> not history.FileVisits.IsEmpty
     | FolderHistoryTab -> false
 
 let private offerGoTo (history: History) (container: Tabs) (goTo: Button) =
@@ -214,13 +230,20 @@ let private rowUnderCursor (shown: TableView) =
 let private item row (entries: Remembered<'item> list) =
     List.tryItem row entries |> Option.map _.Item
 
-let private chosen (history: History) tab pressed row =
+let private revisited asked (visit: FileVisit) =
+    Revisit { visit with How = Option.defaultValue visit.How asked }
+
+let private chosen (dialog: HistoryView) tab pressed row =
+    let history = dialog.History
+
     match tab, pressed with
     | FolderHistoryTab, OpenButton -> item row history.Folders |> Option.map OpenPlace
     | RunHistoryTab, OpenButton -> item row history.Launches |> Option.map RunAgain
     | RunHistoryTab, GoToButton ->
         item row history.Launches
         |> Option.map (fun started -> GoTo(Place.OnDisk started.Target))
+    | ViewHistoryTab, OpenButton -> item row history.FileVisits |> Option.map (revisited dialog.AskedUse)
+    | ViewHistoryTab, GoToButton -> item row history.FileVisits |> Option.map (_.Where >> GoTo)
     | _ -> None
 
 let answer (dialog: HistoryView) =
@@ -228,7 +251,6 @@ let answer (dialog: HistoryView) =
 
     let choice =
         Option.ofNullable dialog.Result
-        |> Option.bind (fun pressed ->
-            rowUnderCursor (table tab dialog) |> Option.bind (chosen dialog.History tab pressed))
+        |> Option.bind (fun pressed -> rowUnderCursor (table tab dialog) |> Option.bind (chosen dialog tab pressed))
 
     { Tab = tab; Choice = choice }

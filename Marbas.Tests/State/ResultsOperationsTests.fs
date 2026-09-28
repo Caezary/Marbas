@@ -290,11 +290,13 @@ let ``marks in one archive alone take the way an archive panel takes`` () =
 let ``F3 on a hit inside an archive streams the entry rather than a path on disk`` () =
     let fs = mockFs ()
     let state = showing fs [ insideArchive ] |> setCursor Left 1
+    let entry = ArchivePath.child ArchivePath.root (EntryName.create "inner.txt")
 
     let result = update fs ViewRequested state
 
     Assert.Equal<Effect list>(
-        [ ViewArchiveEntry(fp (at "start/backup.zip"), ArchivePath.child ArchivePath.root (EntryName.create "inner.txt")) ],
+        [ ChangeHistory(Remember(Opened { Where = Place.InArchive(fp (at "start/backup.zip"), entry); How = Viewed }))
+          ViewArchiveEntry(fp (at "start/backup.zip"), entry) ],
         result.Effects
     )
 
@@ -305,7 +307,11 @@ let ``F4 edits the file a hit stands for`` () =
 
     let result = update fs EditRequested state
 
-    Assert.Equal<Effect list>([ EditFile(fp (at "start/b/two.txt"), None) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ ChangeHistory(Remember(Opened { Where = Place.OnDisk(fp (at "start/b/two.txt")); How = Edited }))
+          EditFile(fp (at "start/b/two.txt"), None) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``F7 refuses in a results panel`` () =

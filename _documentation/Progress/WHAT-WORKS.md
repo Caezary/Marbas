@@ -359,8 +359,16 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   they apply; a directory or drive handed to the system file manager and a
   start that failed are not listed. `Enter` there starts the file again with
   the same program, directory and rights, and `[Go to]` or `Alt+G` stands the
-  active panel beside the file with the cursor on it. `[Delete]` is there but
-  disabled, and *View history* lists nothing yet.
+  active panel beside the file with the cursor on it. *View history* lists
+  every file viewed with `F3`, marked `V`, and edited with `F4` or `Shift+F4`,
+  marked `E`, remembered as the viewer or the editor is asked for — a file
+  inside an archive included, a directory measured with `F3` and one whose
+  properties `F4` shows not. `Enter` there repeats what the row says, `F3` views
+  and `F4` edits whatever it says, an entry inside an archive refusing `F4` as
+  the panel does; `[Go to]` or `Alt+G` stands the active panel beside the file,
+  inside its archive where it is one. A file that is gone, or whose archive
+  is, is handed to the viewer or the editor all the same and is not moved to
+  the top. `[Delete]` is there but disabled.
 
 - `Shift+F1` packs what the active panel points at into an archive in the other
   one. The popup opens on the other panel's path and a name deduced from the

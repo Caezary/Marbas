@@ -121,6 +121,10 @@ let previousHistoryTabKey = Key.PageUp.WithCtrl
 
 let historyGoToKey = Key.G.WithAlt
 
+let historyViewKey = Key.F3
+
+let historyEditKey = Key.F4
+
 let quitKey = Key.Q.WithCtrl
 
 let cancelKey = Key.Esc
