@@ -417,6 +417,15 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Ok history -> dispatch (HistoryChanged history)
         | Error error -> dispatch (HistoryUnwritten error)
     | ReportHistoryError error -> report deps HistoryErrorMessage.Title (HistoryErrorMessage.describe error)
+    | ShowHistory tab ->
+        match History.load deps.FileSystem deps.HistoryPath with
+        | Ok history ->
+            dispatch (HistoryChanged history)
+
+            deps.Prompts.ChooseHistory { History = history; Tab = tab; Now = deps.Clock() }
+            |> HistoryAnswered
+            |> dispatch
+        | Error error -> report deps HistoryErrorMessage.Title (HistoryErrorMessage.describe error)
     | SaveSettings settings ->
         match Settings.save deps.FileSystem deps.SettingsPath settings with
         | Ok() -> ()

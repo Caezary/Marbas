@@ -1006,6 +1006,57 @@ let ``a history that could not be written is reported with its path`` () =
     Assert.Contains(at "config/history.conf", snd reported)
 
 [<Fact>]
+let ``the history is read afresh and offered on the tab asked for`` () =
+    let fs = MockFileSystem()
+    let now = DateTimeOffset(2026, 9, 28, 15, 30, 0, TimeSpan.FromHours 2.0)
+    let path = fp (at "config/history.conf")
+    let stored = History.change fs path now (Remember(Visited(Place.OnDisk(fp (at "work"))))) |> Expect.ok
+    let asked = ResizeArray<Ports.HistoryPrompt>()
+    let sent, dispatch = capture ()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            HistoryPath = path
+            Clock = fun () -> now
+            Prompts.ChooseHistory =
+                fun prompt ->
+                    asked.Add prompt
+                    { Tab = prompt.Tab; Choice = None } }
+
+    Shell.interpret deps dispatch (ShowHistory ViewHistoryTab)
+
+    Assert.Equal<Ports.HistoryPrompt list>(
+        [ { Ports.History = stored
+            Ports.Tab = ViewHistoryTab
+            Ports.Now = now } ],
+        List.ofSeq asked
+    )
+    Assert.Equal<Message list>(
+        [ HistoryChanged stored; HistoryAnswered { Tab = ViewHistoryTab; Choice = None } ],
+        List.ofSeq sent
+    )
+
+[<Fact>]
+let ``a history that cannot be read is reported instead of offered`` () =
+    let path = fp (at "config/history.conf")
+    let fs = Fakes.UnreadableFile(FileSystemPath.value path)
+    fs.AddFile(FileSystemPath.value path, MockFileData "folder.1=x")
+    let mutable reported = ""
+    let sent, dispatch = capture ()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            HistoryPath = path
+            Prompts.ReportError = fun report -> reported <- report.Title }
+
+    Shell.interpret deps dispatch (ShowHistory FolderHistoryTab)
+
+    Assert.Equal(HistoryErrorMessage.Title, reported)
+    Assert.Empty sent
+
+[<Fact>]
 let ``quit runs the quit port`` () =
     let mutable quit = false
     let deps = { noDeps () with OnQuit = fun () -> quit <- true }

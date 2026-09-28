@@ -65,6 +65,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
           AskHandler = Prompts.askHandler app
           ChooseDrive = Prompts.chooseDrive app
           ChooseTab = Prompts.chooseTab app fs
+          ChooseHistory = Prompts.chooseHistory app fs
           EditProperties = Prompts.editProperties app
           EditPrograms = Prompts.editPrograms app
           ShowFile = Prompts.showFile app }

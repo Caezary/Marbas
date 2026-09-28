@@ -20,6 +20,11 @@ module Place =
         | InArchive(archive, level) -> Some(Place.InArchive(archive, level))
         | SearchResults _ -> None
 
+    let toLocation place =
+        match place with
+        | Place.OnDisk path -> OnDisk path
+        | Place.InArchive(archive, inside) -> InArchive(archive, inside)
+
     let spelled (place: Place) =
         match place with
         | Place.OnDisk path -> [ FileSystemPath.value path ]

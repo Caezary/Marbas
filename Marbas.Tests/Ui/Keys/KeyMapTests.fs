@@ -3,7 +3,6 @@ module Marbas.Tests.Ui.Keys.KeyMapTests
 open Xunit
 open Terminal.Gui.Input
 open Marbas.Domain
-open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Ui.Keys
 
@@ -37,7 +36,7 @@ let ``holding Ctrl puts the sort commands on the same slots`` () =
 let ``holding Alt puts the drive choosers on the first two slots and the link on F6`` () =
     let commands = commandsOn (Modifiers.held [ Alt ])
 
-    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; "Link"; "Find"; ""; ""; ""; "NewTab"; "" ], commands)
+    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; "Link"; "Find"; ""; ""; ""; "NewTab"; "History" ], commands)
 
 [<Fact>]
 let ``holding Alt and Shift puts closing a tab where opening one is`` () =
@@ -91,6 +90,18 @@ let ``Alt+W asks for the walk Enter no longer always makes`` () =
 let ``Ctrl+PgDn asks for the same walk, where a terminal delivers it`` () =
     Assert.Equal(Key.PageDown.WithCtrl, KeyMap.classicWalkIntoKey)
     Assert.Equal(Some WalkIntoRequested, KeyMap.messageFor KeyMap.classicWalkIntoKey)
+
+[<Fact>]
+let ``Alt+F12 opens the history`` () =
+    let message = KeyMap.messageFor Key.F12.WithAlt
+
+    Assert.Equal(Some HistoryRequested, message)
+
+[<Fact>]
+let ``Alt+Shift+H opens the history where a terminal keeps Alt+F12 for itself`` () =
+    let message = KeyMap.messageFor Key.H.WithAlt.WithShift
+
+    Assert.Equal(Some HistoryRequested, message)
 
 [<Fact>]
 let ``Alt+F6 asks for a link`` () =

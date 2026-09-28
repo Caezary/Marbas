@@ -68,3 +68,24 @@ history change as well: the watch tests read only the watch effects, and the
 two others name the change they expect. Driven through the real window over a
 real disk, into `alpha`, into `beta`, back out and into `gamma` in the other
 panel, the file read `gamma`, `alpha`, `beta` — newest first, `alpha` once.
+
+**P16.4 put the history on the screen, and the popup behaved as P16.1 said it
+would — except for its drawing.** `Alt+F12` and `Alt+Shift+H` raise
+`HistoryRequested`; the state answers `ShowHistory` with the tab it was left
+on, and `Shell` reads the file afresh, dispatches it back as `HistoryChanged`
+and runs `HistoryDialog`. The dialog is `Tabs` over three tables built the way
+the spike found necessary — no navigator, buttons without hot keys, `Alt+G` and
+`Ctrl+PgUp`/`Ctrl+PgDn` in `KeyDown`, the answer read from `Dialog.Result`. The
+answer always carries the tab, so the next opening lands where the last one was
+left, and on *Folder history* `[Open]` carries the place, which the state stands
+the active panel in through `standInside`. Driven in the real window after
+walking into `alpha`, `beta` and `gamma`: the popup opened on *Folder history*
+with the three newest first, a bare `d` pressed nothing, and `Enter` on the
+third row put the left panel in `alpha\beta` and the file put `beta` on top.
+The first picture showed two things to fix: a path wider than the table pushed
+its right-hand frame off the screen, so the *What* column now shortens it in the
+middle to the table's width, and the table drew its own frame inside the tab's,
+so its outer lines are off. A third could not be fixed — `Tabs` misdraws the
+joints of its strip once the tab in front changes, by the arrows it handles
+itself as much as by our keys — and is in [Rough edges](../ROUGH-EDGES.md). The
+colours are the dialog's.

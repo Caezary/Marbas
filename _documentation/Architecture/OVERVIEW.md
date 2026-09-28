@@ -201,6 +201,8 @@ Marbas/
       LinkDialog.fs         what `Alt+F6` asks, with the refused kinds greyed out
       TabRow.fs             one tab -> its number and where both its panels stand
       TabDialog.fs          the list `F11` opens, and the tab it answers with
+      HistoryRow.fs         a remembered moment and place -> the text of their columns
+      HistoryDialog.fs      the popup `Alt+F12` opens: three tabs, and the tab and row it answers with
       DriveLine.fs          drive rows -> lines whose root, label, kind and sizes line up
       DriveDialog.fs        the list `Alt+F1` / `Alt+F2` open, and the row it answers with
       FindDialog.fs         what `Alt+F7` asks, greyed where the query means nothing

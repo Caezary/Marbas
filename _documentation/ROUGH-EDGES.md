@@ -233,3 +233,17 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 - A single line longer than `LineIndex.MaxLineLength` (a megabyte) is cut there.
   Nothing in a viewer can show more of one line than a screen holds, but
   scrolling right past that point stops rather than going on.
+
+## History
+
+- The tab strip of the `Alt+F12` popup draws its joints wrongly once the tab in
+  front changes. The first picture is right — `├───────┴────────────┘` under
+  the headers — but after a switch the line under them starts with a corner and
+  loses the joints of the tabs behind, and their top corners do the same. It is
+  `Tabs` drawing itself: switching with `←`/`→`, which the control handles on
+  its own, leaves the same marks as `Ctrl+PgUp`/`Ctrl+PgDn`, which set
+  `Tabs.Value`, and neither a relayout nor a redraw of the whole dialog cures
+  it. Measured on Terminal.Gui 2.4.17 during P16.4; the lines are wrong, the
+  rows and the colours are not. A strip drawn by Marbas itself over one table
+  whose rows are swapped would end it, at the price of the keys `Tabs` gives
+  for free.

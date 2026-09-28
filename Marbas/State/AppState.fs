@@ -17,13 +17,25 @@ type HistoryReport =
     | Unreported
     | Reported
 
+type HistoryTab =
+    | RunHistoryTab
+    | ViewHistoryTab
+    | FolderHistoryTab
+
+type HistoryChoice = OpenPlace of Place
+
+type HistoryAnswer =
+    { Tab: HistoryTab
+      Choice: HistoryChoice option }
+
 type AppState =
     { Tabs: Zipper<Tab>
       LastCreatedDirectory: EntryName option
       LastSearch: FindResults option
       Programs: ProgramSettings
       History: History
-      HistoryReport: HistoryReport }
+      HistoryReport: HistoryReport
+      HistoryTab: HistoryTab }
 
     member private this.Focused = this.Tabs |> Zipper.current
 
@@ -63,7 +75,8 @@ let restore (settings: Settings) =
       LastSearch = None
       Programs = settings.Programs
       History = History.empty
-      HistoryReport = Unreported }
+      HistoryReport = Unreported
+      HistoryTab = FolderHistoryTab }
 
 let create (path: FileSystemPath) = restore (Settings.forPath path)
 

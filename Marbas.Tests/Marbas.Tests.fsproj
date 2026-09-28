@@ -113,6 +113,7 @@
     <Compile Include="State\ResultsPanelTests.fs" />
     <Compile Include="State\ResultsOperationsTests.fs" />
     <Compile Include="State\FolderHistoryTests.fs" />
+    <Compile Include="State\HistoryPopupTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
     <Compile Include="State\RuntimeQueueTests.fs" />
@@ -174,6 +175,7 @@
     <Compile Include="Ui\Dialogs\AssociationRowTests.fs" />
     <Compile Include="Ui\Dialogs\HandlerRowTests.fs" />
     <Compile Include="Ui\Dialogs\TabRowTests.fs" />
+    <Compile Include="Ui\Dialogs\HistoryRowTests.fs" />
     <Compile Include="Ui\Dialogs\DriveLineTests.fs" />
   </ItemGroup>
 
@@ -248,6 +250,7 @@
     <Compile Include="Integration\Dialogs\PropertiesDialogTests.fs" />
     <Compile Include="Integration\Dialogs\SettingsDialogTests.fs" />
     <Compile Include="Integration\Dialogs\TabDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\HistoryDialogTests.fs" />
     <Compile Include="Integration\Dialogs\DriveDialogTests.fs" />
     <Compile Include="Integration\Dialogs\PackDialogTests.fs" />
     <Compile Include="Integration\Dialogs\LinkDialogTests.fs" />
@@ -274,6 +277,7 @@
     <Compile Include="Integration\App\PackKeyTests.fs" />
     <Compile Include="Integration\App\LinkKeyTests.fs" />
     <Compile Include="Integration\App\FindKeyTests.fs" />
+    <Compile Include="Integration\App\HistoryKeyTests.fs" />
     <Compile Include="Integration\App\UnpackKeyTests.fs" />
     <Compile Include="Integration\App\ArchiveBrowseTests.fs" />
     <Compile Include="Integration\App\ArchiveWriteKeyTests.fs" />

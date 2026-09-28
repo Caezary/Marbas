@@ -135,6 +135,47 @@ until the first `HistoryUnwritten`, which answers `ReportHistoryError` and turns
 it `Reported`; every later one is passed over for the rest of the session. The
 dialog is `HistoryErrorMessage`, titled *History not saved*, naming the file.
 
+## The popup
+
+**The popup is asked for by the state and filled by the shell.**
+`HistoryRequested` answers `ShowHistory tab` with the tab last used in the
+session, which `AppState.HistoryTab` keeps and which starts on
+`FolderHistoryTab`. `Shell` reads the file afresh with `History.load` — so what
+another copy remembered since is there — dispatches it as `HistoryChanged`, and
+hands it to `Prompts.ChooseHistory` with the tab and `deps.Clock()`. The answer
+is a `HistoryAnswer`: the tab the popup was left on, always, and a
+`HistoryChoice` when a row was chosen. `HistoryAnswered` stores the tab and, for
+`OpenPlace place`, stands the active panel in `Place.toLocation place` through
+the same `standInside` a search's group header uses, so a directory that is gone
+is a listing error and the panel stays. The comparison of P16.3 then remembers
+the place again, which moves it to the top. A file that cannot be read is
+reported and the popup is not shown.
+
+**`HistoryDialog` is `Tabs` over three `TableView`s, set up the way P16.1
+measured.** Each table has its `CollectionNavigator` removed, full-row
+selection, and two columns, *When* and *What*. The buttons are `[Close]`,
+`[Delete]`, `[Go to]` and `[Open]`, built with `LiteralText.showing` so none
+carries a hot key; `[Open]` is the default, and the answer is read from
+`Dialog.Result`, the index of the button pressed — `OpenButton` is 3. `KeyDown`
+takes `Ctrl+PgDn` and `Ctrl+PgUp`, which walk the tabs round, and `Alt+G`,
+which presses `[Go to]` only while it is enabled. In this task `[Delete]` and
+`[Go to]` stay disabled: the first waits for P16.7, the second means nothing for
+a directory and waits for the tabs of P16.5 and P16.6. `[Open]` on those two
+tabs chooses nothing yet.
+
+**The rows are shortened to the table, not cut at it.** `HistoryRow.moment`
+shows a moment of today as its time and an earlier one as its date, read in the
+offset of `now` rather than the one it was written with. `HistoryRow.place`
+spells a level inside an archive as the archive's path followed by the level.
+A path wider than the table is shortened in the middle by `PathText.shorten`,
+the rule the panel titles use, from a `RepresentationGetter` on the *What*
+column that reads the table's width when it draws — so the row keeps its root
+and its last directories, and the table keeps its right-hand frame, which a
+column wider than the table had pushed off. The table's own outer lines are
+switched off, since the tab's frame already surrounds it, and the tab lines are
+single to match. The strip still misdraws its joints after a switch; that is
+`Tabs` itself and is recorded in [Rough edges](../ROUGH-EDGES.md).
+
 ## The controls, measured before use
 
 P16.1 rendered the controls the phase leans on — `Tabs` holding a `TableView`

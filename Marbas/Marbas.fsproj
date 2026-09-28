@@ -161,6 +161,8 @@
         <Compile Include="Ui\Dialogs\LinkDialog.fs" />
         <Compile Include="Ui\Dialogs\TabRow.fs" />
         <Compile Include="Ui\Dialogs\TabDialog.fs" />
+        <Compile Include="Ui\Dialogs\HistoryRow.fs" />
+        <Compile Include="Ui\Dialogs\HistoryDialog.fs" />
         <Compile Include="Ui\Dialogs\DriveLine.fs" />
         <Compile Include="Ui\Dialogs\DriveDialog.fs" />
         <Compile Include="Ui\Dialogs\FindDialog.fs" />

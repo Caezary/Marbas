@@ -474,6 +474,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Ports.Dependencies =
           AskHandler = fun _ -> None
           ChooseDrive = fun _ -> None
           ChooseTab = fun _ -> None
+          ChooseHistory = fun prompt -> { Tab = prompt.Tab; Choice = None }
           EditProperties = fun _ -> None
           EditPrograms = fun _ -> None
           ShowFile = ignore }

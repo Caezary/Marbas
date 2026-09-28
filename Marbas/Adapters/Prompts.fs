@@ -95,6 +95,9 @@ let askHandler (app: IApplication) (request: HandlerPrompt) =
 let editPrograms (app: IApplication) (request: ProgramsPrompt) =
     running app (fun () -> SettingsDialog.create request.Programs request.Candidate) SettingsDialog.programs
 
+let chooseHistory (app: IApplication) (fs: IFileSystem) (request: HistoryPrompt) =
+    running app (fun () -> HistoryDialog.create fs request.History request.Tab request.Now) HistoryDialog.answer
+
 let chooseTab (app: IApplication) (fs: IFileSystem) (tabs: Zipper<Tab>) =
     let rows =
         tabs |> Zipper.items |> List.mapi (fun index -> TabRow.describe fs (index + 1))

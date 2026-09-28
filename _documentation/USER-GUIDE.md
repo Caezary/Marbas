@@ -246,6 +246,14 @@ The file is written on every change, so a crash loses nothing, and two copies
 of Marbas running at once share it rather than overwrite each other. If it
 cannot be written, a dialog says so once and the session carries on.
 
+`Alt+F12` opens it — `Alt+Shift+H` where a terminal keeps `Alt+F12` for
+itself. The popup has three tabs, *History*, *View history* and *Folder
+history*, each listing when and what, newest first; it opens on the tab it was
+left on, *Folder history* the first time. `Ctrl+PgDn` and `Ctrl+PgUp` (or `←`
+and `→`) walk the tabs. On *Folder history*, `Enter` sends the active panel to
+the directory under the cursor, a level inside an archive included; `Esc`
+closes the popup.
+
 ## Things that differ by platform
 
 - **Drives.** Windows lists the ready drives; Unix lists the mounts that hold

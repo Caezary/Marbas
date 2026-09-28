@@ -111,6 +111,16 @@ let closeTabKey = Key.F11.WithAlt.WithShift
 
 let saveSessionKey = Key.F9.WithShift
 
+let historyKey = Key.F12.WithAlt
+
+let spareHistoryKey = Key.H.WithAlt.WithShift
+
+let nextHistoryTabKey = Key.PageDown.WithCtrl
+
+let previousHistoryTabKey = Key.PageUp.WithCtrl
+
+let historyGoToKey = Key.G.WithAlt
+
 let quitKey = Key.Q.WithCtrl
 
 let cancelKey = Key.Esc
@@ -156,6 +166,8 @@ let bindings =
       labelled linkKey "Link" LinkRequested
       labelled findKey "Find" FindRequested
       unlabelled spareFindKey FindRequested
+      labelled historyKey "History" HistoryRequested
+      unlabelled spareHistoryKey HistoryRequested
       unlabelled trashKey (DeleteRequested ToTrash)
       unlabelled permanentDeleteKey (DeleteRequested Permanently)
       unlabelled wipeKey (DeleteRequested ByWiping)

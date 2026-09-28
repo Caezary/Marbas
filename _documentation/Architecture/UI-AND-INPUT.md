@@ -628,6 +628,19 @@ the table.
 
 The results window and its keys are described under *Finding files* above.
 
+**Phase 16 opens the history under two names, and gives its popup three keys
+of its own.**
+
+| Key | Message | On the bar | Why this key |
+|-----|---------|------------|--------------|
+| `Alt+F12`, and `Alt+Shift+H` beside it | `HistoryRequested` | `F12 History` while `Alt` is held, on Windows | the history was asked for on `Alt+F12`, and every terminal measured in P16.1 delivers it; the letter with `Alt` is there for a terminal or a desktop not yet measured |
+
+Inside the popup `KeyMap.nextHistoryTabKey` and `previousHistoryTabKey`
+(`Ctrl+PgDn`, `Ctrl+PgUp`) walk the tabs and `historyGoToKey` (`Alt+G`)
+presses `[Go to]`. They are dialog keys, bound in `HistoryDialog`'s `KeyDown`
+the way `DriveDialog` binds `Alt+R`, not rows of `bindings`, which is the
+panel's table. See [History](HISTORY.md) for why the buttons carry no hot keys.
+
 **The bar is twelve slots, not a list of what happens to be bound.**
 `KeyMap.bar` walks `KeyMap.functionKeys` — `F1` … `F12`, in order — applies the
 held modifiers to each with `Modifiers.apply` and looks the result up in

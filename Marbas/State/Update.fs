@@ -73,6 +73,8 @@ type Message =
     | SessionSaveRequested
     | HistoryChanged of History
     | HistoryUnwritten of HistoryError
+    | HistoryRequested
+    | HistoryAnswered of HistoryAnswer
     | QuitRequested
 
 type DeleteRequest =
@@ -117,6 +119,7 @@ type Effect =
     | WatchLocations of paths: FileSystemPath list
     | ChangeHistory of HistoryChange
     | ReportHistoryError of HistoryError
+    | ShowHistory of HistoryTab
     | SaveSettings of Settings
     | Quit
 
@@ -310,6 +313,11 @@ let private editing (fs: IFileSystem) state =
         | Some path, _ -> request state (EditFile(path, programFor ForEditing (FileSystemPath.name fs path) state))
         | _, Some path -> EntryProperties.read fs path |> showingProperties state
         | None, None -> stay state
+
+let private chosenFromHistory (fs: IFileSystem) state choice =
+    match choice with
+    | None -> stay state
+    | Some(OpenPlace place) -> standInside fs state.Active (Place.toLocation place) state |> applyListing state
 
 let private forGood mode =
     match mode with
@@ -557,6 +565,8 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         match state.HistoryReport with
         | Unreported -> request { state with HistoryReport = Reported } (ReportHistoryError error)
         | Reported -> stay state
+    | HistoryRequested -> request state (ShowHistory state.HistoryTab)
+    | HistoryAnswered answer -> chosenFromHistory fs { state with HistoryTab = answer.Tab } answer.Choice
     | QuitRequested ->
         { State = state
           Effects = [ SaveSettings(settings fs state); Quit ] }

@@ -47,6 +47,11 @@ type ProgramsPrompt =
     { Programs: ProgramSettings
       Candidate: ProgramPath option }
 
+type HistoryPrompt =
+    { History: History
+      Tab: HistoryTab
+      Now: DateTimeOffset }
+
 type Prompts =
     { ReportError: ErrorReport -> unit
       Confirm: Confirmation -> bool
@@ -61,6 +66,7 @@ type Prompts =
       AskHandler: HandlerPrompt -> OpenWithChoice option
       ChooseDrive: DriveRow list -> DriveChoice option
       ChooseTab: Zipper<Tab> -> int option
+      ChooseHistory: HistoryPrompt -> HistoryAnswer
       EditProperties: EntryProperties -> EntryProperties option
       EditPrograms: ProgramsPrompt -> ProgramSettings option
       ShowFile: FileWindow.Source -> unit }

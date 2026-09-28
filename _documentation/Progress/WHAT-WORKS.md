@@ -345,8 +345,17 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   sort, a hidden toggle, a tab switch, a panel walking up because its directory
   vanished and a panel of search results remember nothing. The file is written
   on every change and read before each one, so two copies running at once share
-  it; a file that cannot be written raises one dialog per session. Nothing reads
-  the history back yet.
+  it; a file that cannot be written raises one dialog per session.
+- `Alt+F12`, or `Alt+Shift+H`, opens the history read afresh from the file, in
+  a popup of three tabs — *History*, *View history*, *Folder history* — that
+  opens on the tab it was last left on, *Folder history* the first time. Each
+  row is the moment (the time today, the date before) and the place, a long
+  path shortened in the middle. `Ctrl+PgDn`/`Ctrl+PgUp` and `←`/`→` walk the
+  tabs; on *Folder history* `Enter` stands the active panel in the chosen
+  directory or archive level and moves it to the top of the list, and a
+  directory that is gone is reported with the panel left where it was. `[Go
+  to]` and `[Delete]` are there but disabled, and the other two tabs list
+  nothing yet.
 
 - `Shift+F1` packs what the active panel points at into an archive in the other
   one. The popup opens on the other panel's path and a name deduced from the
