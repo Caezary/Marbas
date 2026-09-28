@@ -31,6 +31,7 @@
         <Compile Include="Domain\ProgramSettings.fs" />
         <Compile Include="Domain\FindQuery.fs" />
         <Compile Include="Domain\ResultsRefusal.fs" />
+        <Compile Include="Domain\EnteredText.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -52,6 +53,9 @@
         <Compile Include="FileSystem\ArchiveKind.fs" />
         <Compile Include="FileSystem\ArchivePath.fs" />
         <Compile Include="FileSystem\PanelLocation.fs" />
+        <Compile Include="FileSystem\Place.fs" />
+        <Compile Include="FileSystem\HistoryError.fs" />
+        <Compile Include="FileSystem\History.fs" />
         <Compile Include="FileSystem\ArchiveFormat.fs" />
         <Compile Include="FileSystem\ArchiveName.fs" />
         <Compile Include="FileSystem\ArchiveNames.fs" />

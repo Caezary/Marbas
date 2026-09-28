@@ -32,3 +32,21 @@ application binds `Esc` beside it; the probe binds both now. And choosing a row
 of the drop-down with `Enter` closed the popup with it — the spike's finding,
 confirmed by hand on a field without the guard, and now written into P16.9 as
 something the field must not do rather than left as a note.
+
+**P16.2 made the history a value and gave it a file of its own.**
+`FileSystem/History.fs` holds the four lists — places visited, files started,
+files viewed or edited, and text typed into each of nine kinds of field — each
+entry stamped with the moment it was last used. `History.apply` performs one of
+three changes, `Remember`, `Forget` and `ClearList`, as a pure function: the
+item goes on top, the entry it replaces goes, a list keeps a hundred. What counts
+as the same entry is what it points at, so a file viewed and then edited is one
+entry, a program started again as administrator is one, and a directory spelled
+in another case is one on Windows and two on Unix. `History.change` reads
+`history.conf`, applies the change and writes it back, which is what lets two
+running copies share one history without either erasing the other; a file that
+cannot be read stops the change before anything is written. Two new types came
+with it: `Place` in `FileSystem`, the part of `PanelLocation` worth keeping, and
+`EnteredText` in `Domain`, the one constructor there that does not trim, because
+a field hands back what was typed. `Dependencies` gained `HistoryPath`, beside
+the settings file, and `Clock`; nothing reads either yet. The file format and the
+reasons are in [History](../Architecture/HISTORY.md).

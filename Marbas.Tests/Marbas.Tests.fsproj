@@ -28,6 +28,7 @@
     <Compile Include="Domain\NamePatternTests.fs" />
     <Compile Include="Domain\ProgramSettingsTests.fs" />
     <Compile Include="Domain\FindQueryTests.fs" />
+    <Compile Include="Domain\EnteredTextTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -58,6 +59,7 @@
     <Compile Include="FileSystem\ArchiveKindTests.fs" />
     <Compile Include="FileSystem\ArchivePathTests.fs" />
     <Compile Include="FileSystem\PanelLocationTests.fs" />
+    <Compile Include="FileSystem\HistoryTests.fs" />
     <Compile Include="FileSystem\ArchiveNameTests.fs" />
     <Compile Include="FileSystem\ArchiveTests.fs" />
     <Compile Include="FileSystem\ArchiveNamesTests.fs" />

@@ -1,5 +1,6 @@
 module Marbas.Ui.App.Ports
 
+open System
 open System.IO.Abstractions
 open Marbas.Collections
 open Marbas.Domain
@@ -93,7 +94,9 @@ type Dependencies =
     { FileSystem: IFileSystem
       StartPath: FileSystemPath
       SettingsPath: FileSystemPath
+      HistoryPath: FileSystemPath
       WorkspacePath: FileSystemPath
+      Clock: unit -> DateTimeOffset
       OnQuit: unit -> unit
       Prompts: Prompts
       Processes: Processes

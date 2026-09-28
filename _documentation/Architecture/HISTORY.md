@@ -7,6 +7,96 @@ nothing checked on show, places rather than listings, text rather than values �
 are set out in [Phase 16](../Plan/PHASE-16-HISTORY.md); this file records what
 the code does about them as it arrives.
 
+## The history and its file
+
+**A history is four kinds of list, each a list of `Remembered` items.**
+`History` holds `Folders` (a `Place`), `Launches` (a `LaunchRequest`),
+`FileVisits` (a `Place` and whether it was `Viewed` or `Edited`) and `Inputs`, a
+map from `InputKind` to the `EnteredText` typed into that kind of field. Every
+item carries `At`, the `DateTimeOffset` it was last used, and every list runs
+newest first. A kind of field nothing was typed into has no key in the map at
+all, and `History.inputs` answers it with an empty list, so an emptied list and
+one never filled are the same value.
+
+**`Place` is the part of `PanelLocation` a history can keep.** It is `OnDisk` or
+`InArchive` — a directory or a file on disk, an archive and a path inside it —
+and has no case for search results, which are a listing rather than a place. It
+is declared with `RequireQualifiedAccess` and spelled `Place.OnDisk` wherever it
+is used, since `PanelLocation` already owns the bare `OnDisk` and `InArchive`
+and both types are in scope wherever a panel is turned into a place.
+
+**`EnteredText` keeps what was typed, not what it means.** It is the one
+constructor in `Domain` that does not trim: a field hands back exactly the text
+it was given, and whether that text is a name, a pattern or a path is decided
+where it is decided today, after the popup is confirmed. It refuses a blank text
+and one that breaks a line, because the file below cannot hold the second.
+
+**Every change is one of three, and they are values.** `HistoryChange` is
+`Remember item`, `Forget item` or `ClearList list`, and `History.apply` is the
+pure function that performs one. Remembering puts the item on top with its
+moment, drops the entry it replaces, and keeps the hundred most recent; forgetting
+drops the entry the item names. What "the same" means differs per list, and is
+what the item points at rather than the whole value: a place is the same place
+by `FileSystemPath.sameEntry`, so on Windows `C:\Work` and `C:\work` are one
+entry and on Unix they are two; a launch is the same launch by its target, so a
+file started as administrator after being started as the user leaves one entry,
+started the latest way; a file visit is the same by its place, so a file viewed
+and then edited is one entry, now `Edited`; typed text is the same only when it
+is spelled the same. An item with a line break in any path it would write is
+not remembered at all — `apply` answers the history unchanged.
+
+**The file is `history.conf`, beside the settings.** `History.beside` takes the
+settings path and answers its sibling, so the rule for where the configuration
+lives — application data, or `$HOME/.config` — stays in `Settings.location`
+alone. `Dependencies` carries the answer as `HistoryPath`, and a `Clock` beside
+it for the moment `Shell` will stamp on each change.
+
+**Each entry is a numbered block, and a block is read whole or not at all.**
+
+```
+folder.1=C:\work
+folder.1.at=2026-09-28T14:05:00.0000000+02:00
+folder.2=C:\backup.zip
+folder.2.inside=docs/2024
+folder.2.at=…
+run.1=C:\tools\setup.exe
+run.1.program=installer.exe
+run.1.directory=C:\tools
+run.1.elevation=administrator
+run.1.at=…
+view.1=C:\notes.md
+view.1.use=edited
+view.1.at=…
+input.target.1=D:\backup
+input.target.1.at=…
+```
+
+The input lists are `input.target`, `input.mkdir`, `input.newfile`,
+`input.pattern`, `input.find.masks`, `input.find.text`, `input.archive`,
+`input.link` and `input.program`. The moment is written in the round-trip
+format, offset included. A value is everything after the first `=`, untrimmed,
+so a typed `a=b` survives. Numbers are read in ascending order and need not
+start at one or run without gaps, the way the tab blocks of the settings are
+read. Where the settings file degrades one *setting* at a time, this one
+degrades one *entry* at a time: a block missing a part it is always written
+with — the moment, a launch's directory or elevation, a visit's use — or
+carrying one that cannot be read, such as an `inside` that climbs, is passed
+over, and the blocks around it are kept. A launch's program is the one optional
+part.
+
+**A change reads the file, applies itself and writes the file back.**
+`History.change` is `load`, `apply`, write, in a `result` expression, and answers
+the history it wrote. So the file is the source of truth: a change made by
+another copy of Marbas since this one last looked is in what `load` reads, and
+this change lands on top of it rather than on a stale copy. A file that cannot
+be read ends the change with an error before anything is written, so a history
+that is there but unreadable is never replaced by one that is empty. A missing
+file is an empty history; the directory it lives in is made on the first write.
+`HistoryError` is `HistoryAccessDenied` or `HistoryFailed` with the path and the
+system's message, and `HistoryError.mapException` is the one place an exception
+becomes one — the same shape as `SettingsError`, kept apart from it because the
+sentence a user reads for "the history could not be written" is a different one.
+
 ## The controls, measured before use
 
 P16.1 rendered the controls the phase leans on — `Tabs` holding a `TableView`

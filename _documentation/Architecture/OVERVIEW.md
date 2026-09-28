@@ -93,6 +93,7 @@ Marbas/
     ProgramSettings.fs    extension and role -> the program that edits or opens it
     FindQuery.fs          what a search asks: masks, text, scope, options, and what a file answers
     ResultsRefusal.fs     which command a panel of search results cannot carry out
+    EnteredText.fs        what was typed into a field, kept exactly, never blank, never two lines
   FileSystem/
     FileSystemPath.fs     single-case path type wrapping a raw string
     EntryAttributes.fs    what FileAttributes and UnixFileMode say, in the Domain's words
@@ -107,6 +108,9 @@ Marbas/
     Drives.fs             where a panel can be sent: the usable drives, and home on Unix
     PanelLocation.fs      where a panel stands: a directory, an archive level, search results;
                           a hit and the ground a search covers
+    Place.fs              a directory or file on disk, or a place inside an archive
+    HistoryError.fs       why the history could not be read or written
+    History.fs            the remembered lists, the changes made to them, and history.conf
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     Links.fs              what a link request means, what refuses it, and making one
     DirectoryMeasure.fs   the size of a directory or an archive level, stopping at links

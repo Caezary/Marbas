@@ -22,7 +22,7 @@ the way `Settings.parse` does: a line it cannot read costs that one entry.
 running copies of Marbas must not erase each other's history, and a union of
 both on every write would bring back what the user deleted in the other one. So
 a transition never writes a history it holds; it raises `Remember entry`,
-`Forget entry` or `ClearHistory list`, and `Shell` answers each by reading the
+`Forget entry` or `ClearList list`, and `Shell` answers each by reading the
 file, applying the change, writing the file and dispatching the result back as
 `HistoryChanged`. Both copies converge at every change they make. The history is
 therefore written on every change, and a crash loses nothing.

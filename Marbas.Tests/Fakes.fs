@@ -120,6 +120,22 @@ type UnwritableDirectory(denied: string) =
         let current = base.Directory.GetCurrentDirectory()
         once making (fun () -> UncreatableDirectory(this, current, denied) :> IDirectory)
 
+type private UnreadableContents(accessor: IMockFileDataAccessor, denied: string) =
+    inherit MockFile(accessor)
+
+    override this.ReadAllLines(path: string) =
+        if path = denied then
+            raise (UnauthorizedAccessException $"Access to the path '{path}' is denied.")
+        else
+            base.ReadAllLines path
+
+type UnreadableFile(denied: string) =
+    inherit MockFileSystem()
+
+    let reading = Replaced<IFile>()
+
+    override this.File = once reading (fun () -> UnreadableContents(this, denied) :> IFile)
+
 type private RefusedStream(path: string) =
     inherit FileSystemStream(new MemoryStream(), path, false)
 
@@ -440,7 +456,9 @@ let dependencies (fs: IFileSystem) (startPath: string) : Ports.Dependencies =
     { FileSystem = fs
       StartPath = FileSystemPath.create startPath
       SettingsPath = FileSystemPath.create (at "marbas.conf")
+      HistoryPath = FileSystemPath.create (at "history.conf")
       WorkspacePath = FileSystemPath.create (at "temp/Marbas/session")
+      Clock = fun () -> DateTimeOffset(2026, 9, 28, 12, 0, 0, TimeSpan.Zero)
       OnQuit = ignore
       Prompts =
         { ReportError = ignore

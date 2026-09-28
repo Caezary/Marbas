@@ -42,11 +42,14 @@ let private runEditor (app: IApplication) (fs: IFileSystem) (env: HostEnvironmen
 
 let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.Dependencies =
     let links = NativeLinks.forPlatform env.Platform
+    let settingsPath = Settings.location fs env.ApplicationData env.UserProfile
 
     { FileSystem = fs
       StartPath = fs.Directory.GetCurrentDirectory() |> FileSystemPath.create
-      SettingsPath = Settings.location fs env.ApplicationData env.UserProfile
+      SettingsPath = settingsPath
+      HistoryPath = History.beside fs settingsPath
       WorkspacePath = Workspace.location fs env.TemporaryRoot env.Session
+      Clock = fun () -> DateTimeOffset.Now
       OnQuit = fun () -> app.RequestStop()
       Prompts =
         { ReportError = Prompts.reportError app
