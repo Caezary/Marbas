@@ -353,9 +353,14 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   path shortened in the middle. `Ctrl+PgDn`/`Ctrl+PgUp` and `←`/`→` walk the
   tabs; on *Folder history* `Enter` stands the active panel in the chosen
   directory or archive level and moves it to the top of the list, and a
-  directory that is gone is reported with the panel left where it was. `[Go
-  to]` and `[Delete]` are there but disabled, and the other two tabs list
-  nothing yet.
+  directory that is gone is reported with the panel left where it was.
+  *History* lists every file that started — `Enter`, `Alt+R` with a program
+  chosen, `Alt+Shift+R` — with the program's name and *as administrator* where
+  they apply; a directory or drive handed to the system file manager and a
+  start that failed are not listed. `Enter` there starts the file again with
+  the same program, directory and rights, and `[Go to]` or `Alt+G` stands the
+  active panel beside the file with the cursor on it. `[Delete]` is there but
+  disabled, and *View history* lists nothing yet.
 
 - `Shift+F1` packs what the active panel points at into an archive in the other
   one. The popup opens on the other panel's path and a name deduced from the

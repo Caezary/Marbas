@@ -254,6 +254,14 @@ and `→`) walk the tabs. On *Folder history*, `Enter` sends the active panel to
 the directory under the cursor, a level inside an archive included; `Esc`
 closes the popup.
 
+*History* lists the files started — with `Enter`, with a program chosen in
+`Alt+R`, or as administrator with `Alt+Shift+R` — once they have started, with
+the program and the rights they were started with. `Enter` starts the file
+under the cursor again exactly that way; `Alt+G` (*Go to*) puts the active
+panel in the file's directory with the cursor on the file. A directory or a
+drive shown in the system file manager is not listed, nor is a file that could
+not be started.
+
 ## Things that differ by platform
 
 - **Drives.** Windows lists the ready drives; Unix lists the mounts that hold

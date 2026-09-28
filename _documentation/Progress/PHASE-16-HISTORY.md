@@ -89,3 +89,21 @@ so its outer lines are off. A third could not be fixed — `Tabs` misdraws the
 joints of its strip once the tab in front changes, by the arrows it handles
 itself as much as by our keys — and is in [Rough edges](../ROUGH-EDGES.md). The
 colours are the dialog's.
+
+**P16.5 remembered the files started, and decided which starts count by what
+was started.** `LaunchFinished` now carries its request, and a successful start
+whose target is a file raises the history change; `Alt+R` on a directory or a
+drive hands the system a directory and is passed over by the same test, so no
+call site had to mark its request. The *History* tab gained a *How* column —
+the program's name and *as administrator* — and two answers: `RunAgain`, which
+the state turns back into the same `RunProgram`, and `GoTo`, which stands the
+active panel beside the file through `Place.beside` and a new
+`AppState.standBeside`. `[Go to]` is enabled while that tab is in front and not
+empty. Wiring it to `Tabs.ValueChanged` broke fifteen dialog tests at once: the
+event also fires while the dialog is disposed, when the tables it looked up are
+already gone, so the tab in front is now read from the `Id` of `Tabs.Value`.
+Five existing tests changed for the new message shape, one of them renamed,
+since a start that succeeds no longer asks for nothing. In the real window, with
+the launcher replaced by a recorder so nothing ran on the machine, `Enter` on
+`readme.txt`, `Enter` on its row in the popup and `Alt+G` on it gave two
+identical requests and a left panel in `alpha` with the cursor on the file.

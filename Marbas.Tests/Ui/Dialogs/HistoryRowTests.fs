@@ -3,6 +3,7 @@ module Marbas.Tests.Ui.Dialogs.HistoryRowTests
 open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Dialogs
 open Marbas.Tests
@@ -30,6 +31,30 @@ let ``a moment is read in the offset of now, not in the one it was written with`
     let shown = HistoryRow.moment now (DateTimeOffset(2026, 9, 27, 23, 0, 0, TimeSpan.Zero))
 
     Assert.Equal("01:00", shown)
+
+let private launch program elevation =
+    { Target = fp (at "work/notes.md")
+      Program = ProgramPath.tryCreate program
+      WorkingDirectory = fp (at "work")
+      Elevation = elevation }
+
+[<Theory>]
+[<InlineData("", "")>]
+[<InlineData("code.exe", "code.exe")>]
+[<InlineData(@"C:\Program Files\Editor\editor.exe", "editor.exe")>]
+[<InlineData("/usr/bin/vim", "vim")>]
+let ``a file started as the user says which program it was started with, by name`` (program: string) (shown: string) =
+    let how = HistoryRow.launchHow (launch program AsUser)
+
+    Assert.Equal(shown, how)
+
+[<Theory>]
+[<InlineData("", "as administrator")>]
+[<InlineData("installer.exe", "installer.exe, as administrator")>]
+let ``a file started as administrator says so`` (program: string) (shown: string) =
+    let how = HistoryRow.launchHow (launch program AsAdministrator)
+
+    Assert.Equal(shown, how)
 
 [<Fact>]
 let ``a directory on disk is shown as its path`` () =

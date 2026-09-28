@@ -176,6 +176,39 @@ switched off, since the tab's frame already surrounds it, and the tab lines are
 single to match. The strip still misdraws its joints after a switch; that is
 `Tabs` itself and is recorded in [Rough edges](../ROUGH-EDGES.md).
 
+## Remembering the files started
+
+**A start is remembered once it has happened, and only a start of a file.**
+`LaunchFinished` carries the `LaunchRequest` it answers beside the outcome, so
+the transition that learns a start succeeded also knows what was started. It
+raises `ChangeHistory(Remember(Launched request))` when the outcome is `Ok` and
+the target is a file — `FileSystemPath.kind` says `FileEntry`. That one test
+covers the three ways a file is started — `Enter`, a program chosen in `Alt+R`
+and `Alt+Shift+R` — and leaves out the two ways `RunProgram` hands the system a
+directory: `Alt+R` on a directory and on a drive, which show it in the system
+file manager rather than start anything. Marking the request at each call site
+would have been the other way; the kind of the target is the fact that decides,
+and the transition may read it. A start that failed, and one whose elevation
+was declined, raise nothing.
+
+**Starting again is the same request, and going to it is standing beside it.**
+On the *History* tab `[Open]` answers `RunAgain request`, which the state turns
+straight back into `RunProgram request`: the same target, program, working
+directory and elevation as the first time, and the start that follows is
+remembered again, which moves it to the top. `[Go to]`, and `Alt+G`, answer
+`GoTo place`; `Place.beside` turns a file's place into the location holding it
+and its name — a directory on disk, or the level of an archive above an entry —
+and `AppState.standBeside` loads that location with the cursor on the name.
+`[Go to]` is enabled only while a tab that offers it is in front and has a row;
+it follows the tab through `Tabs.ValueChanged`. That handler also runs while the
+dialog is being disposed and its tables removed, so the tab in front is read
+from the `Id` of `Tabs.Value` rather than by finding the tables again.
+
+**The row says how the file was started.** A third column, *How*, holds
+`HistoryRow.launchHow`: the program's name, without its directory, when one was
+chosen, and *as administrator* when it ran so. The *What* column is shortened
+to what is left of the table after that column.
+
 ## The controls, measured before use
 
 P16.1 rendered the controls the phase leans on — `Tabs` holding a `TableView`

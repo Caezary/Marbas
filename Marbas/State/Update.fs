@@ -51,7 +51,7 @@ type Message =
     | MeasureFinished of measured: Result<Measurement list, Operations.OperationError>
     | EditRequested
     | EditFinished of outcome: Result<unit, Operations.OperationError>
-    | LaunchFinished of outcome: Result<unit, LaunchError>
+    | LaunchFinished of request: LaunchRequest * outcome: Result<unit, LaunchError>
     | OpenWithRequested
     | HandlerChosen of path: FileSystemPath * choice: OpenWithChoice
     | ElevatedRunRequested
@@ -318,6 +318,11 @@ let private chosenFromHistory (fs: IFileSystem) state choice =
     match choice with
     | None -> stay state
     | Some(OpenPlace place) -> standInside fs state.Active (Place.toLocation place) state |> applyListing state
+    | Some(RunAgain started) -> request state (RunProgram started)
+    | Some(GoTo place) ->
+        match Place.beside fs place with
+        | Some(location, name) -> standBeside fs state.Active location name state |> applyListing state
+        | None -> stay state
 
 let private forGood mode =
     match mode with
@@ -541,10 +546,12 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | Error(Operations.StartDeclined _) -> stay state
         | Error error -> reporting state error
         | Ok() -> refresh fs state |> applyListing state
-    | LaunchFinished outcome ->
+    | LaunchFinished(started, outcome) ->
         match outcome with
         | Error(ElevationDeclined _) -> stay state
         | Error error -> request state (ReportLaunchError error)
+        | Ok() when FileSystemPath.kind fs started.Target = FileEntry ->
+            request state (ChangeHistory(Remember(Launched started)))
         | Ok() -> stay state
     | OpenWithRequested -> openWithHandler fs state
     | HandlerChosen(path, choice) -> chosen fs state path choice

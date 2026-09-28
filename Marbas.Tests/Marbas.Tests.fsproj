@@ -114,6 +114,7 @@
     <Compile Include="State\ResultsOperationsTests.fs" />
     <Compile Include="State\FolderHistoryTests.fs" />
     <Compile Include="State\HistoryPopupTests.fs" />
+    <Compile Include="State\LaunchHistoryTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
     <Compile Include="State\RuntimeQueueTests.fs" />

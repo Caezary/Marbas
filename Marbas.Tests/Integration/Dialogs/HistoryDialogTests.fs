@@ -133,6 +133,68 @@ let ``going to a directory's entry means nothing on the directory tab`` () =
 
     Assert.False goTo.Enabled
 
+let private started target =
+    { Target = fp (at target)
+      Program = ProgramPath.tryCreate "code.exe"
+      WorkingDirectory = fp (at "work")
+      Elevation = AsAdministrator }
+
+let private launches =
+    History.empty
+    |> History.apply Windows (minute 3) (Remember(Launched(started "work/older.md")))
+    |> History.apply Windows (minute 4) (Remember(Launched(started "work/newer.md")))
+
+let private cells (dialog: HistoryDialog.HistoryView) tab =
+    let table = (HistoryDialog.table tab dialog).Table
+    [ for row in 0 .. table.Rows - 1 -> [ for column in 0 .. table.Columns - 1 -> string table[row, column] ] ]
+
+[<Fact>]
+let ``the files started are listed with how they were started`` () =
+    use dialog = laidOut launches RunHistoryTab
+
+    let listed = cells dialog RunHistoryTab
+
+    Assert.Equal<string list list>(
+        [ [ "14:04"; at "work/newer.md"; "code.exe, as administrator" ]
+          [ "14:03"; at "work/older.md"; "code.exe, as administrator" ] ],
+        listed
+    )
+
+[<Fact>]
+let ``opening a started file answers starting it again the same way`` () =
+    use dialog = laidOut launches RunHistoryTab
+    dialog.Result <- HistoryDialog.OpenButton
+
+    let answer = HistoryDialog.answer dialog
+
+    Assert.Equal({ Tab = RunHistoryTab; Choice = Some(RunAgain(started "work/newer.md")) }, answer)
+
+[<Fact>]
+let ``Alt+G on a started file answers going to it`` () =
+    use dialog = laidOut launches RunHistoryTab
+
+    dialog.NewKeyDownEvent(Key.G.WithAlt) |> ignore
+
+    let answer = HistoryDialog.answer dialog
+    Assert.Equal(Nullable HistoryDialog.GoToButton, dialog.Result)
+    Assert.Equal({ Tab = RunHistoryTab; Choice = Some(GoTo(Place.OnDisk(fp (at "work/newer.md")))) }, answer)
+
+[<Fact>]
+let ``going to a started file is offered once its tab is in front`` () =
+    use dialog = laidOut launches FolderHistoryTab
+
+    dialog.NewKeyDownEvent(Key.PageDown.WithCtrl) |> ignore
+
+    Assert.True (HistoryDialog.button HistoryDialog.GoToButton dialog).Enabled
+
+[<Fact>]
+let ``going to anything is not offered on an empty list`` () =
+    use dialog = laidOut History.empty RunHistoryTab
+
+    let goTo = HistoryDialog.button HistoryDialog.GoToButton dialog
+
+    Assert.False goTo.Enabled
+
 [<Fact>]
 let ``Alt+G on the directory tab answers nothing`` () =
     use dialog = laidOut folders FolderHistoryTab

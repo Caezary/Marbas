@@ -837,7 +837,7 @@ let ``a program the effect names is handed to the launcher and its outcome dispa
     Shell.interpret deps dispatch (RunProgram(launching (at "start/notes.txt")))
 
     Assert.Equal(launching (at "start/notes.txt"), Assert.Single asked)
-    Assert.Equal<Message list>([ LaunchFinished(Ok()) ], List.ofSeq sent)
+    Assert.Equal<Message list>([ LaunchFinished(launching (at "start/notes.txt"), Ok()) ], List.ofSeq sent)
 
 [<Fact>]
 let ``a launch that fails dispatches its failure back`` () =
@@ -847,7 +847,7 @@ let ``a launch that fails dispatches its failure back`` () =
 
     Shell.interpret deps dispatch (RunProgram(launching (at "start/notes.odd")))
 
-    Assert.Equal<Message list>([ LaunchFinished(Error failure) ], List.ofSeq sent)
+    Assert.Equal<Message list>([ LaunchFinished(launching (at "start/notes.odd"), Error failure) ], List.ofSeq sent)
 
 [<Fact>]
 let ``a launch failure is reported under its own title`` () =

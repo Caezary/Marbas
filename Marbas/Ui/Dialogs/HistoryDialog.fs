@@ -36,6 +36,9 @@ let private WhenColumn = "When"
 let private WhatColumn = "What"
 
 [<Literal>]
+let private HowColumn = "How"
+
+[<Literal>]
 let private WhatColumnIndex = 1
 
 [<Literal>]
@@ -47,7 +50,10 @@ let private ColumnSeparatorWidth = 1
 [<Literal>]
 let private SizeShare = 80
 
-type Row = { When: string; What: string }
+type Row =
+    { When: string
+      What: string
+      How: string }
 
 type HistoryView(history: History) =
     inherit Dialog(Title = Title, Width = Dim.Percent SizeShare, Height = Dim.Percent SizeShare)
@@ -69,39 +75,62 @@ let private tabTitle tab =
     | FolderHistoryTab -> "Folder history"
 
 let private rowsOf (fs: IFileSystem) now (history: History) tab =
-    let row at what = { When = HistoryRow.moment now at; What = what }
+    let row at what how =
+        { When = HistoryRow.moment now at
+          What = what
+          How = how }
 
     match tab with
     | RunHistoryTab ->
         history.Launches
-        |> List.map (fun entry -> row entry.At (FileSystemPath.value entry.Item.Target))
+        |> List.map (fun entry ->
+            row entry.At (FileSystemPath.value entry.Item.Target) (HistoryRow.launchHow entry.Item))
     | ViewHistoryTab ->
         history.FileVisits
-        |> List.map (fun entry -> row entry.At (HistoryRow.place fs entry.Item.Where))
-    | FolderHistoryTab -> history.Folders |> List.map (fun entry -> row entry.At (HistoryRow.place fs entry.Item))
+        |> List.map (fun entry -> row entry.At (HistoryRow.place fs entry.Item.Where) "")
+    | FolderHistoryTab -> history.Folders |> List.map (fun entry -> row entry.At (HistoryRow.place fs entry.Item) "")
 
-let private source rows =
+let private saysHow tab =
+    match tab with
+    | RunHistoryTab
+    | ViewHistoryTab -> true
+    | FolderHistoryTab -> false
+
+let private source tab rows =
     let columns = Dictionary<string, Func<Row, obj>>()
     columns.Add(WhenColumn, Func<Row, obj>(fun row -> box row.When))
     columns.Add(WhatColumn, Func<Row, obj>(fun row -> box row.What))
+
+    if saysHow tab then
+        columns.Add(HowColumn, Func<Row, obj>(fun row -> box row.How))
+
     EnumerableTableSource<Row>(rows, columns)
 
-let private fitted (fs: IFileSystem) (table: TableView) (value: obj) =
-    let width = table.Viewport.Width - TimePatternWidth - ColumnSeparatorWidth
+let private howWidth tab (rows: Row list) =
+    if saysHow tab then
+        (HowColumn :: (rows |> List.map _.How) |> List.map String.length |> List.max)
+        + ColumnSeparatorWidth
+    else
+        0
+
+let private fitted (fs: IFileSystem) (table: TableView) reserved (value: obj) =
+    let width = table.Viewport.Width - TimePatternWidth - ColumnSeparatorWidth - reserved
     PathText.shorten fs.Path.DirectorySeparatorChar width (string value)
 
 let private tableFor (fs: IFileSystem) rows tab =
     let table =
         new TableView(Title = tabTitle tab, Id = tabId tab, Width = Dim.Fill(), Height = Dim.Fill())
 
-    table.Table <- source rows
+    table.Table <- source tab rows
     table.FullRowSelect <- true
     table.CollectionNavigator <- null
     table.Style.ShowHorizontalHeaderOverline <- false
     table.Style.ShowHorizontalBottomLine <- false
     table.Style.ShowVerticalCellLineForFirstColumn <- false
     table.Style.ShowVerticalCellLineForLastColumn <- false
-    table.Style.GetOrCreateColumnStyle(WhatColumnIndex).RepresentationGetter <- Func<obj, string>(fitted fs table)
+    table.Style.GetOrCreateColumnStyle(WhatColumnIndex).RepresentationGetter <-
+        Func<obj, string>(fitted fs table (howWidth tab rows))
+
     table
 
 let tabs (dialog: HistoryView) = SubView.byType<Tabs> dialog
@@ -111,12 +140,13 @@ let table tab (dialog: HistoryView) =
 
 let button index (dialog: HistoryView) = Seq.item index dialog.Buttons
 
-let front (dialog: HistoryView) =
-    let shown = (tabs dialog).Value
+let private shownIn (container: Tabs) =
+    match container.Value with
+    | null -> None
+    | shown -> tabOrder |> List.tryFind (fun tab -> tabId tab = shown.Id)
 
-    tabOrder
-    |> List.tryFind (fun tab -> obj.ReferenceEquals(table tab dialog, shown))
-    |> Option.defaultValue FolderHistoryTab
+let front (dialog: HistoryView) =
+    shownIn (tabs dialog) |> Option.defaultValue FolderHistoryTab
 
 let private walk step (dialog: HistoryView) =
     let index = List.findIndex ((=) (front dialog)) tabOrder
@@ -142,6 +172,15 @@ let private answerKey (dialog: HistoryView) (key: Key) =
 
 let private plainButton title = DialogStyle.button title |> LiteralText.showing
 
+let private offersGoTo (history: History) tab =
+    match tab with
+    | RunHistoryTab -> not history.Launches.IsEmpty
+    | ViewHistoryTab
+    | FolderHistoryTab -> false
+
+let private offerGoTo (history: History) (container: Tabs) (goTo: Button) =
+    shownIn container |> Option.iter (fun tab -> goTo.Enabled <- offersGoTo history tab)
+
 let create (fs: IFileSystem) (history: History) (tab: HistoryTab) (now: DateTimeOffset) =
     let dialog = new HistoryView(history)
     DialogStyle.dress dialog |> ignore
@@ -158,11 +197,12 @@ let create (fs: IFileSystem) (history: History) (tab: HistoryTab) (now: DateTime
     let goTo = plainButton "Go to"
     let opening = plainButton "Open"
     delete.Enabled <- false
-    goTo.Enabled <- false
     opening.IsDefault <- true
     [ close; delete; goTo; opening ] |> List.iter dialog.AddButton
 
     container.Value <- table tab dialog
+    offerGoTo history container goTo
+    container.ValueChanged.Add(fun _ -> offerGoTo history container goTo)
     dialog.KeyDown.Add(answerKey dialog)
     dialog
 
@@ -171,18 +211,24 @@ let private rowUnderCursor (shown: TableView) =
     | null -> None
     | selection -> Some selection.SelectedCell.Y
 
-let private chosen (dialog: HistoryView) tab row =
-    match tab with
-    | FolderHistoryTab -> List.tryItem row dialog.History.Folders |> Option.map (_.Item >> OpenPlace)
-    | RunHistoryTab
-    | ViewHistoryTab -> None
+let private item row (entries: Remembered<'item> list) =
+    List.tryItem row entries |> Option.map _.Item
+
+let private chosen (history: History) tab pressed row =
+    match tab, pressed with
+    | FolderHistoryTab, OpenButton -> item row history.Folders |> Option.map OpenPlace
+    | RunHistoryTab, OpenButton -> item row history.Launches |> Option.map RunAgain
+    | RunHistoryTab, GoToButton ->
+        item row history.Launches
+        |> Option.map (fun started -> GoTo(Place.OnDisk started.Target))
+    | _ -> None
 
 let answer (dialog: HistoryView) =
     let tab = front dialog
 
     let choice =
-        match Option.ofNullable dialog.Result with
-        | Some OpenButton -> rowUnderCursor (table tab dialog) |> Option.bind (chosen dialog tab)
-        | _ -> None
+        Option.ofNullable dialog.Result
+        |> Option.bind (fun pressed ->
+            rowUnderCursor (table tab dialog) |> Option.bind (chosen dialog.History tab pressed))
 
     { Tab = tab; Choice = choice }

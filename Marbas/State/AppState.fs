@@ -22,7 +22,10 @@ type HistoryTab =
     | ViewHistoryTab
     | FolderHistoryTab
 
-type HistoryChoice = OpenPlace of Place
+type HistoryChoice =
+    | OpenPlace of Place
+    | RunAgain of LaunchRequest
+    | GoTo of Place
 
 type HistoryAnswer =
     { Tab: HistoryTab
@@ -299,6 +302,9 @@ let standOnHit (fs: IFileSystem) side (hit: FindHit) state =
 
 let standInside (fs: IFileSystem) side location state =
     loadLocationFocusing fs side location Top state
+
+let standBeside (fs: IFileSystem) side location name state =
+    loadLocationFocusing fs side location (ByName name) state
 
 let showResults (fs: IFileSystem) side (results: FindResults) state =
     let previous = panel side state

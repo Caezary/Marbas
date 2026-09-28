@@ -719,12 +719,18 @@ let ``an editor start the user turned down is silence, not a dialog`` () =
     Assert.Equal(state, result.State)
     Assert.Empty result.Effects
 
+let private launching target =
+    { Target = fp (at target)
+      Program = None
+      WorkingDirectory = fp (at "start")
+      Elevation = AsUser }
+
 [<Fact>]
-let ``a program that started leaves the state alone and asks for nothing`` () =
+let ``a directory the system showed leaves the state alone and asks for nothing`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
 
-    let result = update fs (LaunchFinished(Ok())) state
+    let result = update fs (LaunchFinished(launching "start/docs", Ok())) state
 
     Assert.Equal(state, result.State)
     Assert.Empty result.Effects
@@ -735,7 +741,7 @@ let ``a program that could not be started is reported`` () =
     let state = loaded fs |> setCursor Left 2
     let failure = NothingAssociated(fp (at "start/notes.txt"))
 
-    let result = update fs (LaunchFinished(Error failure)) state
+    let result = update fs (LaunchFinished(launching "start/notes.txt", Error failure)) state
 
     Assert.Equal(state, result.State)
     Assert.Equal<Effect list>([ ReportLaunchError failure ], result.Effects)
@@ -744,8 +750,9 @@ let ``a program that could not be started is reported`` () =
 let ``an elevation the user turned down is silence, not a dialog`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
+    let declined = ElevationDeclined(fp (at "start/notes.txt"))
 
-    let result = update fs (LaunchFinished(Error(ElevationDeclined(fp (at "start/notes.txt"))))) state
+    let result = update fs (LaunchFinished(launching "start/notes.txt", Error declined)) state
 
     Assert.Equal(state, result.State)
     Assert.Empty result.Effects
