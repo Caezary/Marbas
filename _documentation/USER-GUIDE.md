@@ -231,6 +231,21 @@ could not read, rather than refusing to start. Each tab is a numbered block
 on; a file written by a version from before tabs opens as a single tab and is
 rewritten in the new spelling the next time the session is saved.
 
+## History
+
+Every directory a panel goes to — by `Enter`, `..`, a drive, a root, a path
+opened or a search hit — is remembered, newest first, a hundred at most, in a
+file of its own beside the settings:
+
+| Platform | Location |
+|----------|----------|
+| Windows | `%APPDATA%\Marbas\history.conf` |
+| Linux / macOS | `~/.config/Marbas/history.conf` |
+
+The file is written on every change, so a crash loses nothing, and two copies
+of Marbas running at once share it rather than overwrite each other. If it
+cannot be written, a dialog says so once and the session carries on.
+
 ## Things that differ by platform
 
 - **Drives.** Windows lists the ready drives; Unix lists the mounts that hold

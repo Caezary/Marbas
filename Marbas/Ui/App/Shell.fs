@@ -412,6 +412,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Some(HandOver row) -> dispatch (DriveHandedOver row)
         | None -> ()
     | WatchLocations paths -> deps.Watches.Locations paths (fun () -> dispatch ExternalChangeDetected)
+    | ChangeHistory change ->
+        match History.change deps.FileSystem deps.HistoryPath (deps.Clock()) change with
+        | Ok history -> dispatch (HistoryChanged history)
+        | Error error -> dispatch (HistoryUnwritten error)
+    | ReportHistoryError error -> report deps HistoryErrorMessage.Title (HistoryErrorMessage.describe error)
     | SaveSettings settings ->
         match Settings.save deps.FileSystem deps.SettingsPath settings with
         | Ok() -> ()

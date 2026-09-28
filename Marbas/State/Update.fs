@@ -71,6 +71,8 @@ type Message =
     | TabSwitched of position: int
     | TabCycled of TabStep
     | SessionSaveRequested
+    | HistoryChanged of History
+    | HistoryUnwritten of HistoryError
     | QuitRequested
 
 type DeleteRequest =
@@ -113,6 +115,8 @@ type Effect =
     | PromptForRoot of PanelSide
     | ShowTabs of Zipper<Tab>
     | WatchLocations of paths: FileSystemPath list
+    | ChangeHistory of HistoryChange
+    | ReportHistoryError of HistoryError
     | SaveSettings of Settings
     | Quit
 
@@ -548,6 +552,11 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | TabSwitched position -> switchTab position state |> rereadAndSave fs
     | TabCycled step -> cycleTab step state |> rereadAndSave fs
     | SessionSaveRequested -> state |> saving fs
+    | HistoryChanged history -> stay { state with History = history }
+    | HistoryUnwritten error ->
+        match state.HistoryReport with
+        | Unreported -> request { state with HistoryReport = Reported } (ReportHistoryError error)
+        | Reported -> stay state
     | QuitRequested ->
         { State = state
           Effects = [ SaveSettings(settings fs state); Quit ] }
@@ -558,6 +567,35 @@ let private watching before result =
     | after ->
         { result with
             Effects = result.Effects @ [ WatchLocations after ] }
+
+let private movesPanelsItself msg =
+    match msg with
+    | RefreshRequested
+    | ExternalChangeDetected
+    | TabOpened
+    | TabClosed
+    | TabSwitched _
+    | TabCycled _ -> true
+    | _ -> false
+
+let private landedPlace before after side =
+    let placeIn state = Place.ofLocation (panel side state).Path
+
+    match placeIn after with
+    | Some landed when placeIn before <> Some landed -> Some landed
+    | _ -> None
+
+let private remembering msg before result =
+    if movesPanelsItself msg then
+        result
+    else
+        let visits =
+            [ Left; Right ]
+            |> List.choose (landedPlace before result.State)
+            |> List.map (Visited >> Remember >> ChangeHistory)
+
+        { result with
+            Effects = result.Effects @ visits }
 
 let private refusedAsSource msg =
     match msg with
@@ -588,7 +626,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | Some refusal -> reportResultsRefusal state refusal
         | None -> transition fs msg state
 
-    result |> watching state
+    result |> watching state |> remembering msg state
 
 let step (fs: IFileSystem) (msg: Message) (state: AppState) =
     let result = update fs msg state

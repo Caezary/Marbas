@@ -13,11 +13,17 @@ type Tab =
       Right: PanelState
       Active: PanelSide }
 
+type HistoryReport =
+    | Unreported
+    | Reported
+
 type AppState =
     { Tabs: Zipper<Tab>
       LastCreatedDirectory: EntryName option
       LastSearch: FindResults option
-      Programs: ProgramSettings }
+      Programs: ProgramSettings
+      History: History
+      HistoryReport: HistoryReport }
 
     member private this.Focused = this.Tabs |> Zipper.current
 
@@ -55,7 +61,9 @@ let restore (settings: Settings) =
     { Tabs = settings.Tabs |> Zipper.map restoredTab
       LastCreatedDirectory = settings.LastCreatedDirectory
       LastSearch = None
-      Programs = settings.Programs }
+      Programs = settings.Programs
+      History = History.empty
+      HistoryReport = Unreported }
 
 let create (path: FileSystemPath) = restore (Settings.forPath path)
 

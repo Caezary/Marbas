@@ -194,8 +194,9 @@ let ``a directory inside an archive is still walked into`` () =
 
     let result = update fs EntryOpened state
 
-    Assert.Equal(InArchive(archive, Expect.some (ArchivePath.tryCreate "docs")), result.State.Left.Path)
-    Assert.Empty result.Effects
+    let docs = Expect.some (ArchivePath.tryCreate "docs")
+    Assert.Equal(InArchive(archive, docs), result.State.Left.Path)
+    Assert.Equal<Effect list>([ ChangeHistory(Remember(Visited(Place.InArchive(archive, docs)))) ], result.Effects)
 
 [<Fact>]
 let ``an executable under the cursor is started with administrator rights`` () =

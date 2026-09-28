@@ -338,6 +338,15 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   and a directory that is no longer there falls back to the working directory
   rather than raising an error at startup. A missing file is a first start. When
   the file cannot be written at all, the app quits without complaining.
+- Every directory a panel lands on — `Enter`, `..`, `Alt+W`, a root, a drive,
+  a path opened, a search hit, a level inside an archive — is remembered in
+  `history.conf` beside the settings, newest first, a hundred at most, a
+  directory visited again moving to the top rather than repeating. A re-read, a
+  sort, a hidden toggle, a tab switch, a panel walking up because its directory
+  vanished and a panel of search results remember nothing. The file is written
+  on every change and read before each one, so two copies running at once share
+  it; a file that cannot be written raises one dialog per session. Nothing reads
+  the history back yet.
 
 - `Shift+F1` packs what the active panel points at into an archive in the other
   one. The popup opens on the other panel's path and a name deduced from the

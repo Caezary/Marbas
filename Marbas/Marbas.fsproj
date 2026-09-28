@@ -120,6 +120,7 @@
         <Compile Include="Ui\Messages\OperationErrorMessage.fs" />
         <Compile Include="Ui\Messages\LaunchErrorMessage.fs" />
         <Compile Include="Ui\Messages\SettingsErrorMessage.fs" />
+        <Compile Include="Ui\Messages\HistoryErrorMessage.fs" />
         <Compile Include="Ui\Messages\DeleteConfirmation.fs" />
         <Compile Include="Ui\Messages\OverwriteQuestion.fs" />
         <Compile Include="Ui\Messages\PasswordQuestion.fs" />

@@ -97,6 +97,44 @@ system's message, and `HistoryError.mapException` is the one place an exception
 becomes one — the same shape as `SettingsError`, kept apart from it because the
 sentence a user reads for "the history could not be written" is a different one.
 
+## Remembering the directories
+
+**A panel that lands somewhere new is remembered, and it is found by comparing,
+not by asking every transition.** `Update.update` runs `transition`, then
+`watching`, then `remembering`. `remembering` turns both panels of the tab in
+front into a `Place` before and after the message — `Place.ofLocation` answers
+nothing for search results — and for each side whose place is new appends
+`ChangeHistory(Remember(Visited place))`. That is the shape `watching` has had
+since P12.2, for the same reason: `EntryOpened` alone moves a panel four ways,
+and `WalkIntoRequested`, `PathOpened`, `DriveChosen`, `VolumeRootRequested`,
+`SearchAnswered` and every other way a panel moves would each have had to raise
+the effect themselves. With the comparison they raise nothing and cannot forget
+to. A listing that fails leaves the panel where it stood, so it is not
+remembered either.
+
+**A few messages move a panel without the user moving it, and they are named.**
+`movesPanelsItself` lists them: `ExternalChangeDetected`, whose panel walks up
+when its directory vanishes; `RefreshRequested`, a re-read that may do the same;
+and the four tab messages, which put a different tab in front and so change
+what both panels show without either of them going anywhere. For those the
+comparison is skipped. A sort, a hidden toggle and a cursor movement need no
+entry in that list — the place does not change.
+
+**The shell stamps the moment and hands the file's answer back.**
+`Shell.interpret` answers `ChangeHistory` with `History.change` over
+`deps.HistoryPath` and `deps.Clock()`, then dispatches `HistoryChanged` with the
+history the file now holds, which becomes `AppState.History`, or
+`HistoryUnwritten` with the error. The state is therefore a copy of the file as
+of the last change, not something the transitions build up themselves; the
+popup of P16.4 reads the file afresh when it opens. The state starts empty: the
+first change reads the file, so nothing at startup has to.
+
+**A history that cannot be written says so once.** Every change of directory
+would otherwise raise the same dialog. `AppState.HistoryReport` is `Unreported`
+until the first `HistoryUnwritten`, which answers `ReportHistoryError` and turns
+it `Reported`; every later one is passed over for the rest of the session. The
+dialog is `HistoryErrorMessage`, titled *History not saved*, naming the file.
+
 ## The controls, measured before use
 
 P16.1 rendered the controls the phase leans on — `Tabs` holding a `TableView`

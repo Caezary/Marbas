@@ -20,6 +20,13 @@ let private mockFs () =
     fs.AddDirectory(at "backup")
     fs
 
+let private watches effects =
+    effects
+    |> List.filter (fun effect ->
+        match effect with
+        | WatchLocations _ -> true
+        | _ -> false)
+
 let private loadedBoth (fs: IFileSystem) =
     create (fp (at "start"))
     |> loadPanel fs Left (fp (at "start"))
@@ -34,7 +41,7 @@ let ``walking into a directory answers with the paths on screen`` () =
 
     let result = update fs WalkIntoRequested state
 
-    Assert.Equal<Effect list>([ WatchLocations [ fp (at "start/docs"); fp (at "backup") ] ], result.Effects)
+    Assert.Equal<Effect list>([ WatchLocations [ fp (at "start/docs"); fp (at "backup") ] ], watches result.Effects)
 
 [<Fact>]
 let ``walking out answers with the directory walked out to`` () =
@@ -45,7 +52,7 @@ let ``walking out answers with the directory walked out to`` () =
 
     let result = update fs WalkIntoRequested state
 
-    Assert.Equal<Effect list>([ WatchLocations [ fp (at "start"); fp (at "backup") ] ], result.Effects)
+    Assert.Equal<Effect list>([ WatchLocations [ fp (at "start"); fp (at "backup") ] ], watches result.Effects)
 
 [<Fact>]
 let ``a panel standing inside an archive is watched by the archive file`` () =
@@ -56,7 +63,7 @@ let ``a panel standing inside an archive is watched by the archive file`` () =
 
     Assert.Equal<Effect list>(
         [ WatchLocations [ fp (at "start/backup.zip"); fp (at "start") ] ],
-        result.Effects
+        watches result.Effects
     )
 
 [<Fact>]
@@ -68,7 +75,7 @@ let ``both panels in one directory are watched once`` () =
 
     let result = update fs WalkIntoRequested state
 
-    Assert.Equal<Effect list>([ WatchLocations [ fp (at "start/docs") ] ], result.Effects)
+    Assert.Equal<Effect list>([ WatchLocations [ fp (at "start/docs") ] ], watches result.Effects)
 
 [<Fact>]
 let ``a panel sent to a root is watched where it lands`` () =
@@ -77,7 +84,7 @@ let ``a panel sent to a root is watched where it lands`` () =
 
     let result = update fs (PathOpened(Right, fp (at "start/docs"))) state
 
-    Assert.Equal<Effect list>([ WatchLocations [ fp (at "start"); fp (at "start/docs") ] ], result.Effects)
+    Assert.Equal<Effect list>([ WatchLocations [ fp (at "start"); fp (at "start/docs") ] ], watches result.Effects)
 
 [<Fact>]
 let ``a panel sent to the root of its volume is watched where it lands`` () =
@@ -88,7 +95,7 @@ let ``a panel sent to the root of its volume is watched where it lands`` () =
 
     let result = update fs VolumeRootRequested state
 
-    Assert.Equal<Effect list>([ WatchLocations [ fp (at ""); fp (at "backup") ] ], result.Effects)
+    Assert.Equal<Effect list>([ WatchLocations [ fp (at ""); fp (at "backup") ] ], watches result.Effects)
 
 [<Fact>]
 let ``a re-read of the same directories asks for no watch`` () =

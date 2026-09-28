@@ -112,6 +112,7 @@
     <Compile Include="State\FindTests.fs" />
     <Compile Include="State\ResultsPanelTests.fs" />
     <Compile Include="State\ResultsOperationsTests.fs" />
+    <Compile Include="State\FolderHistoryTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
     <Compile Include="State\RuntimeQueueTests.fs" />

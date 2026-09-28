@@ -14,6 +14,12 @@ module Place =
             FileSystemPath.sameEntry platform one other && inside = otherInside
         | _ -> false
 
+    let ofLocation location =
+        match location with
+        | OnDisk path -> Some(Place.OnDisk path)
+        | InArchive(archive, level) -> Some(Place.InArchive(archive, level))
+        | SearchResults _ -> None
+
     let spelled (place: Place) =
         match place with
         | Place.OnDisk path -> [ FileSystemPath.value path ]

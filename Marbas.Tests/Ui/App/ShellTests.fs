@@ -45,6 +45,12 @@ let private recording (reported: ResizeArray<FileSystemPath>) =
     { Report = reported.Add
       IsCancelled = fun () -> false }
 
+let private unwrittenHistory msg =
+    match msg with
+    | HistoryUnwritten(HistoryAccessDenied path)
+    | HistoryUnwritten(HistoryFailed(path, _)) -> Some path
+    | _ -> None
+
 let private stopped =
     { Report = ignore
       IsCancelled = fun () -> true }
@@ -951,6 +957,53 @@ let ``a session that could not be written is reported`` () =
 
     Assert.Equal(SettingsErrorMessage.Title, fst reported)
     Assert.Contains(at "blocked/marbas.conf", snd reported)
+
+[<Fact>]
+let ``a history change is written where the history path points, stamped by the clock`` () =
+    let fs = MockFileSystem()
+    let sent, dispatch = capture ()
+    let now = DateTimeOffset(2026, 9, 28, 15, 30, 0, TimeSpan.FromHours 2.0)
+    let change = Remember(Visited(Place.OnDisk(fp (at "work"))))
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            HistoryPath = fp (at "config/history.conf")
+            Clock = fun () -> now }
+
+    Shell.interpret deps dispatch (ChangeHistory change)
+
+    let written = History.apply Windows now change History.empty
+    Assert.Equal(Ok written, History.load fs (fp (at "config/history.conf")))
+    Assert.Equal<Message list>([ HistoryChanged written ], List.ofSeq sent)
+
+[<Fact>]
+let ``a history change that could not be written is dispatched as the error`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "blocked", MockFileData "x")
+    let sent, dispatch = capture ()
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            HistoryPath = fp (at "blocked/history.conf") }
+
+    Shell.interpret deps dispatch (ChangeHistory(Remember(Visited(Place.OnDisk(fp (at "work"))))))
+
+    Assert.Equal<FileSystemPath option list>(
+        [ Some(fp (at "blocked/history.conf")) ],
+        List.ofSeq sent |> List.map unwrittenHistory
+    )
+
+[<Fact>]
+let ``a history that could not be written is reported with its path`` () =
+    let mutable reported = ("", "")
+    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
+
+    Shell.interpret deps ignore (ReportHistoryError(HistoryAccessDenied(fp (at "config/history.conf"))))
+
+    Assert.Equal(HistoryErrorMessage.Title, fst reported)
+    Assert.Contains(at "config/history.conf", snd reported)
 
 [<Fact>]
 let ``quit runs the quit port`` () =

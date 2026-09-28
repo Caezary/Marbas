@@ -31,7 +31,7 @@ let private twoTabs (fs: IFileSystem) =
     |> Expect.ok
 
 [<Fact>]
-let ``a dispatch from inside an effect waits for the outer effects and watches last`` () =
+let ``a dispatch from inside an effect waits for the outer effects to finish`` () =
     let fs = mockFs ()
     let seen = ResizeArray<Effect>()
 
@@ -46,6 +46,7 @@ let ``a dispatch from inside an effect waits for the outer effects and watches l
 
     runtime.Dispatch(TabCycled Backward)
 
-    Assert.Equal(3, seen.Count)
+    Assert.Equal(4, seen.Count)
     Assert.Equal(WatchLocations [ fp (at "start"); fp (at "backup") ], seen[1])
     Assert.Equal(WatchLocations [ fp (at "start"); fp (at "start/docs/inner") ], seen[2])
+    Assert.Equal(ChangeHistory(Remember(Visited(Place.OnDisk(fp (at "start/docs/inner"))))), seen[3])

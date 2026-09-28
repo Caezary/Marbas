@@ -368,6 +368,9 @@ every other transition silent. The first watch of a session is not a transition
 at all: at startup the panels already stand where the settings put them, so
 `MainWindow` arms it by interpreting one `WatchLocations` itself, next to the
 `Watches.Modifiers` it already wires. See [Auto-refresh](AUTO-REFRESH.md).
+`remembering` follows `watching` the same way: it compares where each panel of
+the tab in front stood before and after the message and appends a history
+change for a panel that landed somewhere new — see [History](HISTORY.md).
 
 **A search reaches the state once, finished.** `FindEntered` raises `RunSearch`
 with the query, the location the panel returns to and its marked directories;

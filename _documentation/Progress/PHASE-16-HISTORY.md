@@ -50,3 +50,21 @@ with it: `Place` in `FileSystem`, the part of `PanelLocation` worth keeping, and
 a field hands back what was typed. `Dependencies` gained `HistoryPath`, beside
 the settings file, and `Clock`; nothing reads either yet. The file format and the
 reasons are in [History](../Architecture/HISTORY.md).
+
+**P16.3 remembered the directories by comparing, the way the watches are
+armed.** Rather than raising a history change in each of the transitions that
+move a panel, `Update.update` gained a third step after `transition` and
+`watching`: `remembering` compares where both panels of the tab in front stood
+before and after the message and appends `ChangeHistory(Remember(Visited
+place))` for a side that landed somewhere new. Six messages move a panel
+without the user moving it — the external change and the re-read that may walk
+a panel up, and the four tab messages that put another tab in front — and they
+are named in `movesPanelsItself` and skipped. `Shell` answers the effect with
+`History.change`, stamped by `deps.Clock`, and dispatches the file's answer back
+as `HistoryChanged`; a failure comes back as `HistoryUnwritten` and raises a
+dialog only the first time in a session, which `AppState.HistoryReport`
+remembers. Eight existing tests compared whole effect lists that now carry the
+history change as well: the watch tests read only the watch effects, and the
+two others name the change they expect. Driven through the real window over a
+real disk, into `alpha`, into `beta`, back out and into `gamma` in the other
+panel, the file read `gamma`, `alpha`, `beta` — newest first, `alpha` once.
