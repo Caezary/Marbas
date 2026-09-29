@@ -49,7 +49,6 @@ let private secondTab =
 
 let private stored: Settings =
     { Tabs = Zipper.ofNonEmpty firstTab [ secondTab ] |> Zipper.refocus 1
-      LastCreatedDirectory = Some(en "work")
       Programs =
         { DefaultEditor = ProgramPath.tryCreate "code.exe"
           Associations =
@@ -438,28 +437,18 @@ let ``saving where nothing can be written answers the failure`` () =
     Assert.False(fs.File.Exists(at "blocked/marbas.conf"))
 
 [<Fact>]
-let ``the name of the last created directory is written under its own key`` () =
+let ``the name of a directory created is not written to the settings`` () =
     let lines = Settings.format stored
-
-    Assert.Contains("mkdir.name=work", lines)
-
-[<Fact>]
-let ``nothing is written when no directory was ever created`` () =
-    let lines = Settings.format defaults
 
     Assert.DoesNotContain(lines, fun (line: string) -> line.StartsWith "mkdir.")
 
 [<Fact>]
-let ``a remembered name survives being written and read back`` () =
-    let parsed = Settings.parse defaults [ "mkdir.name=Work Files" ]
+let ``a name a directory was given in an older file is passed over`` () =
+    let lines = Settings.format stored
 
-    Assert.Equal(Some(en "Work Files"), parsed.LastCreatedDirectory)
+    let parsed = Settings.parse defaults ("mkdir.name=Work Files" :: lines)
 
-[<Fact>]
-let ``a blank remembered name is read as none`` () =
-    let parsed = Settings.parse defaults [ "mkdir.name=   " ]
-
-    Assert.Equal(None, parsed.LastCreatedDirectory)
+    Assert.Equal(stored, parsed)
 
 [<Fact>]
 let ``the entry each cursor stood on is written under its own key`` () =

@@ -149,6 +149,7 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="Ui\Dialogs\HistoryField.fs" />
         <Compile Include="Ui\Dialogs\PromptDialog.fs" />
         <Compile Include="Ui\Dialogs\PatternDialog.fs" />
         <Compile Include="Ui\Dialogs\ProgressDialog.fs" />

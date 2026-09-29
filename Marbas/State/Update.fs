@@ -111,7 +111,7 @@ type Effect =
     | PromptForTarget of suggestion: FileSystemPath
     | PromptForArchive of suggestion: FileSystemPath
     | PromptForLink of sources: FileSystemPath list * directory: FileSystemPath * suggestion: FileSystemPath
-    | PromptForName of suggestion: EntryName option
+    | PromptForName
     | PromptForFileName
     | PromptForPattern of SelectionMode
     | PromptForRoot of PanelSide
@@ -183,6 +183,16 @@ let private applyOperation state result =
     match result with
     | Ok updated -> stay updated
     | Error error -> reporting state error
+
+let private applyMade name state result =
+    match result with
+    | Error error -> reporting state error
+    | Ok updated ->
+        { State = updated
+          Effects =
+            EnteredText.tryCreate (EntryName.value name)
+            |> Option.map (fun typed -> ChangeHistory(Remember(Typed(NewDirectory, typed))))
+            |> Option.toList }
 
 let private applyBatch state result =
     match result with
@@ -370,14 +380,14 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | PatternEntered(mode, pattern) -> stay (applyPattern mode state.Active pattern state)
     | MakeDirectoryRequested ->
         match (activePanel state).Path with
-        | OnDisk _ -> request state (PromptForName state.LastCreatedDirectory)
-        | InArchive(archive, _) -> refuseUnchangeable fs state [ archive ] (PromptForName state.LastCreatedDirectory)
+        | OnDisk _ -> request state PromptForName
+        | InArchive(archive, _) -> refuseUnchangeable fs state [ archive ] PromptForName
         | SearchResults _ -> stay state
     | NameEntered name ->
         match (activePanel state).Path with
-        | OnDisk directory -> makeDirectory fs state.Active directory name state |> applyOperation state
+        | OnDisk directory -> makeDirectory fs state.Active directory name state |> applyMade name state
         | InArchive(archive, level) ->
-            makeEntryDirectory fs state.Active archive level name state |> applyOperation state
+            makeEntryDirectory fs state.Active archive level name state |> applyMade name state
         | SearchResults _ -> stay state
     | DeleteRequested mode ->
         let target = activePanel state

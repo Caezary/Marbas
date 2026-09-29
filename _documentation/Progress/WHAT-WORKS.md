@@ -194,7 +194,8 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   blank name or a cancelled prompt does nothing; a clash (or any failure) is
   reported in a dialog. The prompt opens on the name the last directory was
   given, selected, so one keystroke replaces it and Enter alone accepts it. That
-  name is kept in the settings file, so it is still offered after a restart.
+  name is the newest of the names `F7` has created, kept in `history.conf`, so it
+  is still offered after a restart.
 - `F8` (or `Del`) sends the operation targets of the active panel to the trash —
   the marked entries, or the entry under the cursor when nothing is marked,
   never `..`. `Shift+F8` (or `Shift+Del`) deletes them for good instead. Either
@@ -385,6 +386,17 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   `Alt+G` and `Del` act on the entry the filtered row stands for, and a row
   forgotten leaves the filter in place; `Shift+Del` still clears the whole
   tab. A filter that leaves no row disables `[Go to]` and `[Delete]`.
+- The fields that ask one question remember what was typed into them: the `To:`
+  of `F6`, the name of `F7`, the name of `Shift+F4`, and the pattern of `+` and
+  `-`, which share one list. Each field offers its list, newest first, under
+  `Alt+↓` or `F4`, with the newest row already under the cursor; `Enter` puts
+  the row into the field with the cursor after it and leaves the popup open, and
+  `Esc` closes only the list. `Space` types a space. The list is as wide as the
+  field and wears its colours. What was typed is remembered when the popup is
+  confirmed, whether or not the operation then succeeds; a cancelled popup and a
+  blank text remember nothing. `F7` is the exception: a name is remembered only
+  once the directory exists, so a refused name does not become the next
+  suggestion.
 
 - `Shift+F1` packs what the active panel points at into an archive in the other
   one. The popup opens on the other panel's path and a name deduced from the

@@ -37,6 +37,7 @@ let dress (dialog: Dialog) =
 let apply () =
     SchemeManager.AddScheme(SchemeManager.SchemesToSchemeName Schemes.Dialog, ClassicScheme.dialog)
     SchemeManager.AddScheme(SchemeManager.SchemesToSchemeName Schemes.Error, ClassicScheme.errorDialog)
+    SchemeManager.AddScheme(SchemeManager.SchemesToSchemeName Schemes.Menu, ClassicScheme.input)
 
     Dialog.DefaultBorderStyle <- Frame
     Dialog.DefaultButtonAlignment <- ButtonAlignment

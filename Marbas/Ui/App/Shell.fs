@@ -278,6 +278,15 @@ let private changeHistory (deps: Dependencies) dispatch change =
         dispatch (HistoryUnwritten error)
         None
 
+let private typedBefore (deps: Dependencies) kind =
+    History.load deps.FileSystem deps.HistoryPath
+    |> Result.map (History.inputs kind >> List.map _.Item)
+    |> Result.defaultValue []
+
+let private rememberTyped (deps: Dependencies) dispatch kind text =
+    EnteredText.tryCreate text
+    |> Option.iter (fun typed -> changeHistory deps dispatch (Remember(Typed(kind, typed))) |> ignore)
+
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
     | ReportListingError error ->
@@ -400,17 +409,37 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         deps.Prompts.EditPrograms { Programs = programs; Candidate = candidate }
         |> Option.iter (ProgramsEntered >> dispatch)
     | PromptForTarget suggestion ->
-        deps.Prompts.AskTarget { Title = MovePrompt; Suggestion = suggestion }
-        |> Option.iter (TargetEntered >> dispatch)
-    | PromptForName suggestion ->
-        deps.Prompts.AskName { Title = MkdirPrompt; Suggestion = suggestion }
+        deps.Prompts.AskTarget
+            { Title = MovePrompt
+              Suggestion = suggestion
+              Remembered = typedBefore deps CopyOrMoveTarget }
+        |> Option.iter (fun text ->
+            rememberTyped deps dispatch CopyOrMoveTarget text
+            dispatch (TargetEntered text))
+    | PromptForName ->
+        let remembered = typedBefore deps NewDirectory
+
+        deps.Prompts.AskName
+            { Title = MkdirPrompt
+              Suggestion = List.tryHead remembered
+              Remembered = remembered }
+        |> Option.bind EntryName.tryCreate
         |> Option.iter (NameEntered >> dispatch)
     | PromptForFileName ->
-        deps.Prompts.AskName { Title = NewFilePrompt; Suggestion = None }
-        |> Option.iter (FileNameEntered >> dispatch)
+        deps.Prompts.AskName
+            { Title = NewFilePrompt
+              Suggestion = None
+              Remembered = typedBefore deps NewFile }
+        |> Option.iter (fun text ->
+            rememberTyped deps dispatch NewFile text
+            EntryName.tryCreate text |> Option.iter (FileNameEntered >> dispatch))
     | PromptForPattern mode ->
-        deps.Prompts.AskPattern { Title = patternTitle mode }
-        |> Option.iter (fun pattern -> dispatch (PatternEntered(mode, pattern)))
+        deps.Prompts.AskPattern
+            { Title = patternTitle mode
+              Remembered = typedBefore deps SelectionPattern }
+        |> Option.iter (fun text ->
+            rememberTyped deps dispatch SelectionPattern text
+            NamePattern.tryCreate text |> Option.iter (fun pattern -> dispatch (PatternEntered(mode, pattern))))
     | PromptForRoot side ->
         match deps.Prompts.ChooseDrive(deps.Processes.ListDrives()) with
         | Some(StandOn row) -> dispatch (DriveChosen(side, row))

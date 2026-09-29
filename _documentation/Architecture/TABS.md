@@ -5,10 +5,10 @@ runs.
 
 **A tab is the pair, not a panel.** `Tab` carries the left panel, the right one
 and which of the two is active, so switching a tab changes both panels and the
-focus at once. Panels are what a tab holds; `LastCreatedDirectory` and
-`Programs` stayed on `AppState`, because the name `F7` offers and the table
-`Enter` reads belong to the session and not to a place. That is also why the
-settings file keeps them outside the `tab.` keys.
+focus at once. Panels are what a tab holds; `Programs` stayed on `AppState`,
+because the table `Enter` reads belongs to the session and not to a place. That
+is also why the settings file keeps it outside the `tab.` keys. The name `F7`
+offers was kept the same way until P16.9 moved it into the history.
 
 **"There is always exactly one tab in front" is a fact of the type.**
 `AppState.Tabs` is a `Zipper<Tab>` — the tabs before the current one, the

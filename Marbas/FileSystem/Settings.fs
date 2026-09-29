@@ -18,7 +18,6 @@ type TabSettings =
 
 type Settings =
     { Tabs: Zipper<TabSettings>
-      LastCreatedDirectory: EntryName option
       Programs: ProgramSettings }
 
     member private this.Focused = Zipper.current this.Tabs
@@ -71,9 +70,6 @@ module Settings =
     let private CursorSetting = "cursor"
 
     [<Literal>]
-    let private DirectoryPrefix = "mkdir."
-
-    [<Literal>]
     let private EditorPrefix = "editor."
 
     [<Literal>]
@@ -84,9 +80,6 @@ module Settings =
 
     [<Literal>]
     let private RolelessPrefix = "editor.extension."
-
-    [<Literal>]
-    let private NameSetting = "name"
 
     let private sortText key =
         match key with
@@ -159,7 +152,6 @@ module Settings =
                 { Left = defaultPanelAt path
                   Right = defaultPanelAt path
                   Active = Left }
-          LastCreatedDirectory = None
           Programs = ProgramSettings.none }
 
     let location (fs: IFileSystem) (applicationData: string) (userProfile: string) =
@@ -179,11 +171,6 @@ module Settings =
           line prefix DirectionSetting (directionText panel.Sort.Direction)
           line prefix HiddenSetting (hiddenText panel.Hidden) ]
         @ (panel.Cursor |> Option.map (EntryName.value >> line prefix CursorSetting) |> Option.toList)
-
-    let private directoryLines (name: EntryName option) =
-        name
-        |> Option.map (EntryName.value >> line DirectoryPrefix NameSetting)
-        |> Option.toList
 
     let private roleSetting (association: ProgramAssociation) =
         $"{roleText association.Role}.{FileExtension.value association.Extension}"
@@ -211,7 +198,6 @@ module Settings =
          |> List.mapi (fun index -> tabLines (index + 1))
          |> List.concat)
         @ [ $"{CurrentSetting}={Zipper.position settings.Tabs + 1}" ]
-        @ directoryLines settings.LastCreatedDirectory
         @ programLines settings.Programs
 
     let private entry (text: string) =
@@ -318,10 +304,6 @@ module Settings =
         let read = entries lines
 
         { Tabs = defaults.Tabs |> Zipper.current |> tabsFrom read
-          LastCreatedDirectory =
-            Map.tryFind (DirectoryPrefix + NameSetting) read
-            |> Option.bind EntryName.tryCreate
-            |> Option.orElse defaults.LastCreatedDirectory
           Programs = programsFrom read defaults.Programs }
 
     let private stored (fs: IFileSystem) defaults path =

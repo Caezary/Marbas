@@ -283,6 +283,14 @@ them and whatever its case, and the text is shown under the table as
 (and a second `Esc` closes the popup), and moving to another tab clears it
 too. `Shift+Del` clears the whole tab, not only the rows the filter shows.
 
+The popups that ask one question remember what you typed: where `F6` moves to,
+the names `F7` gave directories and `Shift+F4` gave files, and the patterns of
+`+` and `-` (one list for both). Press `Alt+↓` or `F4` in the field to open its
+list, newest first, with the newest row already chosen; `Enter` puts the chosen
+row into the field, ready to edit or to confirm with a second `Enter`, and `Esc`
+closes the list without closing the popup. `F7` still opens on the name the last
+directory was given, and remembers a name only once the directory is made.
+
 ## Things that differ by platform
 
 - **Drives.** Windows lists the ready drives; Unix lists the mounts that hold

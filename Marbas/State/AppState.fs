@@ -34,7 +34,6 @@ type HistoryAnswer =
 
 type AppState =
     { Tabs: Zipper<Tab>
-      LastCreatedDirectory: EntryName option
       LastSearch: FindResults option
       Programs: ProgramSettings
       History: History
@@ -75,7 +74,6 @@ let private restoredTab (tab: TabSettings) =
 
 let restore (settings: Settings) =
     { Tabs = settings.Tabs |> Zipper.map restoredTab
-      LastCreatedDirectory = settings.LastCreatedDirectory
       LastSearch = None
       Programs = settings.Programs
       History = History.empty
@@ -97,7 +95,6 @@ let private tabSettings (fs: IFileSystem) (tab: Tab) : TabSettings =
 
 let settings (fs: IFileSystem) (state: AppState) : Settings =
     { Tabs = state.Tabs |> Zipper.map (tabSettings fs)
-      LastCreatedDirectory = state.LastCreatedDirectory
       Programs = state.Programs }
 
 let withPrograms (programs: ProgramSettings) (state: AppState) = { state with Programs = programs }
@@ -527,9 +524,6 @@ let private madeDirectory (fs: IFileSystem) side location name state =
     loadLocationFocusing fs side location (ByName name) state
     |> Result.mapError asOperationError
     |> Result.map (updatePanel side (PanelState.keepSurviving previous.Selected))
-    |> Result.map (fun updated ->
-        { updated with
-            LastCreatedDirectory = Some name })
 
 let makeDirectory (fs: IFileSystem) side directory name state : Result<AppState, Operations.OperationError> =
     Operations.makeDirectory fs directory name

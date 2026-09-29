@@ -59,21 +59,30 @@ let ``an existing name is refused and leaves the panel unchanged`` () =
 
     Assert.Equal(Error(TargetExists(fp (at "start/docs"))), result)
 
+let private typed raw = EnteredText.tryCreate raw |> Expect.some
+
+let private historyChanges effects =
+    effects
+    |> List.choose (fun effect ->
+        match effect with
+        | Update.ChangeHistory change -> Some change
+        | _ -> None)
+
 [<Fact>]
-let ``the name a directory was given is remembered`` () =
+let ``the name a directory was given is remembered once the directory exists`` () =
     let fs = mockFs ()
     let state = loaded fs
 
-    let updated = makeDirectory fs Left (fp (at "start")) (en "work") state |> Expect.ok
+    let result = Update.update fs (Update.NameEntered(en "work")) state
 
-    Assert.Equal(Some(en "work"), updated.LastCreatedDirectory)
+    Assert.True(fs.Directory.Exists(at "start/work"))
+    Assert.Equal<HistoryChange list>([ Remember(Typed(NewDirectory, typed "work")) ], historyChanges result.Effects)
 
 [<Fact>]
-let ``a name that is refused leaves the remembered one alone`` () =
+let ``a name that is refused is not remembered`` () =
     let fs = mockFs ()
-    let state = loaded fs |> makeDirectory fs Left (fp (at "start")) (en "work") |> Expect.ok
+    let state = loaded fs
 
-    let refused = makeDirectory fs Left (fp (at "start")) (en "docs") state
+    let result = Update.update fs (Update.NameEntered(en "docs")) state
 
-    Assert.Equal(Error(TargetExists(fp (at "start/docs"))), refused)
-    Assert.Equal(Some(en "work"), state.LastCreatedDirectory)
+    Assert.Empty(historyChanges result.Effects)

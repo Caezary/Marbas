@@ -2,14 +2,14 @@ module Marbas.Tests.Integration.Dialogs.PatternDialogTests
 
 open System.Drawing
 open Xunit
-open Marbas.Domain
+open Terminal.Gui.Views
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Ui.App
 
-let private laidOut title =
+let private laidOut remembered title =
     DialogStyle.apply ()
-    let dialog = PatternDialog.create title
+    let dialog = PatternDialog.create remembered title
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore
@@ -17,7 +17,7 @@ let private laidOut title =
 
 [<Fact>]
 let ``the input field fits inside the dialog content area`` () =
-    use dialog = laidOut Shell.SelectPrompt
+    use dialog = laidOut [] Shell.SelectPrompt
 
     let input = (PatternDialog.field dialog).Frame
 
@@ -26,34 +26,33 @@ let ``the input field fits inside the dialog content area`` () =
 
 [<Fact>]
 let ``the dialog opens with a pattern matching everything`` () =
-    use dialog = laidOut Shell.SelectPrompt
+    use dialog = laidOut [ "*.fs" ] Shell.SelectPrompt
 
     let typed = (PatternDialog.field dialog).Text
 
     Assert.Equal(PatternDialog.DefaultPattern, typed)
 
 [<Fact>]
-let ``a dismissed dialog yields no pattern`` () =
-    use dialog = laidOut Shell.DeselectPrompt
+let ``the patterns typed before are offered as the field's list`` () =
+    use dialog = laidOut [ "*.fs"; "*.txt" ] Shell.SelectPrompt
 
-    let pattern = PatternDialog.pattern dialog
+    let field = PatternDialog.field dialog :?> DropDownList
+
+    Assert.Equal<string list>([ "*.fs"; "*.txt" ], [ for item in field.Source.ToList() -> string item ])
+
+[<Fact>]
+let ``a dismissed dialog yields no pattern`` () =
+    use dialog = laidOut [] Shell.DeselectPrompt
+
+    let pattern = PromptDialog.text dialog
 
     Assert.Equal(None, pattern)
 
 [<Fact>]
-let ``confirming yields the pattern that was typed`` () =
-    use dialog = laidOut Shell.SelectPrompt
+let ``confirming yields the pattern as it was typed`` () =
+    use dialog = laidOut [] Shell.SelectPrompt
 
-    (PatternDialog.field dialog).Text <- "*.fs"
+    (PatternDialog.field dialog).Text <- " *.fs"
     dialog.Result <- 1
 
-    Assert.Equal(NamePattern.tryCreate "*.fs", PatternDialog.pattern dialog)
-
-[<Fact>]
-let ``an empty pattern is no pattern at all`` () =
-    use dialog = laidOut Shell.SelectPrompt
-
-    (PatternDialog.field dialog).Text <- ""
-    dialog.Result <- 1
-
-    Assert.Equal(None, PatternDialog.pattern dialog)
+    Assert.Equal(Some " *.fs", PromptDialog.text dialog)

@@ -36,7 +36,6 @@ let private session left right : Settings =
             { Left = left
               Right = right
               Active = Left }
-      LastCreatedDirectory = None
       Programs = ProgramSettings.none }
 
 [<Fact>]

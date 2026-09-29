@@ -154,10 +154,10 @@ let ``a directory made inside an archive is in it and under the cursor`` () =
     let asked = update fs MakeDirectoryRequested state
     let made = update fs (NameEntered(en "fresh")) state
 
-    Assert.Equal<Effect list>([ PromptForName None ], asked.Effects)
+    Assert.Equal<Effect list>([ PromptForName ], asked.Effects)
     Assert.Equal<string list>([ ".."; "docs"; "fresh"; "notes.txt" ], names made.State.Left)
     Assert.Equal(Some(en "fresh"), PanelState.cursorEntry made.State.Left |> Option.map _.Name)
-    Assert.Equal(Some(en "fresh"), made.State.LastCreatedDirectory)
+    Assert.Contains(ChangeHistory(Remember(Typed(NewDirectory, Expect.some (EnteredText.tryCreate "fresh")))), made.Effects)
 
     Assert.Contains(
         "fresh",

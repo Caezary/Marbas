@@ -340,6 +340,83 @@ table forwards printable keys to the filter from its own `KeyDown`, which runs
 before the table acts on them, and the dialog's `KeyDown` keeps the same
 branch for a key that arrives while a button has the focus.
 
+## The fields that ask one question
+
+**Five popups remember, in four lists.** The `To:` of `F6` keeps
+`CopyOrMoveTarget`, the name of `F7` keeps `NewDirectory`, the name of
+`Shift+F4` keeps `NewFile`, and the pattern of `+` and `-` keeps one
+`SelectionPattern` list between them. The plan named the `To:` of `F5` as well,
+but `F5` asks nothing — it copies into the other panel straight away — so the
+list of targets is the field of `F6` alone.
+
+**The shell reads each list when it asks, and remembers when the popup is
+confirmed.** `TargetPrompt`, `NamePrompt` and `PatternPrompt` carry
+`Remembered`, the `EnteredText` of their kind newest first, which `Shell` reads
+from `history.conf` with `History.load` just before asking — the state's copy
+of the history is empty until its first change, so it cannot be the source. A
+file that cannot be read offers an empty list rather than stopping the popup.
+The ports now answer the text as it was typed, a `string option`, and the
+meaning is read in `Shell` after that: `EntryName.tryCreate` for a name,
+`NamePattern.tryCreate` for a pattern, the target as it already was. Before
+reading it, `Shell` remembers the text through the same `changeHistory` the
+history popup uses, so a text is remembered whether or not the operation then
+succeeds; `EnteredText` refuses a blank one, so a blank confirmation remembers
+nothing, and a cancelled popup never reaches the shell's branch at all.
+
+**`F7` remembers in the state, once the directory exists.** A name that fails —
+taken, refused by an archive — must not become the next suggestion, and only
+the transition knows whether the directory was made. `NameEntered` answers a
+successful make with `ChangeHistory(Remember(Typed(NewDirectory, name)))`, and
+the suggestion `F7` opens with is the head of that list, which the shell hands
+the prompt as `Suggestion`. So `LastCreatedDirectory` left `AppState` and
+`Settings`, `PromptForName` lost its argument, and `mkdir.name` is no longer
+written; a stale line is passed over like any other unknown key.
+
+**`HistoryField` is a `DropDownList` with the four cures of P16.1.** It is a
+`TextField` underneath, so `PromptDialog` takes it in the place of the plain
+field through `PromptDialog.offering`, and everything that reads the field —
+`PromptDialog.text`, `selecting` — reads it unchanged; the password still uses
+the plain `PromptDialog.create`, since a secret is never remembered.
+
+- `Space` is removed from the field's bindings, so it types a space; `F4` and
+  `Alt+↓` still toggle the list.
+- The list is a popover of the application, not a subview of the dialog, and a
+  row chosen with `Enter` comes back to the field as its `Accept`. While the
+  field's own list is the active popover — `App.Popovers.GetActivePopover()`,
+  whose `Target` is the field — `Accepting` is marked handled, which keeps the
+  row and stops the dialog's default button.
+- The row lands in `Text` after `Accepting`, once the list is already hidden,
+  and `App.Invoke` ran the move at once, before the text arrived — measured
+  through a running `Application`. So `Accepting` marks the field as choosing,
+  and the `TextChanged` that follows moves the insertion point to the end; any
+  key typed into the field clears the mark, so a row equal to the text already
+  there does not leave it behind.
+- `Esc` on the open list closed the whole dialog, because the application's
+  quit binding sees it before the popover does. `HistoryField.apply`, called
+  once in `Program.fs` beside `DialogStyle.apply`, subscribes to
+  `app.Keyboard.KeyDown`, which runs first, and hides the active popover when
+  it belongs to a `DropDownList`.
+
+**The list is as wide as the field and wears the field's colours.** The plan
+said the dialog's; rendered, a list in `White` on `Blue` with no frame could not
+be told from the dialog under it, and being only as wide as its longest row it
+let the buttons show through beside it — `D:\older targetCancel ] [► Ok ◄]`.
+The popover's list asks for the `Menu` scheme, which nothing else in Marbas
+uses, so `DialogStyle.apply` registers `ClassicScheme.input` under it: rows
+`Black` on `White`, the chosen one on `Aqua`, like the field it drops from.
+`HistoryField.apply` also listens to `PopoverRegistered` and gives the list of
+a field the field's width, so it covers the dialog in one block.
+
+**The newest row is chosen when the list opens.** The control pre-selects the
+row equal to the text and nothing otherwise, so `Enter` on a list just opened
+closed it and kept the text — a `+` confirmed that way selected `*` rather than
+the pattern shown. When the list becomes visible with no row chosen, the first
+one — the newest — is, and `Enter` then picks it.
+
+**The arrows still walk the list of a closed field.** In a popup of one field
+they have nothing else to do, so the bindings stay; P16.10 decides for the
+larger dialogs.
+
 ## The controls, measured before use
 
 P16.1 rendered the controls the phase leans on — `Tabs` holding a `TableView`

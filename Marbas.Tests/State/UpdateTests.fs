@@ -106,7 +106,7 @@ let ``make directory requested asks for a name`` () =
 
     let result = update fs MakeDirectoryRequested state
 
-    Assert.Equal<Effect list>([ PromptForName None ], result.Effects)
+    Assert.Equal<Effect list>([ PromptForName ], result.Effects)
 
 [<Fact>]
 let ``a valid name creates the directory on the active side`` () =
@@ -117,7 +117,11 @@ let ``a valid name creates the directory on the active side`` () =
 
     Assert.True(fs.Directory.Exists(at "start/work"))
     Assert.Equal(Some "work", PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
-    Assert.Empty result.Effects
+
+    Assert.Equal<Effect list>(
+        [ ChangeHistory(Remember(Typed(NewDirectory, Expect.some (EnteredText.tryCreate "work")))) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a duplicate name reports an operation error and keeps state`` () =
@@ -812,16 +816,6 @@ let ``step pairs the new state with its effects`` () =
 
     Assert.Equal(state, nextState)
     Assert.Equal<Effect list>([ SaveSettings(settings fs state); Quit ], effects)
-
-[<Fact>]
-let ``the name prompt is asked for with the name of the last directory created`` () =
-    let fs = mockFs ()
-    let state = loaded fs
-    let made = update fs (NameEntered(en "work")) state
-
-    let result = update fs MakeDirectoryRequested made.State
-
-    Assert.Equal<Effect list>([ PromptForName(Some(en "work")) ], result.Effects)
 
 let private zipFormat = ArchiveFormat.tryCreate Zip |> Expect.some
 

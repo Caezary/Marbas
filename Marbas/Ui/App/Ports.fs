@@ -14,15 +14,19 @@ type Confirmation = { Title: string; Question: string }
 
 type OverwritePrompt = { Target: FileSystemPath }
 
-type PatternPrompt = { Title: string }
+type PatternPrompt =
+    { Title: string
+      Remembered: EnteredText list }
 
 type NamePrompt =
     { Title: string
-      Suggestion: EntryName option }
+      Suggestion: EnteredText option
+      Remembered: EnteredText list }
 
 type TargetPrompt =
     { Title: string
-      Suggestion: FileSystemPath }
+      Suggestion: FileSystemPath
+      Remembered: EnteredText list }
 
 type PasswordPrompt = { Archive: EntryName }
 
@@ -57,8 +61,8 @@ type Prompts =
     { ReportError: ErrorReport -> unit
       Confirm: Confirmation -> bool
       AskOverwrite: OverwritePrompt -> Operations.OverwriteAnswer
-      AskPattern: PatternPrompt -> NamePattern option
-      AskName: NamePrompt -> EntryName option
+      AskPattern: PatternPrompt -> string option
+      AskName: NamePrompt -> string option
       AskTarget: TargetPrompt -> string option
       AskPassword: PasswordPrompt -> ArchivePassword option
       AskArchive: PackPrompt -> ArchiveChoice option

@@ -45,22 +45,28 @@ let chooseDrive (app: IApplication) (rows: DriveRow list) =
     | [] -> None
     | _ -> running app (fun () -> DriveDialog.create rows) DriveDialog.choice
 
+let private texts (remembered: EnteredText list) = remembered |> List.map EnteredText.value
+
 let askPattern (app: IApplication) (request: PatternPrompt) =
-    running app (fun () -> PatternDialog.create request.Title) PatternDialog.pattern
+    running app (fun () -> PatternDialog.create (texts request.Remembered) request.Title) PromptDialog.text
 
 let askName (app: IApplication) (request: NamePrompt) =
     let offered =
-        request.Suggestion |> Option.map EntryName.value |> Option.defaultValue ""
+        request.Suggestion |> Option.map EnteredText.value |> Option.defaultValue ""
 
     let asking () =
-        PromptDialog.create request.Title "Name:" offered |> PromptDialog.selecting
+        PromptDialog.offering (texts request.Remembered) request.Title "Name:" offered
+        |> PromptDialog.selecting
 
-    running app asking PromptDialog.name
+    running app asking PromptDialog.text
 
 let askTarget (app: IApplication) (request: TargetPrompt) =
     let offered = FileSystemPath.value request.Suggestion
 
-    running app (fun () -> PromptDialog.create request.Title "To:" offered) PromptDialog.text
+    running
+        app
+        (fun () -> PromptDialog.offering (texts request.Remembered) request.Title "To:" offered)
+        PromptDialog.text
 
 let askPassword (app: IApplication) (request: PasswordPrompt) =
     let label = PasswordQuestion.describe request.Archive

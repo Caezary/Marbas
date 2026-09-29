@@ -172,3 +172,28 @@ the one that emptied the table never arrived. A `TableView` with no rows takes
 printable keys even without its navigator, so every table now hands them to
 the filter from its own `KeyDown`, and a test that types past an empty result
 holds it.
+
+**P16.9 gave the fields that ask one question a history, and the rendering
+overruled one line of the plan.** The `To:` of `F6`, the names of `F7` and
+`Shift+F4` and the pattern of `+` and `-` became `HistoryField`s — a
+`DropDownList` with the four cures P16.1 found — whose lists `Shell` reads from
+`history.conf` just before asking. What was typed is remembered by `Shell` when
+the popup is confirmed, before the text is read as a name or a pattern, so the
+ports now answer the raw text; `F7` alone remembers in the state, once the
+directory exists, and its suggestion is the head of its list, which took
+`LastCreatedDirectory` out of `AppState` and `mkdir.name` out of the settings.
+The plan also named `F5`, which turned out to ask nothing — it copies straight
+into the other panel — so the targets are `F6`'s list. Driven through the real
+window with remembered entries in the file, the four cures held — `Space`
+typed, `Enter` on the list chose without confirming, `Esc` on it closed only
+the list — and three things did not. `App.Invoke` moved the insertion point
+before the chosen row arrived, so `x` landed inside it (`D:\newer targext`); the
+move now follows the `TextChanged` a choice causes. The list in the dialog's
+colours, which the plan asked for, could not be told from the dialog and let
+the buttons show through beside it, so it wears the field's colours and the
+field's width instead. And a list opened on a text it did not hold had no row
+chosen, so the first `Enter` only closed it and `+` confirmed `*`; the newest
+row is now chosen when the list opens. With that, `F6` offered and kept its
+targets, `F7` opened on `reports` and remembered `new` once it was made, `+`
+picked `*.fs` with one `Enter` and applied it with the next, `Shift+F4` offered
+`notes.md`, and a cancelled `F6` wrote nothing.

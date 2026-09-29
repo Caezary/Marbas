@@ -104,3 +104,9 @@ let ``a message box that reports a failure wears the classic error colours`` () 
     DialogStyle.apply ()
 
     Assert.Equal(ClassicScheme.errorDialog, SchemeManager.GetScheme Schemes.Error)
+
+[<Fact>]
+let ``the list of a field with a history wears the colours of the field`` () =
+    DialogStyle.apply ()
+
+    Assert.Equal(ClassicScheme.input, SchemeManager.GetScheme Schemes.Menu)

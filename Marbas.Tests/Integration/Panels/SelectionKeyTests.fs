@@ -130,7 +130,7 @@ let ``a shift arrow and a pattern add up to one selection`` () =
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Prompts.AskPattern = fun _ -> NamePattern.tryCreate "*.txt" }
+                Prompts.AskPattern = fun _ -> Some "*.txt" }
 
     let list = leftList window
     list.SelectedItem <- 1
@@ -147,7 +147,7 @@ let ``a shift arrow unmarks a single entry a pattern selected`` () =
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Prompts.AskPattern = fun _ -> NamePattern.tryCreate "*.txt" }
+                Prompts.AskPattern = fun _ -> Some "*.txt" }
 
     let list = leftList window
 

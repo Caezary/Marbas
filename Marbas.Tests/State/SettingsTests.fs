@@ -41,7 +41,6 @@ let private storedTab: TabSettings =
 
 let private stored: Settings =
     { Tabs = Zipper.single storedTab
-      LastCreatedDirectory = Some(en "work")
       Programs =
         { DefaultEditor = ProgramPath.tryCreate "code.exe"
           Associations =
@@ -158,12 +157,6 @@ let ``a panel inside an archive says the directory holding it in the settings`` 
     Assert.Equal(fp (at "start"), (settings fs inside).Left.Path)
 
 [<Fact>]
-let ``a state built from settings remembers the name the last directory was given`` () =
-    let state = restore stored
-
-    Assert.Equal(Some(en "work"), state.LastCreatedDirectory)
-
-[<Fact>]
 let ``a state built from settings carries the programs it names`` () =
     let state = restore stored
 
@@ -185,16 +178,6 @@ let ``the editor a name is opened with comes from the state`` () =
 
     Assert.Equal(ProgramPath.tryCreate "notepad.exe", programFor ForEditing (en "notes.txt") state)
     Assert.Equal(ProgramPath.tryCreate "code.exe", programFor ForEditing (en "Program.fs") state)
-
-[<Fact>]
-let ``the name a new directory was given goes into the settings`` () =
-    let fs = mockFs ()
-    let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
-
-    let made = makeDirectory fs Left (fp (at "start")) (en "reports") state |> Expect.ok
-
-    Assert.Equal(Some(en "reports"), (settings fs made).LastCreatedDirectory)
-    Assert.Equal(None, (settings fs state).LastCreatedDirectory)
 
 [<Fact>]
 let ``the entry under each cursor goes into the settings`` () =

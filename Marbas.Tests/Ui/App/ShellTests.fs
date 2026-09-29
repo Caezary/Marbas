@@ -58,9 +58,9 @@ let private stopped =
 [<Fact>]
 let ``a supplied name is dispatched as NameEntered`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Prompts.AskName = fun _ -> Some(EntryName.create "work") }
+    let deps = { noDeps () with Prompts.AskName = fun _ -> Some "work" }
 
-    Shell.interpret deps dispatch (PromptForName None)
+    Shell.interpret deps dispatch PromptForName
 
     Assert.Equal<Message list>([ NameEntered(en "work") ], List.ofSeq sent)
 
@@ -68,7 +68,7 @@ let ``a supplied name is dispatched as NameEntered`` () =
 let ``a cancelled name prompt dispatches nothing`` () =
     let sent, dispatch = capture ()
 
-    Shell.interpret (noDeps ()) dispatch (PromptForName None)
+    Shell.interpret (noDeps ()) dispatch PromptForName
 
     Assert.Empty sent
 
@@ -78,7 +78,7 @@ let ``the name prompt uses the mkdir label`` () =
     let mutable asked = ""
     let deps = { noDeps () with Prompts.AskName = fun request -> asked <- request.Title; None }
 
-    Shell.interpret deps dispatch (PromptForName None)
+    Shell.interpret deps dispatch PromptForName
 
     Assert.Equal(Shell.MkdirPrompt, asked)
 
@@ -88,16 +88,12 @@ let ``a selecting pattern uses the select label and carries the answer back`` ()
     let mutable asked = ""
     let deps =
         { noDeps () with
-            Prompts.AskPattern = fun request -> asked <- request.Title; NamePattern.tryCreate "*.fs" }
+            Prompts.AskPattern = fun request -> asked <- request.Title; Some "*.fs" }
 
     Shell.interpret deps dispatch (PromptForPattern Select)
 
     Assert.Equal(Shell.SelectPrompt, asked)
-
-    Assert.Equal<Message list>(
-        [ PatternEntered(Select, NamePattern.tryCreate "*.fs" |> Expect.some) ],
-        List.ofSeq sent
-    )
+    Assert.Contains(PatternEntered(Select, NamePattern.tryCreate "*.fs" |> Expect.some), sent)
 
 [<Fact>]
 let ``a deselecting pattern uses the deselect label`` () =
@@ -568,7 +564,7 @@ let ``the target prompt suggests a path and carries back what was typed`` () =
 
     Assert.Equal(Shell.MovePrompt, fst offered)
     Assert.Equal(at "backup", snd offered)
-    Assert.Equal<Message list>([ TargetEntered "readme.txt" ], List.ofSeq sent)
+    Assert.Contains(TargetEntered "readme.txt", sent)
 
 [<Fact>]
 let ``a cancelled target prompt dispatches nothing`` () =
@@ -774,11 +770,11 @@ let ``an editor that fails dispatches its failure back`` () =
 [<Fact>]
 let ``a name for a new file is dispatched as FileNameEntered`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Prompts.AskName = fun _ -> Some(EntryName.create "draft.md") }
+    let deps = { noDeps () with Prompts.AskName = fun _ -> Some "draft.md" }
 
     Shell.interpret deps dispatch PromptForFileName
 
-    Assert.Equal<Message list>([ FileNameEntered(en "draft.md") ], List.ofSeq sent)
+    Assert.Contains(FileNameEntered(en "draft.md"), sent)
 
 [<Fact>]
 let ``a cancelled new file prompt dispatches nothing`` () =
@@ -791,7 +787,7 @@ let ``a cancelled new file prompt dispatches nothing`` () =
 
 [<Fact>]
 let ``the new file prompt opens on nothing`` () =
-    let offered = ResizeArray<EntryName option>()
+    let offered = ResizeArray<EnteredText option>()
     let deps = { noDeps () with Prompts.AskName = fun request -> offered.Add request.Suggestion; None }
 
     Shell.interpret deps ignore PromptForFileName
@@ -1154,25 +1150,165 @@ let ``quit takes the workspace of the session with it`` () =
 
     Assert.False(fs.Directory.Exists(at "temp/Marbas/session"))
 
+let private typed raw = EnteredText.tryCreate raw |> Expect.some
+
+let private rememberedIn (fs: MockFileSystem) kind =
+    History.load fs (fp (at "history.conf"))
+    |> Expect.ok
+    |> History.inputs kind
+    |> List.map (_.Item >> EnteredText.value)
+
+let private typedEarlier (fs: MockFileSystem) kind texts =
+    texts
+    |> List.iter (fun text ->
+        History.change fs (fp (at "history.conf")) DateTimeOffset.UnixEpoch (Remember(Typed(kind, typed text)))
+        |> ignore)
+
+let private withFs fs = Fakes.dependencies fs (at "start")
+
 [<Fact>]
-let ``the name prompt offers the name that was remembered`` () =
-    let _, dispatch = capture ()
+let ``the name prompt opens on the name the last directory was given`` () =
+    let fs = MockFileSystem()
+    typedEarlier fs NewDirectory [ "older"; "work" ]
     let mutable offered = None
-    let deps = { noDeps () with Prompts.AskName = fun request -> offered <- request.Suggestion; None }
+    let deps = { withFs fs with Prompts.AskName = fun request -> offered <- request.Suggestion; None }
 
-    Shell.interpret deps dispatch (PromptForName(Some(en "work")))
+    Shell.interpret deps ignore PromptForName
 
-    Assert.Equal(Some(en "work"), offered)
+    Assert.Equal(Some(typed "work"), offered)
 
 [<Fact>]
 let ``the name prompt starts empty when nothing was remembered`` () =
-    let _, dispatch = capture ()
-    let mutable offered = Some(en "something")
+    let mutable offered = Some(typed "something")
     let deps = { noDeps () with Prompts.AskName = fun request -> offered <- request.Suggestion; None }
 
-    Shell.interpret deps dispatch (PromptForName None)
+    Shell.interpret deps ignore PromptForName
 
     Assert.Equal(None, offered)
+
+[<Fact>]
+let ``the name prompt offers the names directories were given, newest first`` () =
+    let fs = MockFileSystem()
+    typedEarlier fs NewDirectory [ "older"; "work" ]
+    let offered = ResizeArray<EnteredText list>()
+    let deps = { withFs fs with Prompts.AskName = fun request -> offered.Add request.Remembered; None }
+
+    Shell.interpret deps ignore PromptForName
+
+    Assert.Equal<EnteredText list>([ typed "work"; typed "older" ], Assert.Single offered)
+
+[<Fact>]
+let ``a name given to a directory is left for the state to remember`` () =
+    let fs = MockFileSystem()
+    let deps = { withFs fs with Prompts.AskName = fun _ -> Some "work" }
+
+    Shell.interpret deps ignore PromptForName
+
+    Assert.Empty(rememberedIn fs NewDirectory)
+
+[<Fact>]
+let ``the target prompt offers the targets typed before, newest first`` () =
+    let fs = MockFileSystem()
+    typedEarlier fs CopyOrMoveTarget [ @"D:\older"; @"D:\newer" ]
+    let offered = ResizeArray<EnteredText list>()
+    let deps = { withFs fs with Prompts.AskTarget = fun request -> offered.Add request.Remembered; None }
+
+    Shell.interpret deps ignore (PromptForTarget(fp (at "backup")))
+
+    Assert.Equal<EnteredText list>([ typed @"D:\newer"; typed @"D:\older" ], Assert.Single offered)
+
+[<Fact>]
+let ``a target confirmed is remembered as it was typed`` () =
+    let fs = MockFileSystem()
+    let deps = { withFs fs with Prompts.AskTarget = fun _ -> Some @" D:\backup " }
+
+    Shell.interpret deps ignore (PromptForTarget(fp (at "backup")))
+
+    Assert.Equal<string list>([ @" D:\backup " ], rememberedIn fs CopyOrMoveTarget)
+
+[<Fact>]
+let ``a target prompt cancelled remembers nothing`` () =
+    let fs = MockFileSystem()
+
+    Shell.interpret (withFs fs) ignore (PromptForTarget(fp (at "backup")))
+
+    Assert.False(fs.File.Exists(at "history.conf"))
+
+[<Fact>]
+let ``a blank target confirmed remembers nothing`` () =
+    let fs = MockFileSystem()
+    let deps = { withFs fs with Prompts.AskTarget = fun _ -> Some "   " }
+
+    Shell.interpret deps ignore (PromptForTarget(fp (at "backup")))
+
+    Assert.False(fs.File.Exists(at "history.conf"))
+
+[<Fact>]
+let ``the new file prompt offers the names typed before`` () =
+    let fs = MockFileSystem()
+    typedEarlier fs NewFile [ "notes.md" ]
+    let offered = ResizeArray<EnteredText list>()
+    let deps = { withFs fs with Prompts.AskName = fun request -> offered.Add request.Remembered; None }
+
+    Shell.interpret deps ignore PromptForFileName
+
+    Assert.Equal<EnteredText list>([ typed "notes.md" ], Assert.Single offered)
+
+[<Fact>]
+let ``a name for a new file confirmed is remembered`` () =
+    let fs = MockFileSystem()
+    let deps = { withFs fs with Prompts.AskName = fun _ -> Some "draft.md" }
+
+    Shell.interpret deps ignore PromptForFileName
+
+    Assert.Equal<string list>([ "draft.md" ], rememberedIn fs NewFile)
+
+[<Fact>]
+let ``a new file prompt cancelled remembers nothing`` () =
+    let fs = MockFileSystem()
+
+    Shell.interpret (withFs fs) ignore PromptForFileName
+
+    Assert.False(fs.File.Exists(at "history.conf"))
+
+[<Fact>]
+let ``the pattern prompts offer one list between selecting and deselecting`` () =
+    let fs = MockFileSystem()
+    let offered = ResizeArray<EnteredText list>()
+    let deps = { withFs fs with Prompts.AskPattern = fun request -> offered.Add request.Remembered; Some "*.fs" }
+    Shell.interpret deps ignore (PromptForPattern Select)
+
+    Shell.interpret deps ignore (PromptForPattern Deselect)
+
+    Assert.Equal<EnteredText list>([ typed "*.fs" ], offered[1])
+
+[<Fact>]
+let ``a pattern confirmed is remembered`` () =
+    let fs = MockFileSystem()
+    let deps = { withFs fs with Prompts.AskPattern = fun _ -> Some "*.txt" }
+
+    Shell.interpret deps ignore (PromptForPattern Deselect)
+
+    Assert.Equal<string list>([ "*.txt" ], rememberedIn fs SelectionPattern)
+
+[<Fact>]
+let ``a pattern prompt cancelled remembers nothing`` () =
+    let fs = MockFileSystem()
+
+    Shell.interpret (withFs fs) ignore (PromptForPattern Select)
+
+    Assert.False(fs.File.Exists(at "history.conf"))
+
+[<Fact>]
+let ``a blank pattern is still applied but not remembered`` () =
+    let fs = MockFileSystem()
+    let sent, dispatch = capture ()
+    let deps = { withFs fs with Prompts.AskPattern = fun _ -> Some "  " }
+
+    Shell.interpret deps dispatch (PromptForPattern Select)
+
+    Assert.Contains(PatternEntered(Select, NamePattern.tryCreate "  " |> Expect.some), sent)
+    Assert.False(fs.File.Exists(at "history.conf"))
 
 let private packReadyFs () =
     let fs = MockFileSystem()

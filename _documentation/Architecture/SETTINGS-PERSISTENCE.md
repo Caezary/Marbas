@@ -25,13 +25,11 @@ names no sort key are all simply not read. A truncated or hand-edited file
 therefore degrades one setting at a time instead of being rejected whole. Keys
 and value words are matched lowercased; a path keeps the case it was written in.
 
-**The name of the last directory made is a session setting, not a panel one.**
-It is written as `mkdir.name` — one key, outside the `left.`/`right.` pairs,
-because the suggestion `F7` opens with does not belong to a side. `AppState`
-carries it as an `EntryName option` that `makeDirectory` sets only when the
-directory was actually created, so a refused name leaves the previous
-suggestion standing, and `PromptForName` hands it to the shell. It reaches the
-file the way everything else does, when `QuitRequested` saves the session.
+**The name of the last directory made moved to the history.** Until phase 16
+it was written as `mkdir.name`. Since P16.9 the suggestion `F7` opens with is
+the newest entry of its input list in `history.conf`, so the settings file no
+longer writes the key; a file that still carries it is read like one with any
+other unknown key, and the line is passed over.
 
 **A stored path is checked before it is used.** `Settings.load` ends by asking
 the file system whether each stored path is still a directory and falls back to

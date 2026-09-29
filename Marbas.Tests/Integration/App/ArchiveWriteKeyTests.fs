@@ -40,7 +40,7 @@ let private windowOn (fs: MockFileSystem) =
         { Fakes.dependencies fs (at "start") with
             Prompts.AskOverwrite = fun _ -> Operations.Yes
             Prompts.Confirm = fun _ -> true
-            Prompts.AskName = fun _ -> Some(EntryName.create "fresh") }
+            Prompts.AskName = fun _ -> Some "fresh" }
 
 let private rows (list: ListView) =
     let source = list.Source.ToList()

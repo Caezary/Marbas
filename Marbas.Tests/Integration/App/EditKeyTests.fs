@@ -163,7 +163,7 @@ let ``Shift+F4 creates the named file in the panel directory and opens it`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Prompts.AskName = fun _ -> Some(EntryName.create "draft.md")
+                Prompts.AskName = fun _ -> Some "draft.md"
                 Processes.RunEditor = fun _ path -> edited.Add path; Ok() }
 
     pressKey window KeyMap.newFileKey
