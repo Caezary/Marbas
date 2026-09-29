@@ -58,7 +58,7 @@ type Row =
 type HistoryView(history: History) =
     inherit Dialog(Title = Title, Width = Dim.Percent SizeShare, Height = Dim.Percent SizeShare)
 
-    member _.History = history
+    member val History = history with get, set
 
     member val AskedUse: FileUse option = None with get, set
 
@@ -75,6 +75,12 @@ let private tabTitle tab =
     | RunHistoryTab -> "History"
     | ViewHistoryTab -> "View history"
     | FolderHistoryTab -> "Folder history"
+
+[<Literal>]
+let ClearTitle = "Clear history"
+
+let clearQuestion tab =
+    $"Forget every entry on the {tabTitle tab} tab?"
 
 let private rowsOf (fs: IFileSystem) now (history: History) tab =
     let row at what how =
@@ -120,20 +126,24 @@ let private fitted (fs: IFileSystem) (table: TableView) reserved (value: obj) =
     let width = table.Viewport.Width - TimePatternWidth - ColumnSeparatorWidth - reserved
     PathText.shorten fs.Path.DirectorySeparatorChar width (string value)
 
-let private tableFor (fs: IFileSystem) rows tab =
+let private fill (fs: IFileSystem) now (history: History) tab (table: TableView) =
+    let rows = rowsOf fs now history tab
+    table.Table <- source tab rows
+
+    table.Style.GetOrCreateColumnStyle(WhatColumnIndex).RepresentationGetter <-
+        Func<obj, string>(fitted fs table (howWidth tab rows))
+
+let private tableFor tab =
     let table =
         new TableView(Title = tabTitle tab, Id = tabId tab, Width = Dim.Fill(), Height = Dim.Fill())
 
-    table.Table <- source tab rows
     table.FullRowSelect <- true
     table.CollectionNavigator <- null
     table.Style.ShowHorizontalHeaderOverline <- false
     table.Style.ShowHorizontalBottomLine <- false
     table.Style.ShowVerticalCellLineForFirstColumn <- false
     table.Style.ShowVerticalCellLineForLastColumn <- false
-    table.Style.GetOrCreateColumnStyle(WhatColumnIndex).RepresentationGetter <-
-        Func<obj, string>(fitted fs table (howWidth tab rows))
-
+    table.FrameChanged.Add(fun _ -> table.EnsureCursorIsVisible())
     table
 
 let tabs (dialog: HistoryView) = SubView.byType<Tabs> dialog
@@ -169,7 +179,90 @@ let private openingAs how (key: Key) (dialog: HistoryView) =
         dialog.AskedUse <- Some how
         pressing OpenButton dialog
 
-let private answerKey (dialog: HistoryView) (key: Key) =
+let private rowUnderCursor (shown: TableView) =
+    match shown.Value with
+    | null -> None
+    | selection -> Some selection.SelectedCell.Y
+
+let private item row (entries: Remembered<'item> list) =
+    List.tryItem row entries |> Option.map _.Item
+
+let private itemOn (history: History) tab row =
+    match tab with
+    | FolderHistoryTab -> item row history.Folders |> Option.map Visited
+    | RunHistoryTab -> item row history.Launches |> Option.map Launched
+    | ViewHistoryTab -> item row history.FileVisits |> Option.map Opened
+
+let private listOn tab =
+    match tab with
+    | RunHistoryTab -> LaunchHistory
+    | ViewHistoryTab -> FileHistory
+    | FolderHistoryTab -> FolderHistory
+
+let private hasRows (history: History) tab =
+    match tab with
+    | RunHistoryTab -> not history.Launches.IsEmpty
+    | ViewHistoryTab -> not history.FileVisits.IsEmpty
+    | FolderHistoryTab -> not history.Folders.IsEmpty
+
+let private offersGoTo (history: History) tab =
+    match tab with
+    | RunHistoryTab
+    | ViewHistoryTab -> hasRows history tab
+    | FolderHistoryTab -> false
+
+let private offer (history: History) (container: Tabs) (goTo: Button) (delete: Button) =
+    shownIn container
+    |> Option.iter (fun tab ->
+        goTo.Enabled <- offersGoTo history tab
+        delete.Enabled <- hasRows history tab)
+
+let private offerButtons (dialog: HistoryView) =
+    offer dialog.History (tabs dialog) (button GoToButton dialog) (button DeleteButton dialog)
+
+let private standOn row (shown: TableView) =
+    let last = shown.Table.Rows - 1
+
+    if last >= 0 then
+        shown.SetSelection(0, min row last, false, null)
+        shown.EnsureCursorIsVisible()
+
+type private Changing =
+    { Fs: IFileSystem
+      Now: DateTimeOffset
+      Confirm: string -> string -> bool
+      Change: HistoryChange -> History option }
+
+let private refill (changing: Changing) (dialog: HistoryView) =
+    tabOrder
+    |> List.iter (fun tab -> fill changing.Fs changing.Now dialog.History tab (table tab dialog))
+
+let private changed (changing: Changing) (dialog: HistoryView) change =
+    let shown = table (front dialog) dialog
+    let row = rowUnderCursor shown |> Option.defaultValue 0
+
+    changing.Change change
+    |> Option.iter (fun history ->
+        dialog.History <- history
+        refill changing dialog
+        standOn row shown
+        offerButtons dialog
+        dialog.SetNeedsDraw())
+
+let private forgetting (changing: Changing) (dialog: HistoryView) =
+    let tab = front dialog
+
+    rowUnderCursor (table tab dialog)
+    |> Option.bind (itemOn dialog.History tab)
+    |> Option.iter (Forget >> changed changing dialog)
+
+let private clearing (changing: Changing) (dialog: HistoryView) =
+    let tab = front dialog
+
+    if hasRows dialog.History tab && changing.Confirm ClearTitle (clearQuestion tab) then
+        changed changing dialog (ClearList(listOn tab))
+
+let private answerKey (changing: Changing) (dialog: HistoryView) (key: Key) =
     if key = KeyMap.nextHistoryTabKey then
         key.Handled <- true
         walk 1 dialog
@@ -185,50 +278,54 @@ let private answerKey (dialog: HistoryView) (key: Key) =
         openingAs Viewed key dialog
     elif key = KeyMap.historyEditKey then
         openingAs Edited key dialog
+    elif key = KeyMap.historyForgetKey then
+        key.Handled <- true
+        forgetting changing dialog
+    elif key = KeyMap.historyClearKey then
+        key.Handled <- true
+        clearing changing dialog
 
 let private plainButton title = DialogStyle.button title |> LiteralText.showing
 
-let private offersGoTo (history: History) tab =
-    match tab with
-    | RunHistoryTab -> not history.Launches.IsEmpty
-    | ViewHistoryTab -> not history.FileVisits.IsEmpty
-    | FolderHistoryTab -> false
+let create
+    (fs: IFileSystem)
+    (confirm: string -> string -> bool)
+    (change: HistoryChange -> History option)
+    (history: History)
+    (tab: HistoryTab)
+    (now: DateTimeOffset)
+    =
+    let changing =
+        { Fs = fs
+          Now = now
+          Confirm = confirm
+          Change = change }
 
-let private offerGoTo (history: History) (container: Tabs) (goTo: Button) =
-    shownIn container |> Option.iter (fun tab -> goTo.Enabled <- offersGoTo history tab)
-
-let create (fs: IFileSystem) (history: History) (tab: HistoryTab) (now: DateTimeOffset) =
     let dialog = new HistoryView(history)
     DialogStyle.dress dialog |> ignore
 
     let container = new Tabs(X = 0, Y = 0, Width = Dim.Fill(), Height = Dim.Fill())
     container.TabLineStyle <- LineStyle.Single
-
-    let tables = tabOrder |> List.map (fun shown -> tableFor fs (rowsOf fs now history shown) shown)
-    tables |> List.iter (fun shown -> container.Add shown |> ignore)
+    tabOrder |> List.iter (fun shown -> container.Add(tableFor shown) |> ignore)
     dialog.Add container |> ignore
+    refill changing dialog
 
     let close = plainButton "Close"
     let delete = plainButton "Delete"
     let goTo = plainButton "Go to"
     let opening = plainButton "Open"
-    delete.Enabled <- false
     opening.IsDefault <- true
     [ close; delete; goTo; opening ] |> List.iter dialog.AddButton
 
+    delete.Accepting.Add(fun args ->
+        args.Handled <- true
+        forgetting changing dialog)
+
     container.Value <- table tab dialog
-    offerGoTo history container goTo
-    container.ValueChanged.Add(fun _ -> offerGoTo history container goTo)
-    dialog.KeyDown.Add(answerKey dialog)
+    offerButtons dialog
+    container.ValueChanged.Add(fun _ -> offer dialog.History container goTo delete)
+    dialog.KeyDown.Add(answerKey changing dialog)
     dialog
-
-let private rowUnderCursor (shown: TableView) =
-    match shown.Value with
-    | null -> None
-    | selection -> Some selection.SelectedCell.Y
-
-let private item row (entries: Remembered<'item> list) =
-    List.tryItem row entries |> Option.map _.Item
 
 let private revisited asked (visit: FileVisit) =
     Revisit { visit with How = Option.defaultValue visit.How asked }

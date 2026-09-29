@@ -50,7 +50,8 @@ type ProgramsPrompt =
 type HistoryPrompt =
     { History: History
       Tab: HistoryTab
-      Now: DateTimeOffset }
+      Now: DateTimeOffset
+      Change: HistoryChange -> History option }
 
 type Prompts =
     { ReportError: ErrorReport -> unit

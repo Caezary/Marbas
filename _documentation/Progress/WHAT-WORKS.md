@@ -368,7 +368,15 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   the panel does; `[Go to]` or `Alt+G` stands the active panel beside the file,
   inside its archive where it is one. A file that is gone, or whose archive
   is, is handed to the viewer or the editor all the same and is not moved to
-  the top. `[Delete]` is there but disabled.
+  the top.
+  On every tab `Del`, or `[Delete]`, forgets the row under the cursor, and
+  `Shift+Del` forgets the whole tab once a question naming it is answered
+  *Yes* — `[No]` is the default, and `Esc` closes only the question. The popup
+  stays open: both are written to `history.conf` at once, the tabs show what
+  the file then holds, and the cursor stays on the row that took the forgotten
+  one's place. A cleared tab stays empty after a restart, and a second copy of
+  Marbas running at the same time does not bring the entries back. Both keys
+  do nothing on an empty tab.
 
 - `Shift+F1` packs what the active panel points at into an archive in the other
   one. The popup opens on the other panel's path and a name deduced from the

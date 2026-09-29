@@ -96,7 +96,13 @@ let editPrograms (app: IApplication) (request: ProgramsPrompt) =
     running app (fun () -> SettingsDialog.create request.Programs request.Candidate) SettingsDialog.programs
 
 let chooseHistory (app: IApplication) (fs: IFileSystem) (request: HistoryPrompt) =
-    running app (fun () -> HistoryDialog.create fs request.History request.Tab request.Now) HistoryDialog.answer
+    let asking title question =
+        confirm app { Title = title; Question = question }
+
+    running
+        app
+        (fun () -> HistoryDialog.create fs asking request.Change request.History request.Tab request.Now)
+        HistoryDialog.answer
 
 let chooseTab (app: IApplication) (fs: IFileSystem) (tabs: Zipper<Tab>) =
     let rows =

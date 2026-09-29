@@ -125,6 +125,10 @@ let historyViewKey = Key.F3
 
 let historyEditKey = Key.F4
 
+let historyForgetKey = Key.Delete
+
+let historyClearKey = Key.Delete.WithShift
+
 let quitKey = Key.Q.WithCtrl
 
 let cancelKey = Key.Esc

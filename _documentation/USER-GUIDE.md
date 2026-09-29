@@ -270,6 +270,12 @@ the row says, except that a file inside an archive can only be viewed. `Alt+G`
 puts the active panel beside the file, inside the archive if that is where it
 is. A directory measured with `F3` is not listed.
 
+On any tab, `Del` (or *Delete*) forgets the entry under the cursor, and
+`Shift+Del` forgets everything on the tab after asking — the answer offered is
+*No*, so press `Y` to go ahead. The history file is changed at once, so an
+entry forgotten here does not come back from another copy of Marbas running at
+the same time, and a cleared tab is still empty the next time Marbas starts.
+
 ## Things that differ by platform
 
 - **Drives.** Windows lists the ready drives; Unix lists the mounts that hold

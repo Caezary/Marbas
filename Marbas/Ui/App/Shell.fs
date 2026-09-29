@@ -1,14 +1,10 @@
 module Marbas.Ui.App.Shell
 
-open System.IO.Abstractions
-open Marbas.Collections
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.State.AppState
 open Marbas.State.Update
-open Marbas.Ui.Keys
 open Marbas.Ui.Messages
-open Marbas.Ui.Dialogs
 open Marbas.Ui.App.Ports
 
 [<Literal>]
@@ -273,6 +269,15 @@ let private deleteTitle mode =
     | ToTrash
     | Permanently -> DeleteTitle
 
+let private changeHistory (deps: Dependencies) dispatch change =
+    match History.change deps.FileSystem deps.HistoryPath (deps.Clock()) change with
+    | Ok history ->
+        dispatch (HistoryChanged history)
+        Some history
+    | Error error ->
+        dispatch (HistoryUnwritten error)
+        None
+
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
     | ReportListingError error ->
@@ -412,17 +417,18 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Some(HandOver row) -> dispatch (DriveHandedOver row)
         | None -> ()
     | WatchLocations paths -> deps.Watches.Locations paths (fun () -> dispatch ExternalChangeDetected)
-    | ChangeHistory change ->
-        match History.change deps.FileSystem deps.HistoryPath (deps.Clock()) change with
-        | Ok history -> dispatch (HistoryChanged history)
-        | Error error -> dispatch (HistoryUnwritten error)
+    | ChangeHistory change -> changeHistory deps dispatch change |> ignore
     | ReportHistoryError error -> report deps HistoryErrorMessage.Title (HistoryErrorMessage.describe error)
     | ShowHistory tab ->
         match History.load deps.FileSystem deps.HistoryPath with
         | Ok history ->
             dispatch (HistoryChanged history)
 
-            deps.Prompts.ChooseHistory { History = history; Tab = tab; Now = deps.Clock() }
+            deps.Prompts.ChooseHistory
+                { History = history
+                  Tab = tab
+                  Now = deps.Clock()
+                  Change = changeHistory deps dispatch }
             |> HistoryAnswered
             |> dispatch
         | Error error -> report deps HistoryErrorMessage.Title (HistoryErrorMessage.describe error)

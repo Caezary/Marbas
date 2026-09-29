@@ -245,6 +245,56 @@ history* is in front and has a row; elsewhere they are passed over and the popup
 stays open. `[Go to]` and `Alt+G` answer `GoTo` with the visit's place, which
 `Place.beside` already turns into the archive level above an entry.
 
+## Forgetting and clearing
+
+**The popup changes the file in place, through a function `Shell` hands it.**
+`HistoryPrompt` carries `Change: HistoryChange -> History option`. `Shell`
+builds it from the same `changeHistory` that answers the `ChangeHistory`
+effect: `History.change` over `deps.HistoryPath`, stamped by `deps.Clock()`,
+with the result dispatched to the state as `HistoryChanged`, or
+`HistoryUnwritten` on failure. So only `Shell` touches the file, the file stays
+the source of truth, and the state's copy follows every change. What the popup
+does not get is a decision from a transition, and it needs none — forgetting a
+row is the whole of the request. The first shape of P16.7 went the other way:
+the popup closed with the row to forget, the state raised the change and asked
+for the popup again, and everything the popup held that the file does not —
+the tab, the row, the scroll, and in P16.8 a typed filter — had to be carried
+across the reopening. Done in place, none of it moves.
+
+**`Del` forgets the row under the cursor, and the tables are filled again.**
+`Del`, and `[Delete]`, turn the row into the item it stands for — `Visited`,
+`Launched` or `Opened`, the value `Remember` stored, so `History.apply` finds it
+by what it points at — and hand `Forget item` to `Change`. The history that
+comes back becomes `HistoryView.History`, every tab is filled from it again, so
+the tab reads what the file holds, anything another copy added since included,
+and the cursor goes back to the row number it was on: the entry below the
+forgotten one, or the new last row. A change the file refused answers `None`
+and the rows stay; the `HistoryUnwritten` it dispatched is queued behind the
+popup, and the dialog of P16.3 follows when the popup closes, once per session.
+`[Delete]` is a dialog button, and a dialog button closes the dialog; its
+`Accepting` is marked handled, which a running `Application` proved keeps the
+popup open.
+
+**`Shift+Del` asks inside the popup.** `HistoryDialog.create` also takes a
+`confirm: title -> question -> bool`, which `Adapters/Prompts` fills with the
+same `MessageBox.Query` every other question uses; it runs over the popup, and
+the popup stays open whatever it answers. *No* is the default button, so
+`Enter` does not clear by accident, and `Esc` closes only the question. A *Yes*
+hands `ClearList` of the tab's list — `LaunchHistory`, `FileHistory` or
+`FolderHistory` — to `Change`. Both keys, and `[Delete]`, are live only while
+the tab in front has a row, which is checked again after every change.
+
+**`Tabs.ValueChanged` still fires while the dialog is disposed.** The handler
+that enables `[Go to]` and `[Delete]` is given the tab container and the two
+buttons when the dialog is built, rather than finding them in the dialog: the
+rewrite that looked them up again broke every dialog test at the moment of
+disposal, the way P16.5 found.
+
+**A row stood on is scrolled to.** `SetSelection` moves the cursor but not the
+view, so after a change the table is scrolled to the cursor explicitly, and
+every table also calls `EnsureCursorIsVisible` on `FrameChanged`, which fires
+once it is laid out and again on a resize, and never on scrolling.
+
 ## The controls, measured before use
 
 P16.1 rendered the controls the phase leans on — `Tabs` holding a `TableView`

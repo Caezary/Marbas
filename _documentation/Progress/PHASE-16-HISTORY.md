@@ -127,3 +127,30 @@ name it. Rendered through a real `Application` with an entry on disk, one
 edited and one inside a zip, the tab read `V`, `E`, `V` newest first; `F4` on
 the viewed row answered editing it, `Enter` on the edited one editing it again,
 and `Alt+G` on the zip entry going to its level inside the archive.
+
+**P16.7 let the popup change the file in place, after a first shape that went
+round the loop.** That first shape closed the popup on `Del` with the row to
+forget, had the state raise the change and ask for the popup again, and carried
+the tab and the cursor's row across the reopening. It worked, but everything
+the popup holds that the file does not — the scroll already, the filter of
+P16.8 next — would have had to travel the same way, so it was redone before
+the task closed. Now `HistoryPrompt` carries a `Change` function that `Shell`
+builds from the same code that answers the `ChangeHistory` effect: it writes
+the file, dispatches the result to the state, and hands the history back to the
+popup, which fills its tabs again and keeps the cursor on the row number it was
+on. `Shift+Del` asks through a `confirm` the adapter hands the dialog — a
+`MessageBox` over the popup, with *No* as its default — and a *Yes* clears the
+tab's list the same way. `[Delete]` is a dialog button, which closes the dialog
+unless its `Accepting` is handled; a running `Application` showed that handling
+it keeps the popup open. The rewrite tripped once over what P16.5 found — the
+handler of `Tabs.ValueChanged` runs while the dialog is disposed, so it is given
+the container and the buttons rather than looking them up — and once over the
+screen: a row stood on far down the list was selected out of sight, since
+`SetSelection` does not scroll, so the table now scrolls to its cursor after a
+change and whenever its frame changes. The state gained nothing and lost the two
+choices of the first shape; the one existing test that compared whole prompts
+now compares their fields, since a prompt carries a function. Driven in the real
+window over a real disk with `alpha`, `beta` and `gamma` in `history.conf`,
+`Del` on `beta` left the file and the open popup holding `gamma` and `alpha`,
+`Shift+Del` then `Y` left the file empty and the tab with it, and `Esc` closed
+the popup onto the panels.
