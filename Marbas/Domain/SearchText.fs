@@ -20,3 +20,6 @@ module SearchText =
 
     let matches (SearchText raw) name =
         (EntryName.value name).Contains(raw, StringComparison.OrdinalIgnoreCase)
+
+    let foundIn (text: string) (SearchText raw) =
+        text.Contains(raw, StringComparison.OrdinalIgnoreCase)

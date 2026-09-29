@@ -295,6 +295,51 @@ view, so after a change the table is scrolled to the cursor explicitly, and
 every table also calls `EnsureCursorIsVisible` on `FrameChanged`, which fires
 once it is laid out and again on a resize, and never on scrolling.
 
+## The filter
+
+**The filter is the popup's own state, a `SearchText`.** `HistoryView.Filter`
+is `SearchText option`, the type the quick search of a panel already uses, and
+it is kept by the popup alone: it lives no longer than the popup, and since
+P16.7 changes the file in place nothing has to carry it anywhere. A row is kept
+when `SearchText.foundIn` finds the text in its *What* or its *How* — the full
+path, not the one shortened to the table, and the program and elevation of a
+start — ignoring case the way the panel does, by `OrdinalIgnoreCase`. The
+*When* column is not searched: its spelling changes with the day it is read.
+The filter narrows every tab when the tables are filled, but a tab switch
+clears it, so only the tab in front is ever narrowed; the line under the table
+is a `Label` reading *Filter:* and the text, or nothing.
+
+**A filtered row knows which entry it stands for.** Each `Row` carries `Entry`,
+its position in the history's list, and the table's source is asked for the
+row under the cursor — `EnumerableTableSource.GetObjectOnRow` — rather than the
+cursor's position being taken as the entry's. `Open`, `F3`, `F4`, `Go to` and
+`Del` all go through it, so each acts on the entry the row shows. A change
+fills the tables again under the same filter, so a row forgotten leaves the
+filter in place; `Shift+Del` still clears the whole list, since the question
+names the tab. `[Go to]` and `[Delete]`, and `F3` and `F4`, follow the rows the
+table shows rather than the entries the list holds, so a filter that leaves
+nothing disables them.
+
+**Keys.** A printable key without `Ctrl` or `Alt` — `KeyMap.printable`, now
+shared with the panel's quick search — appends to the filter, the space
+included; `Backspace` shortens it and drops it with its last character; `Esc`
+clears a filter that is not empty and is marked handled, so the popup stays,
+and with no filter it is left alone and the application's quit binding closes
+the popup, as a running `Application` confirmed. The cursor goes to the first
+row after every keystroke. Switching tabs clears the filter from
+`Tabs.ValueChanged`, which also runs while the dialog is disposed, so the
+handler refills the tables it was given when the dialog was built rather than
+looking them up.
+
+**An empty table eats letters.** P16.1 found that a `TableView` takes letters
+until its navigator is removed. With the navigator gone it still takes them
+once it has no rows: driven through a running `Application`, the letter that
+emptied the table reached the dialog and the next one did not — the table's
+`KeyDown` saw it and something inside the table marked it handled. So every
+table forwards printable keys to the filter from its own `KeyDown`, which runs
+before the table acts on them, and the dialog's `KeyDown` keeps the same
+branch for a key that arrives while a button has the focus.
+
 ## The controls, measured before use
 
 P16.1 rendered the controls the phase leans on — `Tabs` holding a `TableView`

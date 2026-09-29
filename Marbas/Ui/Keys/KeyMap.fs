@@ -133,6 +133,13 @@ let quitKey = Key.Q.WithCtrl
 
 let cancelKey = Key.Esc
 
+let private unmodified (key: Key) = not key.IsCtrl && not key.IsAlt
+
+let private visibleCharacter (key: Key) =
+    key.AsRune.Value >= 32 && key.AsRune.Value <> 127
+
+let printable key = unmodified key && visibleCharacter key
+
 type Binding =
     { Key: Key
       Label: string option

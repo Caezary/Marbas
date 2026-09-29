@@ -377,6 +377,14 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   one's place. A cleared tab stays empty after a restart, and a second copy of
   Marbas running at the same time does not bring the entries back. Both keys
   do nothing on an empty tab.
+  Typing narrows the tab in front to the rows holding what was typed —
+  anywhere in the path or in the *How* column, whatever the case, a space
+  included — and shows it as *Filter:* on the line under the table.
+  `Backspace` shortens it, `Esc` clears a filter that is not empty and closes
+  the popup when it is, and switching tabs clears it. `Enter`, `F3`, `F4`,
+  `Alt+G` and `Del` act on the entry the filtered row stands for, and a row
+  forgotten leaves the filter in place; `Shift+Del` still clears the whole
+  tab. A filter that leaves no row disables `[Go to]` and `[Delete]`.
 
 - `Shift+F1` packs what the active panel points at into an archive in the other
   one. The popup opens on the other panel's path and a name deduced from the

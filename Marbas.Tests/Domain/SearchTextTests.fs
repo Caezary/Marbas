@@ -50,3 +50,22 @@ let ``a search passes over a name that does not contain it`` raw name =
     let matched = SearchText.matches (text raw) (EntryName.create name)
 
     Assert.False matched
+
+[<Theory>]
+[<InlineData("notes", @"C:\work\notes.md")>]
+[<InlineData("WORK", @"C:\work\notes.md")>]
+[<InlineData(@"k\n", @"C:\work\notes.md")>]
+[<InlineData("my d", "C:/my docs")>]
+[<InlineData("łódź", "C:/Łódź")>]
+let ``a search is found anywhere in a text, whatever the case`` raw shown =
+    let found = SearchText.foundIn shown (text raw)
+
+    Assert.True found
+
+[<Theory>]
+[<InlineData("notez", @"C:\work\notes.md")>]
+[<InlineData("mydocs", "C:/my docs")>]
+let ``a search is not found in a text that does not hold it`` raw shown =
+    let found = SearchText.foundIn shown (text raw)
+
+    Assert.False found

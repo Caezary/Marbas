@@ -276,6 +276,13 @@ On any tab, `Del` (or *Delete*) forgets the entry under the cursor, and
 entry forgotten here does not come back from another copy of Marbas running at
 the same time, and a cleared tab is still empty the next time Marbas starts.
 
+Typing in the popup filters the tab in front, the way typing in a panel
+searches it: only the rows holding what was typed stay, wherever it appears in
+them and whatever its case, and the text is shown under the table as
+*Filter:*. `Backspace` takes back the last character, `Esc` clears the filter
+(and a second `Esc` closes the popup), and moving to another tab clears it
+too. `Shift+Del` clears the whole tab, not only the rows the filter shows.
+
 ## Things that differ by platform
 
 - **Drives.** Windows lists the ready drives; Unix lists the mounts that hold

@@ -154,3 +154,21 @@ window over a real disk with `alpha`, `beta` and `gamma` in `history.conf`,
 `Del` on `beta` left the file and the open popup holding `gamma` and `alpha`,
 `Shift+Del` then `Y` left the file empty and the tab with it, and `Esc` closed
 the popup onto the panels.
+
+**P16.8 gave the popup a filter, and it cost nothing to carry because P16.7
+had stopped reopening the popup.** The filter is a `SearchText` held by the
+popup: typing narrows the tab in front to the rows whose path or *How* holds
+it, ignoring case, `Backspace` shortens it, `Esc` clears it and a second `Esc`
+closes the popup, and switching tabs clears it. Each row now carries the
+position of its entry in the list, and the popup reads the entry from the row
+under the cursor, so `Enter`, `F3`, `F4`, `Alt+G` and `Del` act on what a
+filtered row shows. `SearchText.foundIn` joined `matches`, and the panel's test
+for a typed character moved to `KeyMap.printable` so both read the same rule.
+Driven through a running `Application`, typing `Dir1` over twelve directories
+left four rows and *Filter: Dir1* under them, `Backspace` brought back all
+twelve, and the two presses of `Esc` cleared the filter and closed the popup.
+Typing `+` in the real window then showed the one surprise: the letter after
+the one that emptied the table never arrived. A `TableView` with no rows takes
+printable keys even without its navigator, so every table now hands them to
+the filter from its own `KeyDown`, and a test that types past an empty result
+holds it.

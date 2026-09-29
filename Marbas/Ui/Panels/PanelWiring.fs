@@ -23,17 +23,10 @@ let private page (list: ListView) =
       PageJump.Height = list.Viewport.Height
       PageJump.Count = count list }
 
-let private unmodified (key: Key) = not key.IsCtrl && not key.IsAlt
-
-let private visibleCharacter (key: Key) =
-    key.AsRune.Value >= 32 && key.AsRune.Value <> 127
-
-let private printable key = unmodified key && visibleCharacter key
-
 let private searchMessage (key: Key) =
     if key = KeyMap.cancelKey then Some SearchCancelled
     elif key = Key.Backspace then Some SearchBackspaced
-    elif printable key then Some(SearchTyped(char key.AsRune.Value))
+    elif KeyMap.printable key then Some(SearchTyped(char key.AsRune.Value))
     else None
 
 let private stopsAtEdge (list: ListView) (key: Key) =
@@ -79,7 +72,7 @@ let private command (host: Host) side (list: ListView) (key: Key) =
         | None ->
             if swallowed list key then
                 true
-            elif printable key then
+            elif KeyMap.printable key then
                 host.Dispatch(SearchTyped(char key.AsRune.Value))
                 true
             else
