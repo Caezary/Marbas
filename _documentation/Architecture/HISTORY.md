@@ -414,8 +414,43 @@ the pattern shown. When the list becomes visible with no row chosen, the first
 one — the newest — is, and `Enter` then picks it.
 
 **The arrows still walk the list of a closed field.** In a popup of one field
-they have nothing else to do, so the bindings stay; P16.10 decides for the
-larger dialogs.
+they have nothing else to do, so the bindings stay; in the larger dialogs
+P16.10 removes them, as the next section describes.
+
+## The fields of the larger dialogs
+
+**Five more fields, each with a list of its own.** The masks and the text of
+`Alt+F7` keep `FindMasks` and `SearchedText`, the archive path of `Shift+F1`
+keeps `ArchiveTarget`, the place of `Alt+F6` keeps `LinkDestination`, and the
+program of `Alt+R` keeps `OpenWithProgram`. Each is a `HistoryField` built by
+`HistoryField.amongOthers` and dressed by `DialogStyle.typedInto` like the plain
+field it replaces; the password of `Shift+F1` stays a plain secret field and is
+never remembered. The dialogs take their lists as arguments, and the prompts
+carry them — `PackPrompt.Remembered`, `LinkPrompt.Remembered`,
+`HandlerPrompt.Remembered`, and `FindPrompt.Masks` and `.Texts` — read by
+`Shell` from `history.conf` just before asking, as in P16.9.
+
+**The arrows keep moving between the fields.** Measured through a running
+`Application` before the change, `↑` and `↓` walked the focus through each of
+the four dialogs — the masks, the text and the first scope in `Alt+F7`, the
+target and the format options in `Shift+F1` and `Alt+F6`, the known programs,
+the program and the check box in `Alt+R`. A `DropDownList` binds the two to
+walking its list, which would have stopped that at the first field. So
+`amongOthers` removes the two bindings, and the same measurement after the
+change moved the focus through exactly the same views; the list of a field in a
+larger dialog opens only with `Alt+↓` or `F4`. The one-field popups of P16.9
+keep the walk, since there the arrows have nothing else to do.
+
+**What is remembered is what the popup hands back, read where it is read
+today.** `ArchiveChoice.Target` and `LinkChoice.Target` are already the text of
+the field, so `Shell` remembers them as they come. `FindChoice` carries a parsed
+query, so the find port answers `FindAsked` — the choice beside the masks and
+the text as typed, which the adapter reads with `FindDialog.typed` — and a
+search remembers both; asking for the last results remembers neither, and an
+empty text is refused by `EnteredText`. `OpenWithChoice` carries a
+`ProgramPath`, which trims the spaces around what was typed; the program is
+remembered as that path, which differs from the text only by those spaces, and
+spares the port a fourth shape.
 
 ## The controls, measured before use
 
@@ -474,7 +509,7 @@ instance, `KeyBindings.Remove Key.Space`, lets it type a space again and leaves
 text with the next or previous item of the list, without opening it. In a
 dialog of one field that is the history of a shell and costs nothing; in the
 larger dialogs of P16.10 it takes away the arrows that move between fields, and
-that task decides whether to keep the walk or remove the two bindings.
+that task removed the two bindings there, keeping the arrows for the fields.
 
 **`Enter` and `Esc` on the open list act on the whole dialog.** `Enter` on a row
 puts it into the field and then presses the default button, so choosing a

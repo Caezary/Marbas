@@ -291,6 +291,11 @@ row into the field, ready to edit or to confirm with a second `Enter`, and `Esc`
 closes the list without closing the popup. `F7` still opens on the name the last
 directory was given, and remembers a name only once the directory is made.
 
+The larger popups remember too: the file name masks and the text of `Alt+F7`,
+the archive of `Shift+F1`, where `Alt+F6` makes its link and the program chosen
+in `Alt+R`. `Alt+↓` or `F4` opens the list of the field you are in; `↑` and `↓`
+keep moving between the fields. The password of an archive is never kept.
+
 ## Things that differ by platform
 
 - **Drives.** Windows lists the ready drives; Unix lists the mounts that hold

@@ -207,7 +207,12 @@ let private resultsWindow (reported: ResizeArray<string>) =
     let window =
         focusedWindow
             { Fakes.dependencies (withArchives ()) (at "start") with
-                Prompts.AskFind = fun _ -> Some(Search query)
+                Prompts.AskFind =
+                    fun _ ->
+                        Some
+                            { Choice = Search query
+                              Masks = "*.*"
+                              Text = "" }
                 Prompts.ReportError = fun report -> reported.Add report.Message
                 Runners.Search = fun _ _ answer -> answer sentToPanel }
 

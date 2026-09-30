@@ -112,9 +112,14 @@ let boxId box =
 let private label x y text =
     new Label(X = Pos.Absolute x, Y = Pos.Absolute y, Height = 1, Text = text)
 
-let private input id y =
-    new TextField(X = 1, Y = Pos.Absolute y, Width = Dim.Fill 1, Height = 1, Id = id)
-    |> DialogStyle.typedInto
+let private input remembered id y =
+    let field = HistoryField.amongOthers remembered ""
+    field.X <- 1
+    field.Y <- Pos.Absolute y
+    field.Width <- Dim.Fill 1
+    field.Height <- 1
+    field.Id <- id
+    DialogStyle.typedInto field
 
 let private checking (box, x, y) =
     new CheckBox(X = Pos.Absolute x, Y = Pos.Absolute y, Height = 1, Id = boxId box, Text = boxLabel box)
@@ -136,13 +141,19 @@ let private offer (dialog: Dialog) =
     textBoxes |> List.iter (fun box -> (checkBox dialog box).Enabled <- searching)
     (checkBox dialog DirectoriesBox).Enabled <- not searching
 
-let create (ground: MarkedGround) (hidden: HiddenEntries) (count: int option) =
+let create
+    (ground: MarkedGround)
+    (hidden: HiddenEntries)
+    (count: int option)
+    (masksBefore: string list)
+    (textsBefore: string list)
+    =
     let dialog =
         new FindView(count, Title = Title, Width = Width, Height = Height)
 
     DialogStyle.dress dialog |> ignore
 
-    let masks = input MasksId 1
+    let masks = input masksBefore MasksId 1
     masks.Text <- EveryName
     masks.SelectAll() |> ignore
 
@@ -151,7 +162,7 @@ let create (ground: MarkedGround) (hidden: HiddenEntries) (count: int option) =
 
     scope.Value <- Nullable 0
 
-    dialog.Add(label 1 0 "File name:", masks, label 1 2 "Containing text:", input TextId 3)
+    dialog.Add(label 1 0 "File name:", masks, label 1 2 "Containing text:", input textsBefore TextId 3)
     dialog.Add(label 1 6 "Search in:", scope, label SecondColumn 6 "Also:")
     placement |> List.iter (fun placed -> dialog.Add(checking placed) |> ignore)
 
@@ -210,3 +221,6 @@ let choice (dialog: FindView) =
     | true, _ -> Some LastResults
     | false, true -> None
     | false, false -> Some(Search(query dialog))
+
+let typed (dialog: Dialog) =
+    (field dialog MasksId).Text, (field dialog TextId).Text

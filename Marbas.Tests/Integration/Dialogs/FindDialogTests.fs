@@ -3,19 +3,22 @@ module Marbas.Tests.Integration.Dialogs.FindDialogTests
 open System
 open System.Drawing
 open Xunit
+open Terminal.Gui.Input
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Tests
 
-let private opened ground hidden found =
+let private openedWith masksBefore textsBefore ground hidden found =
     DialogStyle.apply ()
-    let dialog = FindDialog.create ground hidden found
+    let dialog = FindDialog.create ground hidden found masksBefore textsBefore
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore
     dialog
+
+let private opened ground hidden found = openedWith [] [] ground hidden found
 
 let private laidOut ground hidden = opened ground hidden None
 
@@ -287,3 +290,53 @@ let ``asking for the last results is what the popup answers`` () =
     (FindDialog.lastResults dialog).InvokeCommand Terminal.Gui.Input.Command.Accept |> ignore
 
     Assert.Equal(Some LastResults, FindDialog.choice dialog)
+
+let private listed (field: TextField) =
+    [ for item in (field :?> DropDownList).Source.ToList() -> string item ]
+
+let private bound (field: TextField) (spelled: string) =
+    field.KeyBindings.TryGet(Key.TryParse spelled |> snd) |> fst
+
+[<Fact>]
+let ``the masks typed before are offered as the list of the masks field`` () =
+    use dialog = openedWith [ "*.fs"; "*.md" ] [] NoDirectoryMarked Concealed None
+
+    let offered = listed (masks dialog)
+
+    Assert.Equal<string list>([ "*.fs"; "*.md" ], offered)
+
+[<Fact>]
+let ``the texts searched for before are offered as the list of the text field`` () =
+    use dialog = openedWith [] [ "needle"; "hay" ] NoDirectoryMarked Concealed None
+
+    let offered = listed (text dialog)
+
+    Assert.Equal<string list>([ "needle"; "hay" ], offered)
+
+[<Theory>]
+[<InlineData("CursorUp")>]
+[<InlineData("CursorDown")>]
+let ``the arrows are left to move between the fields of the find popup`` (spelled: string) =
+    use dialog = fresh ()
+
+    let taken = [ bound (masks dialog) spelled; bound (text dialog) spelled ]
+
+    Assert.Equal<bool list>([ false; false ], taken)
+
+[<Fact>]
+let ``F4 opens the list of the masks field`` () =
+    use dialog = fresh ()
+
+    let toggles = (masks dialog).KeyBindings.TryGet Key.F4 |> snd
+
+    Assert.Contains(Command.Toggle, toggles.Commands)
+
+[<Fact>]
+let ``the masks and the text are read as they were typed`` () =
+    use dialog = fresh ()
+    (masks dialog).Text <- " *.fs *.md "
+    (text dialog).Text <- "needle "
+
+    let typed = FindDialog.typed dialog
+
+    Assert.Equal((" *.fs *.md ", "needle "), typed)

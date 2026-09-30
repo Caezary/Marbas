@@ -397,6 +397,14 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   blank text remember nothing. `F7` is the exception: a name is remembered only
   once the directory exists, so a refused name does not become the next
   suggestion.
+- The fields of the larger popups remember the same way: the masks and the text
+  of `Alt+F7`, the archive of `Shift+F1`, the place of `Alt+F6` and the program
+  of `Alt+R`, each with a list of its own under `Alt+↓` or `F4`. There `↑` and
+  `↓` still move between the fields, as they always did, rather than walk the
+  list. A search is remembered when it is started, not when the last results
+  are asked for, and a text left empty remembers nothing; the password of an
+  archive is never remembered. A program is remembered as the path the popup
+  hands back, without the spaces around it.
 
 - `Shift+F1` packs what the active panel points at into an archive in the other
   one. The popup opens on the other panel's path and a name deduced from the

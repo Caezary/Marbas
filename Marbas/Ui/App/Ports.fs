@@ -30,22 +30,33 @@ type TargetPrompt =
 
 type PasswordPrompt = { Archive: EntryName }
 
-type PackPrompt = { Suggestion: FileSystemPath }
+type PackPrompt =
+    { Suggestion: FileSystemPath
+      Remembered: EnteredText list }
 
 type FindPrompt =
     { Ground: MarkedGround
       Hidden: HiddenEntries
-      Found: int option }
+      Found: int option
+      Masks: EnteredText list
+      Texts: EnteredText list }
+
+type FindAsked =
+    { Choice: FindChoice
+      Masks: string
+      Text: string }
 
 type LinkPrompt =
     { Kinds: LinkKind list
       Suggestion: FileSystemPath
-      Refusal: string -> LinkKind -> LinkRefusal option }
+      Refusal: string -> LinkKind -> LinkRefusal option
+      Remembered: EnteredText list }
 
 type HandlerPrompt =
     { Name: EntryName
       Handlers: Handler list
-      Chosen: ProgramPath option }
+      Chosen: ProgramPath option
+      Remembered: EnteredText list }
 
 type ProgramsPrompt =
     { Programs: ProgramSettings
@@ -66,7 +77,7 @@ type Prompts =
       AskTarget: TargetPrompt -> string option
       AskPassword: PasswordPrompt -> ArchivePassword option
       AskArchive: PackPrompt -> ArchiveChoice option
-      AskFind: FindPrompt -> FindChoice option
+      AskFind: FindPrompt -> FindAsked option
       AskLink: LinkPrompt -> LinkChoice option
       AskHandler: HandlerPrompt -> OpenWithChoice option
       ChooseDrive: DriveRow list -> DriveChoice option

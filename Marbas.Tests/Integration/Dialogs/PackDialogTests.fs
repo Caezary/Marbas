@@ -4,6 +4,7 @@ open System
 open System.Drawing
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Terminal.Gui.Input
 open Terminal.Gui.Views
 open Marbas.FileSystem
 open Marbas.Ui.Theme
@@ -12,13 +13,15 @@ open Marbas.Tests
 
 let private suggestion = Root.at "backup/src.zip"
 
-let private laidOut () =
+let private laidOutWith remembered =
     DialogStyle.apply ()
-    let dialog = PackDialog.create (ArchiveName.retarget (MockFileSystem())) suggestion
+    let dialog = PackDialog.create (ArchiveName.retarget (MockFileSystem())) remembered suggestion
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore
     dialog
+
+let private laidOut () = laidOutWith []
 
 let private target dialog = PackDialog.field dialog PackDialog.TargetId
 
@@ -131,3 +134,29 @@ let ``a password left behind on a format that cannot carry one is dropped`` () =
     choose dialog PackDialog.FormatId 1
 
     Assert.Equal(None, (accepted dialog).Password)
+
+[<Fact>]
+let ``the archives packed into before are offered as the list of the target field`` () =
+    use dialog = laidOutWith [ @"D:\one.zip"; @"D:\two.7z" ]
+
+    let offered = [ for item in (target dialog :?> DropDownList).Source.ToList() -> string item ]
+
+    Assert.Equal<string list>([ @"D:\one.zip"; @"D:\two.7z" ], offered)
+
+[<Theory>]
+[<InlineData("CursorUp")>]
+[<InlineData("CursorDown")>]
+let ``the arrows are left to move between the fields of the pack popup`` (spelled: string) =
+    use dialog = laidOut ()
+
+    let taken = (target dialog).KeyBindings.TryGet(Key.TryParse spelled |> snd) |> fst
+
+    Assert.False taken
+
+[<Fact>]
+let ``the password is typed into a plain field, never one with a history`` () =
+    use dialog = laidOutWith [ @"D:\one.zip" ]
+
+    let field = password dialog
+
+    Assert.IsNotType<DropDownList>(field)

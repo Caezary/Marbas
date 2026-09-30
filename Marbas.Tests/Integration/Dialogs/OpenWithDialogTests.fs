@@ -2,6 +2,7 @@ module Marbas.Tests.Integration.Dialogs.OpenWithDialogTests
 
 open System.Drawing
 open Xunit
+open Terminal.Gui.Input
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
@@ -20,13 +21,15 @@ let private known =
     [ handler "Firefox" "/usr/bin/firefox"
       handler "Visual Studio Code" "/usr/bin/code" ]
 
-let private laidOutWith name handlers chosen =
+let private laidOutRemembering remembered name handlers chosen =
     DialogStyle.apply ()
-    let dialog = OpenWithDialog.create (en name) handlers chosen
+    let dialog = OpenWithDialog.create (en name) handlers chosen remembered
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(90, 25)) |> ignore
     dialog
+
+let private laidOutWith name handlers chosen = laidOutRemembering [] name handlers chosen
 
 let private laidOut () = laidOutWith "page.html" known None
 
@@ -136,3 +139,22 @@ let ``everything on the dialog fits inside it`` () =
     Assert.True(box.Bottom <= dialog.Viewport.Height, $"the box at %A{box} is clipped")
     Assert.True(list.Bottom <= dialog.Viewport.Height, $"the handler list at %A{list} is clipped")
     Assert.True(list.Right <= dialog.Viewport.Width, $"the handler list at %A{list} runs past the frame")
+
+[<Fact>]
+let ``the programs typed before are offered as the list of the program field`` () =
+    use dialog = laidOutRemembering [ "/opt/editor"; "/usr/bin/vim" ] "page.html" known None
+
+    let offered =
+        [ for item in (OpenWithDialog.field dialog :?> DropDownList).Source.ToList() -> string item ]
+
+    Assert.Equal<string list>([ "/opt/editor"; "/usr/bin/vim" ], offered)
+
+[<Theory>]
+[<InlineData("CursorUp")>]
+[<InlineData("CursorDown")>]
+let ``the arrows are left to move between the fields of the open-with popup`` (spelled: string) =
+    use dialog = laidOut ()
+
+    let taken = (OpenWithDialog.field dialog).KeyBindings.TryGet(Key.TryParse spelled |> snd) |> fst
+
+    Assert.False taken

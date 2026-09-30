@@ -3,6 +3,7 @@ module Marbas.Tests.Integration.Dialogs.LinkDialogTests
 open System
 open System.Drawing
 open Xunit
+open Terminal.Gui.Input
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
@@ -25,13 +26,15 @@ let private hardRefusedElsewhere (text: string) (kind: LinkKind) =
     | "elsewhere", Hard -> Some HardLinkAcrossVolumes
     | _ -> None
 
-let private laidOut refusal =
+let private laidOutWith remembered refusal =
     DialogStyle.apply ()
-    let dialog = LinkDialog.create [ Symbolic; Hard; Junction ] refusal suggestion
+    let dialog = LinkDialog.create [ Symbolic; Hard; Junction ] refusal remembered suggestion
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore
     dialog
+
+let private laidOut refusal = laidOutWith [] refusal
 
 let private target dialog = LinkDialog.field dialog
 
@@ -65,14 +68,14 @@ let ``every kind is offered`` () =
 let ``the dialog keeps the kinds it was built from`` () =
     DialogStyle.apply ()
 
-    use dialog = LinkDialog.create [ Junction; Symbolic ] nothingRefused suggestion
+    use dialog = LinkDialog.create [ Junction; Symbolic ] nothingRefused [] suggestion
 
     Assert.Equal<LinkKind list>([ Junction; Symbolic ], dialog.Kinds)
 
 [<Fact>]
 let ``only the kinds this system can make are offered`` () =
     DialogStyle.apply ()
-    use dialog = LinkDialog.create [ Symbolic; Hard ] nothingRefused suggestion
+    use dialog = LinkDialog.create [ Symbolic; Hard ] nothingRefused [] suggestion
     dialog.BeginInit()
     dialog.EndInit()
     (LinkDialog.selector dialog).Value <- Nullable 1
@@ -125,3 +128,21 @@ let ``a cancelled dialog answers nothing`` () =
     let choice = LinkDialog.choice dialog
 
     Assert.Equal(None, choice)
+
+[<Fact>]
+let ``the places linked at before are offered as the list of the target field`` () =
+    use dialog = laidOutWith [ @"D:\links\one"; @"D:\links\two" ] nothingRefused
+
+    let offered = [ for item in (target dialog :?> DropDownList).Source.ToList() -> string item ]
+
+    Assert.Equal<string list>([ @"D:\links\one"; @"D:\links\two" ], offered)
+
+[<Theory>]
+[<InlineData("CursorUp")>]
+[<InlineData("CursorDown")>]
+let ``the arrows are left to move between the fields of the link popup`` (spelled: string) =
+    use dialog = laidOut nothingRefused
+
+    let taken = (target dialog).KeyBindings.TryGet(Key.TryParse spelled |> snd) |> fst
+
+    Assert.False taken

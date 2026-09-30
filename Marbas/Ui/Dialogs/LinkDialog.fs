@@ -55,15 +55,22 @@ let private offer
     if List.zip kinds refusals |> List.exists (fun (kind, refused) -> kind = chosen && refused.IsSome) then
         selector.Value <- Nullable 0
 
-let create (kinds: LinkKind list) (refusal: string -> LinkKind -> LinkRefusal option) (suggestion: string) =
+let create
+    (kinds: LinkKind list)
+    (refusal: string -> LinkKind -> LinkRefusal option)
+    (remembered: string list)
+    (suggestion: string)
+    =
     let dialog = new LinkView(kinds, Title = Title, Width = 64, Height = 14)
     DialogStyle.dress dialog |> ignore
 
-    let target =
-        new TextField(X = 1, Y = 1, Width = Dim.Fill 1, Height = 1, Text = suggestion, Id = TargetId)
-        |> DialogStyle.typedInto
-
-    target.InsertionPoint <- suggestion.Length
+    let target = HistoryField.amongOthers remembered suggestion
+    target.X <- 1
+    target.Y <- 1
+    target.Width <- Dim.Fill 1
+    target.Height <- 1
+    target.Id <- TargetId
+    DialogStyle.typedInto target |> ignore
 
     let selector =
         new OptionSelector(X = 1, Y = 4, Id = KindId, Labels = (kinds |> List.map kindLabel |> List.toArray))

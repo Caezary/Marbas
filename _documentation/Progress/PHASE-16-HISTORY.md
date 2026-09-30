@@ -197,3 +197,23 @@ row is now chosen when the list opens. With that, `F6` offered and kept its
 targets, `F7` opened on `reports` and remembered `new` once it was made, `+`
 picked `*.fs` with one `Enter` and applied it with the next, `Shift+F4` offered
 `notes.md`, and a cancelled `F6` wrote nothing.
+
+**P16.10 gave the larger dialogs the same fields and kept their arrows, which
+closed the phase.** The masks and the text of `Alt+F7`, the archive of
+`Shift+F1`, the place of `Alt+F6` and the program of `Alt+R` became
+`HistoryField`s with lists of their own, read by `Shell` before asking and
+remembered when the popup is confirmed; the password of an archive stays a
+plain secret field. The arrows were measured first, through a running
+`Application`: in all four dialogs `↑` and `↓` walked the focus from field to
+option to check box. A drop-down binds them to its list, so
+`HistoryField.amongOthers` removes those two bindings, and the same measurement
+afterwards walked the focus through exactly the same views, while `Alt+↓` and
+`F4` opened each field's list and `Enter` and `Esc` on it behaved as in P16.9.
+Two of the four answers already carried the typed text; the find popup now
+answers `FindAsked`, the choice beside its masks and text as typed, and the
+program of `Alt+R` is remembered as the path the popup hands back, without the
+spaces around it. Driven in the real window, `Alt+F7` with `*.fs` typed over
+the suggestion, `↓` to the text and `x` typed there left `find.masks=*.fs` and
+`find.text=x` in `history.conf`. With it every list the phase named is filled:
+the places, the files started, viewed and edited, and the text of nine kinds
+of field.

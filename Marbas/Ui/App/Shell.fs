@@ -307,12 +307,27 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         then
             dispatch (DeleteConfirmed request.Mode)
     | PromptForArchive suggestion ->
-        deps.Prompts.AskArchive { Suggestion = suggestion }
-        |> Option.iter (ArchiveEntered >> dispatch)
+        deps.Prompts.AskArchive
+            { Suggestion = suggestion
+              Remembered = typedBefore deps ArchiveTarget }
+        |> Option.iter (fun choice ->
+            rememberTyped deps dispatch ArchiveTarget choice.Target
+            dispatch (ArchiveEntered choice))
     | PromptForFind(ground, hidden, found) ->
-        match deps.Prompts.AskFind { Ground = ground; Hidden = hidden; Found = found } with
-        | Some(Search query) -> dispatch (FindEntered query)
-        | Some LastResults -> dispatch LastResultsRequested
+        let asked =
+            deps.Prompts.AskFind
+                { Ground = ground
+                  Hidden = hidden
+                  Found = found
+                  Masks = typedBefore deps FindMasks
+                  Texts = typedBefore deps SearchedText }
+
+        match asked with
+        | Some({ Choice = Search query } as typed) ->
+            rememberTyped deps dispatch FindMasks typed.Masks
+            rememberTyped deps dispatch SearchedText typed.Text
+            dispatch (FindEntered query)
+        | Some { Choice = LastResults } -> dispatch LastResultsRequested
         | None -> ()
     | RunSearch(query, location, marked) ->
         let ground =
@@ -329,8 +344,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         deps.Prompts.AskLink
             { Kinds = deps.Processes.LinkKinds
               Suggestion = suggestion
-              Refusal = refusalOf }
-        |> Option.iter (LinkEntered >> dispatch)
+              Refusal = refusalOf
+              Remembered = typedBefore deps LinkDestination }
+        |> Option.iter (fun choice ->
+            rememberTyped deps dispatch LinkDestination choice.Target
+            dispatch (LinkEntered choice))
     | MakeLinks requests ->
         let outcomes = requests |> List.map (fun link -> link, deps.Processes.MakeLink link)
 
@@ -400,8 +418,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         deps.Prompts.AskHandler
             { Name = name
               Handlers = deps.Processes.HandlersFor name
-              Chosen = chosen }
-        |> Option.iter (fun choice -> dispatch (HandlerChosen(path, choice)))
+              Chosen = chosen
+              Remembered = typedBefore deps OpenWithProgram }
+        |> Option.iter (fun choice ->
+            rememberTyped deps dispatch OpenWithProgram (ProgramPath.value choice.Program)
+            dispatch (HandlerChosen(path, choice)))
     | ShowTabs tabs -> deps.Prompts.ChooseTab tabs |> Option.iter (TabSwitched >> dispatch)
     | ShowProperties properties ->
         deps.Prompts.EditProperties properties |> Option.iter (PropertiesEntered >> dispatch)

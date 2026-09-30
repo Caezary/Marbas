@@ -1,13 +1,13 @@
 # Progress
 
-Status as of 2026-09-27. Phases and task numbers refer to [the plan](PLAN.md).
+Status as of 2026-09-30. Phases and task numbers refer to [the plan](PLAN.md).
 What each phase actually did is in [Progress/](Progress), one file per phase;
 what the application does today is in
 [What works today](Progress/WHAT-WORKS.md).
 
 ## Where we are
 
-**Fifteen phases are complete** (123 of 123 tasks). Marbas
+**Sixteen phases are complete** (133 of 133 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -65,7 +65,7 @@ written up as the checklist in
 | 13 — The drive, the link and what is left behind | P13.1–P13.16 | done | [journal](Progress/PHASE-13-DRIVES-LINKS-AND-TRASH.md) |
 | 14 — Finding files | P14.1–P14.14 | done | [journal](Progress/PHASE-14-FINDING-FILES.md) |
 | 15 — Answering the reviews | P15.1–P15.26 | done | [journal](Progress/PHASE-15-ANSWERING-THE-REVIEWS.md) |
-| 16 — History | P16.1–P16.10 | P16.1–P16.9 done | [journal](Progress/PHASE-16-HISTORY.md) |
+| 16 — History | P16.1–P16.10 | done | [journal](Progress/PHASE-16-HISTORY.md) |
 
 ## What works today
 

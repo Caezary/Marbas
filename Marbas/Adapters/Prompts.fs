@@ -85,18 +85,41 @@ let editProperties (app: IApplication) properties =
 let askArchive (app: IApplication) retarget (request: PackPrompt) =
     let offered = FileSystemPath.value request.Suggestion
 
-    running app (fun () -> PackDialog.create retarget offered) PackDialog.choice
+    running app (fun () -> PackDialog.create retarget (texts request.Remembered) offered) PackDialog.choice
+
+let private askedOf (dialog: FindDialog.FindView) =
+    let masks, text = FindDialog.typed dialog
+
+    FindDialog.choice dialog
+    |> Option.map (fun choice ->
+        { Choice = choice
+          Masks = masks
+          Text = text })
 
 let askFind (app: IApplication) (request: FindPrompt) =
-    running app (fun () -> FindDialog.create request.Ground request.Hidden request.Found) FindDialog.choice
+    let asking () =
+        FindDialog.create
+            request.Ground
+            request.Hidden
+            request.Found
+            (texts request.Masks)
+            (texts request.Texts)
+
+    running app asking askedOf
 
 let askLink (app: IApplication) (request: LinkPrompt) =
     let offered = FileSystemPath.value request.Suggestion
 
-    running app (fun () -> LinkDialog.create request.Kinds request.Refusal offered) LinkDialog.choice
+    running
+        app
+        (fun () -> LinkDialog.create request.Kinds request.Refusal (texts request.Remembered) offered)
+        LinkDialog.choice
 
 let askHandler (app: IApplication) (request: HandlerPrompt) =
-    running app (fun () -> OpenWithDialog.create request.Name request.Handlers request.Chosen) OpenWithDialog.choice
+    running
+        app
+        (fun () -> OpenWithDialog.create request.Name request.Handlers request.Chosen (texts request.Remembered))
+        OpenWithDialog.choice
 
 let editPrograms (app: IApplication) (request: ProgramsPrompt) =
     running app (fun () -> SettingsDialog.create request.Programs request.Candidate) SettingsDialog.programs

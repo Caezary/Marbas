@@ -53,15 +53,17 @@ let private selecting id x labels chosenIndex =
     selector.Value <- Nullable chosenIndex
     selector
 
-let create (retarget: ArchiveFormat -> string -> string) (suggestion: string) =
+let create (retarget: ArchiveFormat -> string -> string) (remembered: string list) (suggestion: string) =
     let dialog =
         new Dialog(Title = Title, Width = 64, Height = 14) |> DialogStyle.dress
 
-    let target =
-        new TextField(X = 1, Y = 1, Width = Dim.Fill 1, Height = 1, Text = suggestion, Id = TargetId)
-        |> DialogStyle.typedInto
-
-    target.InsertionPoint <- suggestion.Length
+    let target = HistoryField.amongOthers remembered suggestion
+    target.X <- 1
+    target.Y <- 1
+    target.Width <- Dim.Fill 1
+    target.Height <- 1
+    target.Id <- TargetId
+    DialogStyle.typedInto target |> ignore
 
     let password =
         new TextField(X = 1, Y = 9, Width = Dim.Fill 1, Height = 1, Id = PasswordId, Secret = true)

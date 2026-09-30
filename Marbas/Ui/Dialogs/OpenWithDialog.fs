@@ -25,7 +25,7 @@ let rememberLabel (name: EntryName) =
     | Some extension -> $"_Always open .{FileExtension.value extension} this way"
     | None -> "_Always open this way"
 
-let create (name: EntryName) (handlers: Handler list) (chosen: ProgramPath option) =
+let create (name: EntryName) (handlers: Handler list) (chosen: ProgramPath option) (remembered: string list) =
     let dialog =
         new Dialog(Title = Title, Width = 76, Height = 19) |> DialogStyle.dress
 
@@ -40,9 +40,13 @@ let create (name: EntryName) (handlers: Handler list) (chosen: ProgramPath optio
         |> Option.map ProgramPath.value
         |> Option.defaultValue ""
 
-    let program =
-        new TextField(X = 1, Y = 13, Width = Dim.Fill 1, Height = 1, Id = ProgramId, Text = offered)
-        |> DialogStyle.typedInto
+    let program = HistoryField.amongOthers remembered offered
+    program.X <- 1
+    program.Y <- 13
+    program.Width <- Dim.Fill 1
+    program.Height <- 1
+    program.Id <- ProgramId
+    DialogStyle.typedInto program |> ignore
 
     let remember =
         new CheckBox(X = 1, Y = 14, Height = 1, Id = RememberId, Text = rememberLabel name)

@@ -55,6 +55,12 @@ let create (remembered: string list) (suggestion: string) =
 
     field
 
+let amongOthers (remembered: string list) (suggestion: string) =
+    let field = create remembered suggestion
+    field.KeyBindings.Remove Key.CursorUp
+    field.KeyBindings.Remove Key.CursorDown
+    field
+
 let private ofField (active: IPopoverView) =
     shownFor active |> Option.exists (fun shown -> shown :? DropDownList)
 
