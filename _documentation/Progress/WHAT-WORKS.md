@@ -352,12 +352,17 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   opens on the tab it was last left on, *Folder history* the first time. Each
   row is the moment (the time today, the date before) and the place, a long
   path shortened in the middle. `Ctrl+PgDn`/`Ctrl+PgUp` and `←`/`→` walk the
-  tabs; on *Folder history* `Enter` stands the active panel in the chosen
-  directory or archive level and moves it to the top of the list, and a
+  tabs, while `↑`/`↓` stop at the first and the last row rather than leave the
+  tab; the tab headers are of one width, their titles centred, and the one in
+  front is drawn like the others. The columns keep their widths — *When* holds
+  a whole date, *How* a word as short as `admin`, and *What* takes the rest. On
+  *Folder history* `Enter`, and `[Go to]` or `Alt+G` alike, stands the active
+  panel in the chosen directory or archive level and moves it to the top of
+  the list, and a
   directory that is gone is reported with the panel left where it was.
   *History* lists every file that started — `Enter`, `Alt+R` with a program
-  chosen, `Alt+Shift+R` — with the program's name and *as administrator* where
-  they apply; a directory or drive handed to the system file manager and a
+  chosen, `Alt+Shift+R` — with the program's name in brackets after the path
+  and `admin` where they apply; a directory or drive handed to the system file manager and a
   start that failed are not listed. `Enter` there starts the file again with
   the same program, directory and rights, and `[Go to]` or `Alt+G` stands the
   active panel beside the file with the cursor on it. *View history* lists

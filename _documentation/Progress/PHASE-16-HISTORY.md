@@ -217,3 +217,20 @@ the suggestion, `↓` to the text and `x` typed there left `find.masks=*.fs` and
 `find.text=x` in `history.conf`. With it every list the phase named is filled:
 the places, the files started, viewed and edited, and the text of nine kinds
 of field.
+
+**After the phase, the popup was refined in use.** Rendered through a running
+`Application`, `↑` on the first row put the tab before in front, the header of
+the tab in front was lit like a selected row, the headers were as wide as their
+titles, and *How* took whatever *What* left, so a short path stood beside a
+wide column holding `code.exe, admin`. Now `↑` and `↓` stop at the ends of the
+list and `←` and `→` walk the tabs; the headers share one width, twenty-two
+columns where the popup allows, with their titles centred and the one in front
+drawn like the others; *When* is as wide as a date, *How* as `admin`, and
+*What* takes the rest, the program chosen following the path in brackets. On
+*Folder history* `[Go to]` and `Alt+G` open the directory, as `[Open]` does.
+Rendered again at popups 45, 56, 64 and 96 columns wide, the columns filled
+the table exactly and the headers shrank to share the width, down to the
+longest title, below which the strip scrolls. The joints of the strip still
+go wrong after a keystroke, as they did before; see
+[Rough edges](../ROUGH-EDGES.md). Details are in
+[History](../Architecture/HISTORY.md#refining-the-popup).

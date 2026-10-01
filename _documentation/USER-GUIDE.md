@@ -249,14 +249,16 @@ cannot be written, a dialog says so once and the session carries on.
 `Alt+F12` opens it — `Alt+Shift+H` where a terminal keeps `Alt+F12` for
 itself. The popup has three tabs, *History*, *View history* and *Folder
 history*, each listing when and what, newest first; it opens on the tab it was
-left on, *Folder history* the first time. `Ctrl+PgDn` and `Ctrl+PgUp` (or `←`
-and `→`) walk the tabs. On *Folder history*, `Enter` sends the active panel to
-the directory under the cursor, a level inside an archive included; `Esc`
-closes the popup.
+left on, *Folder history* the first time. `←` and `→` (or `Ctrl+PgDn` and
+`Ctrl+PgUp`) walk the tabs; `↑` and `↓` only move the cursor and stop at the
+first and the last row. On *Folder history*, `Enter` — or `Alt+G` (*Go to*),
+which does the same there — sends the active panel to the directory under the
+cursor, a level inside an archive included; `Esc` closes the popup.
 
 *History* lists the files started — with `Enter`, with a program chosen in
-`Alt+R`, or as administrator with `Alt+Shift+R` — once they have started, with
-the program and the rights they were started with. `Enter` starts the file
+`Alt+R`, or as administrator with `Alt+Shift+R` — once they have started. The
+program chosen follows the file's path in brackets, and a file started as
+administrator is marked `admin`. `Enter` starts the file
 under the cursor again exactly that way; `Alt+G` (*Go to*) puts the active
 panel in the file's directory with the cursor on the file. A directory or a
 drive shown in the system file manager is not listed, nor is a file that could

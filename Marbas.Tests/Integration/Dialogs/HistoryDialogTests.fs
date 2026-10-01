@@ -4,7 +4,9 @@ open System
 open System.Drawing
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Terminal.Gui.Drawing
 open Terminal.Gui.Input
+open Terminal.Gui.ViewBase
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.State.AppState
@@ -102,6 +104,133 @@ let ``Ctrl+PgUp walks to the tab before`` () =
     Assert.Equal(ViewHistoryTab, HistoryDialog.front dialog)
 
 [<Fact>]
+let ``Right walks to the next tab`` () =
+    use dialog = laidOut folders ViewHistoryTab
+
+    dialog.NewKeyDownEvent Key.CursorRight |> ignore
+
+    Assert.Equal(FolderHistoryTab, HistoryDialog.front dialog)
+
+[<Fact>]
+let ``Left walks to the tab before`` () =
+    use dialog = laidOut folders ViewHistoryTab
+
+    dialog.NewKeyDownEvent Key.CursorLeft |> ignore
+
+    Assert.Equal(RunHistoryTab, HistoryDialog.front dialog)
+
+[<Fact>]
+let ``Up on the first row keeps the tab in front`` () =
+    use dialog = laidOut folders FolderHistoryTab
+
+    dialog.NewKeyDownEvent Key.CursorUp |> ignore
+
+    Assert.Equal(FolderHistoryTab, HistoryDialog.front dialog)
+
+[<Fact>]
+let ``Down on the last row keeps the tab in front`` () =
+    use dialog = laidOut folders FolderHistoryTab
+    dialog.NewKeyDownEvent Key.CursorDown |> ignore
+
+    dialog.NewKeyDownEvent Key.CursorDown |> ignore
+
+    Assert.Equal(FolderHistoryTab, HistoryDialog.front dialog)
+
+[<Fact>]
+let ``Down on an empty list keeps the tab in front`` () =
+    use dialog = laidOut History.empty ViewHistoryTab
+
+    dialog.NewKeyDownEvent Key.CursorDown |> ignore
+
+    Assert.Equal(ViewHistoryTab, HistoryDialog.front dialog)
+
+[<Fact>]
+let ``Down moves the cursor to the next row`` () =
+    use dialog = laidOut folders FolderHistoryTab
+    dialog.NewKeyDownEvent Key.CursorDown |> ignore
+    dialog.Result <- HistoryDialog.OpenButton
+
+    let answer = HistoryDialog.answer dialog
+
+    Assert.Equal(Some(OpenPlace(Place.OnDisk(fp (at "older")))), answer.Choice)
+
+[<Theory>]
+[<InlineData(100, 22)>]
+[<InlineData(52, 18)>]
+[<InlineData(30, 16)>]
+let ``a tab header takes what room the width leaves, within bounds`` (available: int) (expected: int) =
+    let length = HistoryDialog.headerLength available
+
+    Assert.Equal(expected, length)
+
+let private headerLengths (dialog: HistoryDialog.HistoryView) =
+    [ RunHistoryTab; ViewHistoryTab; FolderHistoryTab ]
+    |> List.map (fun tab -> (HistoryDialog.table tab dialog).Border.View :?> BorderView)
+    |> List.map _.TabLength
+
+[<Fact>]
+let ``every tab header is as wide as the others`` () =
+    use dialog = laidOut folders FolderHistoryTab
+
+    let lengths = headerLengths dialog
+
+    Assert.Equal<Nullable<int> list>(List.replicate 3 (Nullable 22), lengths)
+
+[<Fact>]
+let ``a tab header centres its title`` () =
+    use dialog = laidOut folders FolderHistoryTab
+
+    let header = HistoryDialog.header ViewHistoryTab dialog
+
+    Assert.Equal(Alignment.Center, header.TextAlignment)
+
+[<Fact>]
+let ``the header of the tab in front is drawn like the others`` () =
+    use dialog = laidOut folders FolderHistoryTab
+
+    let header = HistoryDialog.header FolderHistoryTab dialog
+
+    Assert.Equal(header.GetAttributeForRole VisualRole.Normal, header.GetAttributeForRole VisualRole.Focus)
+
+let private columnWidth (dialog: HistoryDialog.HistoryView) tab column =
+    let style = (HistoryDialog.table tab dialog).Style.GetColumnStyleIfAny column
+    style.MinWidth, style.MaxWidth
+
+[<Fact>]
+let ``the When column always holds a whole date`` () =
+    use dialog = laidOut folders FolderHistoryTab
+
+    let width = columnWidth dialog FolderHistoryTab 0
+
+    Assert.Equal((10, 10), width)
+
+[<Fact>]
+let ``the How column holds no more than the administrator note`` () =
+    use dialog = laidOut folders RunHistoryTab
+
+    let width = columnWidth dialog RunHistoryTab 2
+
+    Assert.Equal((5, 5), width)
+
+[<Fact>]
+let ``the What column takes the width When and How leave`` () =
+    use dialog = laidOut folders ViewHistoryTab
+    let shown = (HistoryDialog.table ViewHistoryTab dialog).Viewport.Width
+
+    let width = columnWidth dialog ViewHistoryTab 1
+
+    Assert.Equal((shown - 17, shown - 17), width)
+
+[<Fact>]
+let ``the What column of the directory tab takes the width When leaves`` () =
+    use dialog = laidOut folders FolderHistoryTab
+    let shown = (HistoryDialog.table FolderHistoryTab dialog).Viewport.Width
+
+    let width = columnWidth dialog FolderHistoryTab 1
+
+    Assert.Equal((shown - 11, shown - 11), width)
+
+[<Fact>]
 let ``opening a directory answers the one under the cursor`` () =
     use dialog = laidOut folders FolderHistoryTab
     (HistoryDialog.table FolderHistoryTab dialog).NewKeyDownEvent Key.CursorDown |> ignore
@@ -146,12 +275,26 @@ let ``a bare letter presses no button`` (letter: char) =
     Assert.False(dialog.Result.HasValue, $"'{letter}' pressed button {dialog.Result}")
 
 [<Fact>]
-let ``going to a directory's entry means nothing on the directory tab`` () =
+let ``going to a directory is offered on the directory tab`` () =
     use dialog = laidOut folders FolderHistoryTab
 
     let goTo = HistoryDialog.button HistoryDialog.GoToButton dialog
 
-    Assert.False goTo.Enabled
+    Assert.True goTo.Enabled
+
+[<Fact>]
+let ``going to a directory answers opening it`` () =
+    use dialog = laidOut folders FolderHistoryTab
+    (HistoryDialog.table FolderHistoryTab dialog).NewKeyDownEvent Key.CursorDown |> ignore
+    dialog.Result <- HistoryDialog.GoToButton
+
+    let answer = HistoryDialog.answer dialog
+
+    Assert.Equal(
+        { Tab = FolderHistoryTab
+          Choice = Some(OpenPlace(Place.OnDisk(fp (at "older")))) },
+        answer
+    )
 
 let private started target =
     { Target = fp (at target)
@@ -175,8 +318,8 @@ let ``the files started are listed with how they were started`` () =
     let listed = cells dialog RunHistoryTab
 
     Assert.Equal<string list list>(
-        [ [ "14:04"; at "work/newer.md"; "code.exe, as administrator" ]
-          [ "14:03"; at "work/older.md"; "code.exe, as administrator" ] ],
+        [ [ "14:04"; at "work/newer.md" + " (code.exe)"; "admin" ]
+          [ "14:03"; at "work/older.md" + " (code.exe)"; "admin" ] ],
         listed
     )
 
@@ -216,12 +359,13 @@ let ``going to anything is not offered on an empty list`` () =
     Assert.False goTo.Enabled
 
 [<Fact>]
-let ``Alt+G on the directory tab answers nothing`` () =
+let ``Alt+G on a directory answers opening it`` () =
     use dialog = laidOut folders FolderHistoryTab
 
     dialog.NewKeyDownEvent(Key.G.WithAlt) |> ignore
 
-    Assert.False dialog.Result.HasValue
+    let answer = HistoryDialog.answer dialog
+    Assert.Equal(Some(OpenPlace(Place.OnDisk(fp (at "newer")))), answer.Choice)
 
 let private visits =
     History.empty
@@ -556,7 +700,7 @@ let ``typing matches how a file was started as well as where it is`` () =
     typing dialog "admin"
 
     Assert.Equal<string list list>(
-        [ [ "14:03"; at "work/raised.md"; "code.exe, as administrator" ] ],
+        [ [ "14:03"; at "work/raised.md" + " (code.exe)"; "admin" ] ],
         cells dialog RunHistoryTab
     )
 

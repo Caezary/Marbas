@@ -40,13 +40,26 @@ let private WhatColumn = "What"
 let private HowColumn = "How"
 
 [<Literal>]
+let private WhenColumnIndex = 0
+
+[<Literal>]
 let private WhatColumnIndex = 1
 
 [<Literal>]
-let private TimePatternWidth = 10
+let private HowColumnIndex = 2
 
 [<Literal>]
 let private ColumnSeparatorWidth = 1
+
+[<Literal>]
+let private HeaderPadding = 3
+
+[<Literal>]
+let private HeaderEdges = 2
+
+let private whenWidth = HistoryRow.DatePattern.Length
+
+let private howWidth = HistoryRow.AdministratorNote.Length
 
 [<Literal>]
 let private SizeShare = 80
@@ -103,7 +116,7 @@ let private rowsOf (fs: IFileSystem) now (history: History) tab =
     | RunHistoryTab ->
         history.Launches
         |> List.mapi (fun index entry ->
-            row index entry.At (FileSystemPath.value entry.Item.Target) (HistoryRow.launchHow entry.Item))
+            row index entry.At (HistoryRow.launchWhat entry.Item) (HistoryRow.launchHow entry.Item))
     | ViewHistoryTab ->
         history.FileVisits
         |> List.mapi (fun index entry ->
@@ -136,23 +149,36 @@ let private source tab rows =
 
     EnumerableTableSource<Row>(rows, columns)
 
-let private howWidth tab (rows: Row list) =
+let private besideWhat tab =
     if saysHow tab then
-        (HowColumn :: (rows |> List.map _.How) |> List.map String.length |> List.max)
-        + ColumnSeparatorWidth
+        whenWidth + howWidth + 2 * ColumnSeparatorWidth
     else
-        0
+        whenWidth + ColumnSeparatorWidth
 
-let private fitted (fs: IFileSystem) (table: TableView) reserved (value: obj) =
-    let width = table.Viewport.Width - TimePatternWidth - ColumnSeparatorWidth - reserved
-    PathText.shorten fs.Path.DirectorySeparatorChar width (string value)
+let private whatWidth tab (table: TableView) =
+    table.Viewport.Width - besideWhat tab |> max 0
+
+let private holdWidth width (style: ColumnStyle) =
+    style.MinWidth <- width
+    style.MaxWidth <- width
+
+let private fitColumns tab (table: TableView) =
+    table.Style.GetOrCreateColumnStyle WhenColumnIndex |> holdWidth whenWidth
+    table.Style.GetOrCreateColumnStyle WhatColumnIndex |> holdWidth (whatWidth tab table)
+
+    if saysHow tab then
+        table.Style.GetOrCreateColumnStyle HowColumnIndex |> holdWidth howWidth
+
+let private fitted (fs: IFileSystem) tab (table: TableView) (value: obj) =
+    PathText.shorten fs.Path.DirectorySeparatorChar (whatWidth tab table) (string value)
 
 let private fill (fs: IFileSystem) now (history: History) filter tab (table: TableView) =
     let rows = rowsOf fs now history tab |> narrowed filter
     table.Table <- source tab rows
+    fitColumns tab table
 
     table.Style.GetOrCreateColumnStyle(WhatColumnIndex).RepresentationGetter <-
-        Func<obj, string>(fitted fs table (howWidth tab rows))
+        Func<obj, string>(fitted fs tab table)
 
 let private tableFor tab =
     let table =
@@ -164,7 +190,10 @@ let private tableFor tab =
     table.Style.ShowHorizontalBottomLine <- false
     table.Style.ShowVerticalCellLineForFirstColumn <- false
     table.Style.ShowVerticalCellLineForLastColumn <- false
-    table.FrameChanged.Add(fun _ -> table.EnsureCursorIsVisible())
+    table.FrameChanged.Add(fun _ ->
+        fitColumns tab table
+        table.EnsureCursorIsVisible())
+
     table
 
 let tabs (dialog: HistoryView) = SubView.byType<Tabs> dialog
@@ -173,6 +202,30 @@ let table tab (dialog: HistoryView) =
     SubView.byId<TableView> (tabId tab) (tabs dialog)
 
 let filterLine (dialog: HistoryView) = SubView.byId<Label> FilterLineId dialog
+
+let private longestTitle =
+    tabOrder |> List.map (tabTitle >> String.length) |> List.max
+
+let headerLength available =
+    let sharing = (available + tabOrder.Length - 1) / tabOrder.Length
+
+    sharing
+    |> min (longestTitle + 2 * HeaderPadding + HeaderEdges)
+    |> max (longestTitle + HeaderEdges)
+
+let private borderOf (shown: TableView) = shown.Border.View :?> BorderView
+
+let header tab (dialog: HistoryView) = (borderOf (table tab dialog)).TitleView
+
+let private dressHeader length (shown: TableView) =
+    let border = borderOf shown
+    border.TabLength <- Nullable length
+    border.TitleView.TextAlignment <- Alignment.Center
+    border.TitleView.SetScheme ClassicScheme.tabHeader |> ignore
+
+let private dressHeaders (container: Tabs) tables =
+    let length = headerLength container.Viewport.Width
+    tables |> List.iter (snd >> dressHeader length)
 
 let button index (dialog: HistoryView) = Seq.item index dialog.Buttons
 
@@ -211,6 +264,25 @@ let private rowUnderCursor (shown: TableView) =
     | null -> None
     | selection -> Some selection.SelectedCell.Y
 
+let private onFirstRow (shown: TableView) =
+    rowUnderCursor shown |> Option.forall (fun row -> row <= 0)
+
+let private onLastRow (shown: TableView) =
+    rowUnderCursor shown |> Option.forall (fun row -> row >= rowCount shown - 1)
+
+let private leavesList (shown: TableView) (key: Key) =
+    (key = KeyMap.historyRowUpKey && onFirstRow shown)
+    || (key = KeyMap.historyRowDownKey && onLastRow shown)
+
+let private tabStep (key: Key) =
+    if key = KeyMap.nextHistoryTabKey || key = KeyMap.nextHistoryTabArrow then Some 1
+    elif key = KeyMap.previousHistoryTabKey || key = KeyMap.previousHistoryTabArrow then Some -1
+    else None
+
+let private walking step (key: Key) (dialog: HistoryView) =
+    key.Handled <- true
+    walk step dialog
+
 let private offersFiles (dialog: HistoryView) =
     front dialog = ViewHistoryTab && rowCount (table ViewHistoryTab dialog) > 0
 
@@ -241,17 +313,11 @@ let private hasEntries (history: History) tab =
     | ViewHistoryTab -> not history.FileVisits.IsEmpty
     | FolderHistoryTab -> not history.Folders.IsEmpty
 
-let private offersGoTo tab =
-    match tab with
-    | RunHistoryTab
-    | ViewHistoryTab -> true
-    | FolderHistoryTab -> false
-
 let private offer (container: Tabs) (goTo: Button) (delete: Button) =
-    match shownIn container, container.Value with
-    | Some tab, (:? TableView as shown) ->
+    match container.Value with
+    | :? TableView as shown ->
         let showsRows = rowCount shown > 0
-        goTo.Enabled <- offersGoTo tab && showsRows
+        goTo.Enabled <- showsRows
         delete.Enabled <- showsRows
     | _ -> ()
 
@@ -326,14 +392,14 @@ let private typingKey (changing: Changing) (dialog: HistoryView) (key: Key) =
         key.Handled <- true
         filtering changing dialog (Some(typedInto dialog.Filter (char key.AsRune.Value)))
 
-let private answerKey (changing: Changing) (dialog: HistoryView) (key: Key) =
-    if key = KeyMap.nextHistoryTabKey then
-        key.Handled <- true
-        walk 1 dialog
-    elif key = KeyMap.previousHistoryTabKey then
-        key.Handled <- true
-        walk -1 dialog
-    elif key = KeyMap.historyGoToKey then
+let private tableKey (changing: Changing) (dialog: HistoryView) (shown: TableView) (key: Key) =
+    match tabStep key with
+    | Some step -> walking step key dialog
+    | None when leavesList shown key -> key.Handled <- true
+    | None -> typingKey changing dialog key
+
+let private dialogKey (changing: Changing) (dialog: HistoryView) (key: Key) =
+    if key = KeyMap.historyGoToKey then
         key.Handled <- true
 
         if (button GoToButton dialog).Enabled then
@@ -356,6 +422,11 @@ let private answerKey (changing: Changing) (dialog: HistoryView) (key: Key) =
         filtering changing dialog (dialog.Filter |> Option.bind SearchText.backspace)
     else
         typingKey changing dialog key
+
+let private answerKey (changing: Changing) (dialog: HistoryView) (key: Key) =
+    match tabStep key with
+    | Some step -> walking step key dialog
+    | None -> dialogKey changing dialog key
 
 let private leavingTab (changing: Changing) (dialog: HistoryView) =
     if dialog.Filter.IsSome then
@@ -383,7 +454,7 @@ let create
     let line =
         new Label(Id = FilterLineId, X = 0, Y = Pos.Bottom container, Width = Dim.Fill(), Height = 1)
 
-    dialog.Add(container, line) |> ignore
+    dialog.Add(container, line)
 
     let changing =
         { Fs = fs
@@ -413,7 +484,8 @@ let create
         leavingTab changing dialog
         offer container goTo delete)
 
-    tables |> List.iter (fun (_, shown) -> shown.KeyDown.Add(typingKey changing dialog))
+    container.FrameChanged.Add(fun _ -> dressHeaders container tables)
+    tables |> List.iter (fun (_, shown) -> shown.KeyDown.Add(tableKey changing dialog shown))
     dialog.KeyDown.Add(answerKey changing dialog)
     dialog
 
@@ -424,7 +496,8 @@ let private chosen (dialog: HistoryView) tab pressed entry =
     let history = dialog.History
 
     match tab, pressed with
-    | FolderHistoryTab, OpenButton -> item entry history.Folders |> Option.map OpenPlace
+    | FolderHistoryTab, OpenButton
+    | FolderHistoryTab, GoToButton -> item entry history.Folders |> Option.map OpenPlace
     | RunHistoryTab, OpenButton -> item entry history.Launches |> Option.map RunAgain
     | RunHistoryTab, GoToButton ->
         item entry history.Launches

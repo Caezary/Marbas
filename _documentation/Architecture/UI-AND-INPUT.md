@@ -636,8 +636,10 @@ of its own.**
 | `Alt+F12`, and `Alt+Shift+H` beside it | `HistoryRequested` | `F12 History` while `Alt` is held, on Windows | the history was asked for on `Alt+F12`, and every terminal measured in P16.1 delivers it; the letter with `Alt` is there for a terminal or a desktop not yet measured |
 
 Inside the popup `KeyMap.nextHistoryTabKey` and `previousHistoryTabKey`
-(`Ctrl+PgDn`, `Ctrl+PgUp`) walk the tabs and `historyGoToKey` (`Alt+G`)
-presses `[Go to]`. They are dialog keys, bound in `HistoryDialog`'s `KeyDown`
+(`Ctrl+PgDn`, `Ctrl+PgUp`), and `nextHistoryTabArrow` and
+`previousHistoryTabArrow` (`→`, `←`), walk the tabs; `historyRowUpKey` and
+`historyRowDownKey` (`↑`, `↓`) are held at the ends of the list so they never
+walk them; and `historyGoToKey` (`Alt+G`) presses `[Go to]`. They are dialog keys, bound in `HistoryDialog`'s `KeyDown`
 the way `DriveDialog` binds `Alt+R`, not rows of `bindings`, which is the
 panel's table. See [History](HISTORY.md) for why the buttons carry no hot keys.
 

@@ -39,22 +39,35 @@ let private launch program elevation =
       Elevation = elevation }
 
 [<Theory>]
-[<InlineData("", "")>]
-[<InlineData("code.exe", "code.exe")>]
-[<InlineData(@"C:\Program Files\Editor\editor.exe", "editor.exe")>]
-[<InlineData("/usr/bin/vim", "vim")>]
-let ``a file started as the user says which program it was started with, by name`` (program: string) (shown: string) =
-    let how = HistoryRow.launchHow (launch program AsUser)
+[<InlineData("code.exe", " (code.exe)")>]
+[<InlineData(@"C:\Program Files\Editor\editor.exe", " (editor.exe)")>]
+[<InlineData("/usr/bin/vim", " (vim)")>]
+let ``a file started with a program chosen is followed by the program's name`` (program: string) (named: string) =
+    let what = HistoryRow.launchWhat (launch program AsUser)
 
-    Assert.Equal(shown, how)
+    Assert.Equal(at "work/notes.md" + named, what)
+
+[<Fact>]
+let ``a file started with no program chosen is shown as its path`` () =
+    let what = HistoryRow.launchWhat (launch "" AsUser)
+
+    Assert.Equal(at "work/notes.md", what)
 
 [<Theory>]
-[<InlineData("", "as administrator")>]
-[<InlineData("installer.exe", "installer.exe, as administrator")>]
-let ``a file started as administrator says so`` (program: string) (shown: string) =
+[<InlineData("")>]
+[<InlineData("code.exe")>]
+let ``a file started as the user says nothing of how`` (program: string) =
+    let how = HistoryRow.launchHow (launch program AsUser)
+
+    Assert.Equal("", how)
+
+[<Theory>]
+[<InlineData("")>]
+[<InlineData("installer.exe")>]
+let ``a file started as administrator says admin`` (program: string) =
     let how = HistoryRow.launchHow (launch program AsAdministrator)
 
-    Assert.Equal(shown, how)
+    Assert.Equal("admin", how)
 
 [<Fact>]
 let ``a directory on disk is shown as its path`` () =

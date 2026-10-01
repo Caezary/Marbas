@@ -74,6 +74,12 @@ let dialog =
         Disabled = attribute ColorName16.DarkGray ColorName16.Blue
     )
 
+let tabHeader =
+    Scheme(
+        Normal = attribute ColorName16.White ColorName16.Blue,
+        Focus = attribute ColorName16.White ColorName16.Blue
+    )
+
 let input =
     Scheme(
         Normal = attribute ColorName16.Black ColorName16.Cyan,

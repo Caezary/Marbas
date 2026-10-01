@@ -119,6 +119,14 @@ let nextHistoryTabKey = Key.PageDown.WithCtrl
 
 let previousHistoryTabKey = Key.PageUp.WithCtrl
 
+let nextHistoryTabArrow = Key.CursorRight
+
+let previousHistoryTabArrow = Key.CursorLeft
+
+let historyRowUpKey = Key.CursorUp
+
+let historyRowDownKey = Key.CursorDown
+
 let historyGoToKey = Key.G.WithAlt
 
 let historyViewKey = Key.F3

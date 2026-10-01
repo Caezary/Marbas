@@ -199,15 +199,17 @@ remembered again, which moves it to the top. `[Go to]`, and `Alt+G`, answer
 `GoTo place`; `Place.beside` turns a file's place into the location holding it
 and its name — a directory on disk, or the level of an archive above an entry —
 and `AppState.standBeside` loads that location with the cursor on the name.
-`[Go to]` is enabled only while a tab that offers it is in front and has a row;
-it follows the tab through `Tabs.ValueChanged`. That handler also runs while the
+`[Go to]` is enabled only while the tab in front has a row — on *Folder
+history* it answers `OpenPlace`, the same as `[Open]`; it follows the tab through `Tabs.ValueChanged`. That handler also runs while the
 dialog is being disposed and its tables removed, so the tab in front is read
 from the `Id` of `Tabs.Value` rather than by finding the tables again.
 
-**The row says how the file was started.** A third column, *How*, holds
-`HistoryRow.launchHow`: the program's name, without its directory, when one was
-chosen, and *as administrator* when it ran so. The *What* column is shortened
-to what is left of the table after that column.
+**The row says how the file was started.** `HistoryRow.launchWhat` follows the
+path with the program's name, without its directory, in brackets when one was
+chosen, and a third column, *How*, holds `HistoryRow.launchHow`: `admin` when
+it ran so, nothing otherwise. P16.4–P16.6 put the program into *How* as well;
+the refinements at the end of this file moved it next to the path, so *How*
+could be as narrow as its longest word.
 
 ## Remembering the files viewed and edited
 
@@ -532,3 +534,39 @@ row rather than as the field; the arrow on the right of the field is `Black` on
 `Aqua`. P16.9 gives it the dialog's colours. A remembered item chosen from the
 list also leaves the insertion point where it was, so the next letter lands in
 the middle of the path rather than after it — P16.9 moves it to the end.
+
+## Refining the popup
+
+**`↑` and `↓` stay on the list; `←` and `→` always walk the tabs.** A
+`TableView` that cannot move its cursor any further leaves the arrow unhandled,
+and `Tabs` takes it: `↑` on the first row put the tab before in front. Each
+table's `KeyDown` now marks `KeyMap.historyRowUpKey` on the first row and
+`historyRowDownKey` on the last — or on an empty table — as handled, so they
+never leave the table. `KeyMap.nextHistoryTabArrow` and
+`previousHistoryTabArrow` join `Ctrl+PgDn` and `Ctrl+PgUp` in `tabStep`, read
+both by the tables' `KeyDown` and by the dialog's, so the arrows walk the tabs
+wherever the focus is rather than only while `Tabs` happens to see them.
+
+**The tab headers are of one width, and the one in front is not lit.** Each
+header is the `TitleView` of the table's `BorderView`; `BorderView.TabLength`
+fixes its width and `TextAlignment.Center` centres the title in it.
+`HistoryDialog.headerLength` answers the width from the width of `Tabs`: the
+longest title with three columns of room on each side where the three headers
+fit, less where they do not, and never less than the longest title, so on a
+very narrow screen the strip scrolls rather than cuts a title.
+`dressHeaders` sets it on every `FrameChanged` of `Tabs`. The `TitleView` draws
+its title in the `Focus` role while its tab has the focus, which made the
+header of the tab in front look selected like a row;
+`ClassicScheme.tabHeader` gives it the dialog's white on blue for both roles.
+
+**The columns keep their widths.** `ColumnStyle.MinWidth` and `MaxWidth` are
+set equal on every column: *When* to the length of `HistoryRow.DatePattern`, so
+a date never pushes the columns aside, *How* to the length of
+`HistoryRow.AdministratorNote`, which also holds `V` and `E`, and *What* to
+what the table's width leaves, which `PathText.shorten` then fits the path to.
+`fitColumns` runs when a table is filled and on its `FrameChanged`, since the
+width of *What* follows the width of the popup.
+
+**`[Go to]` on a directory opens it.** A directory's place is where the panel
+should stand, not beside, so on *Folder history* `[Go to]` and `Alt+G` answer
+`OpenPlace` like `[Open]` rather than being disabled.

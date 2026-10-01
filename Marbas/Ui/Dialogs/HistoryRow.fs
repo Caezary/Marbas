@@ -18,18 +18,22 @@ let moment (now: DateTimeOffset) (at: DateTimeOffset) =
     seen.ToString(pattern, CultureInfo.InvariantCulture)
 
 [<Literal>]
-let AdministratorNote = "as administrator"
+let AdministratorNote = "admin"
 
 let private programName program =
     (ProgramPath.value program).Split([| '\\'; '/' |]) |> Array.last
 
+let launchWhat (request: LaunchRequest) =
+    let target = FileSystemPath.value request.Target
+
+    match request.Program with
+    | Some program -> $"{target} ({programName program})"
+    | None -> target
+
 let launchHow (request: LaunchRequest) =
-    [ request.Program |> Option.map programName
-      match request.Elevation with
-      | AsUser -> None
-      | AsAdministrator -> Some AdministratorNote ]
-    |> List.choose id
-    |> String.concat ", "
+    match request.Elevation with
+    | AsUser -> ""
+    | AsAdministrator -> AdministratorNote
 
 [<Literal>]
 let ViewedMark = "V"
