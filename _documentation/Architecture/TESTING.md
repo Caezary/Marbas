@@ -363,8 +363,17 @@ elsewhere.
 **`RowRender` is raisable from a test.** `ListView.OnRowRender` is public, so a
 test constructs a `ListViewRowEventArgs row`, raises it and reads
 `RowAttribute` back — the one thing about colour that is observable without a
-driver. `null` there means "leave the row alone", which is what a marked row and
-the row under the cursor of a focused list must get.
+driver. `null` there means "leave the row alone", which is what the row under
+the cursor of a focused list must get; a marked row comes back as
+`ClassicScheme.markedEntry`.
+
+**A built-in move of `ListView` is a real key in a test.** `↑`, `↓`, `PgUp`,
+`PgDn`, `Home` and `End` reach the list's own commands through
+`NewKeyDownEvent`, exactly as at the keyboard, so a test that presses them runs
+`ListView.SetSelection` — which is how the vanishing marks of P17.1 were caught
+without a driver. Setting `SelectedItem` does not go that way, so a test about
+what a cursor move does to the view presses the key rather than setting the
+property.
 
 **`View.Text` is what was set, not what is drawn.** A `Label` that eats an
 underscore as its hot key specifier still hands the underscore back from `Text`,

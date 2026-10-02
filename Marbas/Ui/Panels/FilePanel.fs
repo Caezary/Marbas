@@ -33,15 +33,19 @@ let footer (panel: View) =
 let private rowColor (panel: PanelView) row =
     panel.RowColors |> Array.tryItem row
 
+let private rowAttribute (panel: PanelView) (list: ListView) row =
+    let marked = list.Source <> null && list.Source.IsMarked row
+    let underCursor = list.HasFocus && list.SelectedItem.GetValueOrDefault -1 = row
+
+    match underCursor, marked with
+    | true, _ -> None
+    | false, true -> Some ClassicScheme.markedEntry
+    | false, false -> rowColor panel row
+
 let private paintRows (panel: PanelView) (list: ListView) =
     list.RowRender.Add(fun args ->
-        let marked = list.Source <> null && list.Source.IsMarked args.Row
-        let underCursor = list.HasFocus && list.SelectedItem.GetValueOrDefault -1 = args.Row
-
-        if not marked && not underCursor then
-            match rowColor panel args.Row with
-            | Some color -> args.RowAttribute <- color
-            | None -> ())
+        rowAttribute panel list args.Row
+        |> Option.iter (fun color -> args.RowAttribute <- color))
 
 let private focusable (panel: PanelView) =
     panel.CanFocus <- true
@@ -53,7 +57,7 @@ let private focusable (panel: PanelView) =
         panel.BorderStyle <- if panel.HasFocus then LineStyle.Double else LineStyle.Single)
 
     let list =
-        new ListView(Width = Dim.Fill(), Height = Dim.Fill 2, MarkMultiple = true)
+        new ListView(Width = Dim.Fill(), Height = Dim.Fill 2)
 
     list.KeystrokeNavigator <- null
     paintRows panel list
@@ -67,7 +71,7 @@ let private focusable (panel: PanelView) =
 
     footer.SetScheme ClassicScheme.summary |> ignore
 
-    panel.Add(list, rule, footer) |> ignore
+    panel.Add(list, rule, footer)
 
     panel
 

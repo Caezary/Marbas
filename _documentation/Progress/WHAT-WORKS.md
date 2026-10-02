@@ -155,11 +155,12 @@ What Marbas does today, feature by feature. How to reach each of them is in the
 - `Insert`, `Space` and `Shift+↓` mark the entry under the cursor and move one
   entry down; `Shift+↑` marks it and moves one entry up. Every one of them
   toggles, so holding `Shift` and running an arrow over a marked stretch clears
-  it again. Marked entries are highlighted, `..` can never be marked, and each
-  panel keeps its own marks — they survive `Ctrl+R` (minus whatever
-  disappeared) and are dropped when the panel changes directory. The cursor
-  stops at the ends of the listing while the entry it stopped on still gets
-  marked.
+  it again. Marked entries are drawn in yellow and stay so wherever the cursor
+  goes, `..` can never be marked, and each panel keeps its own marks — they
+  survive `Ctrl+R` (minus whatever disappeared) and are dropped when the panel
+  changes directory. The cursor stops at the ends of the listing while the entry
+  it stopped on still gets marked. A mouse click only moves the cursor; it marks
+  nothing.
 - `Shift+PgDn` (or `Shift+→`) does the same to a whole page: everything from
   the cursor up to — but not including — where a page jump would land, with the
   cursor following onto that last, untouched entry. `Shift+PgUp` and `Shift+←`

@@ -36,9 +36,9 @@ let ``the cursor bar is black on cyan`` () =
 
 [<Fact>]
 let ``marked entries are bright yellow on blue`` () =
-    let highlight = ClassicScheme.panel.Highlight
+    let marked = ClassicScheme.markedEntry
 
-    Assert.Equal(attribute ColorName16.BrightYellow ColorName16.Blue, highlight)
+    Assert.Equal(attribute ColorName16.BrightYellow ColorName16.Blue, marked)
 
 [<Fact>]
 let ``the marked summary is bright yellow on blue`` () =

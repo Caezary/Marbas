@@ -4,6 +4,9 @@ open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Drawing
+open Terminal.Gui.Drivers
+open Terminal.Gui.Input
+open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
@@ -70,7 +73,7 @@ let ``the parent entry is painted like a directory`` () =
     Assert.Equal(Nullable ClassicScheme.directoryEntry, painted)
 
 [<Fact>]
-let ``a marked entry keeps the colour of a mark`` () =
+let ``a marked entry is painted with the colour of a mark`` () =
     use window = window ()
     let list = leftList window
     list.SelectedItem <- 1
@@ -78,7 +81,90 @@ let ``a marked entry keeps the colour of a mark`` () =
 
     let painted = paintedRow list 1
 
+    Assert.Equal(Nullable ClassicScheme.markedEntry, painted)
+
+[<Fact>]
+let ``a marked entry under the cursor keeps the colour of the cursor`` () =
+    use window = window ()
+    let list = leftList window
+    list.SelectedItem <- 1
+    press list KeyMap.selectionKeys.Head
+    list.SelectedItem <- 1
+
+    let painted = paintedRow list 1
+
     Assert.False painted.HasValue
+
+[<Fact>]
+let ``a marked entry under the cursor of an unfocused panel is painted with the colour of a mark`` () =
+    use window = window ()
+    let list = leftList window
+    list.SelectedItem <- 1
+    press list KeyMap.selectionKeys.Head
+    list.SelectedItem <- 1
+    window.AdvanceFocus(NavigationDirection.Forward, Nullable TabBehavior.TabStop) |> ignore
+
+    let painted = paintedRow list 1
+
+    Assert.False(list.HasFocus, "the left list should have given the focus away")
+    Assert.Equal(Nullable ClassicScheme.markedEntry, painted)
+
+let private longListing () =
+    let fs = MockFileSystem()
+
+    [ 1..40 ]
+    |> List.iter (fun number -> fs.AddFile(at $"start/file{number:D2}.txt", MockFileData "hi"))
+
+    fs
+
+let private markedAndLaidOut () =
+    let window = focusedWindow (Fakes.dependencies (longListing ()) (at "start"))
+    window.Layout(System.Drawing.Size(80, 16)) |> ignore
+    let list = leftList window
+    list.SelectedItem <- 1
+    press list KeyMap.selectionKeys.Head
+    press list KeyMap.selectionKeys.Head
+    list.SelectedItem <- 20
+    window
+
+[<Theory>]
+[<InlineData(KeyCode.CursorUp)>]
+[<InlineData(KeyCode.CursorDown)>]
+[<InlineData(KeyCode.PageUp)>]
+[<InlineData(KeyCode.PageDown)>]
+[<InlineData(KeyCode.Home)>]
+[<InlineData(KeyCode.End)>]
+[<InlineData(KeyCode.CursorLeft)>]
+[<InlineData(KeyCode.CursorRight)>]
+let ``the marks stay in the listing when the cursor moves`` (moving: KeyCode) =
+    use window = markedAndLaidOut ()
+    let list = leftList window
+
+    press list (Key moving)
+
+    Assert.NotEqual(20, list.SelectedItem.GetValueOrDefault 20)
+    Assert.Equal<bool list>([ true; true ], [ list.Source.IsMarked 1; list.Source.IsMarked 2 ])
+
+[<Theory>]
+[<InlineData(KeyCode.CursorUp)>]
+[<InlineData(KeyCode.CursorDown)>]
+[<InlineData(KeyCode.PageUp)>]
+[<InlineData(KeyCode.PageDown)>]
+[<InlineData(KeyCode.Home)>]
+[<InlineData(KeyCode.End)>]
+[<InlineData(KeyCode.CursorLeft)>]
+[<InlineData(KeyCode.CursorRight)>]
+let ``the marked rows are still painted as marked when the cursor moves`` (moving: KeyCode) =
+    use window = markedAndLaidOut ()
+    let list = leftList window
+    press list (Key moving)
+
+    let painted = [ 1; 2 ] |> List.map (paintedRow list)
+
+    Assert.Equal<Nullable<Attribute> list>(
+        [ Nullable ClassicScheme.markedEntry; Nullable ClassicScheme.markedEntry ],
+        painted
+    )
 
 [<Fact>]
 let ``the entry under the cursor keeps the colour of the cursor`` () =

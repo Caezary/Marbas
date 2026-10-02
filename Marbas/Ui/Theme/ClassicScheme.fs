@@ -38,6 +38,8 @@ let linkEntry = attribute ColorName16.BrightCyan ColorName16.Blue
 
 let unverifiedEntry = attribute ColorName16.BrightRed ColorName16.Blue
 
+let markedEntry = attribute ColorName16.BrightYellow ColorName16.Blue
+
 let summary =
     Scheme(
         Normal = attribute ColorName16.BrightYellow ColorName16.Blue,

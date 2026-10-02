@@ -84,8 +84,8 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   mark's, so the mark itself is invisible while the cursor stands on it. The
   cursor is the one that wins — black on cyan, as on an unmarked row — and only
   the footer's count says the entry is marked. The classic look is the mark's
-  yellow on the cursor's cyan, which is a third case in the `RowRender` handler
-  that already skips both rows.
+  yellow on the cursor's cyan, which is a third case in the `RowRender` handler,
+  beside the cursor row it hands back and the marked rows it paints.
 - The entry colours and the rule under the listing are drawn by a driver no test
   has, so what a test can say is which attribute `RowRender` hands back and
   where the `Line` sits — not what the screen looks like. Both belong on the

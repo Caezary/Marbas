@@ -4,13 +4,26 @@
 
 **Selection is a set of names in the state; the ListView only displays it.**
 `PanelState.Selected` holds entry names, not indices, so marks stay on the
-right files when a refresh reorders the listing. Terminal.Gui's own marking is
-used purely for rendering: the panel runs with `MarkMultiple = true` and
-`ShowMarks = false`, which draws marked rows with `VisualRole.Highlight` and no
-checkbox glyphs, and `FilePanel.render` re-applies `Source.SetMark` from the
-state whenever it rebuilds the rows. `Insert`/`Space` are handled by Marbas and marked
-handled, so the built-in SPACE marking never runs and cannot disagree with the
-state.
+right files when a refresh reorders the listing. `FilePanel.render` copies the
+state into the list's source with `Source.SetMark` whenever it rebuilds the
+rows, and the `RowRender` handler paints every row the source calls marked in
+`ClassicScheme.markedEntry`. `Insert`/`Space` are handled by Marbas and marked
+handled, so nothing the list does on its own decides what is marked.
+
+**The list's own marking is switched off.** The panel's `ListView` runs with
+`MarkMultiple` and `ShowMarks` both `false`, so Terminal.Gui never writes a mark.
+It used to run with `MarkMultiple = true`, which drew marked rows in
+`Highlight` for free, and that is what made marks vanish from the screen until
+P17.1: every built-in move — `↑`, `↓`, `PgUp`, `PgDn`, `Home`, `End` — goes
+through `ListView.SetSelection(item, false)`, which with `MarkMultiple` on and
+`ShowMarks` off clears every mark in the source. A cursor move leaves the rows
+`Kept` (see *A keystroke renders what changed* below), so nothing put the
+marks back; the footer, read from the state, kept counting them. The jumps on
+`←`/`→` went through the state and the property setter, which is why they
+alone left the marks standing. With marking off, the same `SetSelection` touches
+no mark, and neither do a mouse click, `Ctrl+click` or `Ctrl+A`/`Ctrl+U`, which
+with `MarkMultiple` on marked rows in the view that the state never heard of.
+The decompiled `ListView` of Terminal.Gui 2.4.17 is where this was read.
 
 **One transition marks, however far it reaches.**
 `AppState.toggleSelectionShortOf side target` is the whole rule: take the run
@@ -104,9 +117,11 @@ value cannot slip in unnoticed.
 
 **Rows are painted through `RowRender`, and only the ones nobody else owns.**
 `ListViewRowEventArgs.RowAttribute` overrides whatever attribute `ListView`
-chose for that row, marked and focused included, so the handler must hand the
-row back when it is marked (`Source.IsMarked`) or under the cursor of a focused
-list. What it needs is one attribute per row, which is why `FilePanel.PanelView`
+chose for that row, focused included, so the handler hands back the row under
+the cursor of a focused list and paints the rest: a marked row
+(`Source.IsMarked`) in `ClassicScheme.markedEntry`, any other in its entry's
+colour. The cursor of a panel that lost focus is not a cursor bar, so a marked
+row under it is painted as marked. What it needs is one attribute per row, which is why `FilePanel.PanelView`
 is a `FrameView` carrying a `RowColors` array that `render` fills — the handler
 is attached once and reads the array, rather than being re-subscribed on every
 render. `OnRowRender` is public, so a test raises it and reads the attribute
@@ -136,7 +151,8 @@ again.
 its scheme for an attribute through the `GettingAttributeForRole` event, so
 subscribing to it and drawing the view answers the question directly:
 `ListView` uses `Normal` for ordinary rows, `Focus` for the row under the cursor
-*only while it has focus*, and `Highlight` for marked ones; `FrameView` draws
+*only while it has focus*, and — with `MarkMultiple` on — `Highlight` for
+marked ones, which the panel no longer relies on (see *Selection*); `FrameView` draws
 its border and title with `Normal` whether focused or not; `StatusBar` uses
 `Normal` and `HotNormal`. That settled the palette — the cursor bar disappearing
 from the panel that lost focus is Terminal.Gui's own behaviour, and it is what

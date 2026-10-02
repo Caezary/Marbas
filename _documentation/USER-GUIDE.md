@@ -52,6 +52,9 @@ needs to be installed. On Linux and macOS, mark the file executable first
   page at once.
 - `+` / `-` mark or unmark everything matching a wildcard pattern (`*.fs`).
 
+Marked entries are shown in yellow, and stay marked while the cursor moves
+about the listing; the footer counts them and adds up their sizes.
+
 ## File operations
 
 Every operation below acts on the marked entries, or on the entry under the
