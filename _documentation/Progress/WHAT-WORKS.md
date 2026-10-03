@@ -83,6 +83,20 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   stood on then. On a root it does nothing. The landing is remembered in the
   folder history. `Alt+U` is bound beside it, because gnome-terminal keeps
   `Ctrl+PgUp` for its own tabs once it has several.
+- `Alt+K` keeps the place the active panel stands in — a directory or a level
+  inside an archive — under a digit: a popup of one line, *Add to favourites*,
+  names the path, shortened in the middle when the screen is too narrow for it,
+  and asks for the digit; the first
+  key closes it, and a digit (with `Alt` still held or not) fills that slot,
+  overwriting what it held, while any other key keeps nothing. A panel of
+  search results keeps nothing. `Alt+0` … `Alt+9` send the active panel to the
+  place under the digit; an empty slot does nothing, a place that has gone is
+  reported with the panel left where it was, and the landing is remembered in
+  the folder history. The ten slots are shared by every tab and both panels and
+  live in `favorites.conf` beside the settings, read when a digit is pressed and
+  written, on top of what the file holds, the moment a slot is filled — so the
+  application starts without the file, and two copies keep each other's
+  favourites.
 - `Alt+R` on a file opens a popup listing the programs the system already
   knows for that extension — read from the registry on Windows, from the XDG
   mime database on Linux — with a field for a path of one's own and a box that

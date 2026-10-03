@@ -48,6 +48,9 @@ let chooseDrive (app: IApplication) (request: DrivePrompt) =
     | [] -> None
     | rows -> running app (fun () -> createDriveDialog rows) DriveDialog.choice
 
+let askFavoriteSlot (app: IApplication) (fs: IFileSystem) (place: Place) =
+    running app (fun () -> KeepFavoriteDialog.create fs app.Screen.Width place) KeepFavoriteDialog.slot
+
 let private texts (remembered: EnteredText list) = remembered |> List.map EnteredText.value
 
 let askPattern (app: IApplication) (request: PatternPrompt) =

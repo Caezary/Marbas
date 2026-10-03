@@ -696,6 +696,34 @@ gnome-terminal, which takes `Ctrl+PgUp` for its tabs once it has several. The
 landing goes into the folder history through the same post-step as every other
 landing, with nothing of its own.
 
+**A favourite is kept in two keystrokes and reached in one.** `Alt+K` raises
+`FavoriteKeepRequested`; the transition turns the active panel's location into
+a `Place` — a panel of search results has none, and keeps nothing — and answers
+`PromptForFavoriteSlot place`. `Shell` asks `Prompts.AskFavoriteSlot`, and a
+slot that comes back is written at once with `Favorites.change`, so the place is
+the one the panel stood in when `Alt+K` was pressed. The question is
+`KeepFavoriteDialog`, *Add to favourites*, a frame around one line and no
+buttons. The port hands it the place, so the line names what will be kept —
+*Press a digit to add* the path *to favourites*, a level inside an archive
+spelled the way the history spells it — and the popup is as wide as the line.
+A path that would make it wider than the screen is shortened in the middle by
+`PathText.shorten`, the rule of the panel titles; the width is taken from the
+screen when the popup opens, which is the moment it is asked for and over at
+the first key. The first key
+decides and closes it — a digit, or a digit with `Alt` still held from `Alt+K`,
+is the slot (`KeyMap.favoriteSlotOf`), and anything else, `Esc` included, keeps
+nothing. A popup rather than a question in the status line, because a waiting
+mode in the state would have had to decide what every other message does while
+it waits. `Alt+0` … `Alt+9` are ten rows of `bindings`, one per `FavoriteSlot`,
+each raising `FavoriteRequested slot`; the transition answers `LookUpFavorite
+slot`, `Shell` reads `favorites.conf` afresh, and a slot holding a place comes
+back as `FavoriteFound place`, which stands the active panel in it through
+`standInside` — the way a directory chosen from the history does. An empty slot
+answers nothing, a place that has gone is the listing error every other landing
+reports with the panel left where it was, and the folder history remembers the
+landing through the usual post-step. `Shift+Alt+0` … `Shift+Alt+9` is bound to
+nothing: it reaches Marbas in no terminal.
+
 **The elevated run is the open-with key with one more modifier.** `Alt+R` asks
 which program should open the entry, `Alt+Shift+R` runs it as administrator —
 one key to remember rather than two, and the shift reads as "and with more than

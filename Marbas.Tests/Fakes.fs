@@ -457,6 +457,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Ports.Dependencies =
       StartPath = FileSystemPath.create startPath
       SettingsPath = FileSystemPath.create (at "marbas.conf")
       HistoryPath = FileSystemPath.create (at "history.conf")
+      FavoritesPath = FileSystemPath.create (at "favorites.conf")
       WorkspacePath = FileSystemPath.create (at "temp/Marbas/session")
       Clock = fun () -> DateTimeOffset(2026, 9, 28, 12, 0, 0, TimeSpan.Zero)
       OnQuit = ignore
@@ -475,6 +476,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Ports.Dependencies =
           ChooseDrive = fun _ -> None
           ChooseTab = fun _ -> None
           ChooseHistory = fun prompt -> { Tab = prompt.Tab; Choice = None }
+          AskFavoriteSlot = fun _ -> None
           EditProperties = fun _ -> None
           EditPrograms = fun _ -> None
           ShowFile = ignore }

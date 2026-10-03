@@ -158,3 +158,32 @@ beside their new state, and `Shift+F9` is that effect with no state change at
 all — a save that succeeded says nothing, because there is nothing to say. The
 old complaint that a crash loses the session is therefore smaller than it was:
 anything that touches the tabs has already written the file.
+
+**The favourites have a file of their own, written the way the history is.**
+`favorites.conf` sits beside `settings.conf` and `history.conf` —
+`Favorites.beside` takes the settings path, as `History.beside` does — and
+`Dependencies` carries it as `FavoritesPath`. The settings file is written only
+on quit and on the tab commands, so a favourite kept there would be lost by a
+crash and erased by a second copy of Marbas quitting later; a favourite is
+therefore an operation on its file. `Favorites.change` is `load`, `apply`,
+write, and answers what it wrote, so a slot another copy filled since is kept
+beside the one this copy fills, and a file that cannot be read ends the change
+before anything is written. `FavoritesError` and `FavoritesErrorMessage`, titled
+*Favourites not saved*, are the history's pair under another name, and every
+failure is reported, since a favourite is only ever written when asked for.
+Nothing reads the file at startup: going to a favourite reads it when the key is
+pressed, so a missing file is ten empty slots and the application starts as it
+did. The ten slots are global, shared by every tab and both panels.
+
+```
+favorite.1=C:\work
+favorite.7=C:\backup.zip
+favorite.7.inside=docs/2024
+```
+
+A slot is written as its digit and its place, an archive's level as an `inside`
+part, slots in the order of their digits and empty ones not at all. A line whose
+key names no slot from `0` to `9`, an empty value, and a slot whose `inside`
+cannot be read — one that climbs — are passed over, each costing that slot
+alone. A place whose path breaks a line is not kept, as the history does not
+remember one.

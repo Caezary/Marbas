@@ -48,6 +48,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
       StartPath = fs.Directory.GetCurrentDirectory() |> FileSystemPath.create
       SettingsPath = settingsPath
       HistoryPath = History.beside fs settingsPath
+      FavoritesPath = Favorites.beside fs settingsPath
       WorkspacePath = Workspace.location fs env.TemporaryRoot env.Session
       Clock = fun () -> DateTimeOffset.Now
       OnQuit = fun () -> app.RequestStop()
@@ -66,6 +67,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
           ChooseDrive = Prompts.chooseDrive app
           ChooseTab = Prompts.chooseTab app fs
           ChooseHistory = Prompts.chooseHistory app fs
+          AskFavoriteSlot = Prompts.askFavoriteSlot app fs
           EditProperties = Prompts.editProperties app
           EditPrograms = Prompts.editPrograms app
           ShowFile = Prompts.showFile app }

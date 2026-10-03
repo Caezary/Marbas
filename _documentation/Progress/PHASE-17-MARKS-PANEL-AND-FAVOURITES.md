@@ -223,3 +223,56 @@ On 200 columns the left popup stood at column 2 and the right one ended at
 column 198, each well inside its own hundred-column panel. The popup was
 created on a 120-column screen and resized to 80 and 200 before the shot, so the
 same pictures prove that it follows the edge when the terminal changes size.
+
+**P17.9 keeps ten directories under the digits.** `Alt+K` keeps the place the
+active panel stands in under a digit asked for next, and `Alt+0` … `Alt+9` send
+the active panel there. The plan's "asks for the digit on one line" left the
+shape open, and the user chose a popup of one line over a question in the status
+line: `KeepFavoriteDialog` has no buttons, and its first key decides — a digit is
+the slot, a digit with `Alt` still held from `Alt+K` too, and anything else,
+`Esc` included, keeps nothing. The status line would have needed a waiting mode
+in `AppState` and a rule for every other message arriving while it waited. A
+first version asked *Press a digit to keep this place under it*; at the user's
+word the popup is titled *Add to favourites* and names what it will keep —
+*Press a digit to add* the path *to favourites* — so the port is handed the
+place, and a path too long for the screen is shortened in the middle, the way
+the panel titles shorten theirs. The user offered two lines, a sentence and the
+full path under it, in case one line proved hard; it did not, since the popup
+is as wide as its line and only the screen bounds it.
+
+The pieces follow the history's. `FavoriteSlot` in `Domain` is a digit from 0 to
+9 with a private constructor. `Favorites` in `FileSystem` is a map from slot to
+`Place`, with `apply`, `format`, `parse`, `load` and `change` on the pattern of
+`History`, its own `FavoritesError`, and `favorites.conf` beside the settings.
+The state raises `PromptForFavoriteSlot place` for `Alt+K` — nothing for a panel
+of search results — and `LookUpFavorite slot` for `Alt+digit`; `Shell` writes
+the slot answered, or reads the file afresh and answers `FavoriteFound place`,
+which stands the panel in it through `standInside`, so a place that has gone is
+the listing error every landing reports and the folder history remembers the
+landing through the usual post-step. Nothing reads the file at startup.
+
+The file module, the transitions, `Shell`, the key table and the popup were each
+run red first against a stub that did nothing: five, seven, four, seven and four
+tests failed, and the rest — the cases that expect nothing to happen, and on the
+file side the cases a stub that formats nothing satisfies, among them the change
+on top of another copy's file — passed by nature. The seven tests that press
+`Alt+K` and `Alt+3` in a real panel were written after the pieces and passed at
+once; they prove the path from key to file and back, not a piece of it. A
+running `Application` with the real adapters, over directories in the
+scratchpad, then showed the popup and what the keys did:
+
+```
+80 columns
+║           ╔╡Add to favourites╞══════════════════════════════════╗            │
+║           ║ Press a digit to add C:\...\fav\start to favourites ║            │
+║           ╚═════════════════════════════════════════════════════╝            │
+```
+
+On 200 columns the same popup named the whole path, a line of more than a
+hundred and fifty characters, and stood inside the screen.
+
+`3` closed it and `favorites.conf` held `favorite.3` beside the `favorite.5` the
+file was started with; `Alt+5` then put the left panel in that slot's directory
+and `history.conf` remembered it. A second run pressed `Esc` instead of `3`: the
+popup closed, the file kept only `favorite.5`, and the application went on to
+answer `Alt+5`, so `Esc` closes the popup and not Marbas.

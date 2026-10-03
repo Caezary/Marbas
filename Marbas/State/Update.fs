@@ -80,6 +80,9 @@ type Message =
     | HistoryUnwritten of HistoryError
     | HistoryRequested
     | HistoryAnswered of HistoryAnswer
+    | FavoriteKeepRequested
+    | FavoriteRequested of FavoriteSlot
+    | FavoriteFound of Place
     | QuitRequested
 
 type DeleteRequest =
@@ -125,6 +128,8 @@ type Effect =
     | ChangeHistory of HistoryChange
     | ReportHistoryError of HistoryError
     | ShowHistory of HistoryTab
+    | PromptForFavoriteSlot of Place
+    | LookUpFavorite of FavoriteSlot
     | SaveSettings of Settings
     | Quit
 
@@ -615,6 +620,12 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | Reported -> stay state
     | HistoryRequested -> request state (ShowHistory state.HistoryTab)
     | HistoryAnswered answer -> chosenFromHistory fs { state with HistoryTab = answer.Tab } answer.Choice
+    | FavoriteKeepRequested ->
+        match Place.ofLocation (activePanel state).Path with
+        | Some place -> request state (PromptForFavoriteSlot place)
+        | None -> stay state
+    | FavoriteRequested slot -> request state (LookUpFavorite slot)
+    | FavoriteFound place -> standInside fs state.Active (Place.toLocation place) state |> applyListing state
     | QuitRequested ->
         { State = state
           Effects = [ SaveSettings(settings fs state); Quit ] }

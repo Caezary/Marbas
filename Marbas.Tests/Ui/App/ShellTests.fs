@@ -2405,3 +2405,85 @@ let ``popups of the larger dialogs cancelled remember nothing`` () =
     Shell.interpret deps ignore (ShowHandlers(fp (at "start/page.html"), None))
 
     Assert.False(fs.File.Exists(at "history.conf"))
+
+let private favoriteSlot digit =
+    Expect.some (FavoriteSlot.tryCreate digit)
+
+let private kept (deps: Ports.Dependencies) =
+    Favorites.load deps.FileSystem deps.FavoritesPath |> Expect.ok
+
+[<Fact>]
+let ``a slot answered for a favourite keeps the place in it`` () =
+    let deps = { noDeps () with Prompts.AskFavoriteSlot = fun _ -> Some(favoriteSlot 3) }
+
+    Shell.interpret deps ignore (PromptForFavoriteSlot(Place.OnDisk(fp (at "work"))))
+
+    Assert.Equal(Some(Place.OnDisk(fp (at "work"))), Favorites.placeIn (favoriteSlot 3) (kept deps))
+
+[<Fact>]
+let ``the slot is asked for with the place it will keep`` () =
+    let asked = ResizeArray<Place>()
+    let deps = { noDeps () with Prompts.AskFavoriteSlot = fun place -> asked.Add place; None }
+
+    Shell.interpret deps ignore (PromptForFavoriteSlot(Place.OnDisk(fp (at "work"))))
+
+    Assert.Equal<Place list>([ Place.OnDisk(fp (at "work")) ], List.ofSeq asked)
+
+[<Fact>]
+let ``a favourite asked for and not answered keeps nothing`` () =
+    let deps = noDeps ()
+
+    Shell.interpret deps ignore (PromptForFavoriteSlot(Place.OnDisk(fp (at "work"))))
+
+    Assert.False(deps.FileSystem.File.Exists(FileSystemPath.value deps.FavoritesPath))
+
+[<Fact>]
+let ``favourites that cannot be written are reported`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "blocked", MockFileData "x")
+    let mutable reported = ""
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            FavoritesPath = fp (at "blocked/favorites.conf")
+            Prompts.AskFavoriteSlot = fun _ -> Some(favoriteSlot 3)
+            Prompts.ReportError = fun report -> reported <- report.Title }
+
+    Shell.interpret deps ignore (PromptForFavoriteSlot(Place.OnDisk(fp (at "work"))))
+
+    Assert.Equal(FavoritesErrorMessage.Title, reported)
+
+[<Fact>]
+let ``a favourite looked up is dispatched as found`` () =
+    let sent, dispatch = capture ()
+    let deps = noDeps ()
+
+    Favorites.change deps.FileSystem deps.FavoritesPath (Keep(favoriteSlot 5, Place.OnDisk(fp (at "work"))))
+    |> Expect.ok
+    |> ignore
+
+    Shell.interpret deps dispatch (LookUpFavorite(favoriteSlot 5))
+
+    Assert.Equal<Message list>([ FavoriteFound(Place.OnDisk(fp (at "work"))) ], List.ofSeq sent)
+
+[<Fact>]
+let ``an empty slot looked up dispatches nothing`` () =
+    let sent, dispatch = capture ()
+
+    Shell.interpret (noDeps ()) dispatch (LookUpFavorite(favoriteSlot 5))
+
+    Assert.Empty sent
+
+[<Fact>]
+let ``favourites that cannot be read are reported when looked up`` () =
+    let fs = Fakes.UnreadableFile(at "favorites.conf")
+    fs.AddFile(at "favorites.conf", MockFileData "favorite.5=/work")
+    let mutable reported = ""
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            Prompts.ReportError = fun report -> reported <- report.Title }
+
+    Shell.interpret deps ignore (LookUpFavorite(favoriteSlot 5))
+
+    Assert.Equal(FavoritesErrorMessage.Title, reported)

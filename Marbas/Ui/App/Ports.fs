@@ -87,6 +87,7 @@ type Prompts =
       ChooseDrive: DrivePrompt -> DriveChoice option
       ChooseTab: Zipper<Tab> -> int option
       ChooseHistory: HistoryPrompt -> HistoryAnswer
+      AskFavoriteSlot: Place -> FavoriteSlot option
       EditProperties: EntryProperties -> EntryProperties option
       EditPrograms: ProgramsPrompt -> ProgramSettings option
       ShowFile: FileWindow.Source -> unit }
@@ -121,6 +122,7 @@ type Dependencies =
       StartPath: FileSystemPath
       SettingsPath: FileSystemPath
       HistoryPath: FileSystemPath
+      FavoritesPath: FileSystemPath
       WorkspacePath: FileSystemPath
       Clock: unit -> DateTimeOffset
       OnQuit: unit -> unit

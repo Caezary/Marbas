@@ -182,7 +182,10 @@ loses neither. The ten slots are global, shared by every tab and both panels.
   `History.change`. *Done when:* keeping, overwriting and going are proved on
   `MockFileSystem`, `Alt+K` followed by something other than a digit is proved
   to keep nothing, a change made on top of a file another copy wrote is proved
-  to keep both, and the application still starts without the file.
+  to keep both, and the application still starts without the file. The task
+  settled the one line with the user: it is a popup of one line and no buttons,
+  closed by the first key, and a digit still pressed with `Alt` held from
+  `Alt+K` counts as the digit.
 - **P17.10 The favourites popup** — `Alt+F8`, labelled in the `Alt` layer of the
   bar, opens a popup with the ten slots in order, each showing its place, a long
   path shortened in the middle as in the history; an empty slot is a row with its

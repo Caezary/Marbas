@@ -421,3 +421,62 @@ let ``Alt+U goes up one level where a terminal keeps Ctrl+PgUp for its tabs`` ()
 
     Assert.Equal(Key.U.WithAlt, KeyMap.spareUpOneLevelKey)
     Assert.Equal(Some UpOneLevelRequested, message)
+
+let private favoriteSlot digit =
+    FavoriteSlot.tryCreate digit |> Marbas.Tests.Expect.some
+
+[<Fact>]
+let ``Alt+K keeps the place under a digit asked for next`` () =
+    let message = KeyMap.messageFor KeyMap.keepFavoriteKey
+
+    Assert.Equal(Key.K.WithAlt, KeyMap.keepFavoriteKey)
+    Assert.Equal(Some FavoriteKeepRequested, message)
+
+[<Fact>]
+let ``Alt+3 is the key of the third slot`` () =
+    let key = KeyMap.favoriteKey (favoriteSlot 3)
+
+    Assert.Equal(Key.D3.WithAlt, key)
+
+[<Theory>]
+[<InlineData(0)>]
+[<InlineData(1)>]
+[<InlineData(9)>]
+let ``Alt with a digit goes to the favourite under it`` (digit: int) =
+    let slot = favoriteSlot digit
+
+    let message = KeyMap.messageFor (KeyMap.favoriteKey slot)
+
+    Assert.Equal(Some(FavoriteRequested slot), message)
+
+[<Theory>]
+[<InlineData('0', 0)>]
+[<InlineData('7', 7)>]
+let ``a digit names the slot of that digit`` (character: char, digit: int) =
+    let slot = KeyMap.favoriteSlotOf (Key character)
+
+    Assert.Equal(Some(favoriteSlot digit), slot)
+
+[<Fact>]
+let ``a digit still held with Alt names its slot too`` () =
+    let slot = KeyMap.favoriteSlotOf Key.D7.WithAlt
+
+    Assert.Equal(Some(favoriteSlot 7), slot)
+
+[<Fact>]
+let ``a letter names no slot`` () =
+    let slot = KeyMap.favoriteSlotOf Key.K
+
+    Assert.Equal(None, slot)
+
+[<Fact>]
+let ``a digit with Ctrl names no slot`` () =
+    let slot = KeyMap.favoriteSlotOf Key.D7.WithCtrl
+
+    Assert.Equal(None, slot)
+
+[<Fact>]
+let ``escape names no slot`` () =
+    let slot = KeyMap.favoriteSlotOf Key.Esc
+
+    Assert.Equal(None, slot)

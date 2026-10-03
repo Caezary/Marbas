@@ -283,6 +283,14 @@ let private typedBefore (deps: Dependencies) kind =
     |> Result.map (History.inputs kind >> List.map _.Item)
     |> Result.defaultValue []
 
+let private reportFavorites (deps: Dependencies) error =
+    report deps FavoritesErrorMessage.Title (FavoritesErrorMessage.describe error)
+
+let private changeFavorites (deps: Dependencies) change =
+    match Favorites.change deps.FileSystem deps.FavoritesPath change with
+    | Ok _ -> ()
+    | Error error -> reportFavorites deps error
+
 let private rememberTyped (deps: Dependencies) dispatch kind text =
     EnteredText.tryCreate text
     |> Option.iter (fun typed -> changeHistory deps dispatch (Remember(Typed(kind, typed))) |> ignore)
@@ -482,6 +490,13 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
             |> HistoryAnswered
             |> dispatch
         | Error error -> report deps HistoryErrorMessage.Title (HistoryErrorMessage.describe error)
+    | PromptForFavoriteSlot place ->
+        deps.Prompts.AskFavoriteSlot place
+        |> Option.iter (fun slot -> changeFavorites deps (Keep(slot, place)))
+    | LookUpFavorite slot ->
+        match Favorites.load deps.FileSystem deps.FavoritesPath with
+        | Ok favorites -> Favorites.placeIn slot favorites |> Option.iter (FavoriteFound >> dispatch)
+        | Error error -> reportFavorites deps error
     | SaveSettings settings ->
         match Settings.save deps.FileSystem deps.SettingsPath settings with
         | Ok() -> ()

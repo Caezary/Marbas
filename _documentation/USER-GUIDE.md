@@ -260,6 +260,29 @@ could not read, rather than refusing to start. Each tab is a numbered block
 on; a file written by a version from before tabs opens as a single tab and is
 rewritten in the new spelling the next time the session is saved.
 
+## Favourite directories
+
+Ten directories can be kept under the digits `0` to `9`, the same ten for every
+tab and both panels.
+
+- `Alt+K` keeps the place the active panel stands in — a directory, or a level
+  inside an archive. A popup, *Add to favourites*, names the path and asks for
+  the digit — a path too long for the screen is shortened in the middle: press
+  `0` … `9` and the
+  place is kept under it, replacing whatever the digit held, without a further
+  word. Any other key, `Esc` included, closes the popup and keeps nothing. A
+  panel of search results has no place to keep.
+- `Alt+0` … `Alt+9` send the active panel to the place under that digit. A digit
+  that holds nothing does nothing; a place that is no longer there is reported
+  and the panel stays where it was. Going to a favourite is remembered in the
+  folder history like any other move.
+
+The favourites live in a file of their own beside the settings —
+`%APPDATA%\Marbas\favorites.conf` on Windows, `~/.config/Marbas/favorites.conf`
+on Linux and macOS — written the moment one is kept, so a crash loses nothing
+and two copies of Marbas running at once keep each other's. gnome-terminal
+takes `Alt+1` … `Alt+0` for its own tabs once it has more than one.
+
 ## History
 
 Every directory a panel goes to — by `Enter`, `..`, a drive, a root, a path

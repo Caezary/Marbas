@@ -27,6 +27,7 @@
     <Compile Include="Domain\SearchTextTests.fs" />
     <Compile Include="Domain\NamePatternTests.fs" />
     <Compile Include="Domain\LikenessTests.fs" />
+    <Compile Include="Domain\FavoriteSlotTests.fs" />
     <Compile Include="Domain\ProgramSettingsTests.fs" />
     <Compile Include="Domain\FindQueryTests.fs" />
     <Compile Include="Domain\EnteredTextTests.fs" />
@@ -61,6 +62,7 @@
     <Compile Include="FileSystem\ArchivePathTests.fs" />
     <Compile Include="FileSystem\PanelLocationTests.fs" />
     <Compile Include="FileSystem\HistoryTests.fs" />
+    <Compile Include="FileSystem\FavoritesTests.fs" />
     <Compile Include="FileSystem\ArchiveNameTests.fs" />
     <Compile Include="FileSystem\ArchiveTests.fs" />
     <Compile Include="FileSystem\ArchiveNamesTests.fs" />
@@ -118,6 +120,7 @@
     <Compile Include="State\ResultsOperationsTests.fs" />
     <Compile Include="State\FolderHistoryTests.fs" />
     <Compile Include="State\HistoryPopupTests.fs" />
+    <Compile Include="State\FavoriteTests.fs" />
     <Compile Include="State\LaunchHistoryTests.fs" />
     <Compile Include="State\FileHistoryTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
@@ -261,6 +264,7 @@
     <Compile Include="Integration\Dialogs\TabDialogTests.fs" />
     <Compile Include="Integration\Dialogs\HistoryDialogTests.fs" />
     <Compile Include="Integration\Dialogs\DriveDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\KeepFavoriteDialogTests.fs" />
     <Compile Include="Integration\Dialogs\PackDialogTests.fs" />
     <Compile Include="Integration\Dialogs\LinkDialogTests.fs" />
     <Compile Include="Integration\Dialogs\OpenWithDialogTests.fs" />
@@ -287,6 +291,7 @@
     <Compile Include="Integration\App\LinkKeyTests.fs" />
     <Compile Include="Integration\App\FindKeyTests.fs" />
     <Compile Include="Integration\App\HistoryKeyTests.fs" />
+    <Compile Include="Integration\App\FavoriteKeyTests.fs" />
     <Compile Include="Integration\App\UnpackKeyTests.fs" />
     <Compile Include="Integration\App\ArchiveBrowseTests.fs" />
     <Compile Include="Integration\App\ArchiveWriteKeyTests.fs" />

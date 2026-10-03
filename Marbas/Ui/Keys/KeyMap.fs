@@ -149,6 +149,17 @@ let closeTabKey = Key.F11.WithAlt.WithShift
 
 let saveSessionKey = Key.F9.WithShift
 
+let keepFavoriteKey = Key.K.WithAlt
+
+let private digitKey slot =
+    Key(char (int '0' + FavoriteSlot.value slot))
+
+let favoriteKey slot = (digitKey slot).WithAlt
+
+let favoriteSlotOf (key: Key) =
+    FavoriteSlot.all
+    |> List.tryFind (fun slot -> key = digitKey slot || key = favoriteKey slot)
+
 let historyKey = Key.F12.WithAlt
 
 let spareHistoryKey = Key.H.WithAlt.WithShift
@@ -271,7 +282,10 @@ let bindings =
       unlabelled insertKey (SelectionToggled Downward)
       unlabelled spaceKey (SelectionToggled Downward)
       unlabelled selectionDownKey (SelectionToggled Downward)
-      unlabelled selectionUpKey (SelectionToggled Upward) ]
+      unlabelled selectionUpKey (SelectionToggled Upward)
+      unlabelled keepFavoriteKey FavoriteKeepRequested ]
+    @ (FavoriteSlot.all
+       |> List.map (fun slot -> unlabelled (favoriteKey slot) (FavoriteRequested slot)))
 
 type BarSlot =
     { Name: string
