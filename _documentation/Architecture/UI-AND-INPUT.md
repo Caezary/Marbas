@@ -67,6 +67,22 @@ so the page jumps on `←`/`→` and the edge-stopping on `↑`/`↓` never see 
 They are off the bar, like `Insert` and `Space`: holding `Shift` therefore
 leaves the function-key row empty rather than showing a row of its own.
 
+**Marking by the entry under the cursor compares one part of the name.**
+`Likeness` in `Domain` is `SameExtension` or `SameStem`, and `Likeness.alike`
+compares that part of two names without regard to case. Both parts come from
+`EntryName`: `extension` is what follows the last dot, and is empty for a name
+with no dot, a dot only in front or a dot at the end, which is what the sort by
+extension already used; `stem` is the name with the extension and its dot taken
+off, and the whole name when the extension is empty. `PanelState.applyLikeness`
+takes the entry under the cursor as the anchor and shares `applyNames` with the
+patterns, so both add to and take from the one selection the same way. With
+`..` under the cursor there is no anchor and the command does nothing; `..` is
+filtered out like everywhere else, since it would otherwise be alike by extension
+with every name that has none. The keys are `Alt+E` and `Alt+N`, with `Shift`
+to unmark; the grey-key spellings are bound beside them for a driver that may
+deliver them one day, for the reasons measured in
+[Cross-platform](CROSS-PLATFORM.md).
+
 **The shifted page keys cannot be `KeyMap.bindings`, so `KeyMap` answers with a
 direction instead.** `bindings` maps a key to a whole `Message`, and these four
 keys only become a message once the view has measured the page. `KeyMap` keeps

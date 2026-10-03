@@ -26,6 +26,7 @@
     <Compile Include="Domain\ExecutabilityTests.fs" />
     <Compile Include="Domain\SearchTextTests.fs" />
     <Compile Include="Domain\NamePatternTests.fs" />
+    <Compile Include="Domain\LikenessTests.fs" />
     <Compile Include="Domain\ProgramSettingsTests.fs" />
     <Compile Include="Domain\FindQueryTests.fs" />
     <Compile Include="Domain\EnteredTextTests.fs" />
@@ -99,6 +100,7 @@
     <Compile Include="State\ArchiveCopyTests.fs" />
     <Compile Include="State\ArchiveWriteTests.fs" />
     <Compile Include="State\SelectionPatternTests.fs" />
+    <Compile Include="State\SelectionLikenessTests.fs" />
     <Compile Include="State\MkdirTests.fs" />
     <Compile Include="State\DeleteTests.fs" />
     <Compile Include="State\TransferTests.fs" />
@@ -236,6 +238,7 @@
     <Compile Include="Integration\Panels\RefreshKeyTests.fs" />
     <Compile Include="Integration\Panels\SelectionKeyTests.fs" />
     <Compile Include="Integration\Panels\SelectionPatternKeyTests.fs" />
+    <Compile Include="Integration\Panels\SelectionLikenessKeyTests.fs" />
     <Compile Include="Integration\Panels\SortKeyTests.fs" />
     <Compile Include="Integration\Panels\HiddenKeyTests.fs" />
   </ItemGroup>

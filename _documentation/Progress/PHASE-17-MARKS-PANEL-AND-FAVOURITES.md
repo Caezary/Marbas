@@ -84,3 +84,20 @@ all five terminals. The keys of phases 19 and 20 needed none. What each task now
 binds is the table in
 [the plan of phase 17](../Plan/PHASE-17-MARKS-PANEL-AND-FAVOURITES.md); the
 measurement is in [Cross-platform](../Architecture/CROSS-PLATFORM.md).
+
+**P17.3 marks by the entry under the cursor, on the letters P17.2 chose.**
+`Alt+E` and `Alt+Shift+E` mark and unmark every entry sharing the extension of
+the entry under the cursor, `Alt+N` and `Alt+Shift+N` every entry sharing its
+name without the extension; the grey-key spellings are bound beside them. The
+rule lives in `Domain`: a two-case `Likeness`, `SameExtension` or `SameStem`,
+compares one part of two names without regard to case, and `EntryName` gained
+`stem` beside the `extension` the sort by extension already had, so the two
+commands and the sort agree on what an extension is — `gz` for
+`archive.tar.gz`, nothing for `readme`, `.gitignore` or `odd.`.
+`PanelState.applyLikeness` takes the cursor entry as the anchor and shares one
+helper with the patterns, so a likeness and a pattern add to and take from the
+selection in the same way. The tests run on a listing of files, directories,
+double extensions and names without a dot, and one of them is what keeps `..`
+out: by extension, `..` is alike to every name without one, and a mutation that
+dropped the `selectable` filter was caught by it. Two key tests drive `Alt+E`
+and `Alt+Shift+N` through a real panel.

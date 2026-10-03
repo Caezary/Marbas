@@ -316,3 +316,43 @@ let ``Alt and an arrow walk from tab to tab`` () =
     Assert.Equal(Key.CursorLeft.WithAlt, KeyMap.previousTabKey)
     Assert.Equal(Some(TabCycled Forward), KeyMap.messageFor KeyMap.nextTabKey)
     Assert.Equal(Some(TabCycled Backward), KeyMap.messageFor KeyMap.previousTabKey)
+
+[<Fact>]
+let ``Alt+E and Alt+Shift+E mark and unmark by the extension under the cursor`` () =
+    let marking = KeyMap.messageFor KeyMap.markExtensionKey
+    let unmarking = KeyMap.messageFor KeyMap.unmarkExtensionKey
+
+    Assert.Equal(Key.E.WithAlt, KeyMap.markExtensionKey)
+    Assert.Equal(Key.E.WithAlt.WithShift, KeyMap.unmarkExtensionKey)
+    Assert.Equal(Some(LikenessRequested(Select, SameExtension)), marking)
+    Assert.Equal(Some(LikenessRequested(Deselect, SameExtension)), unmarking)
+
+[<Fact>]
+let ``Alt+N and Alt+Shift+N mark and unmark by the name under the cursor`` () =
+    let marking = KeyMap.messageFor KeyMap.markStemKey
+    let unmarking = KeyMap.messageFor KeyMap.unmarkStemKey
+
+    Assert.Equal(Key.N.WithAlt, KeyMap.markStemKey)
+    Assert.Equal(Key.N.WithAlt.WithShift, KeyMap.unmarkStemKey)
+    Assert.Equal(Some(LikenessRequested(Select, SameStem)), marking)
+    Assert.Equal(Some(LikenessRequested(Deselect, SameStem)), unmarking)
+
+[<Fact>]
+let ``Ctrl with the grey plus and minus ask the same by extension, where a driver delivers them`` () =
+    let marking = KeyMap.messageFor KeyMap.classicMarkExtensionKey
+    let unmarking = KeyMap.messageFor KeyMap.classicUnmarkExtensionKey
+
+    Assert.Equal((Key '+').WithCtrl, KeyMap.classicMarkExtensionKey)
+    Assert.Equal((Key '-').WithCtrl, KeyMap.classicUnmarkExtensionKey)
+    Assert.Equal(Some(LikenessRequested(Select, SameExtension)), marking)
+    Assert.Equal(Some(LikenessRequested(Deselect, SameExtension)), unmarking)
+
+[<Fact>]
+let ``Alt with the grey plus and minus ask the same by name, where a driver delivers them`` () =
+    let marking = KeyMap.messageFor KeyMap.classicMarkStemKey
+    let unmarking = KeyMap.messageFor KeyMap.classicUnmarkStemKey
+
+    Assert.Equal((Key '+').WithAlt, KeyMap.classicMarkStemKey)
+    Assert.Equal((Key '-').WithAlt, KeyMap.classicUnmarkStemKey)
+    Assert.Equal(Some(LikenessRequested(Select, SameStem)), marking)
+    Assert.Equal(Some(LikenessRequested(Deselect, SameStem)), unmarking)

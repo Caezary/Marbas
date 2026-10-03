@@ -17,3 +17,8 @@ module EntryName =
         match raw.LastIndexOf '.' with
         | dot when dot <= 0 || dot = raw.Length - 1 -> ""
         | dot -> raw.Substring(dot + 1)
+
+    let stem (EntryName raw as name) =
+        match extension name with
+        | "" -> raw
+        | found -> raw.Substring(0, raw.Length - found.Length - 1)

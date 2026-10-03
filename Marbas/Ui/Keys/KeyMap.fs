@@ -43,6 +43,22 @@ let selectPatternKey = Key '+'
 
 let deselectPatternKey = Key '-'
 
+let markExtensionKey = Key.E.WithAlt
+
+let unmarkExtensionKey = Key.E.WithAlt.WithShift
+
+let classicMarkExtensionKey = selectPatternKey.WithCtrl
+
+let classicUnmarkExtensionKey = deselectPatternKey.WithCtrl
+
+let markStemKey = Key.N.WithAlt
+
+let unmarkStemKey = Key.N.WithAlt.WithShift
+
+let classicMarkStemKey = selectPatternKey.WithAlt
+
+let classicUnmarkStemKey = deselectPatternKey.WithAlt
+
 let leftRootKey = Key.F1.WithAlt
 
 let rightRootKey = Key.F2.WithAlt
@@ -211,6 +227,14 @@ let bindings =
       unlabelled classicElevatedRunKey ElevatedRunRequested
       unlabelled selectPatternKey (PatternRequested Select)
       unlabelled deselectPatternKey (PatternRequested Deselect)
+      unlabelled markExtensionKey (LikenessRequested(Select, SameExtension))
+      unlabelled unmarkExtensionKey (LikenessRequested(Deselect, SameExtension))
+      unlabelled classicMarkExtensionKey (LikenessRequested(Select, SameExtension))
+      unlabelled classicUnmarkExtensionKey (LikenessRequested(Deselect, SameExtension))
+      unlabelled markStemKey (LikenessRequested(Select, SameStem))
+      unlabelled unmarkStemKey (LikenessRequested(Deselect, SameStem))
+      unlabelled classicMarkStemKey (LikenessRequested(Select, SameStem))
+      unlabelled classicUnmarkStemKey (LikenessRequested(Deselect, SameStem))
       unlabelled insertKey (SelectionToggled Downward)
       unlabelled spaceKey (SelectionToggled Downward)
       unlabelled selectionDownKey (SelectionToggled Downward)

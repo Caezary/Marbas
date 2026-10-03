@@ -51,6 +51,14 @@ needs to be installed. On Linux and macOS, mark the file executable first
 - `Shift+PgUp`/`Shift+PgDn` (or `Shift+←`/`Shift+→`) mark or unmark a whole
   page at once.
 - `+` / `-` mark or unmark everything matching a wildcard pattern (`*.fs`).
+- `Alt+E` / `Alt+Shift+E` mark or unmark every entry with the same extension
+  as the one under the cursor; `Alt+N` / `Alt+Shift+N` do the same for the same
+  name without the extension. The extension is what follows the last dot, so
+  `archive.tar.gz` goes with `data.gz` by extension and with `archive.tar.bz2`
+  by name; names without a dot go together. Case is ignored and directories
+  count too. The classic grey-key spellings — `Ctrl` or `Alt` with the `+` and
+  `-` of the numeric keypad — are bound as well, but no terminal measured so far
+  delivers them.
 
 Marked entries are shown in yellow, and stay marked while the cursor moves
 about the listing; the footer counts them and adds up their sizes.

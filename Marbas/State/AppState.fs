@@ -257,6 +257,9 @@ let toggleSelectionMoving direction side state =
 let applyPattern mode side pattern state =
     updatePanel side (PanelState.applyPattern mode pattern) state
 
+let applyLikeness mode side likeness state =
+    updatePanel side (PanelState.applyLikeness mode likeness) state
+
 let private asOperationError error =
     match error with
     | DirectoryNotFound path -> Operations.SourceNotFound path

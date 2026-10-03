@@ -179,6 +179,16 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   There is one selection per panel, so a pattern and the keys above add to and
   take from the same set: `*.txt` and then `Shift+↓` over one of the matches
   leaves the rest marked.
+- `Alt+E` and `Alt+Shift+E` mark and unmark every entry whose extension is the
+  one under the cursor; `Alt+N` and `Alt+Shift+N` every entry whose name without
+  the extension is. The extension is what follows the last dot — `gz` for
+  `archive.tar.gz`, whose name is then `archive.tar` — and a name with no dot,
+  or with a dot only in front, has an empty one, so `readme`, `Makefile` and a
+  directory called `src` go together. Case is ignored, directories take part
+  like files, and both add to and take from the same selection as everything
+  above. With `..` under the cursor the four keys do nothing, and `..` is never
+  marked. `Ctrl+grey+`, `Ctrl+grey-`, `Alt+grey+` and `Alt+grey-` are bound
+  beside them for a driver that may one day deliver them.
 - A rule separates the listing from the bottom row of each panel, and that row
   is never blank: it summarises the marks — how many entries and how many bytes
   they add up to — and falls back to what the directory holds (`3 files, 2

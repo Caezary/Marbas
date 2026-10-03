@@ -150,10 +150,23 @@ module PanelState =
         |> Array.map _.Name
         |> Set.ofArray
 
-    let applyPattern mode pattern (p: PanelState) =
+    let private applyNames mode names (p: PanelState) =
         match mode with
-        | Select -> { p with Selected = Set.union p.Selected (matching pattern p) }
-        | Deselect -> { p with Selected = Set.difference p.Selected (matching pattern p) }
+        | Select -> { p with Selected = Set.union p.Selected names }
+        | Deselect -> { p with Selected = Set.difference p.Selected names }
+
+    let applyPattern mode pattern (p: PanelState) = applyNames mode (matching pattern p) p
+
+    let private alikeTo likeness (anchor: Entry) (p: PanelState) =
+        p.Entries
+        |> Array.filter (fun e -> selectable e && Likeness.alike likeness anchor.Name e.Name)
+        |> Array.map _.Name
+        |> Set.ofArray
+
+    let applyLikeness mode likeness (p: PanelState) =
+        match cursorEntry p |> Option.filter selectable with
+        | Some anchor -> applyNames mode (alikeTo likeness anchor p) p
+        | None -> p
 
     let keepSurviving selected (p: PanelState) =
         let listed = p.Entries |> Array.map _.Name |> Set.ofArray

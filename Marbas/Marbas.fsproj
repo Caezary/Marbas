@@ -22,6 +22,7 @@
         <Compile Include="Domain\SearchText.fs" />
         <Compile Include="Domain\NamePattern.fs" />
         <Compile Include="Domain\SelectionMode.fs" />
+        <Compile Include="Domain\Likeness.fs" />
         <Compile Include="Domain\CursorDirection.fs" />
         <Compile Include="Domain\DeleteScope.fs" />
         <Compile Include="Domain\DeleteMode.fs" />

@@ -28,3 +28,14 @@ let ``a name ending in a dot has no extension`` () =
     let extension = EntryName.extension (en "odd.")
 
     Assert.Equal("", extension)
+
+[<Theory>]
+[<InlineData("archive.tar.gz", "archive.tar")>]
+[<InlineData("notes.TXT", "notes")>]
+[<InlineData("readme", "readme")>]
+[<InlineData(".gitignore", ".gitignore")>]
+[<InlineData("odd.", "odd.")>]
+let ``the stem is the name without its extension`` (name: string) (expected: string) =
+    let stem = EntryName.stem (en name)
+
+    Assert.Equal(expected, stem)

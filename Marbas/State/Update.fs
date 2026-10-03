@@ -23,6 +23,7 @@ type Message =
     | SearchCancelled
     | PatternRequested of SelectionMode
     | PatternEntered of SelectionMode * NamePattern
+    | LikenessRequested of SelectionMode * Likeness
     | MakeDirectoryRequested
     | NameEntered of name: EntryName
     | DeleteRequested of DeleteMode
@@ -378,6 +379,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | SearchCancelled -> stay (closeSearch state.Active state)
     | PatternRequested mode -> request state (PromptForPattern mode)
     | PatternEntered(mode, pattern) -> stay (applyPattern mode state.Active pattern state)
+    | LikenessRequested(mode, likeness) -> stay (applyLikeness mode state.Active likeness state)
     | MakeDirectoryRequested ->
         match (activePanel state).Path with
         | OnDisk _ -> request state PromptForName
