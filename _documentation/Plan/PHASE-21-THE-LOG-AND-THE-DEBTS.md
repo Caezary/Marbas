@@ -1,0 +1,173 @@
+# Phase 21 — The log and the debts
+
+Goal: when Marbas fails, it leaves behind enough to say why, and the code is
+left easier to change than it was found. The phase adds one feature — a log,
+written on a crash and, in debug mode, on every transition — and otherwise
+pays off what earlier phases left owing: a progress window that is flooded on a
+fast batch, a console editor on Unix that has to share the terminal, a flag
+argument, the effect interpreter sitting in the wrong layer, ports whose types
+say how they are called but not what they are for, mutation that nothing
+demands, test files too long to find a test in, and the manual checks no
+person has yet run.
+
+The phase was opened by a crash. `Esc` during a large `F5` closed the progress
+window while reports for it were still queued on the UI thread, the first of
+them asked the disposed dialog for its line, and the exception ended the
+application with nothing to show for it. That bug was fixed before the phase
+(described in [State and effects](../Architecture/STATE-AND-EFFECTS.md)); what
+it exposed was that a crash told nobody anything, and the first stage answers
+that.
+
+Three rules decide the order. Diagnostics come first, because every task after
+them is safer with a log to read. The fixes a user can see come next. The
+structural work runs from the lowest layer up and from the smallest change to
+the largest, and the test files are divided last, once the modules they test
+have stopped moving. The manual pass closes the phase, because it should be
+run against the binaries the phase ends with.
+
+Five decisions run through the first stage.
+
+**The log is a port.** `Dependencies` gains a log that takes a `LogEntry`, a
+union of what is worth recording: a message handled, an effect interpreted, a
+batch started, finished or cancelled with its counts, an error reported to the
+user, and a crash. Only `Adapters` writes the file. `Update` stays pure:
+`Runtime` is handed an observer it calls with each message it drains, so the
+host that owns the loop is the one place that sees every transition.
+
+**A crash is always written, debug or not.** The loop's own error handler
+(`app.Run(window, errorHandler)`), `AppDomain.UnhandledException` and
+`TaskScheduler.UnobservedTaskException` all write the exception with its stack
+trace. The application still ends — a loop that has thrown is in a state no
+test has seen — but once the terminal is restored the console says, in one
+line, where the log is.
+
+**Debug mode is asked for, not configured.** `--debug` on the command line
+turns on the transition log for that session; nothing is saved, so a forgotten
+switch cannot fill a disk. `Program.fs` hands its arguments to the adapter that
+reads the environment, and still only starts the application.
+
+**Names, not contents.** A message or an effect is logged by its case name and
+the panel it concerns; paths are written only for errors and batch items. No
+password, no file content and no clipboard text is ever written, and a test
+holds every case that carries an `ArchivePassword` to that.
+
+**The log lives beside the settings and stays small.** One file, `marbas.log`,
+next to the settings file, each line stamped with a `DateTimeOffset`. When a
+session starts the file is cut to its last megabyte, so it holds the recent
+past and never grows without bound.
+
+## Stage 1 — Seeing what went wrong
+
+- **P21.1 A crash leaves a log** — the log port, its file adapter and the
+  three crash hooks; the one-line pointer printed after the terminal is
+  restored. *Done when:* `LogEntry` is formatted and the file is cut to its
+  last megabyte on `MockFileSystem`, a probe whose loop throws leaves the stack
+  trace in the file and the pointer on the console, and an exception thrown on
+  a background task is written too.
+- **P21.2 Debug mode** — `--debug` turns on the observer in `Runtime`, the
+  effect log in `Shell.interpret` and the batch entries in `BatchRunner`, with
+  the redaction the decision above describes. *Done when:* a message, an
+  effect and a cancelled batch each leave their line in a test with a fake log,
+  no line is written without the switch, and no case carrying a password writes
+  it.
+- **P21.3 The progress window shows the latest path** — a batch's report no
+  longer queues an `Invoke` per file: it overwrites one cell, and a timer on the
+  UI thread shows what the cell holds every 100 ms, the cadence `SearchRunner`
+  gathers at. The timer is removed when the window closes, so a report can no
+  longer outlive its dialog by construction rather than by the second check that
+  guards it today. *Done when:* a report is proved to queue nothing, a tick to
+  show the latest path and a tick with nothing new to show nothing, and a batch
+  of many small files is timed before and after in
+  [Measurements](../Progress/MEASUREMENTS.md).
+
+## Stage 2 — The terminal handed over
+
+- **P21.4 A console editor gets the terminal** — on Unix, `F4` shuts the
+  Terminal.Gui driver down before starting the editor and brings it back after
+  it exits, so a full-screen editor receives every key and the panels are
+  redrawn whole; Windows keeps today's path behind a switch. A spike first
+  proves that the driver can be taken down and brought back inside one
+  `IApplication`. *Done when:* the switch is proved per platform, a full-screen
+  editor round-trips by hand on Linux, and the entry in
+  [Rough edges](../ROUGH-EDGES.md) is gone.
+
+## Stage 3 — The structure
+
+- **P21.5 Replacing is said by name** — `Operations.copyFile` and `moveFile`
+  lose their `bool`: copying always replaces, so its argument goes, and moving
+  takes a union that says whether an existing target is replaced (every
+  transfer) or kept (the anonymous rename a wipe makes). *Done when:* no
+  function in `Operations` takes a `bool` for what it does, and the suite
+  passes unchanged.
+- **P21.6 `Shell` and `Ports` join `State`** — neither draws anything: `Ports`
+  is the shape of the outside world and `Shell` interprets effects into it. Both
+  move under `State/`, and with them the wording of `Ui/Messages`, which is
+  plain text with no view in it and whose only readers are `Shell`,
+  `Adapters/Prompts` and one dialog — all of them above `State`. `Modifier` moves
+  to `Domain`; `Modifiers.ofKey`, which reads a Terminal.Gui key, stays in
+  `Ui`. What `MainWindow.create` decides rather than wires — restoring the
+  settings, opening the first paths, the first watch — becomes a `State`
+  function the window calls. *Done when:* `Ui/App` holds views and wiring only,
+  nothing under `State` opens a `Terminal.Gui` namespace, the dependency rule in
+  [Overview](../Architecture/OVERVIEW.md) is restated for the new layout, and
+  the suite passes with its tests moved alongside.
+- **P21.7 Ports say what they are for** — a port that takes functions takes a
+  request record instead, the way the prompts already do: `Runners.Batch` takes
+  a title, the work and what to do with the result as named fields, and so do
+  `Measure`, `Search` and the two `Watches`. A function type that stays a field
+  (`LinkPrompt.Refusal`, `HistoryPrompt.Change`, `FavoritesPrompt.Change`) is
+  given a name that says what it answers. *Done when:* no field of
+  `Dependencies` is a function whose argument is another function, and `Fakes`
+  builds every port from named parts.
+- **P21.8 Where mutation is allowed** — a rule in
+  [Coding style](../coding-style-conventions.md) says where a mutable binding or
+  a reference cell earns its place: a measured hot loop confined to one
+  function (`LineIndex`, `TextEncoding`, `ArchiveReader`, `RewindingStream`), an
+  interop call that demands a `byref` (`NativeLinks`, `ClassicScheme`), state
+  shared with another thread inside an adapter, and `Runtime`'s single cell.
+  Every other use in `FileSystem` and `State` — the counters of
+  `FileSearch.run`, the mutable record in `Archive`'s walk — becomes a fold or
+  a returned value. *Done when:* each remaining mutable binding outside `Ui`
+  falls under a clause of the rule, the hot loops are timed before and after in
+  [Measurements](../Progress/MEASUREMENTS.md), and the suite passes unchanged.
+- **P21.9 Views keep their state in one value** — `FileViewer`,
+  `ResultsWindow`, `ResultRow` and `SettingsDialog` hold a handful of mutable
+  locals each, changed from several event handlers. Each gathers them into one
+  immutable record behind one cell, with the changes written as functions over
+  the record, so the transitions can be tested without a view. *Done when:* each
+  view has a single cell, its transitions have unit tests, and the rendered
+  screens are unchanged before and after.
+
+## Stage 4 — The suite and the platforms
+
+- **P21.10 Test files by feature** — no test file runs past a thousand lines.
+  `ShellTests` (about 2,600 lines, 161 tests) splits along the features its
+  helpers already group — transfers, history, typed text, packing, unpacking
+  and the rest — the way `ShellPlacesTests` was split from it, and `UpdateTests`
+  splits the same way. Shared helpers move into a fixture module, as
+  `ArchiveFixture` does for the archive tests. *Done when:* the longest test
+  file is under a thousand lines, the count of tests is the same before and
+  after, and [Testing](../Architecture/TESTING.md) states the limit.
+- **P21.11 The manual rows, by hand** — every row of
+  [Cross-platform](../Architecture/CROSS-PLATFORM.md) marked *manual* is run
+  against the published binaries of this phase, on Windows and on a Linux
+  desktop, by a person at the terminal: colours, a resized terminal, the mouse,
+  a real Unix permission bit, the trash, an archive made by another tool, `F4`
+  with a full-screen console editor, and the GNOME key grabs that
+  [Rough edges](../ROUGH-EDGES.md) read out of a configuration rather than
+  pressed. *Done when:* each manual row carries the date and the outcome on
+  each platform, and every row that failed is an entry in
+  [Rough edges](../ROUGH-EDGES.md).
+
+Every task updates [What works today](../Progress/WHAT-WORKS.md) where the
+behaviour changes and [Overview](../Architecture/OVERVIEW.md) where a module
+moves. P21.1 adds `Architecture/DIAGNOSTICS.md` for the log, and P21.2
+documents `--debug` in [the user guide](../USER-GUIDE.md).
+
+## Left for a later phase
+
+- **A log level in the settings** — debug mode is a switch for one session;
+  making it persistent, or finer than on and off, waits until a session in the
+  field shows it is needed.
+- **Sending a crash report** — the log stays on the user's disk; nothing is
+  uploaded.
