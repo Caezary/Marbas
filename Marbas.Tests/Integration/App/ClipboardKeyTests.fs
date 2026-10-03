@@ -65,3 +65,31 @@ let ``a clipboard the system does not offer is reported once, however often the 
     pressKey window KeyMap.spareCopyNamesKey
 
     Assert.Equal<string list>([ ClipboardErrorMessage.Title ], List.ofSeq reported)
+
+[<Fact>]
+let ``Alt+Shift+Ins puts the full path under the cursor on the clipboard`` () =
+    let handed = ResizeArray<string list>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies (mockFs ()) (at "start") with
+                Clipboard.SetText = taking handed }
+
+    pressKey window Key.CursorDown
+    pressKey window KeyMap.copyPathsKey
+
+    Assert.Equal<string list list>([ [ at "start/docs" ] ], List.ofSeq handed)
+
+[<Fact>]
+let ``Alt+P puts the full path under the cursor on the clipboard`` () =
+    let handed = ResizeArray<string list>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies (mockFs ()) (at "start") with
+                Clipboard.SetText = taking handed }
+
+    pressKey window Key.CursorDown
+    pressKey window KeyMap.spareCopyPathsKey
+
+    Assert.Equal<string list list>([ [ at "start/docs" ] ], List.ofSeq handed)

@@ -184,3 +184,82 @@ let ``a clipboard that failed is reported every time`` () =
     let result = update fs (ClipboardUnwritten failure) reported.State
 
     Assert.Equal<Effect list>([ ReportClipboardError failure ], result.Effects)
+
+[<Fact>]
+let ``the full path of the entry under the cursor is put on the clipboard`` () =
+    let fs = mockFs ()
+    let state = started fs |> standingOn "notes.txt"
+
+    let result = update fs PathsCopyRequested state
+
+    Assert.Equal<Effect list>(copying [ at "start/notes.txt" ], result.Effects)
+
+[<Fact>]
+let ``the full path of a directory carries no separator after it`` () =
+    let fs = mockFs ()
+    let state = started fs |> standingOn "docs"
+
+    let result = update fs PathsCopyRequested state
+
+    Assert.Equal<Effect list>(copying [ at "start/docs" ], result.Effects)
+
+[<Fact>]
+let ``the full paths of the marked entries come in the order of the listing`` () =
+    let fs = mockFs ()
+    let state = started fs |> markedOn [ "readme.txt"; "docs" ] |> standingOn "notes.txt"
+
+    let result = update fs PathsCopyRequested state
+
+    Assert.Equal<Effect list>(copying [ at "start/docs"; at "start/readme.txt" ], result.Effects)
+
+[<Fact>]
+let ``no path is copied with the parent entry under the cursor and nothing marked`` () =
+    let fs = mockFs ()
+    let state = started fs |> standingOn ".."
+
+    let result = update fs PathsCopyRequested state
+
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``the full path of an entry inside an archive is spelled the way the panel title spells it`` () =
+    let fs = ArchiveFixture.packed ()
+    let docs = ArchivePath.tryCreate "docs" |> Expect.some
+
+    let state =
+        ArchiveFixture.loaded fs
+        |> standInside fs Left (InArchive(ArchiveFixture.archive, docs))
+        |> Expect.ok
+        |> update fs (PatternEntered(Select, everything))
+        |> _.State
+
+    let result = update fs PathsCopyRequested state
+
+    Assert.Equal<Effect list>(
+        copying [ at "start/backup.zip/docs/deep"; at "start/backup.zip/docs/inner.txt" ],
+        result.Effects
+    )
+
+[<Fact>]
+let ``each hit in a panel of search results gives its own full path, inside an archive too`` () =
+    let fs = ArchiveFixture.packed ()
+    fs.AddFile(at "start/a/one.txt", MockFileData "1")
+    let docs = ArchivePath.tryCreate "docs" |> Expect.some
+
+    let insideArchive =
+        { Location = InArchive(ArchiveFixture.archive, docs)
+          Entry = file "inner.txt" }
+
+    let state =
+        ArchiveFixture.loaded fs
+        |> update fs (sentToPanel [ hitIn "start/a" "one.txt"; insideArchive ])
+        |> _.State
+        |> update fs (PatternEntered(Select, everything))
+        |> _.State
+
+    let result = update fs PathsCopyRequested state
+
+    Assert.Equal<Effect list>(
+        copying [ at "start/a/one.txt"; at "start/backup.zip/docs/inner.txt" ],
+        result.Effects
+    )

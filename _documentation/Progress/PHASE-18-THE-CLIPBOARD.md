@@ -63,3 +63,31 @@ The real Windows adapter was then left in place and `↓ Ins Ins Ctrl+Ins` press
 over the same directory; PowerShell's `Get-Clipboard` read back
 `docs\r\nnotes.txt` — two lines, the Windows break between them and none after
 the last — so another program sees what the adapter wrote.
+
+**P18.2 copied the full paths, and taught one function to spell a child of
+any place.** `Alt+Shift+Ins` and `Alt+P` raise `PathsCopyRequested`; the
+transition shares its last step with the names — lines to a `ClipboardText`,
+nothing when the list is empty — and differs only in what it reads:
+`AppState.operationSpellings`. The ready-made `operationPaths` would not do:
+it answers paths on the disk alone, and drops a hit inside an archive, which is
+exactly one of the three cases the task names.
+
+The spelling an entry needed already existed twice over — `FindHit.spelled`
+for a hit, and `ArchivePath.spelled` beneath a level for a panel inside an
+archive — so it became `PanelLocation.spelledChild`, the spelling of a name
+inside any place, and `FindHit.spelled` became that function applied to the
+hit's own location. A target in a panel of search results is spelled through
+its hit; any other through the place the panel shows. An entry inside an
+archive therefore comes out as the title spells its level, followed by its name
+(`C:\start\backup.zip\docs\inner.txt`), and a directory with no separator after
+it, because nothing adds one.
+
+The tests: three in `PanelLocationTests` for a child on disk, at the top of an
+archive and on a level inside one; six in `State/ClipboardTests` — the cursor
+entry, a directory, marked entries in listing order, `..` alone, a level inside
+an archive, and search results holding a hit on disk and one inside an archive;
+both keys in `KeyMapTests` and through `MainWindow` in `ClipboardKeyTests`. The
+`render-tui-screen` probe pressed `↓ Alt+Shift+Ins`, `↓ Alt+P` and
+`Ins Ins Alt+P` through a running `Application` over the scratch directory of
+P18.1 and got the full path of `docs`, of `notes.txt`, and of `notes.txt` and
+`readme.txt`.

@@ -71,16 +71,19 @@ module PanelLocation =
 
     let value (fs: IFileSystem) location = spelled fs location |> FileSystemPath.value
 
+    let spelledChild (fs: IFileSystem) location (name: EntryName) =
+        match location with
+        | OnDisk directory -> FileSystemPath.combine fs directory (EntryName.value name)
+        | InArchive(archive, level) -> ArchivePath.spelled fs archive (ArchivePath.child level name)
+        | SearchResults _ -> spelled fs location
+
 module FindHit =
 
     let archivePlace (hit: FindHit) =
         PanelLocation.archivePlace hit.Location hit.Entry.Name
 
     let spelled (fs: IFileSystem) hit =
-        match hit.Location with
-        | OnDisk directory -> FileSystemPath.combine fs directory (EntryName.value hit.Entry.Name)
-        | InArchive(archive, level) -> ArchivePath.spelled fs archive (ArchivePath.child level hit.Entry.Name)
-        | SearchResults _ -> PanelLocation.spelled fs hit.Location
+        PanelLocation.spelledChild fs hit.Location hit.Entry.Name
 
     let private stands (fs: IFileSystem) (path: FileSystemPath) =
         let spelled = FileSystemPath.value path

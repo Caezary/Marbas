@@ -373,6 +373,14 @@ let private entryPath (fs: IFileSystem) panel (entry: Entry) =
         |> Option.map (FindHit.spelled fs)
     | location -> PanelLocation.combine fs location (EntryName.value entry.Name)
 
+let private spelledTarget (fs: IFileSystem) panel (entry: Entry) =
+    match PanelState.hitAt panel entry with
+    | Some hit -> FindHit.spelled fs hit
+    | None -> PanelLocation.spelledChild fs panel.Path entry.Name
+
+let operationSpellings (fs: IFileSystem) panel =
+    PanelState.operationTargets panel |> List.map (spelledTarget fs panel)
+
 let operationPaths (fs: IFileSystem) panel =
     PanelState.operationTargets panel |> List.choose (entryPath fs panel)
 

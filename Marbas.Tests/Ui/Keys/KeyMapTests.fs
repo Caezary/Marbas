@@ -511,3 +511,17 @@ let ``Alt+C copies the names where a terminal keeps Ctrl+Ins for itself`` () =
 
     Assert.Equal(Key.C.WithAlt, KeyMap.spareCopyNamesKey)
     Assert.Equal(Some NamesCopyRequested, message)
+
+[<Fact>]
+let ``Alt+Shift+Ins copies the full paths of the targets`` () =
+    let message = KeyMap.messageFor KeyMap.copyPathsKey
+
+    Assert.Equal(Key.InsertChar.WithAlt.WithShift, KeyMap.copyPathsKey)
+    Assert.Equal(Some PathsCopyRequested, message)
+
+[<Fact>]
+let ``Alt+P copies the full paths where a terminal keeps Alt+Shift+Ins for itself`` () =
+    let message = KeyMap.messageFor KeyMap.spareCopyPathsKey
+
+    Assert.Equal(Key.P.WithAlt, KeyMap.spareCopyPathsKey)
+    Assert.Equal(Some PathsCopyRequested, message)

@@ -495,6 +495,19 @@ turns down, so nothing is asked of the clipboard at all. The marks are left as
 they were: copying text changes nothing on the disk, so there is nothing to
 clear them for.
 
+**A full path is spelled the way the panel title spells a place.**
+`Alt+Shift+Ins` and `Alt+P` raise `PathsCopyRequested`, which reads
+`AppState.operationSpellings`: a target that is a search hit is spelled by
+`FindHit.spelled`, and any other by `PanelLocation.spelledChild` of the place
+the panel shows — a path in the directory on disk, or the archive's own path
+with the entry's segments below it, as `PanelLocation.spelled` does for a level.
+`FindHit.spelled` is now `spelledChild` of the hit's own location, so the two
+cannot drift apart. A spelling through an archive is no path on the disk, and
+it is not meant to be one: it names the entry the way the title and the status
+line already do, and P18.5 is the task that reads such a path back. That is
+also why the copy does not go through `operationPaths`, which answers only what
+exists on disk and leaves a hit inside an archive out.
+
 **Text is lines, and the line break belongs to the system.** The state answers
 `PutOnClipboard` with the names as lines; the Windows adapter joins them with
 the system line break and adds none after the last, so a single name pastes into

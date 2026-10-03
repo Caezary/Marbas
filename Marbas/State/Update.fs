@@ -85,6 +85,7 @@ type Message =
     | FavoriteFound of Place
     | FavoritesRequested
     | NamesCopyRequested
+    | PathsCopyRequested
     | ClipboardUnwritten of ClipboardError
     | QuitRequested
 
@@ -371,6 +372,11 @@ let private chosenFromHistory (fs: IFileSystem) state choice =
         | Some(location, name) -> standBeside fs state.Active location name state |> applyListing state
         | None -> stay state
 
+let private copyingText state lines =
+    ClipboardText.tryCreate lines
+    |> Option.map (PutOnClipboard >> request state)
+    |> Option.defaultValue (stay state)
+
 let private forGood mode =
     match mode with
     | ToTrash -> Permanently
@@ -636,9 +642,11 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | NamesCopyRequested ->
         PanelState.operationNames (activePanel state)
         |> List.map EntryName.value
-        |> ClipboardText.tryCreate
-        |> Option.map (PutOnClipboard >> request state)
-        |> Option.defaultValue (stay state)
+        |> copyingText state
+    | PathsCopyRequested ->
+        operationSpellings fs (activePanel state)
+        |> List.map FileSystemPath.value
+        |> copyingText state
     | ClipboardUnwritten ClipboardUnavailable ->
         match state.ClipboardReport with
         | Unreported -> request { state with ClipboardReport = Reported } (ReportClipboardError ClipboardUnavailable)

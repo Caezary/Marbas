@@ -141,6 +141,10 @@ and nothing marked there is nothing to copy.
   directory and no line break after the last name, so a single name pastes
   cleanly into a field. In a panel of search results each hit gives its own
   name, not the path shown in the panel.
+- `Alt+Shift+Ins` — or `Alt+P` — puts their full paths on the clipboard the same
+  way. An entry inside an archive is spelled as the panel title spells it,
+  through the archive: `C:\work\backup.zip\docs\notes.txt`. In a panel of
+  search results each hit gives its own full path, wherever it was found.
 
 On Linux and macOS Marbas cannot reach the clipboard yet; the first attempt
 in a session says so, and later ones stay quiet.

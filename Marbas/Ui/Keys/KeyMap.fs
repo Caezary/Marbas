@@ -174,6 +174,10 @@ let copyNamesKey = Key.InsertChar.WithCtrl
 
 let spareCopyNamesKey = Key.C.WithAlt
 
+let copyPathsKey = Key.InsertChar.WithAlt.WithShift
+
+let spareCopyPathsKey = Key.P.WithAlt
+
 let historyKey = Key.F12.WithAlt
 
 let spareHistoryKey = Key.H.WithAlt.WithShift
@@ -301,7 +305,9 @@ let bindings =
       unlabelled selectionUpKey (SelectionToggled Upward)
       unlabelled keepFavoriteKey FavoriteKeepRequested
       unlabelled copyNamesKey NamesCopyRequested
-      unlabelled spareCopyNamesKey NamesCopyRequested ]
+      unlabelled spareCopyNamesKey NamesCopyRequested
+      unlabelled copyPathsKey PathsCopyRequested
+      unlabelled spareCopyPathsKey PathsCopyRequested ]
     @ (FavoriteSlot.all
        |> List.map (fun slot -> unlabelled (favoriteKey slot) (FavoriteRequested slot)))
 

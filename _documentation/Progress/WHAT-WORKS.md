@@ -309,6 +309,11 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   were. Windows only: on Unix the clipboard refuses, and the refusal is shown
   the first time in a session and never again; a failure of the Windows
   clipboard itself is reported every time, with the reason the system gave.
+- `Alt+Shift+Ins`, and `Alt+P` beside it, put the full paths of the same
+  targets on the clipboard in the same shape: a path on disk as it stands, an
+  entry inside an archive spelled through the archive the way the panel title
+  spells a level (`C:\work\backup.zip\docs\notes.txt`), and a hit in a panel of
+  search results by its own full path, on disk or inside an archive alike.
 - While `F5` or `F6` works, a progress window names the file being handled and
   the rest of the app keeps drawing, because the batch runs on a background
   thread. `Esc` (or the Cancel button) closes that window and the batch stops

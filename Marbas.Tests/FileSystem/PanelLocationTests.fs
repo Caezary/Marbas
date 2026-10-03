@@ -72,6 +72,30 @@ let ``a name in a location inside an archive is no path on disk`` () =
 
     Assert.Equal(None, PanelLocation.combine fs location "notes.txt")
 
+[<Fact>]
+let ``a child of a location on disk is spelled as a path in that directory`` () =
+    let location = OnDisk(fp (at "start"))
+
+    let spelled = PanelLocation.spelledChild fs location (EntryName.create "notes.txt")
+
+    Assert.Equal(fp (at "start/notes.txt"), spelled)
+
+[<Fact>]
+let ``a child of the top level of an archive is spelled below the archive`` () =
+    let location = InArchive(archive, ArchivePath.root)
+
+    let spelled = PanelLocation.spelledChild fs location (EntryName.create "notes.txt")
+
+    Assert.Equal(fp (at "start/backup.zip/notes.txt"), spelled)
+
+[<Fact>]
+let ``a child of a level inside an archive is spelled below that level`` () =
+    let location = InArchive(archive, inside "docs/deep")
+
+    let spelled = PanelLocation.spelledChild fs location (EntryName.create "leaf.txt")
+
+    Assert.Equal(fp (at "start/backup.zip/docs/deep/leaf.txt"), spelled)
+
 let private entry name =
     { Name = EntryName.create name
       Kind = File
