@@ -264,3 +264,12 @@ let ``a history that could not be written is not reported again in the same sess
     let result = update fs (HistoryUnwritten error) state
 
     Assert.Empty result.Effects
+
+[<Fact>]
+let ``going up one level remembers the directory it lands in`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs |> loadPanel fs Left (fp (at "start/docs")) |> Expect.ok |> setCursor Left 1
+
+    let result = update fs UpOneLevelRequested state
+
+    Assert.Contains(visited "start", result.Effects)

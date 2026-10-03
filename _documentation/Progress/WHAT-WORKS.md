@@ -71,6 +71,14 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   naming a program for `zip` in the popup. `Ctrl+PgDn` is bound to the same
   command and does arrive under Windows Terminal; the letter is there for the
   terminals that swallow it.
+- `Ctrl+PgUp` is the mirror of it and goes up one level, whatever the cursor
+  stands on — exactly what `Enter` on `..` does: the parent directory with the
+  cursor on the directory just left, the level above inside an archive, and out
+  of the archive, onto its file, at its top level. From a panel of search
+  results it goes back to where the search was started, on the entry the panel
+  stood on then. On a root it does nothing. The landing is remembered in the
+  folder history. `Alt+U` is bound beside it, because gnome-terminal keeps
+  `Ctrl+PgUp` for its own tabs once it has several.
 - `Alt+R` on a file opens a popup listing the programs the system already
   knows for that extension — read from the registry on Windows, from the XDG
   mime database on Linux — with a field for a path of one's own and a box that
@@ -366,7 +374,7 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   and a directory that is no longer there falls back to the working directory
   rather than raising an error at startup. A missing file is a first start. When
   the file cannot be written at all, the app quits without complaining.
-- Every directory a panel lands on — `Enter`, `..`, `Alt+W`, a root, a drive,
+- Every directory a panel lands on — `Enter`, `..`, `Alt+W`, `Ctrl+PgUp`, a root, a drive,
   a path opened, a search hit, a level inside an archive — is remembered in
   `history.conf` beside the settings, newest first, a hundred at most, a
   directory visited again moving to the top rather than repeating. A re-read, a

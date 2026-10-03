@@ -407,3 +407,17 @@ let ``Ctrl+M does the same, where a driver tells it from Enter`` () =
 
     Assert.Equal(Key.M.WithCtrl, KeyMap.classicRecallMarksKey)
     Assert.Equal(Some MarksRecalled, message)
+
+[<Fact>]
+let ``Ctrl+PgUp goes up one level`` () =
+    let message = KeyMap.messageFor KeyMap.upOneLevelKey
+
+    Assert.Equal(Key.PageUp.WithCtrl, KeyMap.upOneLevelKey)
+    Assert.Equal(Some UpOneLevelRequested, message)
+
+[<Fact>]
+let ``Alt+U goes up one level where a terminal keeps Ctrl+PgUp for its tabs`` () =
+    let message = KeyMap.messageFor KeyMap.spareUpOneLevelKey
+
+    Assert.Equal(Key.U.WithAlt, KeyMap.spareUpOneLevelKey)
+    Assert.Equal(Some UpOneLevelRequested, message)

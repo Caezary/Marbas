@@ -224,11 +224,12 @@ let private focusByNameOrTop name =
     | Some name -> ByName name
     | None -> Top
 
+let private backToSearchStart (fs: IFileSystem) side (found: FoundEntries) state =
+    loadLocationFocusing fs side found.Origin (focusByNameOrTop found.Returning) state
+
 let private steppingOffResults (fs: IFileSystem) side state =
     match (panel side state).Path with
-    | SearchResults found ->
-        loadLocationFocusing fs side found.Origin (focusByNameOrTop found.Returning) state
-        |> Result.defaultValue state
+    | SearchResults found -> backToSearchStart fs side found state |> Result.defaultValue state
     | _ -> state
 
 let openTab (fs: IFileSystem) (state: AppState) =
@@ -661,6 +662,12 @@ let private enterInResults (fs: IFileSystem) side panel found (entry: Entry) sta
     | Directory, Some location when entry.Name = ParentName ->
         loadLocationFocusing fs side location (focusByNameOrTop found.Returning) state
     | Directory, Some location -> loadLocationFocusing fs side location Top state
+
+let upOneLevel (fs: IFileSystem) (state: AppState) =
+    match (activePanel state).Path with
+    | OnDisk path -> navigateToParent fs state.Active path state
+    | InArchive(archive, level) -> climbLevel fs state.Active archive level state
+    | SearchResults found -> backToSearchStart fs state.Active found state
 
 let enter (fs: IFileSystem) state =
     let panel = activePanel state

@@ -6,6 +6,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Domain
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Tests
 
@@ -91,3 +92,22 @@ let ``enter acts on the active panel only`` () =
 
     Assert.Equal(OnDisk(fp (at "start/docs")), updated.Right.Path)
     Assert.Equal(OnDisk(fp (at "start")), updated.Left.Path)
+
+[<Fact>]
+let ``up one level goes to the parent with the cursor on the directory left, wherever the cursor stood`` () =
+    let fs = mockFs ()
+    let state = create (fp (at "start")) |> loaded Left (fp (at "start/docs")) fs |> setCursor Left 1
+
+    let up = upOneLevel fs state |> Expect.ok
+
+    Assert.Equal(OnDisk(fp (at "start")), up.Left.Path)
+    Assert.Equal(Some "docs", PanelState.cursorEntry up.Left |> Option.map (_.Name >> EntryName.value))
+
+[<Fact>]
+let ``up one level on a root stays where it is`` () =
+    let fs = mockFs ()
+    let state = create (fp (at "start")) |> loaded Left (fp (at "")) fs
+
+    let up = upOneLevel fs state |> Expect.ok
+
+    Assert.Equal(OnDisk(fp (at "")), up.Left.Path)

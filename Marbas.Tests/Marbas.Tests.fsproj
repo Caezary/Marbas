@@ -242,6 +242,7 @@
     <Compile Include="Integration\Panels\SelectionPatternKeyTests.fs" />
     <Compile Include="Integration\Panels\SelectionLikenessKeyTests.fs" />
     <Compile Include="Integration\Panels\SelectionInversionKeyTests.fs" />
+    <Compile Include="Integration\Panels\UpOneLevelKeyTests.fs" />
     <Compile Include="Integration\Panels\SortKeyTests.fs" />
     <Compile Include="Integration\Panels\HiddenKeyTests.fs" />
   </ItemGroup>

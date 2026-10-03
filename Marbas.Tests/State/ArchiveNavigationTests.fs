@@ -169,3 +169,23 @@ let ``a marked entry inside an archive keeps its mark through a re-read`` () =
     let result = update fs RefreshRequested marked
 
     Assert.Equal<Set<EntryName>>(Set.singleton (en "notes.txt"), result.State.Left.Selected)
+
+[<Fact>]
+let ``up one level inside an archive goes to the level above with the cursor on the level left`` () =
+    let fs = packed ()
+    let state = standingInside fs Left |> setCursor Left 1 |> opened fs |> setCursor Left 2
+
+    let up = upOneLevel fs state |> Expect.ok
+
+    Assert.Equal(InArchive(archive, ArchivePath.root), up.Left.Path)
+    Assert.Equal(Some "docs", cursorName up.Left)
+
+[<Fact>]
+let ``up one level at the top of an archive leaves it with the cursor on it`` () =
+    let fs = packed ()
+    let state = standingInside fs Left |> setCursor Left 1
+
+    let up = upOneLevel fs state |> Expect.ok
+
+    Assert.Equal(OnDisk(fp (at "start")), up.Left.Path)
+    Assert.Equal(Some "backup.zip", cursorName up.Left)

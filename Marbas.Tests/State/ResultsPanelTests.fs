@@ -354,3 +354,13 @@ let ``a reload the user did not ask for leaves the archive that cannot be read u
     let result = update fs HiddenToggled state
 
     Assert.Empty result.Effects
+
+[<Fact>]
+let ``up one level from the results goes back to where the search started, on the entry it left`` () =
+    let fs = mockFs ()
+    let state = loaded fs |> setCursor Left 1 |> showing fs |> setCursor Left 2
+
+    let up = update fs UpOneLevelRequested state |> _.State
+
+    Assert.Equal(OnDisk(fp (at "start")), (activePanel up).Path)
+    Assert.Equal(Some "docs", cursorName up)

@@ -123,6 +123,10 @@ let walkIntoKey = Key.W.WithAlt
 
 let classicWalkIntoKey = Key.PageDown.WithCtrl
 
+let upOneLevelKey = Key.PageUp.WithCtrl
+
+let spareUpOneLevelKey = Key.U.WithAlt
+
 let openWithKey = Key.R.WithAlt
 
 let classicOpenWithKey = Key.Enter.WithShift
@@ -239,6 +243,8 @@ let bindings =
       unlabelled previousTabKey (TabCycled Backward)
       unlabelled walkIntoKey WalkIntoRequested
       unlabelled classicWalkIntoKey WalkIntoRequested
+      unlabelled upOneLevelKey UpOneLevelRequested
+      unlabelled spareUpOneLevelKey UpOneLevelRequested
       unlabelled openWithKey OpenWithRequested
       unlabelled classicOpenWithKey OpenWithRequested
       unlabelled elevatedRunKey ElevatedRunRequested

@@ -12,6 +12,7 @@ type Message =
     | PanelFocused of PanelSide
     | EntryOpened
     | WalkIntoRequested
+    | UpOneLevelRequested
     | RefreshRequested
     | ExternalChangeDetected
     | SelectionToggled of CursorDirection
@@ -371,6 +372,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | PanelFocused side -> stay (activate side state)
     | EntryOpened -> openCursorEntry fs state
     | WalkIntoRequested -> enter fs state |> applyListing state
+    | UpOneLevelRequested -> upOneLevel fs state |> applyListing state
     | RefreshRequested -> refreshWithRefusals fs state |> applyListingWithRefusals state
     | ExternalChangeDetected -> state |> readTabQuietly fs |> stay
     | SelectionToggled direction -> stay (toggleSelectionMoving direction state.Active state)

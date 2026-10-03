@@ -136,3 +136,18 @@ nothing, nineteen failed; four passed by nature, and three mutations afterwards
 — no forgetting, no carrying across the watch's refresh, recording without a
 change — were each caught. The fourth, the change of directory, holds even
 without the post-step, because a newly loaded listing starts without a memory.
+
+**P17.6 goes up one level.** `Ctrl+PgUp`, with `Alt+U` beside it for
+gnome-terminal and its tabs, does what `Enter` on `..` does without needing the
+cursor on `..`: `AppState.upOneLevel` picks the way out by where the panel
+stands and calls the very functions `..` reaches — the parent directory with the
+cursor on the directory left, the level above inside an archive, out of an
+archive at its top level, and back from search results to where the search was
+started, on the entry the panel stood on then. The last of those was written
+twice already, so it became one `backToSearchStart`. On a root the parent is
+missing and nothing changes. The landing reaches the folder history through the
+post-step every landing goes through. The tests, red first against a function
+that went nowhere, cover the four places and the root on `MockFileSystem`, the
+history, both bindings, and both keys pressed in a real panel; the root case
+passed against the empty function, as a case that expects nothing to happen
+does.

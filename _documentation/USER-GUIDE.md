@@ -36,6 +36,10 @@ needs to be installed. On Linux and macOS, mark the file executable first
   - `Alt+R` opens the drive in the system file manager (Explorer, or whatever
     `xdg-open` starts) and leaves both panels where they are.
   - `Esc` changes nothing.
+- `Ctrl+PgUp` (or `Alt+U`) goes up one level, wherever the cursor is — the same
+  as `Enter` on `..`: to the parent directory, to the level above inside an
+  archive, out of an archive at its top level, and from search results back to
+  where the search was started. On a root it does nothing.
 - `Ctrl+4` (or `Ctrl+\`) sends the active panel to the root of the drive it is
   on. Terminals turn `Ctrl+\` into `Ctrl+4` before Marbas sees it, so both are
   bound and `Ctrl+4` is the one that works everywhere.

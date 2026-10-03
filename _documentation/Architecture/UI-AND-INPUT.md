@@ -664,6 +664,16 @@ open it. The letters are what the documentation names and what the tests press;
 the classic names cost one row each and are kept for the terminals that do
 deliver them.
 
+**Up one level is `..` without the cursor.** `Ctrl+PgUp`, P17.6's mirror of
+`Ctrl+PgDn`, raises `UpOneLevelRequested`, and `AppState.upOneLevel` chooses by
+the place the panel stands in rather than by the entry under the cursor: the
+same `navigateToParent`, `climbLevel` and way back from search results that
+`Enter` on `..` reaches, so the two cannot drift apart. Here the classic key is
+the one that arrives everywhere measured, and `Alt+U` stands beside it only for
+gnome-terminal, which takes `Ctrl+PgUp` for its tabs once it has several. The
+landing goes into the folder history through the same post-step as every other
+landing, with nothing of its own.
+
 **The elevated run is the open-with key with one more modifier.** `Alt+R` asks
 which program should open the entry, `Alt+Shift+R` runs it as administrator —
 one key to remember rather than two, and the shift reads as "and with more than
