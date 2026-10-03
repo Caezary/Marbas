@@ -99,6 +99,27 @@ search is open every printable key is text, `*` included, exactly as `+` and
 `-` have always behaved. A name holding `*` is rare, and on Windows impossible,
 so the search loses nothing worth the classic key.
 
+**The memory of the marks is recorded by the marking transitions and forgotten
+by `Update`.** `PanelState.MarksBefore` is the set the panel held before its last
+marking command, or nothing. Every marking transition — the toggles behind
+`Insert`, `Space` and the shift keys, the patterns, the likeness, all files and
+the inversion — goes through one private `remembering`, which records the set it
+found only when the marks came out different; a command that marked nothing
+therefore cannot wipe a memory worth having. `recallMarks` swaps the two sets,
+keeping only the names still listed, so a second `Alt+M` goes forward again.
+Forgetting is not spread over forty transitions but done once, after every
+message, in `Update.update`: `keepsMarksToGoBackTo` lists the marking messages,
+`MarksRecalled`, and the messages that change nothing a user could lose — a
+cursor move, the quick search, `PanelFocused` (which is `Tab`), the pattern
+prompt on its way to a pattern, and the refresh the directory watch raises —
+and any other message clears the memory of every panel in every tab. New
+messages forget by default, which is the safe side. The watch's refresh keeps
+the memory because no user asked for it; `readAgainWithRefusals` carries
+`MarksBefore` over with `keepSurvivingMarks`, and the names the refresh took
+away are dropped when the marks come back. A directory change forgets twice
+over: the post-step clears the memory, and a newly loaded listing starts
+without one anyway.
+
 **The shifted page keys cannot be `KeyMap.bindings`, so `KeyMap` answers with a
 direction instead.** `bindings` maps a key to a whole `Message`, and these four
 keys only become a message once the view has measured the page. `KeyMap` keeps

@@ -68,7 +68,12 @@ it again goes forward to where it was. Any message that is not a marking command
 forgets the memory, with three exceptions that change nothing a user could lose:
 moving the cursor, the quick search, and `Tab`, which only moves the focus.
 Changing directory forgets it like everything else, and names that no longer
-exist when the memory is restored are left out.
+exist when the memory is restored are left out. P17.5 settled two cases the
+paragraph left open: a marking command that changes no mark — a pattern that
+matches nothing, `Alt+E` with `..` under the cursor — records nothing, so it
+cannot wipe a memory worth having; and the refresh the directory watch raises
+keeps the memory as well, because no user asked for it, and it is the one way a
+name can vanish while the memory lives, which is what the last clause is for.
 
 **A size in the listing is compact; the exact number lives below it.** The size
 column spells files and measured directories through `CompactSize` — `1.5 KB`,

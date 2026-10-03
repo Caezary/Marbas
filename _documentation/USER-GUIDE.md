@@ -66,6 +66,10 @@ needs to be installed. On Linux and macOS, mark the file executable first
 - `*` (grey or main) or `Alt+I` inverts the marks: what was marked is
   unmarked and the other way round, directories included. `..` is never
   marked by any of these.
+- `Alt+M` takes back the last of these marking commands — a pattern that
+  cleared too much, an inversion pressed by mistake — and pressing it again
+  goes forward to where it was. It reaches one step back only, and anything
+  but moving the cursor, the quick search or `Tab` forgets it.
 
 Marked entries are shown in yellow, and stay marked while the cursor moves
 about the listing; the footer counts them and adds up their sizes.

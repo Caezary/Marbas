@@ -50,3 +50,15 @@ let ``Alt+A marks the files and Alt+Shift+A takes them off again`` () =
 
     Assert.Equal<string list>([ "notes.txt"; "readme.txt" ], marked)
     Assert.Empty(markedRows list)
+
+[<Fact>]
+let ``Alt+M takes back an inversion pressed by mistake`` () =
+    use window = window ()
+    let list = leftList window
+    list.SelectedItem <- 2
+    press list KeyMap.insertKey
+    press list (Key '*')
+
+    press list KeyMap.recallMarksKey
+
+    Assert.Equal<string list>([ "notes.txt" ], markedRows list)

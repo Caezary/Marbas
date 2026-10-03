@@ -10,6 +10,7 @@ type PanelState =
       Cursor: int
       Remembered: EntryName option
       Selected: Set<EntryName>
+      MarksBefore: Set<EntryName> option
       Sort: SortOrder
       Hidden: HiddenEntries
       Search: SearchText option }
@@ -123,7 +124,15 @@ module PanelState =
         |> List.map _.Name
         |> Set.ofList
 
-    let toggleSelectionShortOf target (p: PanelState) =
+    let private remembering mark (p: PanelState) =
+        let marked = mark p
+
+        if marked.Selected = p.Selected then
+            marked
+        else
+            { marked with MarksBefore = Some p.Selected }
+
+    let private toggledShortOf target (p: PanelState) =
         let run = namesOf (runShortOf p.Cursor target) p
 
         let selected =
@@ -133,6 +142,8 @@ module PanelState =
                 Set.union p.Selected run
 
         withCursorClamped target { p with Selected = selected }
+
+    let toggleSelectionShortOf target (p: PanelState) = remembering (toggledShortOf target) p
 
     let toggleSelection (p: PanelState) = toggleSelectionShortOf p.Cursor p
 
@@ -155,7 +166,8 @@ module PanelState =
         | Select -> { p with Selected = Set.union p.Selected names }
         | Deselect -> { p with Selected = Set.difference p.Selected names }
 
-    let applyPattern mode pattern (p: PanelState) = applyNames mode (matching pattern p) p
+    let applyPattern mode pattern (p: PanelState) =
+        remembering (applyNames mode (matching pattern p)) p
 
     let private alikeTo likeness (anchor: Entry) (p: PanelState) =
         p.Entries
@@ -165,7 +177,7 @@ module PanelState =
 
     let applyLikeness mode likeness (p: PanelState) =
         match cursorEntry p |> Option.filter selectable with
-        | Some anchor -> applyNames mode (alikeTo likeness anchor p) p
+        | Some anchor -> remembering (applyNames mode (alikeTo likeness anchor p)) p
         | None -> p
 
     let private selectableNames keep (p: PanelState) =
@@ -175,15 +187,27 @@ module PanelState =
         |> Set.ofArray
 
     let applyAllFiles mode (p: PanelState) =
-        applyNames mode (selectableNames (fun e -> e.Kind = File) p) p
+        remembering (applyNames mode (selectableNames (fun e -> e.Kind = File) p)) p
 
-    let invertSelection (p: PanelState) =
+    let private inverted (p: PanelState) =
         { p with Selected = Set.difference (selectableNames (fun _ -> true) p) p.Selected }
+
+    let invertSelection (p: PanelState) = remembering inverted p
 
     let keepSurviving selected (p: PanelState) =
         let listed = p.Entries |> Array.map _.Name |> Set.ofArray
 
         { p with Selected = Set.intersect listed selected }
+
+    let keepSurvivingMarks (previous: PanelState) (p: PanelState) =
+        { keepSurviving previous.Selected p with MarksBefore = previous.MarksBefore }
+
+    let recallMarks (p: PanelState) =
+        match p.MarksBefore with
+        | Some before -> { keepSurviving before p with MarksBefore = Some p.Selected }
+        | None -> p
+
+    let forgetMarks (p: PanelState) = { p with MarksBefore = None }
 
     let operationTargets (p: PanelState) =
         match selectedEntries p with

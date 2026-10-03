@@ -40,7 +40,8 @@ let private panel =
       Selected = Set.empty
       Sort = SortOrder.byName
       Hidden = Concealed
-      Search = None }
+      Search = None
+      MarksBefore = None }
 
 let private standingAt index = PanelState.withCursor index panel
 

@@ -45,7 +45,8 @@ let private panel =
       Selected = Set.empty
       Sort = SortOrder.byName
       Hidden = Shown
-      Search = None }
+      Search = None
+      MarksBefore = None }
 
 [<Fact>]
 let ``with nothing marked the footer counts the files and the folders of the directory`` () =

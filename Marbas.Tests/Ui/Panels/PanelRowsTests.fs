@@ -31,7 +31,8 @@ let private panelOf entries =
       Selected = Set.empty
       Sort = SortOrder.byName
       Hidden = Concealed
-      Search = None }
+      Search = None
+      MarksBefore = None }
 
 let private panel = panelOf [| file "a.txt"; file "b.txt" |]
 

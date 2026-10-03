@@ -65,7 +65,8 @@ let private restoredPanel (settings: PanelSettings) =
       Selected = Set.empty
       Sort = settings.Sort
       Hidden = settings.Hidden
-      Search = None }
+      Search = None
+      MarksBefore = None }
 
 let private restoredTab (tab: TabSettings) =
     { Left = restoredPanel tab.Left
@@ -204,7 +205,8 @@ let private loadLocationWithRefusals (fs: IFileSystem) side (location: PanelLoca
                   Selected = Set.empty
                   Sort = sort
                   Hidden = hidden
-                  Search = None })
+                  Search = None
+                  MarksBefore = None })
             state,
         listing.Refused)
 
@@ -265,6 +267,17 @@ let applyAllFiles mode side state =
 
 let invertSelection side state =
     updatePanel side PanelState.invertSelection state
+
+let recallMarks side state =
+    updatePanel side PanelState.recallMarks state
+
+let forgetMarks (state: AppState) =
+    let forgotten (tab: Tab) =
+        { tab with
+            Left = PanelState.forgetMarks tab.Left
+            Right = PanelState.forgetMarks tab.Right }
+
+    { state with Tabs = state.Tabs |> Zipper.map forgotten }
 
 let private asOperationError error =
     match error with
@@ -555,7 +568,7 @@ let private readAgainWithRefusals (fs: IFileSystem) side state =
     let panel = panel side state
 
     loadLocationWithRefusals fs side panel.Path (PanelState.cursorFocus panel) state
-    |> Result.map (fun (loaded, refused) -> updatePanel side (PanelState.keepSurviving panel.Selected) loaded, refused)
+    |> Result.map (fun (loaded, refused) -> updatePanel side (PanelState.keepSurvivingMarks panel) loaded, refused)
 
 let private readAgain (fs: IFileSystem) side state =
     readAgainWithRefusals fs side state |> Result.map fst

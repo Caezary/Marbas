@@ -73,6 +73,10 @@ let starInvertKey = Key '*'
 
 let classicInvertKey = starInvertKey.WithCtrl
 
+let recallMarksKey = Key.M.WithAlt
+
+let classicRecallMarksKey = Key.M.WithCtrl
+
 let leftRootKey = Key.F1.WithAlt
 
 let rightRootKey = Key.F2.WithAlt
@@ -256,6 +260,8 @@ let bindings =
       unlabelled invertKey InversionRequested
       unlabelled starInvertKey InversionRequested
       unlabelled classicInvertKey InversionRequested
+      unlabelled recallMarksKey MarksRecalled
+      unlabelled classicRecallMarksKey MarksRecalled
       unlabelled insertKey (SelectionToggled Downward)
       unlabelled spaceKey (SelectionToggled Downward)
       unlabelled selectionDownKey (SelectionToggled Downward)

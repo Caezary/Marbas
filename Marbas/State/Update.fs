@@ -26,6 +26,7 @@ type Message =
     | LikenessRequested of SelectionMode * Likeness
     | AllFilesRequested of SelectionMode
     | InversionRequested
+    | MarksRecalled
     | MakeDirectoryRequested
     | NameEntered of name: EntryName
     | DeleteRequested of DeleteMode
@@ -384,6 +385,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | LikenessRequested(mode, likeness) -> stay (applyLikeness mode state.Active likeness state)
     | AllFilesRequested mode -> stay (applyAllFiles mode state.Active state)
     | InversionRequested -> stay (invertSelection state.Active state)
+    | MarksRecalled -> stay (recallMarks state.Active state)
     | MakeDirectoryRequested ->
         match (activePanel state).Path with
         | OnDisk _ -> request state PromptForName
@@ -651,6 +653,31 @@ let private remembering msg before result =
         { result with
             Effects = result.Effects @ visits }
 
+let private keepsMarksToGoBackTo msg =
+    match msg with
+    | SelectionToggled _
+    | SelectionToggledTo _
+    | PatternRequested _
+    | PatternEntered _
+    | LikenessRequested _
+    | AllFilesRequested _
+    | InversionRequested
+    | MarksRecalled
+    | CursorMoved _
+    | SearchTyped _
+    | SearchBackspaced
+    | SearchCancelled
+    | PanelFocused _
+    | ExternalChangeDetected -> true
+    | _ -> false
+
+let private forgettingMarks msg result =
+    if keepsMarksToGoBackTo msg then
+        result
+    else
+        { result with
+            State = forgetMarks result.State }
+
 let private refusedAsSource msg =
     match msg with
     | MakeDirectoryRequested -> Some MakingDirectory
@@ -680,7 +707,7 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | Some refusal -> reportResultsRefusal state refusal
         | None -> transition fs msg state
 
-    result |> watching state |> remembering msg state
+    result |> watching state |> remembering msg state |> forgettingMarks msg
 
 let step (fs: IFileSystem) (msg: Message) (state: AppState) =
     let result = update fs msg state

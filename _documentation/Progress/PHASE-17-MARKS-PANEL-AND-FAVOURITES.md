@@ -115,3 +115,24 @@ against transitions that changed nothing — nine failed, the tenth, inverting
 twice, holds for any transition that changes nothing and passed by nature —
 then green against the real ones. They cover a listing with marked and unmarked
 files and directories, and each of the three after a pattern applied before it.
+
+**P17.5 gives the marks one step back.** `Alt+M` swaps a panel's marks with the
+set they held before its last marking command, so a second press goes forward
+again; `Ctrl+M` is bound beside it although every terminal measured turns it
+into `Enter`. The memory is a field of `PanelState`, recorded by one helper every
+marking transition goes through, and forgotten in one post-step of
+`Update.update` for every message that is not a marking command or one of the
+exceptions. Two cases the plan left open were settled on the way and written
+back into its decision: a marking command that changes no mark records nothing,
+and the refresh the directory watch raises keeps the memory — the plan's clause
+about names that have vanished by the time the marks come back only has
+something to do if a listing can change while the memory lives, and the watch is
+the one thing that changes it without being asked. The tests send messages
+through `Update.step`, so the forgetting is tested where it happens: every kind
+of marking command undone and redone, a file operation and a change of
+directory forgetting, five kinds of message keeping, vanished names left out,
+and each panel keeping its own memory. Run first against a transition that did
+nothing, nineteen failed; four passed by nature, and three mutations afterwards
+— no forgetting, no carrying across the watch's refresh, recording without a
+change — were each caught. The fourth, the change of directory, holds even
+without the post-step, because a newly loaded listing starts without a memory.

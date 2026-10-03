@@ -393,3 +393,17 @@ let ``Ctrl with the grey star inverts too, where a driver delivers it`` () =
 
     Assert.Equal((Key '*').WithCtrl, KeyMap.classicInvertKey)
     Assert.Equal(Some InversionRequested, message)
+
+[<Fact>]
+let ``Alt+M takes the marks one step back`` () =
+    let message = KeyMap.messageFor KeyMap.recallMarksKey
+
+    Assert.Equal(Key.M.WithAlt, KeyMap.recallMarksKey)
+    Assert.Equal(Some MarksRecalled, message)
+
+[<Fact>]
+let ``Ctrl+M does the same, where a driver tells it from Enter`` () =
+    let message = KeyMap.messageFor KeyMap.classicRecallMarksKey
+
+    Assert.Equal(Key.M.WithCtrl, KeyMap.classicRecallMarksKey)
+    Assert.Equal(Some MarksRecalled, message)

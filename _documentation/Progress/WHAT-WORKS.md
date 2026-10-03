@@ -196,6 +196,15 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   all three, and all three work on the same selection, so `*.txt` followed by
   `*` marks everything but the text files. `Shift+grey+`, `Shift+grey-` and
   `Ctrl+grey*` are bound beside them, for the same reason as above.
+- `Alt+M` swaps the panel's marks with the set they held before the last
+  marking command — `Insert`, `Space`, the shift arrows and page keys, `+`,
+  `-`, and the six keys above — so a second press goes forward again. Each
+  panel remembers one step of its own. A marking command that changes no mark
+  leaves the memory alone; moving the cursor, the quick search, `Tab` and a
+  refresh raised by the directory watch keep it; every other key forgets it, a
+  change of directory and a file operation included. Names that have gone from
+  the listing by the time the marks come back are left out. `Ctrl+M` is bound
+  beside it, but every terminal measured sends it as `Enter`.
 - A rule separates the listing from the bottom row of each panel, and that row
   is never blank: it summarises the marks — how many entries and how many bytes
   they add up to — and falls back to what the directory holds (`3 files, 2

@@ -102,6 +102,7 @@
     <Compile Include="State\SelectionPatternTests.fs" />
     <Compile Include="State\SelectionLikenessTests.fs" />
     <Compile Include="State\SelectionFilesAndInversionTests.fs" />
+    <Compile Include="State\SelectionMemoryTests.fs" />
     <Compile Include="State\MkdirTests.fs" />
     <Compile Include="State\DeleteTests.fs" />
     <Compile Include="State\TransferTests.fs" />
