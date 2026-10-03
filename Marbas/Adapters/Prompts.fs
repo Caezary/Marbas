@@ -49,7 +49,12 @@ let chooseDrive (app: IApplication) (request: DrivePrompt) =
     | rows -> running app (fun () -> createDriveDialog rows) DriveDialog.choice
 
 let askFavoriteSlot (app: IApplication) (fs: IFileSystem) (place: Place) =
-    running app (fun () -> KeepFavoriteDialog.create fs app.Screen.Width place) KeepFavoriteDialog.slot
+    let createAskFavourite () = KeepFavoriteDialog.create fs app.Screen.Width place
+    running app createAskFavourite KeepFavoriteDialog.slot
+
+let chooseFavorite (app: IApplication) (fs: IFileSystem) (request: FavoritesPrompt) =
+    let createFavourites () = FavoritesDialog.create fs request.Change request.Current request.Favorites
+    running app createFavourites FavoritesDialog.chosen
 
 let private texts (remembered: EnteredText list) = remembered |> List.map EnteredText.value
 

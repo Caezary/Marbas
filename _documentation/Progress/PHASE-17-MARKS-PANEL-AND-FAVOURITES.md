@@ -276,3 +276,53 @@ file was started with; `Alt+5` then put the left panel in that slot's directory
 and `history.conf` remembered it. A second run pressed `Esc` instead of `3`: the
 popup closed, the file kept only `favorite.5`, and the application went on to
 answer `Alt+5`, so `Esc` closes the popup and not Marbas.
+
+**P17.10 opens the favourites in a popup, and closes the phase.** `Alt+F8`,
+labelled `Favs` on the `Alt` row of the bar, and `Alt+B` beside it open
+*Favourites*: the ten slots in order, each its digit and its place shortened in
+the middle, an empty one its digit alone. `Enter` or a digit goes to the slot's
+place, `Ins` keeps the active panel's place in the slot under the cursor and
+`Del` empties it, each written at once. The popup follows the history's:
+`Shell` reads the file afresh, hands the popup the favourites, the current
+place and a `Change` function — the `changeFavorites` that already answered
+`Alt+K`, now answering what it wrote — and the popup refills its rows from what
+comes back, so it always shows the file. `FavoriteChange` gained `EmptySlot`,
+named so rather than `Forget` because a second case of that name beside the
+history's would have taken it over wherever the two are in scope.
+
+Three things the plan left open were settled on the way. `Enter` or the digit of
+an empty slot puts the cursor on it rather than closing the popup, so `Ins` can
+fill it next; `Ins` over search results keeps nothing, as `Alt+K` does; and the
+popup has no buttons, which would have turned a digit into a hot key, but a line
+under the list names its keys. The tests ran into a trap of the test harness
+rather than of Marbas: a `Key` is mutable, and handing the same `KeyMap` value
+to `NewKeyDownEvent` twice left the second press marked handled by the first,
+so `Del` on one test's popup did nothing after another test had pressed it;
+`Gui.press`, which sends a copy, is what the dialog tests now use.
+
+Every piece was run red first — the file change, the row, the transition,
+`Shell`, the keys and the popup failed two, four, two, six, three and ten tests
+against stubs, the rest passing by nature — and the three tests that press
+`Alt+F8` and `Alt+B` in a real panel were written after. The live check of
+`ModifierRowTests` that reads the `Alt` row of the bar failed until it expected
+`Favs` on `F8`, as it should. A running `Application` with the real adapters
+then opened the popup on a file holding slots 5 and 7, pressed `3`, `Ins`, `↓`,
+`↓`, `Del` and `Esc`, then `Alt+B` and `7`:
+
+```
+║       ║ 2                                                            ║       │
+║       ║ 3  C:\...\fav\start                                          ║       │
+║       ║ 4                                                            ║       │
+║       ║ 5                                                            ║       │
+║       ║ 6                                                            ║       │
+║       ║ 7  C:\...\start\docs                                         ║       │
+║       ║ 8                                                            ║       │
+║       ║ 9                                                            ║       │
+║───────║                                                              ║───────│
+║0 files║ Enter or a digit: go    Ins: add current path    Del: remove ║       │
+```
+
+`3` put the cursor on the empty slot, `Ins` filled it, `Del` emptied slot 5,
+and `7` from a second opening put the left panel in `start/docs`. The file
+written by the run held `favorite.3` and `favorite.7` and no `favorite.5`, which
+is what the next start reads.

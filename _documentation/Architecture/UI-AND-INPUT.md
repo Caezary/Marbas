@@ -724,6 +724,29 @@ reports with the panel left where it was, and the folder history remembers the
 landing through the usual post-step. `Shift+Alt+0` … `Shift+Alt+9` is bound to
 nothing: it reaches Marbas in no terminal.
 
+**The favourites popup changes the file in place, as the history popup does.**
+`Alt+F8`, labelled `Favs` on the `Alt` row of the bar, and `Alt+B` beside it for
+a GNOME desktop, raise `FavoritesRequested`; the transition answers
+`ShowFavorites current`, the active panel's place or nothing over search
+results. `Shell` reads `favorites.conf` afresh — a file it cannot read is
+reported and the popup not shown — and hands `Prompts.ChooseFavorite` a
+`FavoritesPrompt`: the favourites, the current place, and `Change`, the same
+`changeFavorites` that answers `Alt+K`, which writes the change, reports a
+failure and answers the favourites the file now holds or nothing. The popup
+answers the place chosen, which comes back as `FavoriteFound` and lands like
+`Alt+digit`. `FavoritesDialog` is a `ListView` of the ten slots in order, each
+row from `FavoriteRow.describe` — the digit, two spaces and the place spelled as
+the history spells it, shortened in the middle to the list's width, or the digit
+alone — refilled on the list's `FrameChanged`, so the shortening follows a
+resize, and after every change, with the cursor kept on its row. The list's
+`KeyDown`, which runs before the list's own bindings, takes the keys: a digit
+goes to its slot, `Enter` to the slot under the cursor, and either one on an
+empty slot only puts the cursor there, so `Ins` can fill it next; `Ins` hands
+`Keep` of the slot under the cursor and the current place to `Change` — nothing
+when there is no current place — and `Del` hands `EmptySlot`. The popup has no
+buttons, so no hot key can take a digit, and a line under the list names the
+keys instead.
+
 **The elevated run is the open-with key with one more modifier.** `Alt+R` asks
 which program should open the entry, `Alt+Shift+R` runs it as administrator —
 one key to remember rather than two, and the shift reads as "and with more than

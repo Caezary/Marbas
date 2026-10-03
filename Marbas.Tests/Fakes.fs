@@ -477,6 +477,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Ports.Dependencies =
           ChooseTab = fun _ -> None
           ChooseHistory = fun prompt -> { Tab = prompt.Tab; Choice = None }
           AskFavoriteSlot = fun _ -> None
+          ChooseFavorite = fun _ -> None
           EditProperties = fun _ -> None
           EditPrograms = fun _ -> None
           ShowFile = ignore }

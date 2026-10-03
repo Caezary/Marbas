@@ -68,6 +68,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
           ChooseTab = Prompts.chooseTab app fs
           ChooseHistory = Prompts.chooseHistory app fs
           AskFavoriteSlot = Prompts.askFavoriteSlot app fs
+          ChooseFavorite = Prompts.chooseFavorite app fs
           EditProperties = Prompts.editProperties app
           EditPrograms = Prompts.editPrograms app
           ShowFile = Prompts.showFile app }

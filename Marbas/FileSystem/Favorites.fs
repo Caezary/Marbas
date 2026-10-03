@@ -5,7 +5,9 @@ open System.IO.Abstractions
 open FsToolkit.ErrorHandling
 open Marbas.Domain
 
-type FavoriteChange = Keep of FavoriteSlot * Place
+type FavoriteChange =
+    | Keep of FavoriteSlot * Place
+    | EmptySlot of FavoriteSlot
 
 type Favorites = { Places: Map<FavoriteSlot, Place> }
 
@@ -38,6 +40,9 @@ module Favorites =
             { favorites with
                 Places = Map.add slot place favorites.Places }
         | Keep _ -> favorites
+        | EmptySlot slot ->
+            { favorites with
+                Places = Map.remove slot favorites.Places }
 
     let private slotKey slot =
         $"{SlotPrefix}.{FavoriteSlot.value slot}"

@@ -288,8 +288,10 @@ let private reportFavorites (deps: Dependencies) error =
 
 let private changeFavorites (deps: Dependencies) change =
     match Favorites.change deps.FileSystem deps.FavoritesPath change with
-    | Ok _ -> ()
-    | Error error -> reportFavorites deps error
+    | Ok favorites -> Some favorites
+    | Error error ->
+        reportFavorites deps error
+        None
 
 let private rememberTyped (deps: Dependencies) dispatch kind text =
     EnteredText.tryCreate text
@@ -492,7 +494,16 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Error error -> report deps HistoryErrorMessage.Title (HistoryErrorMessage.describe error)
     | PromptForFavoriteSlot place ->
         deps.Prompts.AskFavoriteSlot place
-        |> Option.iter (fun slot -> changeFavorites deps (Keep(slot, place)))
+        |> Option.iter (fun slot -> changeFavorites deps (Keep(slot, place)) |> ignore)
+    | ShowFavorites current ->
+        match Favorites.load deps.FileSystem deps.FavoritesPath with
+        | Ok favorites ->
+            deps.Prompts.ChooseFavorite
+                { Favorites = favorites
+                  Current = current
+                  Change = changeFavorites deps }
+            |> Option.iter (FavoriteFound >> dispatch)
+        | Error error -> reportFavorites deps error
     | LookUpFavorite slot ->
         match Favorites.load deps.FileSystem deps.FavoritesPath with
         | Ok favorites -> Favorites.placeIn slot favorites |> Option.iter (FavoriteFound >> dispatch)

@@ -186,6 +186,7 @@
     <Compile Include="Ui\Dialogs\TabRowTests.fs" />
     <Compile Include="Ui\Dialogs\HistoryRowTests.fs" />
     <Compile Include="Ui\Dialogs\DriveLineTests.fs" />
+    <Compile Include="Ui\Dialogs\FavoriteRowTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -265,6 +266,7 @@
     <Compile Include="Integration\Dialogs\HistoryDialogTests.fs" />
     <Compile Include="Integration\Dialogs\DriveDialogTests.fs" />
     <Compile Include="Integration\Dialogs\KeepFavoriteDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\FavoritesDialogTests.fs" />
     <Compile Include="Integration\Dialogs\PackDialogTests.fs" />
     <Compile Include="Integration\Dialogs\LinkDialogTests.fs" />
     <Compile Include="Integration\Dialogs\OpenWithDialogTests.fs" />

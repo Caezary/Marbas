@@ -97,6 +97,15 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   written, on top of what the file holds, the moment a slot is filled — so the
   application starts without the file, and two copies keep each other's
   favourites.
+- `Alt+F8`, labelled `Favs` in the `Alt` layer of the bar, and `Alt+B` open
+  *Favourites*, read afresh from the file: ten rows, `0` to `9`, each the digit
+  and its place shortened in the middle, an empty slot the digit alone, and a
+  line naming the keys under them. `Enter` or a digit sends the active panel to
+  the slot's place, and a digit of an empty slot moves the cursor onto it; `Ins`
+  keeps the active panel's place in the slot under the cursor — nothing over
+  search results — and `Del` empties it, each written to the file at once and
+  shown in the rows straight away, the cursor staying where it was. A change the
+  file refuses is reported and the rows stay as they were.
 - `Alt+R` on a file opens a popup listing the programs the system already
   knows for that extension — read from the registry on Windows, from the XDG
   mime database on Linux — with a field for a path of one's own and a box that

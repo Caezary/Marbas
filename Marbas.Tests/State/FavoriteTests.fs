@@ -143,3 +143,25 @@ let ``a favourite that is gone is reported and the panel stays where it was`` ()
 
     Assert.Equal(OnDisk(fp (at "start")), result.State.Left.Path)
     Assert.Equal<Effect list>([ ReportListingError(DirectoryNotFound(fp (at "gone"))) ], result.Effects)
+
+[<Fact>]
+let ``the favourites popup is shown with the place the active panel stands in`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs |> activate Right
+
+    let result = update fs FavoritesRequested state
+
+    Assert.Equal<Effect list>([ ShowFavorites(Some(Place.OnDisk(fp (at "backup")))) ], result.Effects)
+
+[<Fact>]
+let ``the favourites popup over search results is shown with no place to keep`` () =
+    let fs = mockFs ()
+    let state = loadedBoth fs
+
+    let showing =
+        (update fs (SearchAnswered { Landing = Some InPanel; Results = results [ hitIn "start" "notes.txt" ] }) state)
+            .State
+
+    let result = update fs FavoritesRequested showing
+
+    Assert.Equal<Effect list>([ ShowFavorites None ], result.Effects)

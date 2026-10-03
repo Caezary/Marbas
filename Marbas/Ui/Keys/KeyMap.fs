@@ -151,6 +151,16 @@ let saveSessionKey = Key.F9.WithShift
 
 let keepFavoriteKey = Key.K.WithAlt
 
+let favoritesKey = Key.F8.WithAlt
+
+let spareFavoritesKey = Key.B.WithAlt
+
+let favoritesGoKey = Key.Enter
+
+let favoritesKeepKey = Key.InsertChar
+
+let favoritesEmptyKey = Key.Delete
+
 let private digitKey slot =
     Key(char (int '0' + FavoriteSlot.value slot))
 
@@ -239,6 +249,8 @@ let bindings =
       labelled findKey "Find" FindRequested
       unlabelled spareFindKey FindRequested
       labelled historyKey "History" HistoryRequested
+      labelled favoritesKey "Favs" FavoritesRequested
+      unlabelled spareFavoritesKey FavoritesRequested
       unlabelled spareHistoryKey HistoryRequested
       unlabelled trashKey (DeleteRequested ToTrash)
       unlabelled permanentDeleteKey (DeleteRequested Permanently)

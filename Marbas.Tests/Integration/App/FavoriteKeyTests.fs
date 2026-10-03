@@ -119,3 +119,45 @@ let ``a favourite that has gone is reported and the panel stays where it was`` (
 
     Assert.Contains(at "gone", Assert.Single reported)
     Assert.Equal(at "start", shownPath FilePanel.LeftId window)
+
+let private opened (asked: ResizeArray<Place option>) =
+    fun (prompt: Marbas.Ui.App.Ports.FavoritesPrompt) ->
+        asked.Add prompt.Current
+        None
+
+[<Fact>]
+let ``Alt+F8 opens the favourites with the place the active panel stands in`` () =
+    let asked = ResizeArray<Place option>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies (mockFs ()) (at "start") with
+                Prompts.ChooseFavorite = opened asked }
+
+    pressKey window KeyMap.favoritesKey
+
+    Assert.Equal<Place option list>([ Some(Place.OnDisk(fp (at "start"))) ], List.ofSeq asked)
+
+[<Fact>]
+let ``Alt+B opens the same favourites`` () =
+    let asked = ResizeArray<Place option>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies (mockFs ()) (at "start") with
+                Prompts.ChooseFavorite = opened asked }
+
+    pressKey window KeyMap.spareFavoritesKey
+
+    Assert.Equal<Place option list>([ Some(Place.OnDisk(fp (at "start"))) ], List.ofSeq asked)
+
+[<Fact>]
+let ``a place chosen in the favourites is where the active panel stands`` () =
+    use window =
+        focusedWindow
+            { Fakes.dependencies (mockFs ()) (at "start") with
+                Prompts.ChooseFavorite = fun _ -> Some(Place.OnDisk(fp (at "elsewhere"))) }
+
+    pressKey window KeyMap.favoritesKey
+
+    Assert.Equal(at "elsewhere", shownPath FilePanel.LeftId window)

@@ -33,10 +33,13 @@ let ``holding Ctrl puts the sort commands on the same slots`` () =
     Assert.Equal<string list>([ ""; ""; "Name"; "Ext"; "Date"; "Size"; ""; ""; ""; ""; ""; "" ], commands)
 
 [<Fact>]
-let ``holding Alt puts the drive choosers on the first two slots and the link on F6`` () =
+let ``holding Alt puts the drive choosers on the first two slots, the link on F6 and the favourites on F8`` () =
     let commands = commandsOn (Modifiers.held [ Alt ])
 
-    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; "Link"; "Find"; ""; ""; ""; "NewTab"; "History" ], commands)
+    Assert.Equal<string list>(
+        [ "Left"; "Right"; ""; ""; ""; "Link"; "Find"; "Favs"; ""; ""; "NewTab"; "History" ],
+        commands
+    )
 
 [<Fact>]
 let ``holding Alt and Shift puts closing a tab where opening one is`` () =
@@ -480,3 +483,17 @@ let ``escape names no slot`` () =
     let slot = KeyMap.favoriteSlotOf Key.Esc
 
     Assert.Equal(None, slot)
+
+[<Fact>]
+let ``Alt+F8 opens the favourites`` () =
+    let message = KeyMap.messageFor KeyMap.favoritesKey
+
+    Assert.Equal(Key.F8.WithAlt, KeyMap.favoritesKey)
+    Assert.Equal(Some FavoritesRequested, message)
+
+[<Fact>]
+let ``Alt+B opens the favourites where the desktop keeps Alt+F8`` () =
+    let message = KeyMap.messageFor KeyMap.spareFavoritesKey
+
+    Assert.Equal(Key.B.WithAlt, KeyMap.spareFavoritesKey)
+    Assert.Equal(Some FavoritesRequested, message)

@@ -66,6 +66,11 @@ type DrivePrompt =
     { Side: PanelSide
       Drives: DriveRow list }
 
+type FavoritesPrompt =
+    { Favorites: Favorites
+      Current: Place option
+      Change: FavoriteChange -> Favorites option }
+
 type HistoryPrompt =
     { History: History
       Tab: HistoryTab
@@ -88,6 +93,7 @@ type Prompts =
       ChooseTab: Zipper<Tab> -> int option
       ChooseHistory: HistoryPrompt -> HistoryAnswer
       AskFavoriteSlot: Place -> FavoriteSlot option
+      ChooseFavorite: FavoritesPrompt -> Place option
       EditProperties: EntryProperties -> EntryProperties option
       EditPrograms: ProgramsPrompt -> ProgramSettings option
       ShowFile: FileWindow.Source -> unit }

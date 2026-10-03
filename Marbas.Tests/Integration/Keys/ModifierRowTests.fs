@@ -68,13 +68,16 @@ let ``letting Ctrl go brings the classic keys back`` () =
     Assert.Equal<string list>(classic, commands window)
 
 [<Fact>]
-let ``holding Alt shows the drive choosers`` () =
+let ``holding Alt shows the drive choosers and the favourites`` () =
     let window, hold = watchedWindow ()
     use window = window
 
     hold (Modifiers.held [ Alt ])
 
-    Assert.Equal<string list>([ "Left"; "Right"; ""; ""; ""; "Link"; "Find"; ""; ""; ""; "NewTab"; "History" ], commands window)
+    Assert.Equal<string list>(
+        [ "Left"; "Right"; ""; ""; ""; "Link"; "Find"; "Favs"; ""; ""; "NewTab"; "History" ],
+        commands window
+    )
 
 [<Fact>]
 let ``holding Shift shows the permanent delete on the delete slot`` () =

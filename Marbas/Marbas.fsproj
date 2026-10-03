@@ -172,6 +172,8 @@
         <Compile Include="Ui\Dialogs\DriveLine.fs" />
         <Compile Include="Ui\Dialogs\DriveDialog.fs" />
         <Compile Include="Ui\Dialogs\KeepFavoriteDialog.fs" />
+        <Compile Include="Ui\Dialogs\FavoriteRow.fs" />
+        <Compile Include="Ui\Dialogs\FavoritesDialog.fs" />
         <Compile Include="Ui\Dialogs\FindDialog.fs" />
     </ItemGroup>
 

@@ -196,7 +196,11 @@ loses neither. The ten slots are global, shared by every tab and both panels.
   is also the way to every slot where a terminal keeps `Alt+0` … `Alt+9`, as
   gnome-terminal does once it has several tabs. *Done when:* the popup is
   rendered and driven through a real `Application`, a slot filled with `Ins` is
-  proved, and a slot emptied in it is empty after a restart.
+  proved, and a slot emptied in it is empty after a restart. The task settled
+  what the paragraph left open: `Enter` or the digit of an empty slot only puts
+  the cursor on it, so `Ins` can fill it next; `Ins` over search results keeps
+  nothing; and the popup has no buttons but a line under the list naming its
+  keys.
 
 Every task updates [the user guide](../USER-GUIDE.md),
 [What works today](../Progress/WHAT-WORKS.md) and the architecture file it

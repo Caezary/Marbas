@@ -178,3 +178,35 @@ let ``favourites that cannot be read are answered as an error and left as they w
     let kept = fs.GetFile(FileSystemPath.value favoritesPath).TextContents
     Assert.Equal(favoritesPath, unwritten (Expect.error changed))
     Assert.Equal(String.concat "\n" (Favorites.format sample), kept)
+
+[<Fact>]
+let ``an emptied slot holds no place`` () =
+    let favorites = Favorites.apply (EmptySlot(slot 1)) sample
+
+    let held = Favorites.placeIn (slot 1) favorites
+
+    Assert.Equal(None, held)
+
+[<Fact>]
+let ``emptying a slot leaves every other slot as it was`` () =
+    let favorites = Favorites.apply (EmptySlot(slot 1)) sample
+
+    let held = Favorites.placeIn (slot 7) favorites
+
+    Assert.Equal(Some(inArchive "backup.zip" "docs/2024"), held)
+
+[<Fact>]
+let ``emptying a slot that holds nothing changes nothing`` () =
+    let favorites = Favorites.apply (EmptySlot(slot 4)) sample
+
+    Assert.Equal(sample, favorites)
+
+[<Fact>]
+let ``a slot emptied is not written to the file`` () =
+    let fs = MockFileSystem()
+    write fs (Favorites.format sample)
+
+    Favorites.change fs favoritesPath (EmptySlot(slot 1)) |> Expect.ok |> ignore
+
+    let lines = fs.File.ReadAllLines(FileSystemPath.value favoritesPath)
+    Assert.DoesNotContain("favorite.1=" + at "work", lines)

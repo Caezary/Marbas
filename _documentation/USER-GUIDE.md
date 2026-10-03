@@ -276,6 +276,15 @@ tab and both panels.
   that holds nothing does nothing; a place that is no longer there is reported
   and the panel stays where it was. Going to a favourite is remembered in the
   folder history like any other move.
+- `Alt+F8` — or `Alt+B`, since a GNOME desktop keeps `Alt+F8` for itself —
+  opens *Favourites*: the ten digits in order, each with its place, a long path
+  shortened in the middle, and an empty one with its digit alone. `Enter` goes to
+  the place under the cursor and a digit to the place under that digit; a digit
+  that holds nothing moves the cursor onto it instead. `Ins` adds the active
+  panel's path under the digit the cursor is on, replacing what it held, and
+  `Del` removes what the digit holds — both written at once, so they hold after
+  a restart. `Esc` closes the popup. This is also the way to the digits where a
+  terminal keeps `Alt+0` … `Alt+9` for itself.
 
 The favourites live in a file of their own beside the settings —
 `%APPDATA%\Marbas\favorites.conf` on Windows, `~/.config/Marbas/favorites.conf`

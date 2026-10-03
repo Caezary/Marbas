@@ -83,6 +83,7 @@ type Message =
     | FavoriteKeepRequested
     | FavoriteRequested of FavoriteSlot
     | FavoriteFound of Place
+    | FavoritesRequested
     | QuitRequested
 
 type DeleteRequest =
@@ -130,6 +131,7 @@ type Effect =
     | ShowHistory of HistoryTab
     | PromptForFavoriteSlot of Place
     | LookUpFavorite of FavoriteSlot
+    | ShowFavorites of current: Place option
     | SaveSettings of Settings
     | Quit
 
@@ -626,6 +628,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | None -> stay state
     | FavoriteRequested slot -> request state (LookUpFavorite slot)
     | FavoriteFound place -> standInside fs state.Active (Place.toLocation place) state |> applyListing state
+    | FavoritesRequested -> request state (ShowFavorites(Place.ofLocation (activePanel state).Path))
     | QuitRequested ->
         { State = state
           Effects = [ SaveSettings(settings fs state); Quit ] }

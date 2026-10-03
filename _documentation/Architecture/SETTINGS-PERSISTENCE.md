@@ -187,3 +187,10 @@ key names no slot from `0` to `9`, an empty value, and a slot whose `inside`
 cannot be read — one that climbs — are passed over, each costing that slot
 alone. A place whose path breaks a line is not kept, as the history does not
 remember one.
+
+**A slot is filled or emptied, and both are changes of the file.** `FavoriteChange`
+is `Keep slot place` or `EmptySlot slot`; the second drops the slot from the
+map, so it is not written at all, and emptying a slot that holds nothing
+changes nothing. The favourites popup hands both to `Shell` through its
+`Change` function, which writes them at once, so a slot emptied there is empty
+the next time Marbas starts.
