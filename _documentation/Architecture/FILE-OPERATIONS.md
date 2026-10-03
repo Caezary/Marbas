@@ -481,3 +481,23 @@ named program when one was named) — and calls everything else `LaunchRefused`
 with the message the system gave. `Update` turns `ElevationDeclined` into
 silence rather than a dialog: refusing an elevation prompt is an answer, not a
 failure.
+
+## The clipboard
+
+**The clipboard takes the operation targets, as `F5` would.** `Ctrl+Ins` and
+`Alt+C` raise `NamesCopyRequested`, and the transition reads
+`PanelState.operationNames` — the operation targets, each under its own name.
+That is the entry's name everywhere but in a panel of search results, where the
+listing shows a hit under a path relative to where the search started
+(`a\one.txt`) and the name copied is the hit's own (`one.txt`). Nothing marked
+and `..` under the cursor is an empty list, which `ClipboardText.tryCreate`
+turns down, so nothing is asked of the clipboard at all. The marks are left as
+they were: copying text changes nothing on the disk, so there is nothing to
+clear them for.
+
+**Text is lines, and the line break belongs to the system.** The state answers
+`PutOnClipboard` with the names as lines; the Windows adapter joins them with
+the system line break and adds none after the last, so a single name pastes into
+a field without a trailing newline. A name is never quoted and a directory
+carries no separator after it. Where the text goes and what a refusal looks
+like is in [State and effects](STATE-AND-EFFECTS.md).

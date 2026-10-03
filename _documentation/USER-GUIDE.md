@@ -128,6 +128,23 @@ measuring and wiping treat a link to a directory as the link itself and never go
 inside it: a copy is a new link to the same place, and deleting removes only the
 link.
 
+## The clipboard
+
+What the panel points at can be handed to other programs through the system
+clipboard. Like the file operations, each command takes the marked entries, or
+the entry under the cursor when nothing is marked; with `..` under the cursor
+and nothing marked there is nothing to copy.
+
+- `Ctrl+Ins` — or `Alt+C`, for a terminal that keeps `Ctrl+Ins` for its own
+  copy — puts the names of those entries on the clipboard as text, one per
+  line, in the order of the listing. There are no quotes, no separator after a
+  directory and no line break after the last name, so a single name pastes
+  cleanly into a field. In a panel of search results each hit gives its own
+  name, not the path shown in the panel.
+
+On Linux and macOS Marbas cannot reach the clipboard yet; the first attempt
+in a session says so, and later ones stay quiet.
+
 ## Finding files
 
 `Alt+F7` (or `Alt+Shift+F`, which is the one to use on a GNOME desktop, where
@@ -377,6 +394,9 @@ keep moving between the fields. The password of an archive is never kept.
   Windows and `:` on Unix.
 - **The modifier-aware function-key bar is Windows-only** — no Unix terminal
   driver Marbas relies on reports a held `Ctrl`/`Alt` on its own.
+- **The clipboard is Windows-only for now.** On Linux it needs `xclip` or
+  `wl-clipboard` for text, which Marbas does not call yet; copying there is
+  refused, and the refusal is shown once per session.
 - **`F4` with a full-screen console editor** (`vi`, `nano`) does not work
   well on Unix yet, because the terminal is shared with a driver that has not
   let go of it. Use a windowed editor, or `EDITOR="code -w"`, until this is

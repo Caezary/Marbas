@@ -247,3 +247,12 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   rows and the colours are not. A strip drawn by Marbas itself over one table
   whose rows are swapped would end it, at the price of the keys `Tabs` gives
   for free.
+
+## The clipboard
+
+- The clipboard reaches Windows alone. `SystemClipboard.forPlatform Unix`
+  answers every request with `ClipboardUnavailable`, shown once per session and
+  then passed over in silence: text on Linux needs `xclip` or `wl-clipboard` (or
+  a terminal's OSC 52 escape), and files a desktop-specific format, and none of
+  them is called yet. The fix is one more implementation of the same port; the
+  plan of phase 18 leaves it for a later phase.

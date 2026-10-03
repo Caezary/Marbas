@@ -2591,3 +2591,53 @@ let ``a change the file refuses from the popup is reported and hands back nothin
 
     Assert.Equal(FavoritesErrorMessage.Title, reported)
     Assert.Equal(None, answered)
+
+let private clipboardText lines =
+    ClipboardText.tryCreate lines |> Expect.some
+
+[<Fact>]
+let ``text for the clipboard is handed to the clipboard`` () =
+    let handed = ResizeArray<ClipboardText>()
+
+    let deps =
+        { noDeps () with
+            Clipboard.SetText =
+                fun text ->
+                    handed.Add text
+                    Ok() }
+
+    Shell.interpret deps ignore (PutOnClipboard(clipboardText [ "docs"; "notes.txt" ]))
+
+    Assert.Equal<ClipboardText list>([ clipboardText [ "docs"; "notes.txt" ] ], List.ofSeq handed)
+
+[<Fact>]
+let ``text the clipboard takes dispatches nothing`` () =
+    let sent, dispatch = capture ()
+
+    Shell.interpret (noDeps ()) dispatch (PutOnClipboard(clipboardText [ "notes.txt" ]))
+
+    Assert.Empty sent
+
+[<Fact>]
+let ``text the clipboard refuses is dispatched as unwritten`` () =
+    let sent, dispatch = capture ()
+
+    let deps =
+        { noDeps () with
+            Clipboard.SetText = fun _ -> Error ClipboardUnavailable }
+
+    Shell.interpret deps dispatch (PutOnClipboard(clipboardText [ "notes.txt" ]))
+
+    Assert.Equal<Message list>([ ClipboardUnwritten ClipboardUnavailable ], List.ofSeq sent)
+
+[<Fact>]
+let ``a clipboard error is reported under its title`` () =
+    let mutable reported = ""
+
+    let deps =
+        { noDeps () with
+            Prompts.ReportError = fun report -> reported <- report.Title }
+
+    Shell.interpret deps ignore (ReportClipboardError ClipboardUnavailable)
+
+    Assert.Equal(ClipboardErrorMessage.Title, reported)

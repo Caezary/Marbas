@@ -84,6 +84,8 @@ type Message =
     | FavoriteRequested of FavoriteSlot
     | FavoriteFound of Place
     | FavoritesRequested
+    | NamesCopyRequested
+    | ClipboardUnwritten of ClipboardError
     | QuitRequested
 
 type DeleteRequest =
@@ -132,6 +134,8 @@ type Effect =
     | PromptForFavoriteSlot of Place
     | LookUpFavorite of FavoriteSlot
     | ShowFavorites of current: Place option
+    | PutOnClipboard of ClipboardText
+    | ReportClipboardError of ClipboardError
     | SaveSettings of Settings
     | Quit
 
@@ -629,6 +633,17 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | FavoriteRequested slot -> request state (LookUpFavorite slot)
     | FavoriteFound place -> standInside fs state.Active (Place.toLocation place) state |> applyListing state
     | FavoritesRequested -> request state (ShowFavorites(Place.ofLocation (activePanel state).Path))
+    | NamesCopyRequested ->
+        PanelState.operationNames (activePanel state)
+        |> List.map EntryName.value
+        |> ClipboardText.tryCreate
+        |> Option.map (PutOnClipboard >> request state)
+        |> Option.defaultValue (stay state)
+    | ClipboardUnwritten ClipboardUnavailable ->
+        match state.ClipboardReport with
+        | Unreported -> request { state with ClipboardReport = Reported } (ReportClipboardError ClipboardUnavailable)
+        | Reported -> stay state
+    | ClipboardUnwritten error -> request state (ReportClipboardError error)
     | QuitRequested ->
         { State = state
           Effects = [ SaveSettings(settings fs state); Quit ] }

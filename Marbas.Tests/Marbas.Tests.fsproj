@@ -31,6 +31,7 @@
     <Compile Include="Domain\ProgramSettingsTests.fs" />
     <Compile Include="Domain\FindQueryTests.fs" />
     <Compile Include="Domain\EnteredTextTests.fs" />
+    <Compile Include="Domain\ClipboardTextTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -118,6 +119,7 @@
     <Compile Include="State\FindTests.fs" />
     <Compile Include="State\ResultsPanelTests.fs" />
     <Compile Include="State\ResultsOperationsTests.fs" />
+    <Compile Include="State\ClipboardTests.fs" />
     <Compile Include="State\FolderHistoryTests.fs" />
     <Compile Include="State\HistoryPopupTests.fs" />
     <Compile Include="State\FavoriteTests.fs" />
@@ -160,6 +162,7 @@
     <Compile Include="Ui\Messages\DeleteConfirmationTests.fs" />
     <Compile Include="Ui\Messages\OverwriteQuestionTests.fs" />
     <Compile Include="Ui\Messages\PasswordQuestionTests.fs" />
+    <Compile Include="Ui\Messages\ClipboardErrorMessageTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -207,6 +210,7 @@
     <Compile Include="Adapters\DirectoryWatchTests.fs" />
     <Compile Include="Adapters\LaunchProcessTests.fs" />
     <Compile Include="Adapters\NativeLinksTests.fs" />
+    <Compile Include="Adapters\SystemClipboardTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -294,6 +298,7 @@
     <Compile Include="Integration\App\FindKeyTests.fs" />
     <Compile Include="Integration\App\HistoryKeyTests.fs" />
     <Compile Include="Integration\App\FavoriteKeyTests.fs" />
+    <Compile Include="Integration\App\ClipboardKeyTests.fs" />
     <Compile Include="Integration\App\UnpackKeyTests.fs" />
     <Compile Include="Integration\App\ArchiveBrowseTests.fs" />
     <Compile Include="Integration\App\ArchiveWriteKeyTests.fs" />

@@ -82,6 +82,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
           MakeLink = Links.create links env.Platform fs
           HandlersFor = handlersFor fs env
           PathDirectories = FindGround.pathDirectories fs (pathSeparator env.Platform) env.SearchPath }
+      Clipboard = SystemClipboard.forPlatform env.Platform
       Watches =
         { Modifiers = watchModifiers app env
           Locations = DirectoryWatch.watching app fs }

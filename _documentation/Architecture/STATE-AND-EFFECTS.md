@@ -66,9 +66,9 @@ returns with the queue empty, which is what lets `MainWindow.create` read
 groups them by what they do to the world: `Prompts` asks the person something
 (errors, confirmations, names, patterns, passwords, the find and link popups),
 `Processes` reaches the operating system (trash, editor, launch, links,
-handlers), `Watches` subscribes to it and `Runners` puts work on a background
-task. `Shell.interpret` is the only place that turns an `Effect` into a call on
-one of them. **Every prompt has a type of its own:** each takes a request record
+handlers), `Clipboard` hands things to other programs, `Watches` subscribes to
+the system and `Runners` puts work on a background task. `Shell.interpret` is
+the only place that turns an `Effect` into a call on one of them. **Every prompt has a type of its own:** each takes a request record
 (`ErrorReport`, `Confirmation`, `NamePrompt`, `TargetPrompt`, …) and answers a
 domain value, so wiring the target prompt where the name prompt was meant no
 longer compiles, and the two that used to share `string -> string -> string
@@ -135,6 +135,24 @@ closes the search before being handled normally. `PanelWiring.Host` grew an
 `IsSearching` for exactly that question, answered from `Runtime.State`. The
 alternative, letting `KeyMap` always win, would have made a file name with a
 space unsearchable.
+
+**The clipboard is a port, filled on one system.** `Ports.Clipboard` holds
+`SetText`, which takes a `ClipboardText` and answers
+`Result<unit, ClipboardError>`; reading text and the list of files join it with
+the tasks of phase 18 that need them. `ClipboardText` is a list of lines that
+cannot be empty, and the line break is not in it: `ClipboardText.joined` takes
+the break from whoever spells the text, so the state that builds it stays the
+same on every system and the adapter adds the one its system uses.
+`Adapters/SystemClipboard` speaks the Win32 clipboard on Windows — open it (a
+few short retries, since another program may be holding it), empty it, hand
+over a `CF_UNICODETEXT` block — and answers `ClipboardUnavailable` on Unix
+without trying. A refusal comes back to the state as `ClipboardUnwritten`, and the state
+decides how loud it is: `ClipboardUnavailable` is reported the first time and
+then passed over, through `AppState.ClipboardReport`, the same
+`FailureReport` that keeps the unwritable history to one dialog; a
+`ClipboardFailed` carries the system's reason and is reported every time,
+because a clipboard another program held a moment ago may well be free on the
+next press.
 
 **The background thread is a port, not a thread.** `Runners.Batch`
 takes the progress title, the work to do (handed a `BatchControl` to report

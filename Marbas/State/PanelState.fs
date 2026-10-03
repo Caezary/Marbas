@@ -219,6 +219,11 @@ module PanelState =
         | SearchResults found -> SearchListing.hitFor found entry.Name
         | _ -> None
 
+    let private ownName (p: PanelState) (entry: Entry) =
+        hitAt p entry |> Option.map _.Entry.Name |> Option.defaultValue entry.Name
+
+    let operationNames (p: PanelState) = operationTargets p |> List.map (ownName p)
+
     let private entryInArchive (p: PanelState) (entry: Entry) =
         match p.Path with
         | SearchResults _ -> hitAt p entry |> Option.bind FindHit.archivePlace

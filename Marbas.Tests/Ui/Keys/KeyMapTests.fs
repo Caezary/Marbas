@@ -497,3 +497,17 @@ let ``Alt+B opens the favourites where the desktop keeps Alt+F8`` () =
 
     Assert.Equal(Key.B.WithAlt, KeyMap.spareFavoritesKey)
     Assert.Equal(Some FavoritesRequested, message)
+
+[<Fact>]
+let ``Ctrl+Ins copies the names of the targets`` () =
+    let message = KeyMap.messageFor KeyMap.copyNamesKey
+
+    Assert.Equal(Key.InsertChar.WithCtrl, KeyMap.copyNamesKey)
+    Assert.Equal(Some NamesCopyRequested, message)
+
+[<Fact>]
+let ``Alt+C copies the names where a terminal keeps Ctrl+Ins for itself`` () =
+    let message = KeyMap.messageFor KeyMap.spareCopyNamesKey
+
+    Assert.Equal(Key.C.WithAlt, KeyMap.spareCopyNamesKey)
+    Assert.Equal(Some NamesCopyRequested, message)

@@ -109,6 +109,9 @@ type Processes =
       HandlersFor: EntryName -> Handler list
       PathDirectories: FileSystemPath list }
 
+type Clipboard =
+    { SetText: ClipboardText -> Result<unit, ClipboardError> }
+
 type Watches =
     { Modifiers: (Set<Modifier> -> unit) -> unit
       Locations: FileSystemPath list -> (unit -> unit) -> unit }
@@ -134,5 +137,6 @@ type Dependencies =
       OnQuit: unit -> unit
       Prompts: Prompts
       Processes: Processes
+      Clipboard: Clipboard
       Watches: Watches
       Runners: Runners }

@@ -13,7 +13,7 @@ type Tab =
       Right: PanelState
       Active: PanelSide }
 
-type HistoryReport =
+type FailureReport =
     | Unreported
     | Reported
 
@@ -37,7 +37,8 @@ type AppState =
       LastSearch: FindResults option
       Programs: ProgramSettings
       History: History
-      HistoryReport: HistoryReport
+      HistoryReport: FailureReport
+      ClipboardReport: FailureReport
       HistoryTab: HistoryTab }
 
     member private this.Focused = this.Tabs |> Zipper.current
@@ -79,6 +80,7 @@ let restore (settings: Settings) =
       Programs = settings.Programs
       History = History.empty
       HistoryReport = Unreported
+      ClipboardReport = Unreported
       HistoryTab = FolderHistoryTab }
 
 let create (path: FileSystemPath) = restore (Settings.forPath path)

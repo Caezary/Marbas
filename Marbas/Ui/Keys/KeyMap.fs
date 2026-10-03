@@ -170,6 +170,10 @@ let favoriteSlotOf (key: Key) =
     FavoriteSlot.all
     |> List.tryFind (fun slot -> key = digitKey slot || key = favoriteKey slot)
 
+let copyNamesKey = Key.InsertChar.WithCtrl
+
+let spareCopyNamesKey = Key.C.WithAlt
+
 let historyKey = Key.F12.WithAlt
 
 let spareHistoryKey = Key.H.WithAlt.WithShift
@@ -295,7 +299,9 @@ let bindings =
       unlabelled spaceKey (SelectionToggled Downward)
       unlabelled selectionDownKey (SelectionToggled Downward)
       unlabelled selectionUpKey (SelectionToggled Upward)
-      unlabelled keepFavoriteKey FavoriteKeepRequested ]
+      unlabelled keepFavoriteKey FavoriteKeepRequested
+      unlabelled copyNamesKey NamesCopyRequested
+      unlabelled spareCopyNamesKey NamesCopyRequested ]
     @ (FavoriteSlot.all
        |> List.map (fun slot -> unlabelled (favoriteKey slot) (FavoriteRequested slot)))
 

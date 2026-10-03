@@ -508,6 +508,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match Favorites.load deps.FileSystem deps.FavoritesPath with
         | Ok favorites -> Favorites.placeIn slot favorites |> Option.iter (FavoriteFound >> dispatch)
         | Error error -> reportFavorites deps error
+    | PutOnClipboard text ->
+        match deps.Clipboard.SetText text with
+        | Ok() -> ()
+        | Error error -> dispatch (ClipboardUnwritten error)
+    | ReportClipboardError error -> report deps ClipboardErrorMessage.Title (ClipboardErrorMessage.describe error)
     | SaveSettings settings ->
         match Settings.save deps.FileSystem deps.SettingsPath settings with
         | Ok() -> ()

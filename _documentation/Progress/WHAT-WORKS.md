@@ -300,6 +300,15 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   again with the cursor on it, drawn in the link colour; a link Windows refuses
   for want of Developer Mode, and every other failure, is reported with a
   sentence.
+- `Ctrl+Ins`, and `Alt+C` beside it, put the names of the operation targets on
+  the system clipboard as text: one name per line in listing order, joined by
+  the system line break with none after the last, unquoted, a directory without
+  a trailing separator; a hit in a panel of search results gives its own name,
+  an entry inside an archive the name the archive holds it under. `..` under
+  the cursor with nothing marked copies nothing, and the marks stay as they
+  were. Windows only: on Unix the clipboard refuses, and the refusal is shown
+  the first time in a session and never again; a failure of the Windows
+  clipboard itself is reported every time, with the reason the system gave.
 - While `F5` or `F6` works, a progress window names the file being handled and
   the rest of the app keeps drawing, because the batch runs on a background
   thread. `Esc` (or the Cancel button) closes that window and the batch stops

@@ -1,0 +1,105 @@
+module Marbas.Adapters.SystemClipboard
+
+open System
+open System.Runtime.InteropServices
+open System.Threading
+open Marbas.Domain
+open Marbas.Ui.App
+
+module private User32 =
+
+    [<DllImport("user32.dll", SetLastError = true)>]
+    extern bool OpenClipboard(nativeint owner)
+
+    [<DllImport("user32.dll", SetLastError = true)>]
+    extern bool CloseClipboard()
+
+    [<DllImport("user32.dll", SetLastError = true)>]
+    extern bool EmptyClipboard()
+
+    [<DllImport("user32.dll", SetLastError = true)>]
+    extern nativeint SetClipboardData(uint32 format, nativeint memory)
+
+module private Kernel32 =
+
+    [<DllImport("kernel32.dll", SetLastError = true)>]
+    extern nativeint GlobalAlloc(uint32 flags, unativeint bytes)
+
+    [<DllImport("kernel32.dll", SetLastError = true)>]
+    extern nativeint GlobalLock(nativeint memory)
+
+    [<DllImport("kernel32.dll", SetLastError = true)>]
+    extern bool GlobalUnlock(nativeint memory)
+
+    [<DllImport("kernel32.dll", SetLastError = true)>]
+    extern nativeint GlobalFree(nativeint memory)
+
+[<Literal>]
+let private UnicodeText = 13u
+
+[<Literal>]
+let private Moveable = 0x0002u
+
+[<Literal>]
+let private OpenAttempts = 10
+
+[<Literal>]
+let private OpenPauseMilliseconds = 10
+
+let private lastFailure () =
+    Marshal.GetLastPInvokeError()
+    |> Marshal.GetPInvokeErrorMessage
+    |> ClipboardFailed
+    |> Error
+
+let private freedAfter failure (memory: nativeint) =
+    Kernel32.GlobalFree memory |> ignore
+    failure
+
+let rec private opened attemptsLeft =
+    match User32.OpenClipboard 0n, attemptsLeft with
+    | true, _ -> Ok()
+    | false, 1 -> lastFailure ()
+    | false, _ ->
+        Thread.Sleep OpenPauseMilliseconds
+        opened (attemptsLeft - 1)
+
+let private filled (text: string) (memory: nativeint) =
+    match Kernel32.GlobalLock memory with
+    | 0n -> freedAfter (lastFailure ()) memory
+    | locked ->
+        Marshal.Copy(text.ToCharArray(), 0, locked, text.Length)
+        Marshal.WriteInt16(locked, text.Length * sizeof<char>, 0s)
+        Kernel32.GlobalUnlock memory |> ignore
+        Ok memory
+
+let private memoryHolding (text: string) =
+    match Kernel32.GlobalAlloc(Moveable, unativeint ((text.Length + 1) * sizeof<char>)) with
+    | 0n -> lastFailure ()
+    | memory -> filled text memory
+
+let private handedOver (memory: nativeint) =
+    match User32.SetClipboardData(UnicodeText, memory) with
+    | 0n -> freedAfter (lastFailure ()) memory
+    | _ -> Ok()
+
+let private replaced (text: string) =
+    if User32.EmptyClipboard() then
+        memoryHolding text |> Result.bind handedOver
+    else
+        lastFailure ()
+
+let private setOnWindows (text: ClipboardText) =
+    opened OpenAttempts
+    |> Result.bind (fun () ->
+        try
+            replaced (ClipboardText.joined Environment.NewLine text)
+        finally
+            User32.CloseClipboard() |> ignore)
+
+let private unavailable (_: ClipboardText) = Error ClipboardUnavailable
+
+let forPlatform platform : Ports.Clipboard =
+    match platform with
+    | Windows -> { SetText = setOnWindows }
+    | Unix -> { SetText = unavailable }
