@@ -48,7 +48,11 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   bar, so neither is repainted.
 - Both panels list a real directory: `..` first, then directories, then files,
   each group alphabetically, in aligned name / size / date columns that
-  reformat when the terminal is resized. Directories show `<DIR>`. Names collate
+  reformat when the terminal is resized. Directories show `<DIR>`. Sizes are
+  compact — `512 B`, `1.5 KB`, `59.6 GB`, `2.0 TB`, the way the drive popup
+  spells them — in the panel, in a panel of search results and in the search
+  results window alike, so even a size of terabytes fits its column; the footer
+  and the status line keep the exact number of bytes. Names collate
   the way a reader expects rather than by byte value — punctuation before
   digits, digits before letters, case ignored — so `_notes.txt` heads its group
   instead of trailing behind `zebra`.

@@ -107,7 +107,9 @@ cursor when nothing is marked.
 - `F3` opens the file under the cursor in a read-only viewer (binary files
   show as a hex dump); `F3`/`Esc` closes it. On a directory — or with directories
   marked — `F3` measures them instead: the size replaces `<DIR>` in the size
-  column and shows on the status line. A `≥` in front means something inside
+  column and shows on the status line. Sizes in the listing are rounded to the
+  unit they reach (`1.5 KB`, `59.6 GB`); the status line and the panel footer
+  give the exact number of bytes. A `≥` in front means something inside
   could not be read, so the real size is at least that. Sorting by size
   (`Ctrl+F6`) takes the measured sizes into account. The sizes are forgotten
   when the panel is read again.

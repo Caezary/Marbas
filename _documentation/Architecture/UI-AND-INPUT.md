@@ -359,10 +359,16 @@ and a mark nobody can see is a file operated on by accident.
 **One rule for the size column, formatting per view.** `EntrySize.describe`
 holds the shared decision — a directory nobody has measured gets `<DIR>`, a
 measured one gets its size, files get their size, an unknown size gets nothing —
-and takes the byte-to-text function as an argument. The panel row passes
-`EntrySize.plain` (bare digits, to keep columns narrow), the status line passes
-a grouped format with a `bytes` suffix. A new view only supplies another
-function; the drive popup, which needs `931.5 GB`, supplies `CompactSize`.
+and takes the byte-to-text function as an argument. Since P17.7 the panel row
+passes `CompactSize`, as the drive popup always did, and the status line passes
+a grouped format with a `bytes` suffix; the footer adds the exact bytes up
+itself. The row used to pass bare digits, which needed eleven columns from ten
+gigabytes on and pushed the date out of a ten-column field. A compact size is
+at most nine characters (`1023.0 KB`) and ten with the `≥` of a directory
+measured in part, so the field stays ten wide — the plan hoped it could shrink,
+but only by giving up the `≥`, which says something a reader must not lose. The
+results window of `Alt+F7` formats its hits with the same `EntryFormat`, so it
+spells sizes the same way.
 
 **A measured directory fills the column it had nothing to say in.** `F3` on a
 directory measures it (see [File operations](FILE-OPERATIONS.md)), and the

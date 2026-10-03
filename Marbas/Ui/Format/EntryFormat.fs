@@ -19,7 +19,7 @@ let private fitName width (name: string) =
     else
         name.Substring(0, width - 1) + "…"
 
-let private sizeText = EntrySize.describe EntrySize.plain
+let private sizeText = EntrySize.describe CompactSize.describe
 
 let dateText entry =
     entry.Modified.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)

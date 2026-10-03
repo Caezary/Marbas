@@ -142,4 +142,4 @@ let ``a hit stands indented under its header, with its size and its date`` () =
 
     Assert.StartsWith("  notes.txt", line)
     Assert.EndsWith("2026-09-18 14:30", line)
-    Assert.Contains("1024", line)
+    Assert.Contains(" 1.0 KB ", line)

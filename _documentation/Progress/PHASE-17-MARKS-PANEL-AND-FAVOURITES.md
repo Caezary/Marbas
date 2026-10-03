@@ -151,3 +151,36 @@ that went nowhere, cover the four places and the root on `MockFileSystem`, the
 history, both bindings, and both keys pressed in a real panel; the root case
 passed against the empty function, as a case that expects nothing to happen
 does.
+
+**P17.7 spells sizes compactly in the listing.** `EntryFormat` now hands
+`CompactSize` to `EntrySize.describe`, so a file, a measured directory — with
+its `≥` when measured in part — and a hit in a panel of search results read
+`512 B`, `1.5 KB` or `2.0 TB`; `EntrySize.plain` lost its last caller and went.
+The footer and the status line keep the exact bytes. The tests turned up a
+defect the change also mends: bare digits needed eleven columns from ten
+gigabytes on, and a row holding such a file was wider than its panel; the test
+that every row is as wide as asked failed on it before the change and passes
+after. The column did not get narrower, as the plan hoped: `≥1023.0 KB` is ten
+characters, exactly the old width. The results window of `Alt+F7` formats its
+hits through the same function, so it changed with the panel, and its one test
+that expected `1024` now expects `1.0 KB`.
+
+The screen was read off a running `Application` with the `render-tui-screen`
+probe — both panels drawn by the real `FilePanel.render` from a listing of
+synthetic entries, since a mock file cannot hold a terabyte:
+
+```
+║photos                           59.6 GB 2026-10-03 12:30║
+║backups                       ≥1023.0 KB 2026-10-03 12:30║
+║empty.txt                            0 B 2026-10-03 12:30║
+║note.txt                           512 B 2026-10-03 12:30║
+║kilo.bin                          1.5 KB 2026-10-03 12:30║
+║film.mkv                          9.3 GB 2026-10-03 12:30║
+║disk.img                          2.0 TB 2026-10-03 12:30║
+║─────────────────────────────────────────────────────────║
+║7 files, 3 folders   2,209,029,025,791 bytes             ║
+```
+
+The footer's figure is the exact sum of the seven files, and the other panel,
+with two of them marked, showed `2 selected   2,199,023,257,088 bytes`, the
+exact sum of those two.

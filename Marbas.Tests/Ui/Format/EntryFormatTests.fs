@@ -35,7 +35,7 @@ let private dir name =
 let ``file row has name, right-aligned size and date columns`` () =
     let row = EntryFormat.format 40 (file "notes.txt" 5L)
 
-    Assert.Equal("notes.txt" + String(' ', 13) + "5 2026-07-01 12:30", row)
+    Assert.Equal("notes.txt" + String(' ', 11) + "5 B 2026-07-01 12:30", row)
 
 [<Fact>]
 let ``directory row shows DIR marker instead of size`` () =
@@ -47,6 +47,7 @@ let ``directory row shows DIR marker instead of size`` () =
 let ``every row is exactly as wide as requested`` () =
     let entries =
         [ file "a.txt" 12345L
+          file "huge.iso" 10000000000L
           file "very_long_file_name_that_overflows.txt" 1L
           dir ".." ]
 
@@ -67,3 +68,36 @@ let ``narrow width falls back to name only`` () =
 
     Assert.Equal("abc.txt   ", shortName)
     Assert.Equal("very_long…", longName)
+
+let private measured name size =
+    { dir name with Measured = Some size }
+
+[<Theory>]
+[<InlineData(512L, "512 B")>]
+[<InlineData(1536L, "1.5 KB")>]
+[<InlineData(5767168L, "5.5 MB")>]
+[<InlineData(10000000000L, "9.3 GB")>]
+[<InlineData(2199023255552L, "2.0 TB")>]
+let ``a file's size is spelled compactly in its column`` (bytes: int64) (expected: string) =
+    let row = EntryFormat.format 40 (file "a.bin" bytes)
+
+    Assert.EndsWith($" {expected} 2026-07-01 12:30", row)
+
+[<Fact>]
+let ``a measured directory shows its size compactly`` () =
+    let row = EntryFormat.format 40 (measured "docs" (Exact 3221225472L))
+
+    Assert.EndsWith(" 3.0 GB 2026-07-01 12:30", row)
+
+[<Fact>]
+let ``a directory measured only in part keeps its at-least mark`` () =
+    let row = EntryFormat.format 40 (measured "docs" (AtLeast 1536L))
+
+    Assert.EndsWith(" ≥1.5 KB 2026-07-01 12:30", row)
+
+[<Fact>]
+let ``the longest compact size fits its column whole`` () =
+    let row = EntryFormat.format 40 (measured "docs" (AtLeast 1047551L))
+
+    Assert.Equal(40, row.Length)
+    Assert.Contains(" ≥1023.0 KB ", row)
