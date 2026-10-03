@@ -11,6 +11,15 @@ let private polish = "zażółć.txt"
 
 let private legacy = ArchiveNames.legacyEncoding 852
 
+let private inCulture (culture: string) work =
+    let previous = CultureInfo.CurrentCulture
+    CultureInfo.CurrentCulture <- CultureInfo culture
+
+    try
+        work ()
+    finally
+        CultureInfo.CurrentCulture <- previous
+
 let private decoded claimed (bytes: byte array) =
     ArchiveNames.decode legacy bytes 0 bytes.Length claimed
 
@@ -88,3 +97,19 @@ let ``a Polish culture reads legacy names as code page 852`` () =
     let codePage = ArchiveNames.legacyCodePage (CultureInfo "pl-PL")
 
     Assert.Equal(852, codePage)
+
+[<WindowsFact "The OEM code page of a culture is a Windows concept">]
+let ``the legacy encoding is the Polish one once the culture turns Polish`` () =
+    inCulture "en-US" ArchiveNames.legacy |> ignore
+
+    let encoding = inCulture "pl-PL" ArchiveNames.legacy
+
+    Assert.Equal(852, encoding.CodePage)
+
+[<WindowsFact "The OEM code page of a culture is a Windows concept">]
+let ``the legacy encoding is no longer Polish once the culture turns English`` () =
+    inCulture "pl-PL" ArchiveNames.legacy |> ignore
+
+    let encoding = inCulture "en-US" ArchiveNames.legacy
+
+    Assert.Equal(437, encoding.CodePage)

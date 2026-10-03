@@ -10,10 +10,13 @@ let private Utf8CodePage = 65001
 
 let private strictUtf8 = UTF8Encoding(false, true)
 
+let private codePages =
+    lazy (Encoding.RegisterProvider CodePagesEncodingProvider.Instance)
+
 let legacyCodePage (culture: CultureInfo) = culture.TextInfo.OEMCodePage
 
 let legacyEncoding codePage =
-    Encoding.RegisterProvider CodePagesEncodingProvider.Instance
+    codePages.Force()
 
     match codePage with
     | 0
@@ -33,15 +36,8 @@ let decode (legacy: Encoding) (bytes: byte array) index count claimed =
         with :? DecoderFallbackException ->
             legacy.GetString(bytes, index, count)
 
-let private resolved =
-    lazy (CultureInfo.CurrentCulture |> legacyCodePage |> legacyEncoding)
+let legacy () =
+    CultureInfo.CurrentCulture |> legacyCodePage |> legacyEncoding
 
-let legacy () = resolved.Value
-
-let private decoder =
-    lazy
-        ArchiveEncoding(
-            CustomDecoder = Func<byte array, int, int, EncodingType, string>(decode (legacy ()))
-        )
-
-let reading () = decoder.Value
+let reading () =
+    ArchiveEncoding(CustomDecoder = Func<byte array, int, int, EncodingType, string>(decode (legacy ())))

@@ -347,10 +347,13 @@ it names UTF-8, or when nothing answers to it; Latin-1 because it maps every
 byte to a character and so loses nothing it cannot explain. The UTF-8 test is a
 strict `UTF8Encoding` rather than `TextEncoding.detect`, whose tolerance of a
 sequence cut short by the end of the probe is right for a file's first 8 KB and
-wrong for a name, where a cut sequence means the bytes are not UTF-8. The code
-page and the decoder it is wrapped in are resolved once per process —
-`ArchiveNames.legacy` and `reading` are `lazy` — so registering the code-page
-provider and looking the encoding up no longer happen on every archive open.
+wrong for a name, where a cut sequence means the bytes are not UTF-8. The
+code-page provider is registered once per process, but the code page itself is
+looked up from the current culture on every archive open — `Encoding` keeps its
+own cache, so the lookup costs nothing worth saving. Caching the encoding too
+froze it at whichever culture asked first: the archive-name tests switch to
+`pl-PL`, and on a machine whose own culture is English they read 852-encoded
+names through 437.
 
 Writing was never the problem: a zip Marbas writes carries bit 11 and UTF-8
 bytes, so other tools read it back intact. What this fixes is the other
