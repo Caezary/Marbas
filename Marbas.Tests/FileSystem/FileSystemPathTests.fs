@@ -356,3 +356,20 @@ let ``distinct entries keep the first spelling of each entry`` () =
     let distinct = FileSystemPath.distinctEntries platform paths
 
     Assert.Equal<FileSystemPath list>([ fp (at "bin"); fp (at "tools") ], distinct)
+
+[<Fact>]
+let ``a relative path is resolved from the directory given, steps up included`` () =
+    let fs = MockFileSystem()
+    let relative = Root.relative "../work/notes.txt"
+
+    let resolved = FileSystemPath.resolvedFrom fs (fp (at "start")) relative
+
+    Assert.Equal(fp (at "work/notes.txt"), resolved)
+
+[<Fact>]
+let ``a full path is resolved to itself, whatever the directory`` () =
+    let fs = MockFileSystem()
+
+    let resolved = FileSystemPath.resolvedFrom fs (fp (at "start")) (at "work/notes.txt")
+
+    Assert.Equal(fp (at "work/notes.txt"), resolved)

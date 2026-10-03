@@ -384,6 +384,18 @@ let operationSpellings (fs: IFileSystem) panel =
 let operationPaths (fs: IFileSystem) panel =
     PanelState.operationTargets panel |> List.choose (entryPath fs panel)
 
+let private placeLedTo (fs: IFileSystem) panel (entry: Entry) =
+    let own = spelledTarget fs panel entry
+
+    match entry.LinkTarget, entryPath fs panel entry with
+    | Some target, Some path ->
+        FileSystemPath.resolvedFrom fs (FileSystemPath.directory fs path) (FileSystemPath.value target)
+    | None, Some path when Shortcut.isShortcut entry.Name -> Shortcut.target fs path |> Option.defaultValue own
+    | _ -> own
+
+let placesLedTo (fs: IFileSystem) panel =
+    PanelState.operationTargets panel |> List.map (placeLedTo fs panel)
+
 let cursorFilePath (fs: IFileSystem) panel =
     PanelState.cursorEntry panel
     |> Option.filter (fun entry -> entry.Kind = File)

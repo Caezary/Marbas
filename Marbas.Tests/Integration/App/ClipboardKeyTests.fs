@@ -93,3 +93,39 @@ let ``Alt+P puts the full path under the cursor on the clipboard`` () =
     pressKey window KeyMap.spareCopyPathsKey
 
     Assert.Equal<string list list>([ [ at "start/docs" ] ], List.ofSeq handed)
+
+let private linkedFs () =
+    let fs = mockFs ()
+    fs.AddDirectory(at "work")
+    fs.Directory.CreateSymbolicLink(at "start/place", at "work") |> ignore
+    fs
+
+[<Fact>]
+let ``Ctrl+Alt+Ins puts the place the link under the cursor leads to on the clipboard`` () =
+    let handed = ResizeArray<string list>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies (linkedFs ()) (at "start") with
+                Clipboard.SetText = taking handed }
+
+    pressKey window Key.CursorDown
+    pressKey window Key.CursorDown
+    pressKey window KeyMap.copyLinkTargetsKey
+
+    Assert.Equal<string list list>([ [ at "work" ] ], List.ofSeq handed)
+
+[<Fact>]
+let ``Alt+L puts the place the link under the cursor leads to on the clipboard`` () =
+    let handed = ResizeArray<string list>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies (linkedFs ()) (at "start") with
+                Clipboard.SetText = taking handed }
+
+    pressKey window Key.CursorDown
+    pressKey window Key.CursorDown
+    pressKey window KeyMap.spareCopyLinkTargetsKey
+
+    Assert.Equal<string list list>([ [ at "work" ] ], List.ofSeq handed)

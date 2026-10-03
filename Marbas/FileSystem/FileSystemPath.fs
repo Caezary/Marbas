@@ -93,6 +93,9 @@ module FileSystemPath =
     let directory (fs: IFileSystem) (FileSystemPath path) =
         FileSystemPath(fs.Path.GetDirectoryName path)
 
+    let resolvedFrom (fs: IFileSystem) (FileSystemPath directory) (path: string) =
+        FileSystemPath(fs.Path.GetFullPath(fs.Path.Combine(directory, path)))
+
     let root (fs: IFileSystem) (FileSystemPath path) =
         match fs.Path.GetPathRoot path with
         | null

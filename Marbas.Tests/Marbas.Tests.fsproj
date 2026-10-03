@@ -15,6 +15,7 @@
     <Compile Include="UnixFact.fs" />
     <Compile Include="SymbolicLinkFact.fs" />
     <Compile Include="Expect.fs" />
+    <Compile Include="ShortcutBytes.fs" />
     <Compile Include="Collections\ZipperTests.fs" />
     <Compile Include="Fakes.fs" />
   </ItemGroup>
@@ -78,6 +79,7 @@
     <Compile Include="FileSystem\OperationsTests.fs" />
     <Compile Include="FileSystem\WipeTests.fs" />
     <Compile Include="FileSystem\LinksTests.fs" />
+    <Compile Include="FileSystem\ShortcutTests.fs" />
     <Compile Include="FileSystem\TrashTests.fs" />
     <Compile Include="FileSystem\WorkspaceTests.fs" />
   </ItemGroup>
@@ -221,6 +223,7 @@
     <Compile Include="Integration\Disk\Scratch.fs" />
     <Compile Include="Integration\Disk\LinkWalkTests.fs" />
     <Compile Include="Integration\Disk\NativeLinkTests.fs" />
+    <Compile Include="Integration\Disk\LinkTargetCopyTests.fs" />
     <Compile Include="Integration\Disk\DriveListTests.fs" />
   </ItemGroup>
 

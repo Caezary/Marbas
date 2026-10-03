@@ -508,6 +508,41 @@ line already do, and P18.5 is the task that reads such a path back. That is
 also why the copy does not go through `operationPaths`, which answers only what
 exists on disk and leaves a hit inside an archive out.
 
+**Where a link leads is the entry's own question, answered once per target.**
+`Ctrl+Alt+Ins` and `Alt+L` raise `LinkTargetsCopyRequested`, which reads
+`AppState.placesLedTo`. A target with a `LinkTarget` — a symbolic link or a
+junction, which `FileSystemInfo.LinkTarget` reads alike and the listing already
+carries for the status line — gives that target, passed through
+`FileSystemPath.resolvedFrom` the directory the link is listed in, so a relative
+link comes out whole and an absolute one unchanged. A file on disk named
+`*.lnk` gives what `Shortcut.target` reads from it. Anything else, and either of
+them when nothing can be read, gives its own spelling from `operationSpellings`,
+so the clipboard holds one line per target whatever happened. The directory a
+link is listed in is the one the panel shows, not the one the operating system
+would reach by following the links above it: the plan asked for the entry to be
+resolved and nothing more, and the path the user sees is the one the answer
+builds on. An entry inside an archive is never a link here — the archive
+listing carries no `LinkTarget` — and a shortcut inside one is not extracted to
+be read.
+
+**A shortcut is parsed, not asked about.** `Shortcut.parse` reads the Shell
+Link format from bytes, so it is tested byte by byte on `MockFileSystem` and
+works wherever the file can be read, without COM or the Windows shell. It reads
+the header and its class identifier, steps over the list of shell items, and
+takes the target from the link information — the local base path and the common
+suffix, in UTF-16 when the header carries the wide offsets, or the share name
+and the suffix of a network path — and, failing that, the relative path from
+the string data, resolved from the shortcut's own directory by
+`Shortcut.target`. A path held only in the system's ANSI code page is accepted
+when every byte of it is ASCII; anything else gives way to the relative path,
+which Windows writes in UTF-16, because the code page a shortcut was written in
+is not recorded in it. Every read is bounds-checked and answers an option, so a
+truncated or foreign file is no target rather than an exception; a shortcut
+larger than a megabyte is not read at all. A file that cannot be read is mapped
+through `ContentError.mapException` and then, like an unparsable one, falls
+back to the shortcut's own path, which is what the plan asked for. A shortcut
+Windows itself wrote through `WScript.Shell` is read in a test on the real disk.
+
 **Text is lines, and the line break belongs to the system.** The state answers
 `PutOnClipboard` with the names as lines; the Windows adapter joins them with
 the system line break and adds none after the last, so a single name pastes into

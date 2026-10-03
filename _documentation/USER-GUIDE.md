@@ -145,6 +145,14 @@ and nothing marked there is nothing to copy.
   way. An entry inside an archive is spelled as the panel title spells it,
   through the archive: `C:\work\backup.zip\docs\notes.txt`. In a panel of
   search results each hit gives its own full path, wherever it was found.
+- `Ctrl+Alt+Ins` — or `Alt+L` — puts on the clipboard where each of them
+  leads: for a symbolic link or a junction the place it points at (the one the
+  status line shows after `->`, made a full path when the link holds a relative
+  one), for a `.lnk` shortcut the file or directory the shortcut names. Anything
+  else — a plain file, a shortcut Marbas cannot read, an entry inside an
+  archive — gives its own full path, so every target still gets a line. Only
+  the entry itself is followed: a link inside a linked directory is resolved
+  from where the panel shows it, not from where the directory really lives.
 
 On Linux and macOS Marbas cannot reach the clipboard yet; the first attempt
 in a session says so, and later ones stay quiet.

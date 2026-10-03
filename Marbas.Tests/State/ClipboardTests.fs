@@ -263,3 +263,89 @@ let ``each hit in a panel of search results gives its own full path, inside an a
         copying [ at "start/a/one.txt"; at "start/backup.zip/docs/inner.txt" ],
         result.Effects
     )
+
+let private linked () =
+    let fs = mockFs ()
+    fs.AddFile(at "work/report.txt", MockFileData "report")
+    fs.File.CreateSymbolicLink(at "start/twin.txt", at "start/notes.txt") |> ignore
+    fs.Directory.CreateSymbolicLink(at "start/place", at "work") |> ignore
+    fs.Directory.SetCurrentDirectory(at "start")
+    fs.File.CreateSymbolicLink(at "start/near.txt", "readme.txt") |> ignore
+    fs.AddFile(at "start/report.lnk", MockFileData(ShortcutBytes.toFullPath (at "work/report.txt")))
+    fs.AddFile(at "start/broken.lnk", MockFileData "not a shortcut")
+    fs
+
+[<Theory>]
+[<InlineData("twin.txt", "start/notes.txt")>]
+[<InlineData("place", "work")>]
+[<InlineData("near.txt", "start/readme.txt")>]
+[<InlineData("report.lnk", "work/report.txt")>]
+let ``a link or a shortcut under the cursor copies the place it leads to`` (name: string, target: string) =
+    let fs = linked ()
+    let state = started fs |> standingOn name
+
+    let result = update fs LinkTargetsCopyRequested state
+
+    Assert.Equal<Effect list>(copying [ at target ], result.Effects)
+
+[<Theory>]
+[<InlineData("notes.txt", "start/notes.txt")>]
+[<InlineData("docs", "start/docs")>]
+[<InlineData("broken.lnk", "start/broken.lnk")>]
+let ``an entry that leads nowhere else copies its own full path`` (name: string, path: string) =
+    let fs = linked ()
+    let state = started fs |> standingOn name
+
+    let result = update fs LinkTargetsCopyRequested state
+
+    Assert.Equal<Effect list>(copying [ at path ], result.Effects)
+
+[<Fact>]
+let ``each marked entry gives the place it leads to, in the order of the listing`` () =
+    let fs = linked ()
+    let state = started fs |> markedOn [ "twin.txt"; "notes.txt"; "report.lnk" ]
+
+    let result = update fs LinkTargetsCopyRequested state
+
+    Assert.Equal<Effect list>(
+        copying [ at "start/notes.txt"; at "work/report.txt"; at "start/notes.txt" ],
+        result.Effects
+    )
+
+[<Fact>]
+let ``an entry inside an archive copies its own full path`` () =
+    let fs = ArchiveFixture.packed ()
+
+    let state =
+        ArchiveFixture.loaded fs
+        |> standInside fs Left (InArchive(ArchiveFixture.archive, ArchivePath.root))
+        |> Expect.ok
+        |> standingOn "notes.txt"
+
+    let result = update fs LinkTargetsCopyRequested state
+
+    Assert.Equal<Effect list>(copying [ at "start/backup.zip/notes.txt" ], result.Effects)
+
+[<Fact>]
+let ``a shortcut found by a search copies the place it leads to`` () =
+    let fs = linked ()
+
+    let state =
+        started fs
+        |> update fs (sentToPanel [ hitIn "start" "report.lnk" ])
+        |> _.State
+        |> update fs (PatternEntered(Select, everything))
+        |> _.State
+
+    let result = update fs LinkTargetsCopyRequested state
+
+    Assert.Equal<Effect list>(copying [ at "work/report.txt" ], result.Effects)
+
+[<Fact>]
+let ``no link target is copied with the parent entry under the cursor and nothing marked`` () =
+    let fs = linked ()
+    let state = started fs |> standingOn ".."
+
+    let result = update fs LinkTargetsCopyRequested state
+
+    Assert.Empty result.Effects

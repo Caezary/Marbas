@@ -314,6 +314,15 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   entry inside an archive spelled through the archive the way the panel title
   spells a level (`C:\work\backup.zip\docs\notes.txt`), and a hit in a panel of
   search results by its own full path, on disk or inside an archive alike.
+- `Ctrl+Alt+Ins`, and `Alt+L` beside it, put on the clipboard where each of
+  the same targets leads. A symbolic link or a junction gives its target as the
+  status line reads it, a relative one resolved from the directory the link is
+  listed in; a `.lnk` shortcut on disk gives the path it names — a local path,
+  a path on a network share or, failing both, its relative path taken from the
+  shortcut's own directory — read by Marbas's own parser of the format, so it
+  works without the Windows shell. A shortcut the parser cannot read, an entry
+  inside an archive and anything that is no link give their own full path. Only
+  the entry is followed, never the directories above it.
 - While `F5` or `F6` works, a progress window names the file being handled and
   the rest of the app keeps drawing, because the batch runs on a background
   thread. `Esc` (or the Cancel button) closes that window and the batch stops

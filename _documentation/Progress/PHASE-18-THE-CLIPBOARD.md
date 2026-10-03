@@ -91,3 +91,43 @@ both keys in `KeyMapTests` and through `MainWindow` in `ClipboardKeyTests`. The
 `Ins Ins Alt+P` through a running `Application` over the scratch directory of
 P18.1 and got the full path of `docs`, of `notes.txt`, and of `notes.txt` and
 `readme.txt`.
+
+**P18.3 copied where the links lead, and gave Marbas a reader of shortcuts.**
+`Ctrl+Alt+Ins` and `Alt+L` raise `LinkTargetsCopyRequested`, read through
+`AppState.placesLedTo`. A symbolic link and a junction needed nothing new: the
+listing already carries `LinkTarget` for the status line, and .NET reads a
+junction's target the same way as a link's. What was new is a relative target
+— `ln -s readme.txt near.txt` — which the status line shows as written and the
+clipboard now gets whole, through `FileSystemPath.resolvedFrom` the directory
+the link is listed in. That directory is the one in the panel, so a link inside
+a linked directory resolves under the path the user sees, as the plan wanted.
+
+The shortcut parser is `FileSystem/Shortcut.fs`: header and class identifier,
+the shell item list stepped over, then the link information — local path or
+network share, UTF-16 when the wide offsets are there — and the relative path
+of the string data as the last resort. A path in a code page other than ASCII
+is not guessed at; Windows writes the relative path in UTF-16, and that is
+where the parser goes instead. Every read is bounds-checked, so a truncated
+shortcut or a file that only ends in `.lnk` is no target, and the copy falls
+back to the shortcut's own path. The byte builders the tests share live in
+`ShortcutBytes.fs`.
+
+The tests: sixteen in `ShortcutTests` — a local path, a base path and suffix,
+the item list stepped over, a UTF-16 path with Polish letters, a network share,
+a relative path, a Latin-1 path giving way to the relative one, no place at
+all, foreign bytes, a truncated file, the `.lnk` name both ways, and on
+`MockFileSystem` a full target, a relative one, garbage and a missing file;
+two in `FileSystemPathTests` for `resolvedFrom`; eleven in `State/ClipboardTests`
+for a link to a file, to a directory, a relative link, a shortcut, a plain
+file, a directory, an unreadable shortcut, marked entries, an entry inside an
+archive, a shortcut found by a search and `..` alone. On the real disk,
+`LinkTargetCopyTests` makes a junction, a relative shortcut below a junction and
+a shortcut written by Windows itself through `WScript.Shell`, and all three are
+read; the fourth, a relative symbolic link below a linked directory, needs the
+right to make symbolic links, so it is skipped on a Windows machine without it
+and runs on the Linux runner, where anyone may make one. The probe then pressed
+`↓ ↓ Ctrl+Alt+Ins`,
+`End Alt+L` and `↑ Alt+L` through a running `Application` over a scratch
+directory holding a junction `place` and a shortcut `report.lnk` saved by
+`WScript.Shell`, and got the junction's directory, the shortcut's file, and
+`readme.txt`'s own path.

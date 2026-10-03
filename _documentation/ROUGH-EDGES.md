@@ -256,3 +256,10 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   a terminal's OSC 52 escape), and files a desktop-specific format, and none of
   them is called yet. The fix is one more implementation of the same port; the
   plan of phase 18 leaves it for a later phase.
+- `Alt+L` reads a `.lnk` shortcut only as far as a path goes. A shortcut to
+  something that has no path — a Control Panel item, a printer, an application
+  from the Store — and one whose target is kept only in the environment
+  variable block (`%ProgramFiles%\…`) gives the shortcut's own path. So does a
+  local path written in a code page other than ASCII when the shortcut carries
+  no relative path to fall back on; the code page is not recorded in the file.
+  An internet shortcut (`.url`) is not read at all.

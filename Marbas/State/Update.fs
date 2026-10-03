@@ -86,6 +86,7 @@ type Message =
     | FavoritesRequested
     | NamesCopyRequested
     | PathsCopyRequested
+    | LinkTargetsCopyRequested
     | ClipboardUnwritten of ClipboardError
     | QuitRequested
 
@@ -644,7 +645,13 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         |> List.map EntryName.value
         |> copyingText state
     | PathsCopyRequested ->
-        operationSpellings fs (activePanel state)
+        activePanel state
+        |> operationSpellings fs
+        |> List.map FileSystemPath.value
+        |> copyingText state
+    | LinkTargetsCopyRequested ->
+        activePanel state
+        |> placesLedTo fs
         |> List.map FileSystemPath.value
         |> copyingText state
     | ClipboardUnwritten ClipboardUnavailable ->
