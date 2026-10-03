@@ -260,6 +260,12 @@ let applyPattern mode side pattern state =
 let applyLikeness mode side likeness state =
     updatePanel side (PanelState.applyLikeness mode likeness) state
 
+let applyAllFiles mode side state =
+    updatePanel side (PanelState.applyAllFiles mode) state
+
+let invertSelection side state =
+    updatePanel side PanelState.invertSelection state
+
 let private asOperationError error =
     match error with
     | DirectoryNotFound path -> Operations.SourceNotFound path

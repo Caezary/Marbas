@@ -168,6 +168,18 @@ module PanelState =
         | Some anchor -> applyNames mode (alikeTo likeness anchor p) p
         | None -> p
 
+    let private selectableNames keep (p: PanelState) =
+        p.Entries
+        |> Array.filter (fun e -> selectable e && keep e)
+        |> Array.map _.Name
+        |> Set.ofArray
+
+    let applyAllFiles mode (p: PanelState) =
+        applyNames mode (selectableNames (fun e -> e.Kind = File) p) p
+
+    let invertSelection (p: PanelState) =
+        { p with Selected = Set.difference (selectableNames (fun _ -> true) p) p.Selected }
+
     let keepSurviving selected (p: PanelState) =
         let listed = p.Entries |> Array.map _.Name |> Set.ofArray
 

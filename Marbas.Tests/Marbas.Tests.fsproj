@@ -101,6 +101,7 @@
     <Compile Include="State\ArchiveWriteTests.fs" />
     <Compile Include="State\SelectionPatternTests.fs" />
     <Compile Include="State\SelectionLikenessTests.fs" />
+    <Compile Include="State\SelectionFilesAndInversionTests.fs" />
     <Compile Include="State\MkdirTests.fs" />
     <Compile Include="State\DeleteTests.fs" />
     <Compile Include="State\TransferTests.fs" />
@@ -239,6 +240,7 @@
     <Compile Include="Integration\Panels\SelectionKeyTests.fs" />
     <Compile Include="Integration\Panels\SelectionPatternKeyTests.fs" />
     <Compile Include="Integration\Panels\SelectionLikenessKeyTests.fs" />
+    <Compile Include="Integration\Panels\SelectionInversionKeyTests.fs" />
     <Compile Include="Integration\Panels\SortKeyTests.fs" />
     <Compile Include="Integration\Panels\HiddenKeyTests.fs" />
   </ItemGroup>

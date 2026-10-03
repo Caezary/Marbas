@@ -40,7 +40,9 @@ needs to be installed. On Linux and macOS, mark the file executable first
   on. Terminals turn `Ctrl+\` into `Ctrl+4` before Marbas sees it, so both are
   bound and `Ctrl+4` is the one that works everywhere.
 - Typing a printable character opens a search in the active panel: the
-  cursor jumps to the first entry whose name contains what you typed.
+  cursor jumps to the first entry whose name contains what you typed. `+`, `-`
+  and `*` are the exceptions: they mark (see below), and only type into a
+  search that is already open.
   `Backspace` edits it, `Esc` or any other key closes it (and that other key
   still does its own job).
 
@@ -59,6 +61,11 @@ needs to be installed. On Linux and macOS, mark the file executable first
   count too. The classic grey-key spellings — `Ctrl` or `Alt` with the `+` and
   `-` of the numeric keypad — are bound as well, but no terminal measured so far
   delivers them.
+- `Alt+A` / `Alt+Shift+A` mark or unmark every file, leaving the marks on
+  directories as they were.
+- `*` (grey or main) or `Alt+I` inverts the marks: what was marked is
+  unmarked and the other way round, directories included. `..` is never
+  marked by any of these.
 
 Marked entries are shown in yellow, and stay marked while the cursor moves
 about the listing; the footer counts them and adds up their sizes.

@@ -101,3 +101,17 @@ double extensions and names without a dot, and one of them is what keeps `..`
 out: by extension, `..` is alike to every name without one, and a mutation that
 dropped the `selectable` filter was caught by it. Two key tests drive `Alt+E`
 and `Alt+Shift+N` through a real panel.
+
+**P17.4 marks all files and inverts.** `Alt+A` marks every file and
+`Alt+Shift+A` unmarks every file, both leaving the marks of directories as they
+were; `Alt+I` and a bare `*` invert the marks of every entry, directories
+included, with `Shift+grey+`, `Shift+grey-` and `Ctrl+grey*` bound beside them.
+Both transitions sit beside the patterns and the likeness in `PanelState` and
+take no anchor from the cursor, so `..` under it makes no difference and `..`
+itself is never in the set. The bare `*` is the one change a user will notice
+outside marking: it no longer opens the quick search, though it still types into
+a search already open, as `+` and `-` always have. The tests were run red first
+against transitions that changed nothing — nine failed, the tenth, inverting
+twice, holds for any transition that changes nothing and passed by nature —
+then green against the real ones. They cover a listing with marked and unmarked
+files and directories, and each of the three after a pattern applied before it.

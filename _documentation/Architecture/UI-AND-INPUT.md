@@ -83,6 +83,22 @@ to unmark; the grey-key spellings are bound beside them for a driver that may
 deliver them one day, for the reasons measured in
 [Cross-platform](CROSS-PLATFORM.md).
 
+**Marking all files and inverting need no anchor.** `PanelState.applyAllFiles`
+hands every selectable entry of kind `File` to the same `applyNames` as the
+patterns, so `Alt+Shift+A` takes the files off and leaves a directory marked by
+anything else alone. `PanelState.invertSelection` is the set of selectable names
+minus the marks; a mark on a name the listing no longer holds cannot survive it,
+which is what `keepSurviving` does on a reload anyway. The cursor plays no part
+in either, so `..` under it changes nothing, and `..` never enters the set.
+
+**A bare `*` is a command, not the start of a search.** `PanelWiring` asks
+`KeyMap.messageFor` before it treats a printable key as search text, so binding
+`Key '*'` is all it takes: `*` inverts, as the grey `*` does in the classic
+managers, and it arrives from both keyboards in every terminal measured. Once a
+search is open every printable key is text, `*` included, exactly as `+` and
+`-` have always behaved. A name holding `*` is rare, and on Windows impossible,
+so the search loses nothing worth the classic key.
+
 **The shifted page keys cannot be `KeyMap.bindings`, so `KeyMap` answers with a
 direction instead.** `bindings` maps a key to a whole `Message`, and these four
 keys only become a message once the view has measured the page. `KeyMap` keeps

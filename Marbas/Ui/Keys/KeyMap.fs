@@ -59,6 +59,20 @@ let classicMarkStemKey = selectPatternKey.WithAlt
 
 let classicUnmarkStemKey = deselectPatternKey.WithAlt
 
+let markFilesKey = Key.A.WithAlt
+
+let unmarkFilesKey = Key.A.WithAlt.WithShift
+
+let classicMarkFilesKey = selectPatternKey.WithShift
+
+let classicUnmarkFilesKey = deselectPatternKey.WithShift
+
+let invertKey = Key.I.WithAlt
+
+let starInvertKey = Key '*'
+
+let classicInvertKey = starInvertKey.WithCtrl
+
 let leftRootKey = Key.F1.WithAlt
 
 let rightRootKey = Key.F2.WithAlt
@@ -235,6 +249,13 @@ let bindings =
       unlabelled unmarkStemKey (LikenessRequested(Deselect, SameStem))
       unlabelled classicMarkStemKey (LikenessRequested(Select, SameStem))
       unlabelled classicUnmarkStemKey (LikenessRequested(Deselect, SameStem))
+      unlabelled markFilesKey (AllFilesRequested Select)
+      unlabelled unmarkFilesKey (AllFilesRequested Deselect)
+      unlabelled classicMarkFilesKey (AllFilesRequested Select)
+      unlabelled classicUnmarkFilesKey (AllFilesRequested Deselect)
+      unlabelled invertKey InversionRequested
+      unlabelled starInvertKey InversionRequested
+      unlabelled classicInvertKey InversionRequested
       unlabelled insertKey (SelectionToggled Downward)
       unlabelled spaceKey (SelectionToggled Downward)
       unlabelled selectionDownKey (SelectionToggled Downward)

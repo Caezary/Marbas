@@ -37,7 +37,8 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   shortens it and closes it on the last character, `Esc` closes it, and any
   other key closes it and then does its own job — so `Enter` opens what was
   found and `F5` copies it. While the search is open every printable key is
-  text, `Space` and `+` included; while it is closed those keep their commands.
+  text, `Space`, `+` and `*` included; while it is closed those keep their
+  commands, so `*` inverts the marks rather than opening a search.
   Switching panels or reloading a panel closes its search, and the cursor stays
   where the search left it.
 - Entries are coloured by what they are: directories and `..` white, ordinary
@@ -189,6 +190,12 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   above. With `..` under the cursor the four keys do nothing, and `..` is never
   marked. `Ctrl+grey+`, `Ctrl+grey-`, `Alt+grey+` and `Alt+grey-` are bound
   beside them for a driver that may one day deliver them.
+- `Alt+A` marks every file and `Alt+Shift+A` unmarks every file, both leaving
+  the marks of directories as they were; `Alt+I` or a bare `*`, grey or main,
+  inverts the marks of every entry, directories included. `..` is skipped by
+  all three, and all three work on the same selection, so `*.txt` followed by
+  `*` marks everything but the text files. `Shift+grey+`, `Shift+grey-` and
+  `Ctrl+grey*` are bound beside them, for the same reason as above.
 - A rule separates the listing from the bottom row of each panel, and that row
   is never blank: it summarises the marks — how many entries and how many bytes
   they add up to — and falls back to what the directory holds (`3 files, 2

@@ -356,3 +356,40 @@ let ``Alt with the grey plus and minus ask the same by name, where a driver deli
     Assert.Equal((Key '-').WithAlt, KeyMap.classicUnmarkStemKey)
     Assert.Equal(Some(LikenessRequested(Select, SameStem)), marking)
     Assert.Equal(Some(LikenessRequested(Deselect, SameStem)), unmarking)
+
+[<Fact>]
+let ``Alt+A and Alt+Shift+A mark and unmark every file`` () =
+    let marking = KeyMap.messageFor KeyMap.markFilesKey
+    let unmarking = KeyMap.messageFor KeyMap.unmarkFilesKey
+
+    Assert.Equal(Key.A.WithAlt, KeyMap.markFilesKey)
+    Assert.Equal(Key.A.WithAlt.WithShift, KeyMap.unmarkFilesKey)
+    Assert.Equal(Some(AllFilesRequested Select), marking)
+    Assert.Equal(Some(AllFilesRequested Deselect), unmarking)
+
+[<Fact>]
+let ``Shift with the grey plus and minus ask the same, where a driver delivers them`` () =
+    let marking = KeyMap.messageFor KeyMap.classicMarkFilesKey
+    let unmarking = KeyMap.messageFor KeyMap.classicUnmarkFilesKey
+
+    Assert.Equal((Key '+').WithShift, KeyMap.classicMarkFilesKey)
+    Assert.Equal((Key '-').WithShift, KeyMap.classicUnmarkFilesKey)
+    Assert.Equal(Some(AllFilesRequested Select), marking)
+    Assert.Equal(Some(AllFilesRequested Deselect), unmarking)
+
+[<Fact>]
+let ``Alt+I and a bare star invert the marks`` () =
+    let lettered = KeyMap.messageFor KeyMap.invertKey
+    let starred = KeyMap.messageFor KeyMap.starInvertKey
+
+    Assert.Equal(Key.I.WithAlt, KeyMap.invertKey)
+    Assert.Equal(Key '*', KeyMap.starInvertKey)
+    Assert.Equal(Some InversionRequested, lettered)
+    Assert.Equal(Some InversionRequested, starred)
+
+[<Fact>]
+let ``Ctrl with the grey star inverts too, where a driver delivers it`` () =
+    let message = KeyMap.messageFor KeyMap.classicInvertKey
+
+    Assert.Equal((Key '*').WithCtrl, KeyMap.classicInvertKey)
+    Assert.Equal(Some InversionRequested, message)
