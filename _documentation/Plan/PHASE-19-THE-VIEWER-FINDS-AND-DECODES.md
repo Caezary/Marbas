@@ -2,7 +2,8 @@
 
 Goal: the viewer of `F3` can search the file it shows and can be told which code
 page the file is written in, and its hex dump reads in two halves of eight
-bytes. The keys were measured in P17.2.
+bytes. The keys were measured in P17.2, and `F7`, `Shift+F7` and `F8` reach a
+full-screen window in every terminal measured.
 
 Three decisions run through the whole phase.
 

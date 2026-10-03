@@ -4,7 +4,9 @@ Goal: `F2` opens a menu of programs and commands the user has defined, each
 reached by a letter of its own and each able to be handed the files under the
 cursors or the marked ones. The menu is edited where it is shown. The phase
 opens by making `F4` start the editor without waiting for it, so that nothing
-Marbas starts holds the panels up. The keys were measured in P17.2.
+Marbas starts holds the panels up. The keys were measured in P17.2, and `F2`, a
+bare letter, `Ins`, `Del`, `F4`, `Ctrl+↑` and `Ctrl+↓` arrive in every terminal
+measured.
 
 Five decisions run through the whole phase.
 
@@ -82,9 +84,9 @@ expanded, and `Enter` there runs it again exactly as it ran.
   `Ctrl+↑` / `Ctrl+↓` move it; and the dialog can add a separator instead of an
   entry. Each change is written at once. Inside the popup a bare letter runs its
   entry, so the editing keys are the ones P17.2 found reaching a dialog with a
-  list. *Done when:* each change is proved to reach the file and the popup, a
-  duplicate hotkey is refused in the dialog, and a menu edited and closed is the
-  same menu after a restart.
+  list — all of them, in every terminal measured. *Done when:* each change is
+  proved to reach the file and the popup, a duplicate hotkey is refused in the
+  dialog, and a menu edited and closed is the same menu after a restart.
 
 Every task updates [the user guide](../USER-GUIDE.md),
 [What works today](../Progress/WHAT-WORKS.md), the running of programs in

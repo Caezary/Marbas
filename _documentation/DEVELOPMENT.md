@@ -50,6 +50,22 @@ binding says it should be. Run it in every terminal that matters and compare;
 the rows marked *probe* in [Cross-platform](Architecture/CROSS-PLATFORM.md) come
 from it.
 
+Since P17.2 the probe is a guided walk rather than a checklist. It names one
+physical key at a time — "Ctrl with the + of the numeric keypad" — and records
+everything that arrives while that name is up, in three places: the
+application's `Keyboard.KeyDown`, the `KeyDown` of the view that would handle
+the key in Marbas, and the driver's `AnsiSequenceSwallowed` and `Paste` events.
+`Tab` moves to the next key, `Shift+Tab` back, `Ctrl+Q` stops, and the report
+lands in `keyprobe-<moment>.txt` in the working directory, which git ignores. A
+checklist waits for an exact `Key` and so cannot say what arrived instead, which
+is the whole answer for a grey key, for `Ctrl+M` or for `Alt` with a shifted
+digit; the swallowed sequences are what showed that Terminal.Gui drops `Alt`
+with punctuation. Each key walks through the place it is meant for — a focused
+`ListView` for the panel, a full-screen `Window` for the viewer, a modal
+`Dialog` holding a list — and the keys come in rounds: no argument runs the keys
+of phases 17 to 20, `stand-ins` only the letters chosen to stand beside the ones
+that failed. A new phase adds its keys as a round of its own.
+
 A real Linux terminal can be reached from a Windows machine without a Linux
 machine: publish the probe as `linux-x64`, self-contained and single-file, and
 run it under WSLg in a terminal installed inside the distribution

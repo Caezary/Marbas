@@ -20,7 +20,9 @@ Six kinds of evidence appear below:
   measured on 2026-09-11 with a probe that builds the real `MainWindow` over a
   real file system and changes the disk behind its back. The drive popup rows were
   rendered on 2026-09-14 with the `render-tui-screen` probe, which runs the real
-  application with `Launch` replaced by a recorder. See
+  application with `Launch` replaced by a recorder. The rows of phases 17 to 20
+  were measured on 2026-10-02 and 2026-10-03 in the five terminals of P13.1 with
+  the guided walk the key probe has had since P17.2. See
   [Development](../DEVELOPMENT.md), *Probes*.
 - **disk** — an integration test in `Marbas.Tests/Integration/Disk` does it
   against the real file system of whichever machine runs the suite, so it runs on
@@ -30,7 +32,14 @@ Six kinds of evidence appear below:
   rather than pressed. A window manager grabs a shortcut before any terminal sees
   it, so what it claims by default decides whether a key can reach Marbas at all;
   `gsettings list-recursively org.gnome.desktop.wm.keybindings` under WSL answers
-  for GNOME and Mutter without a desktop being installed. Read on 2026-09-16.
+  for GNOME and Mutter without a desktop being installed. Read on 2026-09-16,
+  and again on 2026-10-03 for the keys of phases 17 to 20.
+- **terminal defaults** — read out of a terminal's own key table rather than
+  pressed: Windows Terminal's `defaults.json` in its package directory (1.24.11911.0)
+  and gnome-terminal's `org.gnome.Terminal.Legacy.Keybindings` (3.52.0), read with
+  `gsettings` under WSL. Read on 2026-10-03. It says why a key the probe found
+  missing went missing, and which keys a terminal takes only in a state no probe
+  run had — several tabs open, or text selected.
 - **manual** — needs a person at a real terminal. These are the items where the
   answer is "does it *look* right", which nothing here can assert.
 
@@ -297,6 +306,27 @@ tested and was confirmed by running the app.
 | `Ctrl+PgUp`, `Ctrl+PgDn`, `Del`, `Shift+Del` and `Alt+G` reach a popup that is up | yes | yes | probe |
 | `Alt+↓` and `F4` reach a drop-down field inside a popup | yes | yes | probe |
 | `Alt+F12`, `Alt+Shift+H`, `Ctrl+PgUp`, `Ctrl+PgDn`, `Alt+G`, `Alt+↓`, `F4`, `Del` and `Shift+Del`, the keys of phase 16, are claimed by a desktop | n/a | no, none of them under GNOME; its only `Page_Up` bindings carry `<Super>` and its only `Down` bindings `<Control><Alt>` | desktop defaults, read 2026-09-28; **manual** for KDE and Xfce |
+| The grey `+`, `-` and `*` are told apart from the keys of the main keyboard | **no**, the same code in all three | **no**, the same in both | probe |
+| `Ctrl` with the grey `+` or `-`, the keys P17.3 was planned on | **no**, nothing arrives; Windows Terminal keeps both for the font size | **no**, nothing arrives | probe, terminal defaults |
+| `Ctrl` with the main `+`, `=` or `-` | **no**: `Ctrl+5` and `Ctrl+7` under cmder, a bare `+` or nothing in Windows Terminal and the console | **no**: `Ctrl+5` and `Ctrl+7` under cmder, a bare `=` or nothing in gnome-terminal, which zooms on `Ctrl+plus` and `Ctrl+minus` | probe, terminal defaults |
+| `Alt` with the grey or main `+`, `-` or `=` | **no**: the terminal sends `ESC` and the character and Terminal.Gui swallows it; cmder hands `Alt+grey -` over as a bare `-`; Windows Terminal keeps `Alt+Shift+plus` for a split pane | **no**, swallowed, or a bare `+` or `-` | probe, terminal defaults |
+| `Shift` with the grey `+` or `-`, the keys P17.4 was planned on | **no**, a bare `+` or `-` | **no**: a bare `+` or `-` under cmder, nothing in gnome-terminal | probe |
+| `Ctrl` with the grey or main `*` | **no**: a bare `*`, nothing under cmder, and `Backspace` for the main `*` | **no**: nothing or `Backspace` under cmder, a bare `*` in gnome-terminal | probe |
+| A bare `*`, grey or main | yes | yes | probe |
+| `Ctrl+M` | **no**, arrives as `Enter` | **no**, the same | probe |
+| `Ctrl+PgUp` reaches the panel | yes | yes with one tab; gnome-terminal keeps it for `prev-tab` once there are several | probe, terminal defaults |
+| `Alt+0` … `Alt+9` | yes | yes with one tab; gnome-terminal keeps them for `switch-to-tab` once there are several | probe, terminal defaults |
+| `Shift+Alt+0` … `Shift+Alt+9` | **no**: `ESC` with `)`, `!`, `@` …, which Terminal.Gui swallows; cmder opens a new console on `1` to `9` | **no**, swallowed | probe |
+| `Alt+F8` | yes | yes in the terminal; **no** on a GNOME desktop, whose `begin-resize` is `<Alt>F8` | probe, desktop defaults |
+| `F2` | yes | yes | probe |
+| `Ctrl+Ins`, `Alt+Shift+Ins`, `Ctrl+Alt+Ins` | yes; Windows Terminal's copy on `Ctrl+Insert` lets the key through while nothing is selected | yes under WSL in cmder; **no** in gnome-terminal | probe, terminal defaults |
+| `Ctrl+Shift+Ins` | yes | yes under WSL in cmder; **no** in gnome-terminal, which pastes | probe |
+| `Ctrl+Shift+C` and `Ctrl+Shift+X` | **no**, they arrive as `Ctrl+C` and `Ctrl+X` | **no**: `Ctrl+C` and `Ctrl+X` under cmder; gnome-terminal keeps `Ctrl+Shift+C` for its copy and hands over `Ctrl+X` | probe, terminal defaults |
+| `Ctrl+Shift+V` | **no**: `Ctrl+V` under cmder, a paste in Windows Terminal and the console | **no**: `Ctrl+V` under cmder, a paste in gnome-terminal | probe, terminal defaults |
+| `F7`, `Shift+F7` and `F8` reach a full-screen window that is up | yes | yes | probe |
+| A bare letter, a digit, `Enter`, `Ins`, `Del`, `F4`, `Ctrl+↑` and `Ctrl+↓` reach a list inside a modal dialog | yes | yes | probe |
+| The stand-ins of phases 17 and 18: `Alt` and `Alt+Shift` with `E`, `N`, `A` and `C`; `Alt+Shift` with `X` and `V`; `Alt` with `I`, `M`, `U`, `B`, `K`, `P`, `L` and `J`; a digit after `Alt+K` | yes | yes | probe |
+| The keys of phases 17 to 20 are claimed by a desktop | n/a | `Alt+F8` alone under GNOME; none of the stand-ins | desktop defaults, read 2026-10-03; **manual** for KDE and Xfce |
 
 `Ctrl+Q` deserves a note: it is `0x11`, which is also `XON`, so a terminal doing
 software flow control could in principle eat it. Terminal.Gui puts the terminal
@@ -401,6 +431,62 @@ both, as the application does. What the same run showed about `Enter` on an
 open drop-down list — that it closes the popup as well as choosing the row — is
 the control's doing, not the terminal's, and is taken up in
 [History](HISTORY.md).
+
+**The grey keys are not keys of their own, and `Alt` with punctuation is not a
+key at all.** P17.2 measured every key phases 17 to 20 bind, in the same five
+terminals, with a probe rebuilt for the question: it names one physical key at a
+time and records whatever arrives — at the application, at the view that would
+handle it, and as a sequence the driver swallowed or a paste — because a
+checklist that waits for an exact `Key` cannot tell a grey `+` from a main one.
+Nothing can. A terminal sends the character either key produces, and
+Terminal.Gui 2.4.17 runs its `ansi` driver on Windows as well as on Linux; even
+its `windows` driver maps the keypad's `VK_ADD` and the main `VK_OEM_PLUS` to the
+same character. So the plan's first fallback, the same modifier on the main key,
+was measured too, and it fails in a different way in each terminal. `Ctrl` with
+`=` or `-` is a control byte under cmder, decoded as `Ctrl+5` and `Ctrl+7` — the
+`Ctrl+\` story again; Windows Terminal and the console drop the `Ctrl` or keep
+the key for the font size; gnome-terminal zooms. `Shift` on a grey key is
+dropped everywhere, which leaves a bare `+` or `-` — the key that already opens
+the pattern popup. `Ctrl+M` is byte `0x0D` and arrives as `Enter` in all five.
+
+`Alt` with punctuation is lost one layer higher. Every terminal sends what an
+`Alt` chord has always been, `ESC` followed by the character, and the probe
+caught each of them as a sequence the driver swallowed: Terminal.Gui's
+`EscAsAltPattern` accepts `ESC` followed by a control character, a letter, a
+digit or `_`, and nothing else. That takes `Alt` with the grey or main `+`, `-`
+and `=`, and it takes `Shift+Alt+0` … `Shift+Alt+9`, which reach the driver as
+`Alt` with the shifted character of the layout — `)`, `!`, `@` … — in every
+terminal; cmder opens a new console on `Shift+Alt+1` to `9` before that. A
+Terminal.Gui that decoded those sequences would still hand over a character that
+depends on the layout, so there is no stable key to wait for. The same pattern
+explains a row of P13.1 that was left as a fact: `Alt+\` is `ESC \`, and it
+arrived as nothing at all for exactly this reason.
+
+What travels is what travelled before: a letter or a digit with `Alt`, with or
+without `Shift`. A second round on 2026-10-03 pressed every stand-in chosen
+from that shape — `Alt` and `Alt+Shift` with `E`, `N`, `A` and `C`, `Alt+Shift`
+with `X` and `V`, `Alt` with `I`, `M`, `U`, `B`, `K`, `P`, `L` and `J` — and each
+arrived as itself in all five, as did a bare `*`, grey or main, and a digit after
+`Alt+K`. The spelling each task of phases 17 and 18 binds is listed in
+[the plan of phase 17](../Plan/PHASE-17-MARKS-PANEL-AND-FAVOURITES.md); the keys
+of phases 19 and 20 — `F2`, `F7`, `Shift+F7`, `F8`, and a letter, a digit,
+`Enter`, `Ins`, `Del`, `F4`, `Ctrl+↑` and `Ctrl+↓` inside a dialog holding a
+list — arrived everywhere and need none.
+
+The rest is terminals and desktops keeping keys for themselves. gnome-terminal
+delivers none of `Ctrl+Ins`, `Alt+Shift+Ins`, `Ctrl+Alt+Ins` and
+`Ctrl+Shift+Ins`, the last of which it pastes with, and keeps `Ctrl+Shift+C` for
+its copy; `Ctrl+Shift+X` arrives without its `Shift` everywhere, and
+`Ctrl+Shift+V` is a paste in three terminals and a bare `Ctrl+V` in the other
+two. Windows Terminal's own copy on `Ctrl+Insert` lets the key through while
+nothing is selected, which is why it arrived there. Every run had a single tab:
+gnome-terminal's table binds `Ctrl+PgUp` to `prev-tab` and `Alt+1` … `Alt+0` to
+`switch-to-tab`, so with several tabs open those keys stay in the terminal —
+`Alt+U` stands beside `Ctrl+PgUp`, and the favourites popup reaches every slot
+where the digits do not. And GNOME, which already took `Alt+F7`, holds `<Alt>F8`
+for `begin-resize`, so the favourites popup has `Alt+B` beside it. `Alt+D` is
+left unbound on purpose: it is the natural stand-in for the drive popups,
+`Alt+F1` and `Alt+F2`, which GNOME also takes and which still have none.
 
 ## Watching the directories on screen
 

@@ -4,7 +4,10 @@ Goal: what the panel points at can be handed to other applications through the
 system clipboard — as names, as full paths, as the places links lead to, and as
 files the system file manager and any other program that accepts them can
 paste — and a path or files on the clipboard can be brought back into Marbas.
-The keys were measured in P17.2.
+The keys were measured in P17.2: gnome-terminal keeps the `Ins` family for
+itself and no terminal delivers `Ctrl+Shift` with `C`, `X` or `V`, so every
+command carries a letter with `Alt` as well, listed in
+[the plan of phase 17](PHASE-17-MARKS-PANEL-AND-FAVOURITES.md).
 
 Five decisions run through the whole phase.
 
@@ -43,26 +46,27 @@ program outside Marbas can only paste a file that exists on the disk; cutting
 from inside an archive is refused by name.
 
 - **P18.1 The port and the names** — the clipboard joins `Dependencies` with
-  its Windows adapter and its refusing Unix one, and `Ctrl+Ins` puts the names
-  of the operation targets on it as text. *Done when:* the text built for a
+  its Windows adapter and its refusing Unix one, and `Ctrl+Ins` or `Alt+C` puts
+  the names of the operation targets on it as text. *Done when:* the text built for a
   single entry, several entries, a directory and a panel of search results is
   proved without a terminal, the key copies through a real `Application` with a
   fake clipboard, the real adapter is tried by hand into another program, and
   the Unix refusal is a row in [Rough edges](../ROUGH-EDGES.md).
-- **P18.2 The full paths** — `Alt+Shift+Ins` copies the full path of each target,
-  from a directory, from inside an archive and from search results. *Done
-  when:* the three are proved.
-- **P18.3 Where the links lead** — `Ctrl+Alt+Ins` copies, for each target that
-  is a link, the place it points at — a symbolic link and a junction alike, as
-  the status line already reads them — and for a `.lnk` shortcut the target the
+- **P18.2 The full paths** — `Alt+Shift+Ins` or `Alt+P` copies the full path of
+  each target, from a directory, from inside an archive and from search results.
+  *Done when:* the three are proved.
+- **P18.3 Where the links lead** — `Ctrl+Alt+Ins` or `Alt+L` copies, for each
+  target that is a link, the place it points at — a symbolic link and a
+  junction alike, as the status line already reads them — and for a `.lnk`
+  shortcut the target the
   shortcut names, read by a parser of the shortcut format in `FileSystem` so it
   can be tested on `MockFileSystem`. A target that is neither copies its own full
   path. Only the entry itself is resolved, not the directories above it. *Done
   when:* each kind is proved, a shortcut file built byte by byte in a test
   included, and a shortcut whose target the parser cannot read falls back to the
   shortcut's own path.
-- **P18.4 Going to the path on the clipboard** — `Ctrl+Shift+Ins` reads the text
-  on the clipboard, forgives it as the decision above describes, and sends the
+- **P18.4 Going to the path on the clipboard** — `Ctrl+Shift+Ins` or `Alt+J`
+  reads the text on the clipboard, forgives it as the decision above describes, and sends the
   active panel there: into a directory, or beside a file with the cursor on it.
   The landing is remembered in the folder history. Reading the environment goes
   through a port, so the expansion is testable. *Done when:* every form the
@@ -79,13 +83,14 @@ from inside an archive is refused by name.
 - **P18.6 Files on the clipboard** — a spike first proves that what the adapter
   writes — the list of files and the intent to copy or to move, in the formats
   the system file manager reads — is pasted there as a copy or as a move. Then
-  `Ctrl+Shift+C` puts the operation targets on the clipboard to be copied and
-  `Ctrl+Shift+X` to be moved, extracting from an archive as the decision says.
-  *Done when:* the files and the intent handed to the port are proved for both
+  `Alt+Shift+C` puts the operation targets on the clipboard to be copied and
+  `Alt+Shift+X` to be moved, with `Ctrl+Shift+C` and `Ctrl+Shift+X` bound beside
+  them for a terminal that delivers the `Shift`, extracting from an archive as
+  the decision says. *Done when:* the files and the intent handed to the port are proved for both
   keys, in a directory and in an archive, and a copy and a move pasted into the
   system file manager are tried by hand.
-- **P18.7 Pasting** — `Ctrl+Shift+V` reads the files on the clipboard, put there
-  by Marbas or by any other program, and copies or moves them into the place the
+- **P18.7 Pasting** — `Alt+Shift+V`, with `Ctrl+Shift+V` beside it, reads the
+  files on the clipboard, put there by Marbas or by any other program, and copies or moves them into the place the
   active panel shows through the batches `F5` and `F6` run, an archive included.
   After a move the clipboard is emptied, as the system file manager does, so the
   same files are not moved twice. A clipboard holding no files does nothing.

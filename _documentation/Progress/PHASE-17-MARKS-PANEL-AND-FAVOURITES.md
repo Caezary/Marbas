@@ -51,3 +51,36 @@ after Home    file01..03 BrightBlue,Blue     file01..03 BrightYellow,Blue
 Before the fix the marks went at the first `↓` and never came back; after it
 they stand through every key, and give way to the cursor bar only on the row the
 cursor stands on.
+
+**P17.2 found that the grey keys cannot carry anything, and moved the phase onto
+letters.** The key probe was rebuilt before it was run: a checklist that waits
+for an exact `Key` can tick a key off but cannot say what came instead, and
+instead was the whole question — a grey `+` that may arrive as a main one,
+`Ctrl+M` as `Enter`, `Shift+Alt+1` as `Alt+!`. The new probe names one physical
+key at a time and records whatever arrives at the application, at the view
+Marbas would handle it in, and as a sequence the driver swallowed or a paste.
+It ran by hand in cmder, Windows Terminal, the Windows console, WSL inside cmder
+and gnome-terminal under WSLg.
+
+The first round, 33 keys in the panel, three in the viewer and six in a dialog
+holding a list, settled the plan's open question the hard way. No terminal tells
+a grey key from its twin; `Ctrl` and `Shift` on either arrive as another key or
+as nothing; `Alt` with punctuation — and so `Shift+Alt` with a digit — is sent
+by every terminal as `ESC` and the character and dropped by Terminal.Gui's
+`EscAsAltPattern`, which takes only letters, digits, control characters and `_`
+after `ESC`. That last finding also explains why `Alt+\` arrived as nothing in
+P13.1. Reading Windows Terminal's `defaults.json` and gnome-terminal's key table
+named the rest: font size on `Ctrl` with `+` and `-`, a split pane on
+`Alt+Shift+plus`, copy and paste on the `Ins` family and `Ctrl+Shift+C`/`V`,
+tabs on `Ctrl+PgUp` and `Alt+1` … `Alt+0` once gnome-terminal has several, and
+GNOME's own `<Alt>F8`.
+
+The stand-ins were then chosen with the user — `Alt` to mark and `Alt+Shift` to
+unmark, `Alt+I` and a bare `*` to invert, `Alt+M` for one step back, `Alt+K` and
+a digit or `Ins` in the popup to keep a favourite, `Alt+B`, `Alt+U` and the
+letters of phase 18 — and a second round pressed exactly those: all 19, the bare
+`*`, and a digit and `Enter` in a dialog holding a list arrived as themselves in
+all five terminals. The keys of phases 19 and 20 needed none. What each task now
+binds is the table in
+[the plan of phase 17](../Plan/PHASE-17-MARKS-PANEL-AND-FAVOURITES.md); the
+measurement is in [Cross-platform](../Architecture/CROSS-PLATFORM.md).
