@@ -601,4 +601,4 @@ let driveAt (root: string) =
       Free = 0L }
 
 let choosingDrive (root: string) =
-    fun (_: DriveRow list) -> root |> driveAt |> MountedDrive |> StandOn |> Some
+    fun (_: Ports.DrivePrompt) -> root |> driveAt |> MountedDrive |> StandOn |> Some

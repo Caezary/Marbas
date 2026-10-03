@@ -148,6 +148,8 @@ What Marbas does today, feature by feature. How to reach each of them is in the
 - `Alt+F1` / `Alt+F2` open *Drives* for the left / right panel — one aligned row
   per drive with its root, label, kind, size and free space: the ready drives on
   Windows, the mounts that hold files on Unix and the home directory after them.
+  The popup stands over its own panel, two columns in from the panel's outer
+  edge, and moves inwards only when it would not otherwise fit on the screen.
   Choosing the drive the other panel stands on lands in that panel's directory,
   any other drive in its root, and `Alt+R` opens the drive in the system file
   manager without moving either panel.

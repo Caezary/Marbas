@@ -28,7 +28,8 @@ needs to be installed. On Linux and macOS, mark the file executable first
 - `Alt+F1` / `Alt+F2` open *Drives* for the left / right panel: one row per
   drive with its root, label, kind, total size and free space — the ready drives
   on Windows, the mounts that hold files on Unix, followed there by your home
-  directory. The list is read each time it opens, so a stick plugged in a moment
+  directory. The popup opens over the panel it is for, beside that panel's
+  outer edge. The list is read each time it opens, so a stick plugged in a moment
   ago is already there. In the popup:
   - `Enter` goes to the drive. If the *other* panel is on that drive, the panel
     goes to the other panel's directory, so both end up in one place; any other

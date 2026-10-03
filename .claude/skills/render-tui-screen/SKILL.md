@@ -42,6 +42,12 @@ looked at. It prints the screen as text and, per row, the runs of equal
   piped stdout, but the screen measures 0x0, and anything sized with `Dim.Auto`
   — `MessageBox` above all — then throws `ArgumentOutOfRangeException: width`.
   The template forces 100x24.
+- **Set the size again right before the shot.** Once the loop runs, the size
+  monitor puts `app.Screen` back to the console's own size (120x30 here) on
+  every iteration, and `Driver.SetScreenSize` fares no better. To see a screen
+  of a chosen width — an eighty-column terminal, a wide one — set
+  `app.Screen <- Rectangle(0, 0, width, height)` and call
+  `app.LayoutAndDraw true` in the same timeout that takes the shot.
 - **Snapshot from a timeout, not after `Run`.** `app.AddTimeout` fires inside
   the loop, where the screen is drawn; `app.RequestStop()` ends the scene.
   `app.StopAfterFirstIteration <- true` is enough for a still picture of a

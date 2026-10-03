@@ -164,7 +164,10 @@ loses neither. The ten slots are global, shared by every tab and both panels.
   rather than in the middle of the screen; a popup wider than its panel is moved
   inwards only as far as it takes to stay on the screen. *Done when:* both
   popups are rendered on a wide and on an eighty-column terminal and each sits
-  over the panel it is for.
+  over the panel it is for. The task settled the reading with the user: the
+  popup stands two columns in from its panel's outer edge and reaches inwards,
+  over the other panel if it is wider than its own, and it moves only when it is
+  wider than the screen less those two columns.
 - **P17.9 The favourite directories** — `Alt+K` followed by a digit keeps the
   place the active panel stands in under that digit, overwriting whatever the
   slot held, without a further word; `Alt+K` asks for the digit on one line, and

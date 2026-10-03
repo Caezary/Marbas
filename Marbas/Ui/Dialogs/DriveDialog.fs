@@ -5,6 +5,7 @@ open System.Collections.ObjectModel
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui
 open Marbas.Ui.Keys
@@ -28,6 +29,9 @@ let private FrameHeight = 5
 [<Literal>]
 let private AcceptedButton = 1
 
+[<Literal>]
+let private OuterMargin = 2
+
 type DriveView(rows: DriveRow list, width: int, listHeight: int) =
     inherit Dialog(Title = Title, Width = Dim.Absolute width, Height = Dim.Absolute(listHeight + FrameHeight))
 
@@ -42,13 +46,24 @@ let private handOver (dialog: DriveView) (key: Key) =
         dialog.Result <- Nullable AcceptedButton
         dialog.RequestStop()
 
-let create (rows: DriveRow list) =
+let column (side: PanelSide) (screenWidth: int) (popupWidth: int) =
+    let room = screenWidth - popupWidth
+
+    let wanted =
+        match side with
+        | Left -> min OuterMargin room
+        | Right -> room - OuterMargin
+
+    max 0 wanted
+
+let create (side: PanelSide) (screenWidth: unit -> int) (rows: DriveRow list) =
     let lines = DriveLine.describe rows
     let longest = lines |> List.map String.length |> List.fold max 0
     let width = max NarrowestWidth (longest + FrameWidth)
     let listHeight = lines.Length |> max 1 |> min TallestList
 
     let dialog = new DriveView(rows, width, listHeight)
+    dialog.X <- Pos.Func(fun _ -> column side (screenWidth ()) width)
     DialogStyle.dress dialog |> ignore
 
     let drives =

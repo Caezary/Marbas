@@ -184,3 +184,42 @@ synthetic entries, since a mock file cannot hold a terabyte:
 The footer's figure is the exact sum of the seven files, and the other panel,
 with two of them marked, showed `2 selected   2,199,023,257,088 bytes`, the
 exact sum of those two.
+
+**P17.8 opens the drive popup beside its panel.** The plan's wording allowed two
+readings — the popup centred over its panel and pushed back onto the screen when
+wider than it, or the popup standing at the panel's outer edge — and the user
+chose the second: two columns in from the outer edge, reaching inwards, over the
+other panel when it is wider than its own. `ChooseDrive` now takes a
+`DrivePrompt` carrying the rows and the `PanelSide`, which `Shell` already had
+from `PromptForRoot`, and `DriveDialog.column` turns the side, the screen width
+and the popup's width into the column it starts at; it moves only when the popup
+is wider than the screen less the margin, the margin giving way first. A probe
+showed that Terminal.Gui pulls no window back onto the screen — a dialog at
+column 90 of a 120-column screen is simply cut off — and `Pos.GetAnchor` is
+internal, so the column is a `Pos.Func` over a screen width the adapter reads
+from `IApplication.Screen`, worked out again on every layout.
+
+The tests were run red first against a `column` that answered 0 and a dialog
+that ignored the side: ten failed, the cases where the right answer is 0 passing
+by nature. They cover the column for both sides on wide, eighty-column and too
+narrow screens, the frame of a laid-out dialog on 80 and 200 columns, and the
+side reaching the chooser from `Shell` and from `Alt+F1` / `Alt+F2` in a real
+panel. The screen was then read off a running `Application` with the
+`render-tui-screen` probe, the popup opened over the real main window and the
+screen resized under it:
+
+```
+80 columns, Alt+F1
+║ ╔╡Drives╞═════════════════════════════════════╗                              │
+║ ║ C:\  System  fixed  931.5 GB  120.0 GB free ║                              │
+║ ║ D:\  Data    fixed    1.8 TB    1.2 TB free ║                              │
+80 columns, Alt+F2
+║                              ╔╡Drives╞═════════════════════════════════════╗ │
+║                              ║ C:\  System  fixed  931.5 GB  120.0 GB free ║ │
+║                              ║ D:\  Data    fixed    1.8 TB    1.2 TB free ║ │
+```
+
+On 200 columns the left popup stood at column 2 and the right one ended at
+column 198, each well inside its own hundred-column panel. The popup was
+created on a 120-column screen and resized to 80 and 200 before the shot, so the
+same pictures prove that it follows the edge when the terminal changes size.

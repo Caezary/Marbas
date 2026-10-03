@@ -1,6 +1,7 @@
 module Marbas.Tests.Integration.Panels.DriveSelectionTests
 
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Keys
 open Marbas.Ui.Panels
@@ -56,8 +57,8 @@ let ``the chooser is offered every mounted drive`` () =
     use window =
         windowWith
             fs
-            (fun drives ->
-                offered.Add drives
+            (fun request ->
+                offered.Add request.Drives
                 None)
             silent
 
@@ -73,8 +74,8 @@ let ``a drive plugged in between two openings is offered by the second`` () =
     use window =
         windowWith
             fs
-            (fun drives ->
-                offered.Add drives
+            (fun request ->
+                offered.Add request.Drives
                 None)
             silent
 
@@ -122,3 +123,20 @@ let ``a root that cannot be read is reported and the panel stays put`` () =
 
     Assert.Contains(at "gone", Assert.Single reported)
     Assert.Equal(at "start", shownPath FilePanel.LeftId window)
+
+[<Fact>]
+let ``alt+F1 asks the chooser for the left panel and alt+F2 for the right`` () =
+    let asked = ResizeArray<PanelSide>()
+
+    use window =
+        windowWith
+            (chooserFs ())
+            (fun request ->
+                asked.Add request.Side
+                None)
+            silent
+
+    press (leftList window) KeyMap.leftRootKey
+    press (leftList window) KeyMap.rightRootKey
+
+    Assert.Equal<PanelSide list>([ Left; Right ], List.ofSeq asked)

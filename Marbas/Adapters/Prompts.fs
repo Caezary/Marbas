@@ -40,10 +40,13 @@ let askOverwrite (app: IApplication) (request: OverwritePrompt) =
 
     OverwriteQuestion.answerAt (if answer.HasValue then answer.Value else -1)
 
-let chooseDrive (app: IApplication) (rows: DriveRow list) =
-    match rows with
+let chooseDrive (app: IApplication) (request: DrivePrompt) =
+    let screenWidth () = app.Screen.Width
+    let createDriveDialog = DriveDialog.create request.Side screenWidth
+
+    match request.Drives with
     | [] -> None
-    | _ -> running app (fun () -> DriveDialog.create rows) DriveDialog.choice
+    | rows -> running app (fun () -> createDriveDialog rows) DriveDialog.choice
 
 let private texts (remembered: EnteredText list) = remembered |> List.map EnteredText.value
 

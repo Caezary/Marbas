@@ -62,6 +62,10 @@ type ProgramsPrompt =
     { Programs: ProgramSettings
       Candidate: ProgramPath option }
 
+type DrivePrompt =
+    { Side: PanelSide
+      Drives: DriveRow list }
+
 type HistoryPrompt =
     { History: History
       Tab: HistoryTab
@@ -80,7 +84,7 @@ type Prompts =
       AskFind: FindPrompt -> FindAsked option
       AskLink: LinkPrompt -> LinkChoice option
       AskHandler: HandlerPrompt -> OpenWithChoice option
-      ChooseDrive: DriveRow list -> DriveChoice option
+      ChooseDrive: DrivePrompt -> DriveChoice option
       ChooseTab: Zipper<Tab> -> int option
       ChooseHistory: HistoryPrompt -> HistoryAnswer
       EditProperties: EntryProperties -> EntryProperties option

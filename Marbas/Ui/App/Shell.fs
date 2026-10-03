@@ -462,7 +462,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
             rememberTyped deps dispatch SelectionPattern text
             NamePattern.tryCreate text |> Option.iter (fun pattern -> dispatch (PatternEntered(mode, pattern))))
     | PromptForRoot side ->
-        match deps.Prompts.ChooseDrive(deps.Processes.ListDrives()) with
+        match deps.Prompts.ChooseDrive { Side = side; Drives = deps.Processes.ListDrives() } with
         | Some(StandOn row) -> dispatch (DriveChosen(side, row))
         | Some(HandOver row) -> dispatch (DriveHandedOver row)
         | None -> ()

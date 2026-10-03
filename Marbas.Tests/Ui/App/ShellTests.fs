@@ -134,6 +134,17 @@ let ``a chosen home directory is dispatched as it was chosen`` () =
     Assert.Equal<Message list>([ DriveChosen(Left, HomeDirectory(fp (at "home/user"))) ], List.ofSeq sent)
 
 [<Fact>]
+let ``the chooser is told the side of the panel it was asked for`` () =
+    let _, dispatch = capture ()
+    let asked = ResizeArray<PanelSide>()
+    let deps = { noDeps () with Prompts.ChooseDrive = fun request -> asked.Add request.Side; None }
+
+    Shell.interpret deps dispatch (PromptForRoot Left)
+    Shell.interpret deps dispatch (PromptForRoot Right)
+
+    Assert.Equal<PanelSide list>([ Left; Right ], List.ofSeq asked)
+
+[<Fact>]
 let ``the chooser is offered every drive row as it was listed`` () =
     let _, dispatch = capture ()
     let mutable offered = []
@@ -150,7 +161,7 @@ let ``the chooser is offered every drive row as it was listed`` () =
     let deps =
         { noDeps () with
             Processes.ListDrives = fun () -> rows
-            Prompts.ChooseDrive = fun offering -> offered <- offering; None }
+            Prompts.ChooseDrive = fun offering -> offered <- offering.Drives; None }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
 

@@ -575,6 +575,22 @@ its twin in the panel, is not bound here: terminals deliver it as a bare
 drive the user asked to see elsewhere. The popup does not print `Alt+R`; the
 [user guide](../USER-GUIDE.md) names it.
 
+**The popup stands beside the panel it is for.** `ChooseDrive` takes a
+`DrivePrompt` — the rows and the `PanelSide` the key was for — so the popup of
+`Alt+F1` opens over the left panel and that of `Alt+F2` over the right one,
+rather than in the middle of the screen where it says nothing about which panel
+will move. `DriveDialog.column` places it two columns in from the outer edge of
+its panel, which is an edge of the screen: the left popup starts there, the
+right one ends there, and a popup wider than its panel reaches over the other
+panel from the inside. Only a popup wider than the screen less those two columns
+moves, and only as far as it takes to stay on it — the margin gives way first,
+then the popup starts at column 0. Vertically it stays centred. The column is a
+`Pos.Func` over the screen width the adapter reads from `IApplication.Screen`,
+because Terminal.Gui keeps no window on screen of its own accord and a `Pos`
+cannot be subclassed from outside the library; being a function, it is worked out
+again on every layout, so a terminal resized under the open popup moves it with
+the edge.
+
 **Where a panel lands depends on the other panel.** `AppState.driveLanding`
 takes the panel to the other panel's directory when the other panel stands on
 the chosen drive — whether or not this panel stands there too — because two

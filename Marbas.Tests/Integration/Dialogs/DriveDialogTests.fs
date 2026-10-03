@@ -30,14 +30,16 @@ let private data =
 
 let private rows = [ system; data ]
 
-let private laidOut () =
+let private laidOutOn side screenWidth =
     DialogStyle.apply ()
-    let dialog = DriveDialog.create rows
+    let dialog = DriveDialog.create side (fun () -> screenWidth) rows
     dialog.BeginInit()
     dialog.EndInit()
-    dialog.Layout(Size(120, 30)) |> ignore
+    dialog.Layout(Size(screenWidth, 30)) |> ignore
     (DriveDialog.drives dialog).SetFocus() |> ignore
     dialog
+
+let private laidOut () = laidOutOn Left 120
 
 let private shown (dialog: Dialog) =
     let list = DriveDialog.drives dialog
@@ -113,10 +115,58 @@ let ``an accepted dialog with no drive under the cursor picks nothing`` () =
 [<Fact>]
 let ``an accepted dialog listing no drive picks nothing`` () =
     DialogStyle.apply ()
-    use dialog = DriveDialog.create []
+    use dialog = DriveDialog.create Left (fun () -> 120) []
 
     dialog.Result <- 1
 
     let chosen = DriveDialog.choice dialog
 
     Assert.Equal(None, chosen)
+
+[<Theory>]
+[<InlineData(80, 47, 2)>]
+[<InlineData(200, 47, 2)>]
+[<InlineData(80, 78, 2)>]
+[<InlineData(80, 79, 1)>]
+[<InlineData(40, 47, 0)>]
+let ``the popup of the left panel starts beside the left edge and backs off only to stay on the screen``
+    (screenWidth: int, popupWidth: int, expected: int)
+    =
+    let column = DriveDialog.column Left screenWidth popupWidth
+
+    Assert.Equal(expected, column)
+
+[<Theory>]
+[<InlineData(80, 47, 31)>]
+[<InlineData(200, 47, 151)>]
+[<InlineData(80, 78, 0)>]
+[<InlineData(80, 79, 0)>]
+[<InlineData(40, 47, 0)>]
+let ``the popup of the right panel ends beside the right edge and backs off only to stay on the screen``
+    (screenWidth: int, popupWidth: int, expected: int)
+    =
+    let column = DriveDialog.column Right screenWidth popupWidth
+
+    Assert.Equal(expected, column)
+
+[<Theory>]
+[<InlineData(80)>]
+[<InlineData(200)>]
+let ``the popup of the left panel is laid out over the left panel, beside its outer edge`` (screenWidth: int) =
+    use dialog = laidOutOn Left screenWidth
+
+    let frame = dialog.Frame
+
+    Assert.Equal(2, frame.X)
+
+[<Theory>]
+[<InlineData(80, 78)>]
+[<InlineData(200, 198)>]
+let ``the popup of the right panel is laid out over the right panel, beside its outer edge``
+    (screenWidth: int, expectedRight: int)
+    =
+    use dialog = laidOutOn Right screenWidth
+
+    let frame = dialog.Frame
+
+    Assert.Equal(expectedRight, frame.Right)
