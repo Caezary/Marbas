@@ -46,6 +46,17 @@ after a failure is the tab that was asked for, not a silent return to where the
 user came from. Startup therefore loads only the tab in front, and the others
 the first time they are reached.
 
+**The focus follows the side the tab left active.** Switching, walking or
+closing a tab changes `AppState.Active` without a keystroke ever reaching the
+other panel, but Terminal.Gui sends keys to whichever view holds its focus, and
+`Enter` opens the entry under the cursor of the side the state calls active.
+Left as it was, the focus stayed on the panel it had been on, so the arrows
+moved one cursor and `Enter` opened the other's entry. `AppView.render`
+therefore ends by moving the focus to the active side whenever the opposite
+panel holds it. It moves the focus only away from the other panel, never from
+a dialog or from nothing: at startup the focus still decides which side is
+active, through `PanelFocused`, as it always has.
+
 **A panel standing inside an archive is a place like any other, until the
 session is written.** In memory a tab may hold `InArchive(archive, level)` on
 either side, and cloning, switching and the popup all treat it as they treat a

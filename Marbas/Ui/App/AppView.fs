@@ -31,6 +31,15 @@ let create () =
 
 let panels (view: AppView) = FilePanel.pairs view.Panels
 
+let private shown side (view: AppView) =
+    match side with
+    | Left -> view.Panels.Left
+    | Right -> view.Panels.Right
+
+let private followFocus (state: AppState.AppState) (view: AppView) =
+    if (shown (AppState.opposite state.Active) view).HasFocus then
+        (shown state.Active view).SetFocus() |> ignore
+
 let render (fs: IFileSystem) (view: AppView) (state: AppState.AppState) =
     view.TabCounter |> TabCounter.render state
 
@@ -44,3 +53,4 @@ let render (fs: IFileSystem) (view: AppView) (state: AppState.AppState) =
 
     let entry = state |> AppState.activePanel |> PanelState.cursorEntry
     view.StatusLine |> StatusLine.render entry
+    view |> followFocus state

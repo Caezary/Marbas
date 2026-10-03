@@ -1,6 +1,7 @@
 module Marbas.Tests.Integration.App.TabKeyTests
 
 open System.IO.Abstractions.TestingHelpers
+open Terminal.Gui.Input
 open Xunit
 open Marbas.Collections
 open Marbas.Ui.Keys
@@ -124,3 +125,50 @@ let ``the corner says which tab is in front and how many there are`` () =
     press (leftList window) KeyMap.closeTabKey
 
     Assert.Equal("[2/2]", counter ())
+
+[<Fact>]
+let ``walking to a tab puts the focus on the panel that tab left active`` () =
+    let fs = mockFs ()
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
+    press (leftList window) KeyMap.newTabKey
+    (panel FilePanel.RightId window).SetFocus() |> ignore
+
+    press (rightList window) KeyMap.previousTabKey
+
+    Assert.True((panel FilePanel.LeftId window).HasFocus)
+
+[<Fact>]
+let ``walking to a tab takes the focus off the panel the previous tab left active`` () =
+    let fs = mockFs ()
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
+    press (leftList window) KeyMap.newTabKey
+    (panel FilePanel.RightId window).SetFocus() |> ignore
+
+    press (rightList window) KeyMap.previousTabKey
+
+    Assert.False((panel FilePanel.RightId window).HasFocus)
+
+[<Fact>]
+let ``closing a tab puts the focus on the panel the remaining tab left active`` () =
+    let fs = mockFs ()
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
+    press (leftList window) KeyMap.newTabKey
+    (panel FilePanel.RightId window).SetFocus() |> ignore
+
+    press (rightList window) KeyMap.closeTabKey
+
+    Assert.True((panel FilePanel.LeftId window).HasFocus)
+
+[<Fact>]
+let ``the keys after walking to a tab move and open in the panel that tab left active`` () =
+    let fs = mockFs ()
+    fs.AddDirectory(at "start/inner")
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
+    press (leftList window) KeyMap.newTabKey
+    (panel FilePanel.RightId window).SetFocus() |> ignore
+    press (rightList window) KeyMap.previousTabKey
+    pressKey window Key.CursorDown
+
+    pressKey window Key.Enter
+
+    Assert.Equal(at "start/inner", shownPath FilePanel.LeftId window)
