@@ -6,16 +6,24 @@ open Terminal.Gui.App
 open Marbas.FileSystem
 open Marbas.Ui.Dialogs
 
+let control (invoke: (unit -> unit) -> unit) (show: FileSystemPath -> unit) (isCancelled: unit -> bool) : Operations.BatchControl =
+    { Report =
+        fun path ->
+            if not (isCancelled ()) then
+                invoke (fun () ->
+                    if not (isCancelled ()) then
+                        show path)
+      IsCancelled = isCancelled }
+
 let private drive (app: IApplication) title (work: Operations.BatchControl -> 'a) (finish: 'a -> unit) =
     use cancellation = new CancellationTokenSource()
     use dialog = ProgressDialog.create title
 
-    let control: Operations.BatchControl =
-        { Report =
-            fun path ->
-                if not cancellation.IsCancellationRequested then
-                    app.Invoke(fun () -> ProgressDialog.report dialog (FileSystemPath.value path))
-          IsCancelled = fun () -> cancellation.IsCancellationRequested }
+    let control =
+        control
+            app.Invoke
+            (FileSystemPath.value >> ProgressDialog.report dialog)
+            (fun () -> cancellation.IsCancellationRequested)
 
     Task.Run(fun () ->
         let results = work control

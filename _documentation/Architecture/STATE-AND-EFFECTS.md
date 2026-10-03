@@ -150,7 +150,12 @@ so the batch stops at its next file; if instead the batch finished first, its
 `Invoke` callback closes the dialog and the cancel that follows changes
 nothing. The same flag guards the stop request, so a batch that finishes after
 the window is already gone cannot stop the main window by mistake — which
-would quit the application.
+would quit the application. A progress report is checked twice: once on the
+worker, so nothing is queued after a cancel, and again when the UI thread runs
+it, because a report queued just before `Esc` is still waiting in the loop
+after the dialog has been disposed. Without that second look it asked the
+disposed dialog for its line, found none, and the exception took the
+application down.
 
 **A stopped entry is reported, not passed over in silence.** Cancelling inside
 a tree leaves it half-copied, so the item answers `Cancelled path`, counts as a

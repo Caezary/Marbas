@@ -236,7 +236,10 @@ runs the work inline with `Operations.unattended`, so a test presses `F5` and
 finds the files already copied when the call returns. Nothing in the suite
 waits on a thread. What that does *not* cover is `BatchRunner` — the real
 runner, its progress dialog and the `Application.Invoke` marshalling are only
-ever exercised by running the app.
+ever exercised by running the app. The one piece taken out of it is
+`BatchRunner.control`, which is handed `invoke` as a function: a test keeps the
+action instead of queuing it, cancels, then runs it, and so replays the order
+of a report that was still queued when `Esc` closed the dialog.
 
 **Held modifiers are a port too.** `Watches.Modifiers` is handed a callback at
 startup; a test keeps the callback and calls it with the modifiers it wants
