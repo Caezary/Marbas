@@ -5,7 +5,8 @@ left easier to change than it was found. The phase adds one feature — a log,
 written on a crash and, in debug mode, on every transition — and otherwise
 pays off what earlier phases left owing: a progress window that is flooded on a
 fast batch, a console editor on Unix that has to share the terminal, a flag
-argument, the effect interpreter sitting in the wrong layer, ports whose types
+argument, four ways of landing a panel that say the same thing, the effect
+interpreter sitting in the wrong layer, ports whose types
 say how they are called but not what they are for, mutation that nothing
 demands, test files too long to find a test in, and the manual checks no
 person has yet run.
@@ -99,7 +100,22 @@ past and never grows without bound.
   transfer) or kept (the anonymous rename a wipe makes). *Done when:* no
   function in `Operations` takes a `bool` for what it does, and the suite
   passes unchanged.
-- **P21.6 `Shell` and `Ports` join `State`** — neither draws anything: `Ports`
+- **P21.6 One way to land a panel** — four transitions end in
+  `AppState.standInside` or `standBeside`, each through a type or a match of its
+  own: a history choice through `Place.toLocation` and `Place.beside`, a
+  favourite through `Place.toLocation`, a search answer through
+  `FindLanding.AtDirectory`, and a path from the clipboard through `Landing`,
+  which P18.5 added. `Landing` — `Into` a location, or `Beside` an entry in one
+  — becomes the one answer: `Place` gains the two conversions to it and loses
+  `beside`, `FindLanding` carries a `Landing` where it carried a directory
+  (`AtHit`, which also shows a hidden hit, and `InPanel` keep their meaning),
+  and `Update` lands through one function. The walk up of `Landing.ofPath` and
+  `FileSystemPath.nearest` stay apart: one keeps the names it climbs past to
+  read them inside an archive, the other stops at a directory and drops them.
+  *Done when:* `standInside` and `standBeside` are called from one function in
+  `Update`, the folder history records the same places as before, and the
+  suite passes with only the renamed cases changed.
+- **P21.7 `Shell` and `Ports` join `State`** — neither draws anything: `Ports`
   is the shape of the outside world and `Shell` interprets effects into it. Both
   move under `State/`, and with them the wording of `Ui/Messages`, which is
   plain text with no view in it and whose only readers are `Shell`,
@@ -111,7 +127,7 @@ past and never grows without bound.
   nothing under `State` opens a `Terminal.Gui` namespace, the dependency rule in
   [Overview](../Architecture/OVERVIEW.md) is restated for the new layout, and
   the suite passes with its tests moved alongside.
-- **P21.7 Ports say what they are for** — a port that takes functions takes a
+- **P21.8 Ports say what they are for** — a port that takes functions takes a
   request record instead, the way the prompts already do: `Runners.Batch` takes
   a title, the work and what to do with the result as named fields, and so do
   `Measure`, `Search` and the two `Watches`. A function type that stays a field
@@ -119,7 +135,7 @@ past and never grows without bound.
   given a name that says what it answers. *Done when:* no field of
   `Dependencies` is a function whose argument is another function, and `Fakes`
   builds every port from named parts.
-- **P21.8 Where mutation is allowed** — a rule in
+- **P21.9 Where mutation is allowed** — a rule in
   [Coding style](../coding-style-conventions.md) says where a mutable binding or
   a reference cell earns its place: a measured hot loop confined to one
   function (`LineIndex`, `TextEncoding`, `ArchiveReader`, `RewindingStream`), an
@@ -130,7 +146,7 @@ past and never grows without bound.
   a returned value. *Done when:* each remaining mutable binding outside `Ui`
   falls under a clause of the rule, the hot loops are timed before and after in
   [Measurements](../Progress/MEASUREMENTS.md), and the suite passes unchanged.
-- **P21.9 Views keep their state in one value** — `FileViewer`,
+- **P21.10 Views keep their state in one value** — `FileViewer`,
   `ResultsWindow`, `ResultRow` and `SettingsDialog` hold a handful of mutable
   locals each, changed from several event handlers. Each gathers them into one
   immutable record behind one cell, with the changes written as functions over
@@ -140,7 +156,7 @@ past and never grows without bound.
 
 ## Stage 4 — The suite and the platforms
 
-- **P21.10 Test files by feature** — no test file runs past a thousand lines.
+- **P21.11 Test files by feature** — no test file runs past a thousand lines.
   `ShellTests` (about 2,600 lines, 161 tests) splits along the features its
   helpers already group — transfers, history, typed text, packing, unpacking
   and the rest — the way `ShellPlacesTests` was split from it, and `UpdateTests`
@@ -148,7 +164,7 @@ past and never grows without bound.
   `ArchiveFixture` does for the archive tests. *Done when:* the longest test
   file is under a thousand lines, the count of tests is the same before and
   after, and [Testing](../Architecture/TESTING.md) states the limit.
-- **P21.11 The manual rows, by hand** — every row of
+- **P21.12 The manual rows, by hand** — every row of
   [Cross-platform](../Architecture/CROSS-PLATFORM.md) marked *manual* is run
   against the published binaries of this phase, on Windows and on a Linux
   desktop, by a person at the terminal: colours, a resized terminal, the mouse,
