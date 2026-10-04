@@ -557,13 +557,31 @@ with `FileSystemPath.resolvedFrom` and drops a trailing separator. Expansion
 stops at the platform's own syntax on purpose: `C:\$Recycle.Bin` is a name on
 Windows, not a variable, and `%` is an ordinary character on Unix. What
 `PastedPath.read` answers is dispatched as `ClipboardPathRead`, and the state
-asks the file system what it names: a directory is entered, a file is stood
-beside with the cursor on it, and nothing at all is passed over without an
-effect, which is the silence the plan asked for. Several lines, blank text and
-a clipboard with no text never reach the state. The landing is a change of
-place like any other, so `Update.remembering` puts it in the folder history
-without a line of its own. P18.5 is where a path that runs into an archive
-stops being nothing.
+asks `Landing.ofPath` where it leads: `Into` a location, or `Beside` an entry
+in one. Nothing at all is passed over without an effect, which is the silence
+the plan asked for. Several lines, blank text and a clipboard with no text
+never reach the state. The landing is a change of place like any other, so
+`Update.remembering` puts it in the folder history without a line of its own —
+a level inside an archive as a `Place.InArchive`, which the history already
+knew how to keep.
+
+**A path through an archive is found by walking up to what stands.** Nothing
+in the file system answers `C:\work\backup.zip\docs\notes.txt` — the archive is
+a file, and nothing below it exists on the disk — so `Landing.ofPath` asks
+`FileSystemPath.kind` of the path and, while the answer is `NoEntry`, of its
+parent, keeping the names it climbed past. A directory or a file reached with
+no names left over is the plain case: entered, or stood beside. A file reached
+with names left over is an archive only when `ArchiveReader.kindOf` says the
+capability table can read its kind; then the names are an `ArchivePath`, the
+level above the last one is read with `ArchiveListing.read` — the cached index,
+so a large archive is not walked twice — and the last name is looked up there:
+a directory opens the archive at that level, a file opens the level holding it
+with the cursor on it. Everything else lands nowhere: a directory reached with
+names left over (a path that is not there), a file that is no readable archive,
+a name the archive does not hold, a name below a file inside the archive, and
+an archive that cannot be read at all. The walk compares names exactly as the
+archive stores them. The path to the archive itself is a file like any other,
+so it is stood beside, not opened; `Enter` is one key away.
 
 **Text is lines, and the line break belongs to the system.** The state answers
 `PutOnClipboard` with the names as lines; the Windows adapter joins them with

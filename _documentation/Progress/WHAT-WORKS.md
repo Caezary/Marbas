@@ -335,7 +335,13 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   holding it — and stripped of a trailing separator. Several lines, blank text,
   a character no path may hold, a clipboard with no text, and a path that does
   not exist all change nothing and say nothing; a clipboard that refuses to be
-  read is reported like one that refuses to be written.
+  read is reported like one that refuses to be written. A path whose leading
+  part is an existing archive of a kind Marbas can read
+  (`C:\work\backup.zip\docs\notes.txt`) opens the archive: at the level a
+  directory inside it names, or at the level holding a file it names with the
+  cursor on that file; the level is remembered in the folder history. A name
+  the archive does not hold, a path through a file that is no readable archive,
+  and an archive that cannot be read land nowhere and say nothing.
 - While `F5` or `F6` works, a progress window names the file being handled and
   the rest of the app keeps drawing, because the batch runs on a background
   thread. `Esc` (or the Cancel button) closes that window and the batch stops

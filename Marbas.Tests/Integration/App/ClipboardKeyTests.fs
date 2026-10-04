@@ -167,3 +167,14 @@ let ``a clipboard that names no single existing place leaves the panel and says 
 
     Assert.Equal(at "start", shownPath FilePanel.LeftId window)
     Assert.Empty reported
+
+[<Fact>]
+let ``Alt+J opens the archive the path on the clipboard runs into, at the entry it names`` () =
+    let fs = Marbas.Tests.State.ArchiveFixture.packed ()
+
+    use window = focusedWindow (holding fs (at "start/backup.zip/docs/inner.txt"))
+
+    pressKey window KeyMap.spareClipboardPathKey
+
+    Assert.Equal(at "start/backup.zip/docs", shownPath FilePanel.LeftId window)
+    Assert.Equal(System.Nullable 2, (leftList window).SelectedItem)

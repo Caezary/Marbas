@@ -159,9 +159,13 @@ and nothing marked there is nothing to copy.
   are dropped, a `file:///` address is read as the path it names, `~` stands
   for your home directory, environment variables are expanded (`%TEMP%` on
   Windows, `$HOME` or `${HOME}` on Linux), and a relative path is taken from the
-  directory of the active panel. Text of several lines, an empty clipboard and a
-  path that does not exist are passed over without a word. The place you land
-  on is remembered in the folder history.
+  directory of the active panel. A path that runs into an archive Marbas can
+  read — `C:\work\backup.zip\docs\notes.txt`, the way the panel title and
+  `Alt+P` spell it — opens the archive at that level, with the cursor on the
+  entry when the path names one. Text of several lines, an empty clipboard, a
+  path that does not exist and a path into an archive that does not hold it are
+  passed over without a word. The place you land on is remembered in the folder
+  history.
 
 On Linux and macOS Marbas cannot reach the clipboard yet; the first attempt
 in a session says so, and later ones stay quiet.

@@ -263,3 +263,8 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   local path written in a code page other than ASCII when the shortcut carries
   no relative path to fall back on; the code page is not recorded in the file.
   An internet shortcut (`.url`) is not read at all.
+- A path read from the clipboard into an archive matches the names inside it
+  exactly, case included. On Windows `C:\work\Backup.zip\Docs` reaches the
+  archive, because the disk ignores case, and then finds no `Docs` in it if the
+  archive stores `docs` — and, as the plan asks of a path that leads nowhere,
+  says nothing. A path copied with `Alt+P` always matches.

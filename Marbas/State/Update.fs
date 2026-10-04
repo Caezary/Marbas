@@ -662,12 +662,10 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         |> ReadClipboardPath
         |> request state
     | ClipboardPathRead path ->
-        match FileSystemPath.kind fs path with
-        | DirectoryEntry -> standInside fs state.Active (OnDisk path) state |> applyListing state
-        | FileEntry ->
-            standBeside fs state.Active (OnDisk(FileSystemPath.directory fs path)) (FileSystemPath.name fs path) state
-            |> applyListing state
-        | NoEntry -> stay state
+        match Landing.ofPath fs path with
+        | Some(Into location) -> standInside fs state.Active location state |> applyListing state
+        | Some(Beside(location, name)) -> standBeside fs state.Active location name state |> applyListing state
+        | None -> stay state
     | ClipboardRefused ClipboardUnavailable ->
         match state.ClipboardReport with
         | Unreported -> request { state with ClipboardReport = Reported } (ReportClipboardError ClipboardUnavailable)

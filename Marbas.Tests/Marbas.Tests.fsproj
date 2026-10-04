@@ -73,6 +73,7 @@
     <Compile Include="FileSystem\ForeignArchiveTests.fs" />
     <Compile Include="FileSystem\ArchiveExtractTests.fs" />
     <Compile Include="FileSystem\ArchiveListingTests.fs" />
+    <Compile Include="FileSystem\LandingTests.fs" />
     <Compile Include="FileSystem\ArchiveChangeTests.fs" />
     <Compile Include="FileSystem\ArchiveAcrossTests.fs" />
     <Compile Include="FileSystem\EveryKindTests.fs" />

@@ -176,3 +176,31 @@ file:///…/clipwork/work/report.txt → …\clipwork\work, cursor on report.txt
 two lines                        → stays in start, nothing said
 …\clipwork\nowhere               → stays in start, nothing said
 ```
+
+**P18.5 let a path run into an archive.** What `PastedPath.read` answers no
+longer goes straight to `FileSystemPath.kind`: the state asks
+`FileSystem/Landing.fs`, which answers `Into` a location or `Beside` an entry
+in one, and the disk is the first case of it rather than a separate branch.
+`Landing.ofPath` walks up from the path while nothing stands there, keeping
+the names it climbs past. Reaching a directory or a file with no names left is
+the plain landing of P18.4; reaching a file with names left over opens it only
+when `ArchiveReader.kindOf` says the capability table can read its kind, and
+then the last name is looked up in the listing of the level above it — a
+directory opens that level, a file opens the level holding it with the cursor
+on it, anything else is no landing. The spelling read back is the one `Alt+P`
+writes and the panel title shows, so a path copied out of an archive goes back
+into it.
+
+The tests: fifteen in `LandingTests` on `MockFileSystem` with a zip written by
+`Archive.write` — a directory and a file on disk, the archive itself, two
+levels, three entries at three depths, four paths the archive does not hold
+(a missing name at the top and inside `docs`, a missing level, a name below a
+file), a path through a file that is no archive, an archive no reader can open
+and a path below a directory that does not hold it; four in
+`State/ClipboardTests` for a level, an entry with the cursor on it, the level
+in the folder history and a name the archive does not hold; and one in
+`ClipboardKeyTests` pressing `Alt+J` over a `MainWindow`. The probe then put
+four paths on the real clipboard over a zip made by `Compress-Archive`: the
+`docs` level opened, `docs\inner.txt` opened `docs` with the cursor on it, and
+`backup.zip\gone.txt` and `notes.txt\inner` left the panel where it was without
+a word.

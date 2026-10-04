@@ -407,3 +407,44 @@ let ``a path read from the clipboard that does not exist changes nothing and say
 
     Assert.Equal(state.Left.Path, result.State.Left.Path)
     Assert.Empty result.Effects
+
+let private docs = ArchivePath.tryCreate "docs" |> Expect.some
+
+[<Fact>]
+let ``a path to a level inside an archive read from the clipboard opens the archive there`` () =
+    let fs = ArchiveFixture.packed ()
+
+    let result =
+        update fs (ClipboardPathRead(fp (at "start/backup.zip/docs"))) (ArchiveFixture.loaded fs)
+
+    Assert.Equal(InArchive(ArchiveFixture.archive, docs), result.State.Left.Path)
+
+[<Fact>]
+let ``a path to an entry inside an archive read from the clipboard puts the cursor on it`` () =
+    let fs = ArchiveFixture.packed ()
+
+    let result =
+        update fs (ClipboardPathRead(fp (at "start/backup.zip/docs/inner.txt"))) (ArchiveFixture.loaded fs)
+
+    let standing = PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value)
+    Assert.Equal(InArchive(ArchiveFixture.archive, docs), result.State.Left.Path)
+    Assert.Equal(Some "inner.txt", standing)
+
+[<Fact>]
+let ``a level inside an archive reached from the clipboard is remembered in the folder history`` () =
+    let fs = ArchiveFixture.packed ()
+
+    let result =
+        update fs (ClipboardPathRead(fp (at "start/backup.zip/docs"))) (ArchiveFixture.loaded fs)
+
+    Assert.Contains(ChangeHistory(Remember(Visited(Place.InArchive(ArchiveFixture.archive, docs)))), result.Effects)
+
+[<Fact>]
+let ``a path into an archive that does not hold it changes nothing and says nothing`` () =
+    let fs = ArchiveFixture.packed ()
+    let state = ArchiveFixture.loaded fs
+
+    let result = update fs (ClipboardPathRead(fp (at "start/backup.zip/docs/gone.txt"))) state
+
+    Assert.Equal(state.Left.Path, result.State.Left.Path)
+    Assert.Empty result.Effects

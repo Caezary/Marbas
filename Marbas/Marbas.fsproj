@@ -68,6 +68,7 @@
         <Compile Include="FileSystem\ArchiveReader.fs" />
         <Compile Include="FileSystem\ArchiveIndex.fs" />
         <Compile Include="FileSystem\ArchiveListing.fs" />
+        <Compile Include="FileSystem\Landing.fs" />
         <Compile Include="FileSystem\SearchListing.fs" />
         <Compile Include="FileSystem\Operations.fs" />
         <Compile Include="FileSystem\Links.fs" />
