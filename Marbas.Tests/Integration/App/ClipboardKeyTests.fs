@@ -275,3 +275,108 @@ let ``Alt+Shift+X inside an archive is refused and nothing reaches the clipboard
 
     Assert.Empty handed
     Assert.Contains(at "start/backup.zip/notes.txt", Assert.Single reported)
+
+let private filesOnClipboard intent paths =
+    ClipboardFiles.tryCreate intent (paths |> List.map (at >> FileSystemPath.create)) |> Expect.some
+
+let private pasting fs files (asked: ResizeArray<string>) (emptied: ResizeArray<unit>) =
+    { Fakes.dependencies fs (at "start") with
+        Clipboard.GetFiles = fun () -> Ok(Some files)
+        Clipboard.Empty =
+            fun () ->
+                emptied.Add()
+                Ok()
+        Prompts.AskOverwrite =
+            fun prompt ->
+                asked.Add(FileSystemPath.value prompt.Target)
+                Operations.Yes }
+
+let private bothOnClipboard =
+    filesOnClipboard ForCopying [ "work/notes.txt"; "work/fresh.txt" ]
+
+let private withWork (fs: MockFileSystem) =
+    fs.AddFile(at "work/notes.txt", MockFileData "newer")
+    fs.AddFile(at "work/fresh.txt", MockFileData "fresh")
+    fs
+
+[<Fact>]
+let ``Alt+Shift+V copies the files on the clipboard into the directory, asking before it replaces one`` () =
+    let fs = withWork (mockFs ())
+    let asked = ResizeArray<string>()
+
+    use window =
+        focusedWindow (pasting fs bothOnClipboard asked (ResizeArray()))
+
+    pressKey window KeyMap.pasteFilesKey
+
+    Assert.Equal<string list>([ at "start/notes.txt" ], List.ofSeq asked)
+    Assert.Equal("newer", fs.File.ReadAllText(at "start/notes.txt"))
+    Assert.Equal("fresh", fs.File.ReadAllText(at "start/fresh.txt"))
+    Assert.True(fs.File.Exists(at "work/fresh.txt"))
+
+[<Fact>]
+let ``Ctrl+Shift+V moves the files on the clipboard into the directory and empties the clipboard`` () =
+    let fs = withWork (mockFs ())
+    let emptied = ResizeArray<unit>()
+
+    use window =
+        focusedWindow (pasting fs (filesOnClipboard ForMoving [ "work/fresh.txt" ]) (ResizeArray()) emptied)
+
+    pressKey window KeyMap.sparePasteFilesKey
+
+    Assert.Equal("fresh", fs.File.ReadAllText(at "start/fresh.txt"))
+    Assert.False(fs.File.Exists(at "work/fresh.txt"))
+    Assert.Single emptied |> ignore
+
+let private heldIn (fs: MockFileSystem) =
+    ArchiveListing.read fs (FileSystemPath.create (at "start/backup.zip")) ArchivePath.root
+    |> Expect.ok
+    |> List.map (_.Name >> EntryName.value)
+    |> List.sort
+
+[<Fact>]
+let ``Alt+Shift+V inside an archive adds the files on the clipboard to it, asking before it replaces one`` () =
+    let fs = withWork (Marbas.Tests.State.ArchiveFixture.packed ())
+    let asked = ResizeArray<string>()
+
+    use window =
+        focusedWindow (pasting fs bothOnClipboard asked (ResizeArray()))
+
+    pressKey window Key.CursorDown
+    pressKey window Key.Enter
+    pressKey window KeyMap.pasteFilesKey
+
+    Assert.Equal<string list>([ at "start/backup.zip/notes.txt" ], List.ofSeq asked)
+    Assert.Equal<string list>([ "docs"; "fresh.txt"; "notes.txt" ], heldIn fs)
+    Assert.True(fs.File.Exists(at "work/fresh.txt"))
+
+[<Fact>]
+let ``Ctrl+Shift+V inside an archive moves the files on the clipboard into it`` () =
+    let fs = withWork (Marbas.Tests.State.ArchiveFixture.packed ())
+    let emptied = ResizeArray<unit>()
+
+    use window =
+        focusedWindow (pasting fs (filesOnClipboard ForMoving [ "work/fresh.txt" ]) (ResizeArray()) emptied)
+
+    pressKey window Key.CursorDown
+    pressKey window Key.Enter
+    pressKey window KeyMap.sparePasteFilesKey
+
+    Assert.Equal<string list>([ "docs"; "fresh.txt"; "notes.txt" ], heldIn fs)
+    Assert.False(fs.File.Exists(at "work/fresh.txt"))
+    Assert.Single emptied |> ignore
+
+[<Fact>]
+let ``a clipboard holding no files pastes nothing and says nothing`` () =
+    let fs = withWork (mockFs ())
+    let reported = ResizeArray<string>()
+
+    use window =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                Prompts.ReportError = fun report -> reported.Add report.Title }
+
+    pressKey window KeyMap.pasteFilesKey
+
+    Assert.False(fs.File.Exists(at "start/fresh.txt"))
+    Assert.Empty reported

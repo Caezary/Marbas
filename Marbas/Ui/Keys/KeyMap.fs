@@ -194,6 +194,10 @@ let cutFilesKey = Key.X.WithAlt.WithShift
 
 let spareCutFilesKey = Key.X.WithCtrl.WithShift
 
+let pasteFilesKey = Key.V.WithAlt.WithShift
+
+let sparePasteFilesKey = Key.V.WithCtrl.WithShift
+
 let historyKey = Key.F12.WithAlt
 
 let spareHistoryKey = Key.H.WithAlt.WithShift
@@ -331,7 +335,9 @@ let bindings =
       unlabelled copyFilesKey (FilesOnClipboardRequested ForCopying)
       unlabelled spareCopyFilesKey (FilesOnClipboardRequested ForCopying)
       unlabelled cutFilesKey (FilesOnClipboardRequested ForMoving)
-      unlabelled spareCutFilesKey (FilesOnClipboardRequested ForMoving) ]
+      unlabelled spareCutFilesKey (FilesOnClipboardRequested ForMoving)
+      unlabelled pasteFilesKey FilesPasteRequested
+      unlabelled sparePasteFilesKey FilesPasteRequested ]
     @ (FavoriteSlot.all
        |> List.map (fun slot -> unlabelled (favoriteKey slot) (FavoriteRequested slot)))
 

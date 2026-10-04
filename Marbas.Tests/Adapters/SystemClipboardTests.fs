@@ -29,3 +29,15 @@ let ``Unix refuses files as well`` () =
     let answer = (SystemClipboard.forPlatform Unix).SetFiles files
 
     Assert.Equal(Error ClipboardUnavailable, answer)
+
+[<Fact>]
+let ``Unix gives no files back`` () =
+    let answer = (SystemClipboard.forPlatform Unix).GetFiles()
+
+    Assert.Equal(Error ClipboardUnavailable, answer)
+
+[<Fact>]
+let ``Unix refuses to be emptied`` () =
+    let answer = (SystemClipboard.forPlatform Unix).Empty()
+
+    Assert.Equal(Error ClipboardUnavailable, answer)

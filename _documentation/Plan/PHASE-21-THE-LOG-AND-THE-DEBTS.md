@@ -4,7 +4,7 @@ Goal: when Marbas fails, it leaves behind enough to say why, and the code is
 left easier to change than it was found. The phase adds one feature — a log,
 written on a crash and, in debug mode, on every transition — and otherwise
 pays off what earlier phases left owing: a progress window that is flooded on a
-fast batch, a console editor on Unix that has to share the terminal, working
+fast batch, a directory that can be copied into itself, a console editor on Unix that has to share the terminal, working
 directories left in the temporary directory by every session that did not end
 with `F10`, a flag
 argument, four ways of landing a panel that say the same thing, the effect
@@ -83,9 +83,41 @@ past and never grows without bound.
   of many small files is timed before and after in
   [Measurements](../Progress/MEASUREMENTS.md).
 
-## Stage 2 — The terminal handed over
+## Stage 2 — A copy kept out of itself
 
-- **P21.4 A console editor gets the terminal** — on Unix, `F4` shuts the
+Nothing stops a directory from being copied or moved into itself. Reading
+`Operations.copying` while P18.7 was written showed why that is worse than a
+refusal from the system: a directory's children are listed only when the walk
+reaches it, so a directory copied into its own subdirectory meets its fresh
+copy among them and copies it again, one level deeper each time, until a path
+grows too long. A move that cannot be a rename goes through the same copy
+before it deletes. `F5` and `F6` reach it whenever the other panel stands
+below the source, a typed `F6` target reaches it anywhere, and since P18.7 a
+paste reaches it in three keys — `Alt+Shift+C` on a directory, `Enter`,
+`Alt+Shift+V`. Packing already has the guard, `Archive.wouldPackItself`; the
+transfers do not.
+
+- **P21.4 A directory is not copied into itself** — a test on
+  `MockFileSystem` first shows the walk running away, bounded so the suite
+  cannot hang. Then every transfer from the disk is refused before its batch
+  when the place it lands in is at or under one of its sources —
+  `FileSystemPath.atOrUnder` on the platform's rules, the comparison
+  `wouldPackItself` makes: `F5` and `F6` into the other panel, an `F6` target
+  typed into the prompt, a paste of copied or cut files, and an archive target
+  whose file lies under a source directory, which would be read while it is
+  written. The check is one function of `Operations` beside `approve`, which
+  `wouldPackItself` then calls too, and the refusal names the target the way
+  `TargetWithinSource` does today; its sentence stops speaking of archives
+  alone. A source that only reaches the target through a link is not followed:
+  the comparison is of paths, as packing's is. *Done when:* the runaway is
+  shown and then refused for a copy, a move, a typed target and a paste, each
+  by name and before any batch starts; a target beside the source, and one in
+  a directory whose name merely begins with the source's, still copy; and the
+  entry in [Rough edges](../ROUGH-EDGES.md) is gone.
+
+## Stage 3 — The terminal handed over
+
+- **P21.5 A console editor gets the terminal** — on Unix, `F4` shuts the
   Terminal.Gui driver down before starting the editor and brings it back after
   it exits, so a full-screen editor receives every key and the panels are
   redrawn whole; Windows keeps today's path behind a switch. A spike first
@@ -94,7 +126,7 @@ past and never grows without bound.
   editor round-trips by hand on Linux, and the entry in
   [Rough edges](../ROUGH-EDGES.md) is gone.
 
-## Stage 3 — What a session leaves behind
+## Stage 4 — What a session leaves behind
 
 Each session works in `<temporary root>\Marbas\<session>` — entries on their way
 from one archive to another and, since P18.6, the entries unpacked for the
@@ -107,7 +139,7 @@ console's close and shutdown signals as well would narrow the hole but not
 close it — a kill or a crash still skips every handler — so the sweep at start
 is the fix, and a signal handler is left out.
 
-- **P21.5 Old sessions are swept at start** — every session writes an owner
+- **P21.6 Old sessions are swept at start** — every session writes an owner
   file into its working directory when it makes it: its process id and the
   moment the process started, which together name one process even after the
   system reuses the id. When a session starts, the directories under
@@ -129,15 +161,15 @@ is the fix, and a signal handler is left out.
   the window's button is gone after the next start, and the entry in
   [Rough edges](../ROUGH-EDGES.md) is gone.
 
-## Stage 4 — The structure
+## Stage 5 — The structure
 
-- **P21.6 Replacing is said by name** — `Operations.copyFile` and `moveFile`
+- **P21.7 Replacing is said by name** — `Operations.copyFile` and `moveFile`
   lose their `bool`: copying always replaces, so its argument goes, and moving
   takes a union that says whether an existing target is replaced (every
   transfer) or kept (the anonymous rename a wipe makes). *Done when:* no
   function in `Operations` takes a `bool` for what it does, and the suite
   passes unchanged.
-- **P21.7 One way to land a panel** — four transitions end in
+- **P21.8 One way to land a panel** — four transitions end in
   `AppState.standInside` or `standBeside`, each through a type or a match of its
   own: a history choice through `Place.toLocation` and `Place.beside`, a
   favourite through `Place.toLocation`, a search answer through
@@ -152,7 +184,7 @@ is the fix, and a signal handler is left out.
   *Done when:* `standInside` and `standBeside` are called from one function in
   `Update`, the folder history records the same places as before, and the
   suite passes with only the renamed cases changed.
-- **P21.8 `Shell` and `Ports` join `State`** — neither draws anything: `Ports`
+- **P21.9 `Shell` and `Ports` join `State`** — neither draws anything: `Ports`
   is the shape of the outside world and `Shell` interprets effects into it. Both
   move under `State/`, and with them the wording of `Ui/Messages`, which is
   plain text with no view in it and whose only readers are `Shell`,
@@ -164,7 +196,7 @@ is the fix, and a signal handler is left out.
   nothing under `State` opens a `Terminal.Gui` namespace, the dependency rule in
   [Overview](../Architecture/OVERVIEW.md) is restated for the new layout, and
   the suite passes with its tests moved alongside.
-- **P21.9 Ports say what they are for** — a port that takes functions takes a
+- **P21.10 Ports say what they are for** — a port that takes functions takes a
   request record instead, the way the prompts already do: `Runners.Batch` takes
   a title, the work and what to do with the result as named fields, and so do
   `Measure`, `Search` and the two `Watches`. A function type that stays a field
@@ -172,7 +204,7 @@ is the fix, and a signal handler is left out.
   given a name that says what it answers. *Done when:* no field of
   `Dependencies` is a function whose argument is another function, and `Fakes`
   builds every port from named parts.
-- **P21.10 Where mutation is allowed** — a rule in
+- **P21.11 Where mutation is allowed** — a rule in
   [Coding style](../coding-style-conventions.md) says where a mutable binding or
   a reference cell earns its place: a measured hot loop confined to one
   function (`LineIndex`, `TextEncoding`, `ArchiveReader`, `RewindingStream`), an
@@ -183,7 +215,7 @@ is the fix, and a signal handler is left out.
   a returned value. *Done when:* each remaining mutable binding outside `Ui`
   falls under a clause of the rule, the hot loops are timed before and after in
   [Measurements](../Progress/MEASUREMENTS.md), and the suite passes unchanged.
-- **P21.11 Views keep their state in one value** — `FileViewer`,
+- **P21.12 Views keep their state in one value** — `FileViewer`,
   `ResultsWindow`, `ResultRow` and `SettingsDialog` hold a handful of mutable
   locals each, changed from several event handlers. Each gathers them into one
   immutable record behind one cell, with the changes written as functions over
@@ -191,9 +223,9 @@ is the fix, and a signal handler is left out.
   view has a single cell, its transitions have unit tests, and the rendered
   screens are unchanged before and after.
 
-## Stage 5 — The suite and the platforms
+## Stage 6 — The suite and the platforms
 
-- **P21.12 Test files by feature** — no test file runs past a thousand lines.
+- **P21.13 Test files by feature** — no test file runs past a thousand lines.
   `ShellTests` (about 2,600 lines, 161 tests) splits along the features its
   helpers already group — transfers, history, typed text, packing, unpacking
   and the rest — the way `ShellPlacesTests` was split from it, and `UpdateTests`
@@ -201,7 +233,7 @@ is the fix, and a signal handler is left out.
   `ArchiveFixture` does for the archive tests. *Done when:* the longest test
   file is under a thousand lines, the count of tests is the same before and
   after, and [Testing](../Architecture/TESTING.md) states the limit.
-- **P21.13 The manual rows, by hand** — every row of
+- **P21.14 The manual rows, by hand** — every row of
   [Cross-platform](../Architecture/CROSS-PLATFORM.md) marked *manual* is run
   against the published binaries of this phase, on Windows and on a Linux
   desktop, by a person at the terminal: colours, a resized terminal, the mouse,

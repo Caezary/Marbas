@@ -611,6 +611,36 @@ reports what failed item by item beside the files it still hands over. The
 scratch directories are not released until Marbas quits, when the whole working
 directory goes — a paste in another program may come at any time before that.
 
+**Pasting is `F5` or `F6` with the clipboard as the source and the active
+panel as the target.** `Alt+Shift+V` and `Ctrl+Shift+V` raise
+`FilesPasteRequested`. The state settles the target first — the directory the
+active panel shows, or the level of the archive it is inside, refused by name
+when the kind cannot be changed, and refused as `Receiving` over search
+results, the same refusal a copy into such a panel meets — and answers
+`ReadClipboardFiles` with it, so a refusal never waits on the clipboard.
+`Shell` reads the files and dispatches `ClipboardFilesRead` with the target,
+or nothing when the clipboard holds no files. Files to be copied become
+`CopyPlaces` with one `FromDisk` group, exactly what `F5` sends. Files to be
+moved become `MovePastedFiles`, which `Shell` runs through the same `movePiece`
+as `MovePlaces` — the overwrite question, the progress window, an archive
+target added to and the sources removed — and, once the batch is over, empties
+the clipboard when anything moved and the clipboard still holds the same
+files. Both conditions matter: a move whose every collision was declined left
+the files where they were and worth pasting again, and a clipboard another
+program refilled during a long move is not Marbas's to clear. A move pasted
+into the other panel's directory takes no target prompt, unlike `F6`: the
+place to land in is the panel the user pasted in. The answer to the move is
+the ordinary `MoveFinished`, so the panels are read again as after `F6`.
+
+**The intent is read as Explorer writes it.** The Windows adapter takes the
+paths with `DragQueryFileW`, which reads both the wide and the narrow
+`DROPFILES` layouts, and the intent from `Preferred DropEffect`: the move bit
+without the copy bit is a move, and everything else — Explorer's copy writes
+copy and link together, and a program that writes no effect at all means a
+copy — is a copy. An effect that cannot be read is taken for a copy, the
+reading that loses nothing. What the clipboard offers only as virtual files
+(see below) has no `CF_HDROP` and is read as no files.
+
 **How the system file manager cuts from an archive, and why Marbas does not
 yet.** Explorer offers Cut on an entry inside a zip — its menu there reads
 Open, Cut, Copy, Delete, Properties — and a paste elsewhere moves the entry out

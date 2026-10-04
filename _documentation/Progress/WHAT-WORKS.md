@@ -357,6 +357,18 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   search results holding one, is refused with the entry's full path named, and
   the clipboard is left alone. `..` under the cursor with nothing marked puts
   nothing there. Windows only, refused on Unix like the text.
+- `Alt+Shift+V`, and `Ctrl+Shift+V` beside it, paste the files on the
+  clipboard — the `CF_HDROP` list, whoever wrote it — into the place the active
+  panel shows: a directory on disk, or the level of an archive of a changeable
+  kind, which a kind that cannot be changed refuses by name before the
+  clipboard is read. A `Preferred DropEffect` with the move bit and without the
+  copy bit moves them, through the batch `F6` runs for a move into the other
+  panel; anything else, an absent effect included, copies them through the
+  batch of `F5`. Both ask before replacing an entry, show the progress window
+  and report what failed item by item. When anything was moved and the
+  clipboard still holds the same files, it is emptied. A clipboard with no
+  files changes nothing and says nothing; a panel of search results refuses as
+  it refuses a copy into it. Windows only, refused on Unix.
 - While `F5` or `F6` works, a progress window names the file being handled and
   the rest of the app keeps drawing, because the batch runs on a background
   thread. `Esc` (or the Cancel button) closes that window and the batch stops

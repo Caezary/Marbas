@@ -281,6 +281,25 @@ let private runPlaces (deps: Dependencies) title (pieces: Piece option list) fin
     | [] -> ()
     | ready -> deps.Runners.Batch title (fun control -> untilStopped control ready) finished
 
+let private emptyClipboard (deps: Dependencies) dispatch =
+    match deps.Clipboard.Empty() with
+    | Ok() -> ()
+    | Error error -> dispatch (ClipboardRefused error)
+
+let private forgetMoved (deps: Dependencies) dispatch files (results: Operations.ItemResult list) =
+    let moved = results |> List.exists (_.Outcome >> Result.isOk)
+    let stillHeld = deps.Clipboard.GetFiles() = Ok(Some files)
+
+    if moved && stillHeld then
+        emptyClipboard deps dispatch
+
+let private movePasted (deps: Dependencies) dispatch files target =
+    let finished results =
+        dispatch (MoveFinished results)
+        forgetMoved deps dispatch files results
+
+    runPlaces deps MoveTitle [ movePiece deps target (FromDisk(ClipboardFiles.paths files)) ] finished
+
 let private deleteTitle mode =
     match mode with
     | ByWiping -> WipeTitle
@@ -542,6 +561,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Ok() -> ()
         | Error error -> dispatch (ClipboardRefused error)
     | ExtractForClipboard groups -> extractForClipboard deps dispatch groups
+    | ReadClipboardFiles target ->
+        match deps.Clipboard.GetFiles() with
+        | Error error -> dispatch (ClipboardRefused error)
+        | Ok files -> files |> Option.iter (fun held -> dispatch (ClipboardFilesRead(held, target)))
+    | MovePastedFiles(files, target) -> movePasted deps dispatch files target
     | ReportClipboardError error -> report deps ClipboardErrorMessage.Title (ClipboardErrorMessage.describe error)
     | SaveSettings settings ->
         match Settings.save deps.FileSystem deps.SettingsPath settings with

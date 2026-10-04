@@ -290,3 +290,21 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   `Paste Succeeded` handshake through an OLE data object, and the adapter hands
   over plain clipboard blocks; a second paste then finds the files gone and
   Explorer says so.
+- `Alt+Shift+V` into the directory the files came from does what `F5` does
+  between two panels on one directory: it asks whether to replace each file
+  with itself, and the system refuses the copy. Explorer makes `notes - Copy.txt`
+  instead; Marbas has no such naming yet.
+- Neither `F5`, `F6` nor a paste checks that the target directory lies outside
+  the directories being copied. Read from `Operations.copying`, which lists a
+  directory's children only when it reaches them, a directory copied into its
+  own subdirectory meets its own fresh copy among them and copies it again,
+  deeper each time, until a path grows too long; a move that cannot rename goes
+  the same way before it deletes. Pasting puts it three keys away — `Alt+Shift+C`
+  on a directory, `Enter`, `Alt+Shift+V`. Refusing a target at or under a
+  source, as `Archive.wouldPackItself` does for packing, is the fix;
+  [phase 21](Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md) schedules it.
+- Files Explorer cut or copied from inside a zip probably reach the clipboard
+  only as virtual files (`FileGroupDescriptorW` and `FileContents`, not
+  `CF_HDROP`), which `GetFiles` does not read, so `Alt+Shift+V` pastes nothing
+  and says nothing. This was not measured; how it could be is at the end of
+  the clipboard section of [File operations](Architecture/FILE-OPERATIONS.md).

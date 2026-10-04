@@ -176,6 +176,16 @@ and nothing marked there is nothing to copy.
   until Marbas quits, so paste them before that. An archive cannot be cut from:
   `Alt+Shift+X` on an entry inside one says so and leaves the clipboard as it
   was.
+- `Alt+Shift+V` — or `Ctrl+Shift+V` — pastes the files on the clipboard into
+  the place the active panel shows, whether Marbas put them there or Explorer
+  or another program did: copied when they were copied, moved when they were
+  cut. It works like `F5` and `F6`: the same progress window, the same question
+  before a file is replaced, the same report of what failed, and inside an
+  archive that can be changed the files are added to it. After a move the
+  clipboard is emptied, so the same files are not asked for twice. A clipboard
+  holding no files — text, a picture, nothing — pastes nothing and says
+  nothing. Files Explorer cut or copied from inside a zip may be offered only
+  in a form Marbas does not read yet, and then nothing is pasted.
 
 On Linux and macOS Marbas cannot reach the clipboard yet; the first attempt
 in a session says so, and later ones stay quiet.

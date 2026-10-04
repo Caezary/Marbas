@@ -40,10 +40,10 @@ numbered `P<phase>.<task>` so they can be referenced in commits (e.g.
 | [15 — Answering the reviews](Plan/PHASE-15-ANSWERING-THE-REVIEWS.md) | P15.1–P15.26 | done |
 | [16 — History](Plan/PHASE-16-HISTORY.md) | P16.1–P16.10 | done |
 | [17 — The marks, the panel and the favourites](Plan/PHASE-17-MARKS-PANEL-AND-FAVOURITES.md) | P17.1–P17.10 | done |
-| [18 — The clipboard](Plan/PHASE-18-THE-CLIPBOARD.md) | P18.1–P18.7 | planned |
+| [18 — The clipboard](Plan/PHASE-18-THE-CLIPBOARD.md) | P18.1–P18.7 | done |
 | [19 — The viewer finds and decodes](Plan/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) | P19.1–P19.6 | planned |
 | [20 — The user menu](Plan/PHASE-20-THE-USER-MENU.md) | P20.1–P20.5 | planned |
-| [21 — The log and the debts](Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md) | P21.1–P21.13 | planned |
+| [21 — The log and the debts](Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md) | P21.1–P21.14 | planned |
 
 ## Suggested module layout
 

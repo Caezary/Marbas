@@ -2794,3 +2794,136 @@ let ``a locked archive whose password is not given is left off the clipboard wit
         [ ClipboardExtractFinished(forClipboard, fp (at "temp/Marbas/session/1"), []) ],
         List.ofSeq sent
     )
+
+let private holdingFiles files =
+    { noDeps () with
+        Clipboard.GetFiles = fun () -> Ok files }
+
+[<Fact>]
+let ``files on the clipboard are dispatched as read, with the place to land in`` () =
+    let sent, dispatch = capture ()
+    let files = clipboardFiles ForMoving [ at "work/notes.txt" ]
+
+    Shell.interpret (holdingFiles (Some files)) dispatch (ReadClipboardFiles(ToDirectory(fp (at "start"))))
+
+    Assert.Equal<Message list>([ ClipboardFilesRead(files, ToDirectory(fp (at "start"))) ], List.ofSeq sent)
+
+[<Fact>]
+let ``a clipboard holding no files dispatches nothing`` () =
+    let sent, dispatch = capture ()
+
+    Shell.interpret (holdingFiles None) dispatch (ReadClipboardFiles(ToDirectory(fp (at "start"))))
+
+    Assert.Empty sent
+
+[<Fact>]
+let ``a clipboard that refuses to give its files is dispatched as refused`` () =
+    let sent, dispatch = capture ()
+
+    let deps =
+        { noDeps () with
+            Clipboard.GetFiles = fun () -> Error ClipboardUnavailable }
+
+    Shell.interpret deps dispatch (ReadClipboardFiles(ToDirectory(fp (at "start"))))
+
+    Assert.Equal<Message list>([ ClipboardRefused ClipboardUnavailable ], List.ofSeq sent)
+
+let private pasteReadyFs () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "work/notes.txt", MockFileData "notes")
+    fs.AddFile(at "work/docs/inner.txt", MockFileData "inner")
+    fs.AddDirectory(at "start")
+    fs
+
+let private cut = clipboardFiles ForMoving [ at "work/notes.txt"; at "work/docs" ]
+
+let private emptying (emptied: ResizeArray<unit>) files (deps: Ports.Dependencies) =
+    { deps with
+        Clipboard.GetFiles = fun () -> Ok(Some files)
+        Clipboard.Empty =
+            fun () ->
+                emptied.Add()
+                Ok() }
+
+[<Fact>]
+let ``pasted files to be moved are moved and the outcome dispatched back`` () =
+    let sent, dispatch = capture ()
+    let fs = pasteReadyFs ()
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret deps dispatch (MovePastedFiles(cut, ToDirectory(fp (at "start"))))
+
+    Assert.Equal("inner", fs.File.ReadAllText(at "start/docs/inner.txt"))
+    Assert.False(fs.File.Exists(at "work/notes.txt"))
+
+    Assert.Equal<Message list>(
+        [ MoveFinished(
+              [ Operations.itemResult (fp (at "work/notes.txt")) (Ok())
+                Operations.itemResult (fp (at "work/docs")) (Ok()) ]
+          ) ],
+        List.ofSeq sent
+    )
+
+[<Fact>]
+let ``the clipboard is emptied once the files on it were moved`` () =
+    let emptied = ResizeArray<unit>()
+    let deps = { noDeps () with FileSystem = pasteReadyFs () } |> emptying emptied cut
+
+    Shell.interpret deps ignore (MovePastedFiles(cut, ToDirectory(fp (at "start"))))
+
+    Assert.Single emptied
+
+[<Fact>]
+let ``the clipboard is kept when nothing was moved`` () =
+    let emptied = ResizeArray<unit>()
+    let fs = pasteReadyFs ()
+    fs.AddFile(at "start/notes.txt", MockFileData "old")
+    fs.AddDirectory(at "start/docs")
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            Prompts.AskOverwrite = fun _ -> No }
+        |> emptying emptied cut
+
+    Shell.interpret deps ignore (MovePastedFiles(cut, ToDirectory(fp (at "start"))))
+
+    Assert.Empty emptied
+
+[<Fact>]
+let ``the clipboard is kept when it no longer holds the files that were moved`` () =
+    let emptied = ResizeArray<unit>()
+    let other = clipboardFiles ForCopying [ at "elsewhere/report.txt" ]
+    let deps = { noDeps () with FileSystem = pasteReadyFs () } |> emptying emptied other
+
+    Shell.interpret deps ignore (MovePastedFiles(cut, ToDirectory(fp (at "start"))))
+
+    Assert.Empty emptied
+
+[<Fact>]
+let ``pasted files to be moved into an archive are added to it and leave the disk`` () =
+    let fs = pasteReadyFs ()
+
+    Archive.write
+        fs
+        unattended
+        { Path = fp (at "start/data.zip")
+          Format = zipFormat
+          Compression = Normal
+          Password = None }
+        [ fp (at "work/notes.txt") ]
+    |> ignore
+
+    fs.File.WriteAllText(at "work/notes.txt", "newer")
+    let deps = { noDeps () with FileSystem = fs; Prompts.AskOverwrite = fun _ -> Yes }
+
+    Shell.interpret deps ignore (MovePastedFiles(cut, ToArchive(fp (at "start/data.zip"), ArchivePath.root)))
+
+    let held =
+        ArchiveListing.read fs (fp (at "start/data.zip")) ArchivePath.root
+        |> Expect.ok
+        |> List.map (_.Name >> EntryName.value)
+
+    Assert.Equal<string list>([ "docs"; "notes.txt" ], held |> List.sort)
+    Assert.False(fs.File.Exists(at "work/notes.txt"))
+    Assert.False(fs.Directory.Exists(at "work/docs"))

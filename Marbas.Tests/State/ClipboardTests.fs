@@ -625,3 +625,77 @@ let ``nothing extracted and nothing on disk puts nothing on the clipboard`` () =
     let result = update fs finished (ArchiveFixture.loaded fs)
 
     Assert.Empty result.Effects
+
+let private onClipboard intent paths =
+    ClipboardFiles.tryCreate intent (paths |> List.map (at >> fp)) |> Expect.some
+
+[<Fact>]
+let ``pasting asks the clipboard for files to land in the directory of the active panel`` () =
+    let fs = mockFs ()
+    let state = started fs |> loadPanel fs Left (fp (at "start/docs")) |> Expect.ok
+
+    let result = update fs FilesPasteRequested state
+
+    Assert.Equal<Effect list>([ ReadClipboardFiles(ToDirectory(fp (at "start/docs"))) ], result.Effects)
+
+[<Fact>]
+let ``pasting inside an archive asks for files to land at its level`` () =
+    let fs = ArchiveFixture.packed ()
+
+    let state =
+        ArchiveFixture.loaded fs
+        |> standInside fs Left (InArchive(ArchiveFixture.archive, docs))
+        |> Expect.ok
+
+    let result = update fs FilesPasteRequested state
+
+    Assert.Equal<Effect list>([ ReadClipboardFiles(ToArchive(ArchiveFixture.archive, docs)) ], result.Effects)
+
+[<Fact>]
+let ``pasting inside an archive of a kind that cannot be changed is refused by name`` () =
+    let fs = ArchiveFixture.tarredAs (at "start/backup.tar")
+    let tarball = fp (at "start/backup.tar")
+
+    let state =
+        ArchiveFixture.loaded fs
+        |> standInside fs Left (InArchive(tarball, ArchivePath.root))
+        |> Expect.ok
+
+    let result = update fs FilesPasteRequested state
+
+    Assert.Equal<Effect list>(
+        [ ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged tarball)) ],
+        result.Effects
+    )
+
+[<Fact>]
+let ``pasting into a panel of search results is refused as a copy into one is`` () =
+    let fs = mockFs ()
+    let state = started fs |> update fs (sentToPanel [ hitIn "start/a" "one.txt" ]) |> _.State
+
+    let result = update fs FilesPasteRequested state
+
+    Assert.Equal<Effect list>([ ReportOperationError(Operations.NotInSearchResults Receiving) ], result.Effects)
+
+[<Fact>]
+let ``files on the clipboard to be copied are copied through the batch F5 runs`` () =
+    let fs = mockFs ()
+    let files = onClipboard ForCopying [ "work/a.txt"; "work/b" ]
+    let target = ToDirectory(fp (at "start"))
+
+    let result = update fs (ClipboardFilesRead(files, target)) (started fs)
+
+    Assert.Equal<Effect list>(
+        [ CopyPlaces([ FromDisk [ fp (at "work/a.txt"); fp (at "work/b") ] ], target) ],
+        result.Effects
+    )
+
+[<Fact>]
+let ``files on the clipboard to be moved are moved as pasted files`` () =
+    let fs = mockFs ()
+    let files = onClipboard ForMoving [ "work/a.txt" ]
+    let target = ToArchive(ArchiveFixture.archive, ArchivePath.root)
+
+    let result = update fs (ClipboardFilesRead(files, target)) (started fs)
+
+    Assert.Equal<Effect list>([ MovePastedFiles(files, target) ], result.Effects)

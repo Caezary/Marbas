@@ -581,3 +581,17 @@ let ``Ctrl+Shift+X puts the files on the clipboard to be moved where a terminal 
 
     Assert.Equal(Key.X.WithCtrl.WithShift, KeyMap.spareCutFilesKey)
     Assert.Equal(Some(FilesOnClipboardRequested ForMoving), message)
+
+[<Fact>]
+let ``Alt+Shift+V pastes the files on the clipboard`` () =
+    let message = KeyMap.messageFor KeyMap.pasteFilesKey
+
+    Assert.Equal(Key.V.WithAlt.WithShift, KeyMap.pasteFilesKey)
+    Assert.Equal(Some FilesPasteRequested, message)
+
+[<Fact>]
+let ``Ctrl+Shift+V pastes the files where a terminal delivers the Shift`` () =
+    let message = KeyMap.messageFor KeyMap.sparePasteFilesKey
+
+    Assert.Equal(Key.V.WithCtrl.WithShift, KeyMap.sparePasteFilesKey)
+    Assert.Equal(Some FilesPasteRequested, message)

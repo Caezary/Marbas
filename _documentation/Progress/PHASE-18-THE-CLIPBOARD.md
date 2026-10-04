@@ -277,3 +277,60 @@ never finishes its batch — `F5` out of the same zip stalls the same way — so
 the archive run swapped `Runners.Batch` for the synchronous one the tests use,
 leaving the file system and the clipboard real. A copy and a move pasted into
 Explorer itself by hand are left to the user.
+
+**P18.7 pasted the files on the clipboard through the batches of `F5` and
+`F6`, and closed the phase.** The port gained `GetFiles`, answering a
+`ClipboardFiles` or `None`, and `Empty`. The Windows adapter reads `CF_HDROP`
+through `DragQueryFileW` rather than walking the `DROPFILES` block itself, so a
+narrow list written by an older program reads as well as a wide one, and takes
+the intent from `Preferred DropEffect`: the move bit without the copy bit is a
+move, anything else — Explorer's copy writes 5, copy and link — a copy, and so
+is an effect that is absent or unreadable. Opening, acting and closing became
+one `whileOpen`, shared by every request of the adapter.
+
+`Alt+Shift+V` and `Ctrl+Shift+V` raise `FilesPasteRequested`. The state settles
+where the files land before the clipboard is read: the directory of the active
+panel, or the level of the archive it stands in, refused by name for a kind
+that cannot be changed, and refused over search results through the same
+`Receiving` refusal a copy into such a panel meets. `ReadClipboardFiles`
+carries that target to `Shell`, which dispatches `ClipboardFilesRead` with the
+files, or nothing. A copy is `CopyPlaces` with one `FromDisk` group, exactly
+what `F5` sends. A move is `MovePastedFiles`, run through the `movePiece` of
+`MovePlaces`, and empties the clipboard after the batch when anything moved
+and the clipboard still holds the same files — a move whose every collision
+was declined, or a clipboard another program refilled meanwhile, keeps it.
+
+The tests: six in `State/ClipboardTests` — the target in a directory and at a
+level of a zip, a tarball refused, search results refused, a copy and a move
+read from the clipboard; eight in `ShellTests` — the files dispatched with the
+target, no files, a refusal, a move into a directory dispatched back, the
+clipboard emptied, kept when nothing moved and kept when it holds other files,
+and a move into a zip that leaves the disk; the Unix adapter refusing both new
+requests; both keys in `KeyMapTests`; and five in `ClipboardKeyTests` through a
+`MainWindow` with a fake clipboard — a copy into a directory and into a zip,
+each asking before it replaces `notes.txt`, a move into each that empties the
+clipboard, and a clipboard with no files.
+
+The probe then pasted through a running `Application` with the real adapter.
+The files were put on the clipboard by a Windows Forms `DataObject` — an OLE
+data object, the way Explorer offers ordinary files — with the effect Explorer
+writes:
+
+```
+work\notes.txt, work\docs, effect 5   Alt+Shift+V in start
+                                      start: docs\inner.txt, notes.txt; work unchanged
+work\cut.txt, effect 2                Ctrl+Shift+V in start
+                                      start gains cut.txt, work loses it, clipboard empty
+work\fresh.txt, effect 1              ↓ Enter Alt+Shift+V in backup.zip
+                                      zip: seed.txt, fresh.txt; work unchanged
+work\moved.txt, effect 2              ↓ Enter Ctrl+Shift+V in backup.zip
+                                      zip gains moved.txt, work loses it, clipboard empty
+text only                             Alt+Shift+V: nothing pasted, nothing said
+```
+
+The zip was made by `Compress-Archive`, and the probe ran its batches
+synchronously, as P18.6 explains. Pasting files cut in Explorer itself is left
+to a hand trial. Reading the code for this task showed that nothing keeps a
+directory from being copied or moved into its own subdirectory — by `F5` and
+`F6` as much as by a paste — which is now a row in
+[Rough edges](../ROUGH-EDGES.md).

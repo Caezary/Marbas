@@ -113,7 +113,9 @@ type Processes =
 type Clipboard =
     { SetText: ClipboardText -> Result<unit, ClipboardError>
       GetText: unit -> Result<string option, ClipboardError>
-      SetFiles: ClipboardFiles -> Result<unit, ClipboardError> }
+      SetFiles: ClipboardFiles -> Result<unit, ClipboardError>
+      GetFiles: unit -> Result<ClipboardFiles option, ClipboardError>
+      Empty: unit -> Result<unit, ClipboardError> }
 
 type Watches =
     { Modifiers: (Set<Modifier> -> unit) -> unit

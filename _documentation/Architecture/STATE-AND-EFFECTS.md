@@ -141,8 +141,9 @@ space unsearchable.
 `Result<unit, ClipboardError>`, and `GetText`, which answers the text the
 clipboard holds or `None` when it holds no text, and `SetFiles`, which takes a
 `ClipboardFiles` — a list of paths that cannot be empty and a `ClipboardIntent`,
-`ForCopying` or `ForMoving` — and answers the same result; reading files back
-joins them in P18.7. What `GetText` answers is a `string`
+`ForCopying` or `ForMoving` — and answers the same result, `GetFiles`, which
+answers the files the clipboard holds or `None`, and `Empty`, which clears it
+after a pasted move. What `GetText` answers is a `string`
 on purpose: it is text not yet parsed, and `PastedPath.read` is what makes a
 path of it. `ClipboardText` is a list of lines that
 cannot be empty, and the line break is not in it: `ClipboardText.joined` takes
@@ -154,7 +155,7 @@ over a `CF_UNICODETEXT` block, or ask whether one is there and copy it out;
 for files, a `CF_HDROP` block (a `DROPFILES` header and the paths in UTF-16,
 each ended by a null and the list by one more) beside a `Preferred DropEffect`
 of `DROPEFFECT_COPY` or `DROPEFFECT_MOVE`, the registered format Explorer reads
-to tell a copy from a cut —
+to tell a copy from a cut, read back through `DragQueryFileW` —
 and answers `ClipboardUnavailable` on Unix without trying, for reading and
 writing alike. A refusal either way comes back to the state as
 `ClipboardRefused` (P18.1 named it `ClipboardUnwritten`, before the clipboard

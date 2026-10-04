@@ -95,6 +95,8 @@ type Message =
         groups: TransferSource list *
         scratch: FileSystemPath *
         results: Operations.ItemResult list
+    | FilesPasteRequested
+    | ClipboardFilesRead of files: ClipboardFiles * target: TransferTarget
     | QuitRequested
 
 type DeleteRequest =
@@ -148,6 +150,8 @@ type Effect =
     | ReportClipboardError of ClipboardError
     | PutFilesOnClipboard of ClipboardFiles
     | ExtractForClipboard of groups: TransferSource list
+    | ReadClipboardFiles of target: TransferTarget
+    | MovePastedFiles of files: ClipboardFiles * target: TransferTarget
     | SaveSettings of Settings
     | Quit
 
@@ -727,6 +731,16 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | Some source -> filesOnClipboard fs state intent (places source)
         | None -> stay state
     | ClipboardExtractFinished(groups, scratch, results) -> extractedForClipboard fs state groups scratch results
+    | FilesPasteRequested ->
+        match (activePanel state).Path with
+        | OnDisk directory -> request state (ReadClipboardFiles(ToDirectory directory))
+        | InArchive(archive, level) ->
+            refuseUnchangeable fs state [ archive ] (ReadClipboardFiles(ToArchive(archive, level)))
+        | SearchResults _ -> stay state
+    | ClipboardFilesRead(files, target) ->
+        match ClipboardFiles.intent files with
+        | ForCopying -> request state (CopyPlaces([ FromDisk(ClipboardFiles.paths files) ], target))
+        | ForMoving -> request state (MovePastedFiles(files, target))
     | QuitRequested ->
         { State = state
           Effects = [ SaveSettings(settings fs state); Quit ] }
@@ -796,6 +810,7 @@ let private refusedAsSource msg =
     match msg with
     | MakeDirectoryRequested -> Some MakingDirectory
     | NewFileRequested -> Some MakingFile
+    | FilesPasteRequested -> Some Receiving
     | LinkRequested -> Some Linking
     | PackRequested -> Some Packing
     | UnpackRequested -> Some Unpacking

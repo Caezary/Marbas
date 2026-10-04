@@ -32,6 +32,11 @@ module private User32 =
     [<DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "RegisterClipboardFormatW")>]
     extern uint32 RegisterClipboardFormat(string name)
 
+module private Shell32 =
+
+    [<DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "DragQueryFileW")>]
+    extern uint32 DragQueryFile(nativeint drop, uint32 index, StringBuilder file, uint32 length)
+
 module private Kernel32 =
 
     [<DllImport("kernel32.dll", SetLastError = true)>]
@@ -72,6 +77,9 @@ let private InClientArea = 0
 
 [<Literal>]
 let private WideNames = 1
+
+[<Literal>]
+let private EveryDroppedFile = 0xFFFFFFFFu
 
 [<Literal>]
 let private Moveable = 0x0002u
@@ -126,13 +134,16 @@ let private replacedBy blocks =
     else
         lastFailure ()
 
-let private settingOnWindows blocks =
+let private whileOpen action () =
     opened OpenAttempts
     |> Result.bind (fun () ->
         try
-            replacedBy blocks
+            action ()
         finally
             User32.CloseClipboard() |> ignore)
+
+let private settingOnWindows blocks =
+    whileOpen (fun () -> replacedBy blocks) ()
 
 let private nullTerminated (text: string) = Encoding.Unicode.GetBytes(text + "\000")
 
@@ -178,13 +189,48 @@ let private heldText () =
     else
         Ok None
 
-let private getOnWindows () =
-    opened OpenAttempts
-    |> Result.bind (fun () ->
-        try
-            heldText ()
-        finally
-            User32.CloseClipboard() |> ignore)
+let private droppedFile drop (index: uint32) =
+    let length = Shell32.DragQueryFile(drop, index, null, 0u)
+    let name = StringBuilder(int length + 1)
+    Shell32.DragQueryFile(drop, index, name, length + 1u) |> ignore
+    name.ToString() |> FileSystemPath.create
+
+let private droppedFiles drop =
+    let count = Shell32.DragQueryFile(drop, EveryDroppedFile, null, 0u)
+    List.init (int count) (uint32 >> droppedFile drop)
+
+let private effectHeld (memory: nativeint) =
+    match Kernel32.GlobalLock memory with
+    | 0n -> None
+    | locked ->
+        let effect = Marshal.ReadInt32 locked |> uint32
+        Kernel32.GlobalUnlock memory |> ignore
+        Some effect
+
+let private heldEffect () =
+    match User32.RegisterClipboardFormat PreferredDropEffect with
+    | 0u -> None
+    | format when User32.IsClipboardFormatAvailable format ->
+        match User32.GetClipboardData format with
+        | 0n -> None
+        | memory -> effectHeld memory
+    | _ -> None
+
+let private intentOf effect =
+    match effect with
+    | Some held when held &&& DropEffectMove <> 0u && held &&& DropEffectCopy = 0u -> ForMoving
+    | _ -> ForCopying
+
+let private heldFiles () =
+    if User32.IsClipboardFormatAvailable DroppedFiles then
+        match User32.GetClipboardData DroppedFiles with
+        | 0n -> lastFailure ()
+        | drop -> droppedFiles drop |> ClipboardFiles.tryCreate (intentOf (heldEffect ())) |> Ok
+    else
+        Ok None
+
+let private emptied () =
+    if User32.EmptyClipboard() then Ok() else lastFailure ()
 
 let private unavailable _ = Error ClipboardUnavailable
 
@@ -192,9 +238,13 @@ let forPlatform platform : Ports.Clipboard =
     match platform with
     | Windows ->
         { SetText = setOnWindows
-          GetText = getOnWindows
-          SetFiles = setFilesOnWindows }
+          GetText = whileOpen heldText
+          SetFiles = setFilesOnWindows
+          GetFiles = whileOpen heldFiles
+          Empty = whileOpen emptied }
     | Unix ->
         { SetText = unavailable
           GetText = unavailable
-          SetFiles = unavailable }
+          SetFiles = unavailable
+          GetFiles = unavailable
+          Empty = unavailable }
