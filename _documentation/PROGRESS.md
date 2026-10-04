@@ -67,7 +67,7 @@ written up as the checklist in
 | 15 — Answering the reviews | P15.1–P15.26 | done | [journal](Progress/PHASE-15-ANSWERING-THE-REVIEWS.md) |
 | 16 — History | P16.1–P16.10 | done | [journal](Progress/PHASE-16-HISTORY.md) |
 | 17 — The marks, the panel and the favourites | P17.1–P17.10 | done | [journal](Progress/PHASE-17-MARKS-PANEL-AND-FAVOURITES.md) |
-| 18 — The clipboard | P18.1–P18.7 | P18.1–P18.5 done | [journal](Progress/PHASE-18-THE-CLIPBOARD.md) |
+| 18 — The clipboard | P18.1–P18.7 | P18.1–P18.6 done | [journal](Progress/PHASE-18-THE-CLIPBOARD.md) |
 
 ## What works today
 

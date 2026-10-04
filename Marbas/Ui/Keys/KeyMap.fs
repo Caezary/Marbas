@@ -186,6 +186,14 @@ let clipboardPathKey = Key.InsertChar.WithCtrl.WithShift
 
 let spareClipboardPathKey = Key.J.WithAlt
 
+let copyFilesKey = Key.C.WithAlt.WithShift
+
+let spareCopyFilesKey = Key.C.WithCtrl.WithShift
+
+let cutFilesKey = Key.X.WithAlt.WithShift
+
+let spareCutFilesKey = Key.X.WithCtrl.WithShift
+
 let historyKey = Key.F12.WithAlt
 
 let spareHistoryKey = Key.H.WithAlt.WithShift
@@ -319,7 +327,11 @@ let bindings =
       unlabelled copyLinkTargetsKey LinkTargetsCopyRequested
       unlabelled spareCopyLinkTargetsKey LinkTargetsCopyRequested
       unlabelled clipboardPathKey ClipboardPathRequested
-      unlabelled spareClipboardPathKey ClipboardPathRequested ]
+      unlabelled spareClipboardPathKey ClipboardPathRequested
+      unlabelled copyFilesKey (FilesOnClipboardRequested ForCopying)
+      unlabelled spareCopyFilesKey (FilesOnClipboardRequested ForCopying)
+      unlabelled cutFilesKey (FilesOnClipboardRequested ForMoving)
+      unlabelled spareCutFilesKey (FilesOnClipboardRequested ForMoving) ]
     @ (FavoriteSlot.all
        |> List.map (fun slot -> unlabelled (favoriteKey slot) (FavoriteRequested slot)))
 

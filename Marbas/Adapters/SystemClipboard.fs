@@ -2,8 +2,11 @@ module Marbas.Adapters.SystemClipboard
 
 open System
 open System.Runtime.InteropServices
+open System.Text
 open System.Threading
+open FsToolkit.ErrorHandling
 open Marbas.Domain
+open Marbas.FileSystem
 open Marbas.Ui.App
 
 module private User32 =
@@ -26,6 +29,9 @@ module private User32 =
     [<DllImport("user32.dll", SetLastError = true)>]
     extern nativeint GetClipboardData(uint32 format)
 
+    [<DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "RegisterClipboardFormatW")>]
+    extern uint32 RegisterClipboardFormat(string name)
+
 module private Kernel32 =
 
     [<DllImport("kernel32.dll", SetLastError = true)>]
@@ -42,6 +48,30 @@ module private Kernel32 =
 
 [<Literal>]
 let private UnicodeText = 13u
+
+[<Literal>]
+let private DroppedFiles = 15u
+
+[<Literal>]
+let private PreferredDropEffect = "Preferred DropEffect"
+
+[<Literal>]
+let private DropEffectCopy = 1u
+
+[<Literal>]
+let private DropEffectMove = 2u
+
+[<Literal>]
+let private OffsetOfNames = 20
+
+[<Literal>]
+let private NoDropPoint = 0
+
+[<Literal>]
+let private InClientArea = 0
+
+[<Literal>]
+let private WideNames = 1
 
 [<Literal>]
 let private Moveable = 0x0002u
@@ -70,38 +100,67 @@ let rec private opened attemptsLeft =
         Thread.Sleep OpenPauseMilliseconds
         opened (attemptsLeft - 1)
 
-let private filled (text: string) (memory: nativeint) =
+let private filled (bytes: byte array) (memory: nativeint) =
     match Kernel32.GlobalLock memory with
     | 0n -> freedAfter (lastFailure ()) memory
     | locked ->
-        Marshal.Copy(text.ToCharArray(), 0, locked, text.Length)
-        Marshal.WriteInt16(locked, text.Length * sizeof<char>, 0s)
+        Marshal.Copy(bytes, 0, locked, bytes.Length)
         Kernel32.GlobalUnlock memory |> ignore
         Ok memory
 
-let private memoryHolding (text: string) =
-    match Kernel32.GlobalAlloc(Moveable, unativeint ((text.Length + 1) * sizeof<char>)) with
+let private memoryHolding (bytes: byte array) =
+    match Kernel32.GlobalAlloc(Moveable, unativeint bytes.Length) with
     | 0n -> lastFailure ()
-    | memory -> filled text memory
+    | memory -> filled bytes memory
 
-let private handedOver (memory: nativeint) =
-    match User32.SetClipboardData(UnicodeText, memory) with
-    | 0n -> freedAfter (lastFailure ()) memory
-    | _ -> Ok()
+let private handedOver (format: uint32, bytes: byte array) =
+    memoryHolding bytes
+    |> Result.bind (fun memory ->
+        match User32.SetClipboardData(format, memory) with
+        | 0n -> freedAfter (lastFailure ()) memory
+        | _ -> Ok())
 
-let private replaced (text: string) =
+let private replacedBy blocks =
     if User32.EmptyClipboard() then
-        memoryHolding text |> Result.bind handedOver
+        blocks |> List.traverseResultM handedOver |> Result.map ignore
     else
         lastFailure ()
 
-let private setOnWindows (text: ClipboardText) =
+let private settingOnWindows blocks =
     opened OpenAttempts
     |> Result.bind (fun () ->
         try
-            replaced (ClipboardText.joined Environment.NewLine text)
+            replacedBy blocks
         finally
             User32.CloseClipboard() |> ignore)
+
+let private nullTerminated (text: string) = Encoding.Unicode.GetBytes(text + "\000")
+
+let private setOnWindows (text: ClipboardText) =
+    settingOnWindows [ UnicodeText, nullTerminated (ClipboardText.joined Environment.NewLine text) ]
+
+let private dropFilesHeader =
+    [ OffsetOfNames; NoDropPoint; NoDropPoint; InClientArea; WideNames ]
+    |> List.map BitConverter.GetBytes
+    |> Array.concat
+
+let private dropFiles (paths: FileSystemPath list) =
+    let names = paths |> List.map (FileSystemPath.value >> nullTerminated)
+
+    Array.concat (dropFilesHeader :: names @ [ nullTerminated "" ])
+
+let private dropEffect intent =
+    match intent with
+    | ForCopying -> DropEffectCopy
+    | ForMoving -> DropEffectMove
+
+let private setFilesOnWindows (files: ClipboardFiles) =
+    match User32.RegisterClipboardFormat PreferredDropEffect with
+    | 0u -> lastFailure ()
+    | effectFormat ->
+        settingOnWindows
+            [ DroppedFiles, dropFiles (ClipboardFiles.paths files)
+              effectFormat, BitConverter.GetBytes(dropEffect (ClipboardFiles.intent files)) ]
 
 let private textHeld (memory: nativeint) =
     match Kernel32.GlobalLock memory with
@@ -133,7 +192,9 @@ let forPlatform platform : Ports.Clipboard =
     match platform with
     | Windows ->
         { SetText = setOnWindows
-          GetText = getOnWindows }
+          GetText = getOnWindows
+          SetFiles = setFilesOnWindows }
     | Unix ->
         { SetText = unavailable
-          GetText = unavailable }
+          GetText = unavailable
+          SetFiles = unavailable }

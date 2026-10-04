@@ -166,6 +166,16 @@ and nothing marked there is nothing to copy.
   path that does not exist and a path into an archive that does not hold it are
   passed over without a word. The place you land on is remembered in the folder
   history.
+- `Alt+Shift+C` — or `Ctrl+Shift+C`, in a terminal that delivers the `Shift` —
+  puts the entries themselves on the clipboard as files to be copied, so
+  Explorer, a mail program or any other program that takes files can paste
+  them. `Alt+Shift+X` — or `Ctrl+Shift+X` — puts them there to be moved: pasted
+  in Explorer, they leave the place they were cut from. Entries inside an
+  archive are first unpacked into Marbas's working directory, behind the usual
+  progress window, and those copies are what goes on the clipboard; they last
+  until Marbas quits, so paste them before that. An archive cannot be cut from:
+  `Alt+Shift+X` on an entry inside one says so and leaves the clipboard as it
+  was.
 
 On Linux and macOS Marbas cannot reach the clipboard yet; the first attempt
 in a session says so, and later ones stay quiet.

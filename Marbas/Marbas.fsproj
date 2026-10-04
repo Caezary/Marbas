@@ -36,10 +36,12 @@
         <Compile Include="Domain\FavoriteSlot.fs" />
         <Compile Include="Domain\ClipboardText.fs" />
         <Compile Include="Domain\ClipboardError.fs" />
+        <Compile Include="Domain\ClipboardIntent.fs" />
     </ItemGroup>
 
     <ItemGroup>
         <Compile Include="FileSystem\FileSystemPath.fs" />
+        <Compile Include="FileSystem\ClipboardFiles.fs" />
         <Compile Include="FileSystem\EntryAttributes.fs" />
         <Compile Include="FileSystem\ContentError.fs" />
         <Compile Include="FileSystem\ArchiveError.fs" />

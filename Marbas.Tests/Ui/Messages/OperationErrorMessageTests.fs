@@ -116,3 +116,11 @@ let ``a link refused by its kind is explained with its path and the reason`` () 
 
     Assert.Contains(at "data/twin", message)
     Assert.Contains(LinkRefusalMessage.describe JunctionToFile, message)
+
+[<Fact>]
+let ``an entry that cannot be cut from an archive is named and offered a copy instead`` () =
+    let message = OperationErrorMessage.describe (ArchiveEntryNotCut(fp (at "start/backup.zip/notes.txt")))
+
+    Assert.Contains(at "start/backup.zip/notes.txt", message)
+    Assert.Contains("cannot be cut", message)
+    Assert.Contains("copy it", message)

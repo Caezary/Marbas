@@ -2695,3 +2695,102 @@ let ``a clipboard that refuses to be read is dispatched as refused`` () =
     Shell.interpret deps dispatch (ReadClipboardPath(fp (at "start")))
 
     Assert.Equal<Message list>([ ClipboardRefused ClipboardUnavailable ], List.ofSeq sent)
+
+let private clipboardFiles intent paths =
+    ClipboardFiles.tryCreate intent (paths |> List.map fp) |> Expect.some
+
+[<Fact>]
+let ``files for the clipboard are handed to the clipboard with their intent`` () =
+    let handed = ResizeArray<ClipboardFiles>()
+
+    let deps =
+        { noDeps () with
+            Clipboard.SetFiles =
+                fun files ->
+                    handed.Add files
+                    Ok() }
+
+    Shell.interpret deps ignore (PutFilesOnClipboard(clipboardFiles ForMoving [ at "start/notes.txt" ]))
+
+    Assert.Equal<ClipboardFiles list>([ clipboardFiles ForMoving [ at "start/notes.txt" ] ], List.ofSeq handed)
+
+[<Fact>]
+let ``files the clipboard refuses are dispatched as refused`` () =
+    let sent, dispatch = capture ()
+
+    let deps =
+        { noDeps () with
+            Clipboard.SetFiles = fun _ -> Error ClipboardUnavailable }
+
+    Shell.interpret deps dispatch (PutFilesOnClipboard(clipboardFiles ForCopying [ at "start/notes.txt" ]))
+
+    Assert.Equal<Message list>([ ClipboardRefused ClipboardUnavailable ], List.ofSeq sent)
+
+let private forClipboard =
+    [ FromDisk [ fp (at "start/work/notes.txt") ]
+      FromArchive(dataZip, [ entry "notes.txt"; entry "docs" ]) ]
+
+[<Fact>]
+let ``entries for the clipboard are extracted into a scratch directory of the session`` () =
+    let fs = unpackReadyFs None
+    let deps = { noDeps () with FileSystem = fs }
+
+    Shell.interpret deps ignore (ExtractForClipboard forClipboard)
+
+    Assert.Equal("notes", fs.File.ReadAllText(at "temp/Marbas/session/1/notes.txt"))
+    Assert.Equal("inner", fs.File.ReadAllText(at "temp/Marbas/session/1/docs/inner.txt"))
+
+[<Fact>]
+let ``what was extracted for the clipboard is dispatched back with the scratch directory`` () =
+    let sent, dispatch = capture ()
+    let deps = { noDeps () with FileSystem = unpackReadyFs None }
+
+    Shell.interpret deps dispatch (ExtractForClipboard forClipboard)
+
+    Assert.Equal<Message list>(
+        [ ClipboardExtractFinished(
+              forClipboard,
+              fp (at "temp/Marbas/session/1"),
+              [ { Source = ItemInArchive(dataZip, entry "notes.txt"); Outcome = Ok() }
+                { Source = ItemInArchive(dataZip, entry "docs"); Outcome = Ok() } ]
+          ) ],
+        List.ofSeq sent
+    )
+
+[<Fact>]
+let ``extracting for the clipboard runs under the unpacking title`` () =
+    let titles = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = unpackReadyFs None
+            Runners.Batch =
+                fun title work finish ->
+                    titles.Add title
+                    work unattended |> finish }
+
+    Shell.interpret deps ignore (ExtractForClipboard forClipboard)
+
+    Assert.Equal<string list>([ Shell.UnpackTitle ], List.ofSeq titles)
+
+[<Fact>]
+let ``a locked archive whose password is not given is left off the clipboard without a batch`` () =
+    let sent, dispatch = capture ()
+    let batches = ResizeArray<string>()
+
+    let deps =
+        { noDeps () with
+            FileSystem = unpackReadyFs (ArchivePassword.tryCreate "letmein")
+            Prompts.AskPassword = fun _ -> None
+            Runners.Batch =
+                fun title work finish ->
+                    batches.Add title
+                    work unattended |> finish }
+
+    Shell.interpret deps dispatch (ExtractForClipboard forClipboard)
+
+    Assert.Empty batches
+    Assert.Equal<Message list>(
+        [ ClipboardExtractFinished(forClipboard, fp (at "temp/Marbas/session/1"), []) ],
+        List.ofSeq sent
+    )

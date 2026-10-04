@@ -70,6 +70,24 @@ holds focus; queue several timeouts for a sequence and read the result after
 an injected port). Keys go through the whole application, so this proves what
 no view-level test can: that `Esc` closes a popup and does not quit the app.
 
+Pitfalls measured in P18.6 — the probe's, not the application's:
+
+- **The same key twice in a row arrives once.** `Ins Ins` from two timeouts
+  200 ms apart marks one entry, and so does `Space Space`. Alternate the keys
+  (`Ins` then `Space`) or put another key between them.
+- **A progress window opened from a timeout never finishes its batch.** A key
+  that starts `Runners.Batch` — `F5` out of an archive, `Alt+Shift+C` inside
+  one — opens the window, and the work never comes back. Swap only the runner
+  for the synchronous one the tests use,
+  `Runners.Batch = fun _ work finish -> work Operations.unattended |> finish`,
+  and leave the file system and the other ports real.
+- **`app.RequestStop()` stops the top runnable, not the scene.** With a
+  progress window open it closes that window, the batch reports itself
+  stopped, and the main window keeps the probe alive. End a scene over
+  `MainWindow` with `app.RequestStop window`.
+- **The probe needs a console.** Run from PowerShell's `Start-Job` it hangs
+  without drawing; call the executable directly, under `timeout`.
+
 ## Comparing before and after
 
 Take the shot with the change switched off (skip `DialogStyle.apply`, keep the

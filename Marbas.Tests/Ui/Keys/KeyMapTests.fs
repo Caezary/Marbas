@@ -553,3 +553,31 @@ let ``Alt+J goes to the path on the clipboard where a terminal keeps Ctrl+Shift+
 
     Assert.Equal(Key.J.WithAlt, KeyMap.spareClipboardPathKey)
     Assert.Equal(Some ClipboardPathRequested, message)
+
+[<Fact>]
+let ``Alt+Shift+C puts the files of the targets on the clipboard to be copied`` () =
+    let message = KeyMap.messageFor KeyMap.copyFilesKey
+
+    Assert.Equal(Key.C.WithAlt.WithShift, KeyMap.copyFilesKey)
+    Assert.Equal(Some(FilesOnClipboardRequested ForCopying), message)
+
+[<Fact>]
+let ``Ctrl+Shift+C puts the files on the clipboard to be copied where a terminal delivers the Shift`` () =
+    let message = KeyMap.messageFor KeyMap.spareCopyFilesKey
+
+    Assert.Equal(Key.C.WithCtrl.WithShift, KeyMap.spareCopyFilesKey)
+    Assert.Equal(Some(FilesOnClipboardRequested ForCopying), message)
+
+[<Fact>]
+let ``Alt+Shift+X puts the files of the targets on the clipboard to be moved`` () =
+    let message = KeyMap.messageFor KeyMap.cutFilesKey
+
+    Assert.Equal(Key.X.WithAlt.WithShift, KeyMap.cutFilesKey)
+    Assert.Equal(Some(FilesOnClipboardRequested ForMoving), message)
+
+[<Fact>]
+let ``Ctrl+Shift+X puts the files on the clipboard to be moved where a terminal delivers the Shift`` () =
+    let message = KeyMap.messageFor KeyMap.spareCutFilesKey
+
+    Assert.Equal(Key.X.WithCtrl.WithShift, KeyMap.spareCutFilesKey)
+    Assert.Equal(Some(FilesOnClipboardRequested ForMoving), message)

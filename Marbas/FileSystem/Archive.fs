@@ -668,7 +668,7 @@ let moveToDirectory (fs: IFileSystem) control (request: ExtractRequest) (targets
     extract fs control request targets
     |> Result.bind (fun results -> droppingArrived fs control request.Archive (arrivedOf results) results)
 
-let private landedAs (fs: IFileSystem) archive scratch target =
+let landedAs (fs: IFileSystem) archive scratch target =
     ArchivePath.name target
     |> Option.defaultValue (FileSystemPath.name fs archive)
     |> EntryName.value

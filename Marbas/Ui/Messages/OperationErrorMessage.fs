@@ -40,6 +40,8 @@ let describe error =
         $"'{FileSystemPath.value path}' was not started: the request for administrator rights was turned down."
     | ArchiveEntryNotRunnable path ->
         $"'{FileSystemPath.value path}' cannot be run inside the archive. Unpack it first."
+    | ArchiveEntryNotCut path ->
+        $"'{FileSystemPath.value path}' cannot be cut from inside the archive; copy it to the clipboard instead."
     | SymbolicLinkNotPermitted path ->
         $"'{FileSystemPath.value path}' was not made.\n{SymbolicLinkRight}"
     | LinkRefused(refusal, path) ->

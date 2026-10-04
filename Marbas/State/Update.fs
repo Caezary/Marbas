@@ -90,6 +90,11 @@ type Message =
     | ClipboardPathRequested
     | ClipboardPathRead of FileSystemPath
     | ClipboardRefused of ClipboardError
+    | FilesOnClipboardRequested of ClipboardIntent
+    | ClipboardExtractFinished of
+        groups: TransferSource list *
+        scratch: FileSystemPath *
+        results: Operations.ItemResult list
     | QuitRequested
 
 type DeleteRequest =
@@ -141,6 +146,8 @@ type Effect =
     | PutOnClipboard of ClipboardText
     | ReadClipboardPath of directory: FileSystemPath
     | ReportClipboardError of ClipboardError
+    | PutFilesOnClipboard of ClipboardFiles
+    | ExtractForClipboard of groups: TransferSource list
     | SaveSettings of Settings
     | Quit
 
@@ -380,6 +387,50 @@ let private copyingText state lines =
     ClipboardText.tryCreate lines
     |> Option.map (PutOnClipboard >> request state)
     |> Option.defaultValue (stay state)
+
+let private diskPaths groups =
+    groups
+    |> List.collect (function
+        | FromDisk paths -> paths
+        | FromArchive _
+        | FromPlaces _ -> [])
+
+let private archiveEntries groups =
+    groups
+    |> List.collect (function
+        | FromArchive(archive, entries) -> entries |> List.map (fun entry -> archive, entry)
+        | FromDisk _
+        | FromPlaces _ -> [])
+
+let private handingOver intent paths =
+    ClipboardFiles.tryCreate intent paths
+    |> Option.map PutFilesOnClipboard
+    |> Option.toList
+
+let private filesOnClipboard (fs: IFileSystem) state intent groups =
+    match archiveEntries groups, intent with
+    | [], _ -> { State = state; Effects = handingOver intent (diskPaths groups) }
+    | (archive, entry) :: _, ForMoving ->
+        ArchivePath.spelled fs archive entry
+        |> Operations.ArchiveEntryNotCut
+        |> reporting state
+    | _, ForCopying -> request state (ExtractForClipboard groups)
+
+let private landedFile (fs: IFileSystem) scratch (item: Operations.ItemResult) =
+    match item.Outcome, item.Source with
+    | Ok(), Operations.ItemInArchive(archive, entry) -> Some(Archive.landedAs fs archive scratch entry)
+    | _ -> None
+
+let private extractedForClipboard (fs: IFileSystem) state groups scratch results =
+    let landed = results |> List.choose (landedFile fs scratch)
+
+    let reported =
+        match Operations.failures results with
+        | [] -> []
+        | failed -> [ ReportItemFailures failed ]
+
+    { State = state
+      Effects = handingOver ForCopying (diskPaths groups @ landed) @ reported }
 
 let private forGood mode =
     match mode with
@@ -671,6 +722,11 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | Unreported -> request { state with ClipboardReport = Reported } (ReportClipboardError ClipboardUnavailable)
         | Reported -> stay state
     | ClipboardRefused error -> request state (ReportClipboardError error)
+    | FilesOnClipboardRequested intent ->
+        match transferSource fs (activePanel state) with
+        | Some source -> filesOnClipboard fs state intent (places source)
+        | None -> stay state
+    | ClipboardExtractFinished(groups, scratch, results) -> extractedForClipboard fs state groups scratch results
     | QuitRequested ->
         { State = state
           Effects = [ SaveSettings(settings fs state); Quit ] }

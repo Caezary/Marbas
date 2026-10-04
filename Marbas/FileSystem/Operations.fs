@@ -16,6 +16,7 @@ type OperationError =
     | EntryOutsideTarget of path: FileSystemPath
     | ArchiveEntryNotEditable of path: FileSystemPath
     | ArchiveEntryNotRunnable of path: FileSystemPath
+    | ArchiveEntryNotCut of path: FileSystemPath
     | NoProgramAssociated of path: FileSystemPath
     | StartDeclined of path: FileSystemPath
     | SymbolicLinkNotPermitted of path: FileSystemPath

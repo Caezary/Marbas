@@ -342,6 +342,21 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   cursor on that file; the level is remembered in the folder history. A name
   the archive does not hold, a path through a file that is no readable archive,
   and an archive that cannot be read land nowhere and say nothing.
+- `Alt+Shift+C`, and `Ctrl+Shift+C` beside it, put the operation targets on the
+  system clipboard as files to be copied; `Alt+Shift+X`, and `Ctrl+Shift+X`
+  beside it, as files to be moved. On Windows that is the `CF_HDROP` list of
+  full paths with a `Preferred DropEffect` of copy or move, the pair Explorer
+  writes itself, so Explorer pastes the files as a copy or a move. A hit in a
+  panel of search results gives its own file. Entries inside an archive are
+  copied only: they are first unpacked, behind the `Unpacking` progress window
+  and after the password when the archive asks for one, into a fresh numbered
+  directory of the session's working directory, and those copies go on the
+  clipboard after any files on disk; what failed to unpack is reported item by
+  item and the rest still goes on the clipboard. The copies are deleted with the
+  working directory when Marbas quits. Cutting an entry inside an archive, or
+  search results holding one, is refused with the entry's full path named, and
+  the clipboard is left alone. `..` under the cursor with nothing marked puts
+  nothing there. Windows only, refused on Unix like the text.
 - While `F5` or `F6` works, a progress window names the file being handled and
   the rest of the app keeps drawing, because the batch runs on a background
   thread. `Esc` (or the Cancel button) closes that window and the batch stops

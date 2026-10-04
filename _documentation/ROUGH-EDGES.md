@@ -268,3 +268,18 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   archive, because the disk ignores case, and then finds no `Docs` in it if the
   archive stores `docs` — and, as the plan asks of a path that leads nowhere,
   says nothing. A path copied with `Alt+P` always matches.
+- Entries copied from inside an archive with `Alt+Shift+C` reach the clipboard
+  as unpacked copies in the session's working directory, which is deleted when
+  Marbas quits. A paste after that finds nothing. Keeping them would leave the
+  temporary directory to grow with every session; the user guide says to paste
+  before quitting instead.
+- Two hits of the same name found in archives — `a.zip\x.txt` and
+  `b.zip\docs\x.txt` — are unpacked into the same scratch directory for the
+  clipboard, and the second overwrites the first, so the clipboard names the
+  one file twice. `F5` of the same results into one directory meets the same
+  collision.
+- Files cut with `Alt+Shift+X` and pasted in Explorer stay on the clipboard
+  after the move. Explorer clears a cut only for a program that answers its
+  `Paste Succeeded` handshake through an OLE data object, and the adapter hands
+  over plain clipboard blocks; a second paste then finds the files gone and
+  Explorer says so.

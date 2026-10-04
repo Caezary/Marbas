@@ -174,6 +174,24 @@ let private unpackPlan (deps: Dependencies) targetDirectory archive =
 let private extractPlan (deps: Dependencies) targetDirectory archive entries =
     planFor deps targetDirectory archive (fun () -> entriesApprovedForDirectory deps targetDirectory archive entries)
 
+let private clipboardPlan (deps: Dependencies) scratch group =
+    match group with
+    | FromArchive(archive, entries) -> planFor deps scratch archive (fun () -> entries)
+    | FromDisk _
+    | FromPlaces _ -> None
+
+let private extractForClipboard (deps: Dependencies) dispatch groups =
+    match Workspace.scratch deps.FileSystem deps.WorkspacePath with
+    | Error error -> report deps OperationErrorMessage.Title (OperationErrorMessage.describe error)
+    | Ok scratch ->
+        let finished results =
+            dispatch (ClipboardExtractFinished(groups, scratch, results))
+
+        match groups |> List.choose (clipboardPlan deps scratch) with
+        | [] -> finished []
+        | plans ->
+            deps.Runners.Batch UnpackTitle (fun control -> Archive.extractAll deps.FileSystem control plans) finished
+
 let private archiveToArchivePlan (deps: Dependencies) source target level entries =
     planFor deps deps.WorkspacePath source (fun () -> entriesApprovedForArchive deps source target level entries)
 
@@ -519,6 +537,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         match deps.Clipboard.SetText text with
         | Ok() -> ()
         | Error error -> dispatch (ClipboardRefused error)
+    | PutFilesOnClipboard files ->
+        match deps.Clipboard.SetFiles files with
+        | Ok() -> ()
+        | Error error -> dispatch (ClipboardRefused error)
+    | ExtractForClipboard groups -> extractForClipboard deps dispatch groups
     | ReportClipboardError error -> report deps ClipboardErrorMessage.Title (ClipboardErrorMessage.describe error)
     | SaveSettings settings ->
         match Settings.save deps.FileSystem deps.SettingsPath settings with

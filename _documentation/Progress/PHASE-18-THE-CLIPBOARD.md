@@ -204,3 +204,76 @@ four paths on the real clipboard over a zip made by `Compress-Archive`: the
 `docs` level opened, `docs\inner.txt` opened `docs` with the cursor on it, and
 `backup.zip\gone.txt` and `notes.txt\inner` left the panel where it was without
 a word.
+
+**P18.6 put the files themselves on the clipboard, after a spike proved the
+format.** The spike wrote, from C# loaded into PowerShell, a `CF_HDROP` block —
+a twenty-byte `DROPFILES` header with the wide flag set, then the paths in
+UTF-16, each ended by a null and the list by one more — and beside it the
+registered `Preferred DropEffect` holding a `DWORD`, then asked the Windows
+shell to paste into a directory through `Shell.Application`'s `paste` verb, the
+same handler Explorer's own Paste runs. An effect of 5 (copy and link, what
+Explorer writes) and of 1 (`DROPEFFECT_COPY`) both copied a file and a
+directory; 2 (`DROPEFFECT_MOVE`) moved the file out of its directory. The
+adapter writes 1 and 2, the documented values.
+
+The port gained `SetFiles`, taking a `ClipboardFiles` — a `ClipboardIntent`
+(`ForCopying` or `ForMoving`, in `Domain`) and a list of paths that cannot be
+empty, in `FileSystem` beside `FileSystemPath`. The Windows adapter now builds
+every block from bytes: the text became a null-ended UTF-16 array like the file
+list, and one `settingOnWindows` opens, empties, hands over each block in turn
+and closes, for text and files alike.
+
+`Alt+Shift+C` and `Ctrl+Shift+C` raise `FilesOnClipboardRequested ForCopying`,
+`Alt+Shift+X` and `Ctrl+Shift+X` the same with `ForMoving`. The transition takes
+`transferSource`, so the targets are the ones `F5` would take, search results
+split into the files on disk and one group per archive. Files on disk go
+straight to the port. An entry inside an archive to be cut is refused with
+`ArchiveEntryNotCut` and its spelling; to be copied, the groups go to `Shell` as
+`ExtractForClipboard`, which unpacks the archive groups into a fresh
+`Workspace.scratch` directory through `planFor` and `Archive.extractAll` under
+the `Unpacking` title, and dispatches `ClipboardExtractFinished` with the
+scratch directory and the results. The state then hands over the files on disk
+followed by what unpacked, each found by `Archive.landedAs` — made public for
+it — and reports what failed. The scratch directory stays until Marbas quits,
+since another program may paste at any time.
+
+The tests: four in `ClipboardFilesTests`; eleven in `State/ClipboardTests` —
+the cursor file to be copied, marked entries to be moved in listing order,
+`..` alone, search results on disk, entries inside an archive, a cut inside an
+archive refused by name, search results holding a hit in an archive copied and
+cut, the unpacked copies handed over after the files on disk, a failure
+reported beside the rest, and nothing handed over when nothing unpacked; six in
+`ShellTests` for the port called with the intent, a refusal dispatched, the
+entries unpacked into `temp/Marbas/session/1`, the results dispatched back with
+it, the `Unpacking` title, and a locked archive whose password is not given
+left out without a batch; the Unix adapter refusing files; the four keys in
+`KeyMapTests` and the error sentence in `OperationErrorMessageTests`; and six in
+`ClipboardKeyTests` pressing each key over a `MainWindow`, inside an archive
+too, where `Alt+Shift+C` hands over the unpacked copy and `Alt+Shift+X`
+reports and hands over nothing.
+
+The keys were then pressed with the probe through a running `Application` with
+the real `Dependencies.create` and the real Windows clipboard, and what the
+adapter wrote was pasted with the shell's `paste` verb:
+
+```
+End Alt+Shift+C          clipboard: start\readme.txt, effect 1
+                         pasted: readme.txt copied, start unchanged
+↓ Ins Space Alt+Shift+X  clipboard: start\docs, start\notes.txt, effect 2
+                         pasted: docs (with inner.txt) and notes.txt moved
+End Ctrl+Shift+C         clipboard: start\backup.zip, effect 1
+backup.zip: ↓ Enter ↓ Alt+Shift+C
+                         clipboard: temp\Marbas\session\1\docs, effect 1
+                         pasted: docs with inner.txt, archive unchanged
+backup.zip: ↓ Enter End Alt+Shift+X
+                         reported: '…\backup.zip\notes.txt' cannot be cut from
+                         inside the archive; clipboard unchanged
+```
+
+Two things the probe showed are its own and not the application's: a key
+raised twice in a row from its timeouts arrives once, so the marks were made
+with `Ins` and then `Space`; and a progress window opened from inside a timeout
+never finishes its batch — `F5` out of the same zip stalls the same way — so
+the archive run swapped `Runners.Batch` for the synchronous one the tests use,
+leaving the file system and the clipboard real. A copy and a move pasted into
+Explorer itself by hand are left to the user.

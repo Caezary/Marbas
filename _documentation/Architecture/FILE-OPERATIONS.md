@@ -583,6 +583,34 @@ an archive that cannot be read at all. The walk compares names exactly as the
 archive stores them. The path to the archive itself is a file like any other,
 so it is stood beside, not opened; `Enter` is one key away.
 
+**Files go on the clipboard as the transfer source `F5` would take.**
+`Alt+Shift+C` and `Ctrl+Shift+C` raise `FilesOnClipboardRequested ForCopying`,
+`Alt+Shift+X` and `Ctrl+Shift+X` the same with `ForMoving`, and the transition
+reads `AppState.transferSource` and flattens it into its groups, so a panel of
+search results splits into the files on disk and one group per archive exactly
+as a copy would. Groups on disk alone become a `ClipboardFiles` — the intent
+and a list of paths that cannot be empty — answered as `PutFilesOnClipboard`.
+Any entry inside an archive changes the answer: to be moved, it is refused with
+`ArchiveEntryNotCut` and the spelling of the first such entry, because a
+program pasting a move would delete the unpacked copy, not the entry, and the
+user would believe the archive changed; to be copied, the state answers
+`ExtractForClipboard` with all the groups.
+
+**What a program outside Marbas pastes must exist on the disk.** `Shell`
+answers `ExtractForClipboard` by making a fresh directory with
+`Workspace.scratch` in the session's working directory, planning each archive
+group into it through the same `planFor` that `F5` uses — so a locked archive
+asks for its password and one whose password is not given is left out — and
+running `Archive.extractAll` through `Runners.Batch` under the `Unpacking`
+title. The scratch directory is new, so there is nothing to ask about
+overwriting. The results come back as `ClipboardExtractFinished` with the
+groups and the scratch directory; the state finds where each entry that
+unpacked landed with `Archive.landedAs`, the same function the archive-to-archive
+copy uses, puts the files on disk first and the unpacked copies after them, and
+reports what failed item by item beside the files it still hands over. The
+scratch directories are not released until Marbas quits, when the whole working
+directory goes — a paste in another program may come at any time before that.
+
 **Text is lines, and the line break belongs to the system.** The state answers
 `PutOnClipboard` with the names as lines; the Windows adapter joins them with
 the system line break and adds none after the last, so a single name pastes into
