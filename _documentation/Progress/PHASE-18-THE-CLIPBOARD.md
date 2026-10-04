@@ -131,3 +131,48 @@ and runs on the Linux runner, where anyone may make one. The probe then pressed
 directory holding a junction `place` and a shortcut `report.lnk` saved by
 `WScript.Shell`, and got the junction's directory, the shortcut's file, and
 `readme.txt`'s own path.
+
+**P18.4 read the clipboard back, and taught Marbas to forgive a path.** The
+port gained `GetText`, answering the text or `None` when the clipboard holds no
+text; the Windows adapter asks `IsClipboardFormatAvailable` before
+`GetClipboardData` and copies the `CF_UNICODETEXT` block out under
+`GlobalLock`. Because a refusal can now come from reading as well as writing,
+`ClipboardUnwritten` became `ClipboardRefused`, and the dialog's sentence for a
+failure stopped saying *put*. The environment arrived as
+`Processes.EnvironmentVariable`, filled by `HostEnvironment.variable`.
+
+The forgiving is `FileSystem/PastedPath.fs`, a function of the file system,
+the variable lookup, the directory relative text starts from and the text:
+trim; drop a pair of matching quotes; refuse several lines and blank text; read
+a `file:` URI through `Uri.LocalPath`; otherwise give a leading `~` the home
+directory (`USERPROFILE` or `HOME`) and expand the variables of the platform —
+`%NAME%` on Windows only, because `C:\$Recycle.Bin` is a name there, and
+`$NAME` or `${NAME}` on Unix — leaving an unknown one as written, as Windows
+does; refuse a character no path may hold; resolve from the directory and drop
+a trailing separator, a root keeping its own. The state keeps what only it
+knows: the directory the active panel lends (`PanelLocation.holding`), and
+what the path names when it arrives — a directory entered, a file stood beside,
+nothing passed over without an effect.
+
+The tests: twenty-seven in `PastedPathTests`, three of them for Windows and two
+for Unix alone; six in `State/ClipboardTests` for the directory asked for on
+disk and inside an archive, a directory, a file, the folder history and a path
+that is not there; five in `ShellTests` for a forgiven path dispatched, `~`
+through the port, several lines, blank text, an empty clipboard and a refusal;
+the Unix adapter refusing to be read; both keys in `KeyMapTests`; and in
+`ClipboardKeyTests` a directory, a quoted file with the cursor landing on it,
+and a missing path and two lines leaving the panel with no dialog. Then the
+real Windows adapter, through a running `Application` with the probe: each
+form below was put on the clipboard with `Set-Clipboard`, `Alt+J` pressed over
+the scratch directory `start`, and the panel title and cursor read back.
+
+```
+  "…\clipwork\work"              → …\clipwork\work
+'…\clipwork\start\readme.txt'    → …\clipwork\start, cursor on readme.txt
+file:///…/clipwork/work/report.txt → …\clipwork\work, cursor on report.txt
+..\work                          → …\clipwork\work
+%TEMP%                           → C:\Users\…\AppData\Local\Temp
+~\Documents                      → C:\Users\…\Documents
+two lines                        → stays in start, nothing said
+…\clipwork\nowhere               → stays in start, nothing said
+```

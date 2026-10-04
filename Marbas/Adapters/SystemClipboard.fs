@@ -20,6 +20,12 @@ module private User32 =
     [<DllImport("user32.dll", SetLastError = true)>]
     extern nativeint SetClipboardData(uint32 format, nativeint memory)
 
+    [<DllImport("user32.dll", SetLastError = true)>]
+    extern bool IsClipboardFormatAvailable(uint32 format)
+
+    [<DllImport("user32.dll", SetLastError = true)>]
+    extern nativeint GetClipboardData(uint32 format)
+
 module private Kernel32 =
 
     [<DllImport("kernel32.dll", SetLastError = true)>]
@@ -97,9 +103,37 @@ let private setOnWindows (text: ClipboardText) =
         finally
             User32.CloseClipboard() |> ignore)
 
-let private unavailable (_: ClipboardText) = Error ClipboardUnavailable
+let private textHeld (memory: nativeint) =
+    match Kernel32.GlobalLock memory with
+    | 0n -> lastFailure ()
+    | locked ->
+        let text = Marshal.PtrToStringUni locked
+        Kernel32.GlobalUnlock memory |> ignore
+        Ok(Some text)
+
+let private heldText () =
+    if User32.IsClipboardFormatAvailable UnicodeText then
+        match User32.GetClipboardData UnicodeText with
+        | 0n -> lastFailure ()
+        | memory -> textHeld memory
+    else
+        Ok None
+
+let private getOnWindows () =
+    opened OpenAttempts
+    |> Result.bind (fun () ->
+        try
+            heldText ()
+        finally
+            User32.CloseClipboard() |> ignore)
+
+let private unavailable _ = Error ClipboardUnavailable
 
 let forPlatform platform : Ports.Clipboard =
     match platform with
-    | Windows -> { SetText = setOnWindows }
-    | Unix -> { SetText = unavailable }
+    | Windows ->
+        { SetText = setOnWindows
+          GetText = getOnWindows }
+    | Unix ->
+        { SetText = unavailable
+          GetText = unavailable }

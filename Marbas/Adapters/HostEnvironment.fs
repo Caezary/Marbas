@@ -48,3 +48,9 @@ module HostEnvironment =
           Session = Guid.NewGuid().ToString "N"
           SearchPath = Environment.GetEnvironmentVariable SearchPathVariable
           Editor = Environment.GetEnvironmentVariable EditorVariable |> Option.ofObj }
+
+    let variable (name: string) =
+        match Environment.GetEnvironmentVariable name with
+        | null
+        | "" -> None
+        | value -> Some value

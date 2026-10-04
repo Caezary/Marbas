@@ -107,10 +107,12 @@ type Processes =
       RefuseLink: LinkRequest -> LinkRefusal option
       MakeLink: LinkRequest -> Result<unit, Operations.OperationError>
       HandlersFor: EntryName -> Handler list
-      PathDirectories: FileSystemPath list }
+      PathDirectories: FileSystemPath list
+      EnvironmentVariable: string -> string option }
 
 type Clipboard =
-    { SetText: ClipboardText -> Result<unit, ClipboardError> }
+    { SetText: ClipboardText -> Result<unit, ClipboardError>
+      GetText: unit -> Result<string option, ClipboardError> }
 
 type Watches =
     { Modifiers: (Set<Modifier> -> unit) -> unit

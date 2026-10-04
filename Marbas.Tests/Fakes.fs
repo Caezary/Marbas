@@ -490,8 +490,11 @@ let dependencies (fs: IFileSystem) (startPath: string) : Ports.Dependencies =
           RefuseLink = fun _ -> None
           MakeLink = fun _ -> Ok()
           HandlersFor = fun _ -> []
-          PathDirectories = [] }
-      Clipboard = { SetText = fun _ -> Ok() }
+          PathDirectories = []
+          EnvironmentVariable = fun _ -> None }
+      Clipboard =
+        { SetText = fun _ -> Ok()
+          GetText = fun () -> Ok None }
       Watches =
         { Modifiers = ignore
           Locations = fun _ _ -> () }

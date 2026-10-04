@@ -14,4 +14,4 @@ let ``a clipboard the system does not offer says it is not there yet`` () =
 let ``a clipboard that failed says why`` () =
     let message = ClipboardErrorMessage.describe (ClipboardFailed "Access is denied.")
 
-    Assert.Equal("Could not put the text on the clipboard: Access is denied.", message)
+    Assert.Equal("The clipboard could not be used: Access is denied.", message)

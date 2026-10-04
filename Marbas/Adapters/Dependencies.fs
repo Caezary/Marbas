@@ -81,7 +81,8 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
           RefuseLink = Links.refusal env.Platform fs
           MakeLink = Links.create links env.Platform fs
           HandlersFor = handlersFor fs env
-          PathDirectories = FindGround.pathDirectories fs (pathSeparator env.Platform) env.SearchPath }
+          PathDirectories = FindGround.pathDirectories fs (pathSeparator env.Platform) env.SearchPath
+          EnvironmentVariable = HostEnvironment.variable }
       Clipboard = SystemClipboard.forPlatform env.Platform
       Watches =
         { Modifiers = watchModifiers app env

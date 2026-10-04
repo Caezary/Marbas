@@ -87,7 +87,9 @@ type Message =
     | NamesCopyRequested
     | PathsCopyRequested
     | LinkTargetsCopyRequested
-    | ClipboardUnwritten of ClipboardError
+    | ClipboardPathRequested
+    | ClipboardPathRead of FileSystemPath
+    | ClipboardRefused of ClipboardError
     | QuitRequested
 
 type DeleteRequest =
@@ -137,6 +139,7 @@ type Effect =
     | LookUpFavorite of FavoriteSlot
     | ShowFavorites of current: Place option
     | PutOnClipboard of ClipboardText
+    | ReadClipboardPath of directory: FileSystemPath
     | ReportClipboardError of ClipboardError
     | SaveSettings of Settings
     | Quit
@@ -654,11 +657,22 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         |> placesLedTo fs
         |> List.map FileSystemPath.value
         |> copyingText state
-    | ClipboardUnwritten ClipboardUnavailable ->
+    | ClipboardPathRequested ->
+        PanelLocation.holding fs (activePanel state).Path
+        |> ReadClipboardPath
+        |> request state
+    | ClipboardPathRead path ->
+        match FileSystemPath.kind fs path with
+        | DirectoryEntry -> standInside fs state.Active (OnDisk path) state |> applyListing state
+        | FileEntry ->
+            standBeside fs state.Active (OnDisk(FileSystemPath.directory fs path)) (FileSystemPath.name fs path) state
+            |> applyListing state
+        | NoEntry -> stay state
+    | ClipboardRefused ClipboardUnavailable ->
         match state.ClipboardReport with
         | Unreported -> request { state with ClipboardReport = Reported } (ReportClipboardError ClipboardUnavailable)
         | Reported -> stay state
-    | ClipboardUnwritten error -> request state (ReportClipboardError error)
+    | ClipboardRefused error -> request state (ReportClipboardError error)
     | QuitRequested ->
         { State = state
           Effects = [ SaveSettings(settings fs state); Quit ] }

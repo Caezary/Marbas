@@ -138,21 +138,32 @@ space unsearchable.
 
 **The clipboard is a port, filled on one system.** `Ports.Clipboard` holds
 `SetText`, which takes a `ClipboardText` and answers
-`Result<unit, ClipboardError>`; reading text and the list of files join it with
-the tasks of phase 18 that need them. `ClipboardText` is a list of lines that
+`Result<unit, ClipboardError>`, and `GetText`, which answers the text the
+clipboard holds or `None` when it holds no text; the list of files joins them
+with the tasks of phase 18 that need it. What `GetText` answers is a `string`
+on purpose: it is text not yet parsed, and `PastedPath.read` is what makes a
+path of it. `ClipboardText` is a list of lines that
 cannot be empty, and the line break is not in it: `ClipboardText.joined` takes
 the break from whoever spells the text, so the state that builds it stays the
 same on every system and the adapter adds the one its system uses.
 `Adapters/SystemClipboard` speaks the Win32 clipboard on Windows — open it (a
 few short retries, since another program may be holding it), empty it, hand
-over a `CF_UNICODETEXT` block — and answers `ClipboardUnavailable` on Unix
-without trying. A refusal comes back to the state as `ClipboardUnwritten`, and the state
-decides how loud it is: `ClipboardUnavailable` is reported the first time and
+over a `CF_UNICODETEXT` block, or ask whether one is there and copy it out —
+and answers `ClipboardUnavailable` on Unix without trying, for reading and
+writing alike. A refusal either way comes back to the state as
+`ClipboardRefused` (P18.1 named it `ClipboardUnwritten`, before the clipboard
+could be read), and the state decides how loud it is: `ClipboardUnavailable` is reported the first time and
 then passed over, through `AppState.ClipboardReport`, the same
 `FailureReport` that keeps the unwritable history to one dialog; a
 `ClipboardFailed` carries the system's reason and is reported every time,
 because a clipboard another program held a moment ago may well be free on the
 next press.
+
+**The environment is read through a port.** `Processes.EnvironmentVariable`
+answers the value of a variable, or nothing when it is unset or empty;
+`HostEnvironment.variable` fills it. `PastedPath.read` takes it as a function,
+which is what lets a test expand `%DATA%`, `$DATA` and `~` against a map
+instead of against the machine running the suite.
 
 **The background thread is a port, not a thread.** `Runners.Batch`
 takes the progress title, the work to do (handed a `BatchControl` to report

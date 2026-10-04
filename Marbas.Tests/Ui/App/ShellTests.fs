@@ -2628,7 +2628,7 @@ let ``text the clipboard refuses is dispatched as unwritten`` () =
 
     Shell.interpret deps dispatch (PutOnClipboard(clipboardText [ "notes.txt" ]))
 
-    Assert.Equal<Message list>([ ClipboardUnwritten ClipboardUnavailable ], List.ofSeq sent)
+    Assert.Equal<Message list>([ ClipboardRefused ClipboardUnavailable ], List.ofSeq sent)
 
 [<Fact>]
 let ``a clipboard error is reported under its title`` () =
@@ -2641,3 +2641,57 @@ let ``a clipboard error is reported under its title`` () =
     Shell.interpret deps ignore (ReportClipboardError ClipboardUnavailable)
 
     Assert.Equal(ClipboardErrorMessage.Title, reported)
+
+let private holding (text: string option) =
+    { noDeps () with
+        Clipboard.GetText = fun () -> Ok text }
+
+[<Fact>]
+let ``a path on the clipboard is dispatched as read, forgiven against the directory given`` () =
+    let sent, dispatch = capture ()
+
+    Shell.interpret (holding (Some " \"docs\" ")) dispatch (ReadClipboardPath(fp (at "start")))
+
+    Assert.Equal<Message list>([ ClipboardPathRead(fp (at "start/docs")) ], List.ofSeq sent)
+
+[<Fact>]
+let ``variables on the clipboard are expanded through the environment`` () =
+    let sent, dispatch = capture ()
+
+    let deps =
+        { holding (Some(Root.relative "~/docs")) with
+            Processes.EnvironmentVariable = fun _ -> Some(at "home/user") }
+
+    Shell.interpret deps dispatch (ReadClipboardPath(fp (at "start")))
+
+    Assert.Equal<Message list>([ ClipboardPathRead(fp (at "home/user/docs")) ], List.ofSeq sent)
+
+[<Theory>]
+[<InlineData("first\r\nsecond")>]
+[<InlineData("   ")>]
+let ``text on the clipboard that is no single path dispatches nothing`` (text: string) =
+    let sent, dispatch = capture ()
+
+    Shell.interpret (holding (Some text)) dispatch (ReadClipboardPath(fp (at "start")))
+
+    Assert.Empty sent
+
+[<Fact>]
+let ``a clipboard holding no text dispatches nothing`` () =
+    let sent, dispatch = capture ()
+
+    Shell.interpret (holding None) dispatch (ReadClipboardPath(fp (at "start")))
+
+    Assert.Empty sent
+
+[<Fact>]
+let ``a clipboard that refuses to be read is dispatched as refused`` () =
+    let sent, dispatch = capture ()
+
+    let deps =
+        { noDeps () with
+            Clipboard.GetText = fun () -> Error ClipboardUnavailable }
+
+    Shell.interpret deps dispatch (ReadClipboardPath(fp (at "start")))
+
+    Assert.Equal<Message list>([ ClipboardRefused ClipboardUnavailable ], List.ofSeq sent)

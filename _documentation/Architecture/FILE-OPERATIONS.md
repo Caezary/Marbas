@@ -543,6 +543,28 @@ through `ContentError.mapException` and then, like an unparsable one, falls
 back to the shortcut's own path, which is what the plan asked for. A shortcut
 Windows itself wrote through `WScript.Shell` is read in a test on the real disk.
 
+**A path read from the clipboard is forgiven in `FileSystem` and landed on in
+the state.** `Ctrl+Shift+Ins` and `Alt+J` raise `ClipboardPathRequested`, and
+the state answers `ReadClipboardPath` with the directory relative text will be
+taken from — `PanelLocation.holding`, so a panel inside an archive or over
+search results lends the directory on disk that holds it. `Shell` reads the
+clipboard and hands the text to `PastedPath.read`, which keeps one line or
+nothing (trimmed, a pair of quotes around it dropped), reads a `file:` URI
+through `Uri.LocalPath` and anything else through the home directory and the
+environment variables of the platform `FileSystemPath.platformOf` names,
+refuses a character the file system says no path may hold, resolves the rest
+with `FileSystemPath.resolvedFrom` and drops a trailing separator. Expansion
+stops at the platform's own syntax on purpose: `C:\$Recycle.Bin` is a name on
+Windows, not a variable, and `%` is an ordinary character on Unix. What
+`PastedPath.read` answers is dispatched as `ClipboardPathRead`, and the state
+asks the file system what it names: a directory is entered, a file is stood
+beside with the cursor on it, and nothing at all is passed over without an
+effect, which is the silence the plan asked for. Several lines, blank text and
+a clipboard with no text never reach the state. The landing is a change of
+place like any other, so `Update.remembering` puts it in the folder history
+without a line of its own. P18.5 is where a path that runs into an archive
+stops being nothing.
+
 **Text is lines, and the line break belongs to the system.** The state answers
 `PutOnClipboard` with the names as lines; the Windows adapter joins them with
 the system line break and adds none after the last, so a single name pastes into

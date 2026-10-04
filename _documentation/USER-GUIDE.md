@@ -153,6 +153,15 @@ and nothing marked there is nothing to copy.
   archive — gives its own full path, so every target still gets a line. Only
   the entry itself is followed: a link inside a linked directory is resolved
   from where the panel shows it, not from where the directory really lives.
+- `Ctrl+Shift+Ins` — or `Alt+J` — goes to the path on the clipboard: into it
+  when it is a directory, beside it with the cursor on it when it is a file.
+  The text is forgiven what it reasonably can be: spaces and quotes around it
+  are dropped, a `file:///` address is read as the path it names, `~` stands
+  for your home directory, environment variables are expanded (`%TEMP%` on
+  Windows, `$HOME` or `${HOME}` on Linux), and a relative path is taken from the
+  directory of the active panel. Text of several lines, an empty clipboard and a
+  path that does not exist are passed over without a word. The place you land
+  on is remembered in the folder history.
 
 On Linux and macOS Marbas cannot reach the clipboard yet; the first attempt
 in a session says so, and later ones stay quiet.

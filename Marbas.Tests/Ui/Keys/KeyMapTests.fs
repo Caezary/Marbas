@@ -539,3 +539,17 @@ let ``Alt+L copies the places the targets lead to where a terminal keeps Ctrl+Al
 
     Assert.Equal(Key.L.WithAlt, KeyMap.spareCopyLinkTargetsKey)
     Assert.Equal(Some LinkTargetsCopyRequested, message)
+
+[<Fact>]
+let ``Ctrl+Shift+Ins goes to the path on the clipboard`` () =
+    let message = KeyMap.messageFor KeyMap.clipboardPathKey
+
+    Assert.Equal(Key.InsertChar.WithCtrl.WithShift, KeyMap.clipboardPathKey)
+    Assert.Equal(Some ClipboardPathRequested, message)
+
+[<Fact>]
+let ``Alt+J goes to the path on the clipboard where a terminal keeps Ctrl+Shift+Ins`` () =
+    let message = KeyMap.messageFor KeyMap.spareClipboardPathKey
+
+    Assert.Equal(Key.J.WithAlt, KeyMap.spareClipboardPathKey)
+    Assert.Equal(Some ClipboardPathRequested, message)

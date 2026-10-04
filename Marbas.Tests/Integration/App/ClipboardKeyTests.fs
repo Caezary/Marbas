@@ -6,6 +6,7 @@ open Terminal.Gui.Input
 open Marbas.Domain
 open Marbas.Ui.Keys
 open Marbas.Ui.Messages
+open Marbas.Ui.Panels
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 
@@ -129,3 +130,40 @@ let ``Alt+L puts the place the link under the cursor leads to on the clipboard``
     pressKey window KeyMap.spareCopyLinkTargetsKey
 
     Assert.Equal<string list list>([ [ at "work" ] ], List.ofSeq handed)
+
+let private holding fs (text: string) =
+    { Fakes.dependencies fs (at "start") with
+        Clipboard.GetText = fun () -> Ok(Some text) }
+
+[<Fact>]
+let ``Ctrl+Shift+Ins sends the active panel into the directory on the clipboard`` () =
+    use window = focusedWindow (holding (mockFs ()) (at "start/docs"))
+
+    pressKey window KeyMap.clipboardPathKey
+
+    Assert.Equal(at "start/docs", shownPath FilePanel.LeftId window)
+
+[<Fact>]
+let ``Alt+J sends the active panel beside the file on the clipboard`` () =
+    use window = focusedWindow (holding (mockFs ()) ("\"" + at "start/notes.txt" + "\""))
+
+    pressKey window KeyMap.spareClipboardPathKey
+
+    Assert.Equal(at "start", shownPath FilePanel.LeftId window)
+    Assert.Equal(System.Nullable 2, (leftList window).SelectedItem)
+
+[<Theory>]
+[<InlineData("start/gone")>]
+[<InlineData("start/docs\nstart")>]
+let ``a clipboard that names no single existing place leaves the panel and says nothing`` (text: string) =
+    let reported = ResizeArray<string>()
+
+    use window =
+        focusedWindow
+            { holding (mockFs ()) (at text) with
+                Prompts.ReportError = fun report -> reported.Add report.Title }
+
+    pressKey window KeyMap.spareClipboardPathKey
+
+    Assert.Equal(at "start", shownPath FilePanel.LeftId window)
+    Assert.Empty reported

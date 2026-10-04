@@ -162,16 +162,16 @@ let ``the entries inside an archive are named as the archive holds them`` () =
 let ``a clipboard the system does not offer is reported the first time`` () =
     let fs = mockFs ()
 
-    let result = update fs (ClipboardUnwritten ClipboardUnavailable) (started fs)
+    let result = update fs (ClipboardRefused ClipboardUnavailable) (started fs)
 
     Assert.Equal<Effect list>([ ReportClipboardError ClipboardUnavailable ], result.Effects)
 
 [<Fact>]
 let ``a clipboard the system does not offer is not reported again in the same session`` () =
     let fs = mockFs ()
-    let reported = update fs (ClipboardUnwritten ClipboardUnavailable) (started fs)
+    let reported = update fs (ClipboardRefused ClipboardUnavailable) (started fs)
 
-    let result = update fs (ClipboardUnwritten ClipboardUnavailable) reported.State
+    let result = update fs (ClipboardRefused ClipboardUnavailable) reported.State
 
     Assert.Empty result.Effects
 
@@ -179,9 +179,9 @@ let ``a clipboard the system does not offer is not reported again in the same se
 let ``a clipboard that failed is reported every time`` () =
     let fs = mockFs ()
     let failure = ClipboardFailed "The clipboard is held by another program."
-    let reported = update fs (ClipboardUnwritten failure) (started fs)
+    let reported = update fs (ClipboardRefused failure) (started fs)
 
-    let result = update fs (ClipboardUnwritten failure) reported.State
+    let result = update fs (ClipboardRefused failure) reported.State
 
     Assert.Equal<Effect list>([ ReportClipboardError failure ], result.Effects)
 
@@ -348,4 +348,62 @@ let ``no link target is copied with the parent entry under the cursor and nothin
 
     let result = update fs LinkTargetsCopyRequested state
 
+    Assert.Empty result.Effects
+
+[<Fact>]
+let ``going to the path on the clipboard reads it against the directory of the active panel`` () =
+    let fs = mockFs ()
+    let state = started fs |> loadPanel fs Left (fp (at "start/docs")) |> Expect.ok
+
+    let result = update fs ClipboardPathRequested state
+
+    Assert.Equal<Effect list>([ ReadClipboardPath(fp (at "start/docs")) ], result.Effects)
+
+[<Fact>]
+let ``inside an archive the path on the clipboard is read against the directory holding it`` () =
+    let fs = ArchiveFixture.packed ()
+
+    let state =
+        ArchiveFixture.loaded fs
+        |> standInside fs Left (InArchive(ArchiveFixture.archive, ArchivePath.root))
+        |> Expect.ok
+
+    let result = update fs ClipboardPathRequested state
+
+    Assert.Equal<Effect list>([ ReadClipboardPath(fp (at "start")) ], result.Effects)
+
+[<Fact>]
+let ``a directory read from the clipboard is where the active panel goes`` () =
+    let fs = mockFs ()
+
+    let result = update fs (ClipboardPathRead(fp (at "start/a"))) (started fs)
+
+    Assert.Equal(OnDisk(fp (at "start/a")), result.State.Left.Path)
+
+[<Fact>]
+let ``a file read from the clipboard puts the active panel beside it with the cursor on it`` () =
+    let fs = mockFs ()
+
+    let result = update fs (ClipboardPathRead(fp (at "start/b/two.txt"))) (started fs)
+
+    let standing = PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value)
+    Assert.Equal(OnDisk(fp (at "start/b")), result.State.Left.Path)
+    Assert.Equal(Some "two.txt", standing)
+
+[<Fact>]
+let ``the landing from the clipboard is remembered in the folder history`` () =
+    let fs = mockFs ()
+
+    let result = update fs (ClipboardPathRead(fp (at "start/a"))) (started fs)
+
+    Assert.Contains(ChangeHistory(Remember(Visited(Place.OnDisk(fp (at "start/a"))))), result.Effects)
+
+[<Fact>]
+let ``a path read from the clipboard that does not exist changes nothing and says nothing`` () =
+    let fs = mockFs ()
+    let state = started fs
+
+    let result = update fs (ClipboardPathRead(fp (at "start/gone"))) state
+
+    Assert.Equal(state.Left.Path, result.State.Left.Path)
     Assert.Empty result.Effects

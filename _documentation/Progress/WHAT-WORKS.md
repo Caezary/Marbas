@@ -323,6 +323,19 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   works without the Windows shell. A shortcut the parser cannot read, an entry
   inside an archive and anything that is no link give their own full path. Only
   the entry is followed, never the directories above it.
+- `Ctrl+Shift+Ins`, and `Alt+J` beside it, read the text on the clipboard and
+  send the active panel there — into a directory, or beside a file with the
+  cursor on it — and the landing is remembered in the folder history. The text
+  is trimmed, unquoted (double or single quotes), read as a path when it is a
+  `file:` URI (percent escapes decoded), given the home directory for a leading
+  `~` alone or before a separator, given its environment variables (`%NAME%` on
+  Windows, where a `$` is part of a name; `$NAME` and `${NAME}` on Unix; an
+  unknown one left as written), resolved from the directory the active panel
+  stands in — inside an archive or over search results, the directory on disk
+  holding it — and stripped of a trailing separator. Several lines, blank text,
+  a character no path may hold, a clipboard with no text, and a path that does
+  not exist all change nothing and say nothing; a clipboard that refuses to be
+  read is reported like one that refuses to be written.
 - While `F5` or `F6` works, a progress window names the file being handled and
   the rest of the app keeps drawing, because the batch runs on a background
   thread. `Esc` (or the Cancel button) closes that window and the batch stops
