@@ -3,8 +3,9 @@
 Tests live in `Marbas.Tests` (xUnit). Logic modules (`Domain`, `FileSystem`,
 `State`) are covered directly; UI behaviour is covered by driving real
 Terminal.Gui views with an in-memory file system (`MockFileSystem`). The disk is
-reached by one folder only, `Integration/Disk/`, and the rule for what may go
-there is below.
+reached by one folder only, `Integration/Disk/` — and by the Windows clipboard
+tests in `Integration/Clipboard/`, which paste into a scratch directory — and
+the rule for what may go there is below.
 
 ## Running the suite
 
@@ -13,9 +14,10 @@ dotnet test Marbas.slnx
 ```
 
 That is the whole suite — a few seconds, no terminal, no network, nothing to set
-up beyond the SDK, and no disk but for `Integration/Disk/`. Nothing is marked flaky, so a
-red run is a real failure. A handful skip on Linux: the ones whose subject is
-drive letters.
+up beyond the SDK, and no disk but for `Integration/Disk/` and
+`Integration/Clipboard/`. Nothing is marked flaky, so a red run is a real
+failure. A handful skip on Linux: the ones whose subject is drive letters, and
+the ones whose subject is the Windows clipboard.
 
 **A test on the real disk is the last resort.** It is slower, it leaves a scratch
 directory behind when it crashes, and what it can prove depends on the machine
@@ -64,6 +66,25 @@ Every test there works inside a `Scratch`, a fresh directory under the system
 temp folder that is removed with `Operations.delete` when the test ends — not
 with `Directory.Delete`, which stumbles on a junction inside the tree on
 Windows, as one of the tests there records.
+
+**The Windows clipboard is proved against another program.** The adapter in
+`Adapters/SystemClipboard.fs` speaks `user32`, `kernel32` and `shell32`
+directly and builds every block from bytes, so a test of it that only read back
+what it wrote would pass with both halves wrong in the same way.
+`Integration/Clipboard/WindowsClipboardTests.fs` therefore checks each half
+against Windows PowerShell 5.1 started per call by `OtherProgram`, which reads
+and writes through Windows Forms — the text, the `CF_HDROP` list and
+`Preferred DropEffect` — the way an ordinary program does, and asks the system
+shell to paste through `Shell.Application`'s `paste` verb, the handler
+Explorer's own Paste runs. It also holds the clipboard open from that process
+to prove a refusal arrives as `ClipboardFailed` with the system's reason; the
+holder opens it with a window handle, since an `OpenClipboard(NULL)` in one
+process did not keep another out when this was measured. The tests are
+`[<WindowsFact>]` and run on the Windows CI runner too. Each starts with a
+`KeptClipboard`, which reads the text on the clipboard and puts it back when
+the test ends — the text only: files or a picture someone had copied before a
+local run are gone after it. A full run of the folder takes about six seconds,
+most of it starting PowerShell.
 
 **One suite, two platforms.** Every path in an arrange block is built with
 `Root.at`, which answers `C:\start\docs` on Windows and `/start/docs` on Linux,
@@ -143,9 +164,10 @@ process-wide statics that force parallelisation off, so it belongs on the other
 side of the fence from the pure ones. It carries the same subfolders as
 `Marbas/Ui` — all but `Messages/`, whose modules are pure text and never build a
 view — so a feature's unit tests and its Terminal.Gui tests sit at matching
-paths on either side. `Disk/` is the one subfolder with no `Ui` counterpart:
-it holds the tests that need the real file system rather than a view, which are
-integration tests for the same reason — they reach outside the process.
+paths on either side. `Disk/` and `Clipboard/` are the two subfolders with no
+`Ui` counterpart: they hold the tests that need the real file system or the
+real clipboard rather than a view, which are integration tests for the same
+reason — they reach outside the process.
 
 `Adapters/` is the exception the rule needs. Almost nothing there can be
 reached without starting the real thing, which is why the folder is excluded

@@ -231,6 +231,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Integration\Clipboard\OtherProgram.fs" />
+    <Compile Include="Integration\Clipboard\KeptClipboard.fs" />
+    <Compile Include="Integration\Clipboard\WindowsClipboardTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Integration\Theme\DialogStyleTests.fs" />
     <Compile Include="Integration\Theme\SchemeTests.fs" />
   </ItemGroup>

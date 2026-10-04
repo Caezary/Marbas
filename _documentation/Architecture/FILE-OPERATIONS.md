@@ -497,7 +497,7 @@ clear them for.
 
 **A full path is spelled the way the panel title spells a place.**
 `Alt+Shift+Ins` and `Alt+P` raise `PathsCopyRequested`, which reads
-`AppState.operationSpellings`: a target that is a search hit is spelled by
+`AppState.fullPathsToCopy`: a target that is a search hit is spelled by
 `FindHit.spelled`, and any other by `PanelLocation.spelledChild` of the place
 the panel shows — a path in the directory on disk, or the archive's own path
 with the entry's segments below it, as `PanelLocation.spelled` does for a level.
@@ -507,6 +507,15 @@ it is not meant to be one: it names the entry the way the title and the status
 line already do, and P18.5 is the task that reads such a path back. That is
 also why the copy does not go through `operationPaths`, which answers only what
 exists on disk and leaves a hit inside an archive out.
+
+**`..` is the one entry the full path takes that is no operation target.** With
+nothing marked and `..` under the cursor, the names and the places links lead
+to copy nothing, but `fullPathsToCopy` answers the place the panel shows,
+through `PanelLocation.spelled` — the directory, or the archive's level as the
+title spells it — because that is the path a user standing there wants to hand
+on, as the classic managers do, rather than the parent `..` leads to. A panel
+of search results shows no one place, so there `..` still copies nothing. With anything marked, `..` under
+the cursor changes nothing, as for every other command.
 
 **Where a link leads is the entry's own question, answered once per target.**
 `Ctrl+Alt+Ins` and `Alt+L` raise `LinkTargetsCopyRequested`, which reads

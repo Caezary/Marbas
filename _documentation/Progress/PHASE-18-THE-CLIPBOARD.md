@@ -334,3 +334,49 @@ to a hand trial. Reading the code for this task showed that nothing keeps a
 directory from being copied or moved into its own subdirectory — by `F5` and
 `F6` as much as by a paste — which is now a row in
 [Rough edges](../ROUGH-EDGES.md).
+
+## Appendix
+
+**The full path of `..` became the place the panel shows.** `PathsCopyRequested`
+now reads `AppState.fullPathsToCopy`, which answers `PanelLocation.spelled` of
+the panel's place when nothing is marked and `..` is under the cursor, and the
+operation targets' spellings otherwise; `operationSpellings` became private
+behind it. A panel of search results shows no one place, so `..` there still
+copies nothing, and the names and the places links lead to are unchanged. The
+tests, in `State/ClipboardTests`, replaced the one that proved `..` copied no
+path: `..` copies the directory, copies the level inside an archive as the
+title spells it, leaves the marked entries alone to be copied, and copies
+nothing over search results.
+
+**The Windows adapter was proved against another program.** Twenty-three tests
+in `Integration/Clipboard/WindowsClipboardTests.fs` run on the real clipboard,
+each against Windows PowerShell 5.1 reading and writing through Windows Forms,
+as [Testing](../Architecture/TESTING.md) describes:
+
+- text Marbas writes is read by another program with `\r\n` between the lines
+  and Polish letters intact; text another program writes is read whole; text
+  written by Marbas reads back; an emptied clipboard holds no text for either
+  side; files replace the text;
+- files Marbas writes are read by another program in their order, with effect
+  1 for a copy and 2 for a move; they read back with their intent, a path of
+  more than three hundred characters included; an emptied clipboard holds no
+  files;
+- files another program offers are read as a copy for the effects 1, 3 and 5
+  and with no effect at all, and as a move for 2 and 6; text alone gives no
+  files;
+- files Marbas puts on the clipboard are copied, and moved, by the paste verb
+  of the system shell — a file with Polish letters and a directory with a file
+  inside;
+- a clipboard held open by another program refuses to be written and to be read
+  with `ClipboardFailed` and the system's sentence for access denied.
+
+Two mutations of the adapter were tried to see the tests notice: a narrow
+`DROPFILES` header failed five of them, and a move read from any effect with
+the move bit failed the theory row for effect 3. Measuring the holder showed
+that a process opening the clipboard with `OpenClipboard(NULL)` did not keep a
+second process from opening it too, while a window handle did, answering
+access denied; the holder uses a window, and the adapter, which opens with no
+window, is scheduled to follow it as
+[P21.7](../Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md). `KeptClipboard` puts the text back
+after each test, so a local run leaves the user's clipboard text as it found
+it.

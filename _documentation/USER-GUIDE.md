@@ -133,7 +133,8 @@ link.
 What the panel points at can be handed to other programs through the system
 clipboard. Like the file operations, each command takes the marked entries, or
 the entry under the cursor when nothing is marked; with `..` under the cursor
-and nothing marked there is nothing to copy.
+and nothing marked there is nothing to copy, except for the full path, which
+is then the place the panel shows.
 
 - `Ctrl+Ins` — or `Alt+C`, for a terminal that keeps `Ctrl+Ins` for its own
   copy — puts the names of those entries on the clipboard as text, one per
@@ -144,7 +145,10 @@ and nothing marked there is nothing to copy.
 - `Alt+Shift+Ins` — or `Alt+P` — puts their full paths on the clipboard the same
   way. An entry inside an archive is spelled as the panel title spells it,
   through the archive: `C:\work\backup.zip\docs\notes.txt`. In a panel of
-  search results each hit gives its own full path, wherever it was found.
+  search results each hit gives its own full path, wherever it was found. With
+  `..` under the cursor and nothing marked it copies the path of the directory
+  the panel shows — or of the level inside an archive, spelled as the title
+  spells it; over search results it copies nothing.
 - `Ctrl+Alt+Ins` — or `Alt+L` — puts on the clipboard where each of them
   leads: for a symbolic link or a junction the place it points at (the one the
   status line shows after `->`, made a full path when the link holds a relative

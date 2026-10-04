@@ -314,6 +314,8 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   entry inside an archive spelled through the archive the way the panel title
   spells a level (`C:\work\backup.zip\docs\notes.txt`), and a hit in a panel of
   search results by its own full path, on disk or inside an archive alike.
+  `..` under the cursor with nothing marked copies the place the panel shows,
+  spelled as its title spells it; over search results it copies nothing.
 - `Ctrl+Alt+Ins`, and `Alt+L` beside it, put on the clipboard where each of
   the same targets leads. A symbolic link or a junction gives its target as the
   status line reads it, a relative one resolved from the directory the link is

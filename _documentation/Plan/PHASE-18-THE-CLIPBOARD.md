@@ -104,6 +104,21 @@ Every task updates [the user guide](../USER-GUIDE.md),
 port is described in [State and effects](../Architecture/STATE-AND-EFFECTS.md)
 when P18.1 brings it.
 
+## Appendix
+
+Two additions after the phase closed, outside its numbered tasks.
+
+- **The full path of `..`** — `Alt+Shift+Ins` or `Alt+P` with `..` under the
+  cursor and nothing marked copies the place the panel shows, spelled as its
+  title spells it, instead of nothing; over search results it still copies
+  nothing. This amends the second decision above for the full path alone.
+- **The Windows adapter proved against another program** — integration tests
+  of `SystemClipboard` on the real Win32 clipboard: text and files written by
+  Marbas read by another program and pasted by the system shell, text and files
+  written by another program read by Marbas with the intent its effect names,
+  and a clipboard held open by another program refused with the system's
+  reason.
+
 ## Left for a later phase
 
 - **The clipboard on Linux** — text through `wl-clipboard` or `xclip`, or the

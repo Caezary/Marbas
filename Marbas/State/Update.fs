@@ -704,7 +704,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         |> copyingText state
     | PathsCopyRequested ->
         activePanel state
-        |> operationSpellings fs
+        |> fullPathsToCopy fs
         |> List.map FileSystemPath.value
         |> copyingText state
     | LinkTargetsCopyRequested ->

@@ -213,9 +213,47 @@ let ``the full paths of the marked entries come in the order of the listing`` ()
     Assert.Equal<Effect list>(copying [ at "start/docs"; at "start/readme.txt" ], result.Effects)
 
 [<Fact>]
-let ``no path is copied with the parent entry under the cursor and nothing marked`` () =
+let ``the parent entry under the cursor with nothing marked copies the directory the panel shows`` () =
     let fs = mockFs ()
     let state = started fs |> standingOn ".."
+
+    let result = update fs PathsCopyRequested state
+
+    Assert.Equal<Effect list>(copying [ at "start" ], result.Effects)
+
+[<Fact>]
+let ``the parent entry under the cursor leaves the marked entries alone to be copied`` () =
+    let fs = mockFs ()
+    let state = started fs |> markedOn [ "readme.txt"; "docs" ] |> standingOn ".."
+
+    let result = update fs PathsCopyRequested state
+
+    Assert.Equal<Effect list>(copying [ at "start/docs"; at "start/readme.txt" ], result.Effects)
+
+[<Fact>]
+let ``the parent entry inside an archive copies the level the way the panel title spells it`` () =
+    let fs = ArchiveFixture.packed ()
+    let docs = ArchivePath.tryCreate "docs" |> Expect.some
+
+    let state =
+        ArchiveFixture.loaded fs
+        |> standInside fs Left (InArchive(ArchiveFixture.archive, docs))
+        |> Expect.ok
+        |> standingOn ".."
+
+    let result = update fs PathsCopyRequested state
+
+    Assert.Equal<Effect list>(copying [ at "start/backup.zip/docs" ], result.Effects)
+
+[<Fact>]
+let ``the parent entry in a panel of search results copies no path`` () =
+    let fs = mockFs ()
+
+    let state =
+        started fs
+        |> update fs (sentToPanel [ hitIn "start/a" "one.txt" ])
+        |> _.State
+        |> standingOn ".."
 
     let result = update fs PathsCopyRequested state
 

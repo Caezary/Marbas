@@ -6,7 +6,8 @@ written on a crash and, in debug mode, on every transition — and otherwise
 pays off what earlier phases left owing: a progress window that is flooded on a
 fast batch, a directory that can be copied into itself, a console editor on Unix that has to share the terminal, working
 directories left in the temporary directory by every session that did not end
-with `F10`, a flag
+with `F10`, a Windows clipboard opened without a window and so not held while
+it is written, a flag
 argument, four ways of landing a panel that say the same thing, the effect
 interpreter sitting in the wrong layer, ports whose types
 say how they are called but not what they are for, mutation that nothing
@@ -161,15 +162,48 @@ is the fix, and a signal handler is left out.
   the window's button is gone after the next start, and the entry in
   [Rough edges](../ROUGH-EDGES.md) is gone.
 
-## Stage 5 — The structure
+## Stage 5 — The clipboard held while it is written
 
-- **P21.7 Replacing is said by name** — `Operations.copyFile` and `moveFile`
+`SystemClipboard` opens the clipboard with `OpenClipboard(0n)`, no window of
+its own, and then empties it and hands over one block after another before it
+closes. While the tests of the phase 18 appendix were written, a process that
+had opened the clipboard that way did not keep a second process from opening it
+too, while one that opened it with a window handle did, and the second was
+answered access denied. If that holds, another program can open the clipboard
+between Marbas's `EmptyClipboard` and its last `SetClipboardData` — emptying it,
+or writing a block of its own beside half of Marbas's — and a read can see a
+list of files whose `Preferred DropEffect` was written by someone else. The
+retries of `opened` guard against a clipboard held by another program, not
+against one that is not held at all. It was seen once, in a quick measurement,
+so the task proves it before it fixes it.
+
+- **P21.7 The clipboard opened with a window of Marbas's own** — first, an
+  integration test in `Integration/Clipboard/` proves the gap as the system
+  answers it: a process holding the clipboard opened with no window keeps no
+  other process out. Then the Windows adapter opens the clipboard with a
+  message-only window (`HWND_MESSAGE`) it creates once and keeps for the
+  session, so the clipboard is held while every request of `whileOpen` runs,
+  and Marbas becomes the owner `EmptyClipboard` records. A spike settles first
+  which thread may create the window and open the clipboard with it, since the
+  requests reach the adapter from the UI thread and from batches alike, and
+  whether the blocks handed over stay on the clipboard after the window is
+  destroyed at exit. *Done when:* while the adapter holds the clipboard open,
+  another program's `OpenClipboard` is refused — through a seam that lets a test
+  hold the adapter's open clipboard — every test of `WindowsClipboardTests`
+  still passes, text and files written by Marbas survive Marbas quitting and
+  paste into another program, and
+  [Testing](../Architecture/TESTING.md) no longer has to explain why the holder
+  of the tests opens with a window.
+
+## Stage 6 — The structure
+
+- **P21.8 Replacing is said by name** — `Operations.copyFile` and `moveFile`
   lose their `bool`: copying always replaces, so its argument goes, and moving
   takes a union that says whether an existing target is replaced (every
   transfer) or kept (the anonymous rename a wipe makes). *Done when:* no
   function in `Operations` takes a `bool` for what it does, and the suite
   passes unchanged.
-- **P21.8 One way to land a panel** — four transitions end in
+- **P21.9 One way to land a panel** — four transitions end in
   `AppState.standInside` or `standBeside`, each through a type or a match of its
   own: a history choice through `Place.toLocation` and `Place.beside`, a
   favourite through `Place.toLocation`, a search answer through
@@ -184,7 +218,7 @@ is the fix, and a signal handler is left out.
   *Done when:* `standInside` and `standBeside` are called from one function in
   `Update`, the folder history records the same places as before, and the
   suite passes with only the renamed cases changed.
-- **P21.9 `Shell` and `Ports` join `State`** — neither draws anything: `Ports`
+- **P21.10 `Shell` and `Ports` join `State`** — neither draws anything: `Ports`
   is the shape of the outside world and `Shell` interprets effects into it. Both
   move under `State/`, and with them the wording of `Ui/Messages`, which is
   plain text with no view in it and whose only readers are `Shell`,
@@ -196,7 +230,7 @@ is the fix, and a signal handler is left out.
   nothing under `State` opens a `Terminal.Gui` namespace, the dependency rule in
   [Overview](../Architecture/OVERVIEW.md) is restated for the new layout, and
   the suite passes with its tests moved alongside.
-- **P21.10 Ports say what they are for** — a port that takes functions takes a
+- **P21.11 Ports say what they are for** — a port that takes functions takes a
   request record instead, the way the prompts already do: `Runners.Batch` takes
   a title, the work and what to do with the result as named fields, and so do
   `Measure`, `Search` and the two `Watches`. A function type that stays a field
@@ -204,7 +238,7 @@ is the fix, and a signal handler is left out.
   given a name that says what it answers. *Done when:* no field of
   `Dependencies` is a function whose argument is another function, and `Fakes`
   builds every port from named parts.
-- **P21.11 Where mutation is allowed** — a rule in
+- **P21.12 Where mutation is allowed** — a rule in
   [Coding style](../coding-style-conventions.md) says where a mutable binding or
   a reference cell earns its place: a measured hot loop confined to one
   function (`LineIndex`, `TextEncoding`, `ArchiveReader`, `RewindingStream`), an
@@ -215,7 +249,7 @@ is the fix, and a signal handler is left out.
   a returned value. *Done when:* each remaining mutable binding outside `Ui`
   falls under a clause of the rule, the hot loops are timed before and after in
   [Measurements](../Progress/MEASUREMENTS.md), and the suite passes unchanged.
-- **P21.12 Views keep their state in one value** — `FileViewer`,
+- **P21.13 Views keep their state in one value** — `FileViewer`,
   `ResultsWindow`, `ResultRow` and `SettingsDialog` hold a handful of mutable
   locals each, changed from several event handlers. Each gathers them into one
   immutable record behind one cell, with the changes written as functions over
@@ -223,9 +257,9 @@ is the fix, and a signal handler is left out.
   view has a single cell, its transitions have unit tests, and the rendered
   screens are unchanged before and after.
 
-## Stage 6 — The suite and the platforms
+## Stage 7 — The suite and the platforms
 
-- **P21.13 Test files by feature** — no test file runs past a thousand lines.
+- **P21.14 Test files by feature** — no test file runs past a thousand lines.
   `ShellTests` (about 2,600 lines, 161 tests) splits along the features its
   helpers already group — transfers, history, typed text, packing, unpacking
   and the rest — the way `ShellPlacesTests` was split from it, and `UpdateTests`
@@ -233,7 +267,7 @@ is the fix, and a signal handler is left out.
   `ArchiveFixture` does for the archive tests. *Done when:* the longest test
   file is under a thousand lines, the count of tests is the same before and
   after, and [Testing](../Architecture/TESTING.md) states the limit.
-- **P21.14 The manual rows, by hand** — every row of
+- **P21.15 The manual rows, by hand** — every row of
   [Cross-platform](../Architecture/CROSS-PLATFORM.md) marked *manual* is run
   against the published binaries of this phase, on Windows and on a Linux
   desktop, by a person at the terminal: colours, a resized terminal, the mouse,

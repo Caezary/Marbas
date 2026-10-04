@@ -378,8 +378,18 @@ let private spelledTarget (fs: IFileSystem) panel (entry: Entry) =
     | Some hit -> FindHit.spelled fs hit
     | None -> PanelLocation.spelledChild fs panel.Path entry.Name
 
-let operationSpellings (fs: IFileSystem) panel =
+let private operationSpellings (fs: IFileSystem) panel =
     PanelState.operationTargets panel |> List.map (spelledTarget fs panel)
+
+let private shownPlaceSpelling (fs: IFileSystem) panel =
+    match panel.Path with
+    | SearchResults _ -> []
+    | location -> [ PanelLocation.spelled fs location ]
+
+let fullPathsToCopy (fs: IFileSystem) panel =
+    match PanelState.selectedEntries panel, PanelState.cursorEntry panel with
+    | [], Some entry when entry.Name = ParentName -> shownPlaceSpelling fs panel
+    | _ -> operationSpellings fs panel
 
 let operationPaths (fs: IFileSystem) panel =
     PanelState.operationTargets panel |> List.choose (entryPath fs panel)
