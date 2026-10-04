@@ -9,7 +9,31 @@ let ``a full row shows the offset, every byte and its text`` () =
 
     let line = HexDump.row 0L bytes
 
-    Assert.Equal("00000000  00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F  ................", line)
+    Assert.Equal("0000000000  00 01 02 03 04 05 06 07 │ 08 09 0A 0B 0C 0D 0E 0F  ................", line)
+
+[<Fact>]
+let ``a full row fits eighty columns`` () =
+    let bytes = [| 0uy..15uy |]
+
+    let line = HexDump.row 0L bytes
+
+    Assert.Equal(79, line.Length)
+
+[<Fact>]
+let ``a short row past the eighth byte keeps the rule between the halves`` () =
+    let bytes = [| 0uy..11uy |]
+
+    let line = HexDump.row 0L bytes
+
+    Assert.Equal("0000000000  00 01 02 03 04 05 06 07 │ 08 09 0A 0B              ............", line)
+
+[<Fact>]
+let ``a short row within the first half keeps the rule in its column`` () =
+    let bytes = "Hi!"B
+
+    let line = HexDump.row 0L bytes
+
+    Assert.Equal("0000000000  48 69 21                │                          Hi!", line)
 
 [<Fact>]
 let ``printable bytes are shown as themselves`` () =
@@ -24,7 +48,13 @@ let ``printable bytes are shown as themselves`` () =
 let ``a row is numbered by the offset it starts at`` () =
     let line = HexDump.row 4096L [| 0uy |]
 
-    Assert.StartsWith("00001000", line)
+    Assert.StartsWith("0000001000  ", line)
+
+[<Fact>]
+let ``an offset past four gigabytes keeps every digit`` () =
+    let line = HexDump.row 0xFFFFFFFFF0L [| 0uy |]
+
+    Assert.StartsWith("FFFFFFFFF0  ", line)
 
 [<Fact>]
 let ``rows are numbered on from the offset they were read from`` () =
@@ -33,8 +63,8 @@ let ``rows are numbered on from the offset they were read from`` () =
     let lines = HexDump.rows 16L bytes
 
     Assert.Equal<string list>(
-        [ "00000010"; "00000020"; "00000030" ],
-        lines |> List.map _.Substring(0, 8)
+        [ "0000000010"; "0000000020"; "0000000030" ],
+        lines |> List.map _.Substring(0, 10)
     )
 
 [<Fact>]

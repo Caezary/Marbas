@@ -253,7 +253,7 @@ let ``F4 turns the text into a hex dump and back`` () =
     press content Key.F4
 
     Assert.Equal(HexMode, content.Mode)
-    Assert.StartsWith("00000000  66 69 72 73 74", List.head (content.Rows()))
+    Assert.StartsWith("0000000000  66 69 72 73 74", List.head (content.Rows()))
     Assert.Contains("Hex", drawnText (FileViewer.header window))
 
 [<Fact>]
@@ -266,7 +266,7 @@ let ``the hex dump keeps the place the text was at`` () =
 
     Assert.Equal(HexMode, content.Mode)
     Assert.Equal(ViewerHeader.AtOffset 352L, content.Place)
-    Assert.StartsWith("00000160", List.head (content.Rows()))
+    Assert.StartsWith("0000000160  ", List.head (content.Rows()))
 
 [<Fact>]
 let ``leaving the hex dump lands on the line the offset was in`` () =

@@ -106,7 +106,8 @@ cursor when nothing is marked.
   for an administrator or with Developer Mode on, and says so if you have
   neither.
 - `F3` opens the file under the cursor in a read-only viewer (binary files
-  show as a hex dump); `F3`/`Esc` closes it. On a directory — or with directories
+  show as a hex dump, sixteen bytes a row with a vertical line after the
+  eighth and a ten-digit offset in front); `F3`/`Esc` closes it. On a directory — or with directories
   marked — `F3` measures them instead: the size replaces `<DIR>` in the size
   column and shows on the status line. Sizes in the listing are rounded to the
   unit they reach (`1.5 KB`, `59.6 GB`); the status line and the panel footer

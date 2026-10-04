@@ -387,7 +387,11 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   move by a line, `PgUp`/`PgDn` by a page, `Home`/`End` reach the ends, the side
   arrows move across a long line (a screen at a time with `Ctrl` held), `F2`
   wraps and unwraps, `F4` switches to the hex dump and back at the same place in
-  the file, and `F3`, `F10` or `Esc` closes. A directory or `..` under the
+  the file, and `F3`, `F10` or `Esc` closes. A row of the hex dump holds the
+  offset in ten hexadecimal digits — a fixed column for files up to a
+  terabyte, and the header names the place in the same ten — sixteen bytes in two halves of eight with a vertical line between
+  them, and the same sixteen as characters in one block; it takes seventy-nine
+  columns, so it fits an eighty-column terminal whole. A directory or `..` under the
   cursor opens nothing. Nothing is read but the rows on screen, so a file of any
   size opens at once and there is no length limit, and `End` on a file of a
   hundred million lines keeps one line start in sixty-four rather than all of

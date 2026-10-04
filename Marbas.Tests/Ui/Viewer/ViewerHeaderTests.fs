@@ -38,7 +38,7 @@ let ``lines are counted from one`` () =
 let ``in hex the place is an offset, not a line`` () =
     let shown = describe 80 { bar with Mode = HexMode; Place = AtOffset 41408L }
 
-    Assert.EndsWith("Hex  UTF-8  12,480 B  0000A1C0  47%", shown)
+    Assert.EndsWith("Hex  UTF-8  12,480 B  000000A1C0  47%", shown)
 
 [<Fact>]
 let ``a name too long for the bar keeps its end`` () =

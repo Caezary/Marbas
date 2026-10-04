@@ -902,6 +902,23 @@ rows of the current viewport, padded to the width so the row beneath is erased
 without a clear. Because the rows come from `Rows()`, which a test can call,
 scrolling, wrapping and the hex switch are all assertable without a driver.
 
+**A hex row is a string with a rule in it.** `HexDump.row` writes the offset,
+the first eight bytes, ` │ `, the second eight and the characters, each half
+padded to the width of eight bytes. The rule sits in the same column on every
+row, a short last row included, so it reads as one line down the screen and the
+character column never moves. It is text, not a drawn line: the content view
+paints rows and knows nothing of their layout, and scrolling across a row
+treats the rule as two more columns. The character column stays one block of
+sixteen, because the rule is for counting bytes and the text reads as it lies
+in the file.
+
+**The offset has ten digits.** Eight end at four gigabytes, and an offset past
+them would grow a digit and push its row out of line with the rows above; ten
+keep one column up to a terabyte. `HexDump.offsetText` is the one spelling, and
+the header names the place with it, so the header and the top row agree to the
+character. With the rule the row is seventy-nine columns wide, one short of an
+eighty-column terminal.
+
 **Wrapping moves by whole lines.** With `F2` on, one line can take several
 rows, but the top of the screen is always the start of a line — a page down
 advances by however many lines the screen held (`ViewerScroll.filling`), not by

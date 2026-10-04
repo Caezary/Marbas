@@ -28,7 +28,7 @@ let private modeText mode =
 let private placeText place =
     match place with
     | AtLine line -> $"line {line + 1}"
-    | AtOffset offset -> offset.ToString "X8"
+    | AtOffset offset -> HexDump.offsetText offset
 
 let private shorten width (text: string) =
     if text.Length <= width then text
