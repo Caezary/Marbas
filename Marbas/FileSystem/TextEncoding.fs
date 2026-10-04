@@ -7,6 +7,11 @@ type Charset =
     | Utf16Le
     | Utf16Be
     | Latin1
+    | Windows1250
+    | Cp852
+    | Iso88592
+    | Windows1252
+    | Cp437
 
 type ByteOrderMark =
     | WithBom
@@ -85,34 +90,83 @@ module TextEncoding =
 
     let contentOf (probe: byte array) = examine probe |> snd
 
-    let name encoding =
-        match encoding.Charset with
+    let charsets =
+        [ Utf8; Utf16Le; Utf16Be; Latin1; Windows1250; Cp852; Iso88592; Windows1252; Cp437 ]
+
+    let charsetName charset =
+        match charset with
         | Utf8 -> "UTF-8"
         | Utf16Le -> "UTF-16 LE"
         | Utf16Be -> "UTF-16 BE"
         | Latin1 -> "Latin-1"
+        | Windows1250 -> "Windows-1250"
+        | Cp852 -> "CP852"
+        | Iso88592 -> "ISO-8859-2"
+        | Windows1252 -> "Windows-1252"
+        | Cp437 -> "CP437"
+
+    let name encoding = charsetName encoding.Charset
 
     let unitSize encoding =
         match encoding.Charset with
         | Utf16Le
         | Utf16Be -> 2
         | Utf8
-        | Latin1 -> 1
+        | Latin1
+        | Windows1250
+        | Cp852
+        | Iso88592
+        | Windows1252
+        | Cp437 -> 1
+
+    let private markOf charset =
+        match charset with
+        | Utf8 -> Some utf8Mark
+        | Utf16Le -> Some utf16LeMark
+        | Utf16Be -> Some utf16BeMark
+        | Latin1
+        | Windows1250
+        | Cp852
+        | Iso88592
+        | Windows1252
+        | Cp437 -> None
+
+    let chosen charset (probe: byte array) =
+        let marked = markOf charset |> Option.exists (fun mark -> startsWith mark probe)
+
+        { Charset = charset
+          Bom = if marked then WithBom else WithoutBom }
 
     let preambleLength encoding =
-        match encoding.Bom, encoding.Charset with
+        match encoding.Bom, markOf encoding.Charset with
+        | WithBom, Some mark -> mark.Length
+        | WithBom, None
         | WithoutBom, _ -> 0
-        | WithBom, Utf8 -> utf8Mark.Length
-        | WithBom, Utf16Le
-        | WithBom, Utf16Be -> utf16LeMark.Length
-        | WithBom, Latin1 -> 0
 
     let lineFeed encoding =
         match encoding.Charset with
         | Utf16Le -> [| 0x0Auy; 0x00uy |]
         | Utf16Be -> [| 0x00uy; 0x0Auy |]
         | Utf8
-        | Latin1 -> [| 0x0Auy |]
+        | Latin1
+        | Windows1250
+        | Cp852
+        | Iso88592
+        | Windows1252
+        | Cp437 -> [| 0x0Auy |]
+
+    let private codePage (number: int) =
+        lazy (CodePagesEncodingProvider.Instance.GetEncoding number)
+
+    let private windows1250 = codePage 1250
+
+    let private cp852 = codePage 852
+
+    let private iso88592 = codePage 28592
+
+    let private windows1252 = codePage 1252
+
+    let private cp437 = codePage 437
 
     let private charsetEncoding charset : Encoding =
         match charset with
@@ -120,6 +174,11 @@ module TextEncoding =
         | Utf16Le -> Encoding.Unicode
         | Utf16Be -> Encoding.BigEndianUnicode
         | Latin1 -> Encoding.Latin1
+        | Windows1250 -> windows1250.Value
+        | Cp852 -> cp852.Value
+        | Iso88592 -> iso88592.Value
+        | Windows1252 -> windows1252.Value
+        | Cp437 -> cp437.Value
 
     let decode encoding (bytes: byte array) =
         (charsetEncoding encoding.Charset).GetString bytes
@@ -128,3 +187,46 @@ module TextEncoding =
 
     let maxChars encoding byteCount =
         (charsetEncoding encoding.Charset).GetMaxCharCount byteCount
+
+    let private utf8LengthAt (bytes: byte array) position =
+        sequenceLength bytes[position]
+        |> Option.filter (fun length -> position + length <= bytes.Length)
+        |> Option.filter (fun length -> Array.forall isTrailing bytes[position + 1 .. position + length - 1])
+
+    let private unitAt charset (bytes: byte array) position =
+        match charset with
+        | Utf16Be -> (int bytes[position] <<< 8) ||| int bytes[position + 1]
+        | _ -> (int bytes[position + 1] <<< 8) ||| int bytes[position]
+
+    let private isHighSurrogate unit = unit >= 0xD800 && unit <= 0xDBFF
+
+    let private isLowSurrogate unit = unit >= 0xDC00 && unit <= 0xDFFF
+
+    let private utf16LengthAt charset (bytes: byte array) position =
+        let unitAt at =
+            if at + 2 <= bytes.Length then Some(unitAt charset bytes at) else None
+
+        match unitAt position, unitAt (position + 2) with
+        | None, _ -> None
+        | Some first, _ when isLowSurrogate first -> None
+        | Some first, Some second when isHighSurrogate first && isLowSurrogate second -> Some 4
+        | Some first, _ when isHighSurrogate first -> None
+        | Some _, _ -> Some 2
+
+    let private lengthWithin encoding (bytes: byte array) position =
+        match encoding.Charset with
+        | Utf8 -> utf8LengthAt bytes position
+        | Utf16Le
+        | Utf16Be -> utf16LengthAt encoding.Charset bytes position
+        | Latin1
+        | Windows1250
+        | Cp852
+        | Iso88592
+        | Windows1252
+        | Cp437 -> Some 1
+
+    let characterLengthAt encoding (bytes: byte array) position =
+        if position < 0 || position >= bytes.Length then
+            None
+        else
+            lengthWithin encoding bytes position

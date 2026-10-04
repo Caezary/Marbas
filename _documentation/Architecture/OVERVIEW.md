@@ -128,7 +128,8 @@ Marbas/
     Archive.fs            writing one and taking one apart: the walk, cancelling, the password
     Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     ContentError.fs       what can go wrong reading a file, as values
-    TextEncoding.fs       which encoding a file carries, from its mark or its bytes
+    TextEncoding.fs       which encoding a file carries, from its mark or its bytes,
+                          and the code pages it can be read in
     RewindingStream.fs    a forward-only stream seen as one that seeks, by opening it again
     FileWindow.fs         a file held open, read one byte range at a time
     LineIndex.fs          line starts scanned on demand, one in 64 kept, and the line at an offset
@@ -180,6 +181,8 @@ Marbas/
       FilePanel.fs          panel views, render state -> view
       PanelWiring.fs        one panel's list bound to keys, cursor and search
     Viewer/               the full-screen viewer behind `F3`
+      RowBytes.fs           one dump row's bytes, with the three on either side
+      HexText.fs            a row's bytes -> its character column, a cell to a byte
       HexDump.fs            bytes at an offset -> one offset / hex / text row
       ViewerMode.fs         text or hex, wrapped or not
       PrintableText.fs      a decoded line -> what a terminal can show of it
@@ -187,6 +190,8 @@ Marbas/
       ViewerScroll.fs       clamped scrolling, how many lines fill a page, percent
       ViewerHeader.fs       name, mode, encoding, size, place -> the viewer's top bar
       ViewerKeys.fs         the viewer's own key table and its twelve bar labels
+      CodePage.fs           Auto or a charset, what it is called and what it reads as
+      CodePageDialog.fs     the `F8` popup: Auto and every code page, one to choose
       FileViewer.fs         the viewer itself: header, rows, bar
     Dialogs/              the modal popups, each one built where a test can lay it out
       PromptDialog.fs       single-field text prompt (label + default), plain or secret

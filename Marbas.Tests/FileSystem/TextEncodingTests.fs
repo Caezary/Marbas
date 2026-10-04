@@ -102,10 +102,21 @@ let ``an empty probe is read as utf-8`` () =
 [<Fact>]
 let ``every charset says its name`` () =
     let names =
-        [ Utf8; Utf16Le; Utf16Be; Latin1 ]
+        TextEncoding.charsets
         |> List.map (fun charset -> TextEncoding.name { Charset = charset; Bom = WithoutBom })
 
-    Assert.Equal<string list>([ "UTF-8"; "UTF-16 LE"; "UTF-16 BE"; "Latin-1" ], names)
+    Assert.Equal<string list>(
+        [ "UTF-8"
+          "UTF-16 LE"
+          "UTF-16 BE"
+          "Latin-1"
+          "Windows-1250"
+          "CP852"
+          "ISO-8859-2"
+          "Windows-1252"
+          "CP437" ],
+        names
+    )
 
 [<Fact>]
 let ``a mark is not part of the content`` () =
@@ -134,10 +145,10 @@ let ``without a mark the content starts at the first byte`` () =
 [<Fact>]
 let ``a wide charset counts two bytes to the character`` () =
     let sizes =
-        [ Utf8; Utf16Le; Utf16Be; Latin1 ]
+        TextEncoding.charsets
         |> List.map (fun charset -> TextEncoding.unitSize { Charset = charset; Bom = WithoutBom })
 
-    Assert.Equal<int list>([ 1; 2; 2; 1 ], sizes)
+    Assert.Equal<int list>([ 1; 2; 2; 1; 1; 1; 1; 1; 1 ], sizes)
 
 [<Fact>]
 let ``a line feed is one byte in utf-8 and two in utf-16`` () =
@@ -146,6 +157,138 @@ let ``a line feed is one byte in utf-8 and two in utf-16`` () =
         |> List.map (fun charset -> TextEncoding.lineFeed { Charset = charset; Bom = WithoutBom })
 
     Assert.Equal<byte array list>([ [| 0x0Auy |]; [| 0x0Auy; 0x00uy |]; [| 0x00uy; 0x0Auy |] ], feeds)
+
+[<Fact>]
+let ``a single-byte code page ends a line with one line feed`` () =
+    let feeds =
+        [ Latin1; Windows1250; Cp852; Iso88592; Windows1252; Cp437 ]
+        |> List.map (fun charset -> TextEncoding.lineFeed { Charset = charset; Bom = WithoutBom })
+
+    Assert.All(feeds, (fun feed -> Assert.Equal<byte array>([| 0x0Auy |], feed)))
+
+[<Fact>]
+let ``the same bytes read differently in every code page`` () =
+    let probe = [| 0x80uy; 0xA5uy; 0xB1uy; 0xB9uy |]
+
+    let texts =
+        TextEncoding.charsets
+        |> List.map (fun charset -> TextEncoding.decode { Charset = charset; Bom = WithoutBom } probe)
+
+    Assert.Equal<string list>(
+        [ "����"
+          "ꖀ릱"
+          "肥놹"
+          "\u0080¥±¹"
+          "€Ą±ą"
+          "Çą▒╣"
+          "\u0080Ľąš"
+          "€¥±¹"
+          "ÇÑ▒╣" ],
+        texts
+    )
+
+[<Fact>]
+let ``a chosen charset keeps the mark the file starts with`` () =
+    let probe = Array.append [| 0xEFuy; 0xBBuy; 0xBFuy |] (bytes "first")
+
+    let encoding = TextEncoding.chosen Utf8 probe
+
+    Assert.Equal({ Charset = Utf8; Bom = WithBom }, encoding)
+
+[<Fact>]
+let ``a chosen charset reads another charset's mark as content`` () =
+    let probe = Array.append [| 0xFFuy; 0xFEuy |] (wide "first")
+
+    let encoding = TextEncoding.chosen Utf8 probe
+
+    Assert.Equal({ Charset = Utf8; Bom = WithoutBom }, encoding)
+
+[<Fact>]
+let ``a single-byte code page has no mark`` () =
+    let probe = Array.append [| 0xEFuy; 0xBBuy; 0xBFuy |] (bytes "first")
+
+    let encoding = TextEncoding.chosen Windows1250 probe
+
+    Assert.Equal({ Charset = Windows1250; Bom = WithoutBom }, encoding)
+
+[<Fact>]
+let ``a single-byte code page takes one byte to the character`` () =
+    let encoding = { Charset = Cp852; Bom = WithoutBom }
+
+    let length = TextEncoding.characterLengthAt encoding [| 0xA5uy; 0x41uy |] 0
+
+    Assert.Equal(Some 1, length)
+
+[<Theory>]
+[<InlineData(0, 1)>]
+[<InlineData(1, 2)>]
+[<InlineData(3, 3)>]
+[<InlineData(6, 4)>]
+let ``a utf-8 character is as long as its lead byte says`` (position: int, expected: int) =
+    let encoding = { Charset = Utf8; Bom = WithoutBom }
+    let probe = Encoding.UTF8.GetBytes "Aż€😀"
+
+    let length = TextEncoding.characterLengthAt encoding probe position
+
+    Assert.Equal(Some expected, length)
+
+[<Theory>]
+[<InlineData(2)>]
+[<InlineData(4)>]
+let ``a utf-8 continuation byte starts no character`` (position: int) =
+    let encoding = { Charset = Utf8; Bom = WithoutBom }
+    let probe = Encoding.UTF8.GetBytes "Aż€"
+
+    let length = TextEncoding.characterLengthAt encoding probe position
+
+    Assert.Equal(None, length)
+
+[<Fact>]
+let ``a utf-8 character cut off by the end is no character`` () =
+    let encoding = { Charset = Utf8; Bom = WithoutBom }
+    let probe = (Encoding.UTF8.GetBytes "A€")[.. 2]
+
+    let length = TextEncoding.characterLengthAt encoding probe 1
+
+    Assert.Equal(None, length)
+
+[<Theory>]
+[<InlineData(0, 2)>]
+[<InlineData(2, 4)>]
+let ``a utf-16 character is a unit, or two for a surrogate pair`` (position: int, expected: int) =
+    let encoding = { Charset = Utf16Le; Bom = WithoutBom }
+    let probe = wide "A😀"
+
+    let length = TextEncoding.characterLengthAt encoding probe position
+
+    Assert.Equal(Some expected, length)
+
+[<Fact>]
+let ``a big-endian surrogate pair is read in its own byte order`` () =
+    let encoding = { Charset = Utf16Be; Bom = WithoutBom }
+    let probe = wideBigEndian "😀"
+
+    let length = TextEncoding.characterLengthAt encoding probe 0
+
+    Assert.Equal(Some 4, length)
+
+[<Fact>]
+let ``a utf-16 low surrogate on its own starts no character`` () =
+    let encoding = { Charset = Utf16Le; Bom = WithoutBom }
+    let probe = wide "😀"
+
+    let length = TextEncoding.characterLengthAt encoding probe 2
+
+    Assert.Equal(None, length)
+
+[<Fact>]
+let ``a utf-16 unit cut off by the end is no character`` () =
+    let encoding = { Charset = Utf16Le; Bom = WithoutBom }
+    let probe = (wide "AB")[.. 2]
+
+    let length = TextEncoding.characterLengthAt encoding probe 2
+
+    Assert.Equal(None, length)
 
 [<Fact>]
 let ``utf-16 bytes decode to the text they carry`` () =

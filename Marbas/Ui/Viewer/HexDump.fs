@@ -1,6 +1,6 @@
 module Marbas.Ui.Viewer.HexDump
 
-open System
+open Marbas.FileSystem
 
 [<Literal>]
 let BytesPerLine = 16
@@ -11,9 +11,6 @@ let private halfWidth = bytesPerHalf * 3 - 1
 
 [<Literal>]
 let private Rule = " │ "
-
-let private printable (byte: byte) =
-    if byte >= 32uy && byte <= 126uy then char byte else '.'
 
 let private hexHalf (bytes: byte array) =
     let hex = bytes |> Array.map (fun b -> b.ToString "X2") |> String.concat " "
@@ -26,14 +23,25 @@ let offsetOf (row: int) = int64 row * int64 BytesPerLine
 
 let offsetText (offset: int64) = offset.ToString "X10"
 
-let row (offset: int64) (bytes: byte array) =
-    let first, second = bytes |> Array.splitAt (min bytesPerHalf bytes.Length)
-    let text = bytes |> Array.map printable |> String
+let row encoding (offset: int64) (bytes: RowBytes) =
+    let first, second =
+        bytes.Bytes |> Array.splitAt (min bytesPerHalf bytes.Bytes.Length)
+
+    let text = HexText.cells encoding bytes
 
     $"""{offsetText offset}  {hexHalf first}{Rule}{hexHalf second}  {text}"""
 
-let rows (offset: int64) (bytes: byte array) =
-    bytes
-    |> Array.chunkBySize BytesPerLine
-    |> Array.mapi (fun index -> row (offset + offsetOf index))
-    |> List.ofArray
+let rows encoding (offset: int64) (bytes: byte array) =
+    [ for index in 0 .. rowCount bytes.LongLength - 1 ->
+          RowBytes.within bytes (index * BytesPerLine) BytesPerLine
+          |> row encoding (offset + offsetOf index) ]
+
+let bytesAt (source: FileWindow.Source) (row: int) =
+    let offset = offsetOf row
+
+    if offset >= source.Length then
+        None
+    else
+        let before = int (min offset (int64 RowBytes.Context))
+        let window = source.Read(offset - int64 before, before + BytesPerLine + RowBytes.Context)
+        Some(RowBytes.within window before BytesPerLine)

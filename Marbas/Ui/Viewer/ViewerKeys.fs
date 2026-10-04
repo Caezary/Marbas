@@ -16,11 +16,14 @@ type Command =
     | ToEnd
     | ModeToggled
     | WrapToggled
+    | CodePageAsked
     | Closed
 
 let wrapKey = Key.F2
 
 let modeKey = Key.F4
+
+let codePageKey = Key.F8
 
 let closeKeys = [ Key.F3; Key.F10; Key.Esc ]
 
@@ -38,7 +41,8 @@ let private bindings =
       Key.End, ToEnd
       Key.End.WithCtrl, ToEnd
       wrapKey, WrapToggled
-      modeKey, ModeToggled ]
+      modeKey, ModeToggled
+      codePageKey, CodePageAsked ]
 
 let commandFor (key: Key) =
     if List.contains key closeKeys then
@@ -56,6 +60,8 @@ let private label mode wrap key =
         match mode with
         | TextMode -> "Hex"
         | HexMode -> "Text"
+    elif key = codePageKey then
+        "Code"
     elif List.contains key closeKeys then
         "Quit"
     else

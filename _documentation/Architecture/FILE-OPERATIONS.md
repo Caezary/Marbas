@@ -377,6 +377,28 @@ switch keeps the place by going through the byte offset — the line's start
 offset becomes a dump row, a dump row's offset becomes the line holding it.
 Nothing guesses on the user's behalf and nothing is unreachable.
 
+**A guess can be overruled, and the code pages need no registration.** Since
+P19.2 `F8` lets the user read the file in another charset; the choice and its
+place are in [UI and input](UI-AND-INPUT.md). `Charset` holds the four detection
+can answer and five single-byte code pages besides — Windows-1250, CP852,
+ISO-8859-2, Windows-1252 and CP437 — each answering its line feed (`0A`), its
+unit (one byte) and the absence of a mark. `TextEncoding.chosen` builds the
+encoding for a charset the user picked, keeping the mark only when the file
+starts with that charset's own. The five code pages are not in .NET by default;
+`TextEncoding` asks `CodePagesEncodingProvider.Instance` for each one, once, and
+keeps the answer. The plan had the composition root register the provider for
+the whole process instead. Asking the provider directly reaches the same tables
+without a process-wide switch, so `TextEncoding` works the same whoever calls
+it — a test included — and no start-up order has to hold for it. `ArchiveNames`
+still registers the provider for itself, because it asks `Encoding.GetEncoding`
+for whatever OEM code page the culture names.
+
+`TextEncoding.characterLengthAt` answers how many bytes the character at a
+position takes in an encoding — the lead byte's count in UTF-8, a unit or a
+surrogate pair in UTF-16, one byte in the rest — or nothing when no character
+starts there: a continuation byte, a lone surrogate, a sequence the end of the
+bytes cuts short. The hex dump lays its character column out by it.
+
 **Formatting stays pure, and so does the scrolling.** `HexDump.row` renders one
 row at an absolute offset, `PrintableText.describe` turns tabs and control
 characters into something a terminal can draw, `LineWrap` cuts a line into the

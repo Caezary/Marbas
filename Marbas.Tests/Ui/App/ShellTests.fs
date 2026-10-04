@@ -718,7 +718,7 @@ let ``a viewed file is handed over opened under its own path`` () =
     let mutable shown = ("", [])
 
     let readOut (source: FileWindow.Source) =
-        let index = LineIndex.Index source
+        let index = LineIndex.Index(source, source.Encoding)
         index.ScanAll()
         let lines = [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
         shown <- (FileSystemPath.value source.Path, lines)
@@ -1619,7 +1619,7 @@ let ``an entry of an archive is handed over under the name of its place in it`` 
     let mutable shown = ("", [])
 
     let readOut (source: FileWindow.Source) =
-        let index = LineIndex.Index source
+        let index = LineIndex.Index(source, source.Encoding)
         index.ScanAll()
         let lines = [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
         shown <- (FileSystemPath.value source.Path, lines)

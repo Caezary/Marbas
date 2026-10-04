@@ -28,8 +28,7 @@ let private lastAtOrBefore count (startAt: int -> int64) (offset: int64) =
 
     low
 
-type Index(source: FileWindow.Source) =
-    let encoding = source.Encoding
+type Index(source: FileWindow.Source, encoding: TextEncoding) =
     let feed = TextEncoding.lineFeed encoding
     let contentStart = int64 (TextEncoding.preambleLength encoding)
     let beforeFinalFeed = source.Length - int64 feed.Length

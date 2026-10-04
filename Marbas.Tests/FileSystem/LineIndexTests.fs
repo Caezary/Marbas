@@ -17,7 +17,7 @@ let private over (data: MockFileData) =
     let fs = MockFileSystem()
     fs.AddFile(notes, data)
     let source = FileWindow.openFile fs (fp notes) |> Expect.ok
-    source, LineIndex.Index source
+    source, LineIndex.Index(source, source.Encoding)
 
 let private indexing (text: string) = over (MockFileData text) |> snd
 
@@ -35,6 +35,24 @@ let ``a line feed ends a line`` () =
 [<Fact>]
 let ``a carriage return before the feed is not part of the line`` () =
     let index = indexing "first\r\nsecond"
+
+    let lines = textsOf index 2
+
+    Assert.Equal<string option list>([ Some "first"; Some "second" ], lines)
+
+[<Fact>]
+let ``the lines are read in the encoding the index is given`` () =
+    let source, _ = over (MockFileData [| 0x41uy; 0xB9uy; 0x0Auy; 0xA5uy |])
+    let index = LineIndex.Index(source, { Charset = Windows1250; Bom = WithoutBom })
+
+    let lines = textsOf index 2
+
+    Assert.Equal<string option list>([ Some "Aą"; Some "Ą" ], lines)
+
+[<Fact>]
+let ``a wider encoding finds its own line breaks`` () =
+    let source, _ = over (MockFileData(Encoding.Unicode.GetBytes "first\nsecond"))
+    let index = LineIndex.Index(source, { Charset = Utf16Le; Bom = WithoutBom })
 
     let lines = textsOf index 2
 

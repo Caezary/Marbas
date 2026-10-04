@@ -22,7 +22,9 @@ let KeyBarId = "viewerKeyBar"
 type ContentView(source: FileWindow.Source) as this =
     inherit View()
 
-    let index = LineIndex.Index source
+    let mutable codePage = Automatic
+    let mutable encoding = source.Encoding
+    let mutable index = LineIndex.Index(source, encoding)
     let mutable mode = TextMode
     let mutable wrap = Unwrapped
     let mutable top = 0
@@ -37,12 +39,8 @@ type ContentView(source: FileWindow.Source) as this =
     let height () = max 1 this.Viewport.Height
 
     let hexRow row =
-        let offset = HexDump.offsetOf row
-
-        if offset >= source.Length then
-            None
-        else
-            Some(HexDump.row offset (source.Read(offset, HexDump.BytesPerLine)))
+        HexDump.bytesAt source row
+        |> Option.map (HexDump.row encoding (HexDump.offsetOf row))
 
     let textLine line =
         index.Text line |> Option.map PrintableText.describe
@@ -79,7 +77,7 @@ type ContentView(source: FileWindow.Source) as this =
     let mutable shown = None
 
     let visible () =
-        let place = mode, wrap, top, left, width (), height ()
+        let place = encoding, mode, wrap, top, left, width (), height ()
 
         match shown with
         | Some(shownAt, rows) when shownAt = place -> rows
@@ -138,7 +136,26 @@ type ContentView(source: FileWindow.Source) as this =
 
         left <- 0
 
+    let reindex page =
+        let probe = source.Read(0L, TextEncoding.ProbeLength)
+        codePage <- page
+        encoding <- CodePage.encoding source.Encoding probe page
+        index <- LineIndex.Index(source, encoding)
+
+    let readAs page =
+        match mode with
+        | TextMode ->
+            let offset = index.Start top |> Option.defaultValue 0L
+            reindex page
+            top <- index.LineAt offset
+            left <- 0
+        | HexMode -> reindex page
+
     member _.Source = source
+
+    member _.CodePage = codePage
+
+    member _.Encoding = encoding
 
     member _.Mode = mode
 
@@ -185,7 +202,10 @@ type ContentView(source: FileWindow.Source) as this =
             wrap <- (if wrap = Wrapped then Unwrapped else Wrapped)
             left <- 0
         | ViewerKeys.ModeToggled -> switchMode ()
+        | ViewerKeys.CodePageAsked
         | ViewerKeys.Closed -> ()
+
+    member _.ReadAs(page: CodePage) = readAs page
 
     override this.OnDrawingContent(_: DrawContext) =
         let rows = this.Rows()
@@ -198,7 +218,7 @@ type ContentView(source: FileWindow.Source) as this =
 
         true
 
-let create (close: Window -> unit) (source: FileWindow.Source) =
+let create (close: Window -> unit) (chooseCodePage: CodePageOffer -> CodePage option) (source: FileWindow.Source) =
     let window = new Window(Width = Dim.Fill(), Height = Dim.Fill())
 
     window.BorderStyle <- LineStyle.None
@@ -224,7 +244,7 @@ let create (close: Window -> unit) (source: FileWindow.Source) =
                 (max 1 header.Viewport.Width)
                 { Name = FileSystemPath.value source.Path
                   Mode = content.Mode
-                  Encoding = TextEncoding.name source.Encoding
+                  Encoding = TextEncoding.name content.Encoding
                   Length = source.Length
                   Place = content.Place
                   Percent = content.Percent }
@@ -237,6 +257,15 @@ let create (close: Window -> unit) (source: FileWindow.Source) =
         | Some ViewerKeys.Closed ->
             key.Handled <- true
             close window
+        | Some ViewerKeys.CodePageAsked ->
+            key.Handled <- true
+
+            chooseCodePage
+                { Detected = source.Encoding
+                  Current = content.CodePage }
+            |> Option.iter content.ReadAs
+
+            refresh ()
         | Some command ->
             key.Handled <- true
             content.Run command

@@ -87,8 +87,11 @@ let askPassword (app: IApplication) (request: PasswordPrompt) =
         (fun () -> PromptDialog.create PasswordQuestion.Title label "" |> PromptDialog.secret)
         PromptDialog.password
 
+let private chooseCodePage (app: IApplication) (offer: CodePageOffer) =
+    running app (fun () -> CodePageDialog.create offer) CodePageDialog.choice
+
 let showFile (app: IApplication) (source: FileWindow.Source) =
-    running app (fun () -> FileViewer.create _.RequestStop() source) ignore
+    running app (fun () -> FileViewer.create _.RequestStop() (chooseCodePage app) source) ignore
 
 let editProperties (app: IApplication) properties =
     running app (fun () -> PropertiesDialog.create properties) (PropertiesDialog.properties properties)

@@ -180,12 +180,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Ui\Viewer\RowBytesTests.fs" />
+    <Compile Include="Ui\Viewer\HexTextTests.fs" />
     <Compile Include="Ui\Viewer\HexDumpTests.fs" />
     <Compile Include="Ui\Viewer\PrintableTextTests.fs" />
     <Compile Include="Ui\Viewer\LineWrapTests.fs" />
     <Compile Include="Ui\Viewer\ViewerScrollTests.fs" />
     <Compile Include="Ui\Viewer\ViewerHeaderTests.fs" />
     <Compile Include="Ui\Viewer\ViewerKeysTests.fs" />
+    <Compile Include="Ui\Viewer\CodePageTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -268,6 +271,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Integration\Viewer\CodePageDialogTests.fs" />
     <Compile Include="Integration\Viewer\FileViewerTests.fs" />
     <Compile Include="Integration\Viewer\ViewKeyTests.fs" />
   </ItemGroup>

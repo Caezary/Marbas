@@ -884,15 +884,16 @@ a key bar, and everything between is the content.
 the arrows move by a line, `PgUp`/`PgDn` by a page, `Home`/`End` reach the ends
 of the file, the side arrows move across a long line — a column at a time, a
 screen at a time with `Ctrl` held — `F2` wraps, `F4` switches to the hex dump
-and back, and `F3`, `F10` and `Esc` leave. Nothing is bound to the panel's
-table while the viewer is up, because the viewer's content view is what holds
-focus and keys do not bubble.
+and back, `F8` chooses the code page, and `F3`, `F10` and `Esc` leave. Nothing
+is bound to the panel's table while the viewer is up, because the viewer's
+content view is what holds focus and keys do not bubble.
 
 **Both bars are the same bar.** `FunctionKeyBar.build` makes the twelve-slot
 row — the proportional layout, the two schemes, the `SlotView`s — and both the
 panel bar and the viewer bar are built from it; `show` fills the panel's slots
 from `KeyMap`, `label` fills the viewer's from `ViewerKeys.bar`, which asks for
-the mode and the wrap so `F4` reads `Hex` in text and `Text` in hex.
+the mode and the wrap so `F4` reads `Hex` in text and `Text` in hex. `F8`
+reads `Code` in both.
 
 **The content view draws itself, because nothing in the toolkit fits.**
 `TextView` was deprecated in 2.4.17, and it was the wrong shape anyway: it owns
@@ -918,6 +919,40 @@ keep one column up to a terabyte. `HexDump.offsetText` is the one spelling, and
 the header names the place with it, so the header and the top row agree to the
 character. With the rule the row is seventy-nine columns wide, one short of an
 eighty-column terminal.
+
+**The code page belongs to the viewing, not to the file.** `F8` runs
+`CodePageDialog`: `Auto` first, named for what the viewer settled on
+(`Auto (Latin-1)`), then the nine charsets of `TextEncoding.charsets` in a
+fixed order, with the cursor on the one in use. The viewer does not run the
+popup itself; `FileViewer.create` is handed a `CodePageOffer -> CodePage option`,
+as it is handed `close`, and `Prompts.showFile` passes one that runs the dialog
+on the application. A test hands it an answer instead. What is chosen lives in
+`ContentView` — `CodePage`, and the `TextEncoding` it reads as — and nowhere
+else, so it dies with the window and the next `F3` settles the encoding afresh.
+The header names the encoding the content reads as, so it says `CP852` once
+CP852 is chosen and what detection found while `Auto` is.
+
+Choosing re-reads at the same place. In text the start offset of the top line
+is kept, a new `LineIndex` is built in the chosen encoding and the top becomes
+the line that holds that offset — the same route `F4` takes back from the dump,
+and the same cost: the new index scans up to the place. In hex the row does not
+move and only the characters change. A fixed charset keeps the byte order mark
+when the file starts with that charset's own (`TextEncoding.chosen`), so
+choosing UTF-8 for a file with a UTF-8 mark does not show the mark as content;
+another charset's mark is content like any other bytes.
+
+**The character column of the dump reads the code page too, a cell to a
+byte.** `HexText.cells` decodes the row in the encoding in use and keeps one
+cell for every byte, so the characters stay under the bytes they came from. A
+character stands over its first byte and the cells of its other bytes are left
+blank (`Zaż ó ł ć`, and `H i ` in UTF-16); one of two columns takes two of its
+cells. A control character, a byte that starts nothing, the replacement
+character and anything of no width show as `.`. A character split between two
+rows stands at the end of the first and blanks the start of the second: the row
+is read with three bytes on either side (`RowBytes`, `HexDump.bytesAt`), enough
+for the longest UTF-8 sequence, and the walk starts in the bytes before the row
+so it meets the character from its start. A character two columns wide with one
+cell left in the row shows as `.`, because the column cannot grow.
 
 **Wrapping moves by whole lines.** With `F2` on, one line can take several
 rows, but the top of the screen is always the start of a line — a page down

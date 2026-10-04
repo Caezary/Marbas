@@ -107,7 +107,11 @@ cursor when nothing is marked.
   neither.
 - `F3` opens the file under the cursor in a read-only viewer (binary files
   show as a hex dump, sixteen bytes a row with a vertical line after the
-  eighth and a ten-digit offset in front); `F3`/`Esc` closes it. On a directory — or with directories
+  eighth and a ten-digit offset in front); `F3`/`Esc` closes it. `F8` in the
+  viewer picks the code page the file is read in — `Auto` is what the viewer
+  guessed, and UTF-8, UTF-16, Latin-1, Windows-1250, CP852, ISO-8859-2,
+  Windows-1252 and CP437 can be chosen; the choice lasts until the viewer
+  closes. On a directory — or with directories
   marked — `F3` measures them instead: the size replaces `<DIR>` in the size
   column and shows on the status line. Sizes in the listing are rounded to the
   unit they reach (`1.5 KB`, `59.6 GB`); the status line and the panel footer

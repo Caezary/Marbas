@@ -89,3 +89,15 @@ let ``a slot with no command is left blank`` () =
     let slots = bar TextMode Unwrapped
 
     Assert.Equal("", slots[4])
+
+[<Fact>]
+let ``F8 asks for a code page`` () =
+    let command = commandFor Key.F8
+
+    Assert.Equal(Some CodePageAsked, command)
+
+[<Fact>]
+let ``the bar offers the code page on F8`` () =
+    let slots = bar TextMode Unwrapped
+
+    Assert.Equal("Code", slots[7])

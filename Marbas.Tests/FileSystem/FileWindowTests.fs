@@ -256,7 +256,7 @@ let ``the lines of an entry are read in whatever order the viewer wants them`` (
     fs.AddFile(at "work/notes.txt", MockFileData "first\nsecond\nthird")
     Archive.write fs Operations.unattended (request None) [ fp (at "work/notes.txt") ] |> ignore
     use source = FileWindow.openEntry fs None (fp archive) (inside "notes.txt") |> Expect.ok
-    let index = LineIndex.Index source
+    let index = LineIndex.Index(source, source.Encoding)
 
     index.ScanAll()
 

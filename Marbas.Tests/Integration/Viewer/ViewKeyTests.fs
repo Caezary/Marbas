@@ -42,7 +42,7 @@ let ``the file is handed over ready to read`` () =
     let read = ResizeArray<string>()
 
     let readFirstLine (source: FileWindow.Source) =
-        LineIndex.Index(source).Text 0 |> Option.iter read.Add
+        LineIndex.Index(source, source.Encoding).Text 0 |> Option.iter read.Add
 
     use window = windowWith (mockFs ()) readFirstLine silent
     (leftList window).SelectedItem <- 2

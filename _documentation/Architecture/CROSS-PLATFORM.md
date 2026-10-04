@@ -540,6 +540,7 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 |-------|---------|-------|----------|
 | `F3` opens the viewer, `F3`/`Esc` closes it | same | same | suite |
 | `F4` in the viewer switches to a hex dump | same | same | suite |
+| `F8` in the viewer reads the file in the code page chosen, popup and all | same | same | suite; probe on Windows |
 | A UTF-16 file is shown as the text it is | same | same | suite |
 | The viewer's arrows, page keys, `Home`/`End` and `F2` wrap | same | same | suite |
 | `F4` starts the editor the extension is associated with | same | same | suite |

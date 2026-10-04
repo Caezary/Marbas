@@ -151,6 +151,8 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="Ui\Viewer\RowBytes.fs" />
+        <Compile Include="Ui\Viewer\HexText.fs" />
         <Compile Include="Ui\Viewer\HexDump.fs" />
         <Compile Include="Ui\Viewer\ViewerMode.fs" />
         <Compile Include="Ui\Viewer\PrintableText.fs" />
@@ -158,6 +160,8 @@
         <Compile Include="Ui\Viewer\ViewerScroll.fs" />
         <Compile Include="Ui\Viewer\ViewerHeader.fs" />
         <Compile Include="Ui\Viewer\ViewerKeys.fs" />
+        <Compile Include="Ui\Viewer\CodePage.fs" />
+        <Compile Include="Ui\Viewer\CodePageDialog.fs" />
         <Compile Include="Ui\Viewer\FileViewer.fs" />
     </ItemGroup>
 

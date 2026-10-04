@@ -225,11 +225,14 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   itself (the `running` helper in `Prompts.showFile`) is only exercised by running
   the app — the same blind spot the progress dialog has. What the tests do
   cover is every key the viewer takes and every row it would draw.
-- The viewer shows one encoding per file and offers no way to override it. Where
-  detection has to guess — a byte order mark is missing and the bytes are not
-  valid UTF-8 — it says Latin-1 and renders every byte, which is readable but
-  wrong for a single-byte code page that is not Latin-1. A key that cycles the
-  encoding would be a small addition to `ViewerKeys` and `ContentView`.
+- Where detection has to guess — a byte order mark is missing and the bytes are
+  not valid UTF-8 — the viewer still says Latin-1, which is wrong for a file in
+  CP852 or Windows-1250. `F8` puts that right by hand, but only for the viewing:
+  nothing is remembered, and the next `F3` guesses again.
+- A character two columns wide counts as one in the text of a hex row, so
+  scrolling across a dump of UTF-16 Chinese stops a column or two short of the
+  end of the row. The character column itself is laid out by width and stays
+  under its bytes.
 - A single line longer than `LineIndex.MaxLineLength` (a megabyte) is cut there.
   Nothing in a viewer can show more of one line than a screen holds, but
   scrolling right past that point stops rather than going on.
