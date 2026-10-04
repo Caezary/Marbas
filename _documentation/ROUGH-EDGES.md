@@ -268,6 +268,13 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   archive, because the disk ignores case, and then finds no `Docs` in it if the
   archive stores `docs` — and, as the plan asks of a path that leads nowhere,
   says nothing. A path copied with `Alt+P` always matches.
+- A session's working directory, `<temporary root>\Marbas\<session>`, is
+  removed only by `F10` or `Ctrl+Q` in the main window. Closing the console
+  window, a logoff or shutdown, a killed or crashed process and `Ctrl+Q` inside
+  a dialog leave it behind, with whatever it held — since P18.6 that includes
+  every entry unpacked for the clipboard — and no later session looks for it.
+  [Phase 21](Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md) sweeps such directories
+  at start.
 - Entries copied from inside an archive with `Alt+Shift+C` reach the clipboard
   as unpacked copies in the session's working directory, which is deleted when
   Marbas quits. A paste after that finds nothing. Keeping them would leave the

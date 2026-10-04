@@ -109,3 +109,9 @@ when P18.1 brings it.
 - **The clipboard on Linux** — text through `wl-clipboard` or `xclip`, or the
   terminal's own OSC 52 escape, and files through the desktop's
   `x-special/gnome-copied-files` and `text/uri-list` formats.
+- **A data object of Marbas's own on Windows** — an OLE `IDataObject` instead
+  of plain blocks, offering entries inside an archive as virtual files and
+  answering `Paste Succeeded`, would let an entry be cut from an archive, stop
+  unpacking ahead of the paste and empty the clipboard after a move. How
+  Explorer does it, and what it would cost, is in
+  [File operations](../Architecture/FILE-OPERATIONS.md#the-clipboard).

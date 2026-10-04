@@ -611,6 +611,52 @@ reports what failed item by item beside the files it still hands over. The
 scratch directories are not released until Marbas quits, when the whole working
 directory goes — a paste in another program may come at any time before that.
 
+**How the system file manager cuts from an archive, and why Marbas does not
+yet.** Explorer offers Cut on an entry inside a zip — its menu there reads
+Open, Cut, Copy, Delete, Properties — and a paste elsewhere moves the entry out
+of the archive. What follows is the documented protocol of the Windows shell
+("Handling Shell Data Transfer Scenarios" in the Win32 documentation); which
+formats the zip handler (`zipfldr.dll`) offers in particular was not measured.
+Marbas writes plain blocks to the clipboard and is gone from the exchange the
+moment they are written. Explorer instead puts a live OLE data object there
+(`OleSetClipboard`), which stays in Explorer's process and answers whoever
+pastes:
+
+- **Virtual files.** The object need not name a file on the disk. It can offer
+  `FileGroupDescriptorW` — the names, sizes and times of the files — and
+  `FileContents`, a stream per file that the pasting program reads the data
+  from, so nothing is unpacked before the paste and nothing is left behind
+  after it. A program that reads only `CF_HDROP` sees no files in such an
+  object.
+- **Delete on paste.** For a move that is not a rename on one volume, the
+  program that pastes copies the data, then calls `SetData` on the object with
+  `Paste Succeeded` holding `DROPEFFECT_MOVE` (and `Performed DropEffect`).
+  Only then does the source remove the originals — here, Explorer rewrites the
+  archive without the entry — and clears the clipboard. An optimized move, a
+  rename the target can do alone, needs no answer and leaves the source with
+  nothing to do.
+
+That protocol is the answer to three things P18.6 left: cutting from an
+archive (the entry is removed by the one who understands the archive, and only
+after a paste succeeded), copies unpacked into the working directory ahead of
+time (a stream is read when the paste asks for it), and a clipboard that still
+names cut files after Explorer moved them (the answer to `Paste Succeeded`
+clears it). The price is an `IDataObject` implemented in F# over COM, a thread
+in the single-threaded apartment with `OleInitialize` and a message loop —
+which the Terminal.Gui loop is not — and Marbas alive until the paste; at quit,
+`OleFlushClipboard` keeps the data only by rendering it, which for virtual
+files means unpacking them after all. It is the same mechanism read the other
+way round in P18.7: files cut in Explorer from inside a zip probably reach the
+clipboard as virtual files with no `CF_HDROP`, so a paste that reads only that
+format would find nothing there.
+
+To measure it later: invoking the Cut verb through `Shell.Application` from
+PowerShell put nothing on the clipboard and failed with `CO_E_NOTINITIALIZED`
+once called through the verb object, because the OLE clipboard needs
+`OleInitialize` on the calling thread. A small program that initializes OLE,
+invokes the verb, and lists the formats of `OleGetClipboard` would show what
+the zip handler offers.
+
 **Text is lines, and the line break belongs to the system.** The state answers
 `PutOnClipboard` with the names as lines; the Windows adapter joins them with
 the system line break and adds none after the last, so a single name pastes into

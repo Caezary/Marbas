@@ -4,7 +4,9 @@ Goal: when Marbas fails, it leaves behind enough to say why, and the code is
 left easier to change than it was found. The phase adds one feature — a log,
 written on a crash and, in debug mode, on every transition — and otherwise
 pays off what earlier phases left owing: a progress window that is flooded on a
-fast batch, a console editor on Unix that has to share the terminal, a flag
+fast batch, a console editor on Unix that has to share the terminal, working
+directories left in the temporary directory by every session that did not end
+with `F10`, a flag
 argument, four ways of landing a panel that say the same thing, the effect
 interpreter sitting in the wrong layer, ports whose types
 say how they are called but not what they are for, mutation that nothing
@@ -92,15 +94,50 @@ past and never grows without bound.
   editor round-trips by hand on Linux, and the entry in
   [Rough edges](../ROUGH-EDGES.md) is gone.
 
-## Stage 3 — The structure
+## Stage 3 — What a session leaves behind
 
-- **P21.5 Replacing is said by name** — `Operations.copyFile` and `moveFile`
+Each session works in `<temporary root>\Marbas\<session>` — entries on their way
+from one archive to another and, since P18.6, the entries unpacked for the
+clipboard — and only the `Quit` effect removes it. A console window closed with
+its button, a logoff or a shutdown, a killed or crashed process and `Ctrl+Q`
+inside a dialog all skip that effect, the session id is a fresh GUID each run,
+and nothing ever looks at the directories left behind, so they stay until the
+system cleans its temporary directory, if it ever does. Releasing on the
+console's close and shutdown signals as well would narrow the hole but not
+close it — a kill or a crash still skips every handler — so the sweep at start
+is the fix, and a signal handler is left out.
+
+- **P21.5 Old sessions are swept at start** — every session writes an owner
+  file into its working directory when it makes it: its process id and the
+  moment the process started, which together name one process even after the
+  system reuses the id. When a session starts, the directories under
+  `<temporary root>\Marbas` other than its own are read, and one whose owner is
+  not a running process started at that moment is removed whole; asking whether
+  it runs is a port on `Processes`, filled from `System.Diagnostics.Process` in
+  `Adapters`. A directory with no owner file — left by a version from before
+  this task — is removed once nothing in it has been written for a day, so a
+  session of an older Marbas still running beside a new one keeps its files.
+  The sweep runs off the UI thread so a large leftover cannot delay the first
+  screen, and a directory it cannot remove — a file in it held open — is
+  skipped and written to the log, not shown: the user did nothing to cause it.
+  Only directories directly under `Marbas` are touched, never anything beside
+  it. *Done when:* on `MockFileSystem` a dead session is removed and so is one
+  whose process id now belongs to a process started at another moment, a live
+  session and the session's own are kept, an ownerless directory is removed
+  after a day and kept before it, a directory that refuses deletion leaves a
+  log line and no dialog, on Windows a session whose console was closed with
+  the window's button is gone after the next start, and the entry in
+  [Rough edges](../ROUGH-EDGES.md) is gone.
+
+## Stage 4 — The structure
+
+- **P21.6 Replacing is said by name** — `Operations.copyFile` and `moveFile`
   lose their `bool`: copying always replaces, so its argument goes, and moving
   takes a union that says whether an existing target is replaced (every
   transfer) or kept (the anonymous rename a wipe makes). *Done when:* no
   function in `Operations` takes a `bool` for what it does, and the suite
   passes unchanged.
-- **P21.6 One way to land a panel** — four transitions end in
+- **P21.7 One way to land a panel** — four transitions end in
   `AppState.standInside` or `standBeside`, each through a type or a match of its
   own: a history choice through `Place.toLocation` and `Place.beside`, a
   favourite through `Place.toLocation`, a search answer through
@@ -115,7 +152,7 @@ past and never grows without bound.
   *Done when:* `standInside` and `standBeside` are called from one function in
   `Update`, the folder history records the same places as before, and the
   suite passes with only the renamed cases changed.
-- **P21.7 `Shell` and `Ports` join `State`** — neither draws anything: `Ports`
+- **P21.8 `Shell` and `Ports` join `State`** — neither draws anything: `Ports`
   is the shape of the outside world and `Shell` interprets effects into it. Both
   move under `State/`, and with them the wording of `Ui/Messages`, which is
   plain text with no view in it and whose only readers are `Shell`,
@@ -127,7 +164,7 @@ past and never grows without bound.
   nothing under `State` opens a `Terminal.Gui` namespace, the dependency rule in
   [Overview](../Architecture/OVERVIEW.md) is restated for the new layout, and
   the suite passes with its tests moved alongside.
-- **P21.8 Ports say what they are for** — a port that takes functions takes a
+- **P21.9 Ports say what they are for** — a port that takes functions takes a
   request record instead, the way the prompts already do: `Runners.Batch` takes
   a title, the work and what to do with the result as named fields, and so do
   `Measure`, `Search` and the two `Watches`. A function type that stays a field
@@ -135,7 +172,7 @@ past and never grows without bound.
   given a name that says what it answers. *Done when:* no field of
   `Dependencies` is a function whose argument is another function, and `Fakes`
   builds every port from named parts.
-- **P21.9 Where mutation is allowed** — a rule in
+- **P21.10 Where mutation is allowed** — a rule in
   [Coding style](../coding-style-conventions.md) says where a mutable binding or
   a reference cell earns its place: a measured hot loop confined to one
   function (`LineIndex`, `TextEncoding`, `ArchiveReader`, `RewindingStream`), an
@@ -146,7 +183,7 @@ past and never grows without bound.
   a returned value. *Done when:* each remaining mutable binding outside `Ui`
   falls under a clause of the rule, the hot loops are timed before and after in
   [Measurements](../Progress/MEASUREMENTS.md), and the suite passes unchanged.
-- **P21.10 Views keep their state in one value** — `FileViewer`,
+- **P21.11 Views keep their state in one value** — `FileViewer`,
   `ResultsWindow`, `ResultRow` and `SettingsDialog` hold a handful of mutable
   locals each, changed from several event handlers. Each gathers them into one
   immutable record behind one cell, with the changes written as functions over
@@ -154,9 +191,9 @@ past and never grows without bound.
   view has a single cell, its transitions have unit tests, and the rendered
   screens are unchanged before and after.
 
-## Stage 4 — The suite and the platforms
+## Stage 5 — The suite and the platforms
 
-- **P21.11 Test files by feature** — no test file runs past a thousand lines.
+- **P21.12 Test files by feature** — no test file runs past a thousand lines.
   `ShellTests` (about 2,600 lines, 161 tests) splits along the features its
   helpers already group — transfers, history, typed text, packing, unpacking
   and the rest — the way `ShellPlacesTests` was split from it, and `UpdateTests`
@@ -164,7 +201,7 @@ past and never grows without bound.
   `ArchiveFixture` does for the archive tests. *Done when:* the longest test
   file is under a thousand lines, the count of tests is the same before and
   after, and [Testing](../Architecture/TESTING.md) states the limit.
-- **P21.12 The manual rows, by hand** — every row of
+- **P21.13 The manual rows, by hand** — every row of
   [Cross-platform](../Architecture/CROSS-PLATFORM.md) marked *manual* is run
   against the published binaries of this phase, on Windows and on a Linux
   desktop, by a person at the terminal: colours, a resized terminal, the mouse,
