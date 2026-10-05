@@ -417,8 +417,14 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   it was.
 - `F7` in the viewer opens *Search*: a field with the texts searched for
   before — the same list the text field of *Find files* keeps — and four
-  options, case sensitive, whole words, regular expression and backwards; the
-  regular expression is greyed out for now. The field is empty with nothing
+  options, case sensitive, whole words, regular expression and backwards. With
+  the regular expression ticked, whole words is greyed out and the field is a
+  .NET regular expression run by the linear engine, matched against one line at
+  a time — `^` and `$` are the line's ends — with matches of no characters
+  passed over; a pattern that does not parse, or that needs what the linear
+  engine cannot do (look-arounds, back-references, atomic groups), is reported
+  in a box over the popup when it is confirmed, and the popup stays open with
+  the focus back in the field. The field is empty with nothing
   ticked the first time and holds the last text and options after that, until
   the viewer closes. Confirming searches forward from the line on top of the
   screen, or with *Backwards* from the end of the line on the last row up,

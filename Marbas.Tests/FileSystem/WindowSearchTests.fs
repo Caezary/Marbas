@@ -28,9 +28,13 @@ let private going: Control =
       IsCancelled = fun () -> false }
 
 let private plain raw : Query =
-    { Text = wanted raw
+    { Wanted = Literal(wanted raw, Anywhere)
       Case = IgnoringCase
-      Words = Anywhere
+      Direction = Forwards }
+
+let private expression raw : Query =
+    { Wanted = Pattern(SearchPattern.tryCreate raw |> Expect.ok)
+      Case = IgnoringCase
       Direction = Forwards }
 
 let private placeAt lineStart column : Place = { LineStart = lineStart; Column = column }
@@ -43,7 +47,9 @@ let private searching content raw from = searchingFor (plain raw) content from 0
 
 let private matching raw = { plain raw with Case = MatchingCase }
 
-let private whole raw = { plain raw with Words = WholeWords }
+let private whole raw =
+    { plain raw with
+        Wanted = Literal(wanted raw, WholeWords) }
 
 let private back (query: Query) = { query with Direction = Backwards }
 
@@ -347,3 +353,109 @@ let ``every option at once ends at the end of the file`` () =
     let answer = searchingFor query "Need Needle" 0L 4
 
     Assert.Equal(NotFound, answer)
+
+[<Fact>]
+let ``a pattern finds the first text it matches`` () =
+    let answer = searchingFor (expression "[0-9]+") "alpha\nbeta 42 gamma" 0L 0
+
+    Assert.Equal(found 6L 5 2, answer)
+
+[<Fact>]
+let ``a match is as long as what the pattern took`` () =
+    let answer = searchingFor (expression "a+") "x aaa" 0L 0
+
+    Assert.Equal(found 0L 2 3, answer)
+
+[<Fact>]
+let ``a pattern does not mind the case unless told`` () =
+    let answer = searchingFor (expression "ne+dle") "the NEEDLE" 0L 0
+
+    Assert.Equal(found 0L 4 6, answer)
+
+[<Fact>]
+let ``a pattern that minds the case finds nothing in the other`` () =
+    let query =
+        { expression "ne+dle" with
+            Case = MatchingCase }
+
+    let answer = searchingFor query "the NEEDLE" 0L 0
+
+    Assert.Equal(NotFound, answer)
+
+[<Fact>]
+let ``a pattern is matched against one line at a time`` () =
+    let answer = searchingFor (expression "^line") "a line\nline 2" 0L 0
+
+    Assert.Equal(found 7L 0 4, answer)
+
+[<Fact>]
+let ``the end of a pattern is the end of the line`` () =
+    let answer = searchingFor (expression "end$") "the end of it\nthe end" 0L 0
+
+    Assert.Equal(found 14L 4 3, answer)
+
+[<Fact>]
+let ``a pattern never runs on past the line`` () =
+    let answer = searchingFor (expression "a.*") "abc\ndef" 0L 0
+
+    Assert.Equal(found 0L 0 3, answer)
+
+[<Fact>]
+let ``a match of nothing is passed over`` () =
+    let answer = searchingFor (expression "x*") "abc\nxx" 0L 0
+
+    Assert.Equal(found 4L 0 2, answer)
+
+[<Fact>]
+let ``a pattern that only matches nothing finds nothing`` () =
+    let answer = searchingFor (expression "^$") "abc\n\nxyz" 0L 0
+
+    Assert.Equal(NotFound, answer)
+
+[<Fact>]
+let ``a pattern that matches nothing in the file finds nothing`` () =
+    let answer = searchingFor (expression "[0-9]") "alpha\nbeta" 0L 0
+
+    Assert.Equal(NotFound, answer)
+
+[<Fact>]
+let ``a pattern searched from a column passes over what lies before it`` () =
+    let answer = searchingFor (expression "[a-z][0-9]") "a1 b2" 0L 1
+
+    Assert.Equal(found 0L 3 2, answer)
+
+[<Fact>]
+let ``a pattern searched back finds the last match of a line above`` () =
+    let answer = searchingFor (back (expression "[0-9]+")) "42 and 7\nnone" 9L 0
+
+    Assert.Equal(found 0L 7 1, answer)
+
+[<Fact>]
+let ``a pattern searched back looks before the column`` () =
+    let answer = searchingFor (back (expression "[a-z][0-9]")) "a1 b2 c3" 0L 6
+
+    Assert.Equal(found 0L 3 2, answer)
+
+[<Fact>]
+let ``a pattern searched back finds text before the window it starts in`` () =
+    let filler = String.replicate 5000 "hay and more hay\n"
+    let content = "id 1234\n" + filler + "last"
+
+    let answer = searchingFor (back (expression "[0-9]{4}")) content (int64 (8 + filler.Length)) 0
+
+    Assert.Equal(found 0L 3 4, answer)
+
+[<Fact>]
+let ``a pattern searched back that matches nothing ends at the start of the file`` () =
+    let answer = searchingFor (back (expression "[0-9]")) "alpha\nbeta" 6L 4
+
+    Assert.Equal(NotFound, answer)
+
+[<Fact>]
+let ``a pattern is matched in the code page the file is read in`` () =
+    use source = sourceOf (MockFileData [| 0x41uy; 0x0Auy; 0x42uy; 0xA5uy |])
+    let encoding = { Charset = Windows1250; Bom = WithoutBom }
+
+    let answer = run going source encoding (expression "B[ĄĘ]") (placeAt 0L 0)
+
+    Assert.Equal(found 2L 0 2, answer)

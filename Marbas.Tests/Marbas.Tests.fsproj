@@ -31,6 +31,7 @@
     <Compile Include="Domain\FavoriteSlotTests.fs" />
     <Compile Include="Domain\ProgramSettingsTests.fs" />
     <Compile Include="Domain\FindQueryTests.fs" />
+    <Compile Include="Domain\SearchPatternTests.fs" />
     <Compile Include="Domain\EnteredTextTests.fs" />
     <Compile Include="Domain\ClipboardTextTests.fs" />
   </ItemGroup>

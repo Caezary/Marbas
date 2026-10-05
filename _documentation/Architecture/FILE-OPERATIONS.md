@@ -421,8 +421,8 @@ sliced from the window when it lies wholly in it and read again from the
 `Source` when it began in an earlier window or ends in a later one. The tests
 hold the backward walk to the index's lines too, reversed.
 
-`WindowSearch.run` takes a walk, a `Query` — the `FindText`, `LetterCase`,
-`WordMatch` and `SearchDirection` — the encoding the viewer reads in and a
+`WindowSearch.run` takes a walk, a `Query` — what is `Wanted`, a `LetterCase`
+and a `SearchDirection` — the encoding the viewer reads in and a
 `Place`, the start of a line and a column in it, and answers `Found` with the
 match — the start of its line, the column in the decoded line and the length —
 `NotFound`, `Stopped`, or `Unreadable` with a `ContentError`, the one place an
@@ -439,6 +439,32 @@ tried, so a match that is part of a word does not hide a whole word later in
 the line. A `Control` beside it carries `Reached`, told the offset at every
 `Reading`, and `IsCancelled`, asked at the same step, so a stop is noticed
 within one window of bytes however long the lines are.
+
+**What is wanted is a text or a pattern, never both and never unchecked.**
+Since P19.5 `Wanted` is `Literal` — a `FindText` and its `WordMatch` — or
+`Pattern`, a `SearchPattern`. A pattern carries no `WordMatch`, because whole
+words are not offered with a regular expression: a pattern says where its
+words end itself, with `\b`. `SearchPattern.tryCreate` is the one place a
+regular expression is parsed and the one place its exception becomes a value:
+`PatternDoesNotParse` for a `RegexParseException`, `PatternNotSupported` for
+what the engine refuses, each with the sentence .NET gave. So a `Query` that
+reaches the search always holds a pattern that parses; nothing is read for one
+that does not.
+
+The engine is `RegexOptions.NonBacktracking`. It runs in time linear in the
+line, so no pattern can hold the walk on one line for long, and a stop is
+still noticed within a window of bytes; the backtracking engine could spend
+minutes on one line of a megabyte, and its only remedy, a match timeout, would
+have ended such a search with an error rather than a stop. The price is what
+the linear engine cannot do — look-arounds, back-references, atomic groups —
+and those are refused when the popup is confirmed, the same as a pattern that
+does not parse. `SearchPattern.regex` builds the expression with the case the
+query asks for, once per search, culture-invariant. The pattern is matched
+against one decoded line at a time, so `^` and `$` are the line's ends and a
+match never runs past it. Every position where a match starts is tried, the
+way the literal search tries every occurrence, and a match of no characters is
+passed over: it has nothing to mark, and `Shift+F7` would stand still on it.
+So `^$` finds nothing, and `x*` finds the first run of `x`.
 
 **A `Source` can be read from two threads.** The search runs off the UI thread
 while the viewer under the progress window may still draw, and both read

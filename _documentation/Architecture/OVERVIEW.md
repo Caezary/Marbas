@@ -92,6 +92,7 @@ Marbas/
     DriveKind.fs          fixed, removable, network or optical, not `System.IO.DriveType`
     ProgramSettings.fs    extension and role -> the program that edits or opens it
     FindQuery.fs          what a search asks: masks, text, scope, options, and what a file answers
+    SearchPattern.fs      a regular expression that parsed for the linear engine, or why not
     ResultsRefusal.fs     which command a panel of search results cannot carry out
     EnteredText.fs        what was typed into a field, kept exactly, never blank, never two lines
   FileSystem/
@@ -134,7 +135,7 @@ Marbas/
     FileWindow.fs         a file held open, read one byte range at a time
     LineIndex.fs          line starts scanned on demand, one in 64 kept, and the line at an offset;
                           the lines from an offset as a walk, window by window, either way
-    WindowSearch.fs       the viewer's search: a text, its case, whole words and a direction,
+    WindowSearch.fs       the viewer's search: a text or a pattern, its case and a direction,
                           from a place in a line, stoppable
   State/
     PanelState.fs         one panel: cursor, marks, search and sort, never the disk
@@ -216,7 +217,7 @@ Marbas/
       DriveLine.fs          drive rows -> lines whose root, label, kind and sizes line up
       DriveDialog.fs        the list `Alt+F1` / `Alt+F2` open, and the row it answers with
       FindDialog.fs         what `Alt+F7` asks, greyed where the query means nothing
-      ViewerSearchDialog.fs what `F7` in the viewer asks: the text and four options
+      ViewerSearchDialog.fs what `F7` in the viewer asks: the text and four options, a broken pattern refused
     Find/                 the full-screen results window
       FindKeys.fs           its keys and its twelve bar labels
       FindSummary.fs        the walk so far, or its outcome -> the summary line

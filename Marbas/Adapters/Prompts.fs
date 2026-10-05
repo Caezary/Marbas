@@ -90,10 +90,6 @@ let askPassword (app: IApplication) (request: PasswordPrompt) =
 let private chooseCodePage (app: IApplication) (offer: CodePageOffer) =
     running app (fun () -> CodePageDialog.create offer) CodePageDialog.choice
 
-let private askSearch (app: IApplication) (offer: SearchOffer) =
-    let createSearch () = ViewerSearchDialog.create offer
-    running app createSearch ViewerSearchDialog.answer
-
 let private reportSearch (app: IApplication) (report: SearchReport) =
     match report with
     | TextNotFound _ -> MessageBox.Query(app, ViewerSearch.Title, ViewerSearch.describe report, "Ok") |> ignore
@@ -102,6 +98,17 @@ let private reportSearch (app: IApplication) (report: SearchReport) =
             app
             { Title = ContentErrorMessage.Title
               Message = ViewerSearch.describe report }
+    | PatternRefused _ ->
+        reportError
+            app
+            { Title = ViewerSearch.Title
+              Message = ViewerSearch.describe report }
+
+let private askSearch (app: IApplication) (offer: SearchOffer) =
+    let createSearch () =
+        ViewerSearchDialog.create (PatternRefused >> reportSearch app) offer
+
+    running app createSearch ViewerSearchDialog.answer
 
 let showFile (app: IApplication) (request: ViewRequest) =
     let ports: FileViewer.Ports =

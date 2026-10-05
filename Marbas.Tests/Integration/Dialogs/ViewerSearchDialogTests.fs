@@ -2,24 +2,29 @@ module Marbas.Tests.Integration.Dialogs.ViewerSearchDialogTests
 
 open System.Drawing
 open Xunit
+open Terminal.Gui.Input
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Ui.Viewer
+open Marbas.Tests
 
 let private typed raw = EnteredText.tryCreate raw |> Option.get
 
 let private wanted raw = FindText.tryCreate raw |> Option.get
 
-let private openedOn (offer: SearchOffer) =
+let private openedRefusingInto (refusals: ResizeArray<PatternError>) (offer: SearchOffer) =
     DialogStyle.apply ()
-    let dialog = ViewerSearchDialog.create offer
+    let dialog = ViewerSearchDialog.create refusals.Add offer
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore
     dialog
+
+let private openedOn offer =
+    openedRefusingInto (ResizeArray()) offer
 
 let private fresh () =
     openedOn { Remembered = []; Last = None }
@@ -29,6 +34,40 @@ let private listed (dialog: Dialog) =
     [ for item in field.Source.ToList() -> string item ]
 
 let private AcceptingButton = 1
+
+let private lastQuery raw : WindowSearch.Query =
+    { Wanted = WindowSearch.Literal(wanted raw, Anywhere)
+      Case = IgnoringCase
+      Direction = Forwards }
+
+let private lastPattern raw : WindowSearch.Query =
+    { Wanted = WindowSearch.Pattern(SearchPattern.tryCreate raw |> Expect.ok)
+      Case = IgnoringCase
+      Direction = Forwards }
+
+let private ticked (dialog: Dialog) =
+    ViewerSearchDialog.boxes
+    |> List.filter (fun box -> (ViewerSearchDialog.checkBox dialog box).Value = CheckState.Checked)
+
+let private enabled (dialog: Dialog) =
+    ViewerSearchDialog.boxes
+    |> List.filter (fun box -> (ViewerSearchDialog.checkBox dialog box).Enabled)
+
+let private tick (dialog: Dialog) box =
+    (ViewerSearchDialog.checkBox dialog box).Value <- CheckState.Checked
+
+let private untick (dialog: Dialog) box =
+    (ViewerSearchDialog.checkBox dialog box).Value <- CheckState.UnChecked
+
+let private confirm (dialog: Dialog) =
+    (Seq.last dialog.Buttons).InvokeCommand Command.Accept |> ignore
+
+let private plainAnswer raw : SearchAnswer =
+    { Typed = raw
+      Case = IgnoringCase
+      Words = Anywhere
+      TypedAs = AsText
+      Direction = Forwards }
 
 [<Fact>]
 let ``the field offers the texts searched before, newest first`` () =
@@ -49,19 +88,6 @@ let ``a first search starts from an empty field`` () =
 
     Assert.Equal("", text)
 
-let private lastQuery raw : WindowSearch.Query =
-    { Text = wanted raw
-      Case = IgnoringCase
-      Words = Anywhere
-      Direction = Forwards }
-
-let private ticked (dialog: Dialog) =
-    ViewerSearchDialog.boxes
-    |> List.filter (fun box -> (ViewerSearchDialog.checkBox dialog box).Value = CheckState.Checked)
-
-let private tick (dialog: Dialog) box =
-    (ViewerSearchDialog.checkBox dialog box).Value <- CheckState.Checked
-
 [<Fact>]
 let ``a search asked again holds the last text`` () =
     use dialog =
@@ -77,8 +103,8 @@ let ``a search asked again holds the last text`` () =
 let ``a search asked again holds the last options`` () =
     let last =
         { lastQuery "needle" with
+            Wanted = WindowSearch.Literal(wanted "needle", WholeWords)
             Case = MatchingCase
-            Words = WholeWords
             Direction = Backwards }
 
     use dialog = openedOn { Remembered = []; Last = Some last }
@@ -89,6 +115,30 @@ let ``a search asked again holds the last options`` () =
         [ ViewerSearchDialog.CaseBox; ViewerSearchDialog.WordsBox; ViewerSearchDialog.BackwardsBox ],
         checkedBoxes
     )
+
+[<Fact>]
+let ``a pattern asked again holds its text and its box`` () =
+    use dialog =
+        openedOn
+            { Remembered = []
+              Last = Some(lastPattern "[0-9]+") }
+
+    let text = (ViewerSearchDialog.field dialog).Text
+    let checkedBoxes = ticked dialog
+
+    Assert.Equal("[0-9]+", text)
+    Assert.Equal<ViewerSearchDialog.SearchBox list>([ ViewerSearchDialog.ExpressionBox ], checkedBoxes)
+
+[<Fact>]
+let ``a pattern asked again greys out whole words`` () =
+    use dialog =
+        openedOn
+            { Remembered = []
+              Last = Some(lastPattern "[0-9]+") }
+
+    let choosable = enabled dialog
+
+    Assert.DoesNotContain(ViewerSearchDialog.WordsBox, choosable)
 
 [<Fact>]
 let ``a first search starts with no option ticked`` () =
@@ -109,17 +159,29 @@ let ``the four options are there`` () =
     Assert.Equal<string list>([ "C_ase sensitive"; "_Whole words"; "_Regular expression"; "_Backwards" ], labels)
 
 [<Fact>]
-let ``case, whole words and the direction can be chosen`` () =
+let ``every option can be chosen`` () =
     use dialog = fresh ()
 
-    let enabled =
-        ViewerSearchDialog.boxes
-        |> List.filter (fun box -> (ViewerSearchDialog.checkBox dialog box).Enabled)
+    let choosable = enabled dialog
 
-    Assert.Equal<ViewerSearchDialog.SearchBox list>(
-        [ ViewerSearchDialog.CaseBox; ViewerSearchDialog.WordsBox; ViewerSearchDialog.BackwardsBox ],
-        enabled
-    )
+    Assert.Equal<ViewerSearchDialog.SearchBox list>(ViewerSearchDialog.boxes, choosable)
+
+[<Fact>]
+let ``ticking the regular expression greys out whole words`` () =
+    use dialog = fresh ()
+
+    tick dialog ViewerSearchDialog.ExpressionBox
+
+    Assert.DoesNotContain(ViewerSearchDialog.WordsBox, enabled dialog)
+
+[<Fact>]
+let ``unticking the regular expression gives whole words back`` () =
+    use dialog = fresh ()
+    tick dialog ViewerSearchDialog.ExpressionBox
+
+    untick dialog ViewerSearchDialog.ExpressionBox
+
+    Assert.Contains(ViewerSearchDialog.WordsBox, enabled dialog)
 
 [<Fact>]
 let ``everything stays inside the frame`` () =
@@ -141,14 +203,7 @@ let ``a confirmed popup yields what was typed, forward and plain`` () =
 
     let answer = ViewerSearchDialog.answer dialog
 
-    Assert.Equal(
-        Some
-            { Typed = "needle "
-              Case = IgnoringCase
-              Words = Anywhere
-              Direction = Forwards },
-        answer
-    )
+    Assert.Equal(Some(plainAnswer "needle "), answer)
 
 [<Fact>]
 let ``a confirmed popup yields the options ticked`` () =
@@ -163,12 +218,24 @@ let ``a confirmed popup yields the options ticked`` () =
 
     Assert.Equal(
         Some
-            { Typed = "needle"
-              Case = MatchingCase
-              Words = WholeWords
-              Direction = Backwards },
+            { plainAnswer "needle" with
+                Case = MatchingCase
+                Words = WholeWords
+                Direction = Backwards },
         answer
     )
+
+[<Fact>]
+let ``a confirmed popup yields an expression without whole words`` () =
+    use dialog = fresh ()
+    (ViewerSearchDialog.field dialog).Text <- "[0-9]+"
+    tick dialog ViewerSearchDialog.WordsBox
+    tick dialog ViewerSearchDialog.ExpressionBox
+    dialog.Result <- AcceptingButton
+
+    let answer = ViewerSearchDialog.answer dialog
+
+    Assert.Equal(Some { plainAnswer "[0-9]+" with TypedAs = AsExpression }, answer)
 
 [<Fact>]
 let ``a popup closed without confirming yields nothing`` () =
@@ -178,3 +245,73 @@ let ``a popup closed without confirming yields nothing`` () =
     let answer = ViewerSearchDialog.answer dialog
 
     Assert.Equal(None, answer)
+
+[<Fact>]
+let ``confirming a pattern that does not parse refuses it and stays open`` () =
+    let refusals = ResizeArray<PatternError>()
+    use dialog = openedRefusingInto refusals { Remembered = []; Last = None }
+    (ViewerSearchDialog.field dialog).Text <- "("
+    tick dialog ViewerSearchDialog.ExpressionBox
+
+    confirm dialog
+
+    Assert.Single refusals |> ignore
+    Assert.False(dialog.Result.HasValue, $"the popup closed with {dialog.Result}")
+
+[<Fact>]
+let ``Enter in the field on a pattern the linear engine cannot run refuses it`` () =
+    let refusals = ResizeArray<PatternError>()
+    use dialog = openedRefusingInto refusals { Remembered = []; Last = None }
+    (ViewerSearchDialog.field dialog).Text <- "a(?=b)"
+    tick dialog ViewerSearchDialog.ExpressionBox
+
+    (ViewerSearchDialog.field dialog).InvokeCommand Command.Accept |> ignore
+
+    Assert.Single refusals |> ignore
+    Assert.False(dialog.Result.HasValue, $"the popup closed with {dialog.Result}")
+
+[<Fact>]
+let ``Enter on the box just ticked refuses a pattern that does not parse`` () =
+    let refusals = ResizeArray<PatternError>()
+    use dialog = openedRefusingInto refusals { Remembered = []; Last = None }
+    (ViewerSearchDialog.field dialog).Text <- "["
+    tick dialog ViewerSearchDialog.ExpressionBox
+
+    (ViewerSearchDialog.checkBox dialog ViewerSearchDialog.ExpressionBox).InvokeCommand Command.Accept
+    |> ignore
+
+    Assert.Single refusals |> ignore
+    Assert.False(dialog.Result.HasValue, $"the popup closed with {dialog.Result}")
+
+[<Fact>]
+let ``a refused pattern hands the focus back to the field`` () =
+    use dialog = openedOn { Remembered = []; Last = None }
+    (ViewerSearchDialog.field dialog).Text <- "("
+    let expression = ViewerSearchDialog.checkBox dialog ViewerSearchDialog.ExpressionBox
+    tick dialog ViewerSearchDialog.ExpressionBox
+    expression.SetFocus() |> ignore
+
+    expression.InvokeCommand Command.Accept |> ignore
+
+    Assert.True((ViewerSearchDialog.field dialog).HasFocus, "the field should hold the focus")
+
+[<Fact>]
+let ``confirming a pattern that parses refuses nothing`` () =
+    let refusals = ResizeArray<PatternError>()
+    use dialog = openedRefusingInto refusals { Remembered = []; Last = None }
+    (ViewerSearchDialog.field dialog).Text <- "[0-9]+"
+    tick dialog ViewerSearchDialog.ExpressionBox
+
+    confirm dialog
+
+    Assert.Empty refusals
+
+[<Fact>]
+let ``confirming plain text that would not parse refuses nothing`` () =
+    let refusals = ResizeArray<PatternError>()
+    use dialog = openedRefusingInto refusals { Remembered = []; Last = None }
+    (ViewerSearchDialog.field dialog).Text <- "("
+
+    confirm dialog
+
+    Assert.Empty refusals

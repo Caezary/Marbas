@@ -321,7 +321,7 @@ let private searching (ports: Ports) (source: FileWindow.Source) (content: Conte
 
     match ports.RunSearch(fun control -> WindowSearch.run control source encoding query place) with
     | WindowSearch.Found hit -> content.Show hit
-    | WindowSearch.NotFound -> ports.Report(TextNotFound query.Text)
+    | WindowSearch.NotFound -> ports.Report(TextNotFound query.Wanted)
     | WindowSearch.Stopped -> ()
     | WindowSearch.Unreadable error -> ports.Report(SearchFailed error)
 
@@ -365,12 +365,15 @@ let create (ports: Ports) (source: FileWindow.Source) =
         lastSearch.Value <- Some query
         searching ports source content query (content.ScreenPlace query.Direction)
 
-    let askedFor (answer: SearchAnswer) =
+    let searchAsTyped (answer: SearchAnswer) query =
         EnteredText.tryCreate answer.Typed |> Option.iter ports.Searches.Remember
+        searchFromScreen query
 
-        FindText.tryCreate answer.Typed
-        |> Option.map (ViewerSearch.query answer)
-        |> Option.iter searchFromScreen
+    let askedFor (answer: SearchAnswer) =
+        match ViewerSearch.query answer with
+        | Some(Ok query) -> searchAsTyped answer query
+        | Some(Error error) -> ports.Report(PatternRefused error)
+        | None -> ()
 
     let askSearch () =
         ports.AskSearch

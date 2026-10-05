@@ -971,16 +971,32 @@ cell left in the row shows as `.`, because the column cannot grow.
 the match.** `ViewerSearchDialog` holds a field with a history —
 `HistoryField.amongOthers`, the field of P16, over the texts `Find files`
 searched for, since the two share `input.find.text` — and four boxes: case
-sensitive, whole words, regular expression and backwards. The regular
-expression box is greyed out until P19.5, the way `[Delete]` waited in the
-history popup. The popup answers a `SearchAnswer` — what was typed and the
-three choices — and `ViewerSearch.query` makes it the `WindowSearch.Query` once
-the text is known not to be empty. The field opens empty with nothing ticked
-the first time; after that it opens on the last query, its text selected so
-typing replaces it and its boxes ticked as they were. That last query lives in
-the viewer and dies with it; only the text reaches the history file. What is
-confirmed is remembered as it was typed, a blank text excepted; an empty field
-searches for nothing.
+sensitive, whole words, regular expression and backwards. Ticking the regular
+expression greys out whole words, and unticking it gives them back. The popup
+answers a `SearchAnswer` — what was typed, the case, the words, whether it was
+typed as text or as an expression, and the direction — and
+`ViewerSearch.query` makes it the `WindowSearch.Query`: nothing for an empty
+field, a `PatternError` for an expression that cannot be searched for, the
+query otherwise. The field opens empty with nothing ticked the first time;
+after that it opens on the last query, its text selected so typing replaces it
+and its boxes ticked as they were. That last query lives in the viewer and
+dies with it; only the text reaches the history file. What is searched for is
+remembered as it was typed, a blank text excepted.
+
+**A pattern that cannot be searched for keeps the popup open.**
+`ViewerSearchDialog.create` takes a `PatternError -> unit` beside the offer,
+and `Prompts` hands it the error box of the adapter, so the sentence .NET gave
+stands over the popup. The check is made in an override of
+`Dialog.OnAccepting`, on the `SearchView` the dialog is: every way of
+confirming reaches it — `[Ok]`, `Enter` in the field, `Enter` on a box just
+ticked with its hot key — and `Dialog` sets its result in that same method,
+before the `Accepting` event any subscriber sees. P19.5 first refused in
+handlers on the button and on the field; the tests passed, and a probe showed
+`Alt+R` then `Enter` going through the box straight to the dialog, which
+closed. When the error box is closed the popup is still there, the pattern in
+the field and the focus moved back to it. The viewer checks the answer again
+all the same: a `PatternError` reaching it is reported as `PatternRefused`
+before anything is read or remembered.
 
 Where a search starts is a `Place`, and the content answers it. From the popup
 it is the screen: forwards the start of the line on top, backwards the end of
@@ -1001,7 +1017,7 @@ after a stop, and `Esc` cancelling. The runner waits for the task to finish
 after the window closes, so the answer it hands back is the walk's own, and the
 walk notices a stop within a window of bytes. The percentage is the place the
 walk has reached in the file, so a search backwards counts down. `Found` is shown, `NotFound` is
-reported with `'text' was not found.`, `Stopped` is passed over in silence, and
+reported with `'…' was not found.`, naming the text or the pattern, `Stopped` is passed over in silence, and
 `Unreadable` is the content error the viewer reports on opening.
 
 **A match is a span of columns on one line, and it is drawn over the rows.**

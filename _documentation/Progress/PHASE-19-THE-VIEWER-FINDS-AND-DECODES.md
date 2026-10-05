@@ -215,3 +215,59 @@ and `Alt+A` ticked *Backwards* and *Case sensitive* in the popup; `line 1`
 searched backwards marked `line 19`, the lowest match on the screen, and
 `Shift+F7` moved the mark to `line 18`; `F7` again opened on `line 1` with the
 two boxes still ticked.
+
+**P19.5 let the field be a regular expression.** `SearchPattern`, new in
+`Domain`, is a pattern that parsed: `tryCreate` builds it once with the linear
+engine and answers `PatternDoesNotParse` or `PatternNotSupported` with the
+sentence .NET gave, and `regex` builds the expression for a case. The query
+changed shape so a broken pattern and whole words over a pattern cannot be
+written down: `WindowSearch.Query` is `Wanted` — `Literal` of a text and its
+`WordMatch`, or `Pattern` — with the case and the direction beside it. Both
+kinds answer every position where a match starts with its length, so the
+direction, the place and `Shift+F7` work for a pattern exactly as for a text;
+a match of no characters is passed over. `ViewerSearch.query` turns the
+popup's answer — now with `TypedAs`, `AsText` or `AsExpression` — into the
+query, or nothing for an empty field, or the `PatternError`. `TextNotFound`
+names what was wanted, text or pattern, and `PatternRefused` is a new report.
+
+The popup checks the pattern itself. `ViewerSearchDialog.create` takes a
+`PatternError -> unit`, which `Prompts` fills with its error box, and the
+dialog is now a `SearchView` overriding `OnAccepting`. The override was the
+second try: the first refused in `Accepting` handlers on `[Ok]` and on the
+field, which the tests drove and passed, but the probe pressed `Alt+R` and
+`Enter`, and with the focus on the box the dialog accepted through its own
+`OnAccepting`, set its result there and closed — what showed was the viewer's
+own check reporting the pattern. After a refusal the focus goes back to the
+field, which the probe's next keystrokes needed: they had gone to the box, and
+the space in them unticked it.
+
+Four things the plan left open were settled with the user before the tests
+were written. A pattern that cannot be used leaves the popup open, the error
+over it. The engine is the linear one, which refuses look-arounds,
+back-references and atomic groups but cannot hang on a line. A match of no
+characters is no match. And whole words are greyed out while the regular
+expression is ticked.
+
+The tests: `SearchPatternTests` patterns that parse, four that do not, four
+the linear engine refuses, the reason kept, and the case both ways;
+`WindowSearchTests` were moved to `Wanted` and prove a pattern's first match
+and its length, the case, `^` and `$` at the line's ends, no running past a
+line, a match of nothing passed over, `^$` finding nothing, a pattern that
+matches nothing, from a column, backwards to a line above, before a column,
+past a window and to the start of the file, and in a chosen code page;
+`ViewerSearchTests` the messages, the answer turned into a literal, a
+pattern, a pattern without whole words, a refusal and nothing; and
+`ViewerSearchDialogTests` the pattern offered back with its box, whole words
+greyed by it and given back, every box enabled, the answer as an expression,
+a broken pattern refused from `[Ok]`, from the field and from the box with
+the popup left open, the focus handed back, and nothing refused for a good
+pattern or for plain text; `FileViewerTests` a pattern forwards from the top,
+backwards from the bottom, repeated with `Shift+F7`, matching nothing in both
+directions, a broken pattern reported in both directions before anything is
+run or remembered, and the pattern offered back by `F7`.
+
+Through the probe, with the real dialog and the synchronous runner: `(` with
+`Alt+R` and `Enter` raised *The regular expression does not parse: Invalid
+pattern '(' at offset 1. Not enough )'s.* over the popup; `Esc` closed the box
+and left the popup with `(` in the field, the box ticked and *Whole words*
+grey; `Backspace`, `line 1[5-9]` and `Enter` marked `line 15`.

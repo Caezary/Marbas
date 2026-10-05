@@ -113,7 +113,11 @@ cursor when nothing is marked.
   Windows-1252 and CP437 can be chosen; the choice lasts until the viewer
   closes. `F7` in the viewer searches the text from the top of the screen
   down, or with *Backwards* ticked from the bottom of the screen up; *Case
-  sensitive* and *Whole words* narrow what matches. The field remembers what
+  sensitive* and *Whole words* narrow what matches. With *Regular expression*
+  ticked the field is a .NET regular expression matched one line at a time
+  (whole words are then left to `\b`); look-arounds and back-references are
+  not available, and a pattern that cannot be used is reported before
+  anything is searched, leaving the popup open to fix it. The field remembers what
   you searched for, here and in *Find files*, and `F7` again opens on the last
   text and options. `Shift+F7` finds the next match the same way without
   asking. The match is highlighted and scrolled into view, a long search shows

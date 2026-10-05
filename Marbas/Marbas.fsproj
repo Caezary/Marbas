@@ -31,6 +31,7 @@
         <Compile Include="Domain\DriveKind.fs" />
         <Compile Include="Domain\ProgramSettings.fs" />
         <Compile Include="Domain\FindQuery.fs" />
+        <Compile Include="Domain\SearchPattern.fs" />
         <Compile Include="Domain\ResultsRefusal.fs" />
         <Compile Include="Domain\EnteredText.fs" />
         <Compile Include="Domain\FavoriteSlot.fs" />
