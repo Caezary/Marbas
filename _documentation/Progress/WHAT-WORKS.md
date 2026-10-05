@@ -417,17 +417,25 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   it was.
 - `F7` in the viewer opens *Search*: a field with the texts searched for
   before — the same list the text field of *Find files* keeps — and four
-  options, case sensitive, whole words, regular expression and backwards, which
-  are greyed out for now. The field is empty the first time and holds the last
-  text after that. Confirming searches forward from the line on top of the
-  screen, ignoring case and never across a line break, in the code page the
-  viewer reads in, behind a progress window that `Esc` stops; what was typed is
-  remembered. The match is drawn black on cyan, where a tab before it puts it
-  and across a wrap if the wrap splits it. A match already on screen leaves the
-  screen still; otherwise its line comes to the top, and the screen moves
-  across when the match lies beyond its edge. A text the file does not hold is
-  reported as not found and nothing moves; a search stopped says nothing. `F7`
-  in the hex dump does nothing yet.
+  options, case sensitive, whole words, regular expression and backwards; the
+  regular expression is greyed out for now. The field is empty with nothing
+  ticked the first time and holds the last text and options after that, until
+  the viewer closes. Confirming searches forward from the line on top of the
+  screen, or with *Backwards* from the end of the line on the last row up,
+  never across a line break, in the code page the viewer reads in, behind a
+  progress window that `Esc` stops; what was typed is remembered. Without *Case
+  sensitive* the letter case does not matter; *Whole words* keeps only a match
+  with no letter, digit or `_` on either side. `Shift+F7` repeats the last
+  search in its direction without the popup, from just past the end of the
+  match on display going forward and from just before its start going back —
+  from the screen when no match is on display, and through the popup when
+  nothing has been searched for yet. The match is drawn black on cyan, where a
+  tab before it puts it and across a wrap if the wrap splits it. A match
+  already on screen leaves the screen still; otherwise its line comes to the
+  top, and the screen moves across when the match lies beyond its edge.
+  Reaching the end or the start of the file without a match is reported as not
+  found and nothing moves, the mark included; a search stopped says nothing.
+  `F7` and `Shift+F7` in the hex dump do nothing yet.
 - `F4` opens the same file — the one under the cursor — in an editor: the one
   its extension is associated with, otherwise the default editor named in the
   settings, otherwise whatever `$EDITOR` names, otherwise `notepad` on Windows

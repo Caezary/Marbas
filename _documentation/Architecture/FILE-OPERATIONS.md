@@ -409,15 +409,36 @@ before its feed, and a feed that ends the file ends the last line — the rules
 same bytes. The walk keeps no index: it needs the start of the line it begins
 on, which the viewer's own index already knows, and nothing behind it.
 
-`WindowSearch.forward` takes that walk, a `FindText`, the encoding the viewer
-reads in and the offset of the line on top of the screen, and answers `Found`
-with the match — the start of its line, the column in the decoded line and the
-length — `NotFound`, `Stopped`, or `Unreadable` with a `ContentError`, the one
-place an exception met on the way becomes a value. The plain search ignores
-case (`OrdinalIgnoreCase`) and never matches across a line break. A `Control`
-beside it carries `Reached`, told the offset at every `Reading`, and
-`IsCancelled`, asked at the same step, so a stop is noticed within one window
-of bytes however long the lines are.
+**The walk goes back as well, by finding where lines start.** Since P19.4
+`LineIndex.walkBackFrom` answers the lines before a line start, the nearest
+first: it reads the window of bytes that ends where it has got to, announces it
+with `Reading` like the forward walk, and looks for feeds from the end of the
+window towards its start in the encoding's own units. Each feed found starts a
+line that ends where the one after it began, and what is left when the
+content's start is reached — past the mark — is the first line. A line is cut
+at `MaxLineLength` from its start, the end a forward reading sees, so it is
+sliced from the window when it lies wholly in it and read again from the
+`Source` when it began in an earlier window or ends in a later one. The tests
+hold the backward walk to the index's lines too, reversed.
+
+`WindowSearch.run` takes a walk, a `Query` — the `FindText`, `LetterCase`,
+`WordMatch` and `SearchDirection` — the encoding the viewer reads in and a
+`Place`, the start of a line and a column in it, and answers `Found` with the
+match — the start of its line, the column in the decoded line and the length —
+`NotFound`, `Stopped`, or `Unreadable` with a `ContentError`, the one place an
+exception met on the way becomes a value. Forwards it looks in the line at the
+place from the column on, then in every line after it, and takes the first
+match; backwards it looks in that line before the column, then in every line
+before it, and takes the last match of each — the line at the place is read
+forwards to its end first, then the backward walk takes over. A match never
+crosses a line break. The case compares by `LetterCase.comparison`, ordinal
+either way, and whole words keep a match whose neighbours are not word
+characters — letters, digits and `_`, `WordMatch.isWordCharacter`, the rule
+*Find files* applies to file contents, now shared by both. Every occurrence is
+tried, so a match that is part of a word does not hide a whole word later in
+the line. A `Control` beside it carries `Reached`, told the offset at every
+`Reading`, and `IsCancelled`, asked at the same step, so a stop is noticed
+within one window of bytes however long the lines are.
 
 **A `Source` can be read from two threads.** The search runs off the UI thread
 while the viewer under the progress window may still draw, and both read

@@ -23,7 +23,7 @@ let KeyBarId = "viewerKeyBar"
 type Ports =
     { Close: Window -> unit
       ChooseCodePage: CodePageOffer -> CodePage option
-      AskSearch: SearchOffer -> string option
+      AskSearch: SearchOffer -> SearchAnswer option
       Searches: SearchHistory
       RunSearch: (WindowSearch.Control -> WindowSearch.Answer) -> WindowSearch.Answer
       Report: SearchReport -> unit }
@@ -39,6 +39,7 @@ type ContentView(source: FileWindow.Source) as this =
     let mutable top = 0
     let mutable left = 0
     let mutable found: FoundSpan option = None
+    let mutable lastMatch: WindowSearch.Match option = None
 
     do
         this.Id <- ContentId
@@ -188,6 +189,7 @@ type ContentView(source: FileWindow.Source) as this =
         let raw = index.Text line |> Option.defaultValue ""
         let span = FoundSpan.ofMatch line raw hit.Column hit.Length
         found <- Some span
+        lastMatch <- Some hit
 
         if not (shownRows () |> List.exists (reaches span)) then
             goTo line
@@ -195,8 +197,31 @@ type ContentView(source: FileWindow.Source) as this =
         if wrap = Unwrapped then
             left <- FoundSpan.leftShowing left (width ()) span
 
+    let lineStart line =
+        index.Start line |> Option.defaultValue source.Length
+
+    let screenPlace direction : WindowSearch.Place =
+        match direction with
+        | Forwards -> { LineStart = lineStart top; Column = 0 }
+        | Backwards ->
+            let bottom = shownRows () |> List.tryLast |> Option.map _.Line |> Option.defaultValue top
+
+            { LineStart = lineStart bottom
+              Column = index.Text bottom |> Option.map String.length |> Option.defaultValue 0 }
+
+    let placeAfterMatch direction : WindowSearch.Place =
+        match lastMatch, direction with
+        | Some hit, Forwards ->
+            { LineStart = hit.LineStart
+              Column = hit.Column + hit.Length }
+        | Some hit, Backwards ->
+            { LineStart = hit.LineStart
+              Column = hit.Column }
+        | None, _ -> screenPlace direction
+
     let readAs page =
         found <- None
+        lastMatch <- None
 
         match mode with
         | TextMode ->
@@ -224,7 +249,9 @@ type ContentView(source: FileWindow.Source) as this =
 
     member _.FoundOnScreen() = foundOnScreen ()
 
-    member _.SearchStart = index.Start top |> Option.defaultValue source.Length
+    member _.ScreenPlace(direction: SearchDirection) = screenPlace direction
+
+    member _.PlaceAfterMatch(direction: SearchDirection) = placeAfterMatch direction
 
     member _.Show(hit: WindowSearch.Match) = show hit
 
@@ -264,6 +291,7 @@ type ContentView(source: FileWindow.Source) as this =
             left <- 0
         | ViewerKeys.ModeToggled -> switchMode ()
         | ViewerKeys.SearchAsked
+        | ViewerKeys.SearchRepeated
         | ViewerKeys.CodePageAsked
         | ViewerKeys.Closed -> ()
 
@@ -288,13 +316,12 @@ type ContentView(source: FileWindow.Source) as this =
         this.SetAttribute normal |> ignore
         true
 
-let private searching (ports: Ports) (source: FileWindow.Source) (content: ContentView) text =
+let private searching (ports: Ports) (source: FileWindow.Source) (content: ContentView) query place =
     let encoding = content.Encoding
-    let from = content.SearchStart
 
-    match ports.RunSearch(fun control -> WindowSearch.forward control source encoding text from) with
+    match ports.RunSearch(fun control -> WindowSearch.run control source encoding query place) with
     | WindowSearch.Found hit -> content.Show hit
-    | WindowSearch.NotFound -> ports.Report(TextNotFound text)
+    | WindowSearch.NotFound -> ports.Report(TextNotFound query.Text)
     | WindowSearch.Stopped -> ()
     | WindowSearch.Unreadable error -> ports.Report(SearchFailed error)
 
@@ -334,21 +361,32 @@ let create (ports: Ports) (source: FileWindow.Source) =
 
     let lastSearch = ref None
 
-    let searchFor text =
-        lastSearch.Value <- Some text
-        searching ports source content text
+    let searchFromScreen (query: WindowSearch.Query) =
+        lastSearch.Value <- Some query
+        searching ports source content query (content.ScreenPlace query.Direction)
 
-    let askedFor raw =
-        EnteredText.tryCreate raw |> Option.iter ports.Searches.Remember
-        FindText.tryCreate raw |> Option.iter searchFor
+    let askedFor (answer: SearchAnswer) =
+        EnteredText.tryCreate answer.Typed |> Option.iter ports.Searches.Remember
+
+        FindText.tryCreate answer.Typed
+        |> Option.map (ViewerSearch.query answer)
+        |> Option.iter searchFromScreen
 
     let askSearch () =
+        ports.AskSearch
+            { Remembered = ports.Searches.Texts()
+              Last = lastSearch.Value }
+        |> Option.iter askedFor
+
+    let searchAgain () =
+        match lastSearch.Value with
+        | Some(query: WindowSearch.Query) ->
+            searching ports source content query (content.PlaceAfterMatch query.Direction)
+        | None -> askSearch ()
+
+    let inText act =
         match content.Mode with
-        | TextMode ->
-            ports.AskSearch
-                { Remembered = ports.Searches.Texts()
-                  Last = lastSearch.Value }
-            |> Option.iter askedFor
+        | TextMode -> act ()
         | HexMode -> ()
 
     content.KeyDown.Add(fun (key: Key) ->
@@ -367,7 +405,11 @@ let create (ports: Ports) (source: FileWindow.Source) =
             refresh ()
         | Some ViewerKeys.SearchAsked ->
             key.Handled <- true
-            askSearch ()
+            inText askSearch
+            refresh ()
+        | Some ViewerKeys.SearchRepeated ->
+            key.Handled <- true
+            inText searchAgain
             refresh ()
         | Some command ->
             key.Handled <- true

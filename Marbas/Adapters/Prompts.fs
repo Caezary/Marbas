@@ -92,7 +92,7 @@ let private chooseCodePage (app: IApplication) (offer: CodePageOffer) =
 
 let private askSearch (app: IApplication) (offer: SearchOffer) =
     let createSearch () = ViewerSearchDialog.create offer
-    running app createSearch ViewerSearchDialog.text
+    running app createSearch ViewerSearchDialog.answer
 
 let private reportSearch (app: IApplication) (report: SearchReport) =
     match report with

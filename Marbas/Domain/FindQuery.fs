@@ -46,9 +46,25 @@ type LetterCase =
     | IgnoringCase
     | MatchingCase
 
+module LetterCase =
+
+    let comparison case =
+        match case with
+        | IgnoringCase -> StringComparison.OrdinalIgnoreCase
+        | MatchingCase -> StringComparison.Ordinal
+
 type WordMatch =
     | Anywhere
     | WholeWords
+
+module WordMatch =
+
+    let isWordCharacter (character: char) =
+        Char.IsLetterOrDigit character || character = '_'
+
+type SearchDirection =
+    | Forwards
+    | Backwards
 
 type TextSense =
     | Containing

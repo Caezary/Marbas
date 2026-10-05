@@ -4,6 +4,7 @@ open System.Drawing
 open Xunit
 open Terminal.Gui.Views
 open Marbas.Domain
+open Marbas.FileSystem
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Ui.Viewer
@@ -48,16 +49,54 @@ let ``a first search starts from an empty field`` () =
 
     Assert.Equal("", text)
 
+let private lastQuery raw : WindowSearch.Query =
+    { Text = wanted raw
+      Case = IgnoringCase
+      Words = Anywhere
+      Direction = Forwards }
+
+let private ticked (dialog: Dialog) =
+    ViewerSearchDialog.boxes
+    |> List.filter (fun box -> (ViewerSearchDialog.checkBox dialog box).Value = CheckState.Checked)
+
+let private tick (dialog: Dialog) box =
+    (ViewerSearchDialog.checkBox dialog box).Value <- CheckState.Checked
+
 [<Fact>]
 let ``a search asked again holds the last text`` () =
     use dialog =
         openedOn
             { Remembered = [ typed "older" ]
-              Last = Some(wanted "needle") }
+              Last = Some(lastQuery "needle") }
 
     let text = (ViewerSearchDialog.field dialog).Text
 
     Assert.Equal("needle", text)
+
+[<Fact>]
+let ``a search asked again holds the last options`` () =
+    let last =
+        { lastQuery "needle" with
+            Case = MatchingCase
+            Words = WholeWords
+            Direction = Backwards }
+
+    use dialog = openedOn { Remembered = []; Last = Some last }
+
+    let checkedBoxes = ticked dialog
+
+    Assert.Equal<ViewerSearchDialog.SearchBox list>(
+        [ ViewerSearchDialog.CaseBox; ViewerSearchDialog.WordsBox; ViewerSearchDialog.BackwardsBox ],
+        checkedBoxes
+    )
+
+[<Fact>]
+let ``a first search starts with no option ticked`` () =
+    use dialog = fresh ()
+
+    let checkedBoxes = ticked dialog
+
+    Assert.Empty checkedBoxes
 
 [<Fact>]
 let ``the four options are there`` () =
@@ -70,14 +109,17 @@ let ``the four options are there`` () =
     Assert.Equal<string list>([ "C_ase sensitive"; "_Whole words"; "_Regular expression"; "_Backwards" ], labels)
 
 [<Fact>]
-let ``the options wait for the searches they belong to`` () =
+let ``case, whole words and the direction can be chosen`` () =
     use dialog = fresh ()
 
     let enabled =
         ViewerSearchDialog.boxes
         |> List.filter (fun box -> (ViewerSearchDialog.checkBox dialog box).Enabled)
 
-    Assert.Empty enabled
+    Assert.Equal<ViewerSearchDialog.SearchBox list>(
+        [ ViewerSearchDialog.CaseBox; ViewerSearchDialog.WordsBox; ViewerSearchDialog.BackwardsBox ],
+        enabled
+    )
 
 [<Fact>]
 let ``everything stays inside the frame`` () =
@@ -92,20 +134,47 @@ let ``everything stays inside the frame`` () =
     Assert.True(lowest.Right <= dialog.Viewport.Width, $"the box at %A{lowest} is clipped by %A{dialog.Viewport}")
 
 [<Fact>]
-let ``a confirmed popup yields what was typed`` () =
+let ``a confirmed popup yields what was typed, forward and plain`` () =
     use dialog = fresh ()
     (ViewerSearchDialog.field dialog).Text <- "needle "
     dialog.Result <- AcceptingButton
 
-    let text = ViewerSearchDialog.text dialog
+    let answer = ViewerSearchDialog.answer dialog
 
-    Assert.Equal(Some "needle ", text)
+    Assert.Equal(
+        Some
+            { Typed = "needle "
+              Case = IgnoringCase
+              Words = Anywhere
+              Direction = Forwards },
+        answer
+    )
+
+[<Fact>]
+let ``a confirmed popup yields the options ticked`` () =
+    use dialog = fresh ()
+    (ViewerSearchDialog.field dialog).Text <- "needle"
+    tick dialog ViewerSearchDialog.CaseBox
+    tick dialog ViewerSearchDialog.WordsBox
+    tick dialog ViewerSearchDialog.BackwardsBox
+    dialog.Result <- AcceptingButton
+
+    let answer = ViewerSearchDialog.answer dialog
+
+    Assert.Equal(
+        Some
+            { Typed = "needle"
+              Case = MatchingCase
+              Words = WholeWords
+              Direction = Backwards },
+        answer
+    )
 
 [<Fact>]
 let ``a popup closed without confirming yields nothing`` () =
     use dialog = fresh ()
     (ViewerSearchDialog.field dialog).Text <- "needle"
 
-    let text = ViewerSearchDialog.text dialog
+    let answer = ViewerSearchDialog.answer dialog
 
-    Assert.Equal(None, text)
+    Assert.Equal(None, answer)

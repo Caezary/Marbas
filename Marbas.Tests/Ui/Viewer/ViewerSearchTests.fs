@@ -27,3 +27,21 @@ let ``a file that failed to read names the failure`` () =
     let message = ViewerSearch.describe (SearchFailed(ReadFailed(path, "the disk went away")))
 
     Assert.Contains("the disk went away", message)
+
+[<Fact>]
+let ``an answer becomes the query it asks for`` () =
+    let answer =
+        { Typed = "needle "
+          Case = MatchingCase
+          Words = WholeWords
+          Direction = Backwards }
+
+    let expected: WindowSearch.Query =
+        { Text = wanted "needle"
+          Case = MatchingCase
+          Words = WholeWords
+          Direction = Backwards }
+
+    let query = ViewerSearch.query answer (wanted "needle")
+
+    Assert.Equal(expected, query)

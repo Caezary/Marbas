@@ -9,20 +9,15 @@ open Marbas.FileSystem.Operations
 [<Literal>]
 let private BufferLength = 65536
 
-let private comparisonFor case =
-    match case with
-    | IgnoringCase -> StringComparison.OrdinalIgnoreCase
-    | MatchingCase -> StringComparison.Ordinal
-
-let private isWordCharacter (character: char) =
-    Char.IsLetterOrDigit character || character = '_'
-
 let private bounded (text: string) index length atStart =
     let before =
-        if index = 0 then atStart else not (isWordCharacter text[index - 1])
+        if index = 0 then
+            atStart
+        else
+            not (WordMatch.isWordCharacter text[index - 1])
 
     let after =
-        index + length = text.Length || not (isWordCharacter text[index + length])
+        index + length = text.Length || not (WordMatch.isWordCharacter text[index + length])
 
     before && after
 
@@ -30,7 +25,7 @@ let private runsIntoUnreadText (text: string) index length atEnd =
     not atEnd && index + length = text.Length
 
 let rec private occursFrom (search: TextSearch) (needle: string) (text: string) atStart atEnd from =
-    match text.IndexOf(needle, from, comparisonFor search.Case) with
+    match text.IndexOf(needle, from, LetterCase.comparison search.Case) with
     | -1 -> false
     | index ->
         match search.Words with

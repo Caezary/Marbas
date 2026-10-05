@@ -204,13 +204,14 @@ let private hold (unfinished: Unfinished) (chunk: byte array) first stop =
     if count > 0 then
         unfinished.Held.AddRange(ArraySegment(chunk, first, count))
 
-let private split encoding (feed: byte array) (chunk: byte array) length (offset: int64) unfinished =
-    let feedAt position =
-        if feed.Length = 1 then
-            chunk[position] = feed[0]
-        else
-            chunk[position] = feed[0] && chunk[position + 1] = feed[1]
+let private isFeedAt (feed: byte array) (chunk: byte array) position =
+    if feed.Length = 1 then
+        chunk[position] = feed[0]
+    else
+        chunk[position] = feed[0] && chunk[position + 1] = feed[1]
 
+let private split encoding (feed: byte array) (chunk: byte array) length (offset: int64) unfinished =
+    let feedAt = isFeedAt feed chunk
     let lines = ResizeArray<Line>()
     let mutable current = unfinished
     let mutable lineFrom = 0
@@ -247,3 +248,56 @@ let walkFrom (source: FileWindow.Source) encoding (from: int64) =
         }
 
     walk first (beginningAt first)
+
+let private lineBetween (source: FileWindow.Source) encoding (chunk: byte array) (chunkStart: int64) start stop =
+    let count = int (min (stop - start) (int64 MaxLineLength))
+
+    let within = start - chunkStart
+    let inChunk = within >= 0L && within + int64 count <= int64 chunk.Length
+
+    let bytes =
+        if inChunk then
+            Array.sub chunk (int within) count
+        else
+            source.Read(start, count)
+
+    { Start = start
+      Text = bytes |> TextEncoding.decode encoding |> withoutReturn }
+
+let private splitBack source encoding (feed: byte array) chunk (chunkStart: int64) (scanned: int64) lineEnd =
+    let feedAt = isFeedAt feed chunk
+    let lines = ResizeArray<Line>()
+    let mutable stop = lineEnd
+    let mutable position = int (scanned - chunkStart) - feed.Length
+
+    while position >= 0 do
+        if feedAt position then
+            let start = chunkStart + int64 (position + feed.Length)
+            lines.Add(lineBetween source encoding chunk chunkStart start stop)
+            stop <- chunkStart + int64 position
+
+        position <- position - feed.Length
+
+    List.ofSeq lines, stop
+
+let walkBackFrom (source: FileWindow.Source) encoding (before: int64) =
+    let feed = TextEncoding.lineFeed encoding
+    let contentStart = int64 (TextEncoding.preambleLength encoding)
+    let chunk = Array.zeroCreate<byte> ChunkLength
+
+    let rec walk (scanned: int64) lineEnd =
+        seq {
+            if scanned <= contentStart then
+                yield LineRead(lineBetween source encoding chunk contentStart contentStart lineEnd)
+            else
+                let chunkStart = max contentStart (scanned - int64 ChunkLength)
+                yield Reading chunkStart
+                source.ReadInto(chunkStart, chunk) |> ignore
+                let lines, rest = splitBack source encoding feed chunk chunkStart scanned lineEnd
+                yield! List.map LineRead lines
+                yield! walk chunkStart rest
+        }
+
+    let lastEnd = before - int64 feed.Length
+
+    if before <= contentStart then Seq.empty else walk lastEnd lastEnd

@@ -27,9 +27,31 @@ let private going: Control =
     { Reached = ignore
       IsCancelled = fun () -> false }
 
-let private searching (content: string) raw from =
+let private plain raw : Query =
+    { Text = wanted raw
+      Case = IgnoringCase
+      Words = Anywhere
+      Direction = Forwards }
+
+let private placeAt lineStart column : Place = { LineStart = lineStart; Column = column }
+
+let private searchingFor query (content: string) lineStart column =
     use source = sourceOf (MockFileData content)
-    forward going source source.Encoding (wanted raw) from
+    run going source source.Encoding query (placeAt lineStart column)
+
+let private searching content raw from = searchingFor (plain raw) content from 0
+
+let private matching raw = { plain raw with Case = MatchingCase }
+
+let private whole raw = { plain raw with Words = WholeWords }
+
+let private back (query: Query) = { query with Direction = Backwards }
+
+let private found lineStart column length =
+    Found
+        { LineStart = lineStart
+          Column = column
+          Length = length }
 
 type private BrokenStream() =
     inherit MemoryStream(Array.zeroCreate<byte> 100)
@@ -100,7 +122,7 @@ let ``text is matched in the encoding it is read in`` () =
     use source = sourceOf (MockFileData [| 0x41uy; 0x0Auy; 0x42uy; 0xA5uy |])
     let encoding = { Charset = Windows1250; Bom = WithoutBom }
 
-    let answer = forward going source encoding (wanted "Ą") 0L
+    let answer = run going source encoding (plain "Ą") (placeAt 0L 0)
 
     Assert.Equal(Found { LineStart = 2L; Column = 1; Length = 1 }, answer)
 
@@ -109,7 +131,7 @@ let ``a wide file is searched by its characters`` () =
     let wide = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "first\nthe needle")
     use source = sourceOf (MockFileData wide)
 
-    let answer = forward going source source.Encoding (wanted "needle") 0L
+    let answer = run going source source.Encoding (plain "needle") (placeAt 0L 0)
 
     Assert.Equal(Found { LineStart = 14L; Column = 4; Length = 6 }, answer)
 
@@ -121,7 +143,7 @@ let ``a search told to stop stops before reading`` () =
         { going with
             IsCancelled = fun () -> true }
 
-    let answer = forward stopping source source.Encoding (wanted "needle") 0L
+    let answer = run stopping source source.Encoding (plain "needle") (placeAt 0L 0)
 
     Assert.Equal(Stopped, answer)
 
@@ -134,7 +156,7 @@ let ``a search says how far it has read`` () =
         { going with
             Reached = reached.Add }
 
-    forward watching source source.Encoding (wanted "needle") 0L |> ignore
+    run watching source source.Encoding (plain "needle") (placeAt 0L 0) |> ignore
 
     Assert.Equal<int64 list>([ 0L; int64 LineIndex.ChunkLength ], List.ofSeq reached)
 
@@ -142,6 +164,186 @@ let ``a search says how far it has read`` () =
 let ``a file that fails to read is answered with the failure`` () =
     use source = new FileWindow.Source(fp notes, new BrokenStream(), { Charset = Utf8; Bom = WithoutBom })
 
-    let answer = forward going source source.Encoding (wanted "needle") 0L
+    let answer = run going source source.Encoding (plain "needle") (placeAt 0L 0)
 
     Assert.Equal(Unreadable(ReadFailed(fp notes, "the disk went away")), answer)
+
+[<Fact>]
+let ``a search from a column passes over what lies before it on the line`` () =
+    let answer = searchingFor (plain "needle") "needle and needle" 0L 1
+
+    Assert.Equal(found 0L 11 6, answer)
+
+[<Fact>]
+let ``a match at the very end of the file is found`` () =
+    let answer = searching "hay\nhay needle" "needle" 0L
+
+    Assert.Equal(found 4L 4 6, answer)
+
+[<Fact>]
+let ``a search past the last match ends at the end of the file`` () =
+    let answer = searchingFor (plain "needle") "hay\nneedle" 4L 1
+
+    Assert.Equal(NotFound, answer)
+
+[<Fact>]
+let ``a search that minds the case passes over the other case`` () =
+    let answer = searchingFor (matching "Needle") "needle\nNeedle" 0L 0
+
+    Assert.Equal(found 7L 0 6, answer)
+
+[<Fact>]
+let ``a search that minds the case finds nothing in the other case`` () =
+    let answer = searchingFor (matching "NEEDLE") "needle" 0L 0
+
+    Assert.Equal(NotFound, answer)
+
+[<Fact>]
+let ``a search for whole words passes over part of a word`` () =
+    let answer = searchingFor (whole "need") "needle\nneed it" 0L 0
+
+    Assert.Equal(found 7L 0 4, answer)
+
+[<Fact>]
+let ``a whole word may fill the line`` () =
+    let answer = searchingFor (whole "need") "need" 0L 0
+
+    Assert.Equal(found 0L 0 4, answer)
+
+[<Fact>]
+let ``digits and underscores belong to a word`` () =
+    let answer = searchingFor (whole "need") "need_1 need2 need." 0L 0
+
+    Assert.Equal(found 0L 13 4, answer)
+
+[<Fact>]
+let ``punctuation ends a word`` () =
+    let answer = searchingFor (whole "need") "(need)" 0L 0
+
+    Assert.Equal(found 0L 1 4, answer)
+
+[<Fact>]
+let ``a search back finds the text in a line above`` () =
+    let answer = searchingFor (back (plain "needle")) "needle\nhay\nneedle" 11L 0
+
+    Assert.Equal(found 0L 0 6, answer)
+
+[<Fact>]
+let ``a search back looks before the column on the line it starts from`` () =
+    let answer = searchingFor (back (plain "needle")) "needle needle" 0L 7
+
+    Assert.Equal(found 0L 0 6, answer)
+
+[<Fact>]
+let ``a search back from the end of a line finds its last match`` () =
+    let answer = searchingFor (back (plain "a")) "a a a" 0L 5
+
+    Assert.Equal(found 0L 4 1, answer)
+
+[<Fact>]
+let ``a search back finds the last match of a line above`` () =
+    let answer = searchingFor (back (plain "a")) "a a a\nhay" 6L 0
+
+    Assert.Equal(found 0L 4 1, answer)
+
+[<Fact>]
+let ``a search back ends at the start of the file`` () =
+    let answer = searchingFor (back (plain "needle")) "hay\nneedle" 4L 0
+
+    Assert.Equal(NotFound, answer)
+
+[<Fact>]
+let ``a search back finds text before the window of bytes it starts in`` () =
+    let filler = String.replicate 5000 "hay and more hay\n"
+    let content = "the needle\n" + filler + "last"
+
+    let answer = searchingFor (back (plain "needle")) content (int64 (11 + filler.Length)) 0
+
+    Assert.Equal(found 0L 4 6, answer)
+
+[<Fact>]
+let ``a wide file is searched back by its characters`` () =
+    let wide = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "the needle\nlast")
+    use source = sourceOf (MockFileData wide)
+
+    let answer = run going source source.Encoding (back (plain "needle")) (placeAt 24L 0)
+
+    Assert.Equal(found 2L 4 6, answer)
+
+[<Fact>]
+let ``a search back told to stop stops before reading`` () =
+    use source = sourceOf (MockFileData "needle\nlast")
+
+    let stopping =
+        { going with
+            IsCancelled = fun () -> true }
+
+    let answer = run stopping source source.Encoding (back (plain "needle")) (placeAt 7L 0)
+
+    Assert.Equal(Stopped, answer)
+
+[<Fact>]
+let ``a search back says how far it has read`` () =
+    use source = sourceOf (MockFileData(String('a', LineIndex.ChunkLength + 10) + "\nlast"))
+    let start = int64 (LineIndex.ChunkLength + 11)
+    let reached = ResizeArray<int64>()
+
+    let watching =
+        { going with
+            Reached = reached.Add }
+
+    run watching source source.Encoding (back (plain "needle")) (placeAt start 0) |> ignore
+
+    Assert.Equal<int64 list>([ start; 10L; 0L ], List.ofSeq reached)
+
+[<Fact>]
+let ``case and whole words narrow a search together`` () =
+    let query = { whole "Need" with Case = MatchingCase }
+
+    let answer = searchingFor query "need Needle Need" 0L 0
+
+    Assert.Equal(found 0L 12 4, answer)
+
+[<Fact>]
+let ``case narrows a search back`` () =
+    let answer = searchingFor (back (matching "Need")) "Need need\nneed" 10L 0
+
+    Assert.Equal(found 0L 0 4, answer)
+
+[<Fact>]
+let ``whole words narrow a search back`` () =
+    let answer = searchingFor (back (whole "need")) "need needle\nneedles" 12L 0
+
+    Assert.Equal(found 0L 0 4, answer)
+
+[<Fact>]
+let ``every option at once searches forward`` () =
+    let query = { whole "Need" with Case = MatchingCase }
+
+    let answer = searchingFor query "need Need Needle need\nx" 0L 0
+
+    Assert.Equal(found 0L 5 4, answer)
+
+[<Fact>]
+let ``every option at once searches back`` () =
+    let query = back { whole "Need" with Case = MatchingCase }
+
+    let answer = searchingFor query "need Need Needle need\nx" 22L 0
+
+    Assert.Equal(found 0L 5 4, answer)
+
+[<Fact>]
+let ``every option at once ends at the start of the file`` () =
+    let query = back { whole "Need" with Case = MatchingCase }
+
+    let answer = searchingFor query "need Need" 0L 5
+
+    Assert.Equal(NotFound, answer)
+
+[<Fact>]
+let ``every option at once ends at the end of the file`` () =
+    let query = { whole "Need" with Case = MatchingCase }
+
+    let answer = searchingFor query "Need Needle" 0L 4
+
+    Assert.Equal(NotFound, answer)

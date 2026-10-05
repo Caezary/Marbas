@@ -884,8 +884,8 @@ a key bar, and everything between is the content.
 the arrows move by a line, `PgUp`/`PgDn` by a page, `Home`/`End` reach the ends
 of the file, the side arrows move across a long line — a column at a time, a
 screen at a time with `Ctrl` held — `F2` wraps, `F4` switches to the hex dump
-and back, `F7` searches, `F8` chooses the code page, and `F3`, `F10` and `Esc`
-leave. Nothing
+and back, `F7` searches and `Shift+F7` searches again, `F8` chooses the code
+page, and `F3`, `F10` and `Esc` leave. Nothing
 is bound to the panel's table while the viewer is up, because the viewer's
 content view is what holds focus and keys do not bubble.
 
@@ -967,24 +967,40 @@ for the longest UTF-8 sequence, and the walk starts in the bytes before the row
 so it meets the character from its start. A character two columns wide with one
 cell left in the row shows as `.`, because the column cannot grow.
 
-**`F7` asks for a text and searches forward from the top of the screen.**
-`ViewerSearchDialog` holds a field with a history — `HistoryField.amongOthers`,
-the field of P16, over the texts `Find files` searched for, since the two
-share `input.find.text` — and four boxes: case sensitive, whole words, regular
-expression and backwards. In P19.3 the boxes are there and greyed out, the way
-`[Delete]` waited in the history popup; each is switched on by the task that
-makes it mean something. The field opens empty the first time and holding the
-last text after that, selected, so typing replaces it. What is confirmed is
-remembered as it was typed, a blank text excepted; an empty field searches for
-nothing.
+**`F7` asks for a text and searches from the screen; `Shift+F7` goes on from
+the match.** `ViewerSearchDialog` holds a field with a history —
+`HistoryField.amongOthers`, the field of P16, over the texts `Find files`
+searched for, since the two share `input.find.text` — and four boxes: case
+sensitive, whole words, regular expression and backwards. The regular
+expression box is greyed out until P19.5, the way `[Delete]` waited in the
+history popup. The popup answers a `SearchAnswer` — what was typed and the
+three choices — and `ViewerSearch.query` makes it the `WindowSearch.Query` once
+the text is known not to be empty. The field opens empty with nothing ticked
+the first time; after that it opens on the last query, its text selected so
+typing replaces it and its boxes ticked as they were. That last query lives in
+the viewer and dies with it; only the text reaches the history file. What is
+confirmed is remembered as it was typed, a blank text excepted; an empty field
+searches for nothing.
 
-The search starts at the start of the line on top of the screen and runs
-through `RunSearch`, which in the application is `WindowSearchRunner.run`: the
+Where a search starts is a `Place`, and the content answers it. From the popup
+it is the screen: forwards the start of the line on top, backwards the end of
+the line on the last row, so the two directions mirror each other and a match
+on the screen is found either way — the topmost going down, the lowest going
+up. `Shift+F7` repeats the last query in its own direction without the popup,
+from the match on display: forwards from just past its end, so `aa` in `aaaa`
+is found at columns 0 and 2, backwards from just before its start. With no
+match on display — none found yet, or the mark dropped by a choice of code
+page — it starts from the screen as `F7` would, and with no search made yet in
+this viewer it opens the popup. A search that finds nothing leaves the mark,
+and the place, where they were. Both keys do nothing in the dump.
+
+The search runs through `RunSearch`, which in the application is `WindowSearchRunner.run`: the
 work on a background task, the progress window over the viewer saying
 `Searching… 37%`, a report queued only when the percentage changes and never
 after a stop, and `Esc` cancelling. The runner waits for the task to finish
 after the window closes, so the answer it hands back is the walk's own, and the
-walk notices a stop within a window of bytes. `Found` is shown, `NotFound` is
+walk notices a stop within a window of bytes. The percentage is the place the
+walk has reached in the file, so a search backwards counts down. `Found` is shown, `NotFound` is
 reported with `'text' was not found.`, `Stopped` is passed over in silence, and
 `Unreadable` is the content error the viewer reports on opening.
 

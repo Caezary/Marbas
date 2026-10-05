@@ -6,7 +6,13 @@ open Marbas.Ui.Messages
 
 type SearchOffer =
     { Remembered: EnteredText list
-      Last: FindText option }
+      Last: WindowSearch.Query option }
+
+type SearchAnswer =
+    { Typed: string
+      Case: LetterCase
+      Words: WordMatch
+      Direction: SearchDirection }
 
 type SearchHistory =
     { Texts: unit -> EnteredText list
@@ -28,3 +34,9 @@ module ViewerSearch =
         match report with
         | TextNotFound text -> $"'{FindText.value text}' was not found."
         | SearchFailed error -> ContentErrorMessage.describe error
+
+    let query (answer: SearchAnswer) text : WindowSearch.Query =
+        { Text = text
+          Case = answer.Case
+          Words = answer.Words
+          Direction = answer.Direction }

@@ -133,8 +133,9 @@ Marbas/
     RewindingStream.fs    a forward-only stream seen as one that seeks, by opening it again
     FileWindow.fs         a file held open, read one byte range at a time
     LineIndex.fs          line starts scanned on demand, one in 64 kept, and the line at an offset;
-                          the lines from an offset as a walk, window by window
-    WindowSearch.fs       the viewer's search: text in the lines from an offset, stoppable
+                          the lines from an offset as a walk, window by window, either way
+    WindowSearch.fs       the viewer's search: a text, its case, whole words and a direction,
+                          from a place in a line, stoppable
   State/
     PanelState.fs         one panel: cursor, marks, search and sort, never the disk
     AppState.fs           tabs and app state: loaders, finish* transitions and the

@@ -17,6 +17,7 @@ type Command =
     | ModeToggled
     | WrapToggled
     | SearchAsked
+    | SearchRepeated
     | CodePageAsked
     | Closed
 
@@ -25,6 +26,8 @@ let wrapKey = Key.F2
 let modeKey = Key.F4
 
 let searchKey = Key.F7
+
+let repeatKey = Key.F7.WithShift
 
 let codePageKey = Key.F8
 
@@ -46,6 +49,7 @@ let private bindings =
       wrapKey, WrapToggled
       modeKey, ModeToggled
       searchKey, SearchAsked
+      repeatKey, SearchRepeated
       codePageKey, CodePageAsked ]
 
 let commandFor (key: Key) =

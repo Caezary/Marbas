@@ -159,3 +159,59 @@ directly with a slow walk, showed `Searching… 24%`, closed itself with
 `NotFound` when the walk ended, and answered `Stopped` when `Esc` was pressed.
 A search opened from a probe's timeout never finishes, as P18.6 found for the
 batches, so the two halves were driven apart.
+
+**P19.4 added `Shift+F7`, the search backwards, case sensitivity and whole
+words.** `WindowSearch.forward` became `WindowSearch.run`, which takes a
+`Query` — the text, a `LetterCase`, a `WordMatch` and a `SearchDirection`, the
+one new type in `Domain` — and a `Place`, a line start and a column. Forwards
+it takes the first match at or after the column, then the first of each line
+below; backwards the last match before the column, then the last of each line
+above. Going back needed a walk of its own: `LineIndex.walkBackFrom` reads the
+windows of bytes towards the start, finds the feeds from each window's end and
+answers the lines before a line start, nearest first. A line it finds whole in
+one window is sliced from it; one that began earlier or ended later is read
+again from its start, so a line is cut at `MaxLineLength` the way the screen
+cuts it. The line the search starts on is read forwards first, then the
+backward walk takes over. `LetterCase.comparison` and
+`WordMatch.isWordCharacter` moved into `Domain` beside their types, and
+`ContentMatch` uses them too, so *Find files* and the viewer agree on what a
+word is.
+
+The popup answers a `SearchAnswer` — the typed text and the three choices —
+and opens on the last query, text and boxes, while the viewer is open; the
+regular expression box stays grey until P19.5. The content answers where a
+search starts: `ScreenPlace` for `F7`, `PlaceAfterMatch` for `Shift+F7`, which
+keeps the match on display beside its span and loses both with a choice of
+code page.
+
+Four things the plan left open were settled with the user before the tests
+were written. A search backwards from the popup starts at the end of the line
+on the last row, the mirror of a search forwards from the top, so a match on
+the screen is found either way. `Shift+F7` with nothing searched for yet opens
+the popup. Going forward it starts past the end of the match, so matches do not
+overlap. And the boxes remember their state until the viewer closes.
+
+The tests: `LineIndexTests` hold the backward walk to the index's lines,
+reversed, over seven files and over UTF-16, a line across two windows and a
+line past the longest, and prove the first line, a marked first line and the
+offsets it reads at; `WindowSearchTests` were moved to `run` and prove a
+search from a column, a match at the very end, the end of the file, the case
+both ways, whole words against part of a word, a whole line, digits and
+underscores and punctuation, backwards to a line above, before the column,
+from a line's end, the last match of a line above, the start of the file, past
+a window, in UTF-16, stopped and reporting its progress, and the options two
+and three at a time, at both ends; `ViewerSearchTests` the answer turned into
+a query; `ViewerKeysTests` `Shift+F7`; `ViewerSearchDialogTests` the last
+options ticked, nothing ticked at first, the three boxes enabled and the
+answer with and without options; `FileViewerTests` `Shift+F7` asking when
+nothing was searched, finding the next match without asking, going past the
+match's end, reporting the end and keeping the mark, a search back from the
+bottom of the screen and on backwards, to a line above the screen, past the
+first match, the case and whole words through the popup, the options repeated
+and offered back, a fresh start after a code page and `Shift+F7` in hex.
+
+Through the probe, with the real dialog and the synchronous runner: `Alt+B`
+and `Alt+A` ticked *Backwards* and *Case sensitive* in the popup; `line 1`
+searched backwards marked `line 19`, the lowest match on the screen, and
+`Shift+F7` moved the mark to `line 18`; `F7` again opened on `line 1` with the
+two boxes still ticked.

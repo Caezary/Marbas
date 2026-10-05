@@ -119,3 +119,9 @@ let ``the bar offers no search in hex`` () =
     let slots = bar HexMode Unwrapped
 
     Assert.Equal("", slots[6])
+
+[<Fact>]
+let ``Shift+F7 asks for the last search again`` () =
+    let command = commandFor Key.F7.WithShift
+
+    Assert.Equal(Some SearchRepeated, command)
