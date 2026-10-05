@@ -21,20 +21,22 @@ type Source(path: FileSystemPath, stream: Stream, encoding: TextEncoding) =
     member _.Length = stream.Length
 
     member _.Read(offset: int64, count: int) =
-        match available offset count with
-        | 0 -> Array.empty
-        | length ->
-            let bytes = Array.zeroCreate length
-            fill offset bytes length
-            bytes
+        lock stream (fun () ->
+            match available offset count with
+            | 0 -> Array.empty
+            | length ->
+                let bytes = Array.zeroCreate length
+                fill offset bytes length
+                bytes)
 
     member _.ReadInto(offset: int64, buffer: byte array) =
-        let length = available offset buffer.Length
+        lock stream (fun () ->
+            let length = available offset buffer.Length
 
-        if length > 0 then
-            fill offset buffer length
+            if length > 0 then
+                fill offset buffer length
 
-        length
+            length)
 
     interface IDisposable with
         member _.Dispose() = stream.Dispose()

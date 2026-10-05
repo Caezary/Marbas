@@ -399,6 +399,33 @@ surrogate pair in UTF-16, one byte in the rest — or nothing when no character
 starts there: a continuation byte, a lone surrogate, a sequence the end of the
 bytes cuts short. The hex dump lays its character column out by it.
 
+**A search walks the lines the way the screen reads them.** Since P19.3
+`LineIndex.walkFrom` answers the lines from a line start onwards as a lazy
+sequence of steps: `Reading offset` before each window of `ChunkLength` bytes
+is read, then a `LineRead` for every line that window finishes, its start
+offset and its text. A line is cut at `MaxLineLength`, loses a carriage return
+before its feed, and a feed that ends the file ends the last line — the rules
+`Index.Text` follows, and the tests hold the two to the same lines over the
+same bytes. The walk keeps no index: it needs the start of the line it begins
+on, which the viewer's own index already knows, and nothing behind it.
+
+`WindowSearch.forward` takes that walk, a `FindText`, the encoding the viewer
+reads in and the offset of the line on top of the screen, and answers `Found`
+with the match — the start of its line, the column in the decoded line and the
+length — `NotFound`, `Stopped`, or `Unreadable` with a `ContentError`, the one
+place an exception met on the way becomes a value. The plain search ignores
+case (`OrdinalIgnoreCase`) and never matches across a line break. A `Control`
+beside it carries `Reached`, told the offset at every `Reading`, and
+`IsCancelled`, asked at the same step, so a stop is noticed within one window
+of bytes however long the lines are.
+
+**A `Source` can be read from two threads.** The search runs off the UI thread
+while the viewer under the progress window may still draw, and both read
+through one stream: `Read` and `ReadInto` take a lock on it, since a seek and
+the read after it must not interleave. The search walks the file with its own
+buffer and builds no `LineIndex` of its own, so the viewer's index is touched
+only on the UI thread.
+
 **Formatting stays pure, and so does the scrolling.** `HexDump.row` renders one
 row at an absolute offset, `PrintableText.describe` turns tabs and control
 characters into something a terminal can draw, `LineWrap` cuts a line into the

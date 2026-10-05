@@ -723,7 +723,7 @@ let ``a viewed file is handed over opened under its own path`` () =
         let lines = [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
         shown <- (FileSystemPath.value source.Path, lines)
 
-    let deps = { noDeps () with FileSystem = fs; Prompts.ShowFile = readOut }
+    let deps = { noDeps () with FileSystem = fs; Prompts.ShowFile = fun request -> readOut request.Source }
 
     Shell.interpret deps ignore (ViewFile(fp (at "start/notes.txt")))
 
@@ -1624,7 +1624,7 @@ let ``an entry of an archive is handed over under the name of its place in it`` 
         let lines = [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
         shown <- (FileSystemPath.value source.Path, lines)
 
-    let deps = { noDeps () with FileSystem = fs; Prompts.ShowFile = readOut }
+    let deps = { noDeps () with FileSystem = fs; Prompts.ShowFile = fun request -> readOut request.Source }
     let entry = ArchivePath.tryCreate "notes.txt" |> Expect.some
 
     Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/data.zip"), entry))
@@ -1673,7 +1673,7 @@ let ``a locked archive asks for its password before an entry is shown`` () =
         { noDeps () with
             FileSystem = fs
             Prompts.AskPassword = fun _ -> asked <- asked + 1; ArchivePassword.tryCreate "opensesame"
-            Prompts.ShowFile = fun source -> shown <- Text.Encoding.ASCII.GetString(source.Read(0L, 6)) }
+            Prompts.ShowFile = fun request -> shown <- Text.Encoding.ASCII.GetString(request.Source.Read(0L, 6)) }
 
     Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/locked.zip"), entry))
 
@@ -2254,7 +2254,7 @@ let ``a hit the results window asks to view is read out of the file it names`` (
     let deps =
         { noDeps () with
             FileSystem = fs
-            Prompts.ShowFile = fun source -> shown <- FileSystemPath.value source.Path
+            Prompts.ShowFile = fun request -> shown <- FileSystemPath.value request.Source.Path
             Runners.Search = fun _ view _ -> view hit }
 
     Shell.interpret deps ignore (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
@@ -2285,6 +2285,35 @@ let ``the find popup offers the masks and the texts typed before`` () =
     Shell.interpret deps ignore (PromptForFind(NoDirectoryMarked, Concealed, None))
 
     Assert.Equal(([ typed "*.fs"; typed "*.md" ], [ typed "needle" ]), Assert.Single offered)
+
+[<Fact>]
+let ``the viewer is offered the texts searched for before`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "first")
+    typedEarlier fs SearchedText [ "older"; "needle" ]
+    let offered = ResizeArray<EnteredText list>()
+
+    let deps =
+        { withFs fs with Prompts.ShowFile = fun request -> offered.Add(request.Searches.Texts()) }
+
+    Shell.interpret deps ignore (ViewFile(fp (at "start/notes.txt")))
+
+    Assert.Equal<EnteredText list>([ typed "needle"; typed "older" ], Assert.Single offered)
+
+[<Fact>]
+let ``a text the viewer searched for is remembered with the texts searched for before`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "first")
+    typedEarlier fs SearchedText [ "older" ]
+    let sent, dispatch = capture ()
+
+    let deps =
+        { withFs fs with Prompts.ShowFile = _.Searches.Remember(typed "needle") }
+
+    Shell.interpret deps dispatch (ViewFile(fp (at "start/notes.txt")))
+
+    Assert.Equal<string list>([ "needle"; "older" ], rememberedIn fs SearchedText)
+    Assert.Single sent |> ignore
 
 [<Fact>]
 let ``a search confirmed remembers its masks and its text as they were typed`` () =

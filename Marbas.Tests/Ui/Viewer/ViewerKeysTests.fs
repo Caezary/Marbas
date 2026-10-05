@@ -101,3 +101,21 @@ let ``the bar offers the code page on F8`` () =
     let slots = bar TextMode Unwrapped
 
     Assert.Equal("Code", slots[7])
+
+[<Fact>]
+let ``F7 asks for a search`` () =
+    let command = commandFor Key.F7
+
+    Assert.Equal(Some SearchAsked, command)
+
+[<Fact>]
+let ``the bar offers the search on F7 in text`` () =
+    let slots = bar TextMode Unwrapped
+
+    Assert.Equal("Search", slots[6])
+
+[<Fact>]
+let ``the bar offers no search in hex`` () =
+    let slots = bar HexMode Unwrapped
+
+    Assert.Equal("", slots[6])

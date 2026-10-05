@@ -68,7 +68,7 @@ written up as the checklist in
 | 16 — History | P16.1–P16.10 | done | [journal](Progress/PHASE-16-HISTORY.md) |
 | 17 — The marks, the panel and the favourites | P17.1–P17.10 | done | [journal](Progress/PHASE-17-MARKS-PANEL-AND-FAVOURITES.md) |
 | 18 — The clipboard | P18.1–P18.7 | done | [journal](Progress/PHASE-18-THE-CLIPBOARD.md) |
-| 19 — The viewer finds and decodes | P19.1–P19.6 | P19.1–P19.2 done | [journal](Progress/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) |
+| 19 — The viewer finds and decodes | P19.1–P19.6 | P19.1–P19.3 done | [journal](Progress/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) |
 
 ## What works today
 

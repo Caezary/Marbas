@@ -884,7 +884,8 @@ a key bar, and everything between is the content.
 the arrows move by a line, `PgUp`/`PgDn` by a page, `Home`/`End` reach the ends
 of the file, the side arrows move across a long line — a column at a time, a
 screen at a time with `Ctrl` held — `F2` wraps, `F4` switches to the hex dump
-and back, `F8` chooses the code page, and `F3`, `F10` and `Esc` leave. Nothing
+and back, `F7` searches, `F8` chooses the code page, and `F3`, `F10` and `Esc`
+leave. Nothing
 is bound to the panel's table while the viewer is up, because the viewer's
 content view is what holds focus and keys do not bubble.
 
@@ -893,7 +894,19 @@ row — the proportional layout, the two schemes, the `SlotView`s — and both t
 panel bar and the viewer bar are built from it; `show` fills the panel's slots
 from `KeyMap`, `label` fills the viewer's from `ViewerKeys.bar`, which asks for
 the mode and the wrap so `F4` reads `Hex` in text and `Text` in hex. `F8`
-reads `Code` in both.
+reads `Code` in both; `F7` reads `Search` in text and nothing in hex, where it
+does nothing until the dump learns to search bytes in P19.6.
+
+**What the viewer needs from outside comes in one record.** `FileViewer.create`
+takes `FileViewer.Ports` and the `Source`: `Close`, `ChooseCodePage`,
+`AskSearch`, `Searches`, `RunSearch` and `Report`. `Prompts.showFile` fills it
+with the application's own dialogs and runner; a test fills it with answers and
+runs the search on its own thread. `Shell` hands the adapter a `ViewRequest`,
+the source and a `SearchHistory` — `Texts`, read from the history file each
+time `F7` is pressed, and `Remember`, which writes a text through the same
+`changeHistory` every other field uses and dispatches `HistoryChanged`. So the
+viewer reads and writes the history without knowing there is a file, and only
+`Shell` touches it.
 
 **The content view draws itself, because nothing in the toolkit fits.**
 `TextView` was deprecated in 2.4.17, and it was the wrong shape anyway: it owns
@@ -924,9 +937,9 @@ eighty-column terminal.
 `CodePageDialog`: `Auto` first, named for what the viewer settled on
 (`Auto (Latin-1)`), then the nine charsets of `TextEncoding.charsets` in a
 fixed order, with the cursor on the one in use. The viewer does not run the
-popup itself; `FileViewer.create` is handed a `CodePageOffer -> CodePage option`,
-as it is handed `close`, and `Prompts.showFile` passes one that runs the dialog
-on the application. A test hands it an answer instead. What is chosen lives in
+popup itself; its ports carry a `CodePageOffer -> CodePage option`, and
+`Prompts.showFile` passes one that runs the dialog on the application. A test
+hands it an answer instead. What is chosen lives in
 `ContentView` — `CodePage`, and the `TextEncoding` it reads as — and nowhere
 else, so it dies with the window and the next `F3` settles the encoding afresh.
 The header names the encoding the content reads as, so it says `CP852` once
@@ -953,6 +966,42 @@ is read with three bytes on either side (`RowBytes`, `HexDump.bytesAt`), enough
 for the longest UTF-8 sequence, and the walk starts in the bytes before the row
 so it meets the character from its start. A character two columns wide with one
 cell left in the row shows as `.`, because the column cannot grow.
+
+**`F7` asks for a text and searches forward from the top of the screen.**
+`ViewerSearchDialog` holds a field with a history — `HistoryField.amongOthers`,
+the field of P16, over the texts `Find files` searched for, since the two
+share `input.find.text` — and four boxes: case sensitive, whole words, regular
+expression and backwards. In P19.3 the boxes are there and greyed out, the way
+`[Delete]` waited in the history popup; each is switched on by the task that
+makes it mean something. The field opens empty the first time and holding the
+last text after that, selected, so typing replaces it. What is confirmed is
+remembered as it was typed, a blank text excepted; an empty field searches for
+nothing.
+
+The search starts at the start of the line on top of the screen and runs
+through `RunSearch`, which in the application is `WindowSearchRunner.run`: the
+work on a background task, the progress window over the viewer saying
+`Searching… 37%`, a report queued only when the percentage changes and never
+after a stop, and `Esc` cancelling. The runner waits for the task to finish
+after the window closes, so the answer it hands back is the walk's own, and the
+walk notices a stop within a window of bytes. `Found` is shown, `NotFound` is
+reported with `'text' was not found.`, `Stopped` is passed over in silence, and
+`Unreadable` is the content error the viewer reports on opening.
+
+**A match is a span of columns on one line, and it is drawn over the rows.**
+`WindowSearch` answers the column in the decoded line; `FoundSpan.ofMatch`
+turns it into the columns the line takes once `PrintableText` has expanded its
+tabs, so the mark lands on what is shown. The rows the content draws are
+`ShownRow`s — the line each came from, the column of the line it starts at,
+and its text — so one rule, `FoundSpan.onRow`, finds the part of the match on
+any row: a plain row shifted by the scroll across, a wrapped row a width
+further into its line, a match the wrap splits marked on both rows.
+`FoundOnScreen()` answers those parts, and `OnDrawingContent` paints them black
+on cyan (`ClassicScheme.foundText`) after the rows. A match already on screen
+leaves the screen where it is; otherwise its line becomes the top line. The
+screen moves across only when the match is outside it (`FoundSpan.leftShowing`).
+The mark stays until the next search or until a code page is chosen, which
+re-reads the lines it was measured on; it is not drawn in hex.
 
 **Wrapping moves by whole lines.** With `F2` on, one line can take several
 rows, but the top of the screen is always the start of a line — a page down

@@ -224,7 +224,15 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   an opened `FileWindow.Source` rather than a list of lines, so the modal run
   itself (the `running` helper in `Prompts.showFile`) is only exercised by running
   the app — the same blind spot the progress dialog has. What the tests do
-  cover is every key the viewer takes and every row it would draw.
+  cover is every key the viewer takes and every row it would draw. The same
+  holds for `WindowSearchRunner.run`: its reports are tested, the window and
+  the task were driven once through the probe, and no test runs them.
+- The progress window opens for every `F7`, so a match on the screen or a few
+  lines down shows it for an instant. Waiting a moment before showing it was
+  weighed and left out for one shape shared with the other runners.
+- The mark of a match counts a column per character, as the rows do, so on a
+  line holding a character two columns wide, or one outside the basic plane,
+  it lands as far to the left as the line is drawn short.
 - Where detection has to guess — a byte order mark is missing and the bytes are
   not valid UTF-8 — the viewer still says Latin-1, which is wrong for a file in
   CP852 or Windows-1250. `F8` puts that right by hand, but only for the viewing:

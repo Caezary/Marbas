@@ -132,7 +132,9 @@ Marbas/
                           and the code pages it can be read in
     RewindingStream.fs    a forward-only stream seen as one that seeks, by opening it again
     FileWindow.fs         a file held open, read one byte range at a time
-    LineIndex.fs          line starts scanned on demand, one in 64 kept, and the line at an offset
+    LineIndex.fs          line starts scanned on demand, one in 64 kept, and the line at an offset;
+                          the lines from an offset as a walk, window by window
+    WindowSearch.fs       the viewer's search: text in the lines from an offset, stoppable
   State/
     PanelState.fs         one panel: cursor, marks, search and sort, never the disk
     AppState.fs           tabs and app state: loaders, finish* transitions and the
@@ -192,6 +194,8 @@ Marbas/
       ViewerKeys.fs         the viewer's own key table and its twelve bar labels
       CodePage.fs           Auto or a charset, what it is called and what it reads as
       CodePageDialog.fs     the `F8` popup: Auto and every code page, one to choose
+      FoundSpan.fs          a row on screen, and the columns a match covers on it
+      ViewerSearch.fs       what `F7` offers, the history it reads, and what it reports
       FileViewer.fs         the viewer itself: header, rows, bar
     Dialogs/              the modal popups, each one built where a test can lay it out
       PromptDialog.fs       single-field text prompt (label + default), plain or secret
@@ -211,6 +215,7 @@ Marbas/
       DriveLine.fs          drive rows -> lines whose root, label, kind and sizes line up
       DriveDialog.fs        the list `Alt+F1` / `Alt+F2` open, and the row it answers with
       FindDialog.fs         what `Alt+F7` asks, greyed where the query means nothing
+      ViewerSearchDialog.fs what `F7` in the viewer asks: the text and four options
     Find/                 the full-screen results window
       FindKeys.fs           its keys and its twelve bar labels
       FindSummary.fs        the walk so far, or its outcome -> the summary line
@@ -228,6 +233,7 @@ Marbas/
   Adapters/               the real implementations of Ports.Dependencies;
                           the only folder allowed to touch the OS
     HostEnvironment.fs    platform, home directories and `$EDITOR`, read once
+    WindowSearchRunner.fs the viewer's search on a background task under the progress dialog
     Prompts.fs            the message boxes and popups the application runs
     RecycleBin.fs         the Windows recycle bin, through the VB runtime
     EditorProcess.fs      the editor started as a child process, and waited on

@@ -111,7 +111,11 @@ cursor when nothing is marked.
   viewer picks the code page the file is read in — `Auto` is what the viewer
   guessed, and UTF-8, UTF-16, Latin-1, Windows-1250, CP852, ISO-8859-2,
   Windows-1252 and CP437 can be chosen; the choice lasts until the viewer
-  closes. On a directory — or with directories
+  closes. `F7` in the viewer searches the text forward from the top of the
+  screen, ignoring case; the field remembers what you searched for, here and in
+  *Find files*, and `F7` again opens on the last text. The match is
+  highlighted and scrolled into view, a long search shows its progress and
+  `Esc` stops it, and a text that is not there is reported. On a directory — or with directories
   marked — `F3` measures them instead: the size replaces `<DIR>` in the size
   column and shows on the status line. Sizes in the listing are rounded to the
   unit they reach (`1.5 KB`, `59.6 GB`); the status line and the panel footer

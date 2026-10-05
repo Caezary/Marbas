@@ -90,8 +90,30 @@ let askPassword (app: IApplication) (request: PasswordPrompt) =
 let private chooseCodePage (app: IApplication) (offer: CodePageOffer) =
     running app (fun () -> CodePageDialog.create offer) CodePageDialog.choice
 
-let showFile (app: IApplication) (source: FileWindow.Source) =
-    running app (fun () -> FileViewer.create _.RequestStop() (chooseCodePage app) source) ignore
+let private askSearch (app: IApplication) (offer: SearchOffer) =
+    let createSearch () = ViewerSearchDialog.create offer
+    running app createSearch ViewerSearchDialog.text
+
+let private reportSearch (app: IApplication) (report: SearchReport) =
+    match report with
+    | TextNotFound _ -> MessageBox.Query(app, ViewerSearch.Title, ViewerSearch.describe report, "Ok") |> ignore
+    | SearchFailed _ ->
+        reportError
+            app
+            { Title = ContentErrorMessage.Title
+              Message = ViewerSearch.describe report }
+
+let showFile (app: IApplication) (request: ViewRequest) =
+    let ports: FileViewer.Ports =
+        { Close = _.RequestStop()
+          ChooseCodePage = chooseCodePage app
+          AskSearch = askSearch app
+          Searches = request.Searches
+          RunSearch = WindowSearchRunner.run app ViewerSearch.Title (ViewerSearch.progress request.Source.Length)
+          Report = reportSearch app }
+    let createFileViewer () = FileViewer.create ports request.Source
+
+    running app createFileViewer ignore
 
 let editProperties (app: IApplication) properties =
     running app (fun () -> PropertiesDialog.create properties) (PropertiesDialog.properties properties)

@@ -1,5 +1,6 @@
 module Marbas.FileSystem.LineIndex
 
+open System
 open System.Collections.Generic
 
 [<Literal>]
@@ -27,6 +28,9 @@ let private lastAtOrBefore count (startAt: int -> int64) (offset: int64) =
         if startAt middle <= offset then low <- middle else high <- middle - 1
 
     low
+
+let private withoutReturn (line: string) =
+    if line.EndsWith '\r' then line[.. line.Length - 2] else line
 
 type Index(source: FileWindow.Source, encoding: TextEncoding) =
     let feed = TextEncoding.lineFeed encoding
@@ -127,9 +131,6 @@ type Index(source: FileWindow.Source, encoding: TextEncoding) =
 
             starts
 
-    let withoutReturn (line: string) =
-        if line.EndsWith '\r' then line[.. line.Length - 2] else line
-
     member _.Known = known
 
     member _.Checkpoints = checkpoints.Count
@@ -182,3 +183,67 @@ type Index(source: FileWindow.Source, encoding: TextEncoding) =
             let block = lastAtOrBefore checkpoints.Count (fun at -> checkpoints[at]) offset
             let starts = blockStarts block
             block * LinesPerCheckpoint + lastAtOrBefore starts.Length (fun at -> starts[at]) offset
+
+type Line = { Start: int64; Text: string }
+
+type Step =
+    | Reading of offset: int64
+    | LineRead of Line
+
+type private Unfinished = { From: int64; Held: ResizeArray<byte> }
+
+let private beginningAt offset = { From = offset; Held = ResizeArray() }
+
+let private finished encoding (unfinished: Unfinished) =
+    { Start = unfinished.From
+      Text = unfinished.Held.ToArray() |> TextEncoding.decode encoding |> withoutReturn }
+
+let private hold (unfinished: Unfinished) (chunk: byte array) first stop =
+    let count = min (MaxLineLength - unfinished.Held.Count) (stop - first)
+
+    if count > 0 then
+        unfinished.Held.AddRange(ArraySegment(chunk, first, count))
+
+let private split encoding (feed: byte array) (chunk: byte array) length (offset: int64) unfinished =
+    let feedAt position =
+        if feed.Length = 1 then
+            chunk[position] = feed[0]
+        else
+            chunk[position] = feed[0] && chunk[position + 1] = feed[1]
+
+    let lines = ResizeArray<Line>()
+    let mutable current = unfinished
+    let mutable lineFrom = 0
+    let mutable position = 0
+
+    while position + feed.Length <= length do
+        if feedAt position then
+            hold current chunk lineFrom position
+            lines.Add(finished encoding current)
+            lineFrom <- position + feed.Length
+            current <- beginningAt (offset + int64 lineFrom)
+
+        position <- position + feed.Length
+
+    hold current chunk lineFrom length
+    List.ofSeq lines, current
+
+let walkFrom (source: FileWindow.Source) encoding (from: int64) =
+    let feed = TextEncoding.lineFeed encoding
+    let first = max from (int64 (TextEncoding.preambleLength encoding))
+    let chunk = Array.zeroCreate<byte> ChunkLength
+
+    let rec walk (offset: int64) unfinished =
+        seq {
+            if offset >= source.Length then
+                if unfinished.From < source.Length then
+                    yield LineRead(finished encoding unfinished)
+            else
+                yield Reading offset
+                let length = source.ReadInto(offset, chunk)
+                let lines, rest = split encoding feed chunk length offset unfinished
+                yield! List.map LineRead lines
+                yield! walk (offset + int64 length) rest
+        }
+
+    walk first (beginningAt first)

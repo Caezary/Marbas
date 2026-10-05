@@ -7,6 +7,7 @@ open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.State.AppState
 open Marbas.Ui.Keys
+open Marbas.Ui.Viewer
 
 type ErrorReport = { Title: string; Message: string }
 
@@ -77,6 +78,10 @@ type HistoryPrompt =
       Now: DateTimeOffset
       Change: HistoryChange -> History option }
 
+type ViewRequest =
+    { Source: FileWindow.Source
+      Searches: SearchHistory }
+
 type Prompts =
     { ReportError: ErrorReport -> unit
       Confirm: Confirmation -> bool
@@ -96,7 +101,7 @@ type Prompts =
       ChooseFavorite: FavoritesPrompt -> Place option
       EditProperties: EntryProperties -> EntryProperties option
       EditPrograms: ProgramsPrompt -> ProgramSettings option
-      ShowFile: FileWindow.Source -> unit }
+      ShowFile: ViewRequest -> unit }
 
 type Processes =
     { ListDrives: unit -> DriveRow list

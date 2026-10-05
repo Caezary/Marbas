@@ -40,6 +40,8 @@ let unverifiedEntry = attribute ColorName16.BrightRed ColorName16.Blue
 
 let markedEntry = attribute ColorName16.BrightYellow ColorName16.Blue
 
+let foundText = attribute ColorName16.Black ColorName16.Cyan
+
 let summary =
     Scheme(
         Normal = attribute ColorName16.BrightYellow ColorName16.Blue,

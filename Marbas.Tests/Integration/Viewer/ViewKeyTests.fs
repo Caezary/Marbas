@@ -19,7 +19,7 @@ let private mockFs () =
 let private windowWith (fs: MockFileSystem) showFile reportError =
     focusedWindow
         { Fakes.dependencies fs (at "start") with
-            Prompts.ShowFile = showFile
+            Prompts.ShowFile = fun request -> showFile request.Source
             Prompts.ReportError = reportError }
 
 let private silent = ignore<Ports.ErrorReport>

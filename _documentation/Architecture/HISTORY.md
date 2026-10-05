@@ -73,7 +73,10 @@ input.target.1.at=…
 
 The input lists are `input.target`, `input.mkdir`, `input.newfile`,
 `input.pattern`, `input.find.masks`, `input.find.text`, `input.archive`,
-`input.link` and `input.program`. The moment is written in the round-trip
+`input.link` and `input.program`. `input.find.text` is the one list two fields
+share: the text *Find files* looks for in the files and the text `F7` looks for
+in the viewer are the same kind of thing, so each offers what the other
+searched for. The moment is written in the round-trip
 format, offset included. A value is everything after the first `=`, untrimmed,
 so a typed `a=b` survives. Numbers are read in ascending order and need not
 start at one or run without gaps, the way the tab blocks of the settings are

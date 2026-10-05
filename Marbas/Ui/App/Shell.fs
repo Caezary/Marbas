@@ -101,29 +101,50 @@ let private unpackTargets (deps: Dependencies) targetDirectory (archive: FileSys
         |> List.map (_.Name >> ArchivePath.child ArchivePath.root)
         |> entriesApprovedForDirectory deps targetDirectory archive
 
-let private showOpened (deps: Dependencies) title describe opened =
+let private changeHistory (deps: Dependencies) dispatch change =
+    match History.change deps.FileSystem deps.HistoryPath (deps.Clock()) change with
+    | Ok history ->
+        dispatch (HistoryChanged history)
+        Some history
+    | Error error ->
+        dispatch (HistoryUnwritten error)
+        None
+
+let private typedBefore (deps: Dependencies) kind =
+    History.load deps.FileSystem deps.HistoryPath
+    |> Result.map (History.inputs kind >> List.map _.Item)
+    |> Result.defaultValue []
+
+let private viewerSearches (deps: Dependencies) dispatch : Marbas.Ui.Viewer.SearchHistory =
+    { Texts = fun () -> typedBefore deps SearchedText
+      Remember = fun text -> changeHistory deps dispatch (Remember(Typed(SearchedText, text))) |> ignore }
+
+let private showOpened (deps: Dependencies) dispatch title describe opened =
     match opened with
     | Ok source ->
         use source = source
-        deps.Prompts.ShowFile source
+
+        deps.Prompts.ShowFile
+            { Source = source
+              Searches = viewerSearches deps dispatch }
     | Error error -> report deps title (describe error)
 
-let private showPath (deps: Dependencies) path =
+let private showPath (deps: Dependencies) dispatch path =
     FileWindow.openFile deps.FileSystem path
-    |> showOpened deps ContentErrorMessage.Title ContentErrorMessage.describe
+    |> showOpened deps dispatch ContentErrorMessage.Title ContentErrorMessage.describe
 
-let private showEntry (deps: Dependencies) archive password entry =
+let private showEntry (deps: Dependencies) dispatch archive password entry =
     FileWindow.openEntry deps.FileSystem password archive entry
-    |> showOpened deps ArchiveErrorMessage.Title ArchiveErrorMessage.describe
+    |> showOpened deps dispatch ArchiveErrorMessage.Title ArchiveErrorMessage.describe
 
-let private showHit (deps: Dependencies) (hit: FindHit) =
+let private showHit (deps: Dependencies) dispatch (hit: FindHit) =
     match hit.Location with
     | OnDisk _
-    | SearchResults _ -> showPath deps (FindHit.spelled deps.FileSystem hit)
+    | SearchResults _ -> showPath deps dispatch (FindHit.spelled deps.FileSystem hit)
     | InArchive(archive, level) ->
         let entry = ArchivePath.child level hit.Entry.Name
 
-        withPassword deps archive (fun password -> showEntry deps archive password entry)
+        withPassword deps archive (fun password -> showEntry deps dispatch archive password entry)
 
 let private pathsApprovedForArchive (deps: Dependencies) archive level sources =
     let taken =
@@ -306,20 +327,6 @@ let private deleteTitle mode =
     | ToTrash
     | Permanently -> DeleteTitle
 
-let private changeHistory (deps: Dependencies) dispatch change =
-    match History.change deps.FileSystem deps.HistoryPath (deps.Clock()) change with
-    | Ok history ->
-        dispatch (HistoryChanged history)
-        Some history
-    | Error error ->
-        dispatch (HistoryUnwritten error)
-        None
-
-let private typedBefore (deps: Dependencies) kind =
-    History.load deps.FileSystem deps.HistoryPath
-    |> Result.map (History.inputs kind >> List.map _.Item)
-    |> Result.defaultValue []
-
 let private reportFavorites (deps: Dependencies) error =
     report deps FavoritesErrorMessage.Title (FavoritesErrorMessage.describe error)
 
@@ -380,9 +387,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         let ground =
             FindGround.resolve deps.FileSystem location marked deps.Processes.PathDirectories query.Scope
 
-        deps.Runners.Search (Walk(query, ground)) (showHit deps) (SearchAnswered >> dispatch)
+        deps.Runners.Search (Walk(query, ground)) (showHit deps dispatch) (SearchAnswered >> dispatch)
     | ShowLastResults(results, gone) ->
-        deps.Runners.Search (Reopen(results, gone)) (showHit deps) (SearchAnswered >> dispatch)
+        deps.Runners.Search (Reopen(results, gone)) (showHit deps dispatch) (SearchAnswered >> dispatch)
     | PromptForLink(sources, directory, suggestion) ->
         let refusalOf text kind =
             Links.requests deps.FileSystem kind sources directory text
@@ -454,9 +461,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
             MeasureTitle
             (fun control -> DirectoryMeasure.measureAll deps.FileSystem control targets)
             (MeasureFinished >> dispatch)
-    | ViewFile path -> showPath deps path
+    | ViewFile path -> showPath deps dispatch path
     | ViewArchiveEntry(archive, entry) ->
-        withPassword deps archive (fun password -> showEntry deps archive password entry)
+        withPassword deps archive (fun password -> showEntry deps dispatch archive password entry)
     | EditFile(path, editor) -> deps.Processes.RunEditor editor path |> EditFinished |> dispatch
     | RunProgram request -> dispatch (LaunchFinished(request, deps.Processes.Launch request))
     | ShowHandlers(path, chosen) ->

@@ -44,6 +44,7 @@
     <Compile Include="FileSystem\RewindingStreamTests.fs" />
     <Compile Include="FileSystem\FileWindowTests.fs" />
     <Compile Include="FileSystem\LineIndexTests.fs" />
+    <Compile Include="FileSystem\WindowSearchTests.fs" />
     <Compile Include="FileSystem\DrivesTests.fs" />
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
@@ -189,6 +190,8 @@
     <Compile Include="Ui\Viewer\ViewerHeaderTests.fs" />
     <Compile Include="Ui\Viewer\ViewerKeysTests.fs" />
     <Compile Include="Ui\Viewer\CodePageTests.fs" />
+    <Compile Include="Ui\Viewer\FoundSpanTests.fs" />
+    <Compile Include="Ui\Viewer\ViewerSearchTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -215,6 +218,7 @@
 
   <ItemGroup>
     <Compile Include="Adapters\BatchRunnerTests.fs" />
+    <Compile Include="Adapters\WindowSearchRunnerTests.fs" />
     <Compile Include="Adapters\DirectoryWatchTests.fs" />
     <Compile Include="Adapters\LaunchProcessTests.fs" />
     <Compile Include="Adapters\NativeLinksTests.fs" />
@@ -291,6 +295,7 @@
     <Compile Include="Integration\Dialogs\LinkDialogTests.fs" />
     <Compile Include="Integration\Dialogs\OpenWithDialogTests.fs" />
     <Compile Include="Integration\Dialogs\FindDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\ViewerSearchDialogTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

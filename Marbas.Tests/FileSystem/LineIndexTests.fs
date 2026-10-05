@@ -271,3 +271,102 @@ let ``a wide last line ends before a feed at the very end`` () =
     let last = index.Text 1
 
     Assert.Equal(Some "second", last)
+
+let private everyLine (index: LineIndex.Index) =
+    index.ScanAll()
+    [ for line in 0 .. index.Known - 1 -> index.Start line |> Option.get, index.Text line |> Option.get ]
+
+let private walked (source: FileWindow.Source) from =
+    LineIndex.walkFrom source source.Encoding from
+    |> Seq.choose (fun step ->
+        match step with
+        | LineIndex.LineRead line -> Some(line.Start, line.Text)
+        | LineIndex.Reading _ -> None)
+    |> List.ofSeq
+
+let private readingAt (source: FileWindow.Source) from =
+    LineIndex.walkFrom source source.Encoding from
+    |> Seq.choose (fun step ->
+        match step with
+        | LineIndex.Reading offset -> Some offset
+        | LineIndex.LineRead _ -> None)
+    |> List.ofSeq
+
+let private bomUtf16 (text: string) =
+    MockFileData(Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes text))
+
+[<Theory>]
+[<InlineData("first\nsecond\nthird")>]
+[<InlineData("first\nsecond\n")>]
+[<InlineData("first\r\nsecond\r\n")>]
+[<InlineData("\n\n\nlast")>]
+[<InlineData("\n")>]
+[<InlineData("only")>]
+[<InlineData("")>]
+[<InlineData("﻿marked\nlines")>]
+let ``a walk from the start passes the lines the index reads`` (content: string) =
+    let source, index = over (MockFileData content)
+    let expected = everyLine index
+
+    let lines = walked source 0L
+
+    Assert.Equal<(int64 * string) list>(expected, lines)
+
+[<Fact>]
+let ``a wide walk passes the lines the index reads`` () =
+    let source, index = over (bomUtf16 "first\r\nsecond\nthird\n")
+    let expected = everyLine index
+
+    let lines = walked source 0L
+
+    Assert.Equal<(int64 * string) list>(expected, lines)
+
+[<Fact>]
+let ``a walk passes lines that run across the window of bytes`` () =
+    let source, index = over (MockFileData(String('a', LineIndex.ChunkLength - 3) + "\nbcdefgh\nlast"))
+    let expected = everyLine index
+
+    let lines = walked source 0L
+
+    Assert.Equal<(int64 * string) list>(expected, lines)
+
+[<Fact>]
+let ``a walk cuts a line longer than the longest the viewer reads`` () =
+    let source, index = over (MockFileData(String('a', LineIndex.MaxLineLength + 10) + "\nnext"))
+    let expected = everyLine index
+
+    let lines = walked source 0L
+
+    Assert.Equal<(int64 * string) list>(expected, lines)
+
+[<Fact>]
+let ``a walk from a line start begins at that line`` () =
+    let source, _ = over (MockFileData "first\nsecond\nthird")
+
+    let lines = walked source 6L
+
+    Assert.Equal<(int64 * string) list>([ 6L, "second"; 13L, "third" ], lines)
+
+[<Fact>]
+let ``a walk from the start of a marked file begins past the mark`` () =
+    let source, _ = over (MockFileData "﻿first")
+
+    let lines = walked source 0L
+
+    Assert.Equal<(int64 * string) list>([ 3L, "first" ], lines)
+
+[<Fact>]
+let ``a walk says where it reads before each window of bytes`` () =
+    let source, _ = over (MockFileData(String('a', LineIndex.ChunkLength * 2 + 10)))
+
+    let offsets = readingAt source 7L
+
+    Assert.Equal<int64 list>([ 7L; 7L + int64 LineIndex.ChunkLength; 7L + int64 LineIndex.ChunkLength * 2L ], offsets)
+
+[<Fact>]
+let ``a walk past the end reads nothing`` () =
+    let source, _ = over (MockFileData "first")
+
+    let offsets = readingAt source 5L
+
+    Assert.Empty offsets

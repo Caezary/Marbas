@@ -4,6 +4,7 @@ open Terminal.Gui.Drawing
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui
 open Marbas.Ui.Theme
@@ -19,6 +20,14 @@ let HeaderId = "viewerHeader"
 [<Literal>]
 let KeyBarId = "viewerKeyBar"
 
+type Ports =
+    { Close: Window -> unit
+      ChooseCodePage: CodePageOffer -> CodePage option
+      AskSearch: SearchOffer -> string option
+      Searches: SearchHistory
+      RunSearch: (WindowSearch.Control -> WindowSearch.Answer) -> WindowSearch.Answer
+      Report: SearchReport -> unit }
+
 type ContentView(source: FileWindow.Source) as this =
     inherit View()
 
@@ -29,6 +38,7 @@ type ContentView(source: FileWindow.Source) as this =
     let mutable wrap = Unwrapped
     let mutable top = 0
     let mutable left = 0
+    let mutable found: FoundSpan option = None
 
     do
         this.Id <- ContentId
@@ -53,13 +63,21 @@ type ContentView(source: FileWindow.Source) as this =
     let lineHeight line =
         textLine line |> Option.map (LineWrap.height (width ())) |> Option.defaultValue 1
 
+    let segmentsOf line text =
+        LineWrap.segments (width ()) text
+        |> List.mapi (fun segment piece ->
+            ({ Line = line
+               From = segment * width ()
+               Text = piece }
+            : ShownRow))
+
     let wrappedRows room =
-        let rec gather line count (wrapped: string list list) =
+        let rec gather line count (wrapped: ShownRow list list) =
             match count >= room, textLine line with
             | true, _
             | _, None -> wrapped, line - top
             | false, Some text ->
-                let segments = LineWrap.segments (width ()) text
+                let segments = segmentsOf line text
                 gather (line + 1) (count + List.length segments) (segments :: wrapped)
 
         let wrapped, lines = gather top 0 []
@@ -69,7 +87,12 @@ type ContentView(source: FileWindow.Source) as this =
         let rows =
             [ for row in top .. top + room - 1 do
                   match rowAt row with
-                  | Some text -> yield LineWrap.visible (width ()) left text
+                  | Some text ->
+                      yield
+                          ({ Line = row
+                             From = left
+                             Text = LineWrap.visible (width ()) left text }
+                          : ShownRow)
                   | None -> () ]
 
         rows, max 1 (List.length rows)
@@ -142,7 +165,39 @@ type ContentView(source: FileWindow.Source) as this =
         encoding <- CodePage.encoding source.Encoding probe page
         index <- LineIndex.Index(source, encoding)
 
+    let shownRows () = visible () |> fst
+
+    let foundOnScreen () =
+        match mode, found with
+        | TextMode, Some span ->
+            shownRows ()
+            |> List.indexed
+            |> List.choose (fun (row, shown) ->
+                FoundSpan.onRow shown span
+                |> Option.map (fun (start, length) -> row, start, length))
+        | TextMode, None
+        | HexMode, _ -> []
+
+    let reaches (span: FoundSpan) (row: ShownRow) =
+        match wrap with
+        | Unwrapped -> row.Line = span.Line
+        | Wrapped -> FoundSpan.startsOn row span
+
+    let show (hit: WindowSearch.Match) =
+        let line = index.LineAt hit.LineStart
+        let raw = index.Text line |> Option.defaultValue ""
+        let span = FoundSpan.ofMatch line raw hit.Column hit.Length
+        found <- Some span
+
+        if not (shownRows () |> List.exists (reaches span)) then
+            goTo line
+
+        if wrap = Unwrapped then
+            left <- FoundSpan.leftShowing left (width ()) span
+
     let readAs page =
+        found <- None
+
         match mode with
         | TextMode ->
             let offset = index.Start top |> Option.defaultValue 0L
@@ -165,7 +220,13 @@ type ContentView(source: FileWindow.Source) as this =
 
     member _.Left = left
 
-    member _.Rows() = visible () |> fst
+    member _.Rows() = shownRows () |> List.map _.Text
+
+    member _.FoundOnScreen() = foundOnScreen ()
+
+    member _.SearchStart = index.Start top |> Option.defaultValue source.Length
+
+    member _.Show(hit: WindowSearch.Match) = show hit
 
     member _.Place =
         match mode with
@@ -202,6 +263,7 @@ type ContentView(source: FileWindow.Source) as this =
             wrap <- (if wrap = Wrapped then Unwrapped else Wrapped)
             left <- 0
         | ViewerKeys.ModeToggled -> switchMode ()
+        | ViewerKeys.SearchAsked
         | ViewerKeys.CodePageAsked
         | ViewerKeys.Closed -> ()
 
@@ -210,15 +272,33 @@ type ContentView(source: FileWindow.Source) as this =
     override this.OnDrawingContent(_: DrawContext) =
         let rows = this.Rows()
         let room = width ()
+        let normal = this.GetCurrentAttribute()
 
         for row in 0 .. height () - 1 do
             let text = rows |> List.tryItem row |> Option.defaultValue ""
             this.Move(0, row) |> ignore
             this.AddStr(text.PadRight room)
 
+        this.SetAttribute ClassicScheme.foundText |> ignore
+
+        for row, start, length in foundOnScreen () do
+            this.Move(start, row) |> ignore
+            this.AddStr(rows[row].Substring(start, length))
+
+        this.SetAttribute normal |> ignore
         true
 
-let create (close: Window -> unit) (chooseCodePage: CodePageOffer -> CodePage option) (source: FileWindow.Source) =
+let private searching (ports: Ports) (source: FileWindow.Source) (content: ContentView) text =
+    let encoding = content.Encoding
+    let from = content.SearchStart
+
+    match ports.RunSearch(fun control -> WindowSearch.forward control source encoding text from) with
+    | WindowSearch.Found hit -> content.Show hit
+    | WindowSearch.NotFound -> ports.Report(TextNotFound text)
+    | WindowSearch.Stopped -> ()
+    | WindowSearch.Unreadable error -> ports.Report(SearchFailed error)
+
+let create (ports: Ports) (source: FileWindow.Source) =
     let window = new Window(Width = Dim.Fill(), Height = Dim.Fill())
 
     window.BorderStyle <- LineStyle.None
@@ -252,19 +332,42 @@ let create (close: Window -> unit) (chooseCodePage: CodePageOffer -> CodePage op
         FunctionKeyBar.label keyBar (ViewerKeys.bar content.Mode content.Wrap)
         content.SetNeedsDraw()
 
+    let lastSearch = ref None
+
+    let searchFor text =
+        lastSearch.Value <- Some text
+        searching ports source content text
+
+    let askedFor raw =
+        EnteredText.tryCreate raw |> Option.iter ports.Searches.Remember
+        FindText.tryCreate raw |> Option.iter searchFor
+
+    let askSearch () =
+        match content.Mode with
+        | TextMode ->
+            ports.AskSearch
+                { Remembered = ports.Searches.Texts()
+                  Last = lastSearch.Value }
+            |> Option.iter askedFor
+        | HexMode -> ()
+
     content.KeyDown.Add(fun (key: Key) ->
         match ViewerKeys.commandFor key with
         | Some ViewerKeys.Closed ->
             key.Handled <- true
-            close window
+            ports.Close window
         | Some ViewerKeys.CodePageAsked ->
             key.Handled <- true
 
-            chooseCodePage
+            ports.ChooseCodePage
                 { Detected = source.Encoding
                   Current = content.CodePage }
             |> Option.iter content.ReadAs
 
+            refresh ()
+        | Some ViewerKeys.SearchAsked ->
+            key.Handled <- true
+            askSearch ()
             refresh ()
         | Some command ->
             key.Handled <- true

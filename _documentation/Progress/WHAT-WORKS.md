@@ -387,7 +387,8 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   move by a line, `PgUp`/`PgDn` by a page, `Home`/`End` reach the ends, the side
   arrows move across a long line (a screen at a time with `Ctrl` held), `F2`
   wraps and unwraps, `F4` switches to the hex dump and back at the same place in
-  the file, `F8` reads the file in another code page, and `F3`, `F10` or `Esc`
+  the file, `F7` searches the text, `F8` reads the file in another code page,
+  and `F3`, `F10` or `Esc`
   closes. A row of the hex dump holds the offset in ten hexadecimal digits — a
   fixed column for files up to a terabyte, and the header names the place in
   the same ten — sixteen bytes in two halves of eight with a vertical line
@@ -414,6 +415,19 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   show the mark. The choice holds until the viewer closes; the next `F3`
   settles the encoding afresh. `Esc` closes the popup and leaves the viewer as
   it was.
+- `F7` in the viewer opens *Search*: a field with the texts searched for
+  before — the same list the text field of *Find files* keeps — and four
+  options, case sensitive, whole words, regular expression and backwards, which
+  are greyed out for now. The field is empty the first time and holds the last
+  text after that. Confirming searches forward from the line on top of the
+  screen, ignoring case and never across a line break, in the code page the
+  viewer reads in, behind a progress window that `Esc` stops; what was typed is
+  remembered. The match is drawn black on cyan, where a tab before it puts it
+  and across a wrap if the wrap splits it. A match already on screen leaves the
+  screen still; otherwise its line comes to the top, and the screen moves
+  across when the match lies beyond its edge. A text the file does not hold is
+  reported as not found and nothing moves; a search stopped says nothing. `F7`
+  in the hex dump does nothing yet.
 - `F4` opens the same file — the one under the cursor — in an editor: the one
   its extension is associated with, otherwise the default editor named in the
   settings, otherwise whatever `$EDITOR` names, otherwise `notepad` on Windows

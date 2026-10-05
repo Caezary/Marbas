@@ -88,6 +88,7 @@
         <Compile Include="FileSystem\RewindingStream.fs" />
         <Compile Include="FileSystem\FileWindow.fs" />
         <Compile Include="FileSystem\LineIndex.fs" />
+        <Compile Include="FileSystem\WindowSearch.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -162,6 +163,8 @@
         <Compile Include="Ui\Viewer\ViewerKeys.fs" />
         <Compile Include="Ui\Viewer\CodePage.fs" />
         <Compile Include="Ui\Viewer\CodePageDialog.fs" />
+        <Compile Include="Ui\Viewer\FoundSpan.fs" />
+        <Compile Include="Ui\Viewer\ViewerSearch.fs" />
         <Compile Include="Ui\Viewer\FileViewer.fs" />
     </ItemGroup>
 
@@ -187,6 +190,7 @@
         <Compile Include="Ui\Dialogs\FavoriteRow.fs" />
         <Compile Include="Ui\Dialogs\FavoritesDialog.fs" />
         <Compile Include="Ui\Dialogs\FindDialog.fs" />
+        <Compile Include="Ui\Dialogs\ViewerSearchDialog.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -209,6 +213,7 @@
 
     <ItemGroup>
         <Compile Include="Adapters\HostEnvironment.fs" />
+        <Compile Include="Adapters\WindowSearchRunner.fs" />
         <Compile Include="Adapters\Prompts.fs" />
         <Compile Include="Adapters\RecycleBin.fs" />
         <Compile Include="Adapters\EditorProcess.fs" />
