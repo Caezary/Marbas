@@ -517,16 +517,16 @@ key handled so the `F3` binding on the main window cannot reopen a viewer on
 top of the one being closed.
 
 **The editor is a port, and its failure is an operation failure.**
-`Processes.RunEditor` takes the path and answers
+`Processes.StartEditor` takes the path and answers
 `Result<unit, Operations.OperationError>`; `EditorProcess.run` is the only
 place that knows about `Process.Start`, `WaitForExit` and repainting the
 screen afterwards, and it maps whatever the start threw through
 `Operations.mapException`. That reuses the error type, the
 `ReportOperationError` effect and `OperationErrorMessage` rather than inventing
 a second failure vocabulary for one case — an editor that will not start failed
-on a path, like every other operation error. The tests pass a `RunEditor` that
-records the path and can write to the mock file system, which is what makes
-"the panel shows what the editor left behind" an ordinary test.
+on a path, like every other operation error. The tests pass a `StartEditor`
+that records the path and can write to the mock file system, which is what
+makes "the panel is not re-read when the editor starts" an ordinary test.
 
 **Both start in the directory the panel stands in.** A `LaunchRequest` carries
 its `WorkingDirectory` as a field, and `EditorProcess` derives one from the path
@@ -540,14 +540,28 @@ somewhere the user was never looking.
 command: what was configured, trimmed, or `notepad`/`vi`. `Adapters` only
 reads the environment and asks. A blank `$EDITOR` counts as unset.
 
-**A finished edit re-reads the panel it started from.** `EditFinished Ok` runs
-the same `AppState.refresh` that `Ctrl+R` does, so the cursor stays on the file
-and the marks survive; only the active panel is re-read, because that is the
-directory the editor was pointed into.
+**On Windows the editor is not waited for; on Unix it is.** Since P20.1
+`EditorProcess.describe` answers an `EditorStart` — the `ProcessStartInfo` and
+an `EditorWait` — and `run` only carries it out. On Windows the wait is
+`StartsDetached` and the start goes through the shell (`UseShellExecute`), so a
+console editor gets a console window of its own instead of drawing over the
+panels, and `F4` hands the keyboard back at once. On Unix the wait is
+`WaitsForExit` and the editor is started directly: a console editor such as
+`vi` has no window to open and can only share the terminal, so the panels hold
+still until it ends and the screen is repainted afterwards. The choice is the
+platform's and nothing else's, and `EditorProcessTests` prove both
+descriptions without starting anything.
+
+**A started editor re-reads nothing.** `EditorStarted Ok` leaves the state as
+it is. Until P20.1 it ran the refresh `Ctrl+R` runs, which made sense only
+while `F4` waited for the editor to close; a detached editor has no moment of
+closing to hook, and the directory watch of
+[Auto-refresh](AUTO-REFRESH.md) already follows the file as it is saved —
+on Unix too, where the editor is still waited for.
 
 **Running a program is a second port, and its failures are their own
 vocabulary.** `Processes.Launch` takes a `LaunchRequest` and answers
-`Result<unit, LaunchError>`. It is not `RunEditor` and it does not reuse
+`Result<unit, LaunchError>`. It is not `StartEditor` and it does not reuse
 `OperationError`, because nothing here is an operation on a file: the four ways
 it fails — nothing associated with the name, the named program missing, the
 system refusing, the elevation prompt turned down — say something about
@@ -555,10 +569,10 @@ system refusing, the elevation prompt turned down — say something about
 effect is `RunProgram`, the message back is `LaunchFinished`, and the wording
 lives in `LaunchErrorMessage` beside every other message module.
 
-**The launcher never waits, and that is the whole point of it.** `EditorProcess`
-blocks on `WaitForExit` because `F4` promises the panel is re-read when the
-editor closes; `LaunchProcess` promises nothing of the kind, so it starts the
-program and returns. Nothing re-reads a panel afterwards either — there is no
+**The launcher never waits, and that is the whole point of it.** `LaunchProcess`
+starts the program and returns; since P20.1 `EditorProcess` does the same on
+Windows and blocks on `WaitForExit` only on Unix, where a console editor has
+nowhere to run but the terminal the panels are drawn in. Nothing re-reads a panel afterwards either — there is no
 "afterwards" to hook. On Windows every launch goes through the shell verb
 (`UseShellExecute`), which is what gives a console program a console of its own
 instead of letting it write over the panels, and `runas` is the same call with

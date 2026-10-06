@@ -295,11 +295,19 @@ what pressing it means anywhere else in the world either.
 
 **Starting a program is an effect that changes no state.** `RunProgram` carries
 a `LaunchRequest` and `LaunchFinished` brings the answer back, and the
-transition for it does nothing to the panels either way: unlike `EditFinished`,
-which re-reads the directory the editor was pointed into, nothing here says when
+transition for it does nothing to the panels either way: nothing here says when
 the program is done — or that it ever will be. A failure becomes
 `ReportLaunchError`, except `ElevationDeclined`, which becomes nothing at all.
-`EditFinished` answers `Operations.StartDeclined` the same way, so a prompt the
+
+**Nothing Marbas starts is waited for, and nothing re-reads a panel when it
+ends.** Since P20.1 the editor of `F4` is started the way `Enter` starts a
+program: `StartEditor` answers as soon as the editor is running, on Windows in
+a window of its own, and `EditorStarted Ok` changes nothing — what the editor
+writes reaches the panels through the directory watch, the way a change made
+by any other program does. Unix is the one exception, where a console editor
+can only share the terminal and is still waited for, but the transition is the
+same there. `EditorStarted` answers `Operations.StartDeclined` the way
+`LaunchFinished` answers `ElevationDeclined`, so a prompt the
 user turns down is silence whichever key started the program: `mapException`
 turns the Windows code for it into that value before the transition ever sees
 it, the way it turns the code for "nothing is associated" into

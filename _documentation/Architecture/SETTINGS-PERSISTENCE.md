@@ -103,8 +103,8 @@ role there is nothing to migrate: the first save rewrites the file in the new
 spelling and the old prefix simply stops appearing.
 
 **An empty default editor still means what it always meant.** `EditorCommand`
-was written around one `$EDITOR` and it still is: `EditorProcess.run` resolves
-an editor by asking the state first (`ProgramSettings.programFor ForEditing`,
+was written around one `$EDITOR` and it still is: `EditorProcess.describe`
+resolves an editor by asking the state first (`ProgramSettings.programFor ForEditing`,
 which tries the extension and falls back to the default), then `$EDITOR`, then
 `notepad` on Windows and `vi` elsewhere. Leaving the field blank in the settings
 popup therefore restores exactly the behaviour of the version before it existed.

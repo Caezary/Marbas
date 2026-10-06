@@ -458,10 +458,14 @@ What Marbas does today, feature by feature. How to reach each of them is in the
 - `F4` opens the same file — the one under the cursor — in an editor: the one
   its extension is associated with, otherwise the default editor named in the
   settings, otherwise whatever `$EDITOR` names, otherwise `notepad` on Windows
-  and `vi` elsewhere. Marbas waits for the editor to close, then re-reads the
-  panel with the cursor and the marks where they were, so a file saved (or
-  created) meanwhile is on screen straight away. An editor that cannot be
-  started is reported in a dialog; `..` under the cursor starts nothing.
+  and `vi` elsewhere. On Windows Marbas does not wait for the editor: it is
+  started through the shell, a console editor in a console window of its own,
+  and the panels take keys again at once. On Unix, where a console editor can
+  only share the terminal, Marbas waits for it to close. Either way nothing is
+  re-read when the editor starts or ends; a file saved meanwhile reaches the
+  panel through the directory watch, with the cursor and the marks where they
+  were. An editor that cannot be started is reported in a dialog; `..` under
+  the cursor starts nothing.
 - `F4` on a *directory* opens its properties instead: a popup naming the path,
   with a tick box for each of read-only, hidden, system and archive and a field
   for each of the created, modified and accessed stamps, written

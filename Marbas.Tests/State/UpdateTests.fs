@@ -702,15 +702,14 @@ let ``programs that come back take the place of the ones in force`` () =
     Assert.Empty result.Effects
 
 [<Fact>]
-let ``a finished edit re-reads the panel it was started from`` () =
+let ``a started editor leaves the panels to the directory watch`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
     fs.AddFile(at "start/notes.txt.bak", MockFileData "hi")
 
-    let result = update fs (EditFinished(Ok())) state
+    let result = update fs (EditorStarted(Ok())) state
 
-    Assert.Contains("notes.txt.bak", names result.State.Left.Entries)
-    Assert.Equal(Some "notes.txt", PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
+    Assert.Equal(state, result.State)
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -719,7 +718,7 @@ let ``an editor that could not be started is reported`` () =
     let state = loaded fs |> setCursor Left 2
     let failure = OperationFailed(fp (at "start/notes.txt"), "no editor")
 
-    let result = update fs (EditFinished(Error failure)) state
+    let result = update fs (EditorStarted(Error failure)) state
 
     Assert.Equal(state, result.State)
     Assert.Equal<Effect list>([ ReportOperationError failure ], result.Effects)
@@ -729,7 +728,7 @@ let ``an editor start the user turned down is silence, not a dialog`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
 
-    let result = update fs (EditFinished(Error(StartDeclined(fp (at "start/notes.txt"))))) state
+    let result = update fs (EditorStarted(Error(StartDeclined(fp (at "start/notes.txt"))))) state
 
     Assert.Equal(state, result.State)
     Assert.Empty result.Effects

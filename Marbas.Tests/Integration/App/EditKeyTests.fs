@@ -22,7 +22,7 @@ let private mockFs () =
 let private windowWith (fs: MockFileSystem) runEditor reportError =
     focusedWindow
         { Fakes.dependencies fs (at "start") with
-            Processes.RunEditor = runEditor
+            Processes.StartEditor = runEditor
             Prompts.ReportError = reportError }
 
 let private silent = ignore<Ports.ErrorReport>
@@ -98,7 +98,7 @@ let ``F4 opens the editor its extension is associated with`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Processes.RunEditor = fun editor _ -> started.Add editor; Ok() }
+                Processes.StartEditor = fun editor _ -> started.Add editor; Ok() }
 
     (leftList window).SelectedItem <- 2
 
@@ -125,7 +125,7 @@ let ``F4 opens the editor a settings file written before the role named`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Processes.RunEditor = fun editor _ -> started.Add editor; Ok() }
+                Processes.StartEditor = fun editor _ -> started.Add editor; Ok() }
 
     (leftList window).SelectedItem <- 2
 
@@ -134,7 +134,7 @@ let ``F4 opens the editor a settings file written before the role named`` () =
     Assert.Equal(ProgramPath.tryCreate "notepad++.exe", Assert.Single started)
 
 [<Fact>]
-let ``what the editor left behind shows up when it returns`` () =
+let ``F4 does not re-read the panel once the editor is started`` () =
     let fs = mockFs ()
     let write () = fs.AddFile(at "start/notes.txt.bak", MockFileData "hi")
     use window = windowWith fs (fun _ _ -> write (); Ok()) silent
@@ -142,7 +142,7 @@ let ``what the editor left behind shows up when it returns`` () =
 
     pressKey window Key.F4
 
-    Assert.Equal(4, (leftList window).Source.Count)
+    Assert.Equal(3, (leftList window).Source.Count)
 
 [<Fact>]
 let ``an editor that could not be started is reported`` () =
@@ -164,7 +164,7 @@ let ``Shift+F4 creates the named file in the panel directory and opens it`` () =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
                 Prompts.AskName = fun _ -> Some "draft.md"
-                Processes.RunEditor = fun _ path -> edited.Add path; Ok() }
+                Processes.StartEditor = fun _ path -> edited.Add path; Ok() }
 
     pressKey window KeyMap.newFileKey
 
@@ -198,7 +198,7 @@ let ``F12 hands the programs in force to the settings popup and takes back what 
                     fun request ->
                         shown.Add request.Programs
                         Some { request.Programs with DefaultEditor = Some chosen }
-                Processes.RunEditor = fun editor _ -> started.Add editor; Ok() }
+                Processes.StartEditor = fun editor _ -> started.Add editor; Ok() }
 
     pressKey window KeyMap.settingsKey
     (leftList window).SelectedItem <- 2

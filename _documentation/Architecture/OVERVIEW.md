@@ -241,7 +241,7 @@ Marbas/
     WindowSearchRunner.fs the viewer's search on a background task under the progress dialog
     Prompts.fs            the message boxes and popups the application runs
     RecycleBin.fs         the Windows recycle bin, through the VB runtime
-    EditorProcess.fs      the editor started as a child process, and waited on
+    EditorProcess.fs      the editor started detached on Windows, waited on on Unix
     LaunchProcess.fs      a program handed to the system, and never waited on
     NativeLinks.fs        hard links and junctions through kernel32 and libc
     RegistryHandlers.fs   the Windows registry -> the handlers a name has

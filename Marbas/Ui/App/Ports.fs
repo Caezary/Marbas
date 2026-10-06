@@ -107,7 +107,7 @@ type Prompts =
 type Processes =
     { ListDrives: unit -> DriveRow list
       SendToTrash: FileSystemPath -> Result<unit, Operations.OperationError>
-      RunEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
+      StartEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       Launch: LaunchRequest -> Result<unit, LaunchError>
       LinkKinds: LinkKind list
       RefuseLink: LinkRequest -> LinkRefusal option

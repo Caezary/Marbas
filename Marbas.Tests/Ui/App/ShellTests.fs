@@ -750,18 +750,18 @@ let ``a file that cannot be read is reported instead of shown`` () =
 let ``an edited file is handed to the editor and its outcome dispatched back`` () =
     let sent, dispatch = capture ()
     let edited = ResizeArray<FileSystemPath>()
-    let deps = { noDeps () with Processes.RunEditor = fun _ path -> edited.Add path; Ok() }
+    let deps = { noDeps () with Processes.StartEditor = fun _ path -> edited.Add path; Ok() }
 
     Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), None))
 
     Assert.Equal(fp (at "start/notes.txt"), Assert.Single edited)
-    Assert.Equal<Message list>([ EditFinished(Ok()) ], List.ofSeq sent)
+    Assert.Equal<Message list>([ EditorStarted(Ok()) ], List.ofSeq sent)
 
 [<Fact>]
 let ``the editor the effect names is the one that is started`` () =
     let _, dispatch = capture ()
     let started = ResizeArray<ProgramPath option>()
-    let deps = { noDeps () with Processes.RunEditor = fun chosen _ -> started.Add chosen; Ok() }
+    let deps = { noDeps () with Processes.StartEditor = fun chosen _ -> started.Add chosen; Ok() }
     let chosen = ProgramPath.tryCreate "code.exe"
 
     Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), chosen))
@@ -772,11 +772,11 @@ let ``the editor the effect names is the one that is started`` () =
 let ``an editor that fails dispatches its failure back`` () =
     let sent, dispatch = capture ()
     let failure = OperationFailed(fp (at "start/notes.txt"), "no editor")
-    let deps = { noDeps () with Processes.RunEditor = fun _ _ -> Error failure }
+    let deps = { noDeps () with Processes.StartEditor = fun _ _ -> Error failure }
 
     Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), None))
 
-    Assert.Equal<Message list>([ EditFinished(Error failure) ], List.ofSeq sent)
+    Assert.Equal<Message list>([ EditorStarted(Error failure) ], List.ofSeq sent)
 
 [<Fact>]
 let ``a name for a new file is dispatched as FileNameEntered`` () =

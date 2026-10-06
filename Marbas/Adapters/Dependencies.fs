@@ -75,7 +75,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
       Processes =
         { ListDrives = fun () -> Drives.list fs (home env)
           SendToTrash = sendToTrash fs env
-          RunEditor = runEditor app fs env
+          StartEditor = runEditor app fs env
           Launch = LaunchProcess.start fs env.Platform
           LinkKinds = Links.available links
           RefuseLink = Links.refusal env.Platform fs

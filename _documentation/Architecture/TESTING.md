@@ -269,10 +269,12 @@ held, which is how `Integration/Keys/ModifierRowTests.fs` presses no key at all 
 still asserts what the bottom bar shows. The polling itself lives in
 `ModifierWatch` and is only exercised by running the app.
 
-**An external program is a port too.** `RunEditor` is what `F4` goes through,
-so a test hands it a function that records the path — and, where the point is
-the refresh that follows, one that writes into the `MockFileSystem` before
-answering `Ok`. Nothing in the suite starts a process.
+**An external program is a port too.** `StartEditor` is what `F4` goes
+through, so a test hands it a function that records the path — and, where the
+point is that no refresh follows, one that writes into the `MockFileSystem`
+before answering `Ok`. Nothing in the suite starts a process: what the adapter
+would start is a `ProcessStartInfo` that `EditorProcess.describe` and
+`LaunchProcess.describe` answer without starting it.
 
 **The settings file is not a port.** `SettingsPath` is a plain path on the
 dependencies and `Settings.load`/`Settings.save` use the injected file system, so

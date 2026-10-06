@@ -465,7 +465,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
     | ViewFile path -> showPath deps dispatch path
     | ViewArchiveEntry(archive, entry) ->
         withPassword deps archive (fun password -> showEntry deps dispatch archive password entry)
-    | EditFile(path, editor) -> deps.Processes.RunEditor editor path |> EditFinished |> dispatch
+    | EditFile(path, editor) -> deps.Processes.StartEditor editor path |> EditorStarted |> dispatch
     | RunProgram request -> dispatch (LaunchFinished(request, deps.Processes.Launch request))
     | ShowHandlers(path, chosen) ->
         let name = FileSystemPath.name deps.FileSystem path

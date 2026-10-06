@@ -55,7 +55,7 @@ type Message =
     | ViewRequested
     | MeasureFinished of measured: Result<Measurement list, Operations.OperationError>
     | EditRequested
-    | EditFinished of outcome: Result<unit, Operations.OperationError>
+    | EditorStarted of outcome: Result<unit, Operations.OperationError>
     | LaunchFinished of request: LaunchRequest * outcome: Result<unit, LaunchError>
     | OpenWithRequested
     | HandlerChosen of path: FileSystemPath * choice: OpenWithChoice
@@ -658,11 +658,9 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
 
         request state (ShowSettings(state.Programs, candidate))
     | ProgramsEntered programs -> stay (withPrograms programs state)
-    | EditFinished outcome ->
-        match outcome with
-        | Error(Operations.StartDeclined _) -> stay state
-        | Error error -> reporting state error
-        | Ok() -> refresh fs state |> applyListing state
+    | EditorStarted(Error(Operations.StartDeclined _))
+    | EditorStarted(Ok()) -> stay state
+    | EditorStarted(Error error) -> reporting state error
     | LaunchFinished(started, outcome) ->
         match outcome with
         | Error(ElevationDeclined _) -> stay state
