@@ -2316,6 +2316,34 @@ let ``a text the viewer searched for is remembered with the texts searched for b
     Assert.Single sent |> ignore
 
 [<Fact>]
+let ``the viewer is offered the bytes searched for before, apart from the texts`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "first")
+    typedEarlier fs SearchedText [ "needle" ]
+    typedEarlier fs SearchedBytes [ "4D 5A" ]
+    let offered = ResizeArray<EnteredText list>()
+
+    let deps =
+        { withFs fs with Prompts.ShowFile = fun request -> offered.Add(request.ByteSearches.Texts()) }
+
+    Shell.interpret deps ignore (ViewFile(fp (at "start/notes.txt")))
+
+    Assert.Equal<EnteredText list>([ typed "4D 5A" ], Assert.Single offered)
+
+[<Fact>]
+let ``bytes the viewer searched for are remembered in their own list`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes.txt", MockFileData "first")
+
+    let deps =
+        { withFs fs with Prompts.ShowFile = _.ByteSearches.Remember(typed "4D 5A") }
+
+    Shell.interpret deps ignore (ViewFile(fp (at "start/notes.txt")))
+
+    Assert.Equal<string list>([ "4D 5A" ], rememberedIn fs SearchedBytes)
+    Assert.Empty(rememberedIn fs SearchedText)
+
+[<Fact>]
 let ``a search confirmed remembers its masks and its text as they were typed`` () =
     let fs = MockFileSystem()
     let deps = { withFs fs with Prompts.AskFind = fun _ -> Some(searched "needle ") }

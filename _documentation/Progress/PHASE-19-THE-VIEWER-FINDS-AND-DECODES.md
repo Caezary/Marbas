@@ -271,3 +271,72 @@ Through the probe, with the real dialog and the synchronous runner: `(` with
 pattern '(' at offset 1. Not enough )'s.* over the popup; `Esc` closed the box
 and left the popup with `(` in the field, the box ticked and *Whole words*
 grey; `Backspace`, `line 1[5-9]` and `Enter` marked `line 15`.
+
+**P19.6 let the hex dump search for bytes, and closed the phase.**
+`WantedBytes`, new in `Domain`, is what the hex field asks for, read from
+hexadecimal digits, and `BytesError` says why a field is not bytes.
+`ByteSearch.run` looks for the run window by window — forwards with an overlap
+of one byte short of the run, backwards from the window that ends where a run
+starting before the offset would — and answers `WindowSearch.Answer`, which
+became generic so the text search answers a `WindowSearch.Match`, a line
+and a column, and this one a `ByteSearch.Match`, the offset and the length.
+The runner was already generic in all but its annotation, so the viewer has a
+second port, `RunByteSearch`, filled by the same `WindowSearchRunner.run`.
+
+The byte match was first called `Run`, after the plan's "run of bytes". It
+was renamed before the commit: the two types play one part in `Found` and
+should not read as two different things, and `Run` sat beside the verb — the
+port `RunByteSearch` and the function `ByteSearch.run` — in the same lines as
+`ShowRun` and `PlaceAfterRun`, which meant the match. The viewer's members
+became `ShowBytesMatch`, `BytesScreenPlace` and `PlaceAfterBytesMatch`.
+
+The popup learned which mode it opens in from the offer: `SearchOffer.Last`
+is `LastText` or `LastBytes`, each with the last query of its kind, and in hex
+only *Backwards* can be ticked and the answer is `AsBytes`. `ViewerSearch.query`
+answers an `Asked` — `TextAsked` or `BytesAsked` — or a `SearchRefusal`,
+`BrokenPattern` or `BrokenBytes`; the report that carried a pattern's refusal
+became `Refused` of either, and `BytesNotFound` names the bytes. The viewer
+keeps a last query and a mark for each mode. `HexDump.hexColumn` and
+`HexDump.textColumn` say where a byte stands in a row, from the constants the
+row is written with, and `HexMark.spans` turns a run into the columns it covers
+on a row, split at the rule; the content draws them through the same
+`FoundSpan.onRow` as the text. `F7` reads `Search` on the bar in hex as well.
+
+Three things the plan left open were settled with the user before the tests
+were written. The bytes searched for keep a history list of their own,
+`input.bytes`. The field is read loosely: pairs spaced or not, and a single
+digit as a byte of its own. And *Backwards* applies to bytes as it does to
+text.
+
+The tests: `HistoryTests` the new list under its key; `WantedBytesTests`
+pairs spaced, unspaced, in either case and between tabs, single digits, a mix,
+four tokens that are not hexadecimal, an odd run, a field of spaces and the
+spelling; `ByteSearchTests` a run inside one window, at the start, at the end,
+split across two windows, past the first window, nowhere, in an empty file,
+from an offset past a run and at one, past the last run, backwards before the
+offset, across it, from the end, before the first run, split across two
+windows and before the window it starts in, stopped both ways, the progress
+both ways and a stream that fails; `HexDumpTests` the hex and the text column
+of a byte in either half; `HexMarkTests` a run in one half, across the rule,
+from the row above, into the next row, over a whole row and on rows it does not
+reach; `ViewerSearchTests` the messages for bytes and the answer as bytes,
+good and bad; `ViewerSearchDialogTests` the options greyed for bytes, the last
+bytes offered back with their direction, the bytes history, the answer as
+bytes, and a field that is not bytes refused with the popup left open;
+`ViewerKeysTests` the label in hex; `FileViewerTests` the offer in hex, a run
+on screen marked in both columns, a run split across two windows brought to
+the top and marked on two rows, `Shift+F7` forwards and backwards, a search
+back from the bottom of the screen, bytes not found, a field that is not bytes
+reported before anything is read, the bytes remembered in their own list,
+offered back, a hex mark not drawn in text, a code page keeping it, and
+`Shift+F7` in hex asking when no bytes were searched for; `ShellTests` the
+bytes history handed to the viewer apart from the texts, and remembered in it.
+
+Through the probe, with the real dialog and the synchronous runner: `F4`,
+`F7` and `fc fd fe fb` opened the popup with only *Backwards* in white; `Enter`
+marked `FC FD` and `FE FB` on either side of the rule and `üýþû` in the
+character column of the third row; `Shift+F7` marked `FC FD`/`üý` at the end
+of the fifth row and `FE FB`/`þû` at the start of the sixth; `MZ` raised *'MZ'
+is not a byte* over the popup, which stayed open with `MZ` in the field. The
+sentence then still said the bytes had to be spaced, which the field does not
+ask for, and was reworded.

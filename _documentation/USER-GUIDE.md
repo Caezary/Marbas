@@ -122,7 +122,11 @@ cursor when nothing is marked.
   text and options. `Shift+F7` finds the next match the same way without
   asking. The match is highlighted and scrolled into view, a long search shows
   its progress and `Esc` stops it, and reaching the end — or the start — of
-  the file without a match is reported. On a directory — or with directories
+  the file without a match is reported. In the hex dump `F7` searches for
+  bytes instead: type them as hexadecimal digits, `4D 5A` or `4D5A` (a single
+  digit is a byte of its own), and the run found is highlighted in both
+  columns; only *Backwards* applies, and the field keeps its own list of the
+  bytes searched for. On a directory — or with directories
   marked — `F3` measures them instead: the size replaces `<DIR>` in the size
   column and shows on the status line. Sizes in the listing are rounded to the
   unit they reach (`1.5 KB`, `59.6 GB`); the status line and the panel footer

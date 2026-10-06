@@ -466,6 +466,30 @@ way the literal search tries every occurrence, and a match of no characters is
 passed over: it has nothing to mark, and `Shift+F7` would stand still on it.
 So `^$` finds nothing, and `x*` finds the first run of `x`.
 
+**Bytes are searched as bytes, window by window, with no lines at all.**
+Since P19.6 `ByteSearch.run` looks for a `WantedBytes` from an offset.
+`WantedBytes.tryParse` reads what the hex field holds: tokens separated by
+spaces or tabs, each an even run of hexadecimal digits read in pairs — so
+`4D 5A` and `4D5A` are the same two bytes — or a single digit, which is a
+byte of its own (`A` is `0A`). A token of any other shape, an odd run longer
+than one digit included, is `NotAByte` with the token named, and a field of
+spaces is `NoBytes`; `spelled` writes the bytes back as `4D 5A`.
+
+Forwards the search reads a window of `ChunkLength` bytes at the offset, looks
+for the run in it (`MemoryExtensions.IndexOf` over a span) and moves on by the
+window less one byte short of the run, so a run split by the edge of a window
+is whole in the next one; a window that comes back short is the end of the
+file. Backwards it reads the window that ends where a run starting just before
+the offset would end, takes the last occurrence in it (`LastIndexOf`), and
+steps back the same way, so a run counts when it starts before the offset even
+if it ends after it — the rule the text search follows with its column. Both
+announce each window to `Reached` and ask `IsCancelled` before reading it, and
+answer the same `WindowSearch.Answer`, made generic for this: `Found` of a
+`ByteSearch.Match`, the offset and the length, here, and of a
+`WindowSearch.Match`, a line, a column and a length, there. Both are called
+`Match` because both are what a search found, and the module says which kind.
+Nothing is decoded, so the code page the viewer reads in has no say.
+
 **A `Source` can be read from two threads.** The search runs off the UI thread
 while the viewer under the progress window may still draw, and both read
 through one stream: `Read` and `ReadInto` take a lock on it, since a seek and

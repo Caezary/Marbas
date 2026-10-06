@@ -894,8 +894,7 @@ row — the proportional layout, the two schemes, the `SlotView`s — and both t
 panel bar and the viewer bar are built from it; `show` fills the panel's slots
 from `KeyMap`, `label` fills the viewer's from `ViewerKeys.bar`, which asks for
 the mode and the wrap so `F4` reads `Hex` in text and `Text` in hex. `F8`
-reads `Code` in both; `F7` reads `Search` in text and nothing in hex, where it
-does nothing until the dump learns to search bytes in P19.6.
+reads `Code` and `F7` reads `Search` in both.
 
 **What the viewer needs from outside comes in one record.** `FileViewer.create`
 takes `FileViewer.Ports` and the `Source`: `Close`, `ChooseCodePage`,
@@ -1008,7 +1007,7 @@ is found at columns 0 and 2, backwards from just before its start. With no
 match on display — none found yet, or the mark dropped by a choice of code
 page — it starts from the screen as `F7` would, and with no search made yet in
 this viewer it opens the popup. A search that finds nothing leaves the mark,
-and the place, where they were. Both keys do nothing in the dump.
+and the place, where they were.
 
 The search runs through `RunSearch`, which in the application is `WindowSearchRunner.run`: the
 work on a background task, the progress window over the viewer saying
@@ -1034,6 +1033,32 @@ leaves the screen where it is; otherwise its line becomes the top line. The
 screen moves across only when the match is outside it (`FoundSpan.leftShowing`).
 The mark stays until the next search or until a code page is chosen, which
 re-reads the lines it was measured on; it is not drawn in hex.
+
+**In the dump the field takes bytes, and each mode keeps its own search.**
+Since P19.6 `F7` in hex opens the same popup on `LastBytes` instead of
+`LastText`: the field offers the bytes searched for before — their own list,
+`input.bytes`, kept apart from the texts — and opens on the last bytes
+searched for in this viewer, spelled `4D 5A`; case, whole words and the
+regular expression are greyed out, and *Backwards* works as it does on text.
+The answer is `AsBytes`, and `ViewerSearch.query` turns it into
+`BytesAsked` — a `ByteSearch.Query` of the `WantedBytes` and the direction —
+or refuses it with `BrokenBytes`, through the same `OnAccepting` that refuses
+a pattern, so the popup stays open over a field that is not bytes. The two
+modes keep a last query each, and `Shift+F7` repeats the one of the mode in
+front; a mark made in one mode is not drawn in the other.
+
+A byte search starts at an offset rather than a line: forwards at the first
+byte of the top row, backwards at the end of the last row on screen, and
+`Shift+F7` just past the run on display or just before it. The run is shown by
+bringing its first row to the top when it is not on screen, and is marked in
+both columns: `HexMark.spans` answers, for a row, the columns of the run's
+bytes in the hex — one span per half, so the rule between them is never
+marked — and the cells of the same bytes in the character column, from
+`HexDump.hexColumn` and `HexDump.textColumn`, which read the layout from the
+constants `HexDump.row` writes it with. A run across two rows is marked on
+both. The rows are `ShownRow`s here too, so `FoundSpan.onRow` cuts each span to
+what the scroll across leaves on screen. Choosing a code page keeps the mark:
+the bytes have not changed.
 
 **Wrapping moves by whole lines.** With `F2` on, one line can take several
 rows, but the top of the screen is always the start of a line — a page down

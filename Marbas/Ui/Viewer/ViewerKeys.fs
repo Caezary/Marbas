@@ -69,9 +69,7 @@ let private label mode wrap key =
         | TextMode -> "Hex"
         | HexMode -> "Text"
     elif key = searchKey then
-        match mode with
-        | TextMode -> "Search"
-        | HexMode -> ""
+        "Search"
     elif key = codePageKey then
         "Code"
     elif List.contains key closeKeys then

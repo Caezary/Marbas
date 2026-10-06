@@ -19,6 +19,7 @@ type InputKind =
     | SelectionPattern
     | FindMasks
     | SearchedText
+    | SearchedBytes
     | ArchiveTarget
     | LinkDestination
     | OpenWithProgram
@@ -178,6 +179,7 @@ module History =
           SelectionPattern
           FindMasks
           SearchedText
+          SearchedBytes
           ArchiveTarget
           LinkDestination
           OpenWithProgram ]
@@ -190,6 +192,7 @@ module History =
         | SelectionPattern -> "pattern"
         | FindMasks -> "find.masks"
         | SearchedText -> "find.text"
+        | SearchedBytes -> "bytes"
         | ArchiveTarget -> "archive"
         | LinkDestination -> "link"
         | OpenWithProgram -> "program"

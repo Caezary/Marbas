@@ -25,7 +25,11 @@ type Ports =
       ChooseCodePage: CodePageOffer -> CodePage option
       AskSearch: SearchOffer -> SearchAnswer option
       Searches: SearchHistory
-      RunSearch: (WindowSearch.Control -> WindowSearch.Answer) -> WindowSearch.Answer
+      ByteSearches: SearchHistory
+      RunSearch:
+          (WindowSearch.Control -> WindowSearch.Answer<WindowSearch.Match>) -> WindowSearch.Answer<WindowSearch.Match>
+      RunByteSearch:
+          (WindowSearch.Control -> WindowSearch.Answer<ByteSearch.Match>) -> WindowSearch.Answer<ByteSearch.Match>
       Report: SearchReport -> unit }
 
 type ContentView(source: FileWindow.Source) as this =
@@ -40,6 +44,7 @@ type ContentView(source: FileWindow.Source) as this =
     let mutable left = 0
     let mutable found: FoundSpan option = None
     let mutable lastMatch: WindowSearch.Match option = None
+    let mutable lastBytesMatch: ByteSearch.Match option = None
 
     do
         this.Id <- ContentId
@@ -168,16 +173,29 @@ type ContentView(source: FileWindow.Source) as this =
 
     let shownRows () = visible () |> fst
 
-    let foundOnScreen () =
-        match mode, found with
-        | TextMode, Some span ->
-            shownRows ()
-            |> List.indexed
-            |> List.choose (fun (row, shown) ->
+    let spansOn (spansOf: ShownRow -> FoundSpan list) =
+        shownRows ()
+        |> List.indexed
+        |> List.collect (fun (row, shown) ->
+            spansOf shown
+            |> List.choose (fun span ->
                 FoundSpan.onRow shown span
-                |> Option.map (fun (start, length) -> row, start, length))
-        | TextMode, None
-        | HexMode, _ -> []
+                |> Option.map (fun (start, length) -> row, start, length)))
+
+    let bytesMatchSpans (hit: ByteSearch.Match) (shown: ShownRow) =
+        HexMark.spans hit shown.Line
+        |> List.map (fun (first, until) ->
+            ({ Line = shown.Line
+               From = first
+               Until = until }
+            : FoundSpan))
+
+    let foundOnScreen () =
+        match mode, found, lastBytesMatch with
+        | TextMode, Some span, _ -> spansOn (fun _ -> [ span ])
+        | HexMode, _, Some hit -> spansOn (bytesMatchSpans hit)
+        | TextMode, None, _
+        | HexMode, _, None -> []
 
     let reaches (span: FoundSpan) (row: ShownRow) =
         match wrap with
@@ -219,6 +237,28 @@ type ContentView(source: FileWindow.Source) as this =
               Column = hit.Column }
         | None, _ -> screenPlace direction
 
+    let showBytesMatch (hit: ByteSearch.Match) =
+        let row = int (hit.Offset / int64 HexDump.BytesPerLine)
+        lastBytesMatch <- Some hit
+
+        if not (shownRows () |> List.exists (fun shown -> shown.Line = row)) then
+            goTo row
+
+        bytesMatchSpans hit { Line = row; From = 0; Text = "" }
+        |> List.tryHead
+        |> Option.iter (fun span -> left <- FoundSpan.leftShowing left (width ()) span)
+
+    let bytesScreenPlace direction =
+        match direction with
+        | Forwards -> HexDump.offsetOf top
+        | Backwards -> min source.Length (HexDump.offsetOf (top + List.length (shownRows ())))
+
+    let placeAfterBytesMatch direction =
+        match lastBytesMatch, direction with
+        | Some hit, Forwards -> hit.Offset + int64 hit.Length
+        | Some hit, Backwards -> hit.Offset
+        | None, _ -> bytesScreenPlace direction
+
     let readAs page =
         found <- None
         lastMatch <- None
@@ -254,6 +294,12 @@ type ContentView(source: FileWindow.Source) as this =
     member _.PlaceAfterMatch(direction: SearchDirection) = placeAfterMatch direction
 
     member _.Show(hit: WindowSearch.Match) = show hit
+
+    member _.BytesScreenPlace(direction: SearchDirection) = bytesScreenPlace direction
+
+    member _.PlaceAfterBytesMatch(direction: SearchDirection) = placeAfterBytesMatch direction
+
+    member _.ShowBytesMatch(hit: ByteSearch.Match) = showBytesMatch hit
 
     member _.Place =
         match mode with
@@ -325,6 +371,16 @@ let private searching (ports: Ports) (source: FileWindow.Source) (content: Conte
     | WindowSearch.Stopped -> ()
     | WindowSearch.Unreadable error -> ports.Report(SearchFailed error)
 
+let private searchingBytes (ports: Ports) (source: FileWindow.Source) (content: ContentView) query from =
+    match ports.RunByteSearch(fun control -> ByteSearch.run control source query from) with
+    | WindowSearch.Found hit -> content.ShowBytesMatch hit
+    | WindowSearch.NotFound -> ports.Report(BytesNotFound query.Bytes)
+    | WindowSearch.Stopped -> ()
+    | WindowSearch.Unreadable error -> ports.Report(SearchFailed error)
+
+let private remembering (history: SearchHistory) (answer: SearchAnswer) =
+    EnteredText.tryCreate answer.Typed |> Option.iter history.Remember
+
 let create (ports: Ports) (source: FileWindow.Source) =
     let window = new Window(Width = Dim.Fill(), Height = Dim.Fill())
 
@@ -360,37 +416,47 @@ let create (ports: Ports) (source: FileWindow.Source) =
         content.SetNeedsDraw()
 
     let lastSearch = ref None
+    let lastBytes = ref None
 
-    let searchFromScreen (query: WindowSearch.Query) =
+    let textFromScreen (query: WindowSearch.Query) =
         lastSearch.Value <- Some query
         searching ports source content query (content.ScreenPlace query.Direction)
 
-    let searchAsTyped (answer: SearchAnswer) query =
-        EnteredText.tryCreate answer.Typed |> Option.iter ports.Searches.Remember
-        searchFromScreen query
+    let bytesFromScreen (query: ByteSearch.Query) =
+        lastBytes.Value <- Some query
+        searchingBytes ports source content query (content.BytesScreenPlace query.Direction)
 
     let askedFor (answer: SearchAnswer) =
         match ViewerSearch.query answer with
-        | Some(Ok query) -> searchAsTyped answer query
-        | Some(Error error) -> ports.Report(PatternRefused error)
+        | Some(Ok(TextAsked query)) ->
+            remembering ports.Searches answer
+            textFromScreen query
+        | Some(Ok(BytesAsked query)) ->
+            remembering ports.ByteSearches answer
+            bytesFromScreen query
+        | Some(Error refusal) -> ports.Report(Refused refusal)
         | None -> ()
 
-    let askSearch () =
-        ports.AskSearch
+    let offer () =
+        match content.Mode with
+        | TextMode ->
             { Remembered = ports.Searches.Texts()
-              Last = lastSearch.Value }
-        |> Option.iter askedFor
+              Last = LastText lastSearch.Value }
+        | HexMode ->
+            { Remembered = ports.ByteSearches.Texts()
+              Last = LastBytes lastBytes.Value }
+
+    let askSearch () =
+        offer () |> ports.AskSearch |> Option.iter askedFor
 
     let searchAgain () =
-        match lastSearch.Value with
-        | Some(query: WindowSearch.Query) ->
+        match content.Mode, lastSearch.Value, lastBytes.Value with
+        | TextMode, Some(query: WindowSearch.Query), _ ->
             searching ports source content query (content.PlaceAfterMatch query.Direction)
-        | None -> askSearch ()
-
-    let inText act =
-        match content.Mode with
-        | TextMode -> act ()
-        | HexMode -> ()
+        | HexMode, _, Some(query: ByteSearch.Query) ->
+            searchingBytes ports source content query (content.PlaceAfterBytesMatch query.Direction)
+        | TextMode, None, _
+        | HexMode, _, None -> askSearch ()
 
     content.KeyDown.Add(fun (key: Key) ->
         match ViewerKeys.commandFor key with
@@ -408,11 +474,11 @@ let create (ports: Ports) (source: FileWindow.Source) =
             refresh ()
         | Some ViewerKeys.SearchAsked ->
             key.Handled <- true
-            inText askSearch
+            askSearch ()
             refresh ()
         | Some ViewerKeys.SearchRepeated ->
             key.Handled <- true
-            inText searchAgain
+            searchAgain ()
             refresh ()
         | Some command ->
             key.Handled <- true

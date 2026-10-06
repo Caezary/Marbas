@@ -52,20 +52,33 @@ let private placement =
 
 let boxes = placement |> List.map (fun (box, _, _) -> box)
 
-let private tickedFor (last: WindowSearch.Query option) box =
-    match box, last with
-    | _, None -> false
-    | CaseBox, Some query -> query.Case = MatchingCase
-    | WordsBox, Some { Wanted = WindowSearch.Literal(_, words) } -> words = WholeWords
-    | WordsBox, Some { Wanted = WindowSearch.Pattern _ } -> false
-    | ExpressionBox, Some { Wanted = WindowSearch.Pattern _ } -> true
-    | ExpressionBox, Some { Wanted = WindowSearch.Literal _ } -> false
-    | BackwardsBox, Some query -> query.Direction = Backwards
+let private tickedForText (last: WindowSearch.Query) box =
+    match box, last.Wanted with
+    | CaseBox, _ -> last.Case = MatchingCase
+    | WordsBox, WindowSearch.Literal(_, words) -> words = WholeWords
+    | WordsBox, WindowSearch.Pattern _ -> false
+    | ExpressionBox, WindowSearch.Pattern _ -> true
+    | ExpressionBox, WindowSearch.Literal _ -> false
+    | BackwardsBox, _ -> last.Direction = Backwards
+
+let private tickedForBytes (last: ByteSearch.Query) box =
+    match box with
+    | BackwardsBox -> last.Direction = Backwards
+    | CaseBox
+    | WordsBox
+    | ExpressionBox -> false
+
+let private tickedFor last box =
+    match last with
+    | LastText(Some query) -> tickedForText query box
+    | LastBytes(Some query) -> tickedForBytes query box
+    | LastText None
+    | LastBytes None -> false
 
 let private stateOf ticked =
     if ticked then CheckState.Checked else CheckState.UnChecked
 
-let private checking (last: WindowSearch.Query option) (box, x, y) =
+let private checking last (box, x, y) =
     new CheckBox(
         X = Pos.Absolute x,
         Y = Pos.Absolute y,
@@ -75,11 +88,20 @@ let private checking (last: WindowSearch.Query option) (box, x, y) =
         Value = stateOf (tickedFor last box)
     )
 
+let private spelledLast last =
+    match last with
+    | LastText(Some query) -> WindowSearch.spelled query.Wanted
+    | LastBytes(Some query) -> WantedBytes.spelled query.Bytes
+    | LastText None
+    | LastBytes None -> ""
+
+let private modeOf last =
+    match last with
+    | LastText _ -> TextMode
+    | LastBytes _ -> HexMode
+
 let private input (offer: SearchOffer) =
-    let last =
-        offer.Last
-        |> Option.map (_.Wanted >> WindowSearch.spelled)
-        |> Option.defaultValue ""
+    let last = spelledLast offer.Last
     let field = HistoryField.amongOthers (offer.Remembered |> List.map EnteredText.value) last
     field.X <- 1
     field.Y <- 1
@@ -100,27 +122,39 @@ let private ticked dialog box =
 let private wholeWordsChosen dialog =
     (checkBox dialog WordsBox).Enabled && ticked dialog WordsBox
 
-let private chosen (dialog: Dialog) =
+let private typedAs mode dialog =
+    match mode, ticked dialog ExpressionBox with
+    | HexMode, _ -> AsBytes
+    | TextMode, true -> AsExpression
+    | TextMode, false -> AsText
+
+let private chosen mode (dialog: Dialog) =
     { Typed = (field dialog).Text
       Case = if ticked dialog CaseBox then MatchingCase else IgnoringCase
       Words = if wholeWordsChosen dialog then WholeWords else Anywhere
-      TypedAs = if ticked dialog ExpressionBox then AsExpression else AsText
+      TypedAs = typedAs mode dialog
       Direction = if ticked dialog BackwardsBox then Backwards else Forwards }
 
-let private refusal dialog =
-    match ViewerSearch.query (chosen dialog) with
+let private refusal mode dialog =
+    match ViewerSearch.query (chosen mode dialog) with
     | Some(Error error) -> Some error
     | Some(Ok _)
     | None -> None
 
-let private offerWholeWords dialog =
-    (checkBox dialog WordsBox).Enabled <- not (ticked dialog ExpressionBox)
+let private textOptions = [ CaseBox; WordsBox; ExpressionBox ]
 
-type SearchView(refuse: PatternError -> unit) =
+let private offerOptions mode dialog =
+    match mode with
+    | HexMode -> textOptions |> List.iter (fun box -> (checkBox dialog box).Enabled <- false)
+    | TextMode -> (checkBox dialog WordsBox).Enabled <- not (ticked dialog ExpressionBox)
+
+type SearchView(refuse: SearchRefusal -> unit, mode: ViewerMode) =
     inherit Dialog()
 
+    member _.Mode = mode
+
     override this.OnAccepting(args: CommandEventArgs) =
-        match refusal this with
+        match refusal mode this with
         | Some error ->
             refuse error
             (field this).SetFocus() |> ignore
@@ -128,11 +162,13 @@ type SearchView(refuse: PatternError -> unit) =
             true
         | None -> base.OnAccepting args
 
-let create (refuse: PatternError -> unit) (offer: SearchOffer) =
-    let dialog =
-        new SearchView(refuse, Title = Title, Width = Width, Height = Height)
-        |> DialogStyle.dress
+let create (refuse: SearchRefusal -> unit) (offer: SearchOffer) =
+    let mode = modeOf offer.Last
 
+    let dialog =
+        new SearchView(refuse, mode, Title = Title, Width = Width, Height = Height)
+
+    DialogStyle.dress dialog |> ignore
     dialog.Add(new Label(X = 1, Y = 0, Height = 1, Text = "Search for:"), input offer)
 
     placement
@@ -140,9 +176,9 @@ let create (refuse: PatternError -> unit) (offer: SearchOffer) =
 
     dialog.AddButton(DialogStyle.button "_Cancel")
     dialog.AddButton(DialogStyle.button "_Ok")
-    offerWholeWords dialog
-    (checkBox dialog ExpressionBox).ValueChanged.Add(fun _ -> offerWholeWords dialog)
+    offerOptions mode dialog
+    (checkBox dialog ExpressionBox).ValueChanged.Add(fun _ -> offerOptions mode dialog)
     dialog
 
-let answer (dialog: Dialog) =
-    if dialog.Canceled then None else Some(chosen dialog)
+let answer (dialog: SearchView) =
+    if dialog.Canceled then None else Some(chosen dialog.Mode dialog)

@@ -28,7 +28,7 @@ let control
                 showing text
       IsCancelled = isCancelled }
 
-let run (app: IApplication) title describe (work: WindowSearch.Control -> WindowSearch.Answer) =
+let run (app: IApplication) title describe (work: WindowSearch.Control -> 'answer) =
     use cancellation = new CancellationTokenSource()
     use dialog = ProgressDialog.create title
     let isCancelled () = cancellation.IsCancellationRequested

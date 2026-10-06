@@ -115,10 +115,10 @@ let ``the bar offers the search on F7 in text`` () =
     Assert.Equal("Search", slots[6])
 
 [<Fact>]
-let ``the bar offers no search in hex`` () =
+let ``the bar offers the search in hex too`` () =
     let slots = bar HexMode Unwrapped
 
-    Assert.Equal("", slots[6])
+    Assert.Equal("Search", slots[6])
 
 [<Fact>]
 let ``Shift+F7 asks for the last search again`` () =

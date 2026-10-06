@@ -32,6 +32,7 @@
         <Compile Include="Domain\ProgramSettings.fs" />
         <Compile Include="Domain\FindQuery.fs" />
         <Compile Include="Domain\SearchPattern.fs" />
+        <Compile Include="Domain\WantedBytes.fs" />
         <Compile Include="Domain\ResultsRefusal.fs" />
         <Compile Include="Domain\EnteredText.fs" />
         <Compile Include="Domain\FavoriteSlot.fs" />
@@ -90,6 +91,7 @@
         <Compile Include="FileSystem\FileWindow.fs" />
         <Compile Include="FileSystem\LineIndex.fs" />
         <Compile Include="FileSystem\WindowSearch.fs" />
+        <Compile Include="FileSystem\ByteSearch.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -156,6 +158,7 @@
         <Compile Include="Ui\Viewer\RowBytes.fs" />
         <Compile Include="Ui\Viewer\HexText.fs" />
         <Compile Include="Ui\Viewer\HexDump.fs" />
+        <Compile Include="Ui\Viewer\HexMark.fs" />
         <Compile Include="Ui\Viewer\ViewerMode.fs" />
         <Compile Include="Ui\Viewer\PrintableText.fs" />
         <Compile Include="Ui\Viewer\LineWrap.fs" />

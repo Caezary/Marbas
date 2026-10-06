@@ -92,13 +92,14 @@ let private chooseCodePage (app: IApplication) (offer: CodePageOffer) =
 
 let private reportSearch (app: IApplication) (report: SearchReport) =
     match report with
-    | TextNotFound _ -> MessageBox.Query(app, ViewerSearch.Title, ViewerSearch.describe report, "Ok") |> ignore
+    | TextNotFound _
+    | BytesNotFound _ -> MessageBox.Query(app, ViewerSearch.Title, ViewerSearch.describe report, "Ok") |> ignore
     | SearchFailed _ ->
         reportError
             app
             { Title = ContentErrorMessage.Title
               Message = ViewerSearch.describe report }
-    | PatternRefused _ ->
+    | Refused _ ->
         reportError
             app
             { Title = ViewerSearch.Title
@@ -106,17 +107,21 @@ let private reportSearch (app: IApplication) (report: SearchReport) =
 
 let private askSearch (app: IApplication) (offer: SearchOffer) =
     let createSearch () =
-        ViewerSearchDialog.create (PatternRefused >> reportSearch app) offer
+        ViewerSearchDialog.create (Refused >> reportSearch app) offer
 
     running app createSearch ViewerSearchDialog.answer
 
 let showFile (app: IApplication) (request: ViewRequest) =
+    let progress = ViewerSearch.progress request.Source.Length
+
     let ports: FileViewer.Ports =
         { Close = _.RequestStop()
           ChooseCodePage = chooseCodePage app
           AskSearch = askSearch app
           Searches = request.Searches
-          RunSearch = WindowSearchRunner.run app ViewerSearch.Title (ViewerSearch.progress request.Source.Length)
+          ByteSearches = request.ByteSearches
+          RunSearch = WindowSearchRunner.run app ViewerSearch.Title progress
+          RunByteSearch = WindowSearchRunner.run app ViewerSearch.Title progress
           Report = reportSearch app }
     let createFileViewer () = FileViewer.create ports request.Source
 

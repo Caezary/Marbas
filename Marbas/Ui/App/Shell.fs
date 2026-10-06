@@ -115,9 +115,9 @@ let private typedBefore (deps: Dependencies) kind =
     |> Result.map (History.inputs kind >> List.map _.Item)
     |> Result.defaultValue []
 
-let private viewerSearches (deps: Dependencies) dispatch : Marbas.Ui.Viewer.SearchHistory =
-    { Texts = fun () -> typedBefore deps SearchedText
-      Remember = fun text -> changeHistory deps dispatch (Remember(Typed(SearchedText, text))) |> ignore }
+let private viewerSearches (deps: Dependencies) dispatch kind : Marbas.Ui.Viewer.SearchHistory =
+    { Texts = fun () -> typedBefore deps kind
+      Remember = fun text -> changeHistory deps dispatch (Remember(Typed(kind, text))) |> ignore }
 
 let private showOpened (deps: Dependencies) dispatch title describe opened =
     match opened with
@@ -126,7 +126,8 @@ let private showOpened (deps: Dependencies) dispatch title describe opened =
 
         deps.Prompts.ShowFile
             { Source = source
-              Searches = viewerSearches deps dispatch }
+              Searches = viewerSearches deps dispatch SearchedText
+              ByteSearches = viewerSearches deps dispatch SearchedBytes }
     | Error error -> report deps title (describe error)
 
 let private showPath (deps: Dependencies) dispatch path =

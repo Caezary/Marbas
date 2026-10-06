@@ -227,6 +227,7 @@ let ``every kind of field is written under a key of its own and read back as its
           SelectionPattern
           FindMasks
           SearchedText
+          SearchedBytes
           ArchiveTarget
           LinkDestination
           OpenWithProgram ]
@@ -244,6 +245,7 @@ let ``every kind of field is written under a key of its own and read back as its
               "input.pattern.1=typed"
               "input.find.masks.1=typed"
               "input.find.text.1=typed"
+              "input.bytes.1=typed"
               "input.archive.1=typed"
               "input.link.1=typed"
               "input.program.1=typed" ]

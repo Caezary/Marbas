@@ -11,6 +11,9 @@ let private wanted raw = FindText.tryCreate raw |> Option.get
 let private pattern raw =
     SearchPattern.tryCreate raw |> Expect.ok
 
+let private bytes raw =
+    WantedBytes.tryParse raw |> Expect.ok
+
 let private typed raw : SearchAnswer =
     { Typed = raw
       Case = IgnoringCase
@@ -38,6 +41,12 @@ let ``a pattern that matched nothing is named in the message`` () =
     Assert.Equal("'[0-9]+' was not found.", message)
 
 [<Fact>]
+let ``bytes that are not there are named in the message`` () =
+    let message = ViewerSearch.describe (BytesNotFound(bytes "4d5a"))
+
+    Assert.Equal("'4D 5A' was not found.", message)
+
+[<Fact>]
 let ``a file that failed to read names the failure`` () =
     let path = FileSystemPath.create (Root.at "start/notes.txt")
 
@@ -47,9 +56,22 @@ let ``a file that failed to read names the failure`` () =
 
 [<Fact>]
 let ``a refused pattern names what the parser said`` () =
-    let message = ViewerSearch.describe (PatternRefused(PatternDoesNotParse "Not enough )'s."))
+    let message =
+        ViewerSearch.describe (Refused(BrokenPattern(PatternDoesNotParse "Not enough )'s.")))
 
     Assert.Contains("Not enough )'s.", message)
+
+[<Fact>]
+let ``a token that is not a byte is named in the message`` () =
+    let message = ViewerSearch.describe (Refused(BrokenBytes(NotAByte "4G")))
+
+    Assert.Contains("'4G'", message)
+
+[<Fact>]
+let ``a field with no bytes says what it wants`` () =
+    let message = ViewerSearch.describe (Refused(BrokenBytes NoBytes))
+
+    Assert.Contains("hexadecimal", message)
 
 [<Fact>]
 let ``an answer becomes the query it asks for`` () =
@@ -66,7 +88,7 @@ let ``an answer becomes the query it asks for`` () =
 
     let query = ViewerSearch.query answer
 
-    Assert.Equal(Some(Ok expected), query)
+    Assert.Equal(Some(Ok(TextAsked expected)), query)
 
 [<Fact>]
 let ``an answer typed as an expression becomes a pattern`` () =
@@ -81,7 +103,7 @@ let ``an answer typed as an expression becomes a pattern`` () =
 
     let query = ViewerSearch.query answer
 
-    Assert.Equal(Some(Ok expected), query)
+    Assert.Equal(Some(Ok(TextAsked expected)), query)
 
 [<Fact>]
 let ``an expression is not narrowed to whole words`` () =
@@ -90,9 +112,14 @@ let ``an expression is not narrowed to whole words`` () =
             TypedAs = AsExpression
             Words = WholeWords }
 
+    let expected: WindowSearch.Query =
+        { Wanted = WindowSearch.Pattern(pattern "[0-9]+")
+          Case = IgnoringCase
+          Direction = Forwards }
+
     let query = ViewerSearch.query answer
 
-    Assert.Equal(Some(WindowSearch.Pattern(pattern "[0-9]+")), query |> Option.map (Expect.ok >> _.Wanted))
+    Assert.Equal(Some(Ok(TextAsked expected)), query)
 
 [<Fact>]
 let ``an expression that does not parse is refused`` () =
@@ -101,6 +128,31 @@ let ``an expression that does not parse is refused`` () =
     let query = ViewerSearch.query answer
 
     Assert.True(query |> Option.exists Result.isError, $"%A{query}")
+
+[<Fact>]
+let ``an answer typed as bytes becomes a search for them`` () =
+    let answer =
+        { typed "4D 5A" with
+            TypedAs = AsBytes
+            Case = MatchingCase
+            Words = WholeWords
+            Direction = Backwards }
+
+    let expected: ByteSearch.Query =
+        { Bytes = bytes "4D 5A"
+          Direction = Backwards }
+
+    let query = ViewerSearch.query answer
+
+    Assert.Equal(Some(Ok(BytesAsked expected)), query)
+
+[<Fact>]
+let ``an answer typed as bytes that are not bytes is refused`` () =
+    let answer = { typed "4D 5G" with TypedAs = AsBytes }
+
+    let query = ViewerSearch.query answer
+
+    Assert.Equal(Some(Error(BrokenBytes(NotAByte "5G"))), query)
 
 [<Fact>]
 let ``an empty answer asks for nothing`` () =

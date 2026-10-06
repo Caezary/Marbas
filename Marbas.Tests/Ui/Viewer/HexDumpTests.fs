@@ -152,3 +152,27 @@ let ``no row is read past the end of the file`` () =
     let row = HexDump.bytesAt source 2
 
     Assert.Equal(None, row)
+
+[<Theory>]
+[<InlineData(0)>]
+[<InlineData(7)>]
+[<InlineData(8)>]
+[<InlineData(15)>]
+let ``a byte's hex column holds its two digits`` (index: int) =
+    let line = HexDump.row latin1 0L (alone [| 0xA0uy .. 0xAFuy |])
+
+    let digits = line.Substring(HexDump.hexColumn index, 2)
+
+    Assert.Equal((0xA0 + index).ToString "X2", digits)
+
+[<Theory>]
+[<InlineData(0)>]
+[<InlineData(7)>]
+[<InlineData(8)>]
+[<InlineData(15)>]
+let ``a byte's text column holds its character`` (index: int) =
+    let line = HexDump.row latin1 0L (alone [| 0x41uy .. 0x50uy |])
+
+    let shown = line[HexDump.textColumn index]
+
+    Assert.Equal(char (0x41 + index), shown)

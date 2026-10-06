@@ -232,7 +232,9 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   weighed and left out for one shape shared with the other runners.
 - The mark of a match counts a column per character, as the rows do, so on a
   line holding a character two columns wide, or one outside the basic plane,
-  it lands as far to the left as the line is drawn short.
+  it lands as far to the left as the line is drawn short. The mark of a run of
+  bytes in the character column of the dump does the same on a row whose
+  characters are two columns wide.
 - Where detection has to guess — a byte order mark is missing and the bytes are
   not valid UTF-8 — the viewer still says Latin-1, which is wrong for a file in
   CP852 or Windows-1250. `F8` puts that right by hand, but only for the viewing:

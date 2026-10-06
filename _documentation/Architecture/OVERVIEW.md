@@ -93,6 +93,7 @@ Marbas/
     ProgramSettings.fs    extension and role -> the program that edits or opens it
     FindQuery.fs          what a search asks: masks, text, scope, options, and what a file answers
     SearchPattern.fs      a regular expression that parsed for the linear engine, or why not
+    WantedBytes.fs        the bytes the hex field asks for, read from pairs of hex digits, or why not
     ResultsRefusal.fs     which command a panel of search results cannot carry out
     EnteredText.fs        what was typed into a field, kept exactly, never blank, never two lines
   FileSystem/
@@ -137,6 +138,7 @@ Marbas/
                           the lines from an offset as a walk, window by window, either way
     WindowSearch.fs       the viewer's search: a text or a pattern, its case and a direction,
                           from a place in a line, stoppable
+    ByteSearch.fs         the dump's search: a run of bytes from an offset, either way, stoppable
   State/
     PanelState.fs         one panel: cursor, marks, search and sort, never the disk
     AppState.fs           tabs and app state: loaders, finish* transitions and the
@@ -187,7 +189,8 @@ Marbas/
     Viewer/               the full-screen viewer behind `F3`
       RowBytes.fs           one dump row's bytes, with the three on either side
       HexText.fs            a row's bytes -> its character column, a cell to a byte
-      HexDump.fs            bytes at an offset -> one offset / hex / text row
+      HexDump.fs            bytes at an offset -> one offset / hex / text row, and where each byte stands in it
+      HexMark.fs            a run of bytes -> the columns it covers on one row, in both columns
       ViewerMode.fs         text or hex, wrapped or not
       PrintableText.fs      a decoded line -> what a terminal can show of it
       LineWrap.fs           a line -> the rows it takes, or the window shown of it

@@ -80,7 +80,8 @@ type HistoryPrompt =
 
 type ViewRequest =
     { Source: FileWindow.Source
-      Searches: SearchHistory }
+      Searches: SearchHistory
+      ByteSearches: SearchHistory }
 
 type Prompts =
     { ReportError: ErrorReport -> unit

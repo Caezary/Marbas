@@ -12,6 +12,12 @@ let private halfWidth = bytesPerHalf * 3 - 1
 [<Literal>]
 let private Rule = " │ "
 
+[<Literal>]
+let private Gap = "  "
+
+[<Literal>]
+let private OffsetDigits = 10
+
 let private hexHalf (bytes: byte array) =
     let hex = bytes |> Array.map (fun b -> b.ToString "X2") |> String.concat " "
     hex.PadRight halfWidth
@@ -21,7 +27,16 @@ let rowCount (length: int64) =
 
 let offsetOf (row: int) = int64 row * int64 BytesPerLine
 
-let offsetText (offset: int64) = offset.ToString "X10"
+let offsetText (offset: int64) = offset.ToString $"X{OffsetDigits}"
+
+let private hexStart = OffsetDigits + Gap.Length
+
+let hexColumn index =
+    let pastRule = if index >= bytesPerHalf then Rule.Length - 1 else 0
+    hexStart + index * 3 + pastRule
+
+let textColumn index =
+    hexStart + halfWidth * 2 + Rule.Length + Gap.Length + index
 
 let row encoding (offset: int64) (bytes: RowBytes) =
     let first, second =
@@ -29,7 +44,7 @@ let row encoding (offset: int64) (bytes: RowBytes) =
 
     let text = HexText.cells encoding bytes
 
-    $"""{offsetText offset}  {hexHalf first}{Rule}{hexHalf second}  {text}"""
+    $"""{offsetText offset}{Gap}{hexHalf first}{Rule}{hexHalf second}{Gap}{text}"""
 
 let rows encoding (offset: int64) (bytes: byte array) =
     [ for index in 0 .. rowCount bytes.LongLength - 1 ->

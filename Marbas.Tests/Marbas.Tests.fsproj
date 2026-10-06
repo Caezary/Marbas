@@ -32,6 +32,7 @@
     <Compile Include="Domain\ProgramSettingsTests.fs" />
     <Compile Include="Domain\FindQueryTests.fs" />
     <Compile Include="Domain\SearchPatternTests.fs" />
+    <Compile Include="Domain\WantedBytesTests.fs" />
     <Compile Include="Domain\EnteredTextTests.fs" />
     <Compile Include="Domain\ClipboardTextTests.fs" />
   </ItemGroup>
@@ -46,6 +47,7 @@
     <Compile Include="FileSystem\FileWindowTests.fs" />
     <Compile Include="FileSystem\LineIndexTests.fs" />
     <Compile Include="FileSystem\WindowSearchTests.fs" />
+    <Compile Include="FileSystem\ByteSearchTests.fs" />
     <Compile Include="FileSystem\DrivesTests.fs" />
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
@@ -192,6 +194,7 @@
     <Compile Include="Ui\Viewer\ViewerKeysTests.fs" />
     <Compile Include="Ui\Viewer\CodePageTests.fs" />
     <Compile Include="Ui\Viewer\FoundSpanTests.fs" />
+    <Compile Include="Ui\Viewer\HexMarkTests.fs" />
     <Compile Include="Ui\Viewer\ViewerSearchTests.fs" />
   </ItemGroup>
 

@@ -441,7 +441,20 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   top, and the screen moves across when the match lies beyond its edge.
   Reaching the end or the start of the file without a match is reported as not
   found and nothing moves, the mark included; a search stopped says nothing.
-  `F7` and `Shift+F7` in the hex dump do nothing yet.
+- `F7` in the hex dump searches for bytes. The field takes hexadecimal
+  digits — pairs, spaced or not (`4D 5A`, `4D5A`), or a single digit for a
+  byte of its own — and offers the bytes searched for before, a list kept
+  apart from the texts; case, whole words and the regular expression are greyed
+  out, *Backwards* works. Forward the search starts at the first byte of the
+  top row, backward at the end of the last row on screen, and `Shift+F7` goes
+  on past the run found or before it. The run is found wherever it lies, split
+  between two windows of bytes included, its first row comes to the top when
+  it is off the screen, and it is drawn black on cyan in the hex column — on
+  either side of the rule, never over it — and in the character column, over
+  two rows when it runs into the next. A field that is not bytes is reported
+  over the popup, which stays open; bytes the file does not hold are reported
+  as not found. Text and hex keep a last search each, and a mark shows only in
+  the mode that made it; choosing a code page keeps the mark in the dump.
 - `F4` opens the same file — the one under the cursor — in an editor: the one
   its extension is associated with, otherwise the default editor named in the
   settings, otherwise whatever `$EDITOR` names, otherwise `notepad` on Windows

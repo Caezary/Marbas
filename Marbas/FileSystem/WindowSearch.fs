@@ -23,8 +23,8 @@ type Match =
       Column: int
       Length: int }
 
-type Answer =
-    | Found of Match
+type Answer<'found> =
+    | Found of 'found
     | NotFound
     | Stopped
     | Unreadable of ContentError
