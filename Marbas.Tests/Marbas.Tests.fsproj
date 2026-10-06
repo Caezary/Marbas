@@ -35,6 +35,9 @@
     <Compile Include="Domain\WantedBytesTests.fs" />
     <Compile Include="Domain\EnteredTextTests.fs" />
     <Compile Include="Domain\ClipboardTextTests.fs" />
+    <Compile Include="Domain\MenuHotkeyTests.fs" />
+    <Compile Include="Domain\MenuLabelTests.fs" />
+    <Compile Include="Domain\CommandLineTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -70,6 +73,7 @@
     <Compile Include="FileSystem\PanelLocationTests.fs" />
     <Compile Include="FileSystem\HistoryTests.fs" />
     <Compile Include="FileSystem\FavoritesTests.fs" />
+    <Compile Include="FileSystem\UserMenuTests.fs" />
     <Compile Include="FileSystem\ArchiveNameTests.fs" />
     <Compile Include="FileSystem\ArchiveTests.fs" />
     <Compile Include="FileSystem\ArchiveNamesTests.fs" />

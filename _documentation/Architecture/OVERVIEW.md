@@ -96,6 +96,9 @@ Marbas/
     WantedBytes.fs        the bytes the hex field asks for, read from pairs of hex digits, or why not
     ResultsRefusal.fs     which command a panel of search results cannot carry out
     EnteredText.fs        what was typed into a field, kept exactly, never blank, never two lines
+    MenuHotkey.fs         the one letter or digit that runs a user menu entry, kept in capitals
+    MenuLabel.fs          the name a user menu entry is shown under
+    CommandLine.fs        what a user menu entry runs, not yet expanded, and how it is started
   FileSystem/
     FileSystemPath.fs     single-case path type wrapping a raw string
     EntryAttributes.fs    what FileAttributes and UnixFileMode say, in the Domain's words
@@ -113,6 +116,8 @@ Marbas/
     Place.fs              a directory or file on disk, or a place inside an archive
     HistoryError.fs       why the history could not be read or written
     History.fs            the remembered lists, the changes made to them, and history.conf
+    UserMenuError.fs      why the user menu could not be read, written or changed
+    UserMenu.fs           the user menu entries, the changes made to them, and user-menu.conf
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     Links.fs              what a link request means, what refuses it, and making one
     DirectoryMeasure.fs   the size of a directory or an archive level, stopping at links

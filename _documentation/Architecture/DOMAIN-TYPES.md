@@ -167,3 +167,31 @@ runtime surprise into an `Option` the compiler asks about. `ArchivePath` is
 what the second case carries — `/`-separated, never rooted, never climbing —
 so the two halves of the location are each already a type that cannot hold
 nonsense. See [ARCHIVES.md](ARCHIVES.md), *Where a panel stands*.
+
+**An entry of the user menu is a hotkey, a label and a command line, and each
+is a type.** Since P20.2 `MenuHotkey` is one letter or digit, trimmed and kept
+in capitals, so `e` and `E` are one hotkey and the file, the popup and the
+uniqueness check all compare the same value. `MenuLabel` and `CommandLine` are
+text that is not blank and breaks no line, trimmed as they are created; a
+command line is still unparsed — the placeholders are read when it runs — and
+is a type so that a label cannot be passed where a command is wanted. `MenuRun`
+names the three ways of starting it — `Directly`, `InShellClosing`,
+`InShellKeptOpen` — instead of a pair of booleans, and running as administrator
+reuses the `Elevation` a `LaunchRequest` carries. `MenuCommand`, the record of
+the five, and `MenuItem`, which is `CommandItem` of one or `SeparatorItem`, live
+in `FileSystem/UserMenu.fs` beside the file they are written to, because
+`Elevation` is a `FileSystem` type. `UserMenu` keeps its list private: the only
+ways to build one are `apply` and `parse`, and both refuse a second command
+holding a hotkey already taken.
+
+**An entry is named by its hotkey, a separator by the entry above it.** A change
+made in the popup is applied to the file as it is on disk, which another copy
+of Marbas may have changed since the popup read it, so a position would name
+the wrong entry. `MenuItemRef` is `CommandAt hotkey`, which stays true however
+the entries around it moved, or `SeparatorAfter(anchor, skipped)` for a
+separator, which has nothing of its own to be told by: the hotkey of the
+nearest command above it — `None` at the top — and how many separators stand
+between that command and it. The count is a deliberate `int`, an ordinal inside
+one run of separators; it is needed only because two separators in a row look
+alike yet move differently, and it is never more than the run is long.
+`UserMenu.refAt` turns a row of the popup into one.

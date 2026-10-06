@@ -199,17 +199,6 @@ module History =
 
     let private inputPrefix kind = $"{InputPrefix}.{kindKey kind}"
 
-    let private elevationText elevation =
-        match elevation with
-        | AsUser -> "user"
-        | AsAdministrator -> "administrator"
-
-    let private elevationOf (text: string) =
-        match text.ToLowerInvariant() with
-        | "user" -> Some AsUser
-        | "administrator" -> Some AsAdministrator
-        | _ -> None
-
     let private useText how =
         match how with
         | Viewed -> "viewed"
@@ -247,7 +236,7 @@ module History =
              |> Option.map (fun program -> ProgramPart, ProgramPath.value program)
              |> Option.toList)
             @ [ DirectoryPart, FileSystemPath.value request.WorkingDirectory
-                ElevationPart, elevationText request.Elevation ] }
+                ElevationPart, Elevation.text request.Elevation ] }
 
     let private describedVisit visit =
         let place = describedPlace visit.Where
@@ -322,7 +311,7 @@ module History =
         option {
             let! target = stored.Main
             let! directory = stored.Part DirectoryPart |> Option.filter (String.IsNullOrEmpty >> not)
-            let! elevation = stored.Part ElevationPart |> Option.bind elevationOf
+            let! elevation = stored.Part ElevationPart |> Option.bind Elevation.tryParse
 
             return
                 { Target = FileSystemPath.create target

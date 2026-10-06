@@ -194,3 +194,46 @@ map, so it is not written at all, and emptying a slot that holds nothing
 changes nothing. The favourites popup hands both to `Shell` through its
 `Change` function, which writes them at once, so a slot emptied there is empty
 the next time Marbas starts.
+
+**The user menu has a file of its own, written the way the favourites are.**
+`user-menu.conf` sits beside `favorites.conf`, and `UserMenu.beside` takes the
+settings path as `Favorites.beside` does. Every change is an operation on the
+file: `UserMenu.change` is `load`, `apply`, write, and answers what it wrote,
+so an entry another copy added since is kept beside the one this copy adds, a
+file that cannot be read ends the change before anything is written, and a
+change the menu refuses writes nothing either. `UserMenuError` is
+`UserMenuAccessDenied` and `UserMenuFailed`, the favourites' pair, and
+`MenuRefused` of a `MenuRefusal` — `HotkeyTaken` when an entry would share a
+hotkey with another, `CommandGone` when the entry being changed was removed by
+another copy. Nothing reads the file at startup, and a missing file loads as
+an empty menu, so the application starts as it did without one.
+
+```
+entry.1=command
+entry.1.hotkey=E
+entry.1.label=Edit
+entry.1.command=vim %p
+entry.1.run=direct
+entry.1.elevation=user
+entry.2=separator
+```
+
+An entry is written under its number in the order of the menu: its kind as the
+value, and for a command the hotkey, the label, the command line, the way of
+running (`direct`, `shell-close`, `shell-keep`) and the elevation as parts. The
+parser forgives as `Settings.parse` does. A way of running or an elevation that
+is missing or cannot be read falls back to a direct start as the user, the
+safer reading of either; an entry of a kind not known, or a command without a
+hotkey, a label or a command line it can read, is passed over and costs that
+entry alone; of two commands holding one hotkey the first is kept. Entries are
+read in the order of their numbers, so a file edited by hand may leave gaps.
+
+**A change is one of four, and each is named the way the popup will ask for
+it.** `MenuChange` is `AddItem(item, after)` — after the entry named, at the
+top when nothing is named, at the end when the entry named is gone —
+`ChangeCommand(hotkey, command)`, `RemoveItem` and `MoveItem(reference,
+Earlier | Later)`. Removing or moving something already gone changes nothing,
+and moving the first entry up or the last down leaves it where it is; adding a
+command whose hotkey is taken and changing one that is gone are the two
+refusals, since each would otherwise lose what the user typed without saying
+so.
