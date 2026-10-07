@@ -150,19 +150,6 @@ module UserMenu =
 
         changed |> Result.map (fun items -> { Items = items })
 
-    let private runText run =
-        match run with
-        | Directly -> "direct"
-        | InShellClosing -> "shell-close"
-        | InShellKeptOpen -> "shell-keep"
-
-    let private runOf (text: string) =
-        match text.Trim().ToLowerInvariant() with
-        | "direct" -> Some Directly
-        | "shell-close" -> Some InShellClosing
-        | "shell-keep" -> Some InShellKeptOpen
-        | _ -> None
-
     let private entryKey number = $"{EntryPrefix}.{number}"
 
     let private itemLines number item =
@@ -175,7 +162,7 @@ module UserMenu =
               $"{key}.{HotkeyPart}={MenuHotkey.value command.Hotkey}"
               $"{key}.{LabelPart}={MenuLabel.value command.Label}"
               $"{key}.{CommandPart}={CommandLine.value command.Line}"
-              $"{key}.{RunPart}={runText command.Run}"
+              $"{key}.{RunPart}={MenuRun.text command.Run}"
               $"{key}.{ElevationPart}={Elevation.text command.Elevation}" ]
 
     let format (menu: UserMenu) =
@@ -212,7 +199,7 @@ module UserMenu =
                 { Hotkey = hotkey
                   Label = label
                   Line = line
-                  Run = part RunPart |> Option.bind runOf |> Option.defaultValue Directly
+                  Run = part RunPart |> Option.bind MenuRun.tryParse |> Option.defaultValue Directly
                   Elevation = part ElevationPart |> Option.bind Elevation.tryParse |> Option.defaultValue AsUser }
         }
 

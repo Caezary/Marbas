@@ -747,6 +747,26 @@ when there is no current place — and `Del` hands `EmptySlot`. The popup has no
 buttons, so no hot key can take a digit, and a line under the list names the
 keys instead.
 
+**The user menu popup is the favourites popup with letters for digits.** Since
+P20.4 `F2`, labelled `Menu` on the bar of no modifier, raises
+`UserMenuRequested`, and `Shell` hands `Prompts.ChooseFromUserMenu` a
+`UserMenuPrompt` holding the menu read afresh from its file. `UserMenuDialog`
+is a `ListView` of the entries, each row from `UserMenuRow.describe` — the
+hotkey, two spaces and the label, or for a separator `─` across the list's
+width — refilled on `FrameChanged` so a separator follows a resize. It is
+sixty per cent of the screen wide and as tall as the menu, twenty rows at
+most, and opens on its first entry, the first command when the menu starts
+with a separator. The list's `KeyDown` takes the keys before the list does:
+`KeyMap.menuHotkeyOf` reads a bare printable key as a `MenuHotkey`, in either
+case, and the entry holding it is chosen and the popup stopped at once — a
+letter no entry holds is swallowed, so the list's own navigation by letter
+never moves the cursor; `↑` and `↓` move to the previous or the next command
+and so step over separators, staying put at either end; and
+`KeyMap.userMenuRunKey`, `Enter`, chooses the command under the cursor. The
+answer is the `MenuCommand`, so a letter and `Enter` on the same entry raise
+the same `MenuCommandChosen`. Inside the popup a bare letter runs, which is why
+P20.5 puts the editing on `Ins`, `F4`, `Del` and `Ctrl+↑`/`↓`.
+
 **The elevated run is the open-with key with one more modifier.** `Alt+R` asks
 which program should open the entry, `Alt+Shift+R` runs it as administrator —
 one key to remember rather than two, and the shift reads as "and with more than

@@ -353,6 +353,46 @@ side; `NoProgram` a line whose first word comes out empty. A placeholder that
 does not name the panel standing inside an archive refuses nothing, so a
 command that uses only the other panel runs.
 
+**A run from the user menu is a round trip of three messages and two effects.**
+Since P20.4 `F2` raises `UserMenuRequested`, which asks for `ShowUserMenu`.
+`Shell` reads `user-menu.conf` there — a file that cannot be read is reported
+and nothing is shown — hands the menu to `Prompts.ChooseFromUserMenu`, and
+dispatches the entry chosen as `MenuCommandChosen(command, listFile)`, the list
+file named by `Workspace.listFile` in the session's working directory: the
+first `marked-N.txt` nothing there holds yet. Naming it is the shell's job
+because the state may read the disk only through the transition it is in, and
+where the session works is a port's fact; nothing is written yet.
+
+The transition expands the line. A refusal becomes `ReportExpansionRefusal`;
+an expansion becomes `RunCommand` of a `CommandRun` — the label, the
+`ExpandedCommand`, the way of running and the rights from the entry, and the
+working directory `PanelLocation.holding` answers for the active panel, the
+directory holding the archive when the panel is inside one. The types of a run
+live in `FileSystem/CommandRun.fs`, below the state, because the history file
+stores them. `Shell` hands the run to `Processes.RunCommand` and dispatches
+`CommandFinished(run, outcome)`; `Ok` is remembered with
+`ChangeHistory(Remember(Ran run))`, `ElevationDeclined` is silence as it is for
+`Alt+Shift+R`, and any other `LaunchError` becomes `ReportCommandError`, worded
+by `LaunchErrorMessage` under *Cannot run command* rather than *Cannot run
+file*. Nothing is re-read when the run ends, and nothing waits for it to.
+
+**The launch adapter is the only place that knows how a run is started.**
+`CommandProcess.describe platform run` answers the `ProcessStartInfo`, and
+`start` writes the list file and starts it. On Windows every way goes through
+the shell verb, so a console program gets a console window of its own: a
+direct run is the program with each word an argument of its own, a shell run
+is `cmd.exe /s /c "line"` or `/s /k "line"`, the line spelled with every quoted
+word in double quotes. As administrator the verb is `runas`, the one
+`Alt+Shift+R` uses, and a shell run then starts its line with `cd /d` into the
+working directory, so it does not depend on Windows keeping the directory of
+an elevated start. On Unix a direct run is started with its streams drained,
+as `Enter` starts an executable; a shell run is `/bin/sh -c` with the quoted
+words in single quotes, whichever of the two shell ways the entry names, since
+there is no window to keep open; and a run as administrator is refused by
+platform, as `Alt+Shift+R` is. The list file is written before the start, its
+directory made first; a list that cannot be written refuses the run under its
+own path.
+
 **The settings popup is a port too, and what it returns is state.**
 `SettingsRequested` hands `state.Programs` to `Prompts.EditPrograms` through
 the `ShowSettings` effect, along with the executable under the panel cursor if

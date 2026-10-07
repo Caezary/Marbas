@@ -2984,3 +2984,97 @@ let ``pasted files to be moved into an archive are added to it and leave the dis
     Assert.Equal<string list>([ "docs"; "notes.txt" ], held |> List.sort)
     Assert.False(fs.File.Exists(at "work/notes.txt"))
     Assert.False(fs.Directory.Exists(at "work/docs"))
+
+let private menuEntry hotkey label line =
+    { Hotkey = Expect.some (MenuHotkey.tryCreate hotkey)
+      Label = Expect.some (MenuLabel.tryCreate label)
+      Line = Expect.some (CommandLine.tryCreate line)
+      Run = Directly
+      Elevation = AsUser }
+
+let private ranCommand: CommandRun =
+    { Label = Expect.some (MenuLabel.tryCreate "Show")
+      Command =
+        { Program = { Text = "show"; Quoting = Bare }
+          Arguments = []
+          ListFile = None }
+      Run = Directly
+      Elevation = AsUser
+      WorkingDirectory = fp (at "start") }
+
+[<Fact>]
+let ``the user menu popup is handed the menu its file holds`` () =
+    let fs = MockFileSystem()
+    let written = UserMenu.apply (AddItem(CommandItem(menuEntry "S" "Show" "show %p"), None)) UserMenu.empty |> Expect.ok
+    fs.AddFile(at "user-menu.conf", MockFileData(String.concat "\n" (UserMenu.format written)))
+    let asked = ResizeArray<Ports.UserMenuPrompt>()
+    let deps = { Fakes.dependencies fs (at "start") with Prompts.ChooseFromUserMenu = fun prompt -> asked.Add prompt; None }
+
+    Shell.interpret deps ignore ShowUserMenu
+
+    Assert.Equal(written, (Assert.Single asked).Menu)
+
+[<Fact>]
+let ``with no file the user menu popup is handed an empty menu`` () =
+    let asked = ResizeArray<Ports.UserMenuPrompt>()
+    let deps = { noDeps () with Prompts.ChooseFromUserMenu = fun prompt -> asked.Add prompt; None }
+
+    Shell.interpret deps ignore ShowUserMenu
+
+    Assert.Equal(UserMenu.empty, (Assert.Single asked).Menu)
+
+[<Fact>]
+let ``an entry chosen in the user menu is dispatched with a list file in the session's working directory`` () =
+    let sent, dispatch = capture ()
+    let chosen = menuEntry "S" "Show" "show %f"
+    let deps = { noDeps () with Prompts.ChooseFromUserMenu = fun _ -> Some chosen }
+
+    Shell.interpret deps dispatch ShowUserMenu
+
+    Assert.Equal<Message list>([ MenuCommandChosen(chosen, fp (at "temp/Marbas/session/marked-1.txt")) ], List.ofSeq sent)
+
+[<Fact>]
+let ``a user menu that cannot be read is reported and the popup is not shown`` () =
+    let fs = Fakes.UnreadableFile(at "user-menu.conf")
+    fs.AddFile(at "user-menu.conf", MockFileData "entry.1=separator")
+    let mutable reported = ""
+    let mutable shown = false
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            Prompts.ReportError = fun report -> reported <- report.Title
+            Prompts.ChooseFromUserMenu = fun _ -> shown <- true; None }
+
+    Shell.interpret deps ignore ShowUserMenu
+
+    Assert.Equal(UserMenuErrorMessage.Title, reported)
+    Assert.False shown
+
+[<Fact>]
+let ``a command run is handed to the process port and its outcome dispatched back`` () =
+    let sent, dispatch = capture ()
+    let handed = ResizeArray<CommandRun>()
+    let deps = { noDeps () with Processes.RunCommand = fun run -> handed.Add run; Ok() }
+
+    Shell.interpret deps dispatch (RunCommand ranCommand)
+
+    Assert.Equal(ranCommand, Assert.Single handed)
+    Assert.Equal<Message list>([ CommandFinished(ranCommand, Ok()) ], List.ofSeq sent)
+
+[<Fact>]
+let ``a refused expansion is reported under the command title`` () =
+    let mutable reported = ""
+    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- report.Title }
+
+    Shell.interpret deps ignore (ReportExpansionRefusal Marbas.State.CommandExpansion.NoProgram)
+
+    Assert.Equal(ExpansionRefusalMessage.Title, reported)
+
+[<Fact>]
+let ``a command that could not start is reported under the command title`` () =
+    let mutable reported = ""
+    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- report.Title }
+
+    Shell.interpret deps ignore (ReportCommandError(LaunchRefused(fp "show", "denied")))
+
+    Assert.Equal(LaunchErrorMessage.CommandTitle, reported)

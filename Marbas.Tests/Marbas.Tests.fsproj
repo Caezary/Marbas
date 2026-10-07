@@ -133,6 +133,7 @@
     <Compile Include="State\ResultsPanelTests.fs" />
     <Compile Include="State\ResultsOperationsTests.fs" />
     <Compile Include="State\CommandExpansionTests.fs" />
+    <Compile Include="State\UserMenuRunTests.fs" />
     <Compile Include="State\ClipboardTests.fs" />
     <Compile Include="State\FolderHistoryTests.fs" />
     <Compile Include="State\HistoryPopupTests.fs" />
@@ -173,6 +174,8 @@
     <Compile Include="Ui\Messages\LinkRefusalMessageTests.fs" />
     <Compile Include="Ui\Messages\OperationErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\LaunchErrorMessageTests.fs" />
+    <Compile Include="Ui\Messages\ExpansionRefusalMessageTests.fs" />
+    <Compile Include="Ui\Messages\UserMenuErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\DeleteConfirmationTests.fs" />
     <Compile Include="Ui\Messages\OverwriteQuestionTests.fs" />
     <Compile Include="Ui\Messages\PasswordQuestionTests.fs" />
@@ -210,6 +213,7 @@
     <Compile Include="Ui\Dialogs\HistoryRowTests.fs" />
     <Compile Include="Ui\Dialogs\DriveLineTests.fs" />
     <Compile Include="Ui\Dialogs\FavoriteRowTests.fs" />
+    <Compile Include="Ui\Dialogs\UserMenuRowTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -230,6 +234,7 @@
     <Compile Include="Adapters\WindowSearchRunnerTests.fs" />
     <Compile Include="Adapters\DirectoryWatchTests.fs" />
     <Compile Include="Adapters\LaunchProcessTests.fs" />
+    <Compile Include="Adapters\CommandProcessTests.fs" />
     <Compile Include="Adapters\EditorProcessTests.fs" />
     <Compile Include="Adapters\NativeLinksTests.fs" />
     <Compile Include="Adapters\SystemClipboardTests.fs" />
@@ -301,6 +306,7 @@
     <Compile Include="Integration\Dialogs\DriveDialogTests.fs" />
     <Compile Include="Integration\Dialogs\KeepFavoriteDialogTests.fs" />
     <Compile Include="Integration\Dialogs\FavoritesDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\UserMenuDialogTests.fs" />
     <Compile Include="Integration\Dialogs\PackDialogTests.fs" />
     <Compile Include="Integration\Dialogs\LinkDialogTests.fs" />
     <Compile Include="Integration\Dialogs\OpenWithDialogTests.fs" />
@@ -335,6 +341,7 @@
     <Compile Include="Integration\App\ArchiveWriteKeyTests.fs" />
     <Compile Include="Integration\App\MoveKeyTests.fs" />
     <Compile Include="Integration\App\EditKeyTests.fs" />
+    <Compile Include="Integration\App\UserMenuKeyTests.fs" />
     <Compile Include="Integration\App\EnterKeyTests.fs" />
   </ItemGroup>
 

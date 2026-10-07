@@ -72,6 +72,8 @@ type FavoritesPrompt =
       Current: Place option
       Change: FavoriteChange -> Favorites option }
 
+type UserMenuPrompt = { Menu: UserMenu }
+
 type HistoryPrompt =
     { History: History
       Tab: HistoryTab
@@ -100,6 +102,7 @@ type Prompts =
       ChooseHistory: HistoryPrompt -> HistoryAnswer
       AskFavoriteSlot: Place -> FavoriteSlot option
       ChooseFavorite: FavoritesPrompt -> Place option
+      ChooseFromUserMenu: UserMenuPrompt -> MenuCommand option
       EditProperties: EntryProperties -> EntryProperties option
       EditPrograms: ProgramsPrompt -> ProgramSettings option
       ShowFile: ViewRequest -> unit }
@@ -109,6 +112,7 @@ type Processes =
       SendToTrash: FileSystemPath -> Result<unit, Operations.OperationError>
       StartEditor: ProgramPath option -> FileSystemPath -> Result<unit, Operations.OperationError>
       Launch: LaunchRequest -> Result<unit, LaunchError>
+      RunCommand: CommandRun -> Result<unit, LaunchError>
       LinkKinds: LinkKind list
       RefuseLink: LinkRequest -> LinkRefusal option
       MakeLink: LinkRequest -> Result<unit, Operations.OperationError>
@@ -143,6 +147,7 @@ type Dependencies =
       SettingsPath: FileSystemPath
       HistoryPath: FileSystemPath
       FavoritesPath: FileSystemPath
+      UserMenuPath: FileSystemPath
       WorkspacePath: FileSystemPath
       Clock: unit -> DateTimeOffset
       OnQuit: unit -> unit

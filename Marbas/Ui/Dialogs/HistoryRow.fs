@@ -30,10 +30,22 @@ let launchWhat (request: LaunchRequest) =
     | Some program -> $"{target} ({programName program})"
     | None -> target
 
-let launchHow (request: LaunchRequest) =
-    match request.Elevation with
+let private elevationHow elevation =
+    match elevation with
     | AsUser -> ""
     | AsAdministrator -> AdministratorNote
+
+let launchHow (request: LaunchRequest) = elevationHow request.Elevation
+
+let startedWhat started =
+    match started with
+    | StartedFile request -> launchWhat request
+    | StartedCommand run -> $"{MenuLabel.value run.Label}: {ExpandedCommand.spelled run.Command}"
+
+let startedHow started =
+    match started with
+    | StartedFile request -> launchHow request
+    | StartedCommand run -> elevationHow run.Elevation
 
 [<Literal>]
 let ViewedMark = "V"

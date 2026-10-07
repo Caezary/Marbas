@@ -6,6 +6,9 @@ open Marbas.FileSystem
 [<Literal>]
 let Title = "Cannot run file"
 
+[<Literal>]
+let CommandTitle = "Cannot run command"
+
 let describe error =
     match error with
     | NothingAssociated target -> $"Nothing on this system opens '{FileSystemPath.value target}'."

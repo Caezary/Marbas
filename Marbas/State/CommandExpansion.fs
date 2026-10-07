@@ -8,17 +8,6 @@ open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.State.AppState
 
-type WordQuoting =
-    | Bare
-    | Quoted
-
-type CommandWord = { Text: string; Quoting: WordQuoting }
-
-type ExpandedCommand =
-    { Program: CommandWord
-      Arguments: CommandWord list
-      Listed: FileSystemPath list option }
-
 type ExpansionRefusal =
     | InsideArchive of place: FileSystemPath
     | NoEntryChosen of side: PanelSide
@@ -33,7 +22,7 @@ type private Pick =
 
 type private Placeholder =
     | Picked of Pick * PanelSide
-    | ListFile
+    | ListFilePath
 
 type private Piece =
     | Typed of string
@@ -107,7 +96,7 @@ let rec private read active reading chars =
     | '"' :: rest, _ -> read active (toggled reading) rest
     | blank :: rest, OutsideQuotes when Char.IsWhiteSpace blank -> read active (ended reading) rest
     | '%' :: '%' :: rest, _ -> read active (adding (Typed "%") reading) rest
-    | '%' :: 'f' :: rest, _ -> read active (adding (Slot ListFile) reading) rest
+    | '%' :: 'f' :: rest, _ -> read active (adding (Slot ListFilePath) reading) rest
     | '%' :: SideLetter side :: PickLetter pick :: rest, _ -> read active (adding (Slot(Picked(pick, side))) reading) rest
     | '%' :: PickLetter pick :: rest, _ -> read active (adding (Slot(Picked(pick, active))) reading) rest
     | letter :: rest, _ -> read active (adding (Typed(string letter)) reading) rest
@@ -168,7 +157,7 @@ let private picked fs side panel pick =
 let private resolve fs (listFile: FileSystemPath) (state: AppState) piece =
     match piece with
     | Typed text -> Ok(AsTyped text)
-    | Slot ListFile -> Ok(AsInserted [ FileSystemPath.value listFile ])
+    | Slot ListFilePath -> Ok(AsInserted [ FileSystemPath.value listFile ])
     | Slot(Picked(pick, side)) -> picked fs side (panel side state) pick |> Result.map AsInserted
 
 let private joined building text =
@@ -207,22 +196,25 @@ let private expandedWord fs listFile state (word: Word) =
     |> Result.map (assembled word)
 
 let private mentionsListFile (words: Word list) =
-    words |> List.exists (fun word -> List.contains (Slot ListFile) word.Pieces)
+    words |> List.exists (fun word -> List.contains (Slot ListFilePath) word.Pieces)
 
-let private listed fs (state: AppState) words =
+let private listed fs listFile (state: AppState) words =
     if mentionsListFile words then
         chosen fs state.Active (activePanel state)
-        |> Result.map (List.map FileSystemPath.create >> Some)
+        |> Result.map (fun paths ->
+            Some
+                { FilePath = listFile
+                  Listed = paths |> List.map FileSystemPath.create })
     else
         Ok None
 
-let private commandOf listed (expanded: CommandWord list) =
+let private commandOf listFile (expanded: CommandWord list) =
     match expanded with
     | program :: arguments when program.Text <> "" ->
         Ok
             { Program = program
               Arguments = arguments
-              Listed = listed }
+              ListFile = listFile }
     | _ -> Error NoProgram
 
 let expand (fs: IFileSystem) (listFile: FileSystemPath) (line: CommandLine) (state: AppState) =
@@ -230,6 +222,6 @@ let expand (fs: IFileSystem) (listFile: FileSystemPath) (line: CommandLine) (sta
 
     result {
         let! expanded = read |> List.traverseResultM (expandedWord fs listFile state)
-        let! listed = listed fs state read
-        return! expanded |> List.concat |> commandOf listed
+        let! written = listed fs listFile state read
+        return! expanded |> List.concat |> commandOf written
     }

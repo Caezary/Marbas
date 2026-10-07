@@ -290,7 +290,12 @@ let ``the list file is put in by its path and asks for the marked entries`` () =
 
     let command = Expect.ok expanded
     Assert.Equal<CommandWord list>([ quoted ("@" + FileSystemPath.value listFile) ], command.Arguments)
-    Assert.Equal(Some [ fp (at "start/my file.txt"); fp (at "start/notes.txt") ], command.Listed)
+    Assert.Equal(
+        Some
+            { FilePath = listFile
+              Listed = [ fp (at "start/my file.txt"); fp (at "start/notes.txt") ] },
+        command.ListFile
+    )
 
 [<Fact>]
 let ``a line without the list file asks for none`` () =
@@ -298,7 +303,7 @@ let ``a line without the list file asks for none`` () =
 
     let expanded = expand fs listFile (line "show %s") (panels fs)
 
-    Assert.Equal(None, (Expect.ok expanded).Listed)
+    Assert.Equal(None, (Expect.ok expanded).ListFile)
 
 [<Theory>]
 [<InlineData("%Rn", "inner.txt")>]

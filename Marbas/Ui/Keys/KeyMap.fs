@@ -224,6 +224,10 @@ let historyForgetKey = Key.Delete
 
 let historyClearKey = Key.Delete.WithShift
 
+let userMenuKey = Key.F2
+
+let userMenuRunKey = Key.Enter
+
 let quitKey = Key.Q.WithCtrl
 
 let cancelKey = Key.Esc
@@ -251,7 +255,8 @@ let private unlabelled key message =
       Message = message }
 
 let bindings =
-    [ labelled Key.F3 "View" ViewRequested
+    [ labelled userMenuKey "Menu" UserMenuRequested
+      labelled Key.F3 "View" ViewRequested
       labelled Key.F4 "Edit" EditRequested
       labelled Key.F5 "Copy" CopyRequested
       labelled Key.F6 "RenMov" MoveRequested
@@ -372,3 +377,9 @@ let messageFor (key: Key) =
             Some binding.Message
         else
             None)
+
+let menuHotkeyOf (key: Key) =
+    if printable key then
+        MenuHotkey.tryCreate (key.AsRune.ToString())
+    else
+        None

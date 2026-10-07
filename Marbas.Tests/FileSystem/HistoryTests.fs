@@ -30,6 +30,21 @@ let private launch target elevation =
       WorkingDirectory = fp (at "tools")
       Elevation = elevation }
 
+let private word text quoting = { Text = text; Quoting = quoting }
+
+let private packing: CommandRun =
+    { Label = Expect.some (MenuLabel.tryCreate "Pack")
+      Command =
+        { Program = word "7z" Bare
+          Arguments = [ word "a" Bare; word (at "work/out.7z") Quoted; word ("@" + at "session/marked-1.txt") Quoted ]
+          ListFile =
+            Some
+                { FilePath = fp (at "session/marked-1.txt")
+                  Listed = [ fp (at "work/a.txt"); fp (at "work/b c.txt") ] } }
+      Run = InShellKeptOpen
+      Elevation = AsAdministrator
+      WorkingDirectory = fp (at "work") }
+
 let private remember platform minute item history =
     History.apply platform (moment minute) (Remember item) history
 
@@ -41,10 +56,14 @@ let private sample: History =
           { Item = inArchive "backup.zip" "docs/2024"; At = moment 4 } ]
       Launches =
         [ { Item =
-              { launch "tools/setup.exe" AsAdministrator with
-                  Program = ProgramPath.tryCreate "installer.exe" }
+              StartedFile
+                  { launch "tools/setup.exe" AsAdministrator with
+                      Program = ProgramPath.tryCreate "installer.exe" }
             At = moment 3 }
-          { Item = launch "notes.md" AsUser; At = moment 2 } ]
+          { Item = StartedFile(launch "notes.md" AsUser)
+            At = moment 2 }
+          { Item = StartedCommand packing
+            At = moment 9 } ]
       FileVisits =
         [ { Item = { Where = onDisk "notes.md"; How = Edited }; At = moment 1 }
           { Item = { Where = inArchive "backup.zip" "docs/readme.txt"; How = Viewed }; At = moment 0 } ]
@@ -128,7 +147,7 @@ let ``a file started again another way is one entry, started the latest way`` ()
 
     let remembered = remember Windows 2 (Launched(launch "setup.exe" AsAdministrator)) history
 
-    Assert.Equal<LaunchRequest list>([ launch "setup.exe" AsAdministrator ], items remembered.Launches)
+    Assert.Equal<Started list>([ StartedFile(launch "setup.exe" AsAdministrator) ], items remembered.Launches)
 
 [<Fact>]
 let ``the same text typed into two kinds of field is remembered by both`` () =
@@ -192,6 +211,92 @@ let ``a kind of field nothing was typed into has an empty list`` () =
     let typed = History.inputs OpenWithProgram sample
 
     Assert.Empty typed
+
+[<Fact>]
+let ``a command run from the menu goes on the same list as the files that were started`` () =
+    let history =
+        History.empty |> remember Windows 1 (Launched(launch "setup.exe" AsUser))
+
+    let remembered = remember Windows 2 (Ran packing) history
+
+    Assert.Equal<Started list>(
+        [ StartedCommand packing; StartedFile(launch "setup.exe" AsUser) ],
+        items remembered.Launches
+    )
+
+[<Fact>]
+let ``a command run again exactly as before is one entry`` () =
+    let history = History.empty |> remember Windows 1 (Ran packing)
+
+    let remembered = remember Windows 2 (Ran packing) history
+
+    Assert.Equal<Remembered<Started> list>([ { Item = StartedCommand packing; At = moment 2 } ], remembered.Launches)
+
+[<Fact>]
+let ``a command run another way is an entry of its own`` () =
+    let history = History.empty |> remember Windows 1 (Ran packing)
+
+    let remembered = remember Windows 2 (Ran { packing with Run = Directly }) history
+
+    Assert.Equal(2, remembered.Launches.Length)
+
+[<Fact>]
+let ``a forgotten command run is gone`` () =
+    let history = History.empty |> remember Windows 1 (Ran packing)
+
+    let forgotten = History.apply Windows (moment 2) (Forget(Ran packing)) history
+
+    Assert.Empty forgotten.Launches
+
+[<Fact>]
+let ``a command run is written with its label, its words, its list file and the way it ran`` () =
+    let lines = History.format sample
+
+    Assert.Subset(
+        HashSet lines,
+        HashSet
+            [ "run.3=Pack"
+              "run.3.kind=command"
+              "run.3.command=7z"
+              "run.3.command.quoting=bare"
+              "run.3.argument.1=a"
+              "run.3.argument.1.quoting=bare"
+              "run.3.argument.2=" + at "work/out.7z"
+              "run.3.argument.2.quoting=quoted"
+              "run.3.argument.3=@" + at "session/marked-1.txt"
+              "run.3.list=" + at "session/marked-1.txt"
+              "run.3.list.1=" + at "work/a.txt"
+              "run.3.list.2=" + at "work/b c.txt"
+              "run.3.mode=shell-keep"
+              "run.3.directory=" + at "work"
+              "run.3.elevation=administrator" ]
+    )
+
+[<Theory>]
+[<InlineData("run.3=")>]
+[<InlineData("run.3.command=")>]
+[<InlineData("run.3.mode=")>]
+[<InlineData("run.3.directory=")>]
+[<InlineData("run.3.elevation=")>]
+let ``a command run missing a part it is always written with is passed over`` (missing: string) =
+    let lines =
+        History.format sample |> List.filter (fun line -> not (line.StartsWith missing))
+
+    let parsed = History.parse lines
+
+    Assert.Equal<Started list>(items sample.Launches |> List.truncate 2, items parsed.Launches)
+
+[<Fact>]
+let ``a command run whose words break a line is not remembered`` () =
+    let broken =
+        { packing with
+            Command =
+                { packing.Command with
+                    Arguments = [ word "first\nsecond" Quoted ] } }
+
+    let remembered = remember Windows 1 (Ran broken) History.empty
+
+    Assert.Empty remembered.Launches
 
 [<Fact>]
 let ``what is formatted is what is parsed back`` () =
@@ -307,7 +412,7 @@ let ``an entry missing a part it is always written with is passed over`` (missin
     let parsed = History.parse lines
     let count = parsed.Folders.Length + parsed.FileVisits.Length + parsed.Launches.Length
 
-    Assert.Equal(5, count)
+    Assert.Equal(6, count)
 
 [<Fact>]
 let ``a line that is not a key and a value is passed over`` () =

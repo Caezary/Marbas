@@ -103,6 +103,7 @@ Marbas/
     FileSystemPath.fs     single-case path type wrapping a raw string
     EntryAttributes.fs    what FileAttributes and UnixFileMode say, in the Domain's words
     LaunchRequest.fs      what to start, with what, where, and with which rights
+    CommandRun.fs         a user menu command as expanded, and how and where it ran
     Handler.fs            a program the system offers for a name, and its display name
     ProgramCommand.fs     a command line -> the program it starts
     DesktopEntry.fs       one .desktop file -> the handler it describes
@@ -181,6 +182,8 @@ Marbas/
       LinkRefusalMessage.fs     LinkRefusal -> the one sentence saying why
       OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
       LaunchErrorMessage.fs     LaunchError -> user-facing text
+      ExpansionRefusalMessage.fs  why a user menu command was refused -> user-facing text
+      UserMenuErrorMessage.fs     UserMenuError -> user-facing text
       DeleteConfirmation.fs     delete targets -> confirmation question
       OverwriteQuestion.fs      collision -> question text, answer buttons and mapping
       PasswordQuestion.fs       protected archive -> the words of the password prompt
@@ -226,6 +229,8 @@ Marbas/
       HistoryDialog.fs      the popup `Alt+F12` opens: three tabs, and the tab and row it answers with
       DriveLine.fs          drive rows -> lines whose root, label, kind and sizes line up
       DriveDialog.fs        the list `Alt+F1` / `Alt+F2` open, and the row it answers with
+      UserMenuRow.fs        a user menu entry -> its hotkey and label, a separator -> a line
+      UserMenuDialog.fs     the popup `F2` opens, and the entry it answers with
       FindDialog.fs         what `Alt+F7` asks, greyed where the query means nothing
       ViewerSearchDialog.fs what `F7` in the viewer asks: the text and four options, a broken pattern refused
     Find/                 the full-screen results window
@@ -250,6 +255,7 @@ Marbas/
     RecycleBin.fs         the Windows recycle bin, through the VB runtime
     EditorProcess.fs      the editor started detached on Windows, waited on on Unix
     LaunchProcess.fs      a program handed to the system, and never waited on
+    CommandProcess.fs     a user menu command started directly or through the shell, never waited on
     NativeLinks.fs        hard links and junctions through kernel32 and libc
     RegistryHandlers.fs   the Windows registry -> the handlers a name has
     BatchRunner.fs        a batch on a background task under the progress dialog

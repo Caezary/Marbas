@@ -89,3 +89,35 @@ let ``the top of an archive is shown as the archive's path`` () =
         HistoryRow.place (MockFileSystem()) (Place.InArchive(fp (at "backup.zip"), ArchivePath.root))
 
     Assert.Equal(at "backup.zip", shown)
+
+let private packing elevation : CommandRun =
+    { Label = Expect.some (MenuLabel.tryCreate "Pack")
+      Command =
+        { Program = { Text = "7z"; Quoting = Bare }
+          Arguments =
+            [ { Text = "a"; Quoting = Bare }
+              { Text = at "work/my notes.md"; Quoting = Quoted } ]
+          ListFile = None }
+      Run = Directly
+      Elevation = elevation
+      WorkingDirectory = fp (at "work") }
+
+[<Fact>]
+let ``a command run from the menu is shown as its label and the line it ran, every path quoted`` () =
+    let notes = at "work/my notes.md"
+
+    let what = HistoryRow.startedWhat (StartedCommand(packing AsUser))
+
+    Assert.Equal($"Pack: 7z a \"{notes}\"", what)
+
+[<Fact>]
+let ``a command run as administrator says so`` () =
+    let how = HistoryRow.startedHow (StartedCommand(packing AsAdministrator))
+
+    Assert.Equal(HistoryRow.AdministratorNote, how)
+
+[<Fact>]
+let ``a file started is shown as it always was`` () =
+    let what = HistoryRow.startedWhat (StartedFile(launch "code.exe" AsUser))
+
+    Assert.Equal(HistoryRow.launchWhat (launch "code.exe" AsUser), what)

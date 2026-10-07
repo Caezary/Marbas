@@ -104,3 +104,21 @@ let ``a scratch directory the workspace cannot hold is an operation failure`` ()
     let failure = Workspace.scratch fs (fp (at "temp/Marbas/session")) |> Expect.error
 
     Assert.Equal(Operations.AccessDenied(fp (at "temp/Marbas/session")), failure)
+
+[<Fact>]
+let ``the list file of a run is named in the working directory of the session`` () =
+    let fs = MockFileSystem()
+
+    let path = Workspace.listFile fs (fp (at "temp/Marbas/session"))
+
+    Assert.Equal(at "temp/Marbas/session/marked-1.txt", FileSystemPath.value path)
+
+[<Fact>]
+let ``the list file of a run takes a name no earlier run left there`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "temp/Marbas/session/marked-1.txt", MockFileData "")
+    fs.AddFile(at "temp/Marbas/session/marked-2.txt", MockFileData "")
+
+    let path = Workspace.listFile fs (fp (at "temp/Marbas/session"))
+
+    Assert.Equal(at "temp/Marbas/session/marked-3.txt", FileSystemPath.value path)

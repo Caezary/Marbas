@@ -41,3 +41,11 @@ let release (fs: IFileSystem) (path: FileSystemPath) =
     match FileSystemPath.kind fs path with
     | DirectoryEntry -> delete fs unattended path |> ignore
     | _ -> ()
+
+let listFile (fs: IFileSystem) (workspace: FileSystemPath) =
+    let rec free ordinal =
+        let path = FileSystemPath.combine fs workspace $"marked-{ordinal}.txt"
+
+        if FileSystemPath.kind fs path = NoEntry then path else free (ordinal + 1)
+
+    free 1

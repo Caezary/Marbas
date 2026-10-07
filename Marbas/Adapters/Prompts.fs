@@ -186,3 +186,6 @@ let chooseTab (app: IApplication) (fs: IFileSystem) (tabs: Zipper<Tab>) =
         tabs |> Zipper.items |> List.mapi (fun index -> TabRow.describe fs (index + 1))
 
     running app (fun () -> TabDialog.create rows (Zipper.position tabs)) TabDialog.choice
+
+let chooseFromUserMenu (app: IApplication) (request: UserMenuPrompt) =
+    running app (fun () -> UserMenuDialog.create request.Menu) UserMenuDialog.chosen

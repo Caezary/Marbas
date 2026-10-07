@@ -381,6 +381,75 @@ on Linux and macOS — written the moment one is kept, so a crash loses nothing
 and two copies of Marbas running at once keep each other's. gnome-terminal
 takes `Alt+1` … `Alt+0` for its own tabs once it has more than one.
 
+## The user menu
+
+`F2` opens *User menu*: the programs and commands you have defined, each on a
+letter or a digit of its own, with lines between groups. Press an entry's
+letter and it runs at once and the menu closes; `↑` and `↓` move between the
+entries, stepping over the lines, and `Enter` runs the one under the cursor.
+`Esc` closes the menu and runs nothing. Nothing Marbas starts is waited for:
+the panels take keys again straight away, and what the program changes on the
+disk shows up in them by itself.
+
+An entry is a label, its letter, a command line, a way of running and whether
+it runs as administrator. The command line names a program and its arguments,
+words in double quotes counting as one, and may hold these:
+
+| Write | For |
+|-------|-----|
+| `%n` | the name under the cursor |
+| `%p` | its full path |
+| `%s` | every marked entry's full path — the one under the cursor when nothing is marked |
+| `%d` | the panel's directory |
+| `%Ln`, `%Lp`, `%Ls`, `%Ld` | the same of the left panel |
+| `%Rn`, `%Rp`, `%Rs`, `%Rd` | the same of the right panel |
+| `%f` | a file listing the marked entries one per line, for a list too long for a command line |
+| `%%` | a percent sign |
+
+Without `L` or `R` a placeholder speaks of the active panel. Every path is put
+in as one argument whatever spaces or quotes it holds, and `%s` puts in each
+entry as an argument of its own, so the program is started once with all of
+them. A `%` followed by anything else is kept as you typed it. In a panel of
+search results a hit is named by its own name and path. A command is refused,
+with a dialog saying why, when a placeholder names something inside an
+archive, when `..` is under the cursor and nothing is marked, or when `%d`
+names a panel of search results.
+
+An entry runs one of three ways: the program is started directly, or the line
+goes to the shell — `cmd /c` on Windows, whose window closes when the command
+ends, or `cmd /k`, whose window stays open so you can read what it printed. On
+Windows a console program gets a window of its own either way. Running as
+administrator asks Windows for the rights the way `Alt+Shift+R` does; turning
+the prompt down runs nothing and says nothing. The program starts in the
+directory of the active panel — the one holding the archive when the panel is
+inside one.
+
+A command that ran is a row on the *History* tab of `Alt+F12`, showing its
+label and the command line as it was expanded; `Enter` there runs it again
+exactly as it ran, and `Alt+G` sends the active panel to the directory it ran
+in.
+
+The menu is kept beside the settings in `user-menu.conf`. P20.5 adds editing
+it in the popup; until then it is edited by hand:
+
+```
+entry.1=command
+entry.1.hotkey=E
+entry.1.label=Edit in vim
+entry.1.command=vim %p
+entry.1.run=direct
+entry.1.elevation=user
+entry.2=separator
+entry.3=command
+entry.3.hotkey=Z
+entry.3.label=Pack the marked files
+entry.3.command=7z a %d\packed.7z %s
+entry.3.run=shell-keep
+```
+
+`run` is `direct`, `shell-close` or `shell-keep`; `elevation` is `user` or
+`administrator`. Either may be left out, for a direct start as the user.
+
 ## History
 
 Every directory a panel goes to — by `Enter`, `..`, a drive, a root, a path
@@ -406,7 +475,8 @@ which does the same there — sends the active panel to the directory under the
 cursor, a level inside an archive included; `Esc` closes the popup.
 
 *History* lists the files started — with `Enter`, with a program chosen in
-`Alt+R`, or as administrator with `Alt+Shift+R` — once they have started. The
+`Alt+R`, or as administrator with `Alt+Shift+R` — and the commands run from the
+`F2` menu, once they have started. The
 program chosen follows the file's path in brackets, and a file started as
 administrator is marked `admin`. `Enter` starts the file
 under the cursor again exactly that way; `Alt+G` (*Go to*) puts the active

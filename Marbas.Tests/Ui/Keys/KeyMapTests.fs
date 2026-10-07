@@ -22,7 +22,7 @@ let ``the bar of no modifier carries the classic commands`` () =
     let commands = commandsOn Modifiers.none
 
     Assert.Equal<string list>(
-        [ ""; ""; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; "Tabs"; "Setup" ],
+        [ ""; "Menu"; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; "Tabs"; "Setup" ],
         commands
     )
 
@@ -595,3 +595,32 @@ let ``Ctrl+Shift+V pastes the files where a terminal delivers the Shift`` () =
 
     Assert.Equal(Key.V.WithCtrl.WithShift, KeyMap.sparePasteFilesKey)
     Assert.Equal(Some FilesPasteRequested, message)
+
+[<Fact>]
+let ``F2 opens the user menu and says so on the bar`` () =
+    let slot = KeyMap.bar Modifiers.none |> List.item 1
+
+    Assert.Equal(Key.F2, KeyMap.userMenuKey)
+    Assert.Equal("Menu", slot.Label)
+    Assert.Equal(Some UserMenuRequested, slot.Message)
+
+[<Theory>]
+[<InlineData('e', 'E')>]
+[<InlineData('E', 'E')>]
+[<InlineData('7', '7')>]
+let ``a bare letter or digit is the hotkey of a menu entry`` (pressed: char, hotkey: char) =
+    let found = KeyMap.menuHotkeyOf (Key pressed)
+
+    Assert.Equal(Some hotkey, found |> Option.map MenuHotkey.value)
+
+[<Fact>]
+let ``a letter held with Alt is no hotkey of a menu entry`` () =
+    let found = KeyMap.menuHotkeyOf Key.E.WithAlt
+
+    Assert.Equal(None, found)
+
+[<Fact>]
+let ``a key that is not a letter or a digit is no hotkey of a menu entry`` () =
+    let found = KeyMap.menuHotkeyOf Key.Enter
+
+    Assert.Equal(None, found)

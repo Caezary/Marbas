@@ -57,6 +57,9 @@ type Message =
     | EditRequested
     | EditorStarted of outcome: Result<unit, Operations.OperationError>
     | LaunchFinished of request: LaunchRequest * outcome: Result<unit, LaunchError>
+    | UserMenuRequested
+    | MenuCommandChosen of command: MenuCommand * listFile: FileSystemPath
+    | CommandFinished of run: CommandRun * outcome: Result<unit, LaunchError>
     | OpenWithRequested
     | HandlerChosen of path: FileSystemPath * choice: OpenWithChoice
     | ElevatedRunRequested
@@ -109,6 +112,8 @@ type Effect =
     | ReportUnverifiedHits of refused: ArchiveError list
     | ReportOperationError of Operations.OperationError
     | ReportLaunchError of LaunchError
+    | ReportCommandError of LaunchError
+    | ReportExpansionRefusal of CommandExpansion.ExpansionRefusal
     | ReportItemFailures of Operations.ItemResult list
     | InspectDelete of question: DeleteQuestion * mode: DeleteMode
     | ConfirmDelete of DeleteRequest
@@ -127,6 +132,8 @@ type Effect =
     | ViewArchiveEntry of archive: FileSystemPath * entry: ArchivePath
     | EditFile of path: FileSystemPath * editor: ProgramPath option
     | RunProgram of LaunchRequest
+    | RunCommand of CommandRun
+    | ShowUserMenu
     | ShowHandlers of path: FileSystemPath * chosen: ProgramPath option
     | ShowProperties of EntryProperties
     | ShowSettings of ProgramSettings * candidate: ProgramPath option
@@ -376,11 +383,24 @@ let private editing (fs: IFileSystem) state =
         | _, Some path -> EntryProperties.read fs path |> showingProperties state
         | None, None -> stay state
 
+let private runningFromMenu (fs: IFileSystem) state (command: MenuCommand) listFile =
+    match CommandExpansion.expand fs listFile command.Line state with
+    | Error refusal -> request state (ReportExpansionRefusal refusal)
+    | Ok expanded ->
+        { Label = command.Label
+          Command = expanded
+          Run = command.Run
+          Elevation = command.Elevation
+          WorkingDirectory = PanelLocation.holding fs (activePanel state).Path }
+        |> RunCommand
+        |> request state
+
 let private chosenFromHistory (fs: IFileSystem) state choice =
     match choice with
     | None -> stay state
     | Some(OpenPlace place) -> standInside fs state.Active (Place.toLocation place) state |> applyListing state
-    | Some(RunAgain started) -> request state (RunProgram started)
+    | Some(RunAgain(StartedFile started)) -> request state (RunProgram started)
+    | Some(RunAgain(StartedCommand run)) -> request state (RunCommand run)
     | Some(Revisit visit) -> visiting fs state visit
     | Some(GoTo place) ->
         match Place.beside fs place with
@@ -668,6 +688,11 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | Ok() when FileSystemPath.kind fs started.Target = FileEntry ->
             request state (ChangeHistory(Remember(Launched started)))
         | Ok() -> stay state
+    | UserMenuRequested -> request state ShowUserMenu
+    | MenuCommandChosen(command, listFile) -> runningFromMenu fs state command listFile
+    | CommandFinished(_, Error(ElevationDeclined _)) -> stay state
+    | CommandFinished(_, Error error) -> request state (ReportCommandError error)
+    | CommandFinished(run, Ok()) -> request state (ChangeHistory(Remember(Ran run)))
     | OpenWithRequested -> openWithHandler fs state
     | HandlerChosen(path, choice) -> chosen fs state path choice
     | ElevatedRunRequested -> runElevated fs state

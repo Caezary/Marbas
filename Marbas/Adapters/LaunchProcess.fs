@@ -47,7 +47,7 @@ let private throughShell (request: LaunchRequest) =
 
     start
 
-let private detached command arguments =
+let detached command arguments =
     let start = argued command arguments
     start.UseShellExecute <- false
     start.RedirectStandardOutput <- true
@@ -71,7 +71,7 @@ let describe (fs: IFileSystem) platform (request: LaunchRequest) =
     | Windows, _ -> Ok(throughShell request)
     | Unix, AsUser -> Ok(ofItsOwn fs request)
 
-let private drained (child: Process) =
+let drained (child: Process) =
     child.StandardOutput.BaseStream.CopyToAsync Stream.Null |> ignore
     child.StandardError.BaseStream.CopyToAsync Stream.Null |> ignore
 

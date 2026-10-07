@@ -116,7 +116,7 @@ let private rowsOf (fs: IFileSystem) now (history: History) tab =
     | RunHistoryTab ->
         history.Launches
         |> List.mapi (fun index entry ->
-            row index entry.At (HistoryRow.launchWhat entry.Item) (HistoryRow.launchHow entry.Item))
+            row index entry.At (HistoryRow.startedWhat entry.Item) (HistoryRow.startedHow entry.Item))
     | ViewHistoryTab ->
         history.FileVisits
         |> List.mapi (fun index entry ->
@@ -298,7 +298,7 @@ let private item entry (entries: Remembered<'item> list) =
 let private itemOn (history: History) tab entry =
     match tab with
     | FolderHistoryTab -> item entry history.Folders |> Option.map Visited
-    | RunHistoryTab -> item entry history.Launches |> Option.map Launched
+    | RunHistoryTab -> item entry history.Launches |> Option.map History.startedItem
     | ViewHistoryTab -> item entry history.FileVisits |> Option.map Opened
 
 let private listOn tab =
@@ -492,6 +492,11 @@ let create
 let private revisited asked (visit: FileVisit) =
     Revisit { visit with How = Option.defaultValue visit.How asked }
 
+let private goingTo started =
+    match started with
+    | StartedFile request -> GoTo(Place.OnDisk request.Target)
+    | StartedCommand run -> OpenPlace(Place.OnDisk run.WorkingDirectory)
+
 let private chosen (dialog: HistoryView) tab pressed entry =
     let history = dialog.History
 
@@ -499,9 +504,7 @@ let private chosen (dialog: HistoryView) tab pressed entry =
     | FolderHistoryTab, OpenButton
     | FolderHistoryTab, GoToButton -> item entry history.Folders |> Option.map OpenPlace
     | RunHistoryTab, OpenButton -> item entry history.Launches |> Option.map RunAgain
-    | RunHistoryTab, GoToButton ->
-        item entry history.Launches
-        |> Option.map (fun started -> GoTo(Place.OnDisk started.Target))
+    | RunHistoryTab, GoToButton -> item entry history.Launches |> Option.map goingTo
     | ViewHistoryTab, OpenButton -> item entry history.FileVisits |> Option.map (revisited dialog.AskedUse)
     | ViewHistoryTab, GoToButton -> item entry history.FileVisits |> Option.map (_.Where >> GoTo)
     | _ -> None

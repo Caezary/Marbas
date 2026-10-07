@@ -455,6 +455,25 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   over the popup, which stays open; bytes the file does not hold are reported
   as not found. Text and hex keep a last search each, and a mark shows only in
   the mode that made it; choosing a code page keeps the mark in the dump.
+- `F2`, labelled `Menu` on the bar, opens *User menu*, read afresh from
+  `user-menu.conf` beside the settings — empty when there is no such file, and
+  a file that cannot be read is reported instead. Each entry is shown as its
+  hotkey in capitals and its label, a separator as a line across the popup.
+  A bare letter or digit runs its entry at once and closes the popup, in
+  either case, and one no entry holds does nothing; `↑` and `↓` step over the
+  separators and stop at the first and the last entry, and `Enter` runs the
+  entry under the cursor; `Esc` closes it. The command line is expanded
+  against both panels — `%n`, `%p`, `%s`, `%d` of the active panel, `%L…` and
+  `%R…` of either side, `%f` and `%%` — and a placeholder naming something
+  inside an archive, `..` with nothing marked, or the directory of a panel of
+  search results refuses the run in a dialog. The program is started directly
+  or through `cmd /c` or `cmd /k` (`sh -c` on Unix, both ways), as
+  administrator through the `runas` verb when the entry says so (refused on
+  Unix), in the directory of the active panel, and nothing is waited for. The
+  list file of `%f` is written into the session's working directory before the
+  start. A start that fails is reported under *Cannot run command*, one whose
+  elevation is turned down is silence, and one that started goes on the
+  *History* tab of `Alt+F12`.
 - `F4` opens the same file — the one under the cursor — in an editor: the one
   its extension is associated with, otherwise the default editor named in the
   settings, otherwise whatever `$EDITOR` names, otherwise `notepad` on Windows
@@ -563,7 +582,11 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   and `admin` where they apply; a directory or drive handed to the system file manager and a
   start that failed are not listed. `Enter` there starts the file again with
   the same program, directory and rights, and `[Go to]` or `Alt+G` stands the
-  active panel beside the file with the cursor on it. *View history* lists
+  active panel beside the file with the cursor on it. A command run from the
+  `F2` menu is listed there too, as its label and the line it ran with every
+  path put in quoted, `admin` where it ran so; `Enter` runs it again with the
+  same words, list file, way of running, directory and rights, and `[Go to]`
+  or `Alt+G` stands the active panel in the directory it ran in. *View history* lists
   every file viewed with `F3`, marked `V`, and edited with `F4` or `Shift+F4`,
   marked `E`, remembered as the viewer or the editor is asked for — a file
   inside an archive included, a directory measured with `F3` and one whose

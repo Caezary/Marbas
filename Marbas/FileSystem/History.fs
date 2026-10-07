@@ -26,9 +26,14 @@ type InputKind =
 
 type Remembered<'item> = { Item: 'item; At: DateTimeOffset }
 
+type Started =
+    | StartedFile of LaunchRequest
+    | StartedCommand of CommandRun
+
 type HistoryItem =
     | Visited of Place
     | Launched of LaunchRequest
+    | Ran of CommandRun
     | Opened of FileVisit
     | Typed of InputKind * EnteredText
 
@@ -45,7 +50,7 @@ type HistoryChange =
 
 type History =
     { Folders: Remembered<Place> list
-      Launches: Remembered<LaunchRequest> list
+      Launches: Remembered<Started> list
       FileVisits: Remembered<FileVisit> list
       Inputs: Map<InputKind, Remembered<EnteredText> list> }
 
@@ -88,6 +93,27 @@ module History =
     let private UsePart = "use"
 
     [<Literal>]
+    let private KindPart = "kind"
+
+    [<Literal>]
+    let private CommandKind = "command"
+
+    [<Literal>]
+    let private CommandPart = "command"
+
+    [<Literal>]
+    let private QuotingPart = "quoting"
+
+    [<Literal>]
+    let private ArgumentPart = "argument"
+
+    [<Literal>]
+    let private ListPart = "list"
+
+    [<Literal>]
+    let private ModePart = "mode"
+
+    [<Literal>]
     let private MomentFormat = "o"
 
     let empty =
@@ -102,8 +128,24 @@ module History =
     let beside (fs: IFileSystem) (settingsPath: FileSystemPath) =
         FileSystemPath.combine fs (FileSystemPath.directory fs settingsPath) FileName
 
-    let private sameLaunch platform (one: LaunchRequest) (other: LaunchRequest) =
-        FileSystemPath.sameEntry platform one.Target other.Target
+    let startedItem started =
+        match started with
+        | StartedFile request -> Launched request
+        | StartedCommand run -> Ran run
+
+    let private sameStart platform (one: Started) (other: Started) =
+        match one, other with
+        | StartedFile one, StartedFile other -> FileSystemPath.sameEntry platform one.Target other.Target
+        | StartedCommand one, StartedCommand other -> one = other
+        | _ -> false
+
+    let private spelledRun (run: CommandRun) =
+        MenuLabel.value run.Label
+        :: FileSystemPath.value run.WorkingDirectory
+        :: (ExpandedCommand.words run.Command |> List.map _.Text)
+        @ (run.Command.ListFile
+           |> Option.map (fun list -> list.FilePath :: list.Listed |> List.map FileSystemPath.value)
+           |> Option.defaultValue [])
 
     let private sameVisit platform (one: FileVisit) (other: FileVisit) = Place.same platform one.Where other.Where
 
@@ -113,6 +155,7 @@ module History =
         | Launched request ->
             [ FileSystemPath.value request.Target; FileSystemPath.value request.WorkingDirectory ]
             @ (request.Program |> Option.map ProgramPath.value |> Option.toList)
+        | Ran run -> spelledRun run
         | Opened visit -> Place.spelled visit.Where
         | Typed(_, text) -> [ EnteredText.value text ]
 
@@ -139,7 +182,10 @@ module History =
                 Folders = onTop (Place.same platform) at place history.Folders }
         | Launched request ->
             { history with
-                Launches = onTop (sameLaunch platform) at request history.Launches }
+                Launches = onTop (sameStart platform) at (StartedFile request) history.Launches }
+        | Ran run ->
+            { history with
+                Launches = onTop (sameStart platform) at (StartedCommand run) history.Launches }
         | Opened visit ->
             { history with
                 FileVisits = onTop (sameVisit platform) at visit history.FileVisits }
@@ -152,7 +198,10 @@ module History =
                 Folders = without (Place.same platform) place history.Folders }
         | Launched request ->
             { history with
-                Launches = without (sameLaunch platform) request history.Launches }
+                Launches = without (sameStart platform) (StartedFile request) history.Launches }
+        | Ran run ->
+            { history with
+                Launches = without (sameStart platform) (StartedCommand run) history.Launches }
         | Opened visit ->
             { history with
                 FileVisits = without (sameVisit platform) visit history.FileVisits }
@@ -238,6 +287,45 @@ module History =
             @ [ DirectoryPart, FileSystemPath.value request.WorkingDirectory
                 ElevationPart, Elevation.text request.Elevation ] }
 
+    let private quotingText quoting =
+        match quoting with
+        | Bare -> "bare"
+        | Quoted -> "quoted"
+
+    let private quotingOf (text: string) =
+        match text.Trim().ToLowerInvariant() with
+        | "quoted" -> Quoted
+        | _ -> Bare
+
+    let private wordParts part (word: CommandWord) =
+        [ part, word.Text; $"{part}.{QuotingPart}", quotingText word.Quoting ]
+
+    let private listParts listFile =
+        match listFile with
+        | None -> []
+        | Some list ->
+            (ListPart, FileSystemPath.value list.FilePath)
+            :: (list.Listed
+                |> List.mapi (fun index path -> $"{ListPart}.{index + 1}", FileSystemPath.value path))
+
+    let private describedRun (run: CommandRun) =
+        { Value = MenuLabel.value run.Label
+          Parts =
+            [ KindPart, CommandKind ]
+            @ wordParts CommandPart run.Command.Program
+            @ (run.Command.Arguments
+               |> List.mapi (fun index -> wordParts $"{ArgumentPart}.{index + 1}")
+               |> List.concat)
+            @ listParts run.Command.ListFile
+            @ [ ModePart, MenuRun.text run.Run
+                DirectoryPart, FileSystemPath.value run.WorkingDirectory
+                ElevationPart, Elevation.text run.Elevation ] }
+
+    let private describedStart started =
+        match started with
+        | StartedFile request -> describedLaunch request
+        | StartedCommand run -> describedRun run
+
     let private describedVisit visit =
         let place = describedPlace visit.Where
 
@@ -262,7 +350,7 @@ module History =
 
     let format (history: History) =
         numbered FolderPrefix describedPlace history.Folders
-        @ numbered LaunchPrefix describedLaunch history.Launches
+        @ numbered LaunchPrefix describedStart history.Launches
         @ numbered FilePrefix describedVisit history.FileVisits
         @ (kinds
            |> List.collect (fun kind -> numbered (inputPrefix kind) describedText (inputs kind history)))
@@ -290,13 +378,15 @@ module History =
 
     type private Stored =
         { Main: string option
-          Part: string -> string option }
+          Part: string -> string option
+          Numbered: string -> int list }
 
     let private storedEntry (read: Map<string, string>) prefix number =
         let key = entryKey prefix number
 
         { Main = Map.tryFind key read |> Option.filter (String.IsNullOrEmpty >> not)
-          Part = fun part -> Map.tryFind $"{key}.{part}" read }
+          Part = fun part -> Map.tryFind $"{key}.{part}" read
+          Numbered = fun part -> numbersUnder read $"{key}.{part}" }
 
     let private placeFrom (stored: Stored) =
         stored.Main
@@ -319,6 +409,57 @@ module History =
                   WorkingDirectory = FileSystemPath.create directory
                   Elevation = elevation }
         }
+
+    let private filled (text: string option) =
+        text |> Option.filter (String.IsNullOrEmpty >> not)
+
+    let private wordFrom (stored: Stored) part =
+        stored.Part part
+        |> Option.map (fun text ->
+            { Text = text
+              Quoting =
+                stored.Part $"{part}.{QuotingPart}"
+                |> Option.map quotingOf
+                |> Option.defaultValue Bare })
+
+    let private argumentsFrom (stored: Stored) =
+        stored.Numbered ArgumentPart
+        |> List.choose (fun number -> wordFrom stored $"{ArgumentPart}.{number}")
+
+    let private listFileFrom (stored: Stored) =
+        filled (stored.Part ListPart)
+        |> Option.map (fun path ->
+            { FilePath = FileSystemPath.create path
+              Listed =
+                stored.Numbered ListPart
+                |> List.choose (fun number -> filled (stored.Part $"{ListPart}.{number}"))
+                |> List.map FileSystemPath.create })
+
+    let private runFrom (stored: Stored) =
+        option {
+            let! label = stored.Main |> Option.bind MenuLabel.tryCreate
+            let! program = wordFrom stored CommandPart |> Option.filter (fun word -> word.Text <> "")
+            let! run = stored.Part ModePart |> Option.bind MenuRun.tryParse
+            let! directory = filled (stored.Part DirectoryPart)
+            let! elevation = stored.Part ElevationPart |> Option.bind Elevation.tryParse
+
+            return
+                StartedCommand
+                    { Label = label
+                      Command =
+                        { Program = program
+                          Arguments = argumentsFrom stored
+                          ListFile = listFileFrom stored }
+                      Run = run
+                      Elevation = elevation
+                      WorkingDirectory = FileSystemPath.create directory }
+        }
+
+    let private startedFrom (stored: Stored) =
+        match stored.Part KindPart |> Option.map _.Trim().ToLowerInvariant() with
+        | Some CommandKind -> runFrom stored
+        | Some _ -> None
+        | None -> launchFrom stored |> Option.map StartedFile
 
     let private visitFrom (stored: Stored) =
         option {
@@ -348,7 +489,7 @@ module History =
         let read = lines |> List.choose keyAndValue |> Map.ofList
 
         { Folders = listFrom read FolderPrefix placeFrom
-          Launches = listFrom read LaunchPrefix launchFrom
+          Launches = listFrom read LaunchPrefix startedFrom
           FileVisits = listFrom read FilePrefix visitFrom
           Inputs =
             kinds

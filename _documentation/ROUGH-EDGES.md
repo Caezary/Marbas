@@ -142,7 +142,18 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   `AsAdministrator` request by platform, because there is no way to raise them
   that does not put a password prompt on the screen the panels own. The refusal
   reaches the user as the reason it carries, so `Alt+Shift+R` there is a key
-  that explains itself rather than one that works.
+  that explains itself rather than one that works. A user menu entry marked to
+  run as administrator is refused the same way.
+- On Unix the two shell ways of a user menu entry are one: both are `sh -c`
+  with the output drained, because there is no window of its own to close or
+  keep open. What a shell command prints there is not seen anywhere.
+- A direct run of a user menu entry as administrator relies on Windows starting
+  the program in the directory it was given; the shell ways put a `cd /d` in
+  front of the line so that they do not. Whether an elevated start keeps its
+  directory has not been measured.
+- A command run again from the history writes its list file where it was
+  written the first time, so a run kept from an earlier session recreates that
+  session's working directory, which nothing removes afterwards.
 - Nothing checks that a configured editor exists before `F4` starts it. A path
   that names nothing is reported the way any other failed start is, after the
   key was pressed, rather than when it was typed into the popup.

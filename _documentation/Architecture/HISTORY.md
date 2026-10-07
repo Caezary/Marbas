@@ -208,10 +208,56 @@ history* it answers `OpenPlace`, the same as `[Open]`; it follows the tab throug
 dialog is being disposed and its tables removed, so the tab in front is read
 from the `Id` of `Tabs.Value` rather than by finding the tables again.
 
+**A command run from the user menu shares the list.** Since P20.4
+`History.Launches` holds `Started` values — `StartedFile` of a
+`LaunchRequest` or `StartedCommand` of a `CommandRun` — so the files started
+and the commands run are one list, newest first, under one limit and one
+*History* tab. `HistoryItem` gained `Ran of CommandRun` beside `Launched`, and
+`History.startedItem` turns a row back into the item `Forget` needs. Two file
+starts are the same entry when they name the same file, as before; two command
+runs are the same entry only when everything about them is — the label, every
+word as expanded, the list file, the way of running, the directory and the
+rights — so the same entry run on other files is a row of its own.
+`CommandFinished Ok` raises `ChangeHistory(Remember(Ran run))`, a failed run
+and a declined elevation raise nothing. `[Open]` answers
+`RunAgain(StartedCommand run)`, which the state turns back into
+`RunCommand run`: the same words, not the line expanded again against the
+panels as they are now. `[Go to]` answers `OpenPlace` of the directory it ran
+in, since a command has no single file to stand beside.
+
+A command run is written under the `run.` keys, told apart from a file start
+by a `kind` part a file start never has, so a file written before P20.4 reads
+as it did:
+
+```
+run.3=Pack
+run.3.kind=command
+run.3.command=7z
+run.3.command.quoting=bare
+run.3.argument.1=a
+run.3.argument.1.quoting=bare
+run.3.argument.2=C:\work\b c.txt
+run.3.argument.2.quoting=quoted
+run.3.list=C:\Temp\Marbas\4f2a\marked-1.txt
+run.3.list.1=C:\work\a.txt
+run.3.mode=shell-keep
+run.3.directory=C:\work
+run.3.elevation=administrator
+run.3.at=2026-10-07T14:05:00.0000000+02:00
+```
+
+A run without its label, its program, its way of running, its directory or
+its rights is passed over, costing that entry alone; a missing quoting reads as
+bare. A run any of whose words or paths breaks a line is not remembered, as a
+file start whose path breaks one is not.
+
 **The row says how the file was started.** `HistoryRow.launchWhat` follows the
 path with the program's name, without its directory, in brackets when one was
 chosen, and a third column, *How*, holds `HistoryRow.launchHow`: `admin` when
-it ran so, nothing otherwise. P16.4–P16.6 put the program into *How* as well;
+it ran so, nothing otherwise. A command run is shown by
+`HistoryRow.startedWhat` as its label, a colon and `ExpandedCommand.spelled` —
+the words as they ran, every one that was quoted or had a path put in it in
+double quotes. P16.4–P16.6 put the program into *How* as well;
 the refinements at the end of this file moved it next to the path, so *How*
 could be as narrow as its longest word.
 

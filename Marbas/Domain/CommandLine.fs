@@ -20,3 +20,18 @@ module CommandLine =
             Some(CommandLine(raw.Trim()))
 
     let value (CommandLine text) = text
+
+module MenuRun =
+
+    let text run =
+        match run with
+        | Directly -> "direct"
+        | InShellClosing -> "shell-close"
+        | InShellKeptOpen -> "shell-keep"
+
+    let tryParse (text: string) =
+        match text.Trim().ToLowerInvariant() with
+        | "direct" -> Some Directly
+        | "shell-close" -> Some InShellClosing
+        | "shell-keep" -> Some InShellKeptOpen
+        | _ -> None

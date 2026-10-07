@@ -330,7 +330,7 @@ let ``opening a started file answers starting it again the same way`` () =
 
     let answer = HistoryDialog.answer dialog
 
-    Assert.Equal({ Tab = RunHistoryTab; Choice = Some(RunAgain(started "work/newer.md")) }, answer)
+    Assert.Equal({ Tab = RunHistoryTab; Choice = Some(RunAgain(StartedFile(started "work/newer.md"))) }, answer)
 
 [<Fact>]
 let ``Alt+G on a started file answers going to it`` () =

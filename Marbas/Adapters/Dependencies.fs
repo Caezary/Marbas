@@ -49,6 +49,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
       SettingsPath = settingsPath
       HistoryPath = History.beside fs settingsPath
       FavoritesPath = Favorites.beside fs settingsPath
+      UserMenuPath = UserMenu.beside fs settingsPath
       WorkspacePath = Workspace.location fs env.TemporaryRoot env.Session
       Clock = fun () -> DateTimeOffset.Now
       OnQuit = fun () -> app.RequestStop()
@@ -69,6 +70,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
           ChooseHistory = Prompts.chooseHistory app fs
           AskFavoriteSlot = Prompts.askFavoriteSlot app fs
           ChooseFavorite = Prompts.chooseFavorite app fs
+          ChooseFromUserMenu = Prompts.chooseFromUserMenu app
           EditProperties = Prompts.editProperties app
           EditPrograms = Prompts.editPrograms app
           ShowFile = Prompts.showFile app }
@@ -77,6 +79,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
           SendToTrash = sendToTrash fs env
           StartEditor = runEditor app fs env
           Launch = LaunchProcess.start fs env.Platform
+          RunCommand = CommandProcess.start fs env.Platform
           LinkKinds = Links.available links
           RefuseLink = Links.refusal env.Platform fs
           MakeLink = Links.create links env.Platform fs

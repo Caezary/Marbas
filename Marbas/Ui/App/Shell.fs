@@ -338,6 +338,15 @@ let private changeFavorites (deps: Dependencies) change =
         reportFavorites deps error
         None
 
+let private showUserMenu (deps: Dependencies) dispatch =
+    match UserMenu.load deps.FileSystem deps.UserMenuPath with
+    | Error error -> report deps UserMenuErrorMessage.Title (UserMenuErrorMessage.describe error)
+    | Ok menu ->
+        deps.Prompts.ChooseFromUserMenu { Menu = menu }
+        |> Option.iter (fun command ->
+            MenuCommandChosen(command, Workspace.listFile deps.FileSystem deps.WorkspacePath)
+            |> dispatch)
+
 let private rememberTyped (deps: Dependencies) dispatch kind text =
     EnteredText.tryCreate text
     |> Option.iter (fun typed -> changeHistory deps dispatch (Remember(Typed(kind, typed))) |> ignore)
@@ -351,6 +360,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
     | ReportOperationError error ->
         report deps OperationErrorMessage.Title (OperationErrorMessage.describe error)
     | ReportLaunchError error -> report deps LaunchErrorMessage.Title (LaunchErrorMessage.describe error)
+    | ReportCommandError error -> report deps LaunchErrorMessage.CommandTitle (LaunchErrorMessage.describe error)
+    | ReportExpansionRefusal refusal ->
+        report deps ExpansionRefusalMessage.Title (ExpansionRefusalMessage.describe refusal)
     | ReportItemFailures failures ->
         report deps OperationErrorMessage.Title (OperationErrorMessage.describeFailures deps.FileSystem failures)
     | InspectDelete(question, mode) -> dispatch (DeleteScopeLoaded(deleteScope deps.FileSystem question, mode))
@@ -467,6 +479,8 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         withPassword deps archive (fun password -> showEntry deps dispatch archive password entry)
     | EditFile(path, editor) -> deps.Processes.StartEditor editor path |> EditorStarted |> dispatch
     | RunProgram request -> dispatch (LaunchFinished(request, deps.Processes.Launch request))
+    | RunCommand run -> dispatch (CommandFinished(run, deps.Processes.RunCommand run))
+    | ShowUserMenu -> showUserMenu deps dispatch
     | ShowHandlers(path, chosen) ->
         let name = FileSystemPath.name deps.FileSystem path
 

@@ -130,7 +130,7 @@ let ``a file started again from the history starts as it started the first time`
     let fs = tree ()
     let state = loaded fs
 
-    let result = update fs (answered (RunAgain(launchOf "start/tool.exe"))) state
+    let result = update fs (answered (RunAgain(StartedFile(launchOf "start/tool.exe")))) state
 
     Assert.Equal<Effect list>([ RunProgram(launchOf "start/tool.exe") ], result.Effects)
 

@@ -118,3 +118,73 @@ archive and the other panel still usable, a panel of search results with its
 own names and paths, its marked hits, its missing directory and a hit inside an
 archive, the parent under the cursor, and a line that names no program or names
 one with a placeholder.
+
+**P20.4 put the menu on `F2` and ran what it chooses.** `F2`, labelled `Menu`
+on the bar, raises `UserMenuRequested`; `Shell` reads `user-menu.conf` afresh
+and hands it to the popup, and the entry chosen comes back as
+`MenuCommandChosen` with the path the list file of `%f` will have — the first
+free `marked-N.txt` in the session's working directory. The transition expands
+the line with P20.3's `expand` and answers `RunCommand` of a `CommandRun`, or
+reports the refusal; `Shell` hands the run to `Processes.RunCommand` and
+`CommandFinished` brings the outcome back, remembered on the history when it
+started, silent when the elevation was turned down, reported under *Cannot run
+command* otherwise.
+
+`UserMenuDialog` is built the way the favourites popup is: a `ListView` whose
+`KeyDown` runs before the list's own keys. A bare letter or digit runs its
+entry at once, `↑`/`↓` step from command to command over the separators, and
+`Enter` runs the one under the cursor; both answer the `MenuCommand`, so a
+letter and `Enter` raise the same run. The popup was rendered and driven
+through a real `Application` with the `render-tui-screen` probe — a letter,
+the arrows over the separator followed by `Enter`, and `Esc` — before any of
+this was trusted:
+
+```
+╔╡User menu╞═══════════════════════════════════════════════════════════╗
+║                                                                      ║
+║ E  Edit in vim                                                       ║
+║ C  Compare the panels                                                ║
+║ ──────────────────────────────────────────────────────────────────── ║
+║ Z  Pack the marked files                                             ║
+║                                                                      ║
+║ A letter or Enter: run    Esc: close                                 ║
+╚══════════════════════════════════════════════════════════════════════╝
+```
+
+The launch adapter is `Adapters/CommandProcess.fs`, split as `LaunchProcess`
+is into a `describe` the tests read and a `start` that writes the list file and
+starts. On Windows each way goes through the shell verb, so a console program
+gets a window of its own: the program with its words as arguments, or
+`cmd.exe /s /c "…"` and `/s /k "…"` with every quoted word in double quotes,
+and `runas` for an entry run as administrator — with `cd /d` in front of a
+shell line, which was added after the first draft because an elevated start is
+not trusted to keep its directory. On Unix the program or `/bin/sh -c` is
+started with its streams drained, words quoted in single quotes, and
+elevation is refused by platform.
+
+The history had to learn a second kind of start. The types of a run moved
+down from `State` into `FileSystem/CommandRun.fs` — `CommandWord`,
+`ExpandedCommand`, now carrying a `ListFile` of the path and the entries, and
+`CommandRun` — because `history.conf` stores them. `History.Launches` became a
+list of `Started`, a file start or a command run, so the *History* tab lists
+both in one order; `HistoryItem` gained `Ran`, `RunAgain` carries a `Started`,
+and a run is written under the `run.` keys with a `kind` part a file start
+never had, so older files read as they did. `[Go to]` on a run stands the
+panel in the directory it ran in. `MenuRun.text` and `tryParse` moved into the
+domain beside the type, shared by the menu file and the history file.
+
+The tests: `CommandProcessTests` describe each way on each platform, the
+`runas` verb and the `cd /d`, the refusal on Unix, and the list file written or
+refused on `MockFileSystem`; `HistoryTests` a run remembered, deduplicated,
+forgotten, written, read back and passed over when a part is missing or a word
+breaks a line; `UserMenuRunTests` the round trip through `update`, the working
+directory inside an archive, a refusal, the three outcomes and a run again from
+the history; `ShellTests` the menu handed to the popup with and without a file,
+an unreadable file, the list file named, the run handed to its port and the two
+reports; `UserMenuDialogTests` the rows, where the popup opens, a letter in
+either case, `Enter`, a letter nothing holds, the arrows over a separator and at
+the end, and an empty menu; `UserMenuKeyTests` `F2` through the main window to
+the port and onto the history file, a refused run and a closed menu;
+`KeyMapTests`, `UserMenuRowTests`, `HistoryRowTests`,
+`ExpansionRefusalMessageTests`, `UserMenuErrorMessageTests` and
+`WorkspaceTests` the pieces. Each way of running is to be tried by hand.

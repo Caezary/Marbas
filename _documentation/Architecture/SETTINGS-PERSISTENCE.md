@@ -206,7 +206,12 @@ change the menu refuses writes nothing either. `UserMenuError` is
 `MenuRefused` of a `MenuRefusal` — `HotkeyTaken` when an entry would share a
 hotkey with another, `CommandGone` when the entry being changed was removed by
 another copy. Nothing reads the file at startup, and a missing file loads as
-an empty menu, so the application starts as it did without one.
+an empty menu, so the application starts as it did without one. Since P20.4
+`Dependencies` carries the path as `UserMenuPath`, and `F2` reads the file
+afresh each time it is pressed, so an entry another copy added is in the menu
+the next time it opens; a file that cannot be read is reported under *User
+menu* by `UserMenuErrorMessage`, which also words the two refusals for the
+editing of P20.5.
 
 ```
 entry.1=command
