@@ -313,6 +313,46 @@ turns the Windows code for it into that value before the transition ever sees
 it, the way it turns the code for "nothing is associated" into
 `NoProgramAssociated` rather than into a sentence the system wrote.
 
+**A user menu command line is expanded by a pure function, before anything
+starts.** Since P20.3 `CommandExpansion.expand fs listFile line state` reads the
+`CommandLine` of an entry against the two panels and answers an
+`ExpandedCommand` — the program, its arguments and, when the line asks for a
+list file, the entries that file must hold — or the `ExpansionRefusal` that
+stops the run. It reads the state and writes nothing; `fs` is there to spell
+paths, and the path of the list file is handed in, because where the file goes
+is the launch adapter's choice (P20.4).
+
+The line is split into words first and expanded second. Whitespace outside
+double quotes ends a word, the quotes themselves are dropped, and a word that
+held any is remembered as `Quoted`. A placeholder is then replaced inside its
+word, and what it puts in is never split again: a path with a space in it, or
+a quote, stays one argument however it is spelled. `%s` with several entries
+is the one placeholder that makes more than one argument — each entry its own,
+text typed before it joined to the first and text after it to the last — so
+the program is started once with all of them. Every `CommandWord` that holds
+something put in is `Quoted`, which is how the run through the shell will know
+to quote every path when it writes the line out; a word typed bare stays
+`Bare`, so `|` and `>` keep their meaning there.
+
+| Placeholder | Puts in | Refused when |
+|---|---|---|
+| `%n` | the name under the cursor — a hit's own name in search results | nothing but `..` under the cursor; the entry is inside an archive |
+| `%p` | its full path — a hit's own path | the same |
+| `%s` | each marked entry's full path, or the cursor's when nothing is marked | the same, for any of them |
+| `%d` | the panel's directory | the panel is inside an archive, or shows search results |
+| `%f` | the path of the list file; the active panel's `%s` entries go in it | as `%s` |
+| `%%` | a percent sign | never |
+
+`%n`, `%p`, `%s` and `%d` speak of the active panel; `%L…` and `%R…` of the left
+and the right one, whichever is active. Anything else after a `%` — `%x`, `%N`,
+`%Lf`, a `%` at the end of the line — is kept as it was typed, so a line that
+means a percent sign of its own does not have to be rewritten. A refusal names
+what it stopped at: `InsideArchive` the place inside the archive, spelled the
+way `Enter` names one it will not run; `NoEntryChosen` and `NoDirectory` the
+side; `NoProgram` a line whose first word comes out empty. A placeholder that
+does not name the panel standing inside an archive refuses nothing, so a
+command that uses only the other panel runs.
+
 **The settings popup is a port too, and what it returns is state.**
 `SettingsRequested` hands `state.Programs` to `Prompts.EditPrograms` through
 the `ShowSettings` effect, along with the executable under the panel cursor if

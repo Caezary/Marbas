@@ -102,6 +102,7 @@
     <ItemGroup>
         <Compile Include="State\PanelState.fs" />
         <Compile Include="State\AppState.fs" />
+        <Compile Include="State\CommandExpansion.fs" />
         <Compile Include="State\Update.fs" />
         <Compile Include="State\Runtime.fs" />
     </ItemGroup>

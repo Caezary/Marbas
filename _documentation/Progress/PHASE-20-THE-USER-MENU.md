@@ -78,3 +78,43 @@ duplicate hotkey and gaps in the numbering; and on `MockFileSystem` a change
 on top of a file another copy wrote, a separator still found after an entry was
 added above it, a refused change that leaves the file alone, a first change
 that creates the directory, and a file that cannot be written or read.
+
+**P20.3 expanded a command line against the two panels.**
+`State/CommandExpansion.fs` is one public function, `expand`, from the file
+system that spells paths, the path the list file will have, the `CommandLine`
+and the `AppState` to an `ExpandedCommand` — the program, its arguments and the
+entries the list file must hold, if the line asks for one — or to an
+`ExpansionRefusal`. It sits in `State` because it reads `PanelState` the way
+the operations do: the marks, the cursor standing in for them, a hit's own
+name and path in a panel of search results, and the place inside an archive
+that refuses a run.
+
+The line is split into words before anything is put in, and nothing put in is
+split again. That is what keeps a path with a space or a quote in it one
+argument without any escaping at all, and why `%s` can hand several entries to
+one start of the program: it is the only placeholder that makes more than one
+word, and text joined to it goes to the first entry and to the last. Each word
+remembers whether it was quoted when typed or holds something put in, so the
+run through the shell in P20.4 can quote every path as the plan asks while
+leaving a bare `|` or `>` to the shell; until then nothing reads that mark.
+
+Three choices the plan left open were made here. `..` under the cursor with
+nothing marked is no entry, so `%n`, `%p`, `%s` and `%f` refuse rather than
+hand a program nothing or the parent's name. A panel of search results has no
+directory, so `%d` there refuses instead of guessing at the place the search
+started from. `%f` lists the active panel's entries, the ones `%s` would put
+in, since the plan names no side for it; `%Lf` and `%Rf` are therefore not
+placeholders and are kept as typed, like any other `%` the notation does not
+know — including `%N`, as the letters are matched exactly.
+
+The tests, all in `CommandExpansionTests` on `MockFileSystem`: every
+placeholder on the active panel and on each side named, the bare ones following
+the active panel when it changes, several entries marked on either side, the
+program started once with all of them, text joined to `%s`, names holding a
+space, a single quote and — on Unix, where a file may be called that — a double
+quote, words typed in quotes, `%%`, seven spellings of a `%` that means nothing,
+the list file and a line without one, each placeholder on a panel inside an
+archive and the other panel still usable, a panel of search results with its
+own names and paths, its marked hits, its missing directory and a hit inside an
+archive, the parent under the cursor, and a line that names no program or names
+one with a placeholder.

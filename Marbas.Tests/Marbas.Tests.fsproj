@@ -132,6 +132,7 @@
     <Compile Include="State\FindTests.fs" />
     <Compile Include="State\ResultsPanelTests.fs" />
     <Compile Include="State\ResultsOperationsTests.fs" />
+    <Compile Include="State\CommandExpansionTests.fs" />
     <Compile Include="State\ClipboardTests.fs" />
     <Compile Include="State\FolderHistoryTests.fs" />
     <Compile Include="State\HistoryPopupTests.fs" />

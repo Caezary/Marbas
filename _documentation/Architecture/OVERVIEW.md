@@ -148,6 +148,8 @@ Marbas/
     PanelState.fs         one panel: cursor, marks, search and sort, never the disk
     AppState.fs           tabs and app state: loaders, finish* transitions and the
                           queries Update asks, built from and read back as Settings
+    CommandExpansion.fs   a user menu command line + the panels -> the program and its arguments,
+                          or why it refuses
     Update.fs             messages and effects: message + state -> state + effects
     Runtime.fs            generic host: the single mutable cell, the message
                           queue, one drain loop over update/render/interpret
