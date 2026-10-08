@@ -43,7 +43,7 @@ numbered `P<phase>.<task>` so they can be referenced in commits (e.g.
 | [18 — The clipboard](Plan/PHASE-18-THE-CLIPBOARD.md) | P18.1–P18.7 | done |
 | [19 — The viewer finds and decodes](Plan/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) | P19.1–P19.6 | planned |
 | [20 — The user menu](Plan/PHASE-20-THE-USER-MENU.md) | P20.1–P20.5 | planned |
-| [21 — The log and the debts](Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md) | P21.1–P21.15 | planned |
+| [21 — The log and the debts](Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md) | P21.1–P21.16 | planned |
 
 ## Suggested module layout
 

@@ -4,7 +4,8 @@ Goal: when Marbas fails, it leaves behind enough to say why, and the code is
 left easier to change than it was found. The phase adds one feature — a log,
 written on a crash and, in debug mode, on every transition — and otherwise
 pays off what earlier phases left owing: a progress window that is flooded on a
-fast batch, a directory that can be copied into itself, a console editor on Unix that has to share the terminal, working
+fast batch, a directory that can be copied into itself, a console editor on Unix that has to share the terminal, a
+window program on Windows that writes over the panels, working
 directories left in the temporary directory by every session that did not end
 with `F10`, a Windows clipboard opened without a window and so not held while
 it is written, a flag
@@ -118,6 +119,18 @@ transfers do not.
 
 ## Stage 3 — The terminal handed over
 
+The panels are drawn in a terminal that the programs Marbas starts can reach.
+On Unix a console editor started by `F4` shares it with a driver that is still
+reading keys. On Windows a program started through the shell verb is given a
+console of its own only when it is a console program; a window program is given
+none, and an Electron program such as `Code.exe` then attaches to the console of
+its parent — Marbas's, the terminal the panels are drawn in — and writes its log
+there. Terminal.Gui knows nothing of it, so the text stays until those cells are
+drawn again. It was seen with a user menu entry `code.exe %p`, and `Enter` or
+`F4` reach the same program the same way. The shell verb cannot redirect the
+streams, and starting every program without it would take the window of its
+own away from a console program, so the two kinds have to be told apart.
+
 - **P21.5 A console editor gets the terminal** — on Unix, `F4` shuts the
   Terminal.Gui driver down before starting the editor and brings it back after
   it exits, so a full-screen editor receives every key and the panels are
@@ -126,6 +139,31 @@ transfers do not.
   `IApplication`. *Done when:* the switch is proved per platform, a full-screen
   editor round-trips by hand on Linux, and the entry in
   [Rough edges](../ROUGH-EDGES.md) is gone.
+- **P21.6 A window program keeps off the panels** — on Windows, a program
+  Marbas starts by name is first resolved to its file — the path as written,
+  else the `PATH` with the extensions of `PATHEXT`, else the system's App
+  Paths — and the subsystem in its PE header decides how it is started. A
+  window program is started without the shell verb, its streams redirected and
+  drained as `LaunchProcess.detached` does on Unix, so it holds valid standard
+  handles and has no reason to reach for its parent's console. A console
+  program, a script (`.cmd`, `.bat`), a file that cannot be resolved or read,
+  and every run as administrator — `runas` exists only as a shell verb — go
+  through the shell as today. Reading the subsystem is a function of
+  `FileSystem` over `IFileSystem` that answers a union rather than a number;
+  resolving the name, `PATH` and App Paths included, stays in `Adapters`. The
+  rule covers every start that names its program: a user menu entry run
+  `Directly`, `Enter` on an executable or with a program chosen for the
+  extension, and `F4`. A start through a file's association, where the system
+  picks the program, cannot be redirected and keeps the shell verb. A spike
+  first proves by hand that `Code.exe` started with redirected streams writes
+  nothing to the terminal and that a console program started through the shell
+  verb still opens a window of its own. *Done when:* the subsystem is read on
+  `MockFileSystem` from a window program's header, a console program's, a file
+  too short to hold one and a file that is not an executable; each start is
+  described with the verb or the redirection its kind calls for; the user menu
+  entry `code.exe %p` opens VS Code by hand with nothing written over the
+  panels; and the entry in [Rough edges](../ROUGH-EDGES.md) is narrowed to a
+  start through an association.
 
 ## Stage 4 — What a session leaves behind
 
@@ -140,7 +178,7 @@ console's close and shutdown signals as well would narrow the hole but not
 close it — a kill or a crash still skips every handler — so the sweep at start
 is the fix, and a signal handler is left out.
 
-- **P21.6 Old sessions are swept at start** — every session writes an owner
+- **P21.7 Old sessions are swept at start** — every session writes an owner
   file into its working directory when it makes it: its process id and the
   moment the process started, which together name one process even after the
   system reuses the id. When a session starts, the directories under
@@ -177,7 +215,7 @@ retries of `opened` guard against a clipboard held by another program, not
 against one that is not held at all. It was seen once, in a quick measurement,
 so the task proves it before it fixes it.
 
-- **P21.7 The clipboard opened with a window of Marbas's own** — first, an
+- **P21.8 The clipboard opened with a window of Marbas's own** — first, an
   integration test in `Integration/Clipboard/` proves the gap as the system
   answers it: a process holding the clipboard opened with no window keeps no
   other process out. Then the Windows adapter opens the clipboard with a
@@ -197,13 +235,13 @@ so the task proves it before it fixes it.
 
 ## Stage 6 — The structure
 
-- **P21.8 Replacing is said by name** — `Operations.copyFile` and `moveFile`
+- **P21.9 Replacing is said by name** — `Operations.copyFile` and `moveFile`
   lose their `bool`: copying always replaces, so its argument goes, and moving
   takes a union that says whether an existing target is replaced (every
   transfer) or kept (the anonymous rename a wipe makes). *Done when:* no
   function in `Operations` takes a `bool` for what it does, and the suite
   passes unchanged.
-- **P21.9 One way to land a panel** — four transitions end in
+- **P21.10 One way to land a panel** — four transitions end in
   `AppState.standInside` or `standBeside`, each through a type or a match of its
   own: a history choice through `Place.toLocation` and `Place.beside`, a
   favourite through `Place.toLocation`, a search answer through
@@ -218,7 +256,7 @@ so the task proves it before it fixes it.
   *Done when:* `standInside` and `standBeside` are called from one function in
   `Update`, the folder history records the same places as before, and the
   suite passes with only the renamed cases changed.
-- **P21.10 `Shell` and `Ports` join `State`** — neither draws anything: `Ports`
+- **P21.11 `Shell` and `Ports` join `State`** — neither draws anything: `Ports`
   is the shape of the outside world and `Shell` interprets effects into it. Both
   move under `State/`, and with them the wording of `Ui/Messages`, which is
   plain text with no view in it and whose only readers are `Shell`,
@@ -230,7 +268,7 @@ so the task proves it before it fixes it.
   nothing under `State` opens a `Terminal.Gui` namespace, the dependency rule in
   [Overview](../Architecture/OVERVIEW.md) is restated for the new layout, and
   the suite passes with its tests moved alongside.
-- **P21.11 Ports say what they are for** — a port that takes functions takes a
+- **P21.12 Ports say what they are for** — a port that takes functions takes a
   request record instead, the way the prompts already do: `Runners.Batch` takes
   a title, the work and what to do with the result as named fields, and so do
   `Measure`, `Search` and the two `Watches`. A function type that stays a field
@@ -238,7 +276,7 @@ so the task proves it before it fixes it.
   given a name that says what it answers. *Done when:* no field of
   `Dependencies` is a function whose argument is another function, and `Fakes`
   builds every port from named parts.
-- **P21.12 Where mutation is allowed** — a rule in
+- **P21.13 Where mutation is allowed** — a rule in
   [Coding style](../coding-style-conventions.md) says where a mutable binding or
   a reference cell earns its place: a measured hot loop confined to one
   function (`LineIndex`, `TextEncoding`, `ArchiveReader`, `RewindingStream`), an
@@ -249,7 +287,7 @@ so the task proves it before it fixes it.
   a returned value. *Done when:* each remaining mutable binding outside `Ui`
   falls under a clause of the rule, the hot loops are timed before and after in
   [Measurements](../Progress/MEASUREMENTS.md), and the suite passes unchanged.
-- **P21.13 Views keep their state in one value** — `FileViewer`,
+- **P21.14 Views keep their state in one value** — `FileViewer`,
   `ResultsWindow`, `ResultRow` and `SettingsDialog` hold a handful of mutable
   locals each, changed from several event handlers. Each gathers them into one
   immutable record behind one cell, with the changes written as functions over
@@ -259,7 +297,7 @@ so the task proves it before it fixes it.
 
 ## Stage 7 — The suite and the platforms
 
-- **P21.14 Test files by feature** — no test file runs past a thousand lines.
+- **P21.15 Test files by feature** — no test file runs past a thousand lines.
   `ShellTests` (about 2,600 lines, 161 tests) splits along the features its
   helpers already group — transfers, history, typed text, packing, unpacking
   and the rest — the way `ShellPlacesTests` was split from it, and `UpdateTests`
@@ -267,7 +305,7 @@ so the task proves it before it fixes it.
   `ArchiveFixture` does for the archive tests. *Done when:* the longest test
   file is under a thousand lines, the count of tests is the same before and
   after, and [Testing](../Architecture/TESTING.md) states the limit.
-- **P21.15 The manual rows, by hand** — every row of
+- **P21.16 The manual rows, by hand** — every row of
   [Cross-platform](../Architecture/CROSS-PLATFORM.md) marked *manual* is run
   against the published binaries of this phase, on Windows and on a Linux
   desktop, by a person at the terminal: colours, a resized terminal, the mouse,

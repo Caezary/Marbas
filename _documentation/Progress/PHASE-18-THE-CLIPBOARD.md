@@ -377,6 +377,6 @@ that a process opening the clipboard with `OpenClipboard(NULL)` did not keep a
 second process from opening it too, while a window handle did, answering
 access denied; the holder uses a window, and the adapter, which opens with no
 window, is scheduled to follow it as
-[P21.7](../Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md). `KeptClipboard` puts the text back
+[P21.8](../Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md). `KeptClipboard` puts the text back
 after each test, so a local run leaves the user's clipboard text as it found
 it.

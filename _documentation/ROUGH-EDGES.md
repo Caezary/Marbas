@@ -170,6 +170,19 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   matter, the fix is to shut the driver down around the process and
   re-initialise afterwards, on the waiting branch alone; it touches
   `Adapters/EditorProcess.fs` only.
+- On Windows a window program Marbas starts can write over the panels. Every
+  start goes through the shell verb, which gives a console program a console
+  of its own and a window program none, and an Electron program — `Code.exe`
+  named in a user menu entry, as the editor of `F4` or as the program `Enter`
+  opens a file with — then attaches to the console of its parent, the terminal
+  the panels are drawn in, and writes its log there. Terminal.Gui does not
+  know, so the text stays until those cells are drawn again. The shell verb
+  cannot redirect the streams, and starting without it would take the window
+  of its own away from a console program; the fix is to read the subsystem
+  from the program's header and start a window program with its streams
+  drained, which leaves a start through a file's association as it is.
+  `ELECTRON_NO_ATTACH_CONSOLE=1` in the user's environment is Electron's own
+  switch against attaching and has not been tried here.
 - The open-with popup lists the programs but never says which one the system
   would pick by default, and it cannot remove a program from the list — the
   registry and the mime database are read, never written. Removing a handler is
