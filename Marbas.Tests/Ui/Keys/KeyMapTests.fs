@@ -624,3 +624,14 @@ let ``a key that is not a letter or a digit is no hotkey of a menu entry`` () =
     let found = KeyMap.menuHotkeyOf Key.Enter
 
     Assert.Equal(None, found)
+
+[<Fact>]
+let ``the user menu is edited on the keys P17.2 found reaching a dialog with a list`` () =
+    let keys =
+        [ KeyMap.userMenuAddKey
+          KeyMap.userMenuChangeKey
+          KeyMap.userMenuRemoveKey
+          KeyMap.userMenuEarlierKey
+          KeyMap.userMenuLaterKey ]
+
+    Assert.Equal<Key list>([ Key.InsertChar; Key.F4; Key.Delete; Key.CursorUp.WithCtrl; Key.CursorDown.WithCtrl ], keys)

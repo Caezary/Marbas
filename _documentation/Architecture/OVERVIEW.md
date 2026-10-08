@@ -230,6 +230,9 @@ Marbas/
       DriveLine.fs          drive rows -> lines whose root, label, kind and sizes line up
       DriveDialog.fs        the list `Alt+F1` / `Alt+F2` open, and the row it answers with
       UserMenuRow.fs        a user menu entry -> its hotkey and label, a separator -> a line
+      MenuEntryForm.fs      the fields of the entry popup -> an entry, or why it is refused
+      MenuRemoval.fs        what `Del` in the user menu may remove, and the change for each
+      MenuEntryDialog.fs    the popup `Ins` and `F4` open in the user menu
       UserMenuDialog.fs     the popup `F2` opens, and the entry it answers with
       FindDialog.fs         what `Alt+F7` asks, greyed where the query means nothing
       ViewerSearchDialog.fs what `F7` in the viewer asks: the text and four options, a broken pattern refused

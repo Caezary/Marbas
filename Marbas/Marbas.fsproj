@@ -203,6 +203,9 @@
         <Compile Include="Ui\Dialogs\FavoriteRow.fs" />
         <Compile Include="Ui\Dialogs\FavoritesDialog.fs" />
         <Compile Include="Ui\Dialogs\UserMenuRow.fs" />
+        <Compile Include="Ui\Dialogs\MenuEntryForm.fs" />
+        <Compile Include="Ui\Dialogs\MenuRemoval.fs" />
+        <Compile Include="Ui\Dialogs\MenuEntryDialog.fs" />
         <Compile Include="Ui\Dialogs\UserMenuDialog.fs" />
         <Compile Include="Ui\Dialogs\FindDialog.fs" />
         <Compile Include="Ui\Dialogs\ViewerSearchDialog.fs" />

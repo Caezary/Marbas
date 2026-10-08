@@ -228,6 +228,16 @@ let userMenuKey = Key.F2
 
 let userMenuRunKey = Key.Enter
 
+let userMenuAddKey = Key.InsertChar
+
+let userMenuChangeKey = Key.F4
+
+let userMenuRemoveKey = Key.Delete
+
+let userMenuEarlierKey = Key.CursorUp.WithCtrl
+
+let userMenuLaterKey = Key.CursorDown.WithCtrl
+
 let quitKey = Key.Q.WithCtrl
 
 let cancelKey = Key.Esc

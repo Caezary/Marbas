@@ -564,6 +564,7 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | A user menu entry is started the way it names | shell verb; `cmd /s /c`, `cmd /s /k` | drained; `/bin/sh -c` for both shell ways | suite (the start described); **manual** (each way run) |
 | A user menu entry runs as administrator | `runas`, `cd /d` first in the shell | refused by platform | suite (described); **manual** |
 | The list file of `%f` is written before the start | same | same | suite |
+| `Ins`, `F4`, `Del`, `Ctrl+↑`, `Ctrl+↓` edit the user menu popup | same | same | suite; probe on Windows; keys measured in P17.2 |
 | A program that is not there is named, not thrown | `Win32Exception` 2 | `Win32Exception` 2 | **manual** |
 | `Alt+R` asks which program opens the entry | same | same | suite |
 | `Shift+Enter` reaches the panel as a key at all | **no**, arrives as `Enter` | **manual** | manual (Windows Terminal) |

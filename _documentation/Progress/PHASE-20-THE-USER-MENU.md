@@ -188,3 +188,79 @@ the port and onto the history file, a refused run and a closed menu;
 `KeyMapTests`, `UserMenuRowTests`, `HistoryRowTests`,
 `ExpansionRefusalMessageTests`, `UserMenuErrorMessageTests` and
 `WorkspaceTests` the pieces. Each way of running is to be tried by hand.
+
+**P20.5 made the menu editable where it is shown.** `UserMenuDialog.create`
+now takes a `MenuEditing` — `AskEntry`, `AskRemoval` and `Change` — and the
+list's `KeyDown` answers five more keys from `KeyMap`: `Ins` adds, `F4`
+changes, `Del` removes, `Ctrl+↑`/`Ctrl+↓` move. `Change` is `Shell`'s
+`changeUserMenu`, `UserMenu.change` on the menu's path, so every change is read,
+applied and written at once, a failure is reported under *User menu*, and the
+popup redraws from the menu the file then holds, growing or shrinking with it
+and keeping the cursor on the entry the change was about.
+
+`MenuEntryDialog` is the popup `Ins` and `F4` open: label, hotkey, command
+line, the three ways of running and *As administrator*. `MenuEntryForm.read`
+reads the fields against the other entries and refuses a blank label, a hotkey
+that is not one letter or digit, a hotkey another entry holds — naming that
+entry — and a blank command line; the popup checks it in `OnAccepting` and
+stays open with the reason under the box, which is how "a duplicate hotkey is
+refused in the dialog" was met rather than by letting the file refuse it
+afterwards.
+
+One thing the plan left unanswered was settled with the user: the cursor steps
+over separators (P20.4), so a separator could never be under it to be removed
+or moved. A line is now edited from the entry beside it. `Ins` offers *an
+entry*, *a line above* or *a line below* the entry under the cursor, the fields
+greyed out for a line; `Del` asks — through a `MessageBox` with a button per
+choice and *Cancel* last, the one it opens on — whether to remove the entry or
+the line right above or below it, whichever of those is there, as
+`MenuRemoval.offered` answers; and `Ctrl+↑`/`↓` swap the entry with the row
+next to it, so an entry moved past a line takes it to its other side.
+
+The whole of it was driven through a real `Application` with the
+`render-tui-screen` probe: `Ins`, a label, a hotkey and a command typed and
+`Enter`, which added the entry under the cursor and grew the popup; a hotkey
+another entry holds, refused in place; `Del` on an entry with a line under it;
+and `Ctrl+↓` past a line.
+
+```
+╔╡Add to the menu╞═══════════════════════════════════════════════╗
+║ Label:                                                         ║
+║ C                                                              ║
+║                                                                ║
+║ Hotkey:  c                                                     ║
+║                                                                ║
+║ Command line:                                                  ║
+║ x                                                              ║
+║                                                                ║
+║ Runs:                          Adds:                           ║
+║ ◉ Directly                     ◉ An entry                      ║
+║ ○ Shell, window closes         ○ A line above                  ║
+║ ○ Shell, window stays          ○ A line below                  ║
+║                                                                ║
+║ · As administrator                                             ║
+║ 'C' already runs 'Compare the panels'.                         ║
+║                                                                ║
+║                      [ Cancel ] [► Ok ◄]                       ║
+╚════════════════════════════════════════════════════════════════╝
+
+╔╡Remove from the menu╞══════════════════════════════════════════╗
+║Remove 'Compare the panels' from the menu, or a line next to it?║
+║                                                                ║
+║          [ Remove entry ] [ Line below ] [► Cancel ◄]          ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+The tests: `MenuEntryFormTests` every refusal and the fields of an entry;
+`MenuRemovalTests` what is offered beside no line, between two, on the first
+row and on a line, the change for each choice and both questions;
+`MenuEntryDialogTests` an entry read, the way of running and the rights, a held
+hotkey and empty fields refused with the popup open, a line chosen without
+fields, the fields greyed, an entry being changed filled in without the choice
+of a line and keeping its own hotkey, and a cancel; `UserMenuDialogTests` each
+key reaching `Change` and the popup — an entry added after the cursor, into an
+empty menu, a line above and below, a change, a removal and its line, a move
+each way across a line, a declined question and a change the file refused;
+`ShellTests` a change written at once and a refused one reported; and
+`UserMenuKeyTests` a menu edited in one window and opened in a second built
+over the same file system, which is the restart.

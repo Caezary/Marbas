@@ -338,11 +338,23 @@ let private changeFavorites (deps: Dependencies) change =
         reportFavorites deps error
         None
 
+let private reportUserMenu (deps: Dependencies) error =
+    report deps UserMenuErrorMessage.Title (UserMenuErrorMessage.describe error)
+
+let private changeUserMenu (deps: Dependencies) change =
+    match UserMenu.change deps.FileSystem deps.UserMenuPath change with
+    | Ok menu -> Some menu
+    | Error error ->
+        reportUserMenu deps error
+        None
+
 let private showUserMenu (deps: Dependencies) dispatch =
     match UserMenu.load deps.FileSystem deps.UserMenuPath with
-    | Error error -> report deps UserMenuErrorMessage.Title (UserMenuErrorMessage.describe error)
+    | Error error -> reportUserMenu deps error
     | Ok menu ->
-        deps.Prompts.ChooseFromUserMenu { Menu = menu }
+        deps.Prompts.ChooseFromUserMenu
+            { Menu = menu
+              Change = changeUserMenu deps }
         |> Option.iter (fun command ->
             MenuCommandChosen(command, Workspace.listFile deps.FileSystem deps.WorkspacePath)
             |> dispatch)

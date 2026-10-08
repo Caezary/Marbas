@@ -214,6 +214,8 @@
     <Compile Include="Ui\Dialogs\DriveLineTests.fs" />
     <Compile Include="Ui\Dialogs\FavoriteRowTests.fs" />
     <Compile Include="Ui\Dialogs\UserMenuRowTests.fs" />
+    <Compile Include="Ui\Dialogs\MenuEntryFormTests.fs" />
+    <Compile Include="Ui\Dialogs\MenuRemovalTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -306,6 +308,7 @@
     <Compile Include="Integration\Dialogs\DriveDialogTests.fs" />
     <Compile Include="Integration\Dialogs\KeepFavoriteDialogTests.fs" />
     <Compile Include="Integration\Dialogs\FavoritesDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\MenuEntryDialogTests.fs" />
     <Compile Include="Integration\Dialogs\UserMenuDialogTests.fs" />
     <Compile Include="Integration\Dialogs\PackDialogTests.fs" />
     <Compile Include="Integration\Dialogs\LinkDialogTests.fs" />

@@ -429,8 +429,28 @@ label and the command line as it was expanded; `Enter` there runs it again
 exactly as it ran, and `Alt+G` sends the active panel to the directory it ran
 in.
 
-The menu is kept beside the settings in `user-menu.conf`. P20.5 adds editing
-it in the popup; until then it is edited by hand:
+The menu is edited where it is shown. A bare letter runs an entry, so the
+editing keys are the ones a letter cannot be:
+
+- `Ins` opens *Add to the menu* — the label, the letter, the command line, how
+  it runs and *As administrator* — and the new entry goes right under the one
+  the cursor is on. The same popup can add *a line above* or *a line below* the
+  entry under the cursor instead; the fields are then not needed.
+- `F4` opens the same popup on the entry under the cursor, to change it.
+- `Del` asks before it removes anything. When a line stands right above or
+  below the entry, the question offers that line as well as the entry; the
+  answer offered is *Cancel*.
+- `Ctrl+↑` and `Ctrl+↓` move the entry under the cursor one row; moving it past
+  a line puts it on the other side of that line.
+
+A letter another entry already runs on is refused in the popup, which stays
+open and says which entry holds it; so is an entry without a label or a command
+line. Every change is written to the file the moment it is made, so it holds
+after a restart, and two copies of Marbas editing the menu at once keep each
+other's entries.
+
+The menu is kept beside the settings in `user-menu.conf`, and can be edited by
+hand as well:
 
 ```
 entry.1=command

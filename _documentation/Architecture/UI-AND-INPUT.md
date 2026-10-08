@@ -767,6 +767,48 @@ answer is the `MenuCommand`, so a letter and `Enter` on the same entry raise
 the same `MenuCommandChosen`. Inside the popup a bare letter runs, which is why
 P20.5 puts the editing on `Ins`, `F4`, `Del` and `Ctrl+↑`/`↓`.
 
+**The popup is edited through three functions it is handed.** Since P20.5
+`UserMenuDialog.create` takes a `MenuEditing` beside the menu: `AskEntry`,
+which runs the entry popup; `AskRemoval`, which asks what `Del` removes; and
+`Change`, which `Shell` builds over `UserMenu.change`, so each change is
+written to the file at once, a failure or a refusal is reported under *User
+menu* and nothing is answered, and what is answered is the menu the file now
+holds. The popup refills from that answer, grows or shrinks to the number of
+rows, and puts the cursor on the entry the change was about — the entry added,
+changed or moved, or the one the cursor stood on when a line was added or
+removed — or, after an entry was removed, on the next entry, else the last.
+Every key is in `KeyMap` (`userMenuAddKey`, `userMenuChangeKey`,
+`userMenuRemoveKey`, `userMenuEarlierKey`, `userMenuLaterKey`), and the second
+line of the hint names them.
+
+**The cursor never stands on a line, so a line is edited from the entry beside
+it.** P20.4 made `↑`/`↓` step over the separators, and that was kept. A line is
+therefore added and removed from the entry right above or below it: the entry
+popup of `Ins` offers *an entry*, *a line above* or *a line below* the entry
+under the cursor — a line placed above is `AddItem(SeparatorItem, …)` after the
+row above the cursor, which is the top of the menu on its first row — and
+`Del` offers the entry and whichever of the two neighbouring rows is a line.
+`MenuRemoval.offered` answers those choices and `MenuRemoval.changeFor` turns
+one into a `RemoveItem` of the row it names, the separator by the
+`SeparatorAfter` reference `UserMenu.refAt` gives it. Moving needs nothing of
+its own: `Ctrl+↑`/`↓` swap the entry with the row next to it, a line included,
+so an entry moved past a line puts the line on its other side. The question of
+`Del` is a `MessageBox` with a button per choice and *Cancel* last, the button
+it opens on, so `Enter` pressed at once removes nothing.
+
+**The entry popup refuses before it closes.** `MenuEntryDialog` holds the
+label, a hotkey field three columns wide, the command line, an
+`OptionSelector` of the three ways of running, the *Adds* selector of an entry
+or a line — hidden when an entry is being changed — and the *As administrator*
+box. `MenuEntryForm.read` turns the fields into a `MenuCommand` against the
+other entries of the menu, the one being changed left out so it may keep its
+own hotkey, and answers `NoLabel`, `NoHotkey`, `HotkeyHeld` of the entry
+holding it, or `NoCommandLine`. The dialog checks it in `OnAccepting`, as the
+viewer's search popup checks a pattern, and a refusal is written on the line
+under the box and keeps the popup open. Choosing a line greys the fields out
+and skips the check. The answer is an `EntryAnswer` — `CommandEntered` or
+`LineEntered` of a side — or nothing when the popup was cancelled.
+
 **The elevated run is the open-with key with one more modifier.** `Alt+R` asks
 which program should open the entry, `Alt+Shift+R` runs it as administrator —
 one key to remember rather than two, and the shift reads as "and with more than

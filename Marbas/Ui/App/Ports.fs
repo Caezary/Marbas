@@ -72,7 +72,9 @@ type FavoritesPrompt =
       Current: Place option
       Change: FavoriteChange -> Favorites option }
 
-type UserMenuPrompt = { Menu: UserMenu }
+type UserMenuPrompt =
+    { Menu: UserMenu
+      Change: MenuChange -> UserMenu option }
 
 type HistoryPrompt =
     { History: History

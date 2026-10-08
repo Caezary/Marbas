@@ -83,3 +83,33 @@ let ``closing the menu without a choice starts nothing`` () =
     pressKey window Key.F2
 
     Assert.Empty runs
+
+[<Fact>]
+let ``a menu edited and closed is the same menu after a restart`` () =
+    let fs = mockFs ()
+    let added = CommandItem(entry "show %p")
+    let below = SeparatorAfter(Some(Expect.some (MenuHotkey.tryCreate "S")), 0)
+    let shown = ResizeArray<UserMenu>()
+
+    let editing (prompt: Ports.UserMenuPrompt) =
+        [ AddItem(added, None); AddItem(SeparatorItem, Some(CommandAt(Expect.some (MenuHotkey.tryCreate "S")))) ]
+        |> List.iter (prompt.Change >> ignore)
+
+        None
+
+    use first =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                Prompts.ChooseFromUserMenu = editing }
+
+    use restarted =
+        focusedWindow
+            { Fakes.dependencies fs (at "start") with
+                Prompts.ChooseFromUserMenu = fun prompt -> shown.Add prompt.Menu; None }
+
+    pressKey first KeyMap.userMenuKey
+    pressKey restarted KeyMap.userMenuKey
+
+    let menu = Assert.Single shown
+    Assert.Equal<MenuItem list>([ added; SeparatorItem ], UserMenu.items menu)
+    Assert.Equal(Some below, UserMenu.refAt 1 menu)

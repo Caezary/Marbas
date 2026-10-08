@@ -3078,3 +3078,44 @@ let ``a command that could not start is reported under the command title`` () =
     Shell.interpret deps ignore (ReportCommandError(LaunchRefused(fp "show", "denied")))
 
     Assert.Equal(LaunchErrorMessage.CommandTitle, reported)
+
+[<Fact>]
+let ``a change made in the user menu popup is written at once and handed back`` () =
+    let fs = MockFileSystem()
+    let mutable answered = None
+    let added = CommandItem(menuEntry "S" "Show" "show %p")
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            Prompts.ChooseFromUserMenu =
+                fun prompt ->
+                    answered <- prompt.Change(AddItem(added, None))
+                    None }
+
+    Shell.interpret deps ignore ShowUserMenu
+
+    let written = UserMenu.load fs (fp (at "user-menu.conf")) |> Expect.ok
+    Assert.Equal(Some written, answered)
+    Assert.Equal<MenuItem list>([ added ], UserMenu.items written)
+
+[<Fact>]
+let ``a change the user menu refuses is reported and nothing is handed back`` () =
+    let fs = MockFileSystem()
+    let held = CommandItem(menuEntry "S" "Show" "show %p")
+    let written = UserMenu.apply (AddItem(held, None)) UserMenu.empty |> Expect.ok
+    fs.AddFile(at "user-menu.conf", MockFileData(String.concat "\n" (UserMenu.format written)))
+    let mutable answered = Some UserMenu.empty
+    let mutable reported = ""
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            Prompts.ReportError = fun report -> reported <- report.Message
+            Prompts.ChooseFromUserMenu =
+                fun prompt ->
+                    answered <- prompt.Change(AddItem(CommandItem(menuEntry "s" "Search" "grep %s"), None))
+                    None }
+
+    Shell.interpret deps ignore ShowUserMenu
+
+    Assert.Equal(None, answered)
+    Assert.Contains("'S'", reported)

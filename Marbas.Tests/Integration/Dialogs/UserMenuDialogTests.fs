@@ -31,9 +31,23 @@ let private menuOf items =
 let private sample =
     menuOf [ CommandItem edit; CommandItem compare; SeparatorItem; CommandItem pack ]
 
+let private untouched: UserMenuDialog.MenuEditing =
+    { AskEntry = fun _ -> None
+      AskRemoval = fun _ -> None
+      Change = fun _ -> None }
+
+let private laidOutEditing editing menu =
+    DialogStyle.apply ()
+    let dialog = UserMenuDialog.create editing menu
+    dialog.BeginInit()
+    dialog.EndInit()
+    dialog.Layout(Size(100, 30)) |> ignore
+    (UserMenuDialog.entries dialog).SetFocus() |> ignore
+    dialog
+
 let private laidOut menu =
     DialogStyle.apply ()
-    let dialog = UserMenuDialog.create menu
+    let dialog = UserMenuDialog.create untouched menu
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(100, 30)) |> ignore
@@ -140,3 +154,204 @@ let ``Enter in an empty menu chooses nothing`` () =
     pressOn dialog KeyMap.userMenuRunKey
 
     Assert.Equal(None, UserMenuDialog.chosen dialog)
+
+let private key raw = Expect.some (MenuHotkey.tryCreate raw)
+
+let private extra = entry "X" "Extra" "notepad %p"
+
+type private Recorded =
+    { Changes: ResizeArray<MenuChange>
+      Entries: ResizeArray<MenuEntryForm.EntryPrompt>
+      Removals: ResizeArray<MenuRemoval.RemovalPrompt> }
+
+let private recorded () =
+    { Changes = ResizeArray()
+      Entries = ResizeArray()
+      Removals = ResizeArray() }
+
+let private editing (record: Recorded) entryAnswer removalAnswer start : UserMenuDialog.MenuEditing =
+    let mutable menu = start
+
+    { AskEntry =
+        fun prompt ->
+            record.Entries.Add prompt
+            entryAnswer
+      AskRemoval =
+        fun prompt ->
+            record.Removals.Add prompt
+            removalAnswer
+      Change =
+        fun change ->
+            record.Changes.Add change
+            menu <- Expect.ok (UserMenu.apply change menu)
+            Some menu }
+
+let private editedWith entryAnswer removalAnswer menu =
+    let record = recorded ()
+    let dialog = laidOutEditing (editing record entryAnswer removalAnswer menu) menu
+    record, dialog
+
+[<Fact>]
+let ``Ins adds the entry typed in the dialog after the one under the cursor, and stands on it`` () =
+    let record, dialog = editedWith (Some(MenuEntryForm.CommandEntered extra)) None sample
+    use dialog = dialog
+    standOn 1 dialog
+
+    pressOn dialog KeyMap.userMenuAddKey
+
+    Assert.Equal<MenuChange list>([ AddItem(CommandItem extra, Some(CommandAt(key "C"))) ], List.ofSeq record.Changes)
+    Assert.Equal("X  Extra", (shown dialog)[2])
+    Assert.Equal(Some 2, cursor dialog)
+
+[<Fact>]
+let ``Ins asks for a new entry, naming every entry already in the menu`` () =
+    let record, dialog = editedWith None None sample
+    use dialog = dialog
+
+    pressOn dialog KeyMap.userMenuAddKey
+
+    let prompt = Assert.Single record.Entries
+    Assert.Equal(MenuEntryForm.Adding, prompt.Editing)
+    Assert.Equal<MenuCommand list>([ edit; compare; pack ], prompt.Others)
+
+[<Fact>]
+let ``Ins in an empty menu adds the first entry`` () =
+    let record, dialog = editedWith (Some(MenuEntryForm.CommandEntered extra)) None UserMenu.empty
+    use dialog = dialog
+
+    pressOn dialog KeyMap.userMenuAddKey
+
+    Assert.Equal<MenuChange list>([ AddItem(CommandItem extra, None) ], List.ofSeq record.Changes)
+    Assert.Equal<string list>([ "X  Extra" ], shown dialog)
+
+[<Fact>]
+let ``a line chosen below goes under the entry, the cursor staying on it`` () =
+    let record, dialog = editedWith (Some(MenuEntryForm.LineEntered MenuEntryForm.BelowCursor)) None sample
+    use dialog = dialog
+
+    pressOn dialog KeyMap.userMenuAddKey
+
+    Assert.Equal<MenuChange list>([ AddItem(SeparatorItem, Some(CommandAt(key "E"))) ], List.ofSeq record.Changes)
+    Assert.Matches("^─+$", (shown dialog)[1])
+    Assert.Equal(Some 0, cursor dialog)
+
+[<Fact>]
+let ``a line chosen above goes over the entry, the cursor staying on it`` () =
+    let record, dialog = editedWith (Some(MenuEntryForm.LineEntered MenuEntryForm.AboveCursor)) None sample
+    use dialog = dialog
+    standOn 1 dialog
+
+    pressOn dialog KeyMap.userMenuAddKey
+
+    Assert.Equal<MenuChange list>([ AddItem(SeparatorItem, Some(CommandAt(key "E"))) ], List.ofSeq record.Changes)
+    Assert.Equal(Some 2, cursor dialog)
+
+[<Fact>]
+let ``F4 changes the entry under the cursor through the same dialog`` () =
+    let changed = entry "K" "Compare all" "code --diff %Ls %Rs"
+    let record, dialog = editedWith (Some(MenuEntryForm.CommandEntered changed)) None sample
+    use dialog = dialog
+    standOn 1 dialog
+
+    pressOn dialog KeyMap.userMenuChangeKey
+
+    let prompt = Assert.Single record.Entries
+    Assert.Equal(MenuEntryForm.Changing compare, prompt.Editing)
+    Assert.Equal<MenuCommand list>([ edit; pack ], prompt.Others)
+    Assert.Equal<MenuChange list>([ ChangeCommand(key "C", changed) ], List.ofSeq record.Changes)
+    Assert.Equal("K  Compare all", (shown dialog)[1])
+
+[<Fact>]
+let ``a dialog closed without an answer changes nothing`` () =
+    let record, dialog = editedWith None None sample
+    use dialog = dialog
+
+    pressOn dialog KeyMap.userMenuChangeKey
+
+    Assert.Empty record.Changes
+
+[<Fact>]
+let ``Del asks what to remove, offering the line beside the entry`` () =
+    let record, dialog = editedWith None None sample
+    use dialog = dialog
+    standOn 1 dialog
+
+    pressOn dialog KeyMap.userMenuRemoveKey
+
+    let prompt = Assert.Single record.Removals
+    Assert.Equal(compare, prompt.Command)
+    Assert.Equal<MenuRemoval.RemovalChoice list>(
+        [ MenuRemoval.RemoveCommand; MenuRemoval.RemoveLine MenuEntryForm.BelowCursor ],
+        prompt.Offered
+    )
+
+[<Fact>]
+let ``Del removes the entry once the answer says so, the cursor moving to the next entry`` () =
+    let record, dialog = editedWith None (Some MenuRemoval.RemoveCommand) sample
+    use dialog = dialog
+    standOn 1 dialog
+
+    pressOn dialog KeyMap.userMenuRemoveKey
+
+    Assert.Equal<MenuChange list>([ RemoveItem(CommandAt(key "C")) ], List.ofSeq record.Changes)
+    Assert.Equal(Some 2, cursor dialog)
+    Assert.Equal("Z  Pack", (shown dialog)[2])
+
+[<Fact>]
+let ``Del removes the line below the entry when that is the answer`` () =
+    let record, dialog = editedWith None (Some(MenuRemoval.RemoveLine MenuEntryForm.BelowCursor)) sample
+    use dialog = dialog
+    standOn 1 dialog
+
+    pressOn dialog KeyMap.userMenuRemoveKey
+
+    Assert.Equal<MenuChange list>([ RemoveItem(SeparatorAfter(Some(key "C"), 0)) ], List.ofSeq record.Changes)
+    Assert.Equal<string list>([ "E  Edit"; "C  Compare"; "Z  Pack" ], shown dialog)
+    Assert.Equal(Some 1, cursor dialog)
+
+[<Fact>]
+let ``a removal declined changes nothing`` () =
+    let record, dialog = editedWith None None sample
+    use dialog = dialog
+
+    pressOn dialog KeyMap.userMenuRemoveKey
+
+    Assert.Empty record.Changes
+
+[<Fact>]
+let ``Ctrl+Down moves the entry down, the cursor going with it`` () =
+    let record, dialog = editedWith None None sample
+    use dialog = dialog
+
+    pressOn dialog KeyMap.userMenuLaterKey
+
+    Assert.Equal<MenuChange list>([ MoveItem(CommandAt(key "E"), Later) ], List.ofSeq record.Changes)
+    Assert.Equal<string list>([ "C  Compare"; "E  Edit" ], List.take 2 (shown dialog))
+    Assert.Equal(Some 1, cursor dialog)
+
+[<Fact>]
+let ``Ctrl+Up past a line takes the entry to the other side of it`` () =
+    let record, dialog = editedWith None None sample
+    use dialog = dialog
+    standOn 3 dialog
+
+    pressOn dialog KeyMap.userMenuEarlierKey
+
+    Assert.Equal<MenuChange list>([ MoveItem(CommandAt(key "Z"), Earlier) ], List.ofSeq record.Changes)
+    Assert.Equal("Z  Pack", (shown dialog)[2])
+    Assert.Equal(Some 2, cursor dialog)
+
+[<Fact>]
+let ``a change the file refused leaves the popup as it was`` () =
+    let record = recorded ()
+
+    let refusing =
+        { editing record (Some(MenuEntryForm.CommandEntered extra)) None sample with
+            Change = fun change -> record.Changes.Add change; None }
+
+    use dialog = laidOutEditing refusing sample
+
+    pressOn dialog KeyMap.userMenuAddKey
+
+    Assert.Single record.Changes |> ignore
+    Assert.Equal(4, (shown dialog).Length)

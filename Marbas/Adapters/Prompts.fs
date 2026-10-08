@@ -187,5 +187,24 @@ let chooseTab (app: IApplication) (fs: IFileSystem) (tabs: Zipper<Tab>) =
 
     running app (fun () -> TabDialog.create rows (Zipper.position tabs)) TabDialog.choice
 
+let private askMenuEntry (app: IApplication) (prompt: MenuEntryForm.EntryPrompt) =
+    let createDialog () = MenuEntryDialog.create prompt
+    running app createDialog MenuEntryDialog.answer
+
+let private askMenuRemoval (app: IApplication) (prompt: MenuRemoval.RemovalPrompt) =
+    let labels =
+        (prompt.Offered |> List.map MenuRemoval.label) @ [ MenuRemoval.CancelLabel ]
+
+    let answer =
+        MessageBox.Query(app, MenuRemoval.Title, MenuRemoval.question prompt, Array.ofList labels)
+
+    answer |> Option.ofNullable |> Option.bind (fun index -> List.tryItem index prompt.Offered)
+
 let chooseFromUserMenu (app: IApplication) (request: UserMenuPrompt) =
-    running app (fun () -> UserMenuDialog.create request.Menu) UserMenuDialog.chosen
+    let editing: UserMenuDialog.MenuEditing =
+        { AskEntry = askMenuEntry app
+          AskRemoval = askMenuRemoval app
+          Change = request.Change }
+    let createDialog () = UserMenuDialog.create editing request.Menu
+
+    running app createDialog UserMenuDialog.chosen

@@ -211,7 +211,13 @@ an empty menu, so the application starts as it did without one. Since P20.4
 afresh each time it is pressed, so an entry another copy added is in the menu
 the next time it opens; a file that cannot be read is reported under *User
 menu* by `UserMenuErrorMessage`, which also words the two refusals for the
-editing of P20.5.
+editing of P20.5. Since P20.5 the popup hands each change it makes to
+`Shell`'s `changeUserMenu`, which is `UserMenu.change` on that path: the file
+is read, the change applied and the file written before the popup redraws, so
+a menu edited and closed is the same menu after a restart. The popup refuses a
+hotkey it can see is taken before it asks; `HotkeyTaken` and `CommandGone`
+from the file are what is left for a second copy that changed the menu in the
+meantime, and they reach the user as a dialog over the popup.
 
 ```
 entry.1=command

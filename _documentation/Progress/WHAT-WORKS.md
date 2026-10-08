@@ -474,6 +474,19 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   start. A start that fails is reported under *Cannot run command*, one whose
   elevation is turned down is silence, and one that started goes on the
   *History* tab of `Alt+F12`.
+  The popup edits the menu in place. `Ins` opens *Add to the menu* — label,
+  hotkey, command line, three ways of running and *As administrator* — and
+  adds the entry right under the cursor, or instead a line above or below the
+  entry under the cursor; `F4` opens the same popup filled with the entry under
+  the cursor and without the choice of a line; `Del` asks whether to remove the
+  entry or a line right above or below it, *Cancel* being the default;
+  `Ctrl+↑`/`Ctrl+↓` move the entry one row, across a line when one is next to
+  it. A hotkey another entry holds, a blank label and a blank command line are
+  refused in the popup, which stays open with the reason under the fields.
+  Each change is written to `user-menu.conf` at once, read first so another
+  copy's entries are kept, and the popup shows the file as it then is, the
+  cursor on the entry added, changed or moved, or on the next one after a
+  removal; a change the file refuses is reported and the popup left as it was.
 - `F4` opens the same file — the one under the cursor — in an editor: the one
   its extension is associated with, otherwise the default editor named in the
   settings, otherwise whatever `$EDITOR` names, otherwise `notepad` on Windows

@@ -7,7 +7,7 @@ what the application does today is in
 
 ## Where we are
 
-**Nineteen phases are complete** (156 of 156 tasks). Marbas
+**Twenty phases are complete** (161 of 161 tasks). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -69,7 +69,7 @@ written up as the checklist in
 | 17 — The marks, the panel and the favourites | P17.1–P17.10 | done | [journal](Progress/PHASE-17-MARKS-PANEL-AND-FAVOURITES.md) |
 | 18 — The clipboard | P18.1–P18.7 | done | [journal](Progress/PHASE-18-THE-CLIPBOARD.md) |
 | 19 — The viewer finds and decodes | P19.1–P19.6 | done | [journal](Progress/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) |
-| 20 — The user menu | P20.1–P20.5 | P20.1–P20.4 done | [journal](Progress/PHASE-20-THE-USER-MENU.md) |
+| 20 — The user menu | P20.1–P20.5 | done | [journal](Progress/PHASE-20-THE-USER-MENU.md) |
 
 ## What works today
 
