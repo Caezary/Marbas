@@ -445,7 +445,7 @@ the plain `PromptDialog.create`, since a secret is never remembered.
   there does not leave it behind.
 - `Esc` on the open list closed the whole dialog, because the application's
   quit binding sees it before the popover does. `HistoryField.apply`, called
-  once in `Program.fs` beside `DialogStyle.apply`, subscribes to
+  once in `Session.run` beside `DialogStyle.apply`, subscribes to
   `app.Keyboard.KeyDown`, which runs first, and hides the active popover when
   it belongs to a `DropDownList`.
 

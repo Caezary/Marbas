@@ -46,7 +46,9 @@ the two home directories, `$EDITOR`. `Dependencies.create` reads it and picks a
 Windows or a Unix function per port — `RecycleBin.send` or `Trash.send`,
 `ModifierWatch.poll` or `ModifierWatch.unsupported`, the drives alone or the
 drives and the home directory — so no branch on the platform survives below the composition
-root. `Program.fs` is left with the handful of lines that start the application.
+root. `Program.fs` is left with one line: it hands the real file system and
+environment to `Session.run`, which starts the application under the crash
+hooks described in [Diagnostics](DIAGNOSTICS.md).
 
 ## Topics
 
@@ -58,6 +60,7 @@ root. `Program.fs` is left with the handful of lines that start the application.
 - [Archives](ARCHIVES.md) — kinds and formats, the deduced name, writing, reading, extracting, the libraries
 - [UI and input](UI-AND-INPUT.md) — colour, sorting, hidden entries, search, popups and the drive popup, the key table
 - [Settings persistence](SETTINGS-PERSISTENCE.md) — the config file and what survives a restart
+- [Diagnostics](DIAGNOSTICS.md) — the log, what writes to it, and what a crash leaves behind
 - [Tabs](TABS.md) — a tab as a pair of panels, the zipper, switching, the counter
 - [History](HISTORY.md) — what is remembered, where it is kept, the popup and the drop-down fields
 - [Auto-refresh](AUTO-REFRESH.md) — watching the directories on screen, the burst, what the watcher cannot say
@@ -119,6 +122,8 @@ Marbas/
     History.fs            the remembered lists, the changes made to them, and history.conf
     UserMenuError.fs      why the user menu could not be read, written or changed
     UserMenu.fs           the user menu entries, the changes made to them, and user-menu.conf
+    LogFileError.fs       why the log could not be cut or written
+    LogFile.fs            marbas.log beside the settings: appended to, cut to its last megabyte
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     Links.fs              what a link request means, what refuses it, and making one
     DirectoryMeasure.fs   the size of a directory or an archive level, stopping at links
@@ -152,6 +157,7 @@ Marbas/
     CommandExpansion.fs   a user menu command line + the panels -> the program and its arguments,
                           or why it refuses
     Update.fs             messages and effects: message + state -> state + effects
+    LogEntry.fs           what the log records, and the stamped lines each entry becomes
     Runtime.fs            generic host: the single mutable cell, the message
                           queue, one drain loop over update/render/interpret
   Ui/                     nine folders, compiled in this order; every
@@ -184,6 +190,7 @@ Marbas/
       LaunchErrorMessage.fs     LaunchError -> user-facing text
       ExpansionRefusalMessage.fs  why a user menu command was refused -> user-facing text
       UserMenuErrorMessage.fs     UserMenuError -> user-facing text
+      CrashMessage.fs           a crash -> the line printed once the terminal is back
       DeleteConfirmation.fs     delete targets -> confirmation question
       OverwriteQuestion.fs      collision -> question text, answer buttons and mapping
       PasswordQuestion.fs       protected archive -> the words of the password prompt
@@ -266,8 +273,12 @@ Marbas/
     ModifierWatch.fs      held Ctrl / Alt / Shift, polled on Windows, absent elsewhere
     DirectoryWatch.fs     the directories on screen watched, bursts collapsed,
                           what the watcher cannot say polled for
+    Crashes.fs            a session that throws, an unhandled thread and an
+                          unawaited task -> a crash written to the log
     Dependencies.fs       every port bound to one implementation, platform picked here
-  Program.fs              quit key, application, theme, dependencies, window
+    Session.fs            quit key, application, theme, dependencies, window, run
+                          under the crash hooks; the pointer to the log after a crash
+  Program.fs              hands the real file system and environment to Session.run
   Properties/PublishProfiles/
     win-x64.pubxml        self-contained single-file build for Windows
     linux-x64.pubxml      the same for Linux

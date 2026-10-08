@@ -74,6 +74,7 @@
     <Compile Include="FileSystem\HistoryTests.fs" />
     <Compile Include="FileSystem\FavoritesTests.fs" />
     <Compile Include="FileSystem\UserMenuTests.fs" />
+    <Compile Include="FileSystem\LogFileTests.fs" />
     <Compile Include="FileSystem\ArchiveNameTests.fs" />
     <Compile Include="FileSystem\ArchiveTests.fs" />
     <Compile Include="FileSystem\ArchiveNamesTests.fs" />
@@ -141,6 +142,7 @@
     <Compile Include="State\LaunchHistoryTests.fs" />
     <Compile Include="State\FileHistoryTests.fs" />
     <Compile Include="State\UpdateTests.fs" />
+    <Compile Include="State\LogEntryTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
     <Compile Include="State\RuntimeQueueTests.fs" />
   </ItemGroup>
@@ -176,6 +178,7 @@
     <Compile Include="Ui\Messages\LaunchErrorMessageTests.fs" />
     <Compile Include="Ui\Messages\ExpansionRefusalMessageTests.fs" />
     <Compile Include="Ui\Messages\UserMenuErrorMessageTests.fs" />
+    <Compile Include="Ui\Messages\CrashMessageTests.fs" />
     <Compile Include="Ui\Messages\DeleteConfirmationTests.fs" />
     <Compile Include="Ui\Messages\OverwriteQuestionTests.fs" />
     <Compile Include="Ui\Messages\PasswordQuestionTests.fs" />
@@ -240,6 +243,7 @@
     <Compile Include="Adapters\EditorProcessTests.fs" />
     <Compile Include="Adapters\NativeLinksTests.fs" />
     <Compile Include="Adapters\SystemClipboardTests.fs" />
+    <Compile Include="Adapters\CrashesTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

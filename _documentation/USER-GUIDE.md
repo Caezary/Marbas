@@ -11,6 +11,12 @@ each one is self-contained and carries its own .NET runtime, so nothing else
 needs to be installed. On Linux and macOS, mark the file executable first
 (`chmod +x Marbas`).
 
+If Marbas stops on an error, it writes what happened to `marbas.log`, in the
+same directory as its settings — `%APPDATA%\Marbas` on Windows,
+`~/.config/Marbas` elsewhere — and says where the file is once the terminal is
+back. That file is what to attach to a bug report. It keeps only its last
+megabyte, so it never grows without bound.
+
 ## Panels and the cursor
 
 - `Tab` switches which panel is active — the active one has a double border.

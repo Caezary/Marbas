@@ -72,6 +72,8 @@
         <Compile Include="FileSystem\Favorites.fs" />
         <Compile Include="FileSystem\UserMenuError.fs" />
         <Compile Include="FileSystem\UserMenu.fs" />
+        <Compile Include="FileSystem\LogFileError.fs" />
+        <Compile Include="FileSystem\LogFile.fs" />
         <Compile Include="FileSystem\ArchiveFormat.fs" />
         <Compile Include="FileSystem\ArchiveName.fs" />
         <Compile Include="FileSystem\ArchiveNames.fs" />
@@ -105,6 +107,7 @@
         <Compile Include="State\AppState.fs" />
         <Compile Include="State\CommandExpansion.fs" />
         <Compile Include="State\Update.fs" />
+        <Compile Include="State\LogEntry.fs" />
         <Compile Include="State\Runtime.fs" />
     </ItemGroup>
 
@@ -143,6 +146,7 @@
         <Compile Include="Ui\Messages\LaunchErrorMessage.fs" />
         <Compile Include="Ui\Messages\ExpansionRefusalMessage.fs" />
         <Compile Include="Ui\Messages\UserMenuErrorMessage.fs" />
+        <Compile Include="Ui\Messages\CrashMessage.fs" />
         <Compile Include="Ui\Messages\SettingsErrorMessage.fs" />
         <Compile Include="Ui\Messages\HistoryErrorMessage.fs" />
         <Compile Include="Ui\Messages\FavoritesErrorMessage.fs" />
@@ -244,7 +248,9 @@
         <Compile Include="Adapters\ModifierWatch.fs" />
         <Compile Include="Adapters\NativeLinks.fs" />
         <Compile Include="Adapters\SystemClipboard.fs" />
+        <Compile Include="Adapters\Crashes.fs" />
         <Compile Include="Adapters\Dependencies.fs" />
+        <Compile Include="Adapters\Session.fs" />
     </ItemGroup>
 
     <ItemGroup>

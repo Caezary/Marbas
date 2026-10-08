@@ -674,3 +674,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   that no longer fits to `C:\...\parent\current` rather than losing its sort
   marks. Every one of those commands writes the session, and `Shift+F9` writes
   it whenever asked without quitting.
+- A crash leaves a log. An exception that ends the application is written with
+  its stack trace to `marbas.log` beside the settings file, and once the
+  terminal is back the console says in one line where that file is; the
+  process exits with code 1. An exception on a thread of its own and one in a
+  task nobody awaited are written the same way. Every line of the log is
+  stamped with the moment it was written, and each start cuts the file to its
+  last megabyte.

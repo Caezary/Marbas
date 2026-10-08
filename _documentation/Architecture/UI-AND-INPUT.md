@@ -408,7 +408,7 @@ is what makes `_Cancel` and `_Ok` work on the dialog buttons.
 ## Popups
 
 **Every popup is dressed once, in one place.** `DialogStyle.apply` runs from
-`Program.fs` right after `Application.Init` and sets what Terminal.Gui keeps as
+`Session.run` right after `Application.Init` and sets what Terminal.Gui keeps as
 process-wide defaults: a double frame on `Dialog` and on `MessageBox` — the
 frame a focused panel wears — buttons centred under the question, no shadow on
 either, and `[` `]` for the brackets drawn around a button. It also registers
@@ -447,7 +447,7 @@ shadow is a `Margin` thickness fixed while the view is constructed, and setting
 `ShadowStyle`, `Margin.ShadowStyle` or the thickness itself afterwards changes
 nothing. `Dialog.DefaultShadow` and `Button.DefaultShadow` are therefore the
 only levers, which is why `apply` has to run before the first popup is built —
-`Program.fs` calls it two lines after `Init`, and every test that lays a dialog
+`Session.run` calls it two lines after `Init`, and every test that lays a dialog
 out calls it first. That is also how the suite caught it: with the shadows
 back, the content area of a six-row dialog measures zero.
 
