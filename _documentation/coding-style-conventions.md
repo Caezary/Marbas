@@ -129,6 +129,9 @@ schedules the fix. A rule here beats a habit found in an older file.
       `.config/dotnet-tools.json`; `dotnet tool restore` installs it,
       `dotnet fantomas Marbas Marbas.Tests` formats, and the `format` job in CI
       runs the same with `--check` and fails on any file that would change.
+- [ ] A commit that only reformats is listed in `.git-blame-ignore-revs`, so
+      blame skips it. GitHub reads the file on its own; locally,
+      `git config blame.ignoreRevsFile .git-blame-ignore-revs` once per clone.
 - [ ] `TreatWarningsAsErrors` is on in every configuration: a warning is a build
       failure, not a note.
 - [ ] Warning FS1182 is on (`--warnon:1182` in `Directory.Build.props`), so with
