@@ -48,7 +48,13 @@ let private stampRow y id caption (stamp: DateTimeOffset) =
 
 let private flagBox index flag (properties: EntryProperties) =
     let box =
-        new CheckBox(X = 1, Y = Pos.Absolute(2 + index), Height = 1, Text = EntryProperties.label flag, Id = flagId flag)
+        new CheckBox(
+            X = 1,
+            Y = Pos.Absolute(2 + index),
+            Height = 1,
+            Text = EntryProperties.label flag,
+            Id = flagId flag
+        )
 
     box.Value <-
         if EntryProperties.has flag properties then
@@ -59,8 +65,7 @@ let private flagBox index flag (properties: EntryProperties) =
     box :> View
 
 let create (properties: EntryProperties) =
-    let dialog =
-        new Dialog(Title = Title, Width = 62, Height = 14) |> DialogStyle.dress
+    let dialog = new Dialog(Title = Title, Width = 62, Height = 14) |> DialogStyle.dress
 
     let name =
         new Label(
@@ -73,7 +78,9 @@ let create (properties: EntryProperties) =
         )
         |> LiteralText.showing
 
-    let boxes = EntryProperties.flags |> List.mapi (fun index flag -> flagBox index flag properties)
+    let boxes =
+        EntryProperties.flags
+        |> List.mapi (fun index flag -> flagBox index flag properties)
 
     let stamps =
         stampRow 7 CreatedId "Created:" properties.Created
@@ -86,14 +93,12 @@ let create (properties: EntryProperties) =
     dialog.AddButton(DialogStyle.button "_Ok")
     dialog
 
-let name (dialog: Dialog) =
-    SubView.byId<Label> NameId dialog
+let name (dialog: Dialog) = SubView.byId<Label> NameId dialog
 
 let checkBox (dialog: Dialog) flag =
     SubView.byId<CheckBox> (flagId flag) dialog
 
-let field (dialog: Dialog) id =
-    SubView.byId<TextField> id dialog
+let field (dialog: Dialog) id = SubView.byId<TextField> id dialog
 
 let private stampOf (dialog: Dialog) id fallback =
     TimestampText.tryParse (field dialog id).Text |> Option.defaultValue fallback

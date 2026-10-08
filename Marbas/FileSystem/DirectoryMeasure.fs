@@ -10,8 +10,7 @@ type MeasureTarget =
       Location: PanelLocation }
 
 type Measurement =
-    { Name: EntryName
-      Size: DirectorySize }
+    { Name: EntryName; Size: DirectorySize }
 
 module DirectoryMeasure =
 
@@ -44,20 +43,27 @@ module DirectoryMeasure =
         items
         |> List.collect (fun info ->
             let holding = directoryOf info
-            [ depth + 1 .. holding.Length ] |> List.map (fun taken -> List.truncate taken holding))
+
+            [ depth + 1 .. holding.Length ]
+            |> List.map (fun taken -> List.truncate taken holding))
         |> List.distinct
         |> List.sortBy List.length
         |> List.map (List.fold ArchivePath.child ArchivePath.root)
 
     let private scan (fs: IFileSystem) (control: BatchControl) archive level indexed =
-        let items = indexed |> List.filter (fun info -> ArchivePath.strictlyUnder level info.Segments)
+        let items =
+            indexed
+            |> List.filter (fun info -> ArchivePath.strictlyUnder level info.Segments)
 
         levelsBelow level items
         |> List.iter (ArchivePath.spelled fs archive >> control.Report)
 
         let counted = items |> List.sumBy _.Size
 
-        if control.IsCancelled() then AtLeast counted else Exact counted
+        if control.IsCancelled() then
+            AtLeast counted
+        else
+            Exact counted
 
     let private measureArchive (fs: IFileSystem) (control: BatchControl) archive level =
         if control.IsCancelled() then

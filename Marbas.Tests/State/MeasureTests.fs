@@ -17,7 +17,8 @@ let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private mockFs () =
     let fs = MockFileSystem()
@@ -73,7 +74,13 @@ let ``the view key on a file still opens the viewer`` () =
     let result = update fs ViewRequested state
 
     Assert.Equal<Effect list>(
-        [ ChangeHistory(Remember(Opened { Where = Place.OnDisk(fp (at "start/notes.txt")); How = Viewed }))
+        [ ChangeHistory(
+              Remember(
+                  Opened
+                      { Where = Place.OnDisk(fp (at "start/notes.txt"))
+                        How = Viewed }
+              )
+          )
           ViewFile(fp (at "start/notes.txt")) ],
         result.Effects
     )
@@ -176,13 +183,13 @@ let ``a measurement stopped part way is kept as the lower bound it is`` () =
 let ``a measurement taken while the panel sorts by size moves the row into place`` () =
     let fs = mockFs ()
 
-    let state =
-        loaded fs |> sortBy SortKey.BySize Left |> setCursor Left 1
+    let state = loaded fs |> sortBy SortKey.BySize Left |> setCursor Left 1
 
     let result =
         update fs (MeasureFinished(Ok [ { Name = en "docs"; Size = Exact 5L } ])) state
 
-    let order = result.State.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+    let order =
+        result.State.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
     Assert.Equal<string list>([ ".."; "empty"; "docs"; "notes.txt" ], order)
     Assert.Equal(2, result.State.Left.Cursor)
@@ -195,7 +202,8 @@ let ``a measurement changes no order in a panel sorted by name`` () =
     let result =
         update fs (MeasureFinished(Ok [ { Name = en "docs"; Size = Exact 5L } ])) state
 
-    let order = result.State.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+    let order =
+        result.State.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
     Assert.Equal<string list>([ ".."; "docs"; "empty"; "notes.txt" ], order)
     Assert.Equal(1, result.State.Left.Cursor)

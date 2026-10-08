@@ -54,27 +54,33 @@ let private results hits =
         { Roots = [ OnDisk(fp (at "start")) ]
           OtherRoots = [] }
       Hits = hits
-      Outcome = FileSearch.Finished
-                    { Files = List.length hits
-                      Directories = 0
-                      Skipped = 0 }
+      Outcome =
+        FileSearch.Finished
+            { Files = List.length hits
+              Directories = 0
+              Skipped = 0 }
       Cursor = 0 }
 
 let private sentToPanel hits =
-    SearchAnswered { Landing = Some InPanel; Results = results hits }
+    SearchAnswered
+        { Landing = Some InPanel
+          Results = results hits }
 
 let private loaded (fs: IFileSystem) =
     create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
-let private hits = [ hitIn "start/docs" "inner.txt" File; hitIn "start" "notes.txt" File ]
+let private hits =
+    [ hitIn "start/docs" "inner.txt" File; hitIn "start" "notes.txt" File ]
 
-let private showing fs state = update fs (sentToPanel hits) state |> _.State
+let private showing fs state =
+    update fs (sentToPanel hits) state |> _.State
 
 let private named state =
     (activePanel state).Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private cursorName state =
-    PanelState.cursorEntry (activePanel state) |> Option.map (_.Name >> EntryName.value)
+    PanelState.cursorEntry (activePanel state)
+    |> Option.map (_.Name >> EntryName.value)
 
 let private standingAt name state =
     let index =
@@ -181,7 +187,13 @@ let ``F3 views the file a hit stands for`` () =
     let result = update fs ViewRequested state
 
     Assert.Equal<Effect list>(
-        [ ChangeHistory(Remember(Opened { Where = Place.OnDisk(fp (at "start/docs/inner.txt")); How = Viewed }))
+        [ ChangeHistory(
+              Remember(
+                  Opened
+                      { Where = Place.OnDisk(fp (at "start/docs/inner.txt"))
+                        How = Viewed }
+              )
+          )
           ViewFile(fp (at "start/docs/inner.txt")) ],
         result.Effects
     )
@@ -257,7 +269,10 @@ let private watching () =
 [<Fact>]
 let ``an external change in the other panel asks nothing about the hits`` () =
     let fs = watching ()
-    let state = loaded fs |> loadPanel fs Right (fp (at "backup")) |> Expect.ok |> showing fs
+
+    let state =
+        loaded fs |> loadPanel fs Right (fp (at "backup")) |> Expect.ok |> showing fs
+
     let asked = fs.AskedAbout(at "start/notes.txt")
 
     update fs ExternalChangeDetected state |> ignore
@@ -316,7 +331,12 @@ let private unverifiedReports (effects: Effect list) =
         | _ -> None)
 
 let private showingAcross fs state =
-    update fs (SearchAnswered { Landing = Some InPanel; Results = results acrossArchives }) state
+    update
+        fs
+        (SearchAnswered
+            { Landing = Some InPanel
+              Results = results acrossArchives })
+        state
 
 [<Fact>]
 let ``hits inside an archive that cannot be read are listed with the hits that could be checked`` () =
@@ -325,7 +345,11 @@ let ``hits inside an archive that cannot be read are listed with the hits that c
     let state = loaded fs |> showingAcross fs |> _.State
 
     Assert.Equal<string list>(
-        [ ".."; relative "broken.zip/lost.txt"; relative "broken.zip/other.txt"; relative "data.zip/inner.txt"; "notes.txt" ],
+        [ ".."
+          relative "broken.zip/lost.txt"
+          relative "broken.zip/other.txt"
+          relative "data.zip/inner.txt"
+          "notes.txt" ],
         named state
     )
 

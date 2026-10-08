@@ -85,7 +85,7 @@ let ``a burst that has gone quiet is reported once`` () =
     touched ()
     watch.Pass quiet
 
-    let again = watch.Armed[0] ()
+    let again = watch.Armed[0]()
 
     Assert.Single watch.Reports |> ignore
     Assert.False again
@@ -97,7 +97,7 @@ let ``a burst still running is left to run`` () =
     touched ()
     watch.Pass(TimeSpan.FromMilliseconds 100.0)
 
-    let again = watch.Armed[0] ()
+    let again = watch.Armed[0]()
 
     Assert.Empty watch.Reports
     Assert.True again
@@ -108,7 +108,7 @@ let ``a change after a report arms the watch again`` () =
     let touched = watch.Collapsing()
     touched ()
     watch.Pass quiet
-    watch.Armed[0] () |> ignore
+    watch.Armed[0]() |> ignore
 
     touched ()
 
@@ -121,16 +121,14 @@ let ``the paths that are there are the ones standing`` () =
     let standing =
         DirectoryWatch.standing fs [ fp (at "start/docs"); fp (at "start/backup.zip") ]
 
-    Assert.Equal<Set<FileSystemPath>>(
-        Set.ofList [ fp (at "start/docs"); fp (at "start/backup.zip") ],
-        standing
-    )
+    Assert.Equal<Set<FileSystemPath>>(Set.ofList [ fp (at "start/docs"); fp (at "start/backup.zip") ], standing)
 
 [<Fact>]
 let ``a path that is gone is not standing`` () =
     let fs = mockFs ()
 
-    let standing = DirectoryWatch.standing fs [ fp (at "start/docs"); fp (at "start/gone") ]
+    let standing =
+        DirectoryWatch.standing fs [ fp (at "start/docs"); fp (at "start/gone") ]
 
     Assert.Equal<Set<FileSystemPath>>(Set.singleton (fp (at "start/docs")), standing)
 
@@ -142,7 +140,7 @@ let ``a change while something is in front is held back`` () =
     touched ()
     watch.Pass quiet
 
-    let again = watch.Armed[0] ()
+    let again = watch.Armed[0]()
 
     Assert.Empty watch.Reports
     Assert.True again
@@ -155,10 +153,10 @@ let ``what was held becomes one re-read once the screen is the panels' own`` () 
     touched ()
     touched ()
     watch.Pass quiet
-    watch.Armed[0] () |> ignore
+    watch.Armed[0]() |> ignore
     watch.Uncover()
 
-    let again = watch.Armed[0] ()
+    let again = watch.Armed[0]()
 
     Assert.Single watch.Reports |> ignore
     Assert.False again

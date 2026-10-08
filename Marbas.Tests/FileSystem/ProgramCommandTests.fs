@@ -47,5 +47,4 @@ let ``a quote that is never closed still names what follows it`` () =
 [<Theory>]
 [<InlineData("")>]
 [<InlineData("   ")>]
-let ``a command that names nothing is no program`` command =
-    Assert.Equal(None, programOf command)
+let ``a command that names nothing is no program`` command = Assert.Equal(None, programOf command)

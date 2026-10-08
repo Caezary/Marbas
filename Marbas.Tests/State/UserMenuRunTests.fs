@@ -44,7 +44,9 @@ let private showing: CommandRun =
     { Label = Expect.some (MenuLabel.tryCreate "Show")
       Command =
         { Program = { Text = "show"; Quoting = Bare }
-          Arguments = [ { Text = at "start/notes.txt"; Quoting = Quoted } ]
+          Arguments =
+            [ { Text = at "start/notes.txt"
+                Quoting = Quoted } ]
           ListFile = None }
       Run = Directly
       Elevation = AsUser
@@ -76,11 +78,19 @@ let ``a chosen entry is expanded and run from the directory of the active panel`
 [<Fact>]
 let ``a run keeps the way of running and the elevation the entry names`` () =
     let fs = tree ()
-    let raised = { entry "show %p" with Run = InShellKeptOpen; Elevation = AsAdministrator }
+
+    let raised =
+        { entry "show %p" with
+            Run = InShellKeptOpen
+            Elevation = AsAdministrator }
 
     let result = update fs (MenuCommandChosen(raised, listFile)) (loaded fs)
 
-    let expected = { showing with Run = InShellKeptOpen; Elevation = AsAdministrator }
+    let expected =
+        { showing with
+            Run = InShellKeptOpen
+            Elevation = AsAdministrator }
+
     Assert.Equal<Effect list>([ RunCommand expected ], result.Effects)
 
 [<Fact>]
@@ -115,7 +125,8 @@ let ``a command whose elevation was turned down is silence`` () =
     let fs = tree ()
     let state = loaded fs
 
-    let result = update fs (CommandFinished(showing, Error(ElevationDeclined(fp "show")))) state
+    let result =
+        update fs (CommandFinished(showing, Error(ElevationDeclined(fp "show")))) state
 
     Assert.Equal(state, result.State)
     Assert.Empty result.Effects
@@ -132,7 +143,11 @@ let ``a command that could not start is reported and not remembered`` () =
 [<Fact>]
 let ``a command chosen on the history runs again exactly as it ran`` () =
     let fs = tree ()
-    let answer = HistoryAnswered { Tab = RunHistoryTab; Choice = Some(RunAgain(StartedCommand showing)) }
+
+    let answer =
+        HistoryAnswered
+            { Tab = RunHistoryTab
+              Choice = Some(RunAgain(StartedCommand showing)) }
 
     let result = update fs answer (loaded fs |> setCursor Left 0)
 

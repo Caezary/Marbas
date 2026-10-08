@@ -25,9 +25,13 @@ let private mockFs () =
 let private loaded (fs: IFileSystem) =
     create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
-let private names panel = panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+let private names panel =
+    panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
-let private selectedNames panel = PanelState.selectedEntries panel |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+let private selectedNames panel =
+    PanelState.selectedEntries panel
+    |> Seq.map (_.Name >> EntryName.value)
+    |> List.ofSeq
 
 [<Fact>]
 let ``making a directory adds it and lands the cursor on it`` () =
@@ -59,7 +63,8 @@ let ``an existing name is refused and leaves the panel unchanged`` () =
 
     Assert.Equal(Error(TargetExists(fp (at "start/docs"))), result)
 
-let private typed raw = EnteredText.tryCreate raw |> Expect.some
+let private typed raw =
+    EnteredText.tryCreate raw |> Expect.some
 
 let private historyChanges effects =
     effects

@@ -170,7 +170,9 @@ module Settings =
           line prefix SortSetting (sortText panel.Sort.Key)
           line prefix DirectionSetting (directionText panel.Sort.Direction)
           line prefix HiddenSetting (hiddenText panel.Hidden) ]
-        @ (panel.Cursor |> Option.map (EntryName.value >> line prefix CursorSetting) |> Option.toList)
+        @ (panel.Cursor
+           |> Option.map (EntryName.value >> line prefix CursorSetting)
+           |> Option.toList)
 
     let private roleSetting (association: ProgramAssociation) =
         $"{roleText association.Role}.{FileExtension.value association.Extension}"
@@ -212,7 +214,9 @@ module Settings =
 
     let private panelFrom (read: Map<string, string>) prefix (fallback: PanelSettings) =
         let lookup setting = Map.tryFind (prefix + setting) read
-        let token setting = lookup setting |> Option.map _.ToLowerInvariant()
+
+        let token setting =
+            lookup setting |> Option.map _.ToLowerInvariant()
 
         { Path =
             lookup PathSetting
@@ -225,7 +229,10 @@ module Settings =
                 token DirectionSetting
                 |> Option.bind directionOf
                 |> Option.defaultValue fallback.Sort.Direction }
-          Hidden = token HiddenSetting |> Option.bind hiddenOf |> Option.defaultValue fallback.Hidden
+          Hidden =
+            token HiddenSetting
+            |> Option.bind hiddenOf
+            |> Option.defaultValue fallback.Hidden
           Cursor = lookup CursorSetting |> Option.bind EntryName.tryCreate }
 
     let private parsedNumber (raw: string) =
@@ -256,7 +263,8 @@ module Settings =
 
     let private tabsFrom (read: Map<string, string>) (fallback: TabSettings) =
         let numbered =
-            tabNumbers read |> List.map (fun number -> tabFrom read (tabPrefix number) fallback)
+            tabNumbers read
+            |> List.map (fun number -> tabFrom read (tabPrefix number) fallback)
 
         let tabs =
             match numbered with
@@ -264,7 +272,9 @@ module Settings =
             | [] -> Zipper.single (tabFrom read "" fallback)
 
         let current =
-            Map.tryFind CurrentSetting read |> Option.bind parsedNumber |> Option.defaultValue 1
+            Map.tryFind CurrentSetting read
+            |> Option.bind parsedNumber
+            |> Option.defaultValue 1
 
         tabs |> Zipper.refocus (current - 1)
 
@@ -290,7 +300,9 @@ module Settings =
     let private programsFrom (read: Map<string, string>) (fallback: ProgramSettings) =
         let named =
             { ProgramSettings.none with
-                DefaultEditor = Map.tryFind (EditorPrefix + DefaultSetting) read |> Option.bind ProgramPath.tryCreate }
+                DefaultEditor =
+                    Map.tryFind (EditorPrefix + DefaultSetting) read
+                    |> Option.bind ProgramPath.tryCreate }
 
         let programs =
             read
@@ -298,7 +310,10 @@ module Settings =
             |> List.choose (fun (key, value) -> associationFrom key value)
             |> List.fold (fun settings association -> ProgramSettings.remember association settings) named
 
-        if programs = ProgramSettings.none then fallback else programs
+        if programs = ProgramSettings.none then
+            fallback
+        else
+            programs
 
     let parse (defaults: Settings) (lines: string list) : Settings =
         let read = entries lines

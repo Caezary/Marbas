@@ -74,7 +74,9 @@ module Favorites =
 
             match Map.tryFind $"{key}.{InsidePart}" read with
             | None -> Some(Place.OnDisk path)
-            | Some inside -> ArchivePath.tryCreate inside |> Option.map (fun level -> Place.InArchive(path, level)))
+            | Some inside ->
+                ArchivePath.tryCreate inside
+                |> Option.map (fun level -> Place.InArchive(path, level)))
 
     let parse (lines: string list) =
         let read = lines |> List.choose keyAndValue |> Map.ofList

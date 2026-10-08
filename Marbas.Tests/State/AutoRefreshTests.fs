@@ -63,10 +63,7 @@ let ``an external change keeps the cursor on the entry it stood on`` () =
 
     let result = update fs ExternalChangeDetected state
 
-    Assert.Equal<string list>(
-        [ ".."; "docs"; "added.txt"; "notes.txt"; "setup.fs" ],
-        names result.State.Left.Entries
-    )
+    Assert.Equal<string list>([ ".."; "docs"; "added.txt"; "notes.txt"; "setup.fs" ], names result.State.Left.Entries)
 
     Assert.Equal(3, result.State.Left.Cursor)
 

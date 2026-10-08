@@ -24,14 +24,11 @@ type PanelView() =
 
     member val Painted: PanelRows.Painting option = None with get, set
 
-let listView (panel: View) =
-    SubView.byType<ListView> panel
+let listView (panel: View) = SubView.byType<ListView> panel
 
-let footer (panel: View) =
-    SubView.byType<Label> panel
+let footer (panel: View) = SubView.byType<Label> panel
 
-let private rowColor (panel: PanelView) row =
-    panel.RowColors |> Array.tryItem row
+let private rowColor (panel: PanelView) row = panel.RowColors |> Array.tryItem row
 
 let private rowAttribute (panel: PanelView) (list: ListView) row =
     let marked = list.Source <> null && list.Source.IsMarked row
@@ -54,10 +51,13 @@ let private focusable (panel: PanelView) =
     panel.SetScheme ClassicScheme.panel |> ignore
 
     panel.HasFocusChanged.Add(fun _ ->
-        panel.BorderStyle <- if panel.HasFocus then LineStyle.Double else LineStyle.Single)
+        panel.BorderStyle <-
+            if panel.HasFocus then
+                LineStyle.Double
+            else
+                LineStyle.Single)
 
-    let list =
-        new ListView(Width = Dim.Fill(), Height = Dim.Fill 2)
+    let list = new ListView(Width = Dim.Fill(), Height = Dim.Fill 2)
 
     list.KeystrokeNavigator <- null
     paintRows panel list

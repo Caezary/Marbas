@@ -3,9 +3,15 @@ module Marbas.Tests.Ui.Viewer.FoundSpanTests
 open Xunit
 open Marbas.Ui.Viewer
 
-let private span line from until : FoundSpan = { Line = line; From = from; Until = until }
+let private span line from until : FoundSpan =
+    { Line = line
+      From = from
+      Until = until }
 
-let private row line from text : ShownRow = { Line = line; From = from; Text = text }
+let private row line from text : ShownRow =
+    { Line = line
+      From = from
+      Text = text }
 
 [<Fact>]
 let ``a match in plain text covers the columns it was found at`` () =

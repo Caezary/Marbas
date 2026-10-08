@@ -188,7 +188,11 @@ let ``a directory entry is never opened as content`` () =
 let ``the archive file is closed again with the stream it handed out`` () =
     let tree = Fakes.ByteCounting()
     packedIn tree |> ignore
-    let content = ArchiveReader.openContent tree None Zip (fp archive) [ en "notes.txt" ] |> Expect.some
+
+    let content =
+        ArchiveReader.openContent tree None Zip (fp archive) [ en "notes.txt" ]
+        |> Expect.some
+
     let before = tree.Closed
 
     content.Dispose()

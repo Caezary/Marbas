@@ -16,6 +16,7 @@ let control
 
     let showing text =
         lastShown.Value <- Some text
+
         invoke (fun () ->
             if not (isCancelled ()) then
                 show text)

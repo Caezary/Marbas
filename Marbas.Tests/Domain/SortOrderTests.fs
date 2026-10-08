@@ -30,8 +30,9 @@ let ``switching to the key already in use reverses the direction`` () =
 let ``switching to the same key twice comes back to ascending`` () =
     let order = SortOrder.create SortKey.ByExtension SortDirection.Ascending
 
-    let switched = order
-                |> SortOrder.switchTo SortKey.ByExtension
-                |> SortOrder.switchTo SortKey.ByExtension
+    let switched =
+        order
+        |> SortOrder.switchTo SortKey.ByExtension
+        |> SortOrder.switchTo SortKey.ByExtension
 
     Assert.Equal(order, switched)

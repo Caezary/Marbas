@@ -67,7 +67,9 @@ type ContentView(source: FileWindow.Source) as this =
         | TextMode -> textLine row
 
     let lineHeight line =
-        textLine line |> Option.map (LineWrap.height (width ())) |> Option.defaultValue 1
+        textLine line
+        |> Option.map (LineWrap.height (width ()))
+        |> Option.defaultValue 1
 
     let segmentsOf line text =
         LineWrap.segments (width ()) text
@@ -220,9 +222,12 @@ type ContentView(source: FileWindow.Source) as this =
 
     let screenPlace direction : WindowSearch.Place =
         match direction with
-        | Forwards -> { LineStart = lineStart top; Column = 0 }
+        | Forwards ->
+            { LineStart = lineStart top
+              Column = 0 }
         | Backwards ->
-            let bottom = shownRows () |> List.tryLast |> Option.map _.Line |> Option.defaultValue top
+            let bottom =
+                shownRows () |> List.tryLast |> Option.map _.Line |> Option.defaultValue top
 
             { LineStart = lineStart bottom
               Column = index.Text bottom |> Option.map String.length |> Option.defaultValue 0 }
@@ -492,11 +497,8 @@ let create (ports: Ports) (source: FileWindow.Source) =
     refresh ()
     window
 
-let content (window: Window) =
-    SubView.byType<ContentView> window
+let content (window: Window) = SubView.byType<ContentView> window
 
-let header (window: Window) =
-    SubView.byId<View> HeaderId window
+let header (window: Window) = SubView.byId<View> HeaderId window
 
-let keyBar (window: Window) =
-    SubView.byId<View> KeyBarId window
+let keyBar (window: Window) = SubView.byId<View> KeyBarId window

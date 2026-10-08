@@ -75,7 +75,10 @@ type ResultsView(fs: IFileSystem, run: SearchRun) =
     member _.Rows = List.ofSeq shown
 
     member _.RowAt index =
-        if index >= 0 && index < shown.Count then Some shown[index] else None
+        if index >= 0 && index < shown.Count then
+            Some shown[index]
+        else
+            None
 
     member _.Running = Option.isNone ended
 
@@ -103,8 +106,7 @@ type ResultsView(fs: IFileSystem, run: SearchRun) =
 
     member _.Ran = run
 
-    member _.Outcome =
-        ended |> Option.defaultWith (fun () -> Stopped counts)
+    member _.Outcome = ended |> Option.defaultWith (fun () -> Stopped counts)
 
     member _.Walking(place: string) = directory <- place
 
@@ -112,14 +114,11 @@ type ResultsView(fs: IFileSystem, run: SearchRun) =
 
     member _.Describe width row = ResultRow.describe fs width row
 
-let list (window: ResultsView) =
-    SubView.byId<ListView> ListId window
+let list (window: ResultsView) = SubView.byId<ListView> ListId window
 
-let summary (window: ResultsView) =
-    SubView.byId<View> SummaryId window
+let summary (window: ResultsView) = SubView.byId<View> SummaryId window
 
-let keyBar (window: ResultsView) =
-    SubView.byId<View> KeyBarId window
+let keyBar (window: ResultsView) = SubView.byId<View> KeyBarId window
 
 let private updateSummary (window: ResultsView) =
     (summary window).Text <- FindSummary.describe window.Progress
@@ -138,7 +137,8 @@ let private repaint (window: ResultsView) =
     view.SetNeedsDraw()
 
 let private rowUnderCursor (window: ResultsView) =
-    let standing = (list window).SelectedItem |> Option.ofNullable |> Option.defaultValue 0
+    let standing =
+        (list window).SelectedItem |> Option.ofNullable |> Option.defaultValue 0
 
     window.RowAt standing
 

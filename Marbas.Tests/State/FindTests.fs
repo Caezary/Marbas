@@ -25,7 +25,8 @@ let private mockFs () =
 let private loaded (fs: IFileSystem) =
     create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
-let private marking state = state |> toggleSelectionMoving Downward Left
+let private marking state =
+    state |> toggleSelectionMoving Downward Left
 
 let private query scope =
     { What = FindWhat.create (NameMasks.read "*.txt") None FilesOnly
@@ -138,15 +139,22 @@ let private results hits cursor =
         { Roots = [ OnDisk(fp (at "start")) ]
           OtherRoots = [] }
       Hits = hits
-      Outcome = FileSearch.Finished { Files = List.length hits; Directories = 0; Skipped = 0 }
+      Outcome =
+        FileSearch.Finished
+            { Files = List.length hits
+              Directories = 0
+              Skipped = 0 }
       Cursor = cursor }
 
-let private answer landing = { Landing = landing; Results = results [] 0 }
+let private answer landing =
+    { Landing = landing
+      Results = results [] 0 }
 
 let private landing where = answer (Some where)
 
 let private cursorName state =
-    PanelState.cursorEntry (activePanel state) |> Option.map (_.Name >> EntryName.value)
+    PanelState.cursorEntry (activePanel state)
+    |> Option.map (_.Name >> EntryName.value)
 
 [<Fact>]
 let ``Enter on a file stands the panel in the directory holding it, on the file`` () =
@@ -186,7 +194,8 @@ let ``Enter on a group header stands the panel inside that directory`` () =
     let fs = treeWith ()
     let state = loaded fs
 
-    let result = update fs (SearchAnswered(landing (AtDirectory(OnDisk(fp (at "start/docs")))))) state
+    let result =
+        update fs (SearchAnswered(landing (AtDirectory(OnDisk(fp (at "start/docs")))))) state
 
     Assert.Equal(OnDisk(fp (at "start/docs")), (activePanel result.State).Path)
 
@@ -205,7 +214,8 @@ let ``a landing whose directory is gone says so instead of moving`` () =
     let fs = treeWith ()
     let state = loaded fs
 
-    let result = update fs (SearchAnswered(landing (AtDirectory(OnDisk(fp (at "start/gone")))))) state
+    let result =
+        update fs (SearchAnswered(landing (AtDirectory(OnDisk(fp (at "start/gone")))))) state
 
     Assert.Equal<Effect list>([ ReportListingError(DirectoryNotFound(fp (at "start/gone"))) ], result.Effects)
 
@@ -213,7 +223,10 @@ let ``a landing whose directory is gone says so instead of moving`` () =
 let ``Enter on a hit inside an archive walks the panel into that level`` () =
     let fs = ArchiveFixture.packed ()
     let state = ArchiveFixture.loaded fs
-    let level = InArchive(ArchiveFixture.archive, ArchivePath.child ArchivePath.root (EntryName.create "docs"))
+
+    let level =
+        InArchive(ArchiveFixture.archive, ArchivePath.child ArchivePath.root (EntryName.create "docs"))
+
     let hit: FindHit =
         { Location = level
           Entry = entry "inner.txt" File Plain }
@@ -232,7 +245,8 @@ let ``the answer of a walk becomes the last results`` () =
     let fs = treeWith ()
     let state = loaded fs
 
-    let result = update fs (SearchAnswered(answering [ hitIn "start" "notes.txt" File Plain ] 1)) state
+    let result =
+        update fs (SearchAnswered(answering [ hitIn "start" "notes.txt" File Plain ] 1)) state
 
     Assert.Equal(Some(results [ hitIn "start" "notes.txt" File Plain ] 1), result.State.LastSearch)
 
@@ -273,7 +287,10 @@ let ``the last results are shown again with the row the cursor left`` () =
 
     let result = update fs LastResultsRequested state
 
-    Assert.Equal<Effect list>([ ShowLastResults(results [ hitIn "start" "notes.txt" File Plain ] 1, 0) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ ShowLastResults(results [ hitIn "start" "notes.txt" File Plain ] 1, 0) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a hit that is gone by now is dropped and counted`` () =
@@ -281,7 +298,11 @@ let ``a hit that is gone by now is dropped and counted`` () =
     let kept = hitIn "start" "notes.txt" File Plain
     let found = results [ kept; hitIn "start" "gone.txt" File Plain ] 1
     let surviving = { found with Hits = [ kept ] }
-    let state = loaded fs |> update fs (SearchAnswered { Landing = None; Results = found }) |> _.State
+
+    let state =
+        loaded fs
+        |> update fs (SearchAnswered { Landing = None; Results = found })
+        |> _.State
 
     let result = update fs LastResultsRequested state
 

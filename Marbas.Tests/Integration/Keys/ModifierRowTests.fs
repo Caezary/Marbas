@@ -29,9 +29,11 @@ let private watchedWindow () =
 
     window, hold
 
-let private slots window = FunctionKeyBar.slots (panel FunctionKeyBar.Id window)
+let private slots window =
+    FunctionKeyBar.slots (panel FunctionKeyBar.Id window)
 
-let private commands window = slots window |> List.map _.CommandName.Text
+let private commands window =
+    slots window |> List.map _.CommandName.Text
 
 let private names window = slots window |> List.map _.KeyName.Text
 
@@ -39,7 +41,18 @@ let private functionKeys =
     [ "F1"; "F2"; "F3"; "F4"; "F5"; "F6"; "F7"; "F8"; "F9"; "F10"; "F11"; "F12" ]
 
 let private classic =
-    [ ""; "Menu"; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; "Tabs"; "Setup" ]
+    [ ""
+      "Menu"
+      "View"
+      "Edit"
+      "Copy"
+      "RenMov"
+      "Mkdir"
+      "Delete"
+      ""
+      "Quit"
+      "Tabs"
+      "Setup" ]
 
 [<Fact>]
 let ``the bar starts on the classic function keys`` () =
@@ -75,7 +88,18 @@ let ``holding Alt shows the drive choosers and the favourites`` () =
     hold (Modifiers.held [ Alt ])
 
     Assert.Equal<string list>(
-        [ "Left"; "Right"; ""; ""; ""; "Link"; "Find"; "Favs"; ""; ""; "NewTab"; "History" ],
+        [ "Left"
+          "Right"
+          ""
+          ""
+          ""
+          "Link"
+          "Find"
+          "Favs"
+          ""
+          ""
+          "NewTab"
+          "History" ],
         commands window
     )
 
@@ -86,14 +110,21 @@ let ``holding Shift shows the permanent delete on the delete slot`` () =
 
     hold (Modifiers.held [ Shift ])
 
-    Assert.Equal<string list>([ "Pack"; "Unpack"; ""; "NewFile"; ""; ""; ""; "Erase"; "Save"; ""; ""; "" ], commands window)
+    Assert.Equal<string list>(
+        [ "Pack"; "Unpack"; ""; "NewFile"; ""; ""; ""; "Erase"; "Save"; ""; ""; "" ],
+        commands window
+    )
 
 [<Fact>]
 let ``a key keeps its name whatever modifier is held`` () =
     let window, hold = watchedWindow ()
     use window = window
 
-    for modifiers in [ Modifiers.held [ Ctrl ]; Modifiers.held [ Alt ]; Modifiers.held [ Shift ]; Modifiers.none ] do
+    for modifiers in
+        [ Modifiers.held [ Ctrl ]
+          Modifiers.held [ Alt ]
+          Modifiers.held [ Shift ]
+          Modifiers.none ] do
         hold modifiers
 
         Assert.Equal<string list>(functionKeys, names window)

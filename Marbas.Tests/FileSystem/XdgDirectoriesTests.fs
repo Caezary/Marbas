@@ -9,7 +9,8 @@ let private resolve dataHome dataDirectories configHome configDirectories =
 
 [<Fact>]
 let ``the variables that are set are the directories, home first`` () =
-    let directories = resolve "/home/user/data" "/opt/share:/usr/share" "/home/user/conf" "/etc/xdg"
+    let directories =
+        resolve "/home/user/data" "/opt/share:/usr/share" "/home/user/conf" "/etc/xdg"
 
     Assert.Equal<string list>([ "/home/user/data"; "/opt/share"; "/usr/share" ], directories.Data)
     Assert.Equal<string list>([ "/home/user/conf"; "/etc/xdg" ], directories.Config)
@@ -23,6 +24,7 @@ let ``a variable that is not set falls back to what the spec says`` () =
 
 [<Fact>]
 let ``an empty entry in the list is not a directory`` () =
-    let directories = resolve "/home/user/data" "/opt/share::/usr/share:" "/home/user/conf" "/etc/xdg"
+    let directories =
+        resolve "/home/user/data" "/opt/share::/usr/share:" "/home/user/conf" "/etc/xdg"
 
     Assert.Equal<string list>([ "/home/user/data"; "/opt/share"; "/usr/share" ], directories.Data)

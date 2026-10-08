@@ -65,7 +65,8 @@ let private standOn index (dialog: UserMenuDialog.UserMenuView) =
 let private cursor (dialog: UserMenuDialog.UserMenuView) =
     (UserMenuDialog.entries dialog).SelectedItem |> Option.ofNullable
 
-let private pressOn (dialog: UserMenuDialog.UserMenuView) key = press (UserMenuDialog.entries dialog) key
+let private pressOn (dialog: UserMenuDialog.UserMenuView) key =
+    press (UserMenuDialog.entries dialog) key
 
 [<Fact>]
 let ``each entry is listed as its hotkey and its label, a separator as a line`` () =
@@ -193,7 +194,9 @@ let private editedWith entryAnswer removalAnswer menu =
 
 [<Fact>]
 let ``Ins adds the entry typed in the dialog after the one under the cursor, and stands on it`` () =
-    let record, dialog = editedWith (Some(MenuEntryForm.CommandEntered extra)) None sample
+    let record, dialog =
+        editedWith (Some(MenuEntryForm.CommandEntered extra)) None sample
+
     use dialog = dialog
     standOn 1 dialog
 
@@ -216,7 +219,9 @@ let ``Ins asks for a new entry, naming every entry already in the menu`` () =
 
 [<Fact>]
 let ``Ins in an empty menu adds the first entry`` () =
-    let record, dialog = editedWith (Some(MenuEntryForm.CommandEntered extra)) None UserMenu.empty
+    let record, dialog =
+        editedWith (Some(MenuEntryForm.CommandEntered extra)) None UserMenu.empty
+
     use dialog = dialog
 
     pressOn dialog KeyMap.userMenuAddKey
@@ -226,7 +231,9 @@ let ``Ins in an empty menu adds the first entry`` () =
 
 [<Fact>]
 let ``a line chosen below goes under the entry, the cursor staying on it`` () =
-    let record, dialog = editedWith (Some(MenuEntryForm.LineEntered MenuEntryForm.BelowCursor)) None sample
+    let record, dialog =
+        editedWith (Some(MenuEntryForm.LineEntered MenuEntryForm.BelowCursor)) None sample
+
     use dialog = dialog
 
     pressOn dialog KeyMap.userMenuAddKey
@@ -237,7 +244,9 @@ let ``a line chosen below goes under the entry, the cursor staying on it`` () =
 
 [<Fact>]
 let ``a line chosen above goes over the entry, the cursor staying on it`` () =
-    let record, dialog = editedWith (Some(MenuEntryForm.LineEntered MenuEntryForm.AboveCursor)) None sample
+    let record, dialog =
+        editedWith (Some(MenuEntryForm.LineEntered MenuEntryForm.AboveCursor)) None sample
+
     use dialog = dialog
     standOn 1 dialog
 
@@ -249,7 +258,10 @@ let ``a line chosen above goes over the entry, the cursor staying on it`` () =
 [<Fact>]
 let ``F4 changes the entry under the cursor through the same dialog`` () =
     let changed = entry "K" "Compare all" "code --diff %Ls %Rs"
-    let record, dialog = editedWith (Some(MenuEntryForm.CommandEntered changed)) None sample
+
+    let record, dialog =
+        editedWith (Some(MenuEntryForm.CommandEntered changed)) None sample
+
     use dialog = dialog
     standOn 1 dialog
 
@@ -280,6 +292,7 @@ let ``Del asks what to remove, offering the line beside the entry`` () =
 
     let prompt = Assert.Single record.Removals
     Assert.Equal(compare, prompt.Command)
+
     Assert.Equal<MenuRemoval.RemovalChoice list>(
         [ MenuRemoval.RemoveCommand; MenuRemoval.RemoveLine MenuEntryForm.BelowCursor ],
         prompt.Offered
@@ -299,7 +312,9 @@ let ``Del removes the entry once the answer says so, the cursor moving to the ne
 
 [<Fact>]
 let ``Del removes the line below the entry when that is the answer`` () =
-    let record, dialog = editedWith None (Some(MenuRemoval.RemoveLine MenuEntryForm.BelowCursor)) sample
+    let record, dialog =
+        editedWith None (Some(MenuRemoval.RemoveLine MenuEntryForm.BelowCursor)) sample
+
     use dialog = dialog
     standOn 1 dialog
 
@@ -347,7 +362,10 @@ let ``a change the file refused leaves the popup as it was`` () =
 
     let refusing =
         { editing record (Some(MenuEntryForm.CommandEntered extra)) None sample with
-            Change = fun change -> record.Changes.Add change; None }
+            Change =
+                fun change ->
+                    record.Changes.Add change
+                    None }
 
     use dialog = laidOutEditing refusing sample
 

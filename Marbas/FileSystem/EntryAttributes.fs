@@ -4,7 +4,8 @@ open System.IO
 open Marbas.Domain
 
 let private markedHidden (attributes: FileAttributes) =
-    attributes.HasFlag FileAttributes.Hidden || attributes.HasFlag FileAttributes.System
+    attributes.HasFlag FileAttributes.Hidden
+    || attributes.HasFlag FileAttributes.System
 
 let private markedExecutable (mode: UnixFileMode) =
     mode.HasFlag UnixFileMode.UserExecute

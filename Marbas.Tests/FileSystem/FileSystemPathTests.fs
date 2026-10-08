@@ -70,7 +70,7 @@ let ``parent returns the enclosing directory`` () =
 
     let parent = FileSystemPath.parent fs docsPath
 
-    Assert.Equal(Some (at "data"), parent |> Option.map FileSystemPath.value)
+    Assert.Equal(Some(at "data"), parent |> Option.map FileSystemPath.value)
 
 [<Fact>]
 let ``parent of a root is None`` () =
@@ -95,7 +95,8 @@ let ``the nearest directory to one that is gone is the first ancestor still ther
     let fs = MockFileSystem()
     fs.AddDirectory(at "data")
 
-    let nearest = FileSystemPath.nearest fs (FileSystemPath.create (at "data/docs/deep"))
+    let nearest =
+        FileSystemPath.nearest fs (FileSystemPath.create (at "data/docs/deep"))
 
     Assert.Equal(Some(at "data"), nearest |> Option.map FileSystemPath.value)
 
@@ -104,7 +105,8 @@ let ``the nearest directory to a file is the directory holding it`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/notes.txt", MockFileData "hi")
 
-    let nearest = FileSystemPath.nearest fs (FileSystemPath.create (at "data/notes.txt"))
+    let nearest =
+        FileSystemPath.nearest fs (FileSystemPath.create (at "data/notes.txt"))
 
     Assert.Equal(Some(at "data"), nearest |> Option.map FileSystemPath.value)
 
@@ -185,7 +187,8 @@ let ``linkTarget answers what a file link points at`` () =
     fs.AddFile(at "data/notes.txt", MockFileData "hello")
     fs.File.CreateSymbolicLink(at "data/twin.txt", at "data/notes.txt") |> ignore
 
-    let target = FileSystemPath.linkTarget fs (FileSystemPath.create (at "data/twin.txt"))
+    let target =
+        FileSystemPath.linkTarget fs (FileSystemPath.create (at "data/twin.txt"))
 
     Assert.Equal(Some(FileSystemPath.create (at "data/notes.txt")), target)
 
@@ -351,7 +354,11 @@ let ``on Unix a path that is not under the root has nothing after it`` root path
 [<Fact>]
 let ``distinct entries keep the first spelling of each entry`` () =
     let platform = FileSystemPath.platformOf (MockFileSystem())
-    let paths = [ fp (at "bin"); fp (at "tools"); fp (at "bin" + string System.IO.Path.DirectorySeparatorChar) ]
+
+    let paths =
+        [ fp (at "bin")
+          fp (at "tools")
+          fp (at "bin" + string System.IO.Path.DirectorySeparatorChar) ]
 
     let distinct = FileSystemPath.distinctEntries platform paths
 
@@ -370,6 +377,7 @@ let ``a relative path is resolved from the directory given, steps up included`` 
 let ``a full path is resolved to itself, whatever the directory`` () =
     let fs = MockFileSystem()
 
-    let resolved = FileSystemPath.resolvedFrom fs (fp (at "start")) (at "work/notes.txt")
+    let resolved =
+        FileSystemPath.resolvedFrom fs (fp (at "start")) (at "work/notes.txt")
 
     Assert.Equal(fp (at "work/notes.txt"), resolved)

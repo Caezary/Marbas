@@ -41,10 +41,9 @@ let ``cursor is reset to zero after loading a panel`` () =
 [<Fact>]
 let ``enter descends into the directory under the cursor`` () =
     let fs = mockFs ()
+
     let state =
-        create (fp (at "start"))
-        |> loaded Left (fp (at "start")) fs
-        |> setCursor Left 1
+        create (fp (at "start")) |> loaded Left (fp (at "start")) fs |> setCursor Left 1
 
     let updated = enter fs state |> Expect.ok
 
@@ -55,6 +54,7 @@ let ``enter descends into the directory under the cursor`` () =
 [<Fact>]
 let ``enter on the parent entry goes up with cursor on the directory left behind`` () =
     let fs = mockFs ()
+
     let state =
         create (fp (at "start/docs"))
         |> loaded Left (fp (at "start/docs")) fs
@@ -69,10 +69,9 @@ let ``enter on the parent entry goes up with cursor on the directory left behind
 [<Fact>]
 let ``enter on a file leaves the state unchanged`` () =
     let fs = mockFs ()
+
     let state =
-        create (fp (at "start"))
-        |> loaded Left (fp (at "start")) fs
-        |> setCursor Left 2
+        create (fp (at "start")) |> loaded Left (fp (at "start")) fs |> setCursor Left 2
 
     let result = enter fs state
 
@@ -81,6 +80,7 @@ let ``enter on a file leaves the state unchanged`` () =
 [<Fact>]
 let ``enter acts on the active panel only`` () =
     let fs = mockFs ()
+
     let state =
         create (fp (at "start"))
         |> loaded Left (fp (at "start")) fs
@@ -96,7 +96,11 @@ let ``enter acts on the active panel only`` () =
 [<Fact>]
 let ``up one level goes to the parent with the cursor on the directory left, wherever the cursor stood`` () =
     let fs = mockFs ()
-    let state = create (fp (at "start")) |> loaded Left (fp (at "start/docs")) fs |> setCursor Left 1
+
+    let state =
+        create (fp (at "start"))
+        |> loaded Left (fp (at "start/docs")) fs
+        |> setCursor Left 1
 
     let up = upOneLevel fs state |> Expect.ok
 

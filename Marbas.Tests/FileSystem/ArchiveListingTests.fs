@@ -24,7 +24,8 @@ let private target = at "backup/data.zip"
 
 let private tarTarget = at "backup/data.tar.gz"
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private request format path =
     { Path = fp path
@@ -63,7 +64,9 @@ let private handWritten (fs: IFileSystem) path (entries: (string * DateTime) lis
 
 let private keyedByHand (fs: IFileSystem) path (key: string) =
     use stream = fs.File.Create path
-    use archive = new IO.Compression.ZipArchive(stream, IO.Compression.ZipArchiveMode.Create, true)
+
+    use archive =
+        new IO.Compression.ZipArchive(stream, IO.Compression.ZipArchiveMode.Create, true)
 
     archive.CreateEntry key |> ignore
 
@@ -124,7 +127,9 @@ let ``a file keeps the modification time it was packed with`` () =
     let file = MockFileData "dated"
     file.LastWriteTime <- DateTimeOffset modified
     fs.AddFile(at "work/dated.txt", file)
-    Archive.write fs Operations.unattended (request zip target) [ fp (at "work/dated.txt") ] |> ignore
+
+    Archive.write fs Operations.unattended (request zip target) [ fp (at "work/dated.txt") ]
+    |> ignore
 
     let entries = listed fs target ArchivePath.root
     let dated = named entries "dated.txt"
@@ -179,11 +184,7 @@ let ``a directory that was never stored is as new as the newest below it`` () =
     let fs = tree ()
     let newest = DateTime(2026, 5, 5, 9, 0, 0)
 
-    handWritten
-        fs
-        target
-        [ "docs/old.txt", DateTime(2024, 1, 1, 8, 0, 0)
-          "docs/deep/new.txt", newest ]
+    handWritten fs target [ "docs/old.txt", DateTime(2024, 1, 1, 8, 0, 0); "docs/deep/new.txt", newest ]
 
     let entries = listed fs target ArchivePath.root
     let docs = named entries "docs"
@@ -202,7 +203,9 @@ let ``a backslash in a name is part of the name and not a level of its own`` () 
 [<Fact>]
 let ``a tar gz lists level by level too`` () =
     let fs = tree ()
-    Archive.write fs Operations.unattended (request tarGz tarTarget) sources |> ignore
+
+    Archive.write fs Operations.unattended (request tarGz tarTarget) sources
+    |> ignore
 
     let top = listed fs tarTarget ArchivePath.root
     let below = listed fs tarTarget (inside "docs")
@@ -213,7 +216,9 @@ let ``a tar gz lists level by level too`` () =
 [<Fact>]
 let ``a protected zip still says what is in it`` () =
     let fs = tree ()
-    Archive.write fs Operations.unattended (locked zip target "letmein") sources |> ignore
+
+    Archive.write fs Operations.unattended (locked zip target "letmein") sources
+    |> ignore
 
     let entries = listed fs target ArchivePath.root
 
@@ -270,7 +275,8 @@ let ``a file that only looks like an archive is damaged`` () =
     Assert.Equal(Some(fp (at "backup/broken.zip")), damagedPath error)
 
 let private displayed (fs: IFileSystem) hidden path level =
-    ArchiveListing.listForDisplay fs SortOrder.byName hidden (fp path) level |> Expect.ok
+    ArchiveListing.listForDisplay fs SortOrder.byName hidden (fp path) level
+    |> Expect.ok
 
 [<Fact>]
 let ``a level shown in a panel opens with the way out`` () =
@@ -278,7 +284,10 @@ let ``a level shown in a panel opens with the way out`` () =
 
     let entries = displayed fs Concealed target ArchivePath.root
 
-    Assert.Equal<string list>([ ".."; "docs"; "notes.txt" ], entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
+    Assert.Equal<string list>(
+        [ ".."; "docs"; "notes.txt" ],
+        entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+    )
 
 [<Fact>]
 let ``a level below the top is shown with a way out of its own`` () =
@@ -304,7 +313,9 @@ let ``the way out of an archive is a directory carrying the archive's own time``
 let ``a hidden entry inside an archive is concealed until it is asked for`` () =
     let fs = tree ()
     fs.AddFile(at "work/.secret", MockFileData "hidden")
-    Archive.write fs Operations.unattended (request zip target) [ fp (at "work/.secret") ] |> ignore
+
+    Archive.write fs Operations.unattended (request zip target) [ fp (at "work/.secret") ]
+    |> ignore
 
     let concealed = displayed fs Concealed target ArchivePath.root
     let shown = displayed fs Shown target ArchivePath.root

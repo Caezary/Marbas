@@ -11,9 +11,11 @@ type Scratch() =
 
     do Directory.CreateDirectory root |> ignore
 
-    member _.At(relative: string) = Path.Combine(root, Root.relative relative)
+    member _.At(relative: string) =
+        Path.Combine(root, Root.relative relative)
 
-    member this.Path(relative: string) = FileSystemPath.create (this.At relative)
+    member this.Path(relative: string) =
+        FileSystemPath.create (this.At relative)
 
     member this.Directory(relative: string) =
         Directory.CreateDirectory(this.At relative) |> ignore
@@ -23,4 +25,5 @@ type Scratch() =
 
     interface IDisposable with
         member _.Dispose() =
-            Operations.delete (FileSystem()) Operations.unattended (FileSystemPath.create root) |> ignore
+            Operations.delete (FileSystem()) Operations.unattended (FileSystemPath.create root)
+            |> ignore

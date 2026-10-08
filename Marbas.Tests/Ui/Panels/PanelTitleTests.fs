@@ -53,7 +53,8 @@ let private results roots =
 let ``the title of a results panel names the query and where it ran`` () =
     let where = at "start"
 
-    let title = PanelTitle.describe fs Roomy (results [ start ]) SortOrder.byName Concealed
+    let title =
+        PanelTitle.describe fs Roomy (results [ start ]) SortOrder.byName Concealed
 
     Assert.Equal($"Find: *.jpg in %s{where} [name ↑]", title)
 

@@ -49,9 +49,12 @@ let ``F6 offers the other panel's path`` () =
     use window =
         windowWith
             fs
-            (fun request -> offered.Add(request.Title, FileSystemPath.value request.Suggestion); None)
+            (fun request ->
+                offered.Add(request.Title, FileSystemPath.value request.Suggestion)
+                None)
             noQuestion
             silent
+
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F6
@@ -153,12 +156,16 @@ let ``cancelling the prompt moves nothing`` () =
 let ``F6 on the parent entry asks nothing`` () =
     let fs = mockFs ()
     let asked = ResizeArray<string>()
+
     use window =
         windowWith
             fs
-            (fun request -> asked.Add request.Title; Some(FileSystemPath.value request.Suggestion))
+            (fun request ->
+                asked.Add request.Title
+                Some(FileSystemPath.value request.Suggestion))
             noQuestion
             silent
+
     (leftList window).SelectedItem <- 0
 
     pressKey window Key.F6
@@ -171,8 +178,16 @@ let ``a collision is asked about before the target is replaced`` () =
     let fs = mockFs ()
     fs.AddFile(at "backup/notes.txt", MockFileData "old")
     let asked = ResizeArray<string>()
+
     use window =
-        windowWith fs accepting (fun request -> asked.Add(FileSystemPath.value request.Target); No) silent
+        windowWith
+            fs
+            accepting
+            (fun request ->
+                asked.Add(FileSystemPath.value request.Target)
+                No)
+            silent
+
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F6
@@ -185,7 +200,10 @@ let ``a collision is asked about before the target is replaced`` () =
 let ``a failed move is reported`` () =
     let fs = mockFs ()
     let reported = ResizeArray<string>()
-    use window = windowWith fs accepting noQuestion (fun report -> reported.Add report.Message)
+
+    use window =
+        windowWith fs accepting noQuestion (fun report -> reported.Add report.Message)
+
     (leftList window).SelectedItem <- 2
     fs.File.Delete(at "start/notes.txt")
 
@@ -197,7 +215,10 @@ let ``a failed move is reported`` () =
 let ``a rename onto an existing name is reported`` () =
     let fs = mockFs ()
     let reported = ResizeArray<string>()
-    use window = windowWith fs (fun _ -> Some "readme.txt") noQuestion (fun report -> reported.Add report.Message)
+
+    use window =
+        windowWith fs (fun _ -> Some "readme.txt") noQuestion (fun report -> reported.Add report.Message)
+
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F6

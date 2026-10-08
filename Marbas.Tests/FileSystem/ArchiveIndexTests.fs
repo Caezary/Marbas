@@ -15,7 +15,8 @@ let private zip = ArchiveFormat.tryCreate Zip |> Expect.some
 
 let private archive = at "backup/data.zip"
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private request path =
     { Path = fp path
@@ -43,7 +44,8 @@ let private packed () =
 let private keyOf (info: ArchiveEntryInfo) =
     info.Segments |> List.map EntryName.value |> String.concat "/"
 
-let private names items = items |> List.map keyOf |> List.sort |> String.concat ","
+let private names items =
+    items |> List.map keyOf |> List.sort |> String.concat ","
 
 [<Fact>]
 let ``an archive is read once for every level a panel walks into`` () =
@@ -111,5 +113,8 @@ let ``an index tells a stored directory from a stored file`` () =
 
     Assert.Equal(
         "docs/inner.txt=StoredFile,docs=StoredDirectory,notes.txt=StoredFile",
-        items |> List.map (fun info -> $"{keyOf info}={info.Kind}") |> List.sort |> String.concat ","
+        items
+        |> List.map (fun info -> $"{keyOf info}={info.Kind}")
+        |> List.sort
+        |> String.concat ","
     )

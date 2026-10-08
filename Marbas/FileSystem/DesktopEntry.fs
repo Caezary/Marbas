@@ -33,8 +33,7 @@ let private valueOf key lines =
         | _ -> None)
 
 let private concealed lines =
-    hiddenKeys
-    |> List.exists (fun key -> valueOf key lines = Some "true")
+    hiddenKeys |> List.exists (fun key -> valueOf key lines = Some "true")
 
 let private ofKind lines =
     match valueOf TypeKey lines with

@@ -25,12 +25,18 @@ let private lastAtOrBefore count (startAt: int -> int64) (offset: int64) =
     while low < high do
         let middle = (low + high + 1) / 2
 
-        if startAt middle <= offset then low <- middle else high <- middle - 1
+        if startAt middle <= offset then
+            low <- middle
+        else
+            high <- middle - 1
 
     low
 
 let private withoutReturn (line: string) =
-    if line.EndsWith '\r' then line[.. line.Length - 2] else line
+    if line.EndsWith '\r' then
+        line[.. line.Length - 2]
+    else
+        line
 
 type Index(source: FileWindow.Source, encoding: TextEncoding) =
     let feed = TextEncoding.lineFeed encoding
@@ -38,7 +44,10 @@ type Index(source: FileWindow.Source, encoding: TextEncoding) =
     let beforeFinalFeed = source.Length - int64 feed.Length
 
     let contentEnd =
-        if beforeFinalFeed >= contentStart && source.Read(beforeFinalFeed, feed.Length) = feed then
+        if
+            beforeFinalFeed >= contentStart
+            && source.Read(beforeFinalFeed, feed.Length) = feed
+        then
             beforeFinalFeed
         else
             source.Length
@@ -182,7 +191,9 @@ type Index(source: FileWindow.Source, encoding: TextEncoding) =
         else
             let block = lastAtOrBefore checkpoints.Count (fun at -> checkpoints[at]) offset
             let starts = blockStarts block
-            block * LinesPerCheckpoint + lastAtOrBefore starts.Length (fun at -> starts[at]) offset
+
+            block * LinesPerCheckpoint
+            + lastAtOrBefore starts.Length (fun at -> starts[at]) offset
 
 type Line = { Start: int64; Text: string }
 
@@ -190,7 +201,8 @@ type Step =
     | Reading of offset: int64
     | LineRead of Line
 
-type private Unfinished = { From: int64; Held: ResizeArray<byte> }
+type private Unfinished =
+    { From: int64; Held: ResizeArray<byte> }
 
 let private beginningAt offset = { From = offset; Held = ResizeArray() }
 
@@ -300,4 +312,7 @@ let walkBackFrom (source: FileWindow.Source) encoding (before: int64) =
 
     let lastEnd = before - int64 feed.Length
 
-    if before <= contentStart then Seq.empty else walk lastEnd lastEnd
+    if before <= contentStart then
+        Seq.empty
+    else
+        walk lastEnd lastEnd

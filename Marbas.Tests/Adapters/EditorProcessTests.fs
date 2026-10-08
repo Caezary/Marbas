@@ -61,7 +61,8 @@ let ``the editor is handed the file and starts in its directory`` () =
 let ``the editor chosen for the file comes before the one the environment names`` () =
     let fs = mockFs ()
 
-    let editor = EditorProcess.describe fs (Some "nano") Unix (ProgramPath.tryCreate "micro") notes
+    let editor =
+        EditorProcess.describe fs (Some "nano") Unix (ProgramPath.tryCreate "micro") notes
 
     Assert.Equal("micro", editor.Start.FileName)
 

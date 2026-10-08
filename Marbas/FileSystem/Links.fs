@@ -87,7 +87,11 @@ module Links =
               Location = location }
 
         let linkInDirectory source =
-            let location = FileSystemPath.name fs source |> EntryName.value |> FileSystemPath.combine fs typed
+            let location =
+                FileSystemPath.name fs source
+                |> EntryName.value
+                |> FileSystemPath.combine fs typed
+
             linking location source
 
         match text.Trim(), sources with

@@ -36,7 +36,10 @@ let private packing: CommandRun =
     { Label = Expect.some (MenuLabel.tryCreate "Pack")
       Command =
         { Program = word "7z" Bare
-          Arguments = [ word "a" Bare; word (at "work/out.7z") Quoted; word ("@" + at "session/marked-1.txt") Quoted ]
+          Arguments =
+            [ word "a" Bare
+              word (at "work/out.7z") Quoted
+              word ("@" + at "session/marked-1.txt") Quoted ]
           ListFile =
             Some
                 { FilePath = fp (at "session/marked-1.txt")
@@ -53,7 +56,8 @@ let private items (entries: Remembered<'item> list) = entries |> List.map _.Item
 let private sample: History =
     { Folders =
         [ { Item = onDisk "work"; At = moment 5 }
-          { Item = inArchive "backup.zip" "docs/2024"; At = moment 4 } ]
+          { Item = inArchive "backup.zip" "docs/2024"
+            At = moment 4 } ]
       Launches =
         [ { Item =
               StartedFile
@@ -65,12 +69,23 @@ let private sample: History =
           { Item = StartedCommand packing
             At = moment 9 } ]
       FileVisits =
-        [ { Item = { Where = onDisk "notes.md"; How = Edited }; At = moment 1 }
-          { Item = { Where = inArchive "backup.zip" "docs/readme.txt"; How = Viewed }; At = moment 0 } ]
+        [ { Item =
+              { Where = onDisk "notes.md"
+                How = Edited }
+            At = moment 1 }
+          { Item =
+              { Where = inArchive "backup.zip" "docs/readme.txt"
+                How = Viewed }
+            At = moment 0 } ]
       Inputs =
         Map.ofList
-            [ CopyOrMoveTarget, [ { Item = text (at "backup"); At = moment 6 } ]
-              FindMasks, [ { Item = text "*.fs;*.md"; At = moment 7 }; { Item = text "a=b"; At = moment 8 } ] ] }
+            [ CopyOrMoveTarget,
+              [ { Item = text (at "backup")
+                  At = moment 6 } ]
+              FindMasks,
+              [ { Item = text "*.fs;*.md"
+                  At = moment 7 }
+                { Item = text "a=b"; At = moment 8 } ] ] }
 
 let private write (fs: MockFileSystem) lines =
     fs.AddFile(FileSystemPath.value historyPath, MockFileData(String.concat "\n" lines))
@@ -87,7 +102,8 @@ let ``a place remembered goes on top with the moment it was used`` () =
     let remembered = remember Windows 2 (Visited(onDisk "notes")) history
 
     Assert.Equal<Remembered<Place> list>(
-        [ { Item = onDisk "notes"; At = moment 2 }; { Item = onDisk "work"; At = moment 1 } ],
+        [ { Item = onDisk "notes"; At = moment 2 }
+          { Item = onDisk "work"; At = moment 1 } ],
         remembered.Folders
     )
 
@@ -101,7 +117,8 @@ let ``a place remembered again moves to the top rather than repeating`` () =
     let remembered = remember Windows 3 (Visited(onDisk "work")) history
 
     Assert.Equal<Remembered<Place> list>(
-        [ { Item = onDisk "work"; At = moment 3 }; { Item = onDisk "notes"; At = moment 2 } ],
+        [ { Item = onDisk "work"; At = moment 3 }
+          { Item = onDisk "notes"; At = moment 2 } ],
         remembered.Folders
     )
 
@@ -133,19 +150,35 @@ let ``a level inside an archive is another place than the archive's own director
 let ``a file viewed and then edited is one entry, now edited`` () =
     let history =
         History.empty
-        |> remember Windows 1 (Opened { Where = onDisk "notes.md"; How = Viewed })
+        |> remember
+            Windows
+            1
+            (Opened
+                { Where = onDisk "notes.md"
+                  How = Viewed })
 
     let remembered =
-        remember Windows 2 (Opened { Where = onDisk "notes.md"; How = Edited }) history
+        remember
+            Windows
+            2
+            (Opened
+                { Where = onDisk "notes.md"
+                  How = Edited })
+            history
 
-    Assert.Equal<FileVisit list>([ { Where = onDisk "notes.md"; How = Edited } ], items remembered.FileVisits)
+    Assert.Equal<FileVisit list>(
+        [ { Where = onDisk "notes.md"
+            How = Edited } ],
+        items remembered.FileVisits
+    )
 
 [<Fact>]
 let ``a file started again another way is one entry, started the latest way`` () =
     let history =
         History.empty |> remember Windows 1 (Launched(launch "setup.exe" AsUser))
 
-    let remembered = remember Windows 2 (Launched(launch "setup.exe" AsAdministrator)) history
+    let remembered =
+        remember Windows 2 (Launched(launch "setup.exe" AsAdministrator)) history
 
     Assert.Equal<Started list>([ StartedFile(launch "setup.exe" AsAdministrator) ], items remembered.Launches)
 
@@ -194,13 +227,15 @@ let ``a forgotten entry leaves its list, found the way remembering finds it`` ()
         |> remember Windows 1 (Visited(onDisk "work"))
         |> remember Windows 2 (Visited(onDisk "notes"))
 
-    let forgotten = History.apply Windows (moment 3) (Forget(Visited(onDisk "WORK"))) history
+    let forgotten =
+        History.apply Windows (moment 3) (Forget(Visited(onDisk "WORK"))) history
 
     Assert.Equal<Place list>([ onDisk "notes" ], items forgotten.Folders)
 
 [<Fact>]
 let ``clearing a list empties that list and no other`` () =
-    let cleared = History.apply Windows (moment 9) (ClearList(InputHistory FindMasks)) sample
+    let cleared =
+        History.apply Windows (moment 9) (ClearList(InputHistory FindMasks)) sample
 
     Assert.Empty(History.inputs FindMasks cleared)
     Assert.Equal<Remembered<EnteredText> list>(sample.Inputs[CopyOrMoveTarget], History.inputs CopyOrMoveTarget cleared)
@@ -230,7 +265,11 @@ let ``a command run again exactly as before is one entry`` () =
 
     let remembered = remember Windows 2 (Ran packing) history
 
-    Assert.Equal<Remembered<Started> list>([ { Item = StartedCommand packing; At = moment 2 } ], remembered.Launches)
+    Assert.Equal<Remembered<Started> list>(
+        [ { Item = StartedCommand packing
+            At = moment 2 } ],
+        remembered.Launches
+    )
 
 [<Fact>]
 let ``a command run another way is an entry of its own`` () =
@@ -355,6 +394,7 @@ let ``every kind of field is written under a key of its own and read back as its
               "input.link.1=typed"
               "input.program.1=typed" ]
     )
+
     Assert.Equal(history, parsed)
 
 [<Fact>]
@@ -396,7 +436,9 @@ let ``an entry with a part that cannot be read costs that entry alone`` (broken:
           broken ]
 
     let parsed = History.parse lines
-    let count = parsed.Folders.Length + parsed.FileVisits.Length + parsed.Launches.Length
+
+    let count =
+        parsed.Folders.Length + parsed.FileVisits.Length + parsed.Launches.Length
 
     Assert.Equal(3, count)
 
@@ -407,10 +449,13 @@ let ``an entry with a part that cannot be read costs that entry alone`` (broken:
 [<InlineData("view.1.use")>]
 let ``an entry missing a part it is always written with is passed over`` (missing: string) =
     let lines =
-        History.format sample |> List.filter (fun line -> not (line.StartsWith(missing + "=")))
+        History.format sample
+        |> List.filter (fun line -> not (line.StartsWith(missing + "=")))
 
     let parsed = History.parse lines
-    let count = parsed.Folders.Length + parsed.FileVisits.Length + parsed.Launches.Length
+
+    let count =
+        parsed.Folders.Length + parsed.FileVisits.Length + parsed.Launches.Length
 
     Assert.Equal(6, count)
 
@@ -443,9 +488,12 @@ let ``a change is applied on top of what the file holds, not of what was held be
     let fs = MockFileSystem()
     write fs (History.format sample)
 
-    let changed = History.change fs historyPath (moment 30) (Remember(Visited(onDisk "elsewhere")))
+    let changed =
+        History.change fs historyPath (moment 30) (Remember(Visited(onDisk "elsewhere")))
 
-    let expected = History.apply Windows (moment 30) (Remember(Visited(onDisk "elsewhere"))) sample
+    let expected =
+        History.apply Windows (moment 30) (Remember(Visited(onDisk "elsewhere"))) sample
+
     Assert.Equal(Ok expected, changed)
     Assert.Equal(Ok expected, History.load fs historyPath)
 
@@ -453,7 +501,8 @@ let ``a change is applied on top of what the file holds, not of what was held be
 let ``the first change creates the file and the directory it lives in`` () =
     let fs = MockFileSystem()
 
-    let changed = History.change fs historyPath (moment 1) (Remember(Visited(onDisk "work")))
+    let changed =
+        History.change fs historyPath (moment 1) (Remember(Visited(onDisk "work")))
 
     let loaded = History.load fs historyPath
     Assert.Equal(changed, loaded)
@@ -465,7 +514,8 @@ let ``a history that cannot be written answers an error naming the file`` () =
     fs.AddFile(at "blocked", MockFileData "x")
     let blocked = fp (at "blocked/history.conf")
 
-    let changed = History.change fs blocked (moment 1) (Remember(Visited(onDisk "work")))
+    let changed =
+        History.change fs blocked (moment 1) (Remember(Visited(onDisk "work")))
 
     Assert.Equal(blocked, unwritten (Expect.error changed))
 
@@ -474,7 +524,8 @@ let ``a history that cannot be read is answered as an error and left as it was``
     let fs = Fakes.UnreadableFile(FileSystemPath.value historyPath)
     write fs (History.format sample)
 
-    let changed = History.change fs historyPath (moment 1) (Remember(Visited(onDisk "work")))
+    let changed =
+        History.change fs historyPath (moment 1) (Remember(Visited(onDisk "work")))
 
     let kept = fs.GetFile(FileSystemPath.value historyPath).TextContents
     Assert.Equal(historyPath, unwritten (Expect.error changed))

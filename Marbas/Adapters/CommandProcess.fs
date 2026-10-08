@@ -113,7 +113,9 @@ let private launched (run: CommandRun) (start: ProcessStartInfo) =
     try
         match Process.Start start with
         | null -> ()
-        | child -> if start.RedirectStandardOutput then LaunchProcess.drained child
+        | child ->
+            if start.RedirectStandardOutput then
+                LaunchProcess.drained child
 
         Ok()
     with ex ->

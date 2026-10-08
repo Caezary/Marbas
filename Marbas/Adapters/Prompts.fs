@@ -49,14 +49,19 @@ let chooseDrive (app: IApplication) (request: DrivePrompt) =
     | rows -> running app (fun () -> createDriveDialog rows) DriveDialog.choice
 
 let askFavoriteSlot (app: IApplication) (fs: IFileSystem) (place: Place) =
-    let createAskFavourite () = KeepFavoriteDialog.create fs app.Screen.Width place
+    let createAskFavourite () =
+        KeepFavoriteDialog.create fs app.Screen.Width place
+
     running app createAskFavourite KeepFavoriteDialog.slot
 
 let chooseFavorite (app: IApplication) (fs: IFileSystem) (request: FavoritesPrompt) =
-    let createFavourites () = FavoritesDialog.create fs request.Change request.Current request.Favorites
+    let createFavourites () =
+        FavoritesDialog.create fs request.Change request.Current request.Favorites
+
     running app createFavourites FavoritesDialog.chosen
 
-let private texts (remembered: EnteredText list) = remembered |> List.map EnteredText.value
+let private texts (remembered: EnteredText list) =
+    remembered |> List.map EnteredText.value
 
 let askPattern (app: IApplication) (request: PatternPrompt) =
     running app (fun () -> PatternDialog.create (texts request.Remembered) request.Title) PromptDialog.text
@@ -93,7 +98,9 @@ let private chooseCodePage (app: IApplication) (offer: CodePageOffer) =
 let private reportSearch (app: IApplication) (report: SearchReport) =
     match report with
     | TextNotFound _
-    | BytesNotFound _ -> MessageBox.Query(app, ViewerSearch.Title, ViewerSearch.describe report, "Ok") |> ignore
+    | BytesNotFound _ ->
+        MessageBox.Query(app, ViewerSearch.Title, ViewerSearch.describe report, "Ok")
+        |> ignore
     | SearchFailed _ ->
         reportError
             app
@@ -123,6 +130,7 @@ let showFile (app: IApplication) (request: ViewRequest) =
           RunSearch = WindowSearchRunner.run app ViewerSearch.Title progress
           RunByteSearch = WindowSearchRunner.run app ViewerSearch.Title progress
           Report = reportSearch app }
+
     let createFileViewer () = FileViewer.create ports request.Source
 
     running app createFileViewer ignore
@@ -146,12 +154,7 @@ let private askedOf (dialog: FindDialog.FindView) =
 
 let askFind (app: IApplication) (request: FindPrompt) =
     let asking () =
-        FindDialog.create
-            request.Ground
-            request.Hidden
-            request.Found
-            (texts request.Masks)
-            (texts request.Texts)
+        FindDialog.create request.Ground request.Hidden request.Found (texts request.Masks) (texts request.Texts)
 
     running app asking askedOf
 
@@ -198,13 +201,17 @@ let private askMenuRemoval (app: IApplication) (prompt: MenuRemoval.RemovalPromp
     let answer =
         MessageBox.Query(app, MenuRemoval.Title, MenuRemoval.question prompt, Array.ofList labels)
 
-    answer |> Option.ofNullable |> Option.bind (fun index -> List.tryItem index prompt.Offered)
+    answer
+    |> Option.ofNullable
+    |> Option.bind (fun index -> List.tryItem index prompt.Offered)
 
 let chooseFromUserMenu (app: IApplication) (request: UserMenuPrompt) =
     let editing: UserMenuDialog.MenuEditing =
         { AskEntry = askMenuEntry app
           AskRemoval = askMenuRemoval app
           Change = request.Change }
-    let createDialog () = UserMenuDialog.create editing request.Menu
+
+    let createDialog () =
+        UserMenuDialog.create editing request.Menu
 
     running app createDialog UserMenuDialog.chosen

@@ -18,8 +18,7 @@ module PatternError =
 
 module SearchPattern =
 
-    let private linear =
-        RegexOptions.NonBacktracking ||| RegexOptions.CultureInvariant
+    let private linear = RegexOptions.NonBacktracking ||| RegexOptions.CultureInvariant
 
     let private options case =
         match case with

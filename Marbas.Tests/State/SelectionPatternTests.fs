@@ -13,7 +13,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private pattern raw = NamePattern.tryCreate raw |> Expect.some
+let private pattern raw =
+    NamePattern.tryCreate raw |> Expect.some
 
 let private mockFs () =
     let fs = MockFileSystem()

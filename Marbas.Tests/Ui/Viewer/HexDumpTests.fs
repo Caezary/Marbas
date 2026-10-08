@@ -27,7 +27,7 @@ let private splitCharacter =
 
 [<Fact>]
 let ``a full row shows the offset, every byte and its text`` () =
-    let bytes = [| 0uy..15uy |]
+    let bytes = [| 0uy .. 15uy |]
 
     let line = HexDump.row latin1 0L (alone bytes)
 
@@ -35,7 +35,7 @@ let ``a full row shows the offset, every byte and its text`` () =
 
 [<Fact>]
 let ``a full row fits eighty columns`` () =
-    let bytes = [| 0uy..15uy |]
+    let bytes = [| 0uy .. 15uy |]
 
     let line = HexDump.row latin1 0L (alone bytes)
 
@@ -43,7 +43,7 @@ let ``a full row fits eighty columns`` () =
 
 [<Fact>]
 let ``a short row past the eighth byte keeps the rule between the halves`` () =
-    let bytes = [| 0uy..11uy |]
+    let bytes = [| 0uy .. 11uy |]
 
     let line = HexDump.row latin1 0L (alone bytes)
 
@@ -84,10 +84,7 @@ let ``rows are numbered on from the offset they were read from`` () =
 
     let lines = HexDump.rows latin1 16L bytes
 
-    Assert.Equal<string list>(
-        [ "0000000010"; "0000000020"; "0000000030" ],
-        lines |> List.map _.Substring(0, 10)
-    )
+    Assert.Equal<string list>([ "0000000010"; "0000000020"; "0000000030" ], lines |> List.map _.Substring(0, 10))
 
 [<Fact>]
 let ``a short last row is padded so the text column keeps its place`` () =

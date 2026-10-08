@@ -29,7 +29,10 @@ let onUnobserved (record: RecordLogEntry) (args: UnobservedTaskExceptionEventArg
 
 let watch (record: RecordLogEntry) =
     let unhandled = UnhandledExceptionEventHandler(fun _ -> onUnhandled record)
-    let unobserved = EventHandler<UnobservedTaskExceptionEventArgs>(fun _ -> onUnobserved record)
+
+    let unobserved =
+        EventHandler<UnobservedTaskExceptionEventArgs>(fun _ -> onUnobserved record)
+
     AppDomain.CurrentDomain.UnhandledException.AddHandler unhandled
     TaskScheduler.UnobservedTaskException.AddHandler unobserved
 

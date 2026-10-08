@@ -240,7 +240,8 @@ let ``the cursor stops at the bottom of the listing`` () =
     list.SelectedItem <- 2
     probe.Messages.Clear()
 
-    let keys = [ Key.CursorDown; Key.PageDown; Key.End ] |> List.map (pressReturning list)
+    let keys =
+        [ Key.CursorDown; Key.PageDown; Key.End ] |> List.map (pressReturning list)
 
     Assert.All(keys, fun key -> Assert.True(key.Handled, $"%A{key} should not leave the panel"))
     Assert.Empty probe.Messages

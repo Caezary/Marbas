@@ -45,7 +45,10 @@ module NamePattern =
         | _ -> retry ()
 
     let tryCreate (raw: string) =
-        if String.IsNullOrEmpty raw then None else Some(NamePattern raw)
+        if String.IsNullOrEmpty raw then
+            None
+        else
+            Some(NamePattern raw)
 
     let value (NamePattern pattern) = pattern
 

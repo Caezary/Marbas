@@ -57,7 +57,11 @@ let private results hits =
         { Roots = [ OnDisk(fp (at "start")) ]
           OtherRoots = [] }
       Hits = hits
-      Outcome = FileSearch.Finished { Files = List.length hits; Directories = 0; Skipped = 0 }
+      Outcome =
+        FileSearch.Finished
+            { Files = List.length hits
+              Directories = 0
+              Skipped = 0 }
       Cursor = 0 }
 
 [<Fact>]
@@ -89,7 +93,12 @@ let ``a panel of search results keeps nothing`` () =
     let state = loadedBoth fs
 
     let showing =
-        (update fs (SearchAnswered { Landing = Some InPanel; Results = results [ hitIn "start" "notes.txt" ] }) state)
+        (update
+            fs
+            (SearchAnswered
+                { Landing = Some InPanel
+                  Results = results [ hitIn "start" "notes.txt" ] })
+            state)
             .State
 
     let result = update fs FavoriteKeepRequested showing
@@ -121,7 +130,8 @@ let ``a favourite found inside an archive is walked back into`` () =
     let docs = Expect.some (ArchivePath.tryCreate "docs")
     let state = ArchiveFixture.loaded fs |> activate Left
 
-    let result = update fs (FavoriteFound(Place.InArchive(ArchiveFixture.archive, docs))) state
+    let result =
+        update fs (FavoriteFound(Place.InArchive(ArchiveFixture.archive, docs))) state
 
     Assert.Equal(InArchive(ArchiveFixture.archive, docs), result.State.Left.Path)
 
@@ -159,7 +169,12 @@ let ``the favourites popup over search results is shown with no place to keep`` 
     let state = loadedBoth fs
 
     let showing =
-        (update fs (SearchAnswered { Landing = Some InPanel; Results = results [ hitIn "start" "notes.txt" ] }) state)
+        (update
+            fs
+            (SearchAnswered
+                { Landing = Some InPanel
+                  Results = results [ hitIn "start" "notes.txt" ] })
+            state)
             .State
 
     let result = update fs FavoritesRequested showing

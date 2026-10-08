@@ -41,12 +41,7 @@ let private listHeight (menu: UserMenu) =
     UserMenu.items menu |> List.length |> max 1 |> min TallestList
 
 type UserMenuView(menu: UserMenu) =
-    inherit
-        Dialog(
-            Title = Title,
-            Width = Dim.Percent SizeShare,
-            Height = Dim.Absolute(listHeight menu + FrameHeight)
-        )
+    inherit Dialog(Title = Title, Width = Dim.Percent SizeShare, Height = Dim.Absolute(listHeight menu + FrameHeight))
 
     member val Menu = menu with get, set
 
@@ -154,7 +149,9 @@ let private changed (editing: Editing) change (following: MenuHotkey option) =
 
 let private underCursor (editing: Editing) =
     cursorOf editing.List
-    |> Option.bind (fun index -> commandAt index editing.Dialog.Menu |> Option.map (fun command -> index, command))
+    |> Option.bind (fun index ->
+        commandAt index editing.Dialog.Menu
+        |> Option.map (fun command -> index, command))
 
 let private referenceAt index (editing: Editing) =
     index |> Option.bind (fun at -> UserMenu.refAt at editing.Dialog.Menu)
@@ -221,12 +218,18 @@ let private stepOf (key: Key) =
     else None
 
 let private editingAct (editing: Editing) (key: Key) =
-    if key = KeyMap.userMenuAddKey then Some(fun () -> adding editing)
-    elif key = KeyMap.userMenuChangeKey then Some(fun () -> rewriting editing)
-    elif key = KeyMap.userMenuRemoveKey then Some(fun () -> removing editing)
-    elif key = KeyMap.userMenuEarlierKey then Some(fun () -> moving editing Earlier)
-    elif key = KeyMap.userMenuLaterKey then Some(fun () -> moving editing Later)
-    else None
+    if key = KeyMap.userMenuAddKey then
+        Some(fun () -> adding editing)
+    elif key = KeyMap.userMenuChangeKey then
+        Some(fun () -> rewriting editing)
+    elif key = KeyMap.userMenuRemoveKey then
+        Some(fun () -> removing editing)
+    elif key = KeyMap.userMenuEarlierKey then
+        Some(fun () -> moving editing Earlier)
+    elif key = KeyMap.userMenuLaterKey then
+        Some(fun () -> moving editing Later)
+    else
+        None
 
 let private answer (editing: Editing) (key: Key) =
     let handled act =

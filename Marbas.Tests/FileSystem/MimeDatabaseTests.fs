@@ -5,7 +5,8 @@ open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Tests
 
-let private ext raw = Expect.some (FileExtension.tryCreate raw)
+let private ext raw =
+    Expect.some (FileExtension.tryCreate raw)
 
 let private globs =
     [ "# This file was automatically generated"
@@ -15,8 +16,7 @@ let private globs =
       "text/plain:*.txt"
       "" ]
 
-let private weighted =
-    [ "50:text/html:*.html"; "10:application/xhtml+xml:*.html" ]
+let private weighted = [ "50:text/html:*.html"; "10:application/xhtml+xml:*.html" ]
 
 let private applications =
     [ "[Default Applications]"
@@ -47,7 +47,8 @@ let ``an extension no glob names has no type`` () =
 
 [<Fact>]
 let ``a glob that is not a plain extension is passed over`` () =
-    let types = MimeDatabase.typesFor (ext "gz") [ "application/x-tar:*.tar.gz"; "text/x-makefile:Makefile" ]
+    let types =
+        MimeDatabase.typesFor (ext "gz") [ "application/x-tar:*.tar.gz"; "text/x-makefile:Makefile" ]
 
     Assert.Empty types
 

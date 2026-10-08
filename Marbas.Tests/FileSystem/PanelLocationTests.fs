@@ -12,7 +12,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private fs = MockFileSystem() :> IFileSystem
 

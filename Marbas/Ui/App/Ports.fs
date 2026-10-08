@@ -135,7 +135,10 @@ type Watches =
 
 type Runners =
     { Batch:
-        string -> (Operations.BatchControl -> Operations.ItemResult list) -> (Operations.ItemResult list -> unit) -> unit
+        string
+            -> (Operations.BatchControl -> Operations.ItemResult list)
+            -> (Operations.ItemResult list -> unit)
+            -> unit
       Measure:
           string
               -> (Operations.BatchControl -> Measurement list)

@@ -110,7 +110,10 @@ module UserMenu =
             |> Option.defaultValue (List.length items)
 
     let private adding item after items =
-        match hotkeyOf item |> Option.filter (fun hotkey -> (commandIndex hotkey items).IsSome) with
+        match
+            hotkeyOf item
+            |> Option.filter (fun hotkey -> (commandIndex hotkey items).IsSome)
+        with
         | Some taken -> Error(HotkeyTaken taken)
         | None -> Ok(List.insertAt (placeAfter after items) item items)
 
@@ -200,7 +203,10 @@ module UserMenu =
                   Label = label
                   Line = line
                   Run = part RunPart |> Option.bind MenuRun.tryParse |> Option.defaultValue Directly
-                  Elevation = part ElevationPart |> Option.bind Elevation.tryParse |> Option.defaultValue AsUser }
+                  Elevation =
+                    part ElevationPart
+                    |> Option.bind Elevation.tryParse
+                    |> Option.defaultValue AsUser }
         }
 
     let private itemFrom (read: Map<string, string>) number =

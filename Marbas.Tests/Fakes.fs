@@ -49,8 +49,12 @@ type private DeniedDirectories(accessor: IMockFileDataAccessor, denied: string) 
 
     interface IDirectoryInfoFactory with
         member _.FileSystem = (inner :> IDirectoryInfoFactory).FileSystem
-        member _.New(path) = DeniedDirectoryInfo(accessor, path, denied) :> IDirectoryInfo
-        member _.Wrap(info: DirectoryInfo) = (inner :> IDirectoryInfoFactory).Wrap info
+
+        member _.New(path) =
+            DeniedDirectoryInfo(accessor, path, denied) :> IDirectoryInfo
+
+        member _.Wrap(info: DirectoryInfo) =
+            (inner :> IDirectoryInfoFactory).Wrap info
 
 type UnreadableDirectory(denied: string) =
     inherit MockFileSystem()
@@ -62,7 +66,8 @@ type UnreadableDirectory(denied: string) =
         let current = base.Directory.GetCurrentDirectory()
         once listing (fun () -> DeniedDirectory(this, current, denied) :> IDirectory)
 
-    override this.DirectoryInfo = once infos (fun () -> DeniedDirectories(this, denied) :> IDirectoryInfoFactory)
+    override this.DirectoryInfo =
+        once infos (fun () -> DeniedDirectories(this, denied) :> IDirectoryInfoFactory)
 
 [<Literal>]
 let DeepestFollowedPath = 40
@@ -200,7 +205,8 @@ type WipeWitness() =
 
     member _.Renamed = List.ofSeq renamed
 
-    override this.File = once writing (fun () -> WitnessedFile(this, flushed, renamed) :> IFile)
+    override this.File =
+        once writing (fun () -> WitnessedFile(this, flushed, renamed) :> IFile)
 
 type private CountingFile(accessor: IMockFileDataAccessor, copied: unit -> unit) =
     inherit MockFile(accessor)
@@ -217,7 +223,8 @@ type CopyCounting() =
 
     member _.Copies = copies
 
-    override this.File = once writing (fun () -> CountingFile(this, fun () -> copies <- copies + 1) :> IFile)
+    override this.File =
+        once writing (fun () -> CountingFile(this, fun () -> copies <- copies + 1) :> IFile)
 
 type private ReadCountingFile(accessor: IMockFileDataAccessor, opened: string -> unit) =
     inherit MockFile(accessor)
@@ -232,7 +239,8 @@ type ReadCounting() =
     let opened = ResizeArray<string>()
     let reading = Replaced<IFile>()
 
-    member _.Reads(path: string) = opened |> Seq.filter ((=) path) |> Seq.length
+    member _.Reads(path: string) =
+        opened |> Seq.filter ((=) path) |> Seq.length
 
     override this.File = once reading (fun () -> ReadCountingFile(this, opened.Add) :> IFile)
 
@@ -257,7 +265,8 @@ type private CountedStream(inner: FileSystemStream, path: string, read: int -> u
             value
 
     override this.Dispose(disposing: bool) =
-        if disposing then closed ()
+        if disposing then
+            closed ()
 
         base.Dispose disposing
 
@@ -295,7 +304,8 @@ type ExistenceWitness() =
     let asked = ResizeArray<string>()
     let reading = Replaced<IFile>()
 
-    member _.AskedAbout(path: string) = asked |> Seq.filter ((=) path) |> Seq.length
+    member _.AskedAbout(path: string) =
+        asked |> Seq.filter ((=) path) |> Seq.length
 
     override this.File = once reading (fun () -> AskedFile(this, asked.Add) :> IFile)
 
@@ -312,7 +322,8 @@ type private Watching() =
 
     member _.Enumerations = enumerated.Count
 
-    member _.AskedAbout(path: string) = asked |> Seq.filter ((=) path) |> Seq.length
+    member _.AskedAbout(path: string) =
+        asked |> Seq.filter ((=) path) |> Seq.length
 
     member _.Working() =
         working <- working + 1
@@ -408,7 +419,8 @@ type private WatchedDirectories(accessor: IMockFileDataAccessor, watching: Watch
             watching.Ask path
             WatchedDirectoryInfo(accessor, path, watching) :> IDirectoryInfo
 
-        member _.Wrap(info: DirectoryInfo) = (inner :> IDirectoryInfoFactory).Wrap info
+        member _.Wrap(info: DirectoryInfo) =
+            (inner :> IDirectoryInfoFactory).Wrap info
 
 type WalkWitness() =
     inherit MockFileSystem()
@@ -429,7 +441,8 @@ type WalkWitness() =
         let current = base.Directory.GetCurrentDirectory()
         once directories (fun () -> WatchedDirectory(this, current, watching) :> IDirectory)
 
-    override this.FileInfo = once fileInfos (fun () -> WatchedFiles(this, watching) :> IFileInfoFactory)
+    override this.FileInfo =
+        once fileInfos (fun () -> WatchedFiles(this, watching) :> IFileInfoFactory)
 
     override this.DirectoryInfo =
         once directoryInfos (fun () -> WatchedDirectories(this, watching) :> IDirectoryInfoFactory)
@@ -440,8 +453,7 @@ let CrossVolumeReason = "Source and destination path must have identical roots."
 type private UnmovableDirectory(accessor: IMockFileDataAccessor, current: string) =
     inherit MockDirectory(accessor, current)
 
-    override this.Move(_source: string, _target: string) =
-        raise (IOException CrossVolumeReason)
+    override this.Move(_source: string, _target: string) = raise (IOException CrossVolumeReason)
 
 type DirectoryMoveRefused() =
     inherit MockFileSystem()
@@ -543,7 +555,8 @@ type SymbolicLinksRefused(refusedUnder: string) =
         let current = base.Directory.GetCurrentDirectory()
         once making (fun () -> LinkRefusingDirectory(this, current, refusedUnder) :> IDirectory)
 
-    override this.File = once writing (fun () -> LinkRefusingFile(this, refusedUnder) :> IFile)
+    override this.File =
+        once writing (fun () -> LinkRefusingFile(this, refusedUnder) :> IFile)
 
 type Mount =
     { MountPoint: string
@@ -602,7 +615,10 @@ type MountedFileSystem(mounts: Mount list) =
 
         { new IDriveInfoFactory with
             member _.GetDrives() = drives ()
-            member _.New(name: string) = drives () |> Array.find (fun drive -> drive.Name = name)
+
+            member _.New(name: string) =
+                drives () |> Array.find (fun drive -> drive.Name = name)
+
             member _.Wrap(_: DriveInfo) = raise (NotSupportedException())
             member _.FileSystem = this }
 

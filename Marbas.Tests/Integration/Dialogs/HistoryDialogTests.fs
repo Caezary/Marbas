@@ -233,7 +233,10 @@ let ``the What column of the directory tab takes the width When leaves`` () =
 [<Fact>]
 let ``opening a directory answers the one under the cursor`` () =
     use dialog = laidOut folders FolderHistoryTab
-    (HistoryDialog.table FolderHistoryTab dialog).NewKeyDownEvent Key.CursorDown |> ignore
+
+    (HistoryDialog.table FolderHistoryTab dialog).NewKeyDownEvent Key.CursorDown
+    |> ignore
+
     dialog.Result <- HistoryDialog.OpenButton
 
     let answer = HistoryDialog.answer dialog
@@ -260,7 +263,11 @@ let ``opening on an empty list chooses nothing`` () =
 
     let answer = HistoryDialog.answer dialog
 
-    Assert.Equal({ Tab = FolderHistoryTab; Choice = None }, answer)
+    Assert.Equal(
+        { Tab = FolderHistoryTab
+          Choice = None },
+        answer
+    )
 
 [<Theory>]
 [<InlineData('d')>]
@@ -285,7 +292,10 @@ let ``going to a directory is offered on the directory tab`` () =
 [<Fact>]
 let ``going to a directory answers opening it`` () =
     use dialog = laidOut folders FolderHistoryTab
-    (HistoryDialog.table FolderHistoryTab dialog).NewKeyDownEvent Key.CursorDown |> ignore
+
+    (HistoryDialog.table FolderHistoryTab dialog).NewKeyDownEvent Key.CursorDown
+    |> ignore
+
     dialog.Result <- HistoryDialog.GoToButton
 
     let answer = HistoryDialog.answer dialog
@@ -330,7 +340,11 @@ let ``opening a started file answers starting it again the same way`` () =
 
     let answer = HistoryDialog.answer dialog
 
-    Assert.Equal({ Tab = RunHistoryTab; Choice = Some(RunAgain(StartedFile(started "work/newer.md"))) }, answer)
+    Assert.Equal(
+        { Tab = RunHistoryTab
+          Choice = Some(RunAgain(StartedFile(started "work/newer.md"))) },
+        answer
+    )
 
 [<Fact>]
 let ``Alt+G on a started file answers going to it`` () =
@@ -340,7 +354,12 @@ let ``Alt+G on a started file answers going to it`` () =
 
     let answer = HistoryDialog.answer dialog
     Assert.Equal(Nullable HistoryDialog.GoToButton, dialog.Result)
-    Assert.Equal({ Tab = RunHistoryTab; Choice = Some(GoTo(Place.OnDisk(fp (at "work/newer.md")))) }, answer)
+
+    Assert.Equal(
+        { Tab = RunHistoryTab
+          Choice = Some(GoTo(Place.OnDisk(fp (at "work/newer.md")))) },
+        answer
+    )
 
 [<Fact>]
 let ``going to a started file is offered once its tab is in front`` () =
@@ -369,14 +388,31 @@ let ``Alt+G on a directory answers opening it`` () =
 
 let private visits =
     History.empty
-    |> History.apply Windows (minute 5) (Remember(Opened { Where = Place.OnDisk(fp (at "work/seen.md")); How = Viewed }))
-    |> History.apply Windows (minute 6) (Remember(Opened { Where = Place.OnDisk(fp (at "work/typed.md")); How = Edited }))
+    |> History.apply
+        Windows
+        (minute 5)
+        (Remember(
+            Opened
+                { Where = Place.OnDisk(fp (at "work/seen.md"))
+                  How = Viewed }
+        ))
+    |> History.apply
+        Windows
+        (minute 6)
+        (Remember(
+            Opened
+                { Where = Place.OnDisk(fp (at "work/typed.md"))
+                  How = Edited }
+        ))
 
 let private visitOf path how =
-    { Where = Place.OnDisk(fp (at path)); How = how }
+    { Where = Place.OnDisk(fp (at path))
+      How = how }
 
 let private onSecondRow (dialog: HistoryDialog.HistoryView) =
-    (HistoryDialog.table ViewHistoryTab dialog).NewKeyDownEvent Key.CursorDown |> ignore
+    (HistoryDialog.table ViewHistoryTab dialog).NewKeyDownEvent Key.CursorDown
+    |> ignore
+
     dialog
 
 [<Fact>]
@@ -397,7 +433,11 @@ let ``opening an edited file answers editing it again`` () =
 
     let answer = HistoryDialog.answer dialog
 
-    Assert.Equal({ Tab = ViewHistoryTab; Choice = Some(Revisit(visitOf "work/typed.md" Edited)) }, answer)
+    Assert.Equal(
+        { Tab = ViewHistoryTab
+          Choice = Some(Revisit(visitOf "work/typed.md" Edited)) },
+        answer
+    )
 
 [<Fact>]
 let ``opening a viewed file answers viewing it again`` () =
@@ -406,7 +446,11 @@ let ``opening a viewed file answers viewing it again`` () =
 
     let answer = HistoryDialog.answer dialog
 
-    Assert.Equal({ Tab = ViewHistoryTab; Choice = Some(Revisit(visitOf "work/seen.md" Viewed)) }, answer)
+    Assert.Equal(
+        { Tab = ViewHistoryTab
+          Choice = Some(Revisit(visitOf "work/seen.md" Viewed)) },
+        answer
+    )
 
 [<Fact>]
 let ``F3 on an edited file answers viewing it`` () =
@@ -415,7 +459,12 @@ let ``F3 on an edited file answers viewing it`` () =
     dialog.NewKeyDownEvent Key.F3 |> ignore
 
     let answer = HistoryDialog.answer dialog
-    Assert.Equal({ Tab = ViewHistoryTab; Choice = Some(Revisit(visitOf "work/typed.md" Viewed)) }, answer)
+
+    Assert.Equal(
+        { Tab = ViewHistoryTab
+          Choice = Some(Revisit(visitOf "work/typed.md" Viewed)) },
+        answer
+    )
 
 [<Fact>]
 let ``F4 on a viewed file answers editing it`` () =
@@ -424,7 +473,12 @@ let ``F4 on a viewed file answers editing it`` () =
     dialog.NewKeyDownEvent Key.F4 |> ignore
 
     let answer = HistoryDialog.answer dialog
-    Assert.Equal({ Tab = ViewHistoryTab; Choice = Some(Revisit(visitOf "work/seen.md" Edited)) }, answer)
+
+    Assert.Equal(
+        { Tab = ViewHistoryTab
+          Choice = Some(Revisit(visitOf "work/seen.md" Edited)) },
+        answer
+    )
 
 [<Fact>]
 let ``Alt+G on a file viewed answers going to it`` () =
@@ -433,7 +487,12 @@ let ``Alt+G on a file viewed answers going to it`` () =
     dialog.NewKeyDownEvent(Key.G.WithAlt) |> ignore
 
     let answer = HistoryDialog.answer dialog
-    Assert.Equal({ Tab = ViewHistoryTab; Choice = Some(GoTo(Place.OnDisk(fp (at "work/typed.md")))) }, answer)
+
+    Assert.Equal(
+        { Tab = ViewHistoryTab
+          Choice = Some(GoTo(Place.OnDisk(fp (at "work/typed.md")))) },
+        answer
+    )
 
 [<Fact>]
 let ``F3 on the directory tab leaves the popup open`` () =
@@ -523,7 +582,8 @@ let ``the cursor on the last row forgotten moves to the new last one`` () =
 let ``the Delete button forgets the row without closing the popup`` () =
     use dialog = laidOut folders FolderHistoryTab
 
-    (HistoryDialog.button HistoryDialog.DeleteButton dialog).InvokeCommand Command.Accept |> ignore
+    (HistoryDialog.button HistoryDialog.DeleteButton dialog).InvokeCommand Command.Accept
+    |> ignore
 
     Assert.Equal<string list>([ "14:01 " + at "older" ], rows dialog FolderHistoryTab)
     Assert.False dialog.Result.HasValue
@@ -666,7 +726,8 @@ let ``a row forgotten below the fold keeps the cursor in sight`` () =
     Assert.InRange(shown.RowOffset, 30 - shown.Viewport.Height + 1, 30)
 
 let private typing (dialog: HistoryDialog.HistoryView) (text: string) =
-    text |> Seq.iter (fun character -> dialog.NewKeyDownEvent(Key character) |> ignore)
+    text
+    |> Seq.iter (fun character -> dialog.NewKeyDownEvent(Key character) |> ignore)
 
 let private filterShown (dialog: HistoryDialog.HistoryView) = (HistoryDialog.filterLine dialog).Text
 
@@ -688,7 +749,9 @@ let ``typing matches in the middle of a row and ignores case`` () =
 
 [<Fact>]
 let ``typing matches how a file was started as well as where it is`` () =
-    let asUser = { started "work/plain.md" with Elevation = AsUser }
+    let asUser =
+        { started "work/plain.md" with
+            Elevation = AsUser }
 
     let mixed =
         History.empty

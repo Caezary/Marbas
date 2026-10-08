@@ -26,8 +26,7 @@ let rememberLabel (name: EntryName) =
     | None -> "_Always open this way"
 
 let create (name: EntryName) (handlers: Handler list) (chosen: ProgramPath option) (remembered: string list) =
-    let dialog =
-        new Dialog(Title = Title, Width = 76, Height = 19) |> DialogStyle.dress
+    let dialog = new Dialog(Title = Title, Width = 76, Height = 19) |> DialogStyle.dress
 
     let known =
         new ListView(X = 1, Y = 3, Width = Dim.Fill 1, Height = ListHeight, KeystrokeNavigator = null)
@@ -82,8 +81,7 @@ let field (dialog: Dialog) =
 let checkBox (dialog: Dialog) =
     SubView.byId<CheckBox> RememberId dialog
 
-let known (dialog: Dialog) =
-    SubView.byType<ListView> dialog
+let known (dialog: Dialog) = SubView.byType<ListView> dialog
 
 let private handlerUse (dialog: Dialog) =
     match (checkBox dialog).Value with

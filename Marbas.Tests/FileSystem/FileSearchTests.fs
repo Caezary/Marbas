@@ -54,7 +54,11 @@ let private hitsOf (fs: IFileSystem) control query roots =
     let hits = ResizeArray<FindHit>()
 
     let outcome =
-        run fs control (fun report -> hits.Add report.Hit) query
+        run
+            fs
+            control
+            (fun report -> hits.Add report.Hit)
+            query
             { Roots = roots |> List.map OnDisk
               OtherRoots = [] }
 
@@ -62,7 +66,10 @@ let private hitsOf (fs: IFileSystem) control query roots =
 
 let private hitsWithin (fs: IFileSystem) query ground =
     let hits = ResizeArray<FindHit>()
-    run fs Operations.unattended (fun report -> hits.Add report.Hit) query ground |> ignore
+
+    run fs Operations.unattended (fun report -> hits.Add report.Hit) query ground
+    |> ignore
+
     spelled fs hits
 
 let private found fs query roots =
@@ -81,7 +88,9 @@ let ``a search from a directory walks the tree below it`` () =
     let hits = found fs (queryFor "*.txt" FromDirectory) [ fp (at "start") ]
 
     Assert.Equal<string list>(
-        [ at "start/docs/deep/notes.txt"; at "start/docs/notes.txt"; at "start/notes.txt" ],
+        [ at "start/docs/deep/notes.txt"
+          at "start/docs/notes.txt"
+          at "start/notes.txt" ],
         hits
     )
 
@@ -148,7 +157,9 @@ let ``a hidden entry is found once the query shows them`` () =
     let fs = tree ()
     fs.AddFile(at "start/.hidden.txt", MockFileData "let h = 1")
 
-    let query = { queryFor "*.txt" FromDirectory with Hidden = Shown }
+    let query =
+        { queryFor "*.txt" FromDirectory with
+            Hidden = Shown }
 
     let hits = found fs query [ fp (at "start") ]
 
@@ -171,7 +182,13 @@ let ``a directory that cannot be read is skipped and counted`` () =
 
     let outcome = outcomeOf fs (queryFor "*.txt" FromDirectory) [ fp (at "start") ]
 
-    Assert.Equal<FindOutcome>(Finished { Files = 1; Directories = 0; Skipped = 1 }, outcome)
+    Assert.Equal<FindOutcome>(
+        Finished
+            { Files = 1
+              Directories = 0
+              Skipped = 1 },
+        outcome
+    )
 
 [<Fact>]
 let ``a finished walk counts the files and the directories it found`` () =
@@ -183,14 +200,21 @@ let ``a finished walk counts the files and the directories it found`` () =
 
     let outcome = outcomeOf fs query [ fp (at "start") ]
 
-    Assert.Equal<FindOutcome>(Finished { Files = 3; Directories = 1; Skipped = 0 }, outcome)
+    Assert.Equal<FindOutcome>(
+        Finished
+            { Files = 3
+              Directories = 1
+              Skipped = 0 },
+        outcome
+    )
 
 [<Fact>]
 let ``every directory the walk enters is reported`` () =
     let fs = tree ()
     let reported = ResizeArray<FileSystemPath>()
 
-    hitsOf fs (recording reported) (queryFor "*.txt" FromDirectory) [ fp (at "start") ] |> ignore
+    hitsOf fs (recording reported) (queryFor "*.txt" FromDirectory) [ fp (at "start") ]
+    |> ignore
 
     Assert.Equal<string list>(
         [ at "start"; at "start/docs"; at "start/docs/deep"; at "start/notes" ],
@@ -206,7 +230,13 @@ let ``a walk stopped at its first directory says so`` () =
         hitsOf fs (stoppingAfter 1 reported) (queryFor "*.txt" FromDirectory) [ fp (at "start") ]
         |> fst
 
-    Assert.Equal<FindOutcome>(Stopped { Files = 0; Directories = 0; Skipped = 0 }, outcome)
+    Assert.Equal<FindOutcome>(
+        Stopped
+            { Files = 0
+              Directories = 0
+              Skipped = 0 },
+        outcome
+    )
 
 [<Fact>]
 let ``a stopped walk reports no more directories`` () =
@@ -226,9 +256,17 @@ let ``a walk that follows links goes round a cycle once`` () =
     let reported = ResizeArray<FileSystemPath>()
 
     let outcome =
-        hitsOf fs (recording reported) (queryFor "*.zzz" FromDirectory) [ fp (at "data") ] |> fst
+        hitsOf fs (recording reported) (queryFor "*.zzz" FromDirectory) [ fp (at "data") ]
+        |> fst
 
-    Assert.Equal<FindOutcome>(Finished { Files = 0; Directories = 0; Skipped = 0 }, outcome)
+    Assert.Equal<FindOutcome>(
+        Finished
+            { Files = 0
+              Directories = 0
+              Skipped = 0 },
+        outcome
+    )
+
     Assert.Equal<string list>([ at "data"; at "data/docs" ], paths reported |> List.sort)
 
 [<Fact>]
@@ -240,9 +278,17 @@ let ``a link leading out of the walked tree is entered`` () =
     let reported = ResizeArray<FileSystemPath>()
 
     let outcome =
-        hitsOf fs (recording reported) (queryFor "*.zzz" FromDirectory) [ fp (at "data") ] |> fst
+        hitsOf fs (recording reported) (queryFor "*.zzz" FromDirectory) [ fp (at "data") ]
+        |> fst
 
-    Assert.Equal<FindOutcome>(Finished { Files = 0; Directories = 0; Skipped = 0 }, outcome)
+    Assert.Equal<FindOutcome>(
+        Finished
+            { Files = 0
+              Directories = 0
+              Skipped = 0 },
+        outcome
+    )
+
     Assert.Equal<string list>([ at "data"; at "data/docs"; at "data/docs/away" ], paths reported |> List.sort)
 
 [<Fact>]
@@ -251,7 +297,10 @@ let ``a walk that stops at links never enters one`` () =
     fs.AddDirectory(at "data/docs")
     fs.Directory.CreateSymbolicLink(at "data/docs/loop", at "data") |> ignore
     let reported = ResizeArray<FileSystemPath>()
-    let query = { queryFor "*.zzz" FromDirectory with Links = StopAtLinks }
+
+    let query =
+        { queryFor "*.zzz" FromDirectory with
+            Links = StopAtLinks }
 
     hitsOf fs (recording reported) query [ fp (at "data") ] |> ignore
 

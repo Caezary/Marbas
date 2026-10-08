@@ -22,7 +22,9 @@ module Zipper =
 
     let position (zipper: Zipper<'a>) = List.length zipper.Before
 
-    let update f (zipper: Zipper<'a>) = { zipper with Current = f zipper.Current }
+    let update f (zipper: Zipper<'a>) =
+        { zipper with
+            Current = f zipper.Current }
 
     let insert item (zipper: Zipper<'a>) =
         { zipper with

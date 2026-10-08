@@ -10,13 +10,12 @@ type OpenWithChoice =
     { Program: ProgramPath
       Use: HandlerUse }
 
-type Handler =
-    { Name: string
-      Program: ProgramPath }
+type Handler = { Name: string; Program: ProgramPath }
 
 module Handler =
 
-    let fileName (text: string) = text.Split([| '\\'; '/' |]) |> Array.last
+    let fileName (text: string) =
+        text.Split([| '\\'; '/' |]) |> Array.last
 
     let private named (raw: string) (program: ProgramPath) =
         match raw.Trim() with
@@ -24,7 +23,10 @@ module Handler =
         | text -> text
 
     let tryCreate raw program =
-        program |> Option.map (fun path -> { Name = named raw path; Program = path })
+        program
+        |> Option.map (fun path ->
+            { Name = named raw path
+              Program = path })
 
     let distinct (handlers: Handler list) =
         handlers

@@ -55,13 +55,19 @@ let ``loading a panel fills its entries and leaves the other side untouched`` ()
 
     let loaded = loadPanel fs Right (fp (at "start")) state |> Expect.ok
 
-    Assert.Equal<string list>([ ".."; "docs"; "readme.txt" ], loaded.Right.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
+    Assert.Equal<string list>(
+        [ ".."; "docs"; "readme.txt" ],
+        loaded.Right.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+    )
+
     Assert.Empty loaded.Left.Entries
 
 [<Fact>]
 let ``the cursor entry is the one at the cursor index`` () =
     let fs = mockFs ()
-    let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
+
+    let state =
+        create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
     let atStart = PanelState.cursorEntry state.Left
     let atThirdRow = state |> setCursor Left 2 |> activePanel |> PanelState.cursorEntry

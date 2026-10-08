@@ -148,7 +148,8 @@ let private archivedIn archive level name kind =
     { Location = InArchive(fp (at archive), ArchivePath.tryCreate level |> Expect.some)
       Entry = { entry name Plain with Kind = kind } }
 
-let private archived level name kind = archivedIn "start/data.zip" level name kind
+let private archived level name kind =
+    archivedIn "start/data.zip" level name kind
 
 let private broken = "start/broken.zip"
 
@@ -159,18 +160,26 @@ let private mixed () =
     fs
 
 let private mixedHits =
-    [ hitIn "start" "plain.txt"; archived "" "notes.txt" File; archivedIn broken "" "lost.txt" File ]
+    [ hitIn "start" "plain.txt"
+      archived "" "notes.txt" File
+      archivedIn broken "" "lost.txt" File ]
 
 [<Fact>]
 let ``a hit inside an archive stays while the archive still holds it`` () =
     let fs = packed ()
 
-    let hits = [ archived "" "notes.txt" File; archived "" "docs" Directory; archived "docs" "inner.txt" File ]
+    let hits =
+        [ archived "" "notes.txt" File
+          archived "" "docs" Directory
+          archived "docs" "inner.txt" File ]
 
     let entries = listed fs Concealed (fromStart fs hits)
 
     Assert.Equal<string list>(
-        [ ".."; relative "data.zip/docs"; relative "data.zip/docs/inner.txt"; relative "data.zip/notes.txt" ],
+        [ ".."
+          relative "data.zip/docs"
+          relative "data.zip/docs/inner.txt"
+          relative "data.zip/notes.txt" ],
         named entries
     )
 
@@ -178,10 +187,15 @@ let ``a hit inside an archive stays while the archive still holds it`` () =
 let ``a hit inside an archive that no longer holds it is left out`` () =
     let fs = packed ()
 
-    Archive.removeEntries fs Operations.unattended (fp (at "start/data.zip")) [ ArchivePath.tryCreate "notes.txt" |> Expect.some ]
+    Archive.removeEntries
+        fs
+        Operations.unattended
+        (fp (at "start/data.zip"))
+        [ ArchivePath.tryCreate "notes.txt" |> Expect.some ]
     |> ignore
 
-    let entries = listed fs Concealed (fromStart fs [ archived "" "notes.txt" File; archived "docs" "inner.txt" File ])
+    let entries =
+        listed fs Concealed (fromStart fs [ archived "" "notes.txt" File; archived "docs" "inner.txt" File ])
 
     Assert.Equal<string list>([ ".."; relative "data.zip/docs/inner.txt" ], named entries)
 
@@ -192,7 +206,10 @@ let ``a hit inside an archive whose index cannot be read is listed beside the hi
     let entries = listed fs Concealed (fromStart fs mixedHits)
 
     Assert.Equal<string list>(
-        [ ".."; relative "broken.zip/lost.txt"; relative "data.zip/notes.txt"; "plain.txt" ],
+        [ ".."
+          relative "broken.zip/lost.txt"
+          relative "data.zip/notes.txt"
+          "plain.txt" ],
         named entries
     )
 
@@ -207,7 +224,9 @@ let ``only the hits inside an archive whose index cannot be read are listed unve
 [<Fact>]
 let ``an archive whose index cannot be read is named once however many hits it holds`` () =
     let fs = mixed ()
-    let hits = [ archivedIn broken "" "lost.txt" File; archivedIn broken "" "other.txt" File ]
+
+    let hits =
+        [ archivedIn broken "" "lost.txt" File; archivedIn broken "" "other.txt" File ]
 
     let listing = listing fs Concealed (fromStart fs hits)
 
@@ -234,7 +253,8 @@ let ``the name a hit is shown under leads back to that hit`` () =
     let fs = mockFs ()
     let hit = hitIn "start/docs" "inner.txt"
 
-    let back = SearchListing.hitFor (fromStart fs [ hit ]) (EntryName.create (relative "docs/inner.txt"))
+    let back =
+        SearchListing.hitFor (fromStart fs [ hit ]) (EntryName.create (relative "docs/inner.txt"))
 
     Assert.Equal(Some hit, back)
 
@@ -242,6 +262,7 @@ let ``the name a hit is shown under leads back to that hit`` () =
 let ``a name that stands for no hit leads nowhere`` () =
     let fs = mockFs ()
 
-    let back = SearchListing.hitFor (fromStart fs [ hitIn "start" "notes.txt" ]) ParentName
+    let back =
+        SearchListing.hitFor (fromStart fs [ hitIn "start" "notes.txt" ]) ParentName
 
     Assert.Equal(None, back)

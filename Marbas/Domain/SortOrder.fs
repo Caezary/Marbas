@@ -10,7 +10,9 @@ type SortDirection =
     | Ascending
     | Descending
 
-type SortOrder = { Key: SortKey; Direction: SortDirection }
+type SortOrder =
+    { Key: SortKey
+      Direction: SortDirection }
 
 module SortOrder =
 
@@ -25,6 +27,7 @@ module SortOrder =
 
     let switchTo key order =
         if order.Key = key then
-            { order with Direction = reverse order.Direction }
+            { order with
+                Direction = reverse order.Direction }
         else
             create key Ascending

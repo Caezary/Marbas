@@ -94,7 +94,9 @@ let start (fs: IFileSystem) platform (request: LaunchRequest) =
 
             match Process.Start describing with
             | null -> ()
-            | child -> if describing.RedirectStandardOutput then drained child
+            | child ->
+                if describing.RedirectStandardOutput then
+                    drained child
 
             Ok()
     with ex ->

@@ -42,10 +42,8 @@ let describe error =
         $"'{FileSystemPath.value path}' cannot be run inside the archive. Unpack it first."
     | ArchiveEntryNotCut path ->
         $"'{FileSystemPath.value path}' cannot be cut from inside the archive; copy it to the clipboard instead."
-    | SymbolicLinkNotPermitted path ->
-        $"'{FileSystemPath.value path}' was not made.\n{SymbolicLinkRight}"
-    | LinkRefused(refusal, path) ->
-        $"'{FileSystemPath.value path}' was not made. {LinkRefusalMessage.describe refusal}"
+    | SymbolicLinkNotPermitted path -> $"'{FileSystemPath.value path}' was not made.\n{SymbolicLinkRight}"
+    | LinkRefused(refusal, path) -> $"'{FileSystemPath.value path}' was not made. {LinkRefusalMessage.describe refusal}"
     | NotInSearchResults refusal -> resultsRefusal refusal
     | BatchFailed reason -> $"The operation could not be completed: {reason}"
     | OperationFailed(path, reason) -> $"Could not complete '{FileSystemPath.value path}': {reason}"

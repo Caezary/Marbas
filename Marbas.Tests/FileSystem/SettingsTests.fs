@@ -164,7 +164,8 @@ let ``an association is read whatever the case its extension was written in`` ()
 
 [<Fact>]
 let ``an association written before the role existed is one for editing`` () =
-    let parsed = Settings.parse defaults [ "editor.extension.txt=notepad.exe"; "editor.default=code.exe" ]
+    let parsed =
+        Settings.parse defaults [ "editor.extension.txt=notepad.exe"; "editor.default=code.exe" ]
 
     Assert.Equal(
         ProgramPath.tryCreate "notepad.exe",
@@ -241,11 +242,14 @@ let private twoTabLines =
     [ "tab.1.left.path=" + at "backup"; "tab.2.left.path=" + at "notes" ]
 
 let private leftPaths (settings: Settings) =
-    settings.Tabs |> Zipper.items |> List.map (fun tab -> FileSystemPath.value tab.Left.Path)
+    settings.Tabs
+    |> Zipper.items
+    |> List.map (fun tab -> FileSystemPath.value tab.Left.Path)
 
 [<Fact>]
 let ``three tabs are written and read back in the order they were in`` () =
-    let third = tabOn (panelOn "notes" SortOrder.byName Shown) (panelOn "backup" SortOrder.byName Concealed) Left
+    let third =
+        tabOn (panelOn "notes" SortOrder.byName Shown) (panelOn "backup" SortOrder.byName Concealed) Left
 
     let parsed =
         { stored with
@@ -306,7 +310,8 @@ let ``a tab the file says nothing more about keeps the defaults`` () =
 
 [<Fact>]
 let ``the active side is read whatever the case, and a word that names no side keeps the default`` () =
-    let parsed = Settings.parse defaults [ "tab.1.active=RIGHT"; "tab.2.active=sideways" ]
+    let parsed =
+        Settings.parse defaults [ "tab.1.active=RIGHT"; "tab.2.active=sideways" ]
 
     Assert.Equal(Right, parsed.Active)
     Assert.Equal(Left, (Zipper.items parsed.Tabs |> List.item 1).Active)

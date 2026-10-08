@@ -21,7 +21,11 @@ Read these before starting work — they carry the context this file omits:
 ```
 dotnet build Marbas.slnx
 dotnet test Marbas.slnx
+dotnet tool restore
+dotnet fantomas Marbas Marbas.Tests
 ```
+
+CI fails on any file `dotnet fantomas --check Marbas Marbas.Tests` would change.
 
 ## Working rules
 

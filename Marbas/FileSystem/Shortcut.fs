@@ -50,8 +50,22 @@ module Shortcut =
     let private LongestShortcut = 1048576L
 
     let private shellLinkClass =
-        [| 0x01uy; 0x14uy; 0x02uy; 0x00uy; 0x00uy; 0x00uy; 0x00uy; 0x00uy
-           0xC0uy; 0x00uy; 0x00uy; 0x00uy; 0x00uy; 0x00uy; 0x00uy; 0x46uy |]
+        [| 0x01uy
+           0x14uy
+           0x02uy
+           0x00uy
+           0x00uy
+           0x00uy
+           0x00uy
+           0x00uy
+           0xC0uy
+           0x00uy
+           0x00uy
+           0x00uy
+           0x00uy
+           0x00uy
+           0x00uy
+           0x46uy |]
 
     let isShortcut (name: EntryName) =
         FileExtension.ofName name |> Option.map FileExtension.value = Some "lnk"
@@ -73,7 +87,8 @@ module Shortcut =
 
     let private holds flag (flags: int) = flags &&& flag = flag
 
-    let private isAscii (bytes: byte array) = bytes |> Array.forall (fun one -> one < 0x80uy)
+    let private isAscii (bytes: byte array) =
+        bytes |> Array.forall (fun one -> one < 0x80uy)
 
     let private asciiAt (bytes: byte array) offset =
         let terminator =
@@ -86,7 +101,11 @@ module Shortcut =
         | -1 -> None
         | ending ->
             let text = bytes[offset .. ending - 1]
-            if isAscii text then Some(Encoding.ASCII.GetString text) else None
+
+            if isAscii text then
+                Some(Encoding.ASCII.GetString text)
+            else
+                None
 
     let rec private wideEnding (bytes: byte array) offset =
         match uint16At bytes offset with
@@ -128,12 +147,16 @@ module Shortcut =
         int32At bytes (network + 8)
         |> Option.bind (fun nameAt ->
             if nameAt > WideNetworkHeaderSize then
-                int32At bytes (network + 20) |> Option.bind (fun wideNameAt -> wideAt bytes (network + wideNameAt))
+                int32At bytes (network + 20)
+                |> Option.bind (fun wideNameAt -> wideAt bytes (network + wideNameAt))
             else
                 asciiAt bytes (network + nameAt))
 
     let private underShare (share: string) (suffix: string) =
-        if suffix = "" then share else share.TrimEnd('\\') + "\\" + suffix
+        if suffix = "" then
+            share
+        else
+            share.TrimEnd('\\') + "\\" + suffix
 
     let private networkPath (bytes: byte array) start =
         option {
@@ -150,9 +173,12 @@ module Shortcut =
             let! held = int32At bytes (start + 8)
 
             let! path =
-                if holds LocalPathHeld held then localPath bytes start headerSize
-                elif holds NetworkPathHeld held then networkPath bytes start
-                else None
+                if holds LocalPathHeld held then
+                    localPath bytes start headerSize
+                elif holds NetworkPathHeld held then
+                    networkPath bytes start
+                else
+                    None
 
             return! if path = "" then None else Some path
         }
@@ -164,7 +190,10 @@ module Shortcut =
             Some HeaderSize
 
     let private stringsStart (bytes: byte array) flags start =
-        if holds HasLinkInfo flags then int32At bytes start |> Option.map ((+) start) else Some start
+        if holds HasLinkInfo flags then
+            int32At bytes start |> Option.map ((+) start)
+        else
+            Some start
 
     let private countedAt (bytes: byte array) wide offset =
         let width = if wide then 2 else 1
@@ -200,7 +229,10 @@ module Shortcut =
             let! info = infoStart bytes flags
 
             let held =
-                if holds HasLinkInfo flags then infoPath bytes info else None
+                if holds HasLinkInfo flags then
+                    infoPath bytes info
+                else
+                    None
 
             let relative () =
                 stringsStart bytes flags info

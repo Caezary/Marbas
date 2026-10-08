@@ -6,23 +6,32 @@ open Marbas.Domain
 open Marbas.State.Update
 open Marbas.Ui.Keys
 
-let private commandsOn modifiers = KeyMap.bar modifiers |> List.map _.Label
+let private commandsOn modifiers =
+    KeyMap.bar modifiers |> List.map _.Label
 
 [<Fact>]
 let ``the bar names every function key, whatever is held`` () =
     let names = KeyMap.bar (Modifiers.held [ Shift ]) |> List.map _.Name
 
-    Assert.Equal<string list>(
-        [ "F1"; "F2"; "F3"; "F4"; "F5"; "F6"; "F7"; "F8"; "F9"; "F10"; "F11"; "F12" ],
-        names
-    )
+    Assert.Equal<string list>([ "F1"; "F2"; "F3"; "F4"; "F5"; "F6"; "F7"; "F8"; "F9"; "F10"; "F11"; "F12" ], names)
 
 [<Fact>]
 let ``the bar of no modifier carries the classic commands`` () =
     let commands = commandsOn Modifiers.none
 
     Assert.Equal<string list>(
-        [ ""; "Menu"; "View"; "Edit"; "Copy"; "RenMov"; "Mkdir"; "Delete"; ""; "Quit"; "Tabs"; "Setup" ],
+        [ ""
+          "Menu"
+          "View"
+          "Edit"
+          "Copy"
+          "RenMov"
+          "Mkdir"
+          "Delete"
+          ""
+          "Quit"
+          "Tabs"
+          "Setup" ],
         commands
     )
 
@@ -37,7 +46,18 @@ let ``holding Alt puts the drive choosers on the first two slots, the link on F6
     let commands = commandsOn (Modifiers.held [ Alt ])
 
     Assert.Equal<string list>(
-        [ "Left"; "Right"; ""; ""; ""; "Link"; "Find"; "Favs"; ""; ""; "NewTab"; "History" ],
+        [ "Left"
+          "Right"
+          ""
+          ""
+          ""
+          "Link"
+          "Find"
+          "Favs"
+          ""
+          ""
+          "NewTab"
+          "History" ],
         commands
     )
 
@@ -61,13 +81,18 @@ let ``a slot carries the key the modifiers held make of its function key`` () =
 
 [<Fact>]
 let ``a slot carries what its own key stands for`` () =
-    for modifiers in [ Modifiers.none; Modifiers.held [ Ctrl ]; Modifiers.held [ Alt ]; Modifiers.held [ Shift ] ] do
+    for modifiers in
+        [ Modifiers.none
+          Modifiers.held [ Ctrl ]
+          Modifiers.held [ Alt ]
+          Modifiers.held [ Shift ] ] do
         for slot in KeyMap.bar modifiers do
             Assert.Equal(KeyMap.messageFor slot.Key, slot.Message)
 
 [<Fact>]
 let ``a slot with no command carries no message`` () =
-    let unlabelled = KeyMap.bar Modifiers.none |> List.filter (fun slot -> slot.Label = "")
+    let unlabelled =
+        KeyMap.bar Modifiers.none |> List.filter (fun slot -> slot.Label = "")
 
     Assert.NotEmpty unlabelled
     Assert.All(unlabelled, fun slot -> Assert.Equal(None, slot.Message))
@@ -634,4 +659,11 @@ let ``the user menu is edited on the keys P17.2 found reaching a dialog with a l
           KeyMap.userMenuEarlierKey
           KeyMap.userMenuLaterKey ]
 
-    Assert.Equal<Key list>([ Key.InsertChar; Key.F4; Key.Delete; Key.CursorUp.WithCtrl; Key.CursorDown.WithCtrl ], keys)
+    Assert.Equal<Key list>(
+        [ Key.InsertChar
+          Key.F4
+          Key.Delete
+          Key.CursorUp.WithCtrl
+          Key.CursorDown.WithCtrl ],
+        keys
+    )

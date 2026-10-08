@@ -70,7 +70,10 @@ let private adding piece reading =
     let word = started reading
 
     { reading with
-        Current = Some { word with Pieces = piece :: word.Pieces } }
+        Current =
+            Some
+                { word with
+                    Pieces = piece :: word.Pieces } }
 
 let private flipped quotes =
     match quotes with
@@ -79,7 +82,10 @@ let private flipped quotes =
 
 let private toggled reading =
     { reading with
-        Current = Some { started reading with Quoting = Quoted }
+        Current =
+            Some
+                { started reading with
+                    Quoting = Quoted }
         Quotes = flipped reading.Quotes }
 
 let private ended reading =
@@ -87,7 +93,10 @@ let private ended reading =
     | None -> reading
     | Some word ->
         { reading with
-            Done = { word with Pieces = List.rev word.Pieces } :: reading.Done
+            Done =
+                { word with
+                    Pieces = List.rev word.Pieces }
+                :: reading.Done
             Current = None }
 
 let rec private read active reading chars =
@@ -97,14 +106,19 @@ let rec private read active reading chars =
     | blank :: rest, OutsideQuotes when Char.IsWhiteSpace blank -> read active (ended reading) rest
     | '%' :: '%' :: rest, _ -> read active (adding (Typed "%") reading) rest
     | '%' :: 'f' :: rest, _ -> read active (adding (Slot ListFilePath) reading) rest
-    | '%' :: SideLetter side :: PickLetter pick :: rest, _ -> read active (adding (Slot(Picked(pick, side))) reading) rest
+    | '%' :: SideLetter side :: PickLetter pick :: rest, _ ->
+        read active (adding (Slot(Picked(pick, side))) reading) rest
     | '%' :: PickLetter pick :: rest, _ -> read active (adding (Slot(Picked(pick, active))) reading) rest
     | letter :: rest, _ -> read active (adding (Typed(string letter)) reading) rest
 
 let private words active line =
     CommandLine.value line
     |> List.ofSeq
-    |> read active { Done = []; Current = None; Quotes = OutsideQuotes }
+    |> read
+        active
+        { Done = []
+          Current = None
+          Quotes = OutsideQuotes }
 
 let private archivePlaceOf (panel: PanelState) (entry: Entry) =
     match PanelState.hitAt panel entry with
@@ -150,7 +164,10 @@ let private picked fs side panel pick =
         underCursor side panel
         |> Result.bind (outsideArchive fs panel)
         |> Result.map (fun entry -> [ EntryName.value (ownEntry panel entry).Name ])
-    | CursorPath -> underCursor side panel |> Result.bind (entryPath fs panel) |> Result.map List.singleton
+    | CursorPath ->
+        underCursor side panel
+        |> Result.bind (entryPath fs panel)
+        |> Result.map List.singleton
     | ChosenPaths -> chosen fs side panel
     | PanelDirectory -> panelDirectory fs side panel |> Result.map List.singleton
 

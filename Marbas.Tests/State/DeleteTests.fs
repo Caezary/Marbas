@@ -29,7 +29,10 @@ let private started () =
     let fs = mockFs ()
     fs, loaded fs
 
-let private targetNames (state: AppState) = PanelState.operationTargets state.Left |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+let private targetNames (state: AppState) =
+    PanelState.operationTargets state.Left
+    |> Seq.map (_.Name >> EntryName.value)
+    |> List.ofSeq
 
 let private deleted (fs: IFileSystem) state =
     let results = operationPaths fs (panel Left state) |> deleteAll fs unattended
@@ -99,6 +102,7 @@ let ``every marked entry is deleted and reported`` () =
           Operations.ItemOnDisk(fp (at "start/readme.txt")) ],
         results |> List.map _.Source
     )
+
     Assert.All(results, fun item -> Assert.Equal(Ok(), item.Outcome))
     Assert.False(fs.File.Exists(at "start/notes.txt"))
     Assert.False(fs.File.Exists(at "start/readme.txt"))

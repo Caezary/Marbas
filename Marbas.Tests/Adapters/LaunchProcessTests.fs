@@ -22,7 +22,12 @@ let ``a directory on Unix is handed to the desktop's opener rather than run`` ()
     let fs = MockFileSystem()
     fs.AddDirectory(at "media/stick")
 
-    let described = LaunchProcess.describe fs Unix { elevating (at "media/stick") with Elevation = AsUser }
+    let described =
+        LaunchProcess.describe
+            fs
+            Unix
+            { elevating (at "media/stick") with
+                Elevation = AsUser }
 
     let start = Expect.ok described
     Assert.Equal(LaunchProcess.DesktopOpener, start.FileName)
@@ -30,6 +35,7 @@ let ``a directory on Unix is handed to the desktop's opener rather than run`` ()
 
 [<Fact>]
 let ``a Unix system has no administrator rights to ask for, and says so`` () =
-    let outcome = LaunchProcess.start (MockFileSystem()) Unix (elevating (at "start/tool"))
+    let outcome =
+        LaunchProcess.start (MockFileSystem()) Unix (elevating (at "start/tool"))
 
     Assert.Equal(Error(LaunchRefused(fp (at "start/tool"), LaunchProcess.ElevationUnavailable)), outcome)

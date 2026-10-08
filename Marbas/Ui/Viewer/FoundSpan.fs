@@ -29,6 +29,9 @@ module FoundSpan =
         && span.From < row.From + row.Text.Length
 
     let leftShowing left width (span: FoundSpan) =
-        if span.From < left then span.From
-        elif span.Until > left + width then min span.From (span.Until - width)
-        else left
+        if span.From < left then
+            span.From
+        elif span.Until > left + width then
+            min span.From (span.Until - width)
+        else
+            left

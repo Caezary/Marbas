@@ -124,8 +124,7 @@ let private input remembered id y =
 let private checking (box, x, y) =
     new CheckBox(X = Pos.Absolute x, Y = Pos.Absolute y, Height = 1, Id = boxId box, Text = boxLabel box)
 
-let field (dialog: Dialog) id =
-    SubView.byId<TextField> id dialog
+let field (dialog: Dialog) id = SubView.byId<TextField> id dialog
 
 let selector (dialog: Dialog) =
     SubView.byId<OptionSelector> ScopeId dialog
@@ -148,8 +147,7 @@ let create
     (masksBefore: string list)
     (textsBefore: string list)
     =
-    let dialog =
-        new FindView(count, Title = Title, Width = Width, Height = Height)
+    let dialog = new FindView(count, Title = Title, Width = Width, Height = Height)
 
     DialogStyle.dress dialog |> ignore
 
@@ -214,7 +212,11 @@ let private query (dialog: FindView) =
       Scope = chosenScope dialog
       Hidden = if ticked dialog HiddenBox then Shown else Concealed
       Links = if ticked dialog LinksBox then FollowLinks else StopAtLinks
-      Archives = if ticked dialog ArchivesBox then SearchArchives else SkipArchives }
+      Archives =
+        if ticked dialog ArchivesBox then
+            SearchArchives
+        else
+            SkipArchives }
 
 let choice (dialog: FindView) =
     match dialog.Reopening, dialog.Canceled with

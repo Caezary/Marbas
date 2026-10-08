@@ -28,7 +28,9 @@ let private windowWith (fs: Fakes.MountedFileSystem) chooseDrive reportError =
 let private silent = ignore<Ports.ErrorReport>
 
 let private offeredRoots (offered: ResizeArray<DriveRow list>) =
-    offered |> Seq.map (List.map (DriveRow.root >> FileSystemPath.value)) |> List.ofSeq
+    offered
+    |> Seq.map (List.map (DriveRow.root >> FileSystemPath.value))
+    |> List.ofSeq
 
 [<Fact>]
 let ``alt+F1 opens the chosen root in the left panel`` () =
@@ -97,7 +99,10 @@ let ``a drive handed over opens outside and moves neither panel`` () =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
                 Prompts.ChooseDrive = fun _ -> Some(HandOver stick)
-                Processes.Launch = fun request -> started.Add request; Ok() }
+                Processes.Launch =
+                    fun request ->
+                        started.Add request
+                        Ok() }
 
     press (leftList window) KeyMap.rightRootKey
 
@@ -117,7 +122,9 @@ let ``cancelling the chooser leaves both panels untouched`` () =
 [<Fact>]
 let ``a root that cannot be read is reported and the panel stays put`` () =
     let reported = ResizeArray<string>()
-    use window = windowWith (chooserFs ()) (Fakes.choosingDrive (at "gone")) (fun report -> reported.Add report.Message)
+
+    use window =
+        windowWith (chooserFs ()) (Fakes.choosingDrive (at "gone")) (fun report -> reported.Add report.Message)
 
     press (leftList window) KeyMap.leftRootKey
 

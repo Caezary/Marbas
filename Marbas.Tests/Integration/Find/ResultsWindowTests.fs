@@ -34,10 +34,16 @@ let private hitIn where name =
     { Location = OnDisk(fp (at where))
       Entry = file name }
 
-let private counts files = { Files = files; Directories = 0; Skipped = 0 }
+let private counts files =
+    { Files = files
+      Directories = 0
+      Skipped = 0 }
 
 let private arriving hits =
-    hits |> List.mapi (fun index hit -> { Hit = hit; Counts = counts (index + 1) })
+    hits
+    |> List.mapi (fun index hit ->
+        { Hit = hit
+          Counts = counts (index + 1) })
 
 let private query =
     { What = FindWhat.create (NameMasks.read "*.txt") None FilesOnly
@@ -51,14 +57,18 @@ let private ground =
       OtherRoots = [] }
 
 let private running view stop close =
-    let window = ResultsWindow.create (MockFileSystem()) (Walk(query, ground)) view stop close
+    let window =
+        ResultsWindow.create (MockFileSystem()) (Walk(query, ground)) view stop close
+
     window.BeginInit()
     window.EndInit()
     window.Layout(Size(80, 24)) |> ignore
     window
 
 let private reopening results gone =
-    let window = ResultsWindow.create (MockFileSystem()) (Reopen(results, gone)) ignore ignore ignore
+    let window =
+        ResultsWindow.create (MockFileSystem()) (Reopen(results, gone)) ignore ignore ignore
+
     window.BeginInit()
     window.EndInit()
     window.Layout(Size(80, 24)) |> ignore
@@ -84,7 +94,15 @@ let private tickingOneByOne window hits =
     hits |> List.iter (fun hit -> ResultsWindow.add window (arriving [ hit ]))
 
 let private nineMore =
-    [ "b.txt"; "c.txt"; "d.txt"; "e.txt"; "f.txt"; "g.txt"; "h.txt"; "i.txt"; "j.txt" ]
+    [ "b.txt"
+      "c.txt"
+      "d.txt"
+      "e.txt"
+      "f.txt"
+      "g.txt"
+      "h.txt"
+      "i.txt"
+      "j.txt" ]
     |> List.map (hitIn "start")
 
 let private summary window = (ResultsWindow.summary window).Text
@@ -124,7 +142,12 @@ let ``a finished walk says so with the counts it answered`` () =
     use window = laidOut ()
     ResultsWindow.add window (arriving [ hitIn "start" "a.txt" ])
 
-    ResultsWindow.finish window (Finished { Files = 1; Directories = 0; Skipped = 2 })
+    ResultsWindow.finish
+        window
+        (Finished
+            { Files = 1
+              Directories = 0
+              Skipped = 2 })
 
     Assert.Equal("Finished — 1 file, 0 directories, 2 skipped", summary window)
 
@@ -198,7 +221,10 @@ let ``a step of the walk leaves the rows alone`` () =
 let ``Esc stops a running walk and leaves the window up`` () =
     let stopped = ref 0
     let closed = ref 0
-    use window = showing (fun () -> stopped.Value <- stopped.Value + 1) (fun _ -> closed.Value <- closed.Value + 1)
+
+    use window =
+        showing (fun () -> stopped.Value <- stopped.Value + 1) (fun _ -> closed.Value <- closed.Value + 1)
+
     ResultsWindow.walking window (at "start")
 
     press (ResultsWindow.list window) Key.Esc
@@ -210,7 +236,10 @@ let ``Esc stops a running walk and leaves the window up`` () =
 let ``a second Esc closes the window over what was found`` () =
     let stopped = ref 0
     let closed = ref 0
-    use window = showing (fun () -> stopped.Value <- stopped.Value + 1) (fun _ -> closed.Value <- closed.Value + 1)
+
+    use window =
+        showing (fun () -> stopped.Value <- stopped.Value + 1) (fun _ -> closed.Value <- closed.Value + 1)
+
     ResultsWindow.walking window (at "start")
     press (ResultsWindow.list window) Key.Esc
 
@@ -223,7 +252,10 @@ let ``a second Esc closes the window over what was found`` () =
 let ``Esc closes a walk that finished on its own at once`` () =
     let stopped = ref 0
     let closed = ref 0
-    use window = showing (fun () -> stopped.Value <- stopped.Value + 1) (fun _ -> closed.Value <- closed.Value + 1)
+
+    use window =
+        showing (fun () -> stopped.Value <- stopped.Value + 1) (fun _ -> closed.Value <- closed.Value + 1)
+
     ResultsWindow.finish window (Finished(counts 1))
 
     press (ResultsWindow.list window) Key.Esc
@@ -248,7 +280,9 @@ let ``the list, the summary and the key bar divide the screen between them`` () 
 let ``the key bar says which key leaves the results`` () =
     use window = laidOut ()
 
-    let labels = Marbas.Ui.Keys.FunctionKeyBar.slots (ResultsWindow.keyBar window) |> List.map _.CommandName.Text
+    let labels =
+        Marbas.Ui.Keys.FunctionKeyBar.slots (ResultsWindow.keyBar window)
+        |> List.map _.CommandName.Text
 
     Assert.Equal<string list>(FindKeys.bar, labels)
     Assert.Equal("Quit", labels |> List.item 9)
@@ -257,7 +291,10 @@ let private viewing (seen: ResizeArray<FindHit>) = watching seen.Add ignore igno
 
 let private directoryIn where name =
     { Location = OnDisk(fp (at where))
-      Entry = { file name with Kind = Directory; Size = None } }
+      Entry =
+        { file name with
+            Kind = Directory
+            Size = None } }
 
 [<Fact>]
 let ``F3 on a file hit views it`` () =
@@ -327,8 +364,7 @@ let ``the panel key answers with the whole list and closes the window`` () =
     Assert.Equal(1, closed.Value)
 
 [<Fact>]
-let ``the panel key names itself in the bar`` () =
-    Assert.Equal("Panel", FindKeys.bar[1])
+let ``the panel key names itself in the bar`` () = Assert.Equal("Panel", FindKeys.bar[1])
 
 [<Fact>]
 let ``a window left by Esc answers no landing at all`` () =
@@ -360,7 +396,8 @@ let private lastResults hits cursor =
 
 [<Fact>]
 let ``a reopened window shows what was found before`` () =
-    use window = reopening (lastResults [ hitIn "start" "a.txt"; hitIn "start" "b.txt" ] 0) 0
+    use window =
+        reopening (lastResults [ hitIn "start" "a.txt"; hitIn "start" "b.txt" ] 0) 0
 
     let shown = lines window
 
@@ -386,7 +423,8 @@ let ``a reopened window counts the hits that are gone`` () =
 
 [<Fact>]
 let ``a reopened window comes back on the row the cursor left`` () =
-    use window = reopening (lastResults [ hitIn "start" "a.txt"; hitIn "start" "b.txt" ] 2) 0
+    use window =
+        reopening (lastResults [ hitIn "start" "a.txt"; hitIn "start" "b.txt" ] 2) 0
 
     Assert.Equal(Nullable 2, (ResultsWindow.list window).SelectedItem)
 

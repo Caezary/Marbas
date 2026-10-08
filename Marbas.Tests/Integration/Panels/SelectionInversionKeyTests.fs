@@ -18,14 +18,16 @@ let private mockFs () =
     fs.AddFile(at "start/readme.txt", MockFileData "hi")
     fs
 
-let private window () = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
+let private window () =
+    focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
 
 let private markedRows (list: ListView) =
     [ for i in 0 .. list.Source.Count - 1 do
           if list.Source.IsMarked i then
               (string (list.Source.ToList()[i])).Split(' ').[0] ]
 
-let private footerOf window = (FilePanel.footer (panel FilePanel.LeftId window)).Text
+let private footerOf window =
+    (FilePanel.footer (panel FilePanel.LeftId window)).Text
 
 [<Fact>]
 let ``a bare star inverts the marks instead of opening the search`` () =

@@ -14,7 +14,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private pattern raw = NamePattern.tryCreate raw |> Expect.some
+let private pattern raw =
+    NamePattern.tryCreate raw |> Expect.some
 
 let private mockFs () =
     let fs = MockFileSystem()
@@ -26,7 +27,8 @@ let private mockFs () =
     fs
 
 let private sending (fs: IFileSystem) messages state =
-    messages |> List.fold (fun current message -> step fs message current |> fst) state
+    messages
+    |> List.fold (fun current message -> step fs message current |> fst) state
 
 let private loaded (fs: IFileSystem) =
     create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
@@ -107,7 +109,9 @@ let ``a second step back goes forward to the marks the command made`` (command: 
 [<Fact>]
 let ``with nothing to take back a step back changes nothing`` () =
     let fs = mockFs ()
-    let state = loaded fs |> sending fs [ onSetup; SelectionToggled Downward; CopyRequested ]
+
+    let state =
+        loaded fs |> sending fs [ onSetup; SelectionToggled Downward; CopyRequested ]
 
     let recalled = sending fs [ MarksRecalled ] state
 
@@ -178,7 +182,11 @@ let ``each panel keeps its own marks to go back to`` () =
         textMarked fs
         |> loadPanel fs Right (fp (at "start"))
         |> Expect.ok
-        |> sending fs [ PanelFocused Right; PatternEntered(Select, pattern "*.fs"); PanelFocused Left ]
+        |> sending
+            fs
+            [ PanelFocused Right
+              PatternEntered(Select, pattern "*.fs")
+              PanelFocused Left ]
 
     let recalled = sending fs [ MarksRecalled ] state
 

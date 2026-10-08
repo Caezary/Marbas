@@ -15,5 +15,6 @@ let private fallback platform =
 
 let choose (configured: string option) platform =
     match configured |> Option.map _.Trim() with
-    | Some "" | None -> fallback platform
+    | Some ""
+    | None -> fallback platform
     | Some editor -> editor

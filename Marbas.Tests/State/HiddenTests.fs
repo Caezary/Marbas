@@ -95,7 +95,10 @@ let ``concealing an entry drops its mark`` () =
     let fs = mockFs ()
 
     let state =
-        toggleHidden fs Left (both fs) |> Expect.ok |> setCursor Left 2 |> toggleSelection Left
+        toggleHidden fs Left (both fs)
+        |> Expect.ok
+        |> setCursor Left 2
+        |> toggleSelection Left
 
     let toggled = toggleHidden fs Left state |> Expect.ok
 

@@ -17,7 +17,8 @@ let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private sources = [ fp (at "work/notes.txt"); fp (at "work/docs") ]
 
@@ -80,10 +81,7 @@ let ``a kind that can be created takes a tree and gives it back`` extension =
     Assert.Equal("notes", fs.File.ReadAllText(at "out/notes.txt"))
     Assert.Equal("inner", fs.File.ReadAllText(at "out/docs/inner.txt"))
 
-    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>(
-        [ "notes.txt", Ok(); "docs", Ok() ],
-        results
-    )
+    Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "notes.txt", Ok(); "docs", Ok() ], results)
 
 [<Theory>]
 [<InlineData("zip")>]
@@ -120,7 +118,8 @@ let ``a kind that can be changed keeps what it already held`` extension =
     |> Expect.ok
     |> ignore
 
-    use source = FileWindow.openEntry fs None archive (inside "docs/inner.txt") |> Expect.ok
+    use source =
+        FileWindow.openEntry fs None archive (inside "docs/inner.txt") |> Expect.ok
 
     Assert.Equal<string list>([ "added.txt"; "inner.txt" ], names fs archive (inside "docs"))
     Assert.Equal("inner", System.Text.Encoding.ASCII.GetString(source.Read(0L, 5)))
@@ -222,7 +221,6 @@ let ``a kind that can be changed takes a directory of its own`` extension =
     let archive = fp (at $"start/data.{extension}")
     packed fs archive
 
-    Archive.makeEntryDirectory fs archive ArchivePath.root (en "fresh")
-    |> Expect.ok
+    Archive.makeEntryDirectory fs archive ArchivePath.root (en "fresh") |> Expect.ok
 
     Assert.Equal<string list>([ "docs"; "fresh"; "notes.txt" ], names fs archive ArchivePath.root)

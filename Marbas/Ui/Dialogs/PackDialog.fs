@@ -54,8 +54,7 @@ let private selecting id x labels chosenIndex =
     selector
 
 let create (retarget: ArchiveFormat -> string -> string) (remembered: string list) (suggestion: string) =
-    let dialog =
-        new Dialog(Title = Title, Width = 64, Height = 14) |> DialogStyle.dress
+    let dialog = new Dialog(Title = Title, Width = 64, Height = 14) |> DialogStyle.dress
 
     let target = HistoryField.amongOthers remembered suggestion
     target.X <- 1
@@ -104,11 +103,9 @@ let create (retarget: ArchiveFormat -> string -> string) (remembered: string lis
     dialog.AddButton(DialogStyle.button "_Ok")
     dialog
 
-let field (dialog: Dialog) id =
-    SubView.byId<TextField> id dialog
+let field (dialog: Dialog) id = SubView.byId<TextField> id dialog
 
-let selector (dialog: Dialog) id =
-    SubView.byId<OptionSelector> id dialog
+let selector (dialog: Dialog) id = SubView.byId<OptionSelector> id dialog
 
 let choice (dialog: Dialog) =
     if dialog.Canceled then

@@ -11,7 +11,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private zip = ArchiveFormat.tryCreate Zip |> Expect.some
 
@@ -37,6 +38,7 @@ let private packed () =
 
     Archive.write fs Operations.unattended request [ fp (at "data/a.txt"); fp (at "data/docs") ]
     |> ignore
+
     fs
 
 let private measured (fs: IFileSystem) location =
@@ -74,7 +76,8 @@ let ``every directory below is reported as it is entered`` () =
     let fs = tree ()
     let reported = ResizeArray<FileSystemPath>()
 
-    DirectoryMeasure.measure fs (recording reported) (OnDisk(fp (at "data"))) |> ignore
+    DirectoryMeasure.measure fs (recording reported) (OnDisk(fp (at "data")))
+    |> ignore
 
     Assert.Equal<string list>(
         [ at "data"; at "data/docs"; at "data/docs/deep"; at "data/docs/empty" ],
@@ -182,7 +185,8 @@ let private watched () =
 let ``measuring a tree enumerates each directory once`` () =
     let fs = watched ()
 
-    DirectoryMeasure.measure fs Operations.unattended (OnDisk(fp (at "work"))) |> ignore
+    DirectoryMeasure.measure fs Operations.unattended (OnDisk(fp (at "work")))
+    |> ignore
 
     Assert.Equal(3, fs.Enumerations)
 
@@ -190,6 +194,7 @@ let ``measuring a tree enumerates each directory once`` () =
 let ``measuring a tree asks nothing about an entry it enumerated`` () =
     let fs = watched ()
 
-    DirectoryMeasure.measure fs Operations.unattended (OnDisk(fp (at "work"))) |> ignore
+    DirectoryMeasure.measure fs Operations.unattended (OnDisk(fp (at "work")))
+    |> ignore
 
     Assert.Equal(0, fs.AskedAbout(at "work/docs/inner.txt"))

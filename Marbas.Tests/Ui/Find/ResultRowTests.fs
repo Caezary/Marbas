@@ -47,7 +47,9 @@ let ``nothing found is no rows at all`` () =
 [<Fact>]
 let ``the hits of one directory stand under one header`` () =
     let rows =
-        rowsOf [ hitIn (onDisk "start") (file "a.txt" 1L); hitIn (onDisk "start") (file "b.txt" 2L) ]
+        rowsOf
+            [ hitIn (onDisk "start") (file "a.txt" 1L)
+              hitIn (onDisk "start") (file "b.txt" 2L) ]
 
     Assert.Equal<ResultRow.ResultRow list>(
         [ ResultRow.GroupHeader(onDisk "start")
@@ -128,7 +130,9 @@ let ``a header spells the directory its hits live in`` () =
 [<Fact>]
 let ``a header inside an archive spells the level as a path`` () =
     let fs = MockFileSystem()
-    let level = InArchive(fp (at "start/backup.zip"), ArchivePath.child ArchivePath.root (EntryName.create "docs"))
+
+    let level =
+        InArchive(fp (at "start/backup.zip"), ArchivePath.child ArchivePath.root (EntryName.create "docs"))
 
     let line = ResultRow.describe fs 60 (ResultRow.GroupHeader level)
 
@@ -138,7 +142,8 @@ let ``a header inside an archive spells the level as a path`` () =
 let ``a hit stands indented under its header, with its size and its date`` () =
     let fs = MockFileSystem()
 
-    let line = ResultRow.describe fs 60 (ResultRow.Hit(hitIn (onDisk "start") (file "notes.txt" 1024L)))
+    let line =
+        ResultRow.describe fs 60 (ResultRow.Hit(hitIn (onDisk "start") (file "notes.txt" 1024L)))
 
     Assert.StartsWith("  notes.txt", line)
     Assert.EndsWith("2026-09-18 14:30", line)

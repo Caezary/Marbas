@@ -103,7 +103,9 @@ let ``the question names the path it will add`` () =
 
 [<Fact>]
 let ``a level inside an archive is named as the archive's path and the level`` () =
-    let place = Place.InArchive(fp (at "backup.zip"), Expect.some (ArchivePath.tryCreate "docs/2024"))
+    let place =
+        Place.InArchive(fp (at "backup.zip"), Expect.some (ArchivePath.tryCreate "docs/2024"))
+
     use dialog = laidOutOn 80 place
 
     let question = (KeepFavoriteDialog.question dialog).Text
@@ -118,7 +120,11 @@ let ``the question fits inside the frame on one line`` () =
 
     Assert.Equal(question.Text.Length, question.Frame.Width)
     Assert.Equal(1, question.Frame.Height)
-    Assert.True(question.Frame.Right <= dialog.Viewport.Width, $"the question at %A{question.Frame} runs past the frame")
+
+    Assert.True(
+        question.Frame.Right <= dialog.Viewport.Width,
+        $"the question at %A{question.Frame} runs past the frame"
+    )
 
 [<Fact>]
 let ``a path too long for the screen is shortened in the middle and the popup stays on it`` () =

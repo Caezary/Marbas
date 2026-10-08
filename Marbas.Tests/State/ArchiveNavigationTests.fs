@@ -18,9 +18,11 @@ let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
-let private names panel = panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+let private names panel =
+    panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private cursorName panel =
     PanelState.cursorEntry panel |> Option.map (_.Name >> EntryName.value)
@@ -56,7 +58,11 @@ let ``a level deeper still is walked into`` () =
     let fs = packed ()
 
     let entered =
-        standingInside fs Left |> setCursor Left 1 |> opened fs |> setCursor Left 1 |> opened fs
+        standingInside fs Left
+        |> setCursor Left 1
+        |> opened fs
+        |> setCursor Left 1
+        |> opened fs
 
     Assert.Equal(InArchive(archive, inside "docs/deep"), entered.Left.Path)
     Assert.Equal<string list>([ ".."; "leaf.txt" ], names entered.Left)
@@ -65,7 +71,12 @@ let ``a level deeper still is walked into`` () =
 let ``the way out of a level leads to the one above it with the cursor on the level left`` () =
     let fs = packed ()
 
-    let left = standingInside fs Left |> setCursor Left 1 |> opened fs |> setCursor Left 0 |> opened fs
+    let left =
+        standingInside fs Left
+        |> setCursor Left 1
+        |> opened fs
+        |> setCursor Left 0
+        |> opened fs
 
     Assert.Equal(InArchive(archive, ArchivePath.root), left.Left.Path)
     Assert.Equal(Some "docs", cursorName left.Left)
@@ -142,7 +153,13 @@ let ``the file under the cursor inside an archive is viewed out of it`` () =
     let result = update fs ViewRequested state
 
     Assert.Equal<Effect list>(
-        [ ChangeHistory(Remember(Opened { Where = Place.InArchive(archive, inside "notes.txt"); How = Viewed }))
+        [ ChangeHistory(
+              Remember(
+                  Opened
+                      { Where = Place.InArchive(archive, inside "notes.txt")
+                        How = Viewed }
+              )
+          )
           ViewArchiveEntry(archive, inside "notes.txt") ],
         result.Effects
     )
@@ -173,7 +190,9 @@ let ``a marked entry inside an archive keeps its mark through a re-read`` () =
 [<Fact>]
 let ``up one level inside an archive goes to the level above with the cursor on the level left`` () =
     let fs = packed ()
-    let state = standingInside fs Left |> setCursor Left 1 |> opened fs |> setCursor Left 2
+
+    let state =
+        standingInside fs Left |> setCursor Left 1 |> opened fs |> setCursor Left 2
 
     let up = upOneLevel fs state |> Expect.ok
 

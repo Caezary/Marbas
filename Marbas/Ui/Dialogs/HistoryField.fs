@@ -26,7 +26,9 @@ let private activeList (app: IApplication) =
 
 let private listOf (app: IApplication) (field: View) =
     activeList app
-    |> Option.exists (fun active -> shownFor active |> Option.exists (fun shown -> obj.ReferenceEquals(shown, field)))
+    |> Option.exists (fun active ->
+        shownFor active
+        |> Option.exists (fun shown -> obj.ReferenceEquals(shown, field)))
 
 let private listShown (field: DropDownList) =
     match field.App with

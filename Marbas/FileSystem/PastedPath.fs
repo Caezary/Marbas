@@ -10,7 +10,10 @@ let private quotes = [ '"'; '\'' ]
 let private breaksALine (text: string) = text.IndexOfAny [| '\n'; '\r' |] >= 0
 
 let private unquoted (text: string) =
-    match quotes |> List.tryFind (fun quote -> text.Length >= 2 && text[0] = quote && text[text.Length - 1] = quote) with
+    match
+        quotes
+        |> List.tryFind (fun quote -> text.Length >= 2 && text[0] = quote && text[text.Length - 1] = quote)
+    with
     | Some _ -> text.Substring(1, text.Length - 2).Trim()
     | None -> text
 
@@ -39,7 +42,8 @@ let private isSeparator platform (character: char) =
     | Unix -> character = '/'
 
 let private withHome platform (variable: string -> string option) (text: string) =
-    let leadsHome = text = "~" || (text.Length > 1 && text[0] = '~' && isSeparator platform text[1])
+    let leadsHome =
+        text = "~" || (text.Length > 1 && text[0] = '~' && isSeparator platform text[1])
 
     match leadsHome, variable (homeVariable platform) with
     | true, Some home -> home + text.Substring 1
@@ -52,7 +56,12 @@ let private variablePattern platform =
 
 let private withVariables platform (variable: string -> string option) (text: string) =
     let expanded (found: Match) =
-        let name = if found.Groups[1].Success then found.Groups[1].Value else found.Groups[2].Value
+        let name =
+            if found.Groups[1].Success then
+                found.Groups[1].Value
+            else
+                found.Groups[2].Value
+
         variable name |> Option.defaultValue found.Value
 
     (variablePattern platform).Replace(text, MatchEvaluator expanded)
@@ -67,7 +76,8 @@ let private holdsNoInvalidCharacter (fs: IFileSystem) (text: string) =
     text.IndexOfAny(fs.Path.GetInvalidPathChars()) < 0
 
 let private trimmedEnd (fs: IFileSystem) (path: FileSystemPath) =
-    fs.Path.TrimEndingDirectorySeparator(FileSystemPath.value path) |> FileSystemPath.create
+    fs.Path.TrimEndingDirectorySeparator(FileSystemPath.value path)
+    |> FileSystemPath.create
 
 let read (fs: IFileSystem) (variable: string -> string option) (directory: FileSystemPath) (text: string) =
     let platform = FileSystemPath.platformOf fs

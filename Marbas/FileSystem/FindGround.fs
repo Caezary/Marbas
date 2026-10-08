@@ -25,7 +25,9 @@ let private onDisk paths = paths |> List.map OnDisk
 let resolve (fs: IFileSystem) location marked onPath scope =
     match scope with
     | FromDirectory
-    | DirectoryOnly -> { Roots = [ location ]; OtherRoots = [] }
+    | DirectoryOnly ->
+        { Roots = [ location ]
+          OtherRoots = [] }
     | MarkedDirectories -> { Roots = marked; OtherRoots = [] }
     | FromVolumeRoot ->
         let start = PanelLocation.holding fs location
@@ -37,4 +39,6 @@ let resolve (fs: IFileSystem) location marked onPath scope =
     | AllDrives ->
         { Roots = allRoots fs |> onDisk
           OtherRoots = [] }
-    | PathDirectories -> { Roots = onPath |> onDisk; OtherRoots = [] }
+    | PathDirectories ->
+        { Roots = onPath |> onDisk
+          OtherRoots = [] }

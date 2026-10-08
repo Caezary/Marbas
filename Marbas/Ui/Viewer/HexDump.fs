@@ -58,5 +58,8 @@ let bytesAt (source: FileWindow.Source) (row: int) =
         None
     else
         let before = int (min offset (int64 RowBytes.Context))
-        let window = source.Read(offset - int64 before, before + BytesPerLine + RowBytes.Context)
+
+        let window =
+            source.Read(offset - int64 before, before + BytesPerLine + RowBytes.Context)
+
         Some(RowBytes.within window before BytesPerLine)

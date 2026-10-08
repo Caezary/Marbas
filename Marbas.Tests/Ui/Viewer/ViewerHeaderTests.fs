@@ -36,13 +36,22 @@ let ``lines are counted from one`` () =
 
 [<Fact>]
 let ``in hex the place is an offset, not a line`` () =
-    let shown = describe 80 { bar with Mode = HexMode; Place = AtOffset 41408L }
+    let shown =
+        describe
+            80
+            { bar with
+                Mode = HexMode
+                Place = AtOffset 41408L }
 
     Assert.EndsWith("Hex  UTF-8  12,480 B  000000A1C0  47%", shown)
 
 [<Fact>]
 let ``a name too long for the bar keeps its end`` () =
-    let shown = describe 60 { bar with Name = at "start/a/very/deeply/nested/place/of/its/own/notes.txt" }
+    let shown =
+        describe
+            60
+            { bar with
+                Name = at "start/a/very/deeply/nested/place/of/its/own/notes.txt" }
 
     Assert.Equal(60, shown.Length)
     Assert.Contains(Ellipsis, shown)

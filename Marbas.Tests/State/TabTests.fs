@@ -20,7 +20,8 @@ let private mockFs () =
     fs.AddFile(at "start/readme.txt", MockFileData "hi")
     fs :> IFileSystem
 
-let private opened side path fs state = loadPanel fs side path state |> Expect.ok
+let private opened side path fs state =
+    loadPanel fs side path state |> Expect.ok
 
 let private started (fs: IFileSystem) =
     create (fp (at "start"))
@@ -54,6 +55,7 @@ let ``opening a tab clones the panels of the current one and makes it current`` 
     Assert.Equal(1, Zipper.position twoTabs.Tabs)
     Assert.Equal(state.Left.Path, twoTabs.Left.Path)
     Assert.Equal(state.Right.Path, twoTabs.Right.Path)
+
     Assert.Equal<string list>(
         state.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq,
         twoTabs.Left.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq

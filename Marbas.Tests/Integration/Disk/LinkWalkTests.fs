@@ -14,7 +14,10 @@ let private looped () =
     scratch.Directory "data/docs"
     scratch.Directory "backup"
     scratch.File "data/docs/inner.txt" "inner"
-    Directory.CreateSymbolicLink(scratch.At "data/docs/loop", scratch.At "data") |> ignore
+
+    Directory.CreateSymbolicLink(scratch.At "data/docs/loop", scratch.At "data")
+    |> ignore
+
     scratch
 
 let private disk = FileSystem() :> IFileSystem
@@ -33,7 +36,9 @@ let ``enumerating a directory link walks into what it points at`` () =
 [<SymbolicLinkFact>]
 let ``deleting a directory recursively leaves what a link inside it points at`` () =
     use scratch = looped ()
-    Directory.CreateSymbolicLink(scratch.At "backup/twin", scratch.At "data/docs") |> ignore
+
+    Directory.CreateSymbolicLink(scratch.At "backup/twin", scratch.At "data/docs")
+    |> ignore
 
     Directory.Delete(scratch.At "backup", true)
 
@@ -69,7 +74,9 @@ let ``measuring a tree holding a link to its own ancestor terminates`` () =
 [<SymbolicLinkFact>]
 let ``deleting a tree holding a link leaves what the link points at`` () =
     use scratch = looped ()
-    Directory.CreateSymbolicLink(scratch.At "backup/twin", scratch.At "data/docs") |> ignore
+
+    Directory.CreateSymbolicLink(scratch.At "backup/twin", scratch.At "data/docs")
+    |> ignore
 
     delete disk unattended (scratch.Path "backup") |> Expect.ok
 
@@ -79,7 +86,9 @@ let ``deleting a tree holding a link leaves what the link points at`` () =
 [<SymbolicLinkFact>]
 let ``wiping a tree holding a link leaves what the link points at`` () =
     use scratch = looped ()
-    Directory.CreateSymbolicLink(scratch.At "backup/twin", scratch.At "data/docs") |> ignore
+
+    Directory.CreateSymbolicLink(scratch.At "backup/twin", scratch.At "data/docs")
+    |> ignore
 
     wipe disk unattended (scratch.Path "backup") |> Expect.ok
 

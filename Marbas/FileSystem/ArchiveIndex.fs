@@ -8,7 +8,9 @@ open Marbas.Domain
 [<Literal>]
 let private Remembered = 4
 
-type private Stamp = { Length: int64; Modified: DateTimeOffset }
+type private Stamp =
+    { Length: int64
+      Modified: DateTimeOffset }
 
 type private Indexed =
     { Path: FileSystemPath
@@ -57,7 +59,13 @@ let private answer (fs: IFileSystem) kind path (cache: ResizeArray<Indexed>) =
     | Some held -> held.Items
     | None ->
         let items = scan fs kind path
-        keep cache { Path = path; Stamp = stamp; Items = items }
+
+        keep
+            cache
+            { Path = path
+              Stamp = stamp
+              Items = items }
+
         items
 
 let read (fs: IFileSystem) (path: FileSystemPath) : Result<ArchiveEntryInfo list, ArchiveError> =

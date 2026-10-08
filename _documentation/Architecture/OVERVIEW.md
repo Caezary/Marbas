@@ -298,8 +298,12 @@ Marbas.Tests/
                           panelTitle, shownPath, drawnText
 
 coverlet.runsettings      what coverage measures and what it leaves out
+.editorconfig             the Fantomas settings: its defaults, cramped brackets, lf
+.config/
+  dotnet-tools.json       Fantomas, pinned to one version
 .github/workflows/
-  ci.yml                  restore, build and test on Windows and Linux
+  ci.yml                  restore, build and test on Windows and Linux;
+                          the format check on Linux
   release.yml             publish both profiles on a tag, attach them to a release
 ```
 

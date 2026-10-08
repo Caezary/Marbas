@@ -10,8 +10,7 @@ open Marbas.Ui.Format
 let LineId = "progressLine"
 
 let create title =
-    let dialog =
-        new Dialog(Title = title, Width = 60, Height = 6) |> DialogStyle.dress
+    let dialog = new Dialog(Title = title, Width = 60, Height = 6) |> DialogStyle.dress
 
     dialog.Add(
         new Label(X = 1, Y = 0, Width = Dim.Fill 1, Height = 1, Text = "", Id = LineId)
@@ -22,7 +21,6 @@ let create title =
     dialog.AddButton(DialogStyle.button "_Cancel")
     dialog
 
-let line (dialog: Dialog) =
-    SubView.byId<Label> LineId dialog
+let line (dialog: Dialog) = SubView.byId<Label> LineId dialog
 
 let report (dialog: Dialog) (text: string) = (line dialog).Text <- text

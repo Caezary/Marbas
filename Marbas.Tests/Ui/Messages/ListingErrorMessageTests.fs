@@ -26,14 +26,16 @@ let ``access denied is explained with its path`` () =
 
 [<Fact>]
 let ``unexpected failure includes the underlying reason`` () =
-    let message = ListingErrorMessage.describe (ListingFailed(fp (at "bad"), "drive not ready"))
+    let message =
+        ListingErrorMessage.describe (ListingFailed(fp (at "bad"), "drive not ready"))
 
     Assert.Contains(at "bad", message)
     Assert.Contains("drive not ready", message)
 
 [<Fact>]
 let ``an archive that cannot be read is explained by the archive wording`` () =
-    let message = ListingErrorMessage.describe (ArchiveUnreadable(KindCannotBeRead(fp (at "notes.txt"))))
+    let message =
+        ListingErrorMessage.describe (ArchiveUnreadable(KindCannotBeRead(fp (at "notes.txt"))))
 
     Assert.Equal(ArchiveErrorMessage.describe (KindCannotBeRead(fp (at "notes.txt"))), message)
 

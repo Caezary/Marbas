@@ -45,9 +45,7 @@ let ``the columns line up across drives`` () =
 let ``the home directory is a line of its own kind without sizes`` () =
     let lines = DriveLine.describe [ system; home ]
 
-    let expected =
-        [ "/           fixed  931.5 GB  120.0 GB free"
-          "/home/user  home" ]
+    let expected = [ "/           fixed  931.5 GB  120.0 GB free"; "/home/user  home" ]
 
     Assert.Equal<string list>(expected, lines)
 

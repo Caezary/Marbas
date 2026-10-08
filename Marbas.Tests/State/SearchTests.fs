@@ -25,10 +25,13 @@ let private loaded () =
     create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
 let private typeText (text: string) side state =
-    text |> Seq.fold (fun current character -> typeIntoSearch side character current) state
+    text
+    |> Seq.fold (fun current character -> typeIntoSearch side character current) state
 
 let private cursorName state =
-    (panel Left state) |> PanelState.cursorEntry |> Option.map (_.Name >> EntryName.value)
+    (panel Left state)
+    |> PanelState.cursorEntry
+    |> Option.map (_.Name >> EntryName.value)
 
 [<Fact>]
 let ``the first character opens a search and moves the cursor to what it matches`` () =
@@ -68,7 +71,8 @@ let ``a character that matches nothing joins the search and leaves the cursor`` 
 let ``backspace shortens the search and moves the cursor back to what is left`` () =
     let state = loaded () |> typeText "notes" Left
 
-    let shortened = state |> backspaceSearch Left |> backspaceSearch Left |> backspaceSearch Left
+    let shortened =
+        state |> backspaceSearch Left |> backspaceSearch Left |> backspaceSearch Left
 
     Assert.Equal(Some "no", shortened.Left.Search |> Option.map SearchText.value)
     Assert.Equal(Some "notes.txt", cursorName shortened)
@@ -109,10 +113,15 @@ let ``switching panels closes the search`` () =
 [<Fact>]
 let ``reloading a panel closes its search`` () =
     let fs = mockFs ()
-    let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
+
+    let state =
+        create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
     let reloaded =
-        state |> typeText "readme" Left |> loadPanel fs Left (fp (at "start")) |> Expect.ok
+        state
+        |> typeText "readme" Left
+        |> loadPanel fs Left (fp (at "start"))
+        |> Expect.ok
 
     Assert.Equal<SearchText option>(None, reloaded.Left.Search)
 

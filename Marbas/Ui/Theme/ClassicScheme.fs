@@ -79,10 +79,7 @@ let dialog =
     )
 
 let tabHeader =
-    Scheme(
-        Normal = attribute ColorName16.White ColorName16.Blue,
-        Focus = attribute ColorName16.White ColorName16.Blue
-    )
+    Scheme(Normal = attribute ColorName16.White ColorName16.Blue, Focus = attribute ColorName16.White ColorName16.Blue)
 
 let input =
     Scheme(

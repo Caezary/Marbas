@@ -30,7 +30,8 @@ let private sample =
 
 [<Fact>]
 let ``an entry with no line beside it offers only itself`` () =
-    let menu = menuOf [ CommandItem(entry "E" "Edit"); CommandItem(entry "C" "Compare") ]
+    let menu =
+        menuOf [ CommandItem(entry "E" "Edit"); CommandItem(entry "C" "Compare") ]
 
     let offered = MenuRemoval.offered 1 menu
 
@@ -74,7 +75,10 @@ let ``removing the line below names the separator right under the entry`` () =
 
 [<Fact>]
 let ``with only the entry to remove the question asks about the entry alone`` () =
-    let question = MenuRemoval.question { Command = entry "C" "Compare"; Offered = [ RemoveCommand ] }
+    let question =
+        MenuRemoval.question
+            { Command = entry "C" "Compare"
+              Offered = [ RemoveCommand ] }
 
     Assert.Equal("Remove 'Compare' from the menu?", question)
 

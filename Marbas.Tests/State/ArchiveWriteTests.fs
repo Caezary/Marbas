@@ -16,7 +16,8 @@ let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private loose = fp (at "start/loose.txt")
 
@@ -32,7 +33,8 @@ let private withTarball () =
     fs.AddFile(at "start/loose.txt", MockFileData "loose")
     fs
 
-let private names panel = panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+let private names panel =
+    panel.Entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
 
 let private atLoose state = setCursor Left 2 state
 
@@ -98,7 +100,11 @@ let ``a delete inside an archive is asked for good and removes the entries`` () 
     let confirmed = update fs (DeleteConfirmed Permanently) state
 
     Assert.Equal<Effect list>(
-        [ InspectDelete({ Probed = []; AtLeast = NamedEntriesOnly }, Permanently) ],
+        [ InspectDelete(
+              { Probed = []
+                AtLeast = NamedEntriesOnly },
+              Permanently
+          ) ],
         asked.Effects
     )
 
@@ -115,7 +121,11 @@ let ``a wipe inside an archive is asked as a delete for good`` () =
     let asked = update fs (DeleteRequested ByWiping) state
 
     Assert.Equal<Effect list>(
-        [ InspectDelete({ Probed = []; AtLeast = NamedEntriesOnly }, Permanently) ],
+        [ InspectDelete(
+              { Probed = []
+                AtLeast = NamedEntriesOnly },
+              Permanently
+          ) ],
         asked.Effects
     )
 
@@ -127,7 +137,11 @@ let ``a directory among the targets inside an archive needs nothing read to warn
     let result = update fs (DeleteRequested ToTrash) state
 
     Assert.Equal<Effect list>(
-        [ InspectDelete({ Probed = []; AtLeast = WithDirectoryContents }, Permanently) ],
+        [ InspectDelete(
+              { Probed = []
+                AtLeast = WithDirectoryContents },
+              Permanently
+          ) ],
         result.Effects
     )
 
@@ -157,13 +171,18 @@ let ``a directory made inside an archive is in it and under the cursor`` () =
     Assert.Equal<Effect list>([ PromptForName ], asked.Effects)
     Assert.Equal<string list>([ ".."; "docs"; "fresh"; "notes.txt" ], names made.State.Left)
     Assert.Equal(Some(en "fresh"), PanelState.cursorEntry made.State.Left |> Option.map _.Name)
-    Assert.Contains(ChangeHistory(Remember(Typed(NewDirectory, Expect.some (EnteredText.tryCreate "fresh")))), made.Effects)
+
+    Assert.Contains(
+        ChangeHistory(Remember(Typed(NewDirectory, Expect.some (EnteredText.tryCreate "fresh")))),
+        made.Effects
+    )
 
     Assert.Contains(
         "fresh",
         ArchiveListing.read fs archive ArchivePath.root
         |> Expect.ok
-        |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+        |> Seq.map (_.Name >> EntryName.value)
+        |> List.ofSeq
     )
 
 [<Fact>]
@@ -240,7 +259,8 @@ let ``a move between archives needs the one it takes from to be changeable`` () 
         copied.Effects
     )
 
-let private refusal = ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged tarball))
+let private refusal =
+    ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged tarball))
 
 [<Fact>]
 let ``a copy into a kind that cannot be changed is refused by name`` () =

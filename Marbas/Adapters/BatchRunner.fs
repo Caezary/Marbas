@@ -6,7 +6,11 @@ open Terminal.Gui.App
 open Marbas.FileSystem
 open Marbas.Ui.Dialogs
 
-let control (invoke: (unit -> unit) -> unit) (show: FileSystemPath -> unit) (isCancelled: unit -> bool) : Operations.BatchControl =
+let control
+    (invoke: (unit -> unit) -> unit)
+    (show: FileSystemPath -> unit)
+    (isCancelled: unit -> bool)
+    : Operations.BatchControl =
     { Report =
         fun path ->
             if not (isCancelled ()) then
@@ -20,10 +24,8 @@ let private drive (app: IApplication) title (work: Operations.BatchControl -> 'a
     use dialog = ProgressDialog.create title
 
     let control =
-        control
-            app.Invoke
-            (FileSystemPath.value >> ProgressDialog.report dialog)
-            (fun () -> cancellation.IsCancellationRequested)
+        control app.Invoke (FileSystemPath.value >> ProgressDialog.report dialog) (fun () ->
+            cancellation.IsCancellationRequested)
 
     Task.Run(fun () ->
         let results = work control
@@ -47,5 +49,4 @@ let measured (work: Operations.BatchControl -> Measurement list) control =
     with ex ->
         Error(Operations.BatchFailed ex.Message)
 
-let runMeasuring app title work finish =
-    drive app title (measured work) finish
+let runMeasuring app title work finish = drive app title (measured work) finish

@@ -12,11 +12,9 @@ let Id = "functionKeyBar"
 type SlotView(name: string) as this =
     inherit View()
 
-    let keyName =
-        new Label(Text = name, Width = Dim.Absolute name.Length, Height = 1)
+    let keyName = new Label(Text = name, Width = Dim.Absolute name.Length, Height = 1)
 
-    let commandName =
-        new Label(X = Pos.Right keyName, Width = Dim.Fill(), Height = 1)
+    let commandName = new Label(X = Pos.Right keyName, Width = Dim.Fill(), Height = 1)
 
     do
         this.Height <- Dim.Absolute 1
@@ -35,8 +33,7 @@ let slots (bar: View) =
     |> List.ofSeq
 
 let build id (names: string list) =
-    let bar =
-        new View(Id = id, Y = Pos.AnchorEnd 1, Width = Dim.Fill(), Height = 1)
+    let bar = new View(Id = id, Y = Pos.AnchorEnd 1, Width = Dim.Fill(), Height = 1)
 
     bar.SetScheme ClassicScheme.keyBar |> ignore
     let count = List.length names
@@ -74,8 +71,7 @@ let private dispatching (dispatch: Message -> unit) (slot: SlotView) =
         view.MouseEvent.Add clicked
 
 let create (dispatch: Message -> unit) =
-    let bar =
-        KeyMap.bar Modifiers.none |> List.map _.Name |> build Id
+    let bar = KeyMap.bar Modifiers.none |> List.map _.Name |> build Id
 
     for slot in slots bar do
         dispatching dispatch slot

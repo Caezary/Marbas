@@ -45,7 +45,8 @@ let ``a hard link the system cannot make is reported rather than thrown`` () =
     use scratch = withData ()
 
     let failure =
-        make (request Hard scratch "data/notes.txt" "data/gone/twin.txt") |> Expect.error
+        make (request Hard scratch "data/notes.txt" "data/gone/twin.txt")
+        |> Expect.error
 
     Assert.Equal(Some(scratch.Path "data/gone/twin.txt"), failedPath failure)
 
@@ -85,7 +86,8 @@ let ``deleting a tree holding a junction removes the tree and leaves what the ju
     scratch.Directory "backup"
     make (request Junction scratch "data/docs" "backup/twin") |> Expect.ok
 
-    Operations.delete disk Operations.unattended (scratch.Path "backup") |> Expect.ok
+    Operations.delete disk Operations.unattended (scratch.Path "backup")
+    |> Expect.ok
 
     Assert.False(Directory.Exists(scratch.At "backup"))
     Assert.Equal("inner", File.ReadAllText(scratch.At "data/docs/inner.txt"))

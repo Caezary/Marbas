@@ -26,14 +26,16 @@ let ``the side arrows move across the line`` () =
 
 [<Fact>]
 let ``held control the side arrows move by a screen`` () =
-    let commands = [ Key.CursorLeft.WithCtrl; Key.CursorRight.WithCtrl ] |> List.map commandFor
+    let commands =
+        [ Key.CursorLeft.WithCtrl; Key.CursorRight.WithCtrl ] |> List.map commandFor
 
     Assert.Equal<Command option list>([ Some PageLeft; Some PageRight ], commands)
 
 [<Fact>]
 let ``home and end reach the ends of the file`` () =
     let commands =
-        [ Key.Home; Key.End; Key.Home.WithCtrl; Key.End.WithCtrl ] |> List.map commandFor
+        [ Key.Home; Key.End; Key.Home.WithCtrl; Key.End.WithCtrl ]
+        |> List.map commandFor
 
     Assert.Equal<Command option list>([ Some ToStart; Some ToEnd; Some ToStart; Some ToEnd ], commands)
 

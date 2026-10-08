@@ -29,11 +29,16 @@ let private show (fs: IFileSystem) (env: HostEnvironment) () =
     app.Run window |> ignore
 
 let run (fs: IFileSystem) (env: HostEnvironment) =
-    let logPath = LogFile.beside fs (Settings.location fs env.ApplicationData env.UserProfile)
+    let logPath =
+        LogFile.beside fs (Settings.location fs env.ApplicationData env.UserProfile)
+
     LogFile.cut fs logPath |> ignore
-    let record entry = LogEntry.write fs logPath DateTimeOffset.Now entry
+
+    let record entry =
+        LogEntry.write fs logPath DateTimeOffset.Now entry
+
     use _crashes = watch record
-    
+
     let runApplication = show fs env
 
     match guarded record runApplication with

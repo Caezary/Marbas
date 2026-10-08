@@ -31,14 +31,18 @@ module NameMasks =
         patterns |> List.map NamePattern.value |> String.concat (string Separator)
 
     let matches (NameMasks patterns) name =
-        List.isEmpty patterns || patterns |> List.exists (fun pattern -> NamePattern.matches pattern name)
+        List.isEmpty patterns
+        || patterns |> List.exists (fun pattern -> NamePattern.matches pattern name)
 
 type FindText = private FindText of string
 
 module FindText =
 
     let tryCreate (raw: string) =
-        if String.IsNullOrEmpty raw then None else Some(FindText raw)
+        if String.IsNullOrEmpty raw then
+            None
+        else
+            Some(FindText raw)
 
     let value (FindText raw) = raw
 
@@ -153,8 +157,7 @@ module FindQuery =
 
     let text query = FindWhat.text query.What
 
-    let matchesName query name =
-        NameMasks.matches (masks query) name
+    let matchesName query name = NameMasks.matches (masks query) name
 
 type FindChoice =
     | Search of FindQuery

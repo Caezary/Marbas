@@ -13,8 +13,7 @@ let Title = "Tabs"
 let private ListHeight = 10
 
 let create (rows: string list) (current: int) =
-    let dialog =
-        new Dialog(Title = Title, Width = 76, Height = 15) |> DialogStyle.dress
+    let dialog = new Dialog(Title = Title, Width = 76, Height = 15) |> DialogStyle.dress
 
     let tabs =
         new ListView(X = 1, Y = 1, Width = Dim.Fill 1, Height = ListHeight, KeystrokeNavigator = null)
@@ -27,8 +26,7 @@ let create (rows: string list) (current: int) =
     dialog.AddButton(DialogStyle.button "_Ok")
     dialog
 
-let tabs (dialog: Dialog) =
-    SubView.byType<ListView> dialog
+let tabs (dialog: Dialog) = SubView.byType<ListView> dialog
 
 let choice (dialog: Dialog) =
     if dialog.Canceled then

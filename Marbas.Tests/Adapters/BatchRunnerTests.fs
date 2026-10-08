@@ -36,7 +36,10 @@ let private path = FileSystemPath.create (Root.at "start/notes.txt")
 let ``a report made while the batch runs reaches the dialog`` () =
     let pending = ref ignore
     let shown = ResizeArray<FileSystemPath>()
-    let control = BatchRunner.control (fun action -> pending.Value <- action) shown.Add (fun () -> false)
+
+    let control =
+        BatchRunner.control (fun action -> pending.Value <- action) shown.Add (fun () -> false)
+
     control.Report path
 
     pending.Value()
@@ -48,7 +51,10 @@ let ``a report still queued when the batch is cancelled never reaches the closed
     let pending = ref ignore
     let cancelled = ref false
     let shown = ResizeArray<FileSystemPath>()
-    let control = BatchRunner.control (fun action -> pending.Value <- action) shown.Add (fun () -> cancelled.Value)
+
+    let control =
+        BatchRunner.control (fun action -> pending.Value <- action) shown.Add (fun () -> cancelled.Value)
+
     control.Report path
     cancelled.Value <- true
 

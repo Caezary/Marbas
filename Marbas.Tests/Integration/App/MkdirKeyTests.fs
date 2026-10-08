@@ -25,12 +25,20 @@ let private windowWith (fs: MockFileSystem) askName reportError =
 
 let private silent = ignore<Ports.ErrorReport>
 
-let private typed raw = EnteredText.tryCreate raw |> Expect.some
+let private typed raw =
+    EnteredText.tryCreate raw |> Expect.some
 
 [<Fact>]
 let ``F7 asks for a name and the new directory shows up under the cursor`` () =
     let asked = ResizeArray<string>()
-    use window = windowWith (mockFs ()) (fun request -> asked.Add request.Title; Some "work") silent
+
+    use window =
+        windowWith
+            (mockFs ())
+            (fun request ->
+                asked.Add request.Title
+                Some "work")
+            silent
 
     pressKey window Key.F7
 
@@ -49,6 +57,7 @@ let ``cancelling the name prompt creates nothing`` () =
 [<Fact>]
 let ``a duplicate name is reported`` () =
     let reported = ResizeArray<string>()
+
     use window =
         windowWith (mockFs ()) (fun _ -> Some "docs") (fun report -> reported.Add report.Message)
 
@@ -59,7 +68,14 @@ let ``a duplicate name is reported`` () =
 [<Fact>]
 let ``F7 opens with nothing to suggest until a directory has been made`` () =
     let offered = ResizeArray<EnteredText option>()
-    use window = windowWith (mockFs ()) (fun request -> offered.Add request.Suggestion; None) silent
+
+    use window =
+        windowWith
+            (mockFs ())
+            (fun request ->
+                offered.Add request.Suggestion
+                None)
+            silent
 
     pressKey window Key.F7
 
@@ -69,17 +85,21 @@ let ``F7 opens with nothing to suggest until a directory has been made`` () =
 let ``F7 offers the name the last directory was given`` () =
     let offered = ResizeArray<EnteredText option>()
     let answer = ref "work"
-    use window = windowWith (mockFs ()) (fun request -> offered.Add request.Suggestion; Some answer.Value) silent
+
+    use window =
+        windowWith
+            (mockFs ())
+            (fun request ->
+                offered.Add request.Suggestion
+                Some answer.Value)
+            silent
 
     pressKey window Key.F7
     answer.Value <- "reports"
     pressKey window Key.F7
     pressKey window Key.F7
 
-    Assert.Equal<EnteredText option list>(
-        [ None; Some(typed "work"); Some(typed "reports") ],
-        List.ofSeq offered
-    )
+    Assert.Equal<EnteredText option list>([ None; Some(typed "work"); Some(typed "reports") ], List.ofSeq offered)
 
 [<Fact>]
 let ``the name the last directory was given outlives the session`` () =
@@ -90,7 +110,14 @@ let ``the name the last directory was given outlives the session`` () =
     pressKey first Key.F7
     pressKey first KeyMap.quitKey
 
-    use second = windowWith fs (fun request -> offered.Add request.Suggestion; None) silent
+    use second =
+        windowWith
+            fs
+            (fun request ->
+                offered.Add request.Suggestion
+                None)
+            silent
+
     pressKey second Key.F7
 
     Assert.Equal<EnteredText option list>([ Some(typed "work") ], List.ofSeq offered)

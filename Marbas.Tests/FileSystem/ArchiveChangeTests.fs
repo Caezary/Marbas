@@ -13,7 +13,8 @@ let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private archive = fp (at "start/data.zip")
 
@@ -33,12 +34,17 @@ let private packedInto format path password =
     fs.AddFile(at "loose/added.txt", MockFileData "added")
     fs.AddFile(at "loose/tree/kept.txt", MockFileData "kept")
 
-    Archive.write fs Operations.unattended (request format path password) [ fp (at "work/notes.txt"); fp (at "work/docs") ]
+    Archive.write
+        fs
+        Operations.unattended
+        (request format path password)
+        [ fp (at "work/notes.txt"); fp (at "work/docs") ]
     |> ignore
 
     fs
 
-let private packed () = packedInto Zip (at "start/data.zip") None
+let private packed () =
+    packedInto Zip (at "start/data.zip") None
 
 let private names (fs: IFileSystem) level =
     ArchiveListing.read fs archive level
@@ -47,7 +53,8 @@ let private names (fs: IFileSystem) level =
     |> List.sort
 
 let private outcomes (fs: IFileSystem) (results: Operations.ItemResult list) =
-    results |> List.map (fun item -> EntryName.value (Operations.ItemSource.name fs item.Source), item.Outcome)
+    results
+    |> List.map (fun item -> EntryName.value (Operations.ItemSource.name fs item.Source), item.Outcome)
 
 let private stopped () =
     { Operations.unattended with
@@ -126,7 +133,8 @@ let ``an entry removed from an archive is gone from it`` () =
     let fs = packed ()
 
     let results =
-        Archive.removeEntries fs Operations.unattended archive [ inside "notes.txt" ] |> Expect.ok
+        Archive.removeEntries fs Operations.unattended archive [ inside "notes.txt" ]
+        |> Expect.ok
 
     Assert.Equal<string list>([ "docs" ], names fs ArchivePath.root)
     Assert.Equal<(string * Result<unit, Operations.OperationError>) list>([ "notes.txt", Ok() ], outcomes fs results)
@@ -135,7 +143,9 @@ let ``an entry removed from an archive is gone from it`` () =
 let ``a directory removed from an archive takes the tree below it`` () =
     let fs = packed ()
 
-    Archive.removeEntries fs Operations.unattended archive [ inside "docs" ] |> Expect.ok |> ignore
+    Archive.removeEntries fs Operations.unattended archive [ inside "docs" ]
+    |> Expect.ok
+    |> ignore
 
     Assert.Equal<string list>([ "notes.txt" ], names fs ArchivePath.root)
 
@@ -144,7 +154,8 @@ let ``an entry the archive does not hold cannot be removed`` () =
     let fs = packed ()
 
     let results =
-        Archive.removeEntries fs Operations.unattended archive [ inside "gone.txt" ] |> Expect.ok
+        Archive.removeEntries fs Operations.unattended archive [ inside "gone.txt" ]
+        |> Expect.ok
 
     Assert.Equal<(string * Result<unit, Operations.OperationError>) list>(
         [ "gone.txt", Error(Operations.SourceNotFound(fp (at "start/data.zip/gone.txt"))) ],
@@ -155,7 +166,9 @@ let ``an entry the archive does not hold cannot be removed`` () =
 let ``a cancelled removal leaves every entry where it was`` () =
     let fs = packed ()
 
-    let results = Archive.removeEntries fs (stopped ()) archive [ inside "notes.txt" ] |> Expect.ok
+    let results =
+        Archive.removeEntries fs (stopped ()) archive [ inside "notes.txt" ]
+        |> Expect.ok
 
     Assert.Equal<string list>([ "docs"; "notes.txt" ], names fs ArchivePath.root)
 
@@ -176,7 +189,9 @@ let ``a directory made in an archive is listed at its level`` () =
 let ``a directory made under a name already there is refused`` () =
     let fs = packed ()
 
-    let failure = Archive.makeEntryDirectory fs archive ArchivePath.root (en "docs") |> Expect.error
+    let failure =
+        Archive.makeEntryDirectory fs archive ArchivePath.root (en "docs")
+        |> Expect.error
 
     Assert.Equal(Operations.TargetExists(fp (at "start/data.zip/docs")), failure)
 
@@ -253,7 +268,11 @@ let ``moving out two entries of one name drops only the one that arrived`` () =
     let fs = packedTwins ()
 
     let results =
-        Archive.moveToDirectory fs Operations.unattended (extracting (at "out")) [ inside "a/same.txt"; inside "c/same.txt" ]
+        Archive.moveToDirectory
+            fs
+            Operations.unattended
+            (extracting (at "out"))
+            [ inside "a/same.txt"; inside "c/same.txt" ]
         |> Expect.ok
 
     Assert.Equal<string list>([], names fs (inside "a"))
@@ -280,7 +299,8 @@ let ``a kind that cannot be changed refuses by name`` () =
 
 [<Fact>]
 let ``an archive behind a password refuses to be changed`` () =
-    let fs = packedInto Zip (at "start/data.zip") (ArchivePassword.tryCreate "opensesame")
+    let fs =
+        packedInto Zip (at "start/data.zip") (ArchivePassword.tryCreate "opensesame")
 
     let refusal =
         Archive.addEntries fs Operations.unattended archive ArchivePath.root [ fp (at "loose/added.txt") ]
@@ -299,7 +319,10 @@ let ``nothing refuses a plain zip`` () =
 [<InlineData("7z")>]
 let ``a working file already beside the archive is left alone`` extension =
     let target = at $"start/data.{extension}"
-    let fs = packedInto (ArchiveKind.recognise (en $"data.{extension}") |> Expect.some) target None
+
+    let fs =
+        packedInto (ArchiveKind.recognise (en $"data.{extension}") |> Expect.some) target None
+
     fs.AddFile(target + ".marbas-new", MockFileData "someone else's file")
 
     Archive.addEntries fs Operations.unattended (fp target) ArchivePath.root [ fp (at "loose/added.txt") ]
@@ -313,7 +336,9 @@ let ``a working file already beside the archive is left alone`` extension =
 [<InlineData("7z")>]
 let ``a change leaves no working file behind`` extension =
     let target = at $"start/data.{extension}"
-    let fs = packedInto (ArchiveKind.recognise (en $"data.{extension}") |> Expect.some) target None
+
+    let fs =
+        packedInto (ArchiveKind.recognise (en $"data.{extension}") |> Expect.some) target None
 
     Archive.addEntries fs Operations.unattended (fp target) ArchivePath.root [ fp (at "loose/added.txt") ]
     |> Expect.ok
@@ -326,7 +351,9 @@ let ``a change leaves no working file behind`` extension =
 [<InlineData("7z")>]
 let ``a cancelled change leaves no working file behind`` extension =
     let target = at $"start/data.{extension}"
-    let fs = packedInto (ArchiveKind.recognise (en $"data.{extension}") |> Expect.some) target None
+
+    let fs =
+        packedInto (ArchiveKind.recognise (en $"data.{extension}") |> Expect.some) target None
 
     Archive.addEntries fs (stopped ()) (fp target) ArchivePath.root [ fp (at "loose/added.txt") ]
     |> Expect.ok

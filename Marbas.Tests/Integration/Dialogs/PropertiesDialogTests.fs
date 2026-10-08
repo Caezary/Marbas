@@ -53,7 +53,10 @@ let ``every stamp is offered ready to be edited`` () =
 let ``every field fits inside the dialog`` () =
     use dialog = laidOut shown
 
-    for id in [ PropertiesDialog.CreatedId; PropertiesDialog.ModifiedId; PropertiesDialog.AccessedId ] do
+    for id in
+        [ PropertiesDialog.CreatedId
+          PropertiesDialog.ModifiedId
+          PropertiesDialog.AccessedId ] do
         let frame = (PropertiesDialog.field dialog id).Frame
         Assert.True(frame.Width > 0, $"the field {id} must be wide enough to show a stamp")
         Assert.True(frame.Bottom <= dialog.Viewport.Height, $"the field {id} at %A{frame} is clipped")

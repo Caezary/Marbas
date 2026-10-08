@@ -18,9 +18,11 @@ let private mockFs () =
     fs.AddFile(at "start/setup.exe", MockFileData "hi")
     fs
 
-let private window () = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
+let private window () =
+    focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
 
-let private footerOf window id = (FilePanel.footer (panel id window)).Text
+let private footerOf window id =
+    (FilePanel.footer (panel id window)).Text
 
 let private typeInto list (text: string) =
     text |> Seq.iter (fun character -> press list (Key character))

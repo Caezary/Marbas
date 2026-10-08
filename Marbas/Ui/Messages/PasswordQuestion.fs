@@ -5,4 +5,5 @@ open Marbas.Domain
 [<Literal>]
 let Title = "Password"
 
-let describe (archive: EntryName) = $"Password for '{EntryName.value archive}':"
+let describe (archive: EntryName) =
+    $"Password for '{EntryName.value archive}':"

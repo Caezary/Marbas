@@ -147,13 +147,15 @@ module History =
            |> Option.map (fun list -> list.FilePath :: list.Listed |> List.map FileSystemPath.value)
            |> Option.defaultValue [])
 
-    let private sameVisit platform (one: FileVisit) (other: FileVisit) = Place.same platform one.Where other.Where
+    let private sameVisit platform (one: FileVisit) (other: FileVisit) =
+        Place.same platform one.Where other.Where
 
     let private spelled item =
         match item with
         | Visited place -> Place.spelled place
         | Launched request ->
-            [ FileSystemPath.value request.Target; FileSystemPath.value request.WorkingDirectory ]
+            [ FileSystemPath.value request.Target
+              FileSystemPath.value request.WorkingDirectory ]
             @ (request.Program |> Option.map ProgramPath.value |> Option.toList)
         | Ran run -> spelledRun run
         | Opened visit -> Place.spelled visit.Where
@@ -172,8 +174,12 @@ module History =
 
     let private withInputs kind entries (history: History) =
         match entries with
-        | [] -> { history with Inputs = Map.remove kind history.Inputs }
-        | kept -> { history with Inputs = Map.add kind kept history.Inputs }
+        | [] ->
+            { history with
+                Inputs = Map.remove kind history.Inputs }
+        | kept ->
+            { history with
+                Inputs = Map.add kind kept history.Inputs }
 
     let private remembering platform at item (history: History) =
         match item with
@@ -273,7 +279,9 @@ module History =
 
     let private describedPlace place =
         match place with
-        | Place.OnDisk path -> { Value = FileSystemPath.value path; Parts = [] }
+        | Place.OnDisk path ->
+            { Value = FileSystemPath.value path
+              Parts = [] }
         | Place.InArchive(archive, inside) ->
             { Value = FileSystemPath.value archive
               Parts = [ InsidePart, ArchivePath.value inside ] }
@@ -333,7 +341,8 @@ module History =
             Parts = place.Parts @ [ UsePart, useText visit.How ] }
 
     let private describedText text =
-        { Value = EnteredText.value text; Parts = [] }
+        { Value = EnteredText.value text
+          Parts = [] }
 
     let private entryKey prefix number = $"{prefix}.{number}"
 
@@ -346,7 +355,9 @@ module History =
             |> List.map (fun (part, value) -> $"{key}.{part}={value}"))
 
     let private numbered prefix describe entries =
-        entries |> List.mapi (fun index -> entryLines prefix describe (index + 1)) |> List.concat
+        entries
+        |> List.mapi (fun index -> entryLines prefix describe (index + 1))
+        |> List.concat
 
     let format (history: History) =
         numbered FolderPrefix describedPlace history.Folders
@@ -395,12 +406,17 @@ module History =
 
             match stored.Part InsidePart with
             | None -> Some(Place.OnDisk path)
-            | Some inside -> ArchivePath.tryCreate inside |> Option.map (fun level -> Place.InArchive(path, level)))
+            | Some inside ->
+                ArchivePath.tryCreate inside
+                |> Option.map (fun level -> Place.InArchive(path, level)))
 
     let private launchFrom (stored: Stored) =
         option {
             let! target = stored.Main
-            let! directory = stored.Part DirectoryPart |> Option.filter (String.IsNullOrEmpty >> not)
+
+            let! directory =
+                stored.Part DirectoryPart |> Option.filter (String.IsNullOrEmpty >> not)
+
             let! elevation = stored.Part ElevationPart |> Option.bind Elevation.tryParse
 
             return
@@ -438,7 +454,10 @@ module History =
     let private runFrom (stored: Stored) =
         option {
             let! label = stored.Main |> Option.bind MenuLabel.tryCreate
-            let! program = wordFrom stored CommandPart |> Option.filter (fun word -> word.Text <> "")
+
+            let! program =
+                wordFrom stored CommandPart |> Option.filter (fun word -> word.Text <> "")
+
             let! run = stored.Part ModePart |> Option.bind MenuRun.tryParse
             let! directory = filled (stored.Part DirectoryPart)
             let! elevation = stored.Part ElevationPart |> Option.bind Elevation.tryParse
@@ -493,9 +512,7 @@ module History =
           FileVisits = listFrom read FilePrefix visitFrom
           Inputs =
             kinds
-            |> List.fold
-                (fun inputs kind -> Map.add kind (listFrom read (inputPrefix kind) textFrom) inputs)
-                Map.empty
+            |> List.fold (fun inputs kind -> Map.add kind (listFrom read (inputPrefix kind) textFrom) inputs) Map.empty
             |> Map.filter (fun _ entries -> not (List.isEmpty entries)) }
 
     let load (fs: IFileSystem) (path: FileSystemPath) =

@@ -164,7 +164,9 @@ let private holdWidth width (style: ColumnStyle) =
 
 let private fitColumns tab (table: TableView) =
     table.Style.GetOrCreateColumnStyle WhenColumnIndex |> holdWidth whenWidth
-    table.Style.GetOrCreateColumnStyle WhatColumnIndex |> holdWidth (whatWidth tab table)
+
+    table.Style.GetOrCreateColumnStyle WhatColumnIndex
+    |> holdWidth (whatWidth tab table)
 
     if saysHow tab then
         table.Style.GetOrCreateColumnStyle HowColumnIndex |> holdWidth howWidth
@@ -177,8 +179,7 @@ let private fill (fs: IFileSystem) now (history: History) filter tab (table: Tab
     table.Table <- source tab rows
     fitColumns tab table
 
-    table.Style.GetOrCreateColumnStyle(WhatColumnIndex).RepresentationGetter <-
-        Func<obj, string>(fitted fs tab table)
+    table.Style.GetOrCreateColumnStyle(WhatColumnIndex).RepresentationGetter <- Func<obj, string>(fitted fs tab table)
 
 let private tableFor tab =
     let table =
@@ -190,6 +191,7 @@ let private tableFor tab =
     table.Style.ShowHorizontalBottomLine <- false
     table.Style.ShowVerticalCellLineForFirstColumn <- false
     table.Style.ShowVerticalCellLineForLastColumn <- false
+
     table.FrameChanged.Add(fun _ ->
         fitColumns tab table
         table.EnsureCursorIsVisible())
@@ -275,9 +277,12 @@ let private leavesList (shown: TableView) (key: Key) =
     || (key = KeyMap.historyRowDownKey && onLastRow shown)
 
 let private tabStep (key: Key) =
-    if key = KeyMap.nextHistoryTabKey || key = KeyMap.nextHistoryTabArrow then Some 1
-    elif key = KeyMap.previousHistoryTabKey || key = KeyMap.previousHistoryTabArrow then Some -1
-    else None
+    if key = KeyMap.nextHistoryTabKey || key = KeyMap.nextHistoryTabArrow then
+        Some 1
+    elif key = KeyMap.previousHistoryTabKey || key = KeyMap.previousHistoryTabArrow then
+        Some -1
+    else
+        None
 
 let private walking step (key: Key) (dialog: HistoryView) =
     key.Handled <- true
@@ -433,7 +438,8 @@ let private leavingTab (changing: Changing) (dialog: HistoryView) =
         dialog.Filter <- None
         refill changing dialog
 
-let private plainButton title = DialogStyle.button title |> LiteralText.showing
+let private plainButton title =
+    DialogStyle.button title |> LiteralText.showing
 
 let create
     (fs: IFileSystem)
@@ -485,12 +491,17 @@ let create
         offer container goTo delete)
 
     container.FrameChanged.Add(fun _ -> dressHeaders container tables)
-    tables |> List.iter (fun (_, shown) -> shown.KeyDown.Add(tableKey changing dialog shown))
+
+    tables
+    |> List.iter (fun (_, shown) -> shown.KeyDown.Add(tableKey changing dialog shown))
+
     dialog.KeyDown.Add(answerKey changing dialog)
     dialog
 
 let private revisited asked (visit: FileVisit) =
-    Revisit { visit with How = Option.defaultValue visit.How asked }
+    Revisit
+        { visit with
+            How = Option.defaultValue visit.How asked }
 
 let private goingTo started =
     match started with

@@ -87,7 +87,8 @@ schedules the fix. A rule here beats a habit found in an older file.
 | a four-clause `if`, one clause with a side effect | one named predicate per clause |
 | free `mutable`s across a recursion | a record threaded through the walk |
 
-- [ ] One operation per line.
+- [ ] One statement per line. Where a pipeline or an argument list breaks is
+      Fantomas's decision, not the author's (§6).
 - [ ] Pipelines read left to right; nested parentheses three deep do not.
 - [ ] Computation-expression cut-off: three binds, or one nested match.
       FsToolkit.ErrorHandling is already referenced — `result`, `option`,
@@ -120,7 +121,14 @@ schedules the fix. A rule here beats a habit found in an older file.
 
 ## 6. Formatting
 
-- [ ] Fantomas defaults, no per-file overrides.
+- [ ] Fantomas formats every `.fs` file, with the settings in the repository's
+      `.editorconfig` and nothing else: its defaults, except the `cramped`
+      bracket style (`{ Name = …` on the line of its first field, the closing
+      bracket on the line of its last) and `lf` line endings. No per-file
+      overrides, no `// fantomas` exclusions. The version is pinned in
+      `.config/dotnet-tools.json`; `dotnet tool restore` installs it,
+      `dotnet fantomas Marbas Marbas.Tests` formats, and the `format` job in CI
+      runs the same with `--check` and fails on any file that would change.
 - [ ] `TreatWarningsAsErrors` is on in every configuration: a warning is a build
       failure, not a note.
 - [ ] Warning FS1182 is on (`--warnon:1182` in `Directory.Build.props`), so with
@@ -199,6 +207,7 @@ schedules the fix. A rule here beats a habit found in an older file.
 ## 10. Before handing work back
 
 - [ ] `dotnet build Marbas.slnx` is clean and `dotnet test Marbas.slnx` is green.
+- [ ] `dotnet fantomas --check Marbas Marbas.Tests` changes nothing.
 - [ ] No comment, no primed alias, no boolean parameter, no new `with _ ->` was
       added.
 - [ ] Every new name says what it answers, and every boundary is in the name.

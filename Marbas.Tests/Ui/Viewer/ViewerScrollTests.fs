@@ -35,13 +35,28 @@ let ``a page of single rows holds as many lines as it is tall`` () =
 
 [<Fact>]
 let ``wrapped lines fill a page sooner`` () =
-    let lines = ViewerScroll.filling 10 (seq { 4; 3; 2; 6; 1 })
+    let lines =
+        ViewerScroll.filling
+            10
+            (seq {
+                4
+                3
+                2
+                6
+                1
+            })
 
     Assert.Equal(3, lines)
 
 [<Fact>]
 let ``a line taller than the page is still a page`` () =
-    let lines = ViewerScroll.filling 5 (seq { 40; 1 })
+    let lines =
+        ViewerScroll.filling
+            5
+            (seq {
+                40
+                1
+            })
 
     Assert.Equal(1, lines)
 

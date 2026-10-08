@@ -17,7 +17,7 @@ let private longerThanKept (fs: IFileSystem) file =
 
 let private lastBytesWithTheOneBefore (fs: IFileSystem) file =
     use stream = fs.File.OpenRead file
-    let read = Array.zeroCreate<byte> (KeptBytes + 1)
+    let read = Array.zeroCreate<byte>(KeptBytes + 1)
     stream.Seek(-(int64 read.Length), SeekOrigin.End) |> ignore
     stream.ReadExactly read
     read

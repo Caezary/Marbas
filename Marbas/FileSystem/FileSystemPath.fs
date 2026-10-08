@@ -39,7 +39,10 @@ module FileSystemPath =
         fs.Path.GetFileName path |> EntryName.create
 
     let platformOf (fs: IFileSystem) =
-        if fs.Path.DirectorySeparatorChar = '\\' then Windows else Unix
+        if fs.Path.DirectorySeparatorChar = '\\' then
+            Windows
+        else
+            Unix
 
     let private separatorsOf platform =
         match platform with
@@ -54,19 +57,17 @@ module FileSystemPath =
     let comparer platform =
         StringComparer.FromComparison(caseRule platform)
 
-    let private withoutTrailingSeparator platform (FileSystemPath path) =
-        path.TrimEnd(separatorsOf platform)
+    let private withoutTrailingSeparator platform (FileSystemPath path) = path.TrimEnd(separatorsOf platform)
 
     let sameEntry platform one other =
-        String.Equals(
-            withoutTrailingSeparator platform one,
-            withoutTrailingSeparator platform other,
-            caseRule platform
-        )
+        String.Equals(withoutTrailingSeparator platform one, withoutTrailingSeparator platform other, caseRule platform)
 
     let distinctEntries platform (paths: FileSystemPath list) =
         let keep kept path =
-            if kept |> List.exists (sameEntry platform path) then kept else path :: kept
+            if kept |> List.exists (sameEntry platform path) then
+                kept
+            else
+                path :: kept
 
         paths |> List.fold keep [] |> List.rev
 
@@ -88,7 +89,8 @@ module FileSystemPath =
             None
 
     let isBareName (fs: IFileSystem) (name: string) =
-        not (fs.Path.IsPathRooted name) && String.IsNullOrEmpty(fs.Path.GetDirectoryName name)
+        not (fs.Path.IsPathRooted name)
+        && String.IsNullOrEmpty(fs.Path.GetDirectoryName name)
 
     let directory (fs: IFileSystem) (FileSystemPath path) =
         FileSystemPath(fs.Path.GetDirectoryName path)

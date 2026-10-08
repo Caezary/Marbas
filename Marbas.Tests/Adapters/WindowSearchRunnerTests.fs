@@ -11,7 +11,10 @@ let private queuing (pending: ResizeArray<unit -> unit>) action = pending.Add ac
 let ``a place reached while the search runs reaches the dialog`` () =
     let pending = ResizeArray<unit -> unit>()
     let shown = ResizeArray<string>()
-    let control = WindowSearchRunner.control (queuing pending) shown.Add describe (fun () -> false)
+
+    let control =
+        WindowSearchRunner.control (queuing pending) shown.Add describe (fun () -> false)
+
     control.Reached 250L
 
     pending |> Seq.iter (fun action -> action ())
@@ -21,7 +24,10 @@ let ``a place reached while the search runs reaches the dialog`` () =
 [<Fact>]
 let ``a place that reads as the last one is not queued again`` () =
     let pending = ResizeArray<unit -> unit>()
-    let control = WindowSearchRunner.control (queuing pending) ignore describe (fun () -> false)
+
+    let control =
+        WindowSearchRunner.control (queuing pending) ignore describe (fun () -> false)
+
     control.Reached 210L
 
     control.Reached 290L
@@ -33,7 +39,10 @@ let ``a place still queued when the search is stopped never reaches the closed d
     let pending = ResizeArray<unit -> unit>()
     let cancelled = ref false
     let shown = ResizeArray<string>()
-    let control = WindowSearchRunner.control (queuing pending) shown.Add describe (fun () -> cancelled.Value)
+
+    let control =
+        WindowSearchRunner.control (queuing pending) shown.Add describe (fun () -> cancelled.Value)
+
     control.Reached 250L
     cancelled.Value <- true
 
@@ -44,7 +53,9 @@ let ``a place still queued when the search is stopped never reaches the closed d
 [<Fact>]
 let ``a place reached after the search is stopped is not queued`` () =
     let pending = ResizeArray<unit -> unit>()
-    let control = WindowSearchRunner.control (queuing pending) ignore describe (fun () -> true)
+
+    let control =
+        WindowSearchRunner.control (queuing pending) ignore describe (fun () -> true)
 
     control.Reached 250L
 

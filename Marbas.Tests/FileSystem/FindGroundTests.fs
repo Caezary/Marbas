@@ -51,7 +51,8 @@ let ``a panel inside an archive searches below the level it stands on`` () =
     let fs = mounted ()
     let level = ArchivePath.tryCreate "docs" |> Expect.some
 
-    let ground = resolved fs (InArchive(fp (at "start/backup.zip"), level)) FromDirectory
+    let ground =
+        resolved fs (InArchive(fp (at "start/backup.zip"), level)) FromDirectory
 
     Assert.Equal<string list>([ at "start/backup.zip/docs" ], roots fs ground)
 
@@ -60,7 +61,8 @@ let ``a panel inside an archive leaves it for the root of the volume`` () =
     let fs = mounted ()
     let level = ArchivePath.tryCreate "docs" |> Expect.some
 
-    let ground = resolved fs (InArchive(fp (at "start/backup.zip"), level)) FromVolumeRoot
+    let ground =
+        resolved fs (InArchive(fp (at "start/backup.zip"), level)) FromVolumeRoot
 
     Assert.Equal<string list>([ at "" ], roots fs ground)
 
@@ -68,10 +70,10 @@ let ``a panel inside an archive leaves it for the root of the volume`` () =
 let ``a search of marked directories starts at each of them`` () =
     let fs = mounted ()
 
-    let marked =
-        [ OnDisk(fp (at "start/docs")); OnDisk(fp (at "media/stick/photos")) ]
+    let marked = [ OnDisk(fp (at "start/docs")); OnDisk(fp (at "media/stick/photos")) ]
 
-    let ground = FindGround.resolve fs (OnDisk(fp (at "start"))) marked [] MarkedDirectories
+    let ground =
+        FindGround.resolve fs (OnDisk(fp (at "start"))) marked [] MarkedDirectories
 
     Assert.Equal<string list>([ at "start/docs"; at "media/stick/photos" ], roots fs ground)
 
@@ -112,7 +114,8 @@ let ``a search of the path starts at the directories it was given`` () =
     let fs = mounted ()
     let onPath = [ fp (at "start/docs") ]
 
-    let ground = FindGround.resolve fs (OnDisk(fp (at "start"))) [] onPath PathDirectories
+    let ground =
+        FindGround.resolve fs (OnDisk(fp (at "start"))) [] onPath PathDirectories
 
     Assert.Equal<string list>([ at "start/docs" ], roots fs ground)
 

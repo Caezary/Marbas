@@ -174,18 +174,7 @@ let ``the same bytes read differently in every code page`` () =
         TextEncoding.charsets
         |> List.map (fun charset -> TextEncoding.decode { Charset = charset; Bom = WithoutBom } probe)
 
-    Assert.Equal<string list>(
-        [ "����"
-          "ꖀ릱"
-          "肥놹"
-          "\u0080¥±¹"
-          "€Ą±ą"
-          "Çą▒╣"
-          "\u0080Ľąš"
-          "€¥±¹"
-          "ÇÑ▒╣" ],
-        texts
-    )
+    Assert.Equal<string list>([ "����"; "ꖀ릱"; "肥놹"; "\u0080¥±¹"; "€Ą±ą"; "Çą▒╣"; "\u0080Ľąš"; "€¥±¹"; "ÇÑ▒╣" ], texts)
 
 [<Fact>]
 let ``a chosen charset keeps the mark the file starts with`` () =
@@ -209,7 +198,11 @@ let ``a single-byte code page has no mark`` () =
 
     let encoding = TextEncoding.chosen Windows1250 probe
 
-    Assert.Equal({ Charset = Windows1250; Bom = WithoutBom }, encoding)
+    Assert.Equal(
+        { Charset = Windows1250
+          Bom = WithoutBom },
+        encoding
+    )
 
 [<Fact>]
 let ``a single-byte code page takes one byte to the character`` () =
@@ -246,7 +239,7 @@ let ``a utf-8 continuation byte starts no character`` (position: int) =
 [<Fact>]
 let ``a utf-8 character cut off by the end is no character`` () =
     let encoding = { Charset = Utf8; Bom = WithoutBom }
-    let probe = (Encoding.UTF8.GetBytes "A€")[.. 2]
+    let probe = (Encoding.UTF8.GetBytes "A€")[..2]
 
     let length = TextEncoding.characterLengthAt encoding probe 1
 
@@ -284,7 +277,7 @@ let ``a utf-16 low surrogate on its own starts no character`` () =
 [<Fact>]
 let ``a utf-16 unit cut off by the end is no character`` () =
     let encoding = { Charset = Utf16Le; Bom = WithoutBom }
-    let probe = (wide "AB")[.. 2]
+    let probe = (wide "AB")[..2]
 
     let length = TextEncoding.characterLengthAt encoding probe 2
 

@@ -33,7 +33,10 @@ let private windowChoosing (fs: MockFileSystem) chosen (runs: ResizeArray<Comman
         { Fakes.dependencies fs (at "start") with
             Prompts.ChooseFromUserMenu = fun _ -> Some chosen
             Prompts.ReportError = fun (report: Ports.ErrorReport) -> reported report.Title
-            Processes.RunCommand = fun run -> runs.Add run; Ok() }
+            Processes.RunCommand =
+                fun run ->
+                    runs.Add run
+                    Ok() }
 
 [<Fact>]
 let ``F2 runs the entry chosen in the menu against the file under the cursor`` () =
@@ -44,7 +47,13 @@ let ``F2 runs the entry chosen in the menu against the file under the cursor`` (
     pressKey window KeyMap.userMenuKey
 
     let run = Assert.Single runs
-    Assert.Equal<CommandWord list>([ { Text = at "start/notes.txt"; Quoting = Quoted } ], run.Command.Arguments)
+
+    Assert.Equal<CommandWord list>(
+        [ { Text = at "start/notes.txt"
+            Quoting = Quoted } ],
+        run.Command.Arguments
+    )
+
     Assert.Equal(InShellKeptOpen, run.Run)
 
 [<Fact>]
@@ -78,7 +87,10 @@ let ``closing the menu without a choice starts nothing`` () =
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Processes.RunCommand = fun run -> runs.Add run; Ok() }
+                Processes.RunCommand =
+                    fun run ->
+                        runs.Add run
+                        Ok() }
 
     pressKey window Key.F2
 
@@ -92,7 +104,8 @@ let ``a menu edited and closed is the same menu after a restart`` () =
     let shown = ResizeArray<UserMenu>()
 
     let editing (prompt: Ports.UserMenuPrompt) =
-        [ AddItem(added, None); AddItem(SeparatorItem, Some(CommandAt(Expect.some (MenuHotkey.tryCreate "S")))) ]
+        [ AddItem(added, None)
+          AddItem(SeparatorItem, Some(CommandAt(Expect.some (MenuHotkey.tryCreate "S")))) ]
         |> List.iter (prompt.Change >> ignore)
 
         None
@@ -105,7 +118,10 @@ let ``a menu edited and closed is the same menu after a restart`` () =
     use restarted =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Prompts.ChooseFromUserMenu = fun prompt -> shown.Add prompt.Menu; None }
+                Prompts.ChooseFromUserMenu =
+                    fun prompt ->
+                        shown.Add prompt.Menu
+                        None }
 
     pressKey first KeyMap.userMenuKey
     pressKey restarted KeyMap.userMenuKey

@@ -40,7 +40,8 @@ type RewindingStream(length: int64, openSource: unit -> Stream) =
                 skipping stream (remaining - int64 read)
 
     member private _.Reach(target: int64) =
-        if target < position then closed ()
+        if target < position then
+            closed ()
 
         skipping (currentStream ()) (target - position)
 
@@ -78,6 +79,7 @@ type RewindingStream(length: int64, openSource: unit -> Stream) =
         position
 
     override _.Dispose(disposing: bool) =
-        if disposing then closed ()
+        if disposing then
+            closed ()
 
         base.Dispose disposing

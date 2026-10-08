@@ -44,7 +44,13 @@ let private walk
             ResultsWindow.add window arrived
             ResultsWindow.walking window walking
 
-    let timer = app.AddTimeout(Gathering, (fun () -> gather (); true))
+    let timer =
+        app.AddTimeout(
+            Gathering,
+            (fun () ->
+                gather ()
+                true)
+        )
 
     Task.Run(fun () ->
         let outcome = FileSearch.run fs control pending.Enqueue query ground
@@ -58,7 +64,13 @@ let private walk
 
     timer
 
-let run (app: IApplication) (fs: IFileSystem) (asked: SearchRun) (view: FindHit -> unit) (finished: FindAnswer -> unit) =
+let run
+    (app: IApplication)
+    (fs: IFileSystem)
+    (asked: SearchRun)
+    (view: FindHit -> unit)
+    (finished: FindAnswer -> unit)
+    =
     use cancellation = new CancellationTokenSource()
     let mutable showing = true
 

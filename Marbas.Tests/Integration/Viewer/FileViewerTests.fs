@@ -122,8 +122,7 @@ let ``the key bar says what the function keys do`` () =
     use window = laidOut (text [ "first" ])
 
     let labels =
-        FunctionKeyBar.slots (FileViewer.keyBar window)
-        |> List.map _.CommandName.Text
+        FunctionKeyBar.slots (FileViewer.keyBar window) |> List.map _.CommandName.Text
 
     Assert.Equal("Wrap", labels[1])
     Assert.Equal("Quit", labels[2])
@@ -279,7 +278,10 @@ let ``the header counts lines from one`` () =
 [<Fact>]
 let ``json in utf-16 is shown as the text it is`` () =
     let json = "{ \"name\": \"value\" }"
-    let wide = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes json)
+
+    let wide =
+        Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes json)
+
     use window = laidOut (MockFileData wide)
 
     let content = FileViewer.content window
@@ -365,8 +367,7 @@ let ``the key bar offers the way back out of hex and wrap`` () =
     press content Key.F2
 
     let labels =
-        FunctionKeyBar.slots (FileViewer.keyBar window)
-        |> List.map _.CommandName.Text
+        FunctionKeyBar.slots (FileViewer.keyBar window) |> List.map _.CommandName.Text
 
     Assert.Equal("Unwrap", labels[1])
     Assert.Equal("Text", labels[3])
@@ -440,7 +441,9 @@ let ``a file of a hundred thousand lines opens at its first line`` () =
 [<Fact>]
 let ``F8 offers the code page in use and what the viewer settled on`` () =
     let offers = ResizeArray<CodePageOffer>()
-    use window = viewingWith ignore (recordingInto offers None) (Size(80, 24)) (text [ "first" ])
+
+    use window =
+        viewingWith ignore (recordingInto offers None) (Size(80, 24)) (text [ "first" ])
 
     press (FileViewer.content window) Key.F8
 
@@ -453,7 +456,10 @@ let ``F8 offers the code page in use and what the viewer settled on`` () =
 [<Fact>]
 let ``F8 again offers the code page chosen the time before`` () =
     let offers = ResizeArray<CodePageOffer>()
-    use window = viewingWith ignore (recordingInto offers (Some(Fixed Cp852))) (Size(80, 24)) latinBytes
+
+    use window =
+        viewingWith ignore (recordingInto offers (Some(Fixed Cp852))) (Size(80, 24)) latinBytes
+
     let content = FileViewer.content window
     press content Key.F8
 
@@ -473,19 +479,7 @@ let ``every code page reads the same bytes its own way`` () =
             press content Key.F8
             List.head (content.Rows()))
 
-    Assert.Equal<string list>(
-        [ ".¥±¹"
-          "����"
-          "ꖀ릱"
-          "肥놹"
-          ".¥±¹"
-          "€Ą±ą"
-          "Çą▒╣"
-          ".Ľąš"
-          "€¥±¹"
-          "ÇÑ▒╣" ],
-        firstRows
-    )
+    Assert.Equal<string list>([ ".¥±¹"; "����"; "ꖀ릱"; "肥놹"; ".¥±¹"; "€Ą±ą"; "Çą▒╣"; ".Ľąš"; "€¥±¹"; "ÇÑ▒╣" ], firstRows)
 
 [<Fact>]
 let ``a code page that was not chosen leaves the file as it was`` () =
@@ -518,7 +512,9 @@ let ``a new code page keeps the place in the text`` () =
 
 [<Fact>]
 let ``a code page with a wider line feed finds the lines it holds`` () =
-    use window = choosing (Fixed Utf16Le) (MockFileData(Encoding.Unicode.GetBytes "first\nsecond"))
+    use window =
+        choosing (Fixed Utf16Le) (MockFileData(Encoding.Unicode.GetBytes "first\nsecond"))
+
     let content = FileViewer.content window
 
     press content Key.F8
@@ -564,8 +560,7 @@ let ``the key bar offers the code page`` () =
     use window = laidOut (text [ "first" ])
 
     let labels =
-        FunctionKeyBar.slots (FileViewer.keyBar window)
-        |> List.map _.CommandName.Text
+        FunctionKeyBar.slots (FileViewer.keyBar window) |> List.map _.CommandName.Text
 
     Assert.Equal("Code", labels[7])
 
@@ -631,7 +626,11 @@ let ``F7 offers the texts searched before and nothing typed yet`` () =
 
     use window = searched ports (numbered 10)
 
-    Assert.Equal({ Remembered = [ typed "older" ]; Last = LastText None }, Assert.Single offers)
+    Assert.Equal(
+        { Remembered = [ typed "older" ]
+          Last = LastText None },
+        Assert.Single offers
+    )
 
 [<Fact>]
 let ``F7 pressed again offers the last text searched for`` () =
@@ -704,7 +703,9 @@ let ``a match further down a file larger than one window of bytes comes to the t
 
 [<Fact>]
 let ``a search starts from the top of the screen`` () =
-    use window = searching (answering "needle") (text [ "needle"; "hay"; "hay"; "needle" ])
+    use window =
+        searching (answering "needle") (text [ "needle"; "hay"; "hay"; "needle" ])
+
     let content = FileViewer.content window
     press content Key.CursorDown
 
@@ -840,15 +841,18 @@ let ``F7 in hex offers the bytes searched before and nothing typed yet`` () =
 
     press content Key.F7
 
-    Assert.Equal({ Remembered = [ typed "4D 5A" ]; Last = LastBytes None }, Assert.Single offers)
+    Assert.Equal(
+        { Remembered = [ typed "4D 5A" ]
+          Last = LastBytes None },
+        Assert.Single offers
+    )
 
 [<Fact>]
 let ``the key bar offers the search`` () =
     use window = laidOut (text [ "first" ])
 
     let labels =
-        FunctionKeyBar.slots (FileViewer.keyBar window)
-        |> List.map _.CommandName.Text
+        FunctionKeyBar.slots (FileViewer.keyBar window) |> List.map _.CommandName.Text
 
     Assert.Equal("Search", labels[6])
 
@@ -870,7 +874,11 @@ let ``Shift+F7 before any search asks for one`` () =
 
     again (FileViewer.content window)
 
-    Assert.Equal({ Remembered = []; Last = LastText None }, Assert.Single offers)
+    Assert.Equal(
+        { Remembered = []
+          Last = LastText None },
+        Assert.Single offers
+    )
 
 [<Fact>]
 let ``Shift+F7 finds the next match without asking`` () =
@@ -990,7 +998,9 @@ let ``Shift+F7 repeats the options of the last search`` () =
         { plainAnswer "needle" with
             Words = WholeWords }
 
-    use window = searched (answeringWith answer) (text [ "needle"; "needles"; "needle" ])
+    use window =
+        searched (answeringWith answer) (text [ "needle"; "needles"; "needle" ])
+
     let content = FileViewer.content window
 
     again content
@@ -1052,7 +1062,11 @@ let ``Shift+F7 in hex before any search of bytes asks for one`` () =
 
     again content
 
-    Assert.Equal({ Remembered = []; Last = LastBytes None }, offers[1])
+    Assert.Equal(
+        { Remembered = []
+          Last = LastBytes None },
+        offers[1]
+    )
 
 let private patternAnswer raw =
     { plainAnswer raw with
@@ -1131,7 +1145,9 @@ let private brokenPatternSearched direction =
     let remembered = ResizeArray<EnteredText>()
 
     let ports =
-        { answeringWith { patternAnswer "(" with Direction = direction } with
+        { answeringWith
+              { patternAnswer "(" with
+                  Direction = direction } with
             Report = reports.Add
             RunSearch = counting runs
             Searches.Remember = remembered.Add }
@@ -1178,7 +1194,10 @@ let private needle = [| 0xFCuy; 0xFDuy; 0xFEuy; 0xFFuy |]
 
 let private binaryWithNeedlesAt (offsets: int list) length =
     let bytes = Array.init length (fun index -> byte (index % 251))
-    offsets |> List.iter (fun offset -> Array.blit needle 0 bytes offset needle.Length)
+
+    offsets
+    |> List.iter (fun offset -> Array.blit needle 0 bytes offset needle.Length)
+
     MockFileData bytes
 
 let private bytesAnswer raw =
@@ -1200,7 +1219,8 @@ let private wantedBytes raw = WantedBytes.tryParse raw |> Expect.ok
 
 [<Fact>]
 let ``a run of bytes on the screen is marked in both columns`` () =
-    use window = searchedInHex (answeringWith (bytesAnswer "FC FD FE FF")) (binaryWithNeedlesAt [ 40 ] 1000)
+    use window =
+        searchedInHex (answeringWith (bytesAnswer "FC FD FE FF")) (binaryWithNeedlesAt [ 40 ] 1000)
 
     let content = FileViewer.content window
 
@@ -1236,7 +1256,8 @@ let ``bytes searched back start from the bottom of the screen`` () =
         { bytesAnswer "FC FD FE FF" with
             Direction = Backwards }
 
-    use window = searchedInHex (answeringWith answer) (binaryWithNeedlesAt [ 40; 80 ] 1000)
+    use window =
+        searchedInHex (answeringWith answer) (binaryWithNeedlesAt [ 40; 80 ] 1000)
 
     let content = FileViewer.content window
 
@@ -1248,7 +1269,9 @@ let ``Shift+F7 in hex goes on backwards`` () =
         { bytesAnswer "FC FD FE FF" with
             Direction = Backwards }
 
-    use window = searchedInHex (answeringWith answer) (binaryWithNeedlesAt [ 40; 80 ] 1000)
+    use window =
+        searchedInHex (answeringWith answer) (binaryWithNeedlesAt [ 40; 80 ] 1000)
+
     let content = FileViewer.content window
 
     again content
@@ -1326,7 +1349,9 @@ let ``F7 in hex again offers the last bytes`` () =
 
 [<Fact>]
 let ``a run marked in hex is not marked in text`` () =
-    use window = searchedInHex (answeringWith (bytesAnswer "FC FD FE FF")) (binaryWithNeedlesAt [ 40 ] 1000)
+    use window =
+        searchedInHex (answeringWith (bytesAnswer "FC FD FE FF")) (binaryWithNeedlesAt [ 40 ] 1000)
+
     let content = FileViewer.content window
 
     press content Key.F4

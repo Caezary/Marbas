@@ -9,7 +9,9 @@ type PanelLocation =
     | InArchive of archive: FileSystemPath * level: ArchivePath
     | SearchResults of found: FoundEntries
 
-and FindHit = { Location: PanelLocation; Entry: Entry }
+and FindHit =
+    { Location: PanelLocation
+      Entry: Entry }
 
 and FindGround =
     { Roots: PanelLocation list
@@ -61,7 +63,8 @@ module PanelLocation =
         | SearchResults _ -> None
 
     let combine (fs: IFileSystem) location (name: string) =
-        directory location |> Option.map (fun path -> FileSystemPath.combine fs path name)
+        directory location
+        |> Option.map (fun path -> FileSystemPath.combine fs path name)
 
     let rec spelled (fs: IFileSystem) location =
         match location with
@@ -69,7 +72,8 @@ module PanelLocation =
         | InArchive(archive, level) -> ArchivePath.spelled fs archive level
         | SearchResults found -> spelled fs found.Origin
 
-    let value (fs: IFileSystem) location = spelled fs location |> FileSystemPath.value
+    let value (fs: IFileSystem) location =
+        spelled fs location |> FileSystemPath.value
 
     let spelledChild (fs: IFileSystem) location (name: EntryName) =
         match location with

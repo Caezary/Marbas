@@ -27,7 +27,8 @@ let private loadedBoth (fs: IFileSystem) =
     |> loadPanel fs Right (fp (at "backup"))
     |> Expect.ok
 
-let private answered tab choice = HistoryAnswered { Tab = tab; Choice = choice }
+let private answered tab choice =
+    HistoryAnswered { Tab = tab; Choice = choice }
 
 [<Fact>]
 let ``the history opens on the directories the first time`` () =

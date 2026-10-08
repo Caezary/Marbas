@@ -19,7 +19,9 @@ let ``the question names the entry that would be replaced`` () =
 
 [<Fact>]
 let ``every offered answer maps to its own outcome`` () =
-    let answers = OverwriteQuestion.Answers |> List.mapi (fun index _ -> OverwriteQuestion.answerAt index)
+    let answers =
+        OverwriteQuestion.Answers
+        |> List.mapi (fun index _ -> OverwriteQuestion.answerAt index)
 
     Assert.Equal<OverwriteAnswer list>([ Yes; No; YesToAll; NoToAll; Cancel ], answers)
 

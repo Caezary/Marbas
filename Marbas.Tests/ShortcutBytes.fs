@@ -28,8 +28,22 @@ let LongInfoHeader = 0x24
 let NetworkHeader = 0x14
 
 let private shellLinkClass =
-    [| 0x01uy; 0x14uy; 0x02uy; 0x00uy; 0x00uy; 0x00uy; 0x00uy; 0x00uy
-       0xC0uy; 0x00uy; 0x00uy; 0x00uy; 0x00uy; 0x00uy; 0x00uy; 0x46uy |]
+    [| 0x01uy
+       0x14uy
+       0x02uy
+       0x00uy
+       0x00uy
+       0x00uy
+       0x00uy
+       0x00uy
+       0xC0uy
+       0x00uy
+       0x00uy
+       0x00uy
+       0x00uy
+       0x00uy
+       0x00uy
+       0x46uy |]
 
 let int32s (values: int list) =
     values |> List.map BitConverter.GetBytes |> Array.concat
@@ -50,7 +64,10 @@ let localInfo (basePath: byte array) (suffix: byte array) =
     let suffixAt = ShortInfoHeader + basePath.Length
     let size = suffixAt + suffix.Length
 
-    Array.concat [ int32s [ size; ShortInfoHeader; 1; 0; ShortInfoHeader; 0; suffixAt ]; basePath; suffix ]
+    Array.concat
+        [ int32s [ size; ShortInfoHeader; 1; 0; ShortInfoHeader; 0; suffixAt ]
+          basePath
+          suffix ]
 
 let counted (text: string) =
     Array.append (BitConverter.GetBytes(uint16 text.Length)) (Encoding.Unicode.GetBytes text)

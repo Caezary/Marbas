@@ -108,7 +108,9 @@ let ``reading a directory says which entries are hidden`` () =
     let fs = mockFs ()
 
     let entries = read fs (fp (at "start")) |> Expect.ok
-    let byName name = entries |> List.find (fun e -> e.Name = en name)
+
+    let byName name =
+        entries |> List.find (fun e -> e.Name = en name)
 
     Assert.Equal(Plain, (byName "notes.txt").Visibility)
     Assert.Equal(Plain, (byName "docs").Visibility)
@@ -121,7 +123,8 @@ let ``reading a directory says which entries are hidden`` () =
 let ``a concealing listing leaves the hidden entries out`` () =
     let fs = mockFs ()
 
-    let entries = listForDisplay fs SortOrder.byName Concealed (fp (at "start")) |> Expect.ok
+    let entries =
+        listForDisplay fs SortOrder.byName Concealed (fp (at "start")) |> Expect.ok
 
     Assert.Equal<string list>([ ".."; "docs"; "notes.txt" ], names entries)
 
@@ -129,12 +132,10 @@ let ``a concealing listing leaves the hidden entries out`` () =
 let ``a showing listing lists the hidden entries in their usual place`` () =
     let fs = mockFs ()
 
-    let entries = listForDisplay fs SortOrder.byName Shown (fp (at "start")) |> Expect.ok
+    let entries =
+        listForDisplay fs SortOrder.byName Shown (fp (at "start")) |> Expect.ok
 
-    Assert.Equal<string list>(
-        [ ".."; ".git"; "cache"; "docs"; ".config"; "notes.txt"; "swap.sys" ],
-        names entries
-    )
+    Assert.Equal<string list>([ ".."; ".git"; "cache"; "docs"; ".config"; "notes.txt"; "swap.sys" ], names entries)
 
 [<Fact>]
 let ``the parent entry is never concealed`` () =
@@ -142,6 +143,7 @@ let ``the parent entry is never concealed`` () =
     fs.AddDirectory(at "start/sub")
     markDirectory fs (at "start")
 
-    let entries = listForDisplay fs SortOrder.byName Concealed (fp (at "start/sub")) |> Expect.ok
+    let entries =
+        listForDisplay fs SortOrder.byName Concealed (fp (at "start/sub")) |> Expect.ok
 
     Assert.Equal<string list>([ ".." ], names entries)

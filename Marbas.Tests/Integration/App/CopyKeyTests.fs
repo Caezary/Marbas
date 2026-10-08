@@ -68,7 +68,15 @@ let ``F5 asks before replacing an existing entry`` () =
     let fs = mockFs ()
     fs.AddFile(at "backup/notes.txt", MockFileData "old")
     let asked = ResizeArray<FileSystemPath>()
-    use window = windowWith fs (fun (request: Ports.OverwritePrompt) -> asked.Add request.Target; Yes) silent
+
+    use window =
+        windowWith
+            fs
+            (fun (request: Ports.OverwritePrompt) ->
+                asked.Add request.Target
+                Yes)
+            silent
+
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F5
@@ -94,7 +102,15 @@ let ``no to all leaves every colliding target alone after one question`` () =
     fs.AddFile(at "backup/notes.txt", MockFileData "old notes")
     fs.AddFile(at "backup/readme.txt", MockFileData "old readme")
     let asked = ResizeArray<FileSystemPath>()
-    use window = windowWith fs (fun (request: Ports.OverwritePrompt) -> asked.Add request.Target; NoToAll) silent
+
+    use window =
+        windowWith
+            fs
+            (fun (request: Ports.OverwritePrompt) ->
+                asked.Add request.Target
+                NoToAll)
+            silent
+
     let left = leftList window
 
     left.SelectedItem <- 2
@@ -111,8 +127,15 @@ let ``no to all leaves every colliding target alone after one question`` () =
 let ``F5 on the parent entry copies nothing and asks nothing`` () =
     let fs = mockFs ()
     let asked = ResizeArray<string>()
+
     use window =
-        windowWith fs (fun request -> asked.Add(FileSystemPath.value request.Target); Yes) silent
+        windowWith
+            fs
+            (fun request ->
+                asked.Add(FileSystemPath.value request.Target)
+                Yes)
+            silent
+
     (leftList window).SelectedItem <- 0
 
     pressKey window Key.F5

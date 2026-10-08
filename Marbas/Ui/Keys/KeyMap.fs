@@ -35,9 +35,12 @@ let selectionPageDownKeys = [ Key.CursorRight.WithShift; Key.PageDown.WithShift 
 let selectionPageUpKeys = [ Key.CursorLeft.WithShift; Key.PageUp.WithShift ]
 
 let selectionPageDirection (key: Key) =
-    if List.contains key selectionPageDownKeys then Some Downward
-    elif List.contains key selectionPageUpKeys then Some Upward
-    else None
+    if List.contains key selectionPageDownKeys then
+        Some Downward
+    elif List.contains key selectionPageUpKeys then
+        Some Upward
+    else
+        None
 
 let selectPatternKey = Key '+'
 
@@ -382,11 +385,7 @@ let bar modifiers =
 
 let messageFor (key: Key) =
     bindings
-    |> List.tryPick (fun binding ->
-        if binding.Key = key then
-            Some binding.Message
-        else
-            None)
+    |> List.tryPick (fun binding -> if binding.Key = key then Some binding.Message else None)
 
 let menuHotkeyOf (key: Key) =
     if printable key then

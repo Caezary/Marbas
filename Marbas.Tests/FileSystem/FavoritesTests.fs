@@ -39,7 +39,9 @@ let private unwritten error =
 
 [<Fact>]
 let ``no slot holds a place before anything is kept`` () =
-    let places = FavoriteSlot.all |> List.choose (fun slot -> Favorites.placeIn slot Favorites.empty)
+    let places =
+        FavoriteSlot.all
+        |> List.choose (fun slot -> Favorites.placeIn slot Favorites.empty)
 
     Assert.Empty places
 
@@ -55,7 +57,8 @@ let ``a place kept under a digit is the place that slot holds`` () =
 let ``a place kept under a digit leaves every other slot as it was`` () =
     let favorites = keep 3 (onDisk "elsewhere") sample
 
-    let held = [ 1; 7 ] |> List.map (fun digit -> Favorites.placeIn (slot digit) favorites)
+    let held =
+        [ 1; 7 ] |> List.map (fun digit -> Favorites.placeIn (slot digit) favorites)
 
     Assert.Equal<Place option list>([ Some(onDisk "work"); Some(inArchive "backup.zip" "docs/2024") ], held)
 

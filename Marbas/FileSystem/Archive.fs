@@ -31,7 +31,10 @@ let private attempt path action =
     Operations.attempting path action |> Result.ignore
 
 let private known (moment: DateTimeOffset) =
-    if moment = DateTimeOffset.MinValue then None else Some moment
+    if moment = DateTimeOffset.MinValue then
+        None
+    else
+        Some moment
 
 let private nullableTime moment =
     moment
@@ -95,8 +98,7 @@ let private intoTarGz compression (stream: Stream) pack =
     use tar = new TarWriter(compressed, TarEntryFormat.Pax, true)
 
     let dated (entry: PaxTarEntry) moment =
-        moment
-        |> Option.iter (fun (m: DateTimeOffset) -> entry.ModificationTime <- m)
+        moment |> Option.iter (fun (m: DateTimeOffset) -> entry.ModificationTime <- m)
 
         tar.WriteEntry entry
 
@@ -113,8 +115,8 @@ let private keyAtLevel (level: ArchivePath) (name: string) =
     | prefix -> $"{prefix}/{name}"
 
 let private sinkAtLevel (level: ArchivePath) sink =
-    { AddDirectory = fun name -> sink.AddDirectory (keyAtLevel level name)
-      AddFile = fun name -> sink.AddFile (keyAtLevel level name) }
+    { AddDirectory = fun name -> sink.AddDirectory(keyAtLevel level name)
+      AddFile = fun name -> sink.AddFile(keyAtLevel level name) }
 
 let private lzmaLevel compression =
     match compression with
@@ -126,7 +128,11 @@ let private intoSevenZip compression (stream: Stream) pack =
     use writer =
         new SevenZipWriter(
             stream,
-            SevenZipWriterOptions(CompressionType.LZMA2, CompressionLevel = lzmaLevel compression, LeaveStreamOpen = true)
+            SevenZipWriterOptions(
+                CompressionType.LZMA2,
+                CompressionLevel = lzmaLevel compression,
+                LeaveStreamOpen = true
+            )
         )
 
     pack
@@ -159,7 +165,9 @@ let rec private adding (fs: IFileSystem) (control: Operations.BatchControl) sink
             }
         | File, _ ->
             control.Report child.Path
-            attempt child.Path (fun () -> sink.AddFile (entryName fs root child.Path) (onDisk fs child.Entry child.Path))
+
+            attempt child.Path (fun () ->
+                sink.AddFile (entryName fs root child.Path) (onDisk fs child.Entry child.Path))
 
 let private add (fs: IFileSystem) control sink root source =
     match existingEntry fs source with
@@ -174,8 +182,7 @@ let private packInto fs control (request: ArchiveRequest) sources stream =
     intoArchive request.Format request.Compression request.Password stream (packAll fs control sources)
 
 let private failingEvery sources error =
-    sources
-    |> List.map (fun source -> Operations.itemResult source (Error error))
+    sources |> List.map (fun source -> Operations.itemResult source (Error error))
 
 let write (fs: IFileSystem) control (request: ArchiveRequest) sources =
     match Operations.attempting request.Path (fun () -> fs.File.Create(FileSystemPath.value request.Path)) with
@@ -186,7 +193,8 @@ let write (fs: IFileSystem) control (request: ArchiveRequest) sources =
                 use stream = created
                 packInto fs control request sources stream)
 
-        let discard () = Operations.delete fs Operations.unattended request.Path |> ignore
+        let discard () =
+            Operations.delete fs Operations.unattended request.Path |> ignore
 
         if control.IsCancelled() then
             discard ()
@@ -220,7 +228,8 @@ let private landingPlace (fs: IFileSystem) (destination: FileSystemPath) segment
     |> FileSystemPath.create
 
 let private makeRoom (fs: IFileSystem) (path: FileSystemPath) =
-    fs.Directory.CreateDirectory(fs.Path.GetDirectoryName(FileSystemPath.value path)) |> ignore
+    fs.Directory.CreateDirectory(fs.Path.GetDirectoryName(FileSystemPath.value path))
+    |> ignore
 
 let private writeContent (fs: IFileSystem) (openContent: unit -> Stream) (path: FileSystemPath) =
     use stream = fs.File.Create(FileSystemPath.value path)
@@ -263,7 +272,8 @@ type private UnpackWalk =
       mutable End: WalkEnd }
 
 let private isTargetItself (target: ArchivePath) (info: ArchiveEntryInfo) =
-    not (ArchiveEntryInfo.isDirectory info) && info.Segments = ArchivePath.segments target
+    not (ArchiveEntryInfo.isDirectory info)
+    && info.Segments = ArchivePath.segments target
 
 let private advanced target info outcome =
     match outcome with
@@ -293,7 +303,8 @@ let private targetsBySegments (targets: ArchivePath array) =
     |> Map.ofArray
 
 let private prefixesOf (segments: EntryName list) =
-    [ 0 .. segments.Length ] |> List.map (fun length -> List.truncate length segments)
+    [ 0 .. segments.Length ]
+    |> List.map (fun length -> List.truncate length segments)
 
 let private unpackingAll fs control destination (targets: ArchivePath array) (walk: UnpackWalk) =
     let bySegments = targetsBySegments targets
@@ -306,7 +317,9 @@ let private unpackingAll fs control destination (targets: ArchivePath array) (wa
     let unpackInto info openContent index =
         let target = targets[index]
         let before = walk.Progress[index]
-        let after = advanced target info (unpackEntry fs control destination target info openContent)
+
+        let after =
+            advanced target info (unpackEntry fs control destination target info openContent)
 
         if settled after && not (settled before) then
             walk.Unsettled <- walk.Unsettled - 1
@@ -326,7 +339,10 @@ let private unpackingAll fs control destination (targets: ArchivePath array) (wa
             if walk.Unsettled = 0 then StopReading else KeepReading)
 
 let private targetLanding (fs: IFileSystem) destination target =
-    ArchivePath.segments target |> List.tryLast |> Option.toList |> landingPlace fs destination
+    ArchivePath.segments target
+    |> List.tryLast
+    |> Option.toList
+    |> landingPlace fs destination
 
 let private outcomeOf (fs: IFileSystem) (request: ExtractRequest) ending target progress =
     match progress, ending with
@@ -385,9 +401,10 @@ let private eachTarget (control: Operations.BatchControl) (archive: FileSystemPa
 let needsPassword (fs: IFileSystem) (archive: FileSystemPath) =
     match ArchiveReader.kindOf fs archive with
     | Some kind when ArchiveKind.carriesPassword kind ->
-        ArchiveIndex.read fs archive |> Result.map (List.exists ArchiveEntryInfo.isEncrypted)
+        ArchiveIndex.read fs archive
+        |> Result.map (List.exists ArchiveEntryInfo.isEncrypted)
     | _ -> Ok false
-    
+
 let private whenUnlocked (fs: IFileSystem) control (request: ExtractRequest) kind targets =
     match needsPassword fs request.Archive with
     | Error error -> Error error
@@ -482,10 +499,11 @@ let private updatingZip (fs: IFileSystem) archive (dropped: ArchivePath list) le
     |> List.filter (fun (_, segments) -> dropped |> List.exists (fun target -> ArchivePath.atOrUnder target segments))
     |> List.iter (fst >> zip.Delete)
 
-    match work
-              { Held = held |> List.map snd
-                Sink = sinkAtLevel level (intoUpdate zip) }
-        with
+    match
+        work
+            { Held = held |> List.map snd
+              Sink = sinkAtLevel level (intoUpdate zip) }
+    with
     | Commit value ->
         zip.CommitUpdate()
         Ok value
@@ -547,7 +565,10 @@ let private writingFreshCopy (fs: IFileSystem) archive kind format fresh dropped
 
             intoArchive format Normal None stream (fun sink ->
                 copyKept fs archive kind dropped control sink
-                work { Held = held; Sink = sinkAtLevel level sink })
+
+                work
+                    { Held = held
+                      Sink = sinkAtLevel level sink })
 
         match outcome with
         | Commit value ->
@@ -564,7 +585,9 @@ let private rewritingWhole (fs: IFileSystem) archive kind dropped level control 
         let rewriteHeld =
             writingFreshCopy fs archive kind format (workingFile fs archive) dropped level control work
 
-        ArchiveIndex.read fs archive |> Result.map (List.map _.Segments) |> Result.bind rewriteHeld
+        ArchiveIndex.read fs archive
+        |> Result.map (List.map _.Segments)
+        |> Result.bind rewriteHeld
 
 let private withArchiveOpenForChange
     (fs: IFileSystem)
@@ -589,7 +612,8 @@ let private cancelledEntries (fs: IFileSystem) archive targets =
     targets
     |> List.map (fun target ->
         { Source = Operations.ItemInArchive(archive, target)
-          Outcome = Error(Operations.Cancelled(ArchivePath.spelled fs archive target)) }: Operations.ItemResult)
+          Outcome = Error(Operations.Cancelled(ArchivePath.spelled fs archive target)) }
+        : Operations.ItemResult)
 
 let addEntries (fs: IFileSystem) control (archive: FileSystemPath) (level: ArchivePath) sources =
     let replaced =
@@ -629,8 +653,7 @@ let makeEntryDirectory (fs: IFileSystem) archive level (name: EntryName) =
 
     match ArchiveListing.read fs archive level with
     | Error error -> Error(Operations.ArchiveFailed error)
-    | Ok entries when entries |> List.exists (fun entry -> entry.Name = name) ->
-        Error(Operations.TargetExists target)
+    | Ok entries when entries |> List.exists (fun entry -> entry.Name = name) -> Error(Operations.TargetExists target)
     | Ok _ ->
         withArchiveOpenForChange fs archive Operations.unattended [] level (fun change ->
             change.Sink.AddDirectory (EntryName.value name) None

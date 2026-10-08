@@ -39,13 +39,15 @@ module ArchiveFormat =
 
     let kind (ArchiveFormat kind) = kind
 
-    let tryCreate wanted = all |> List.tryFind (kind >> (=) wanted)
+    let tryCreate wanted =
+        all |> List.tryFind (kind >> (=) wanted)
 
     let initial = List.head all
 
     let extension format = kind format |> ArchiveKind.extension
 
-    let carriesPassword format = kind format |> ArchiveKind.carriesPassword
+    let carriesPassword format =
+        kind format |> ArchiveKind.carriesPassword
 
 module ArchiveCompression =
 

@@ -78,8 +78,7 @@ let create (side: PanelSide) (screenWidth: unit -> int) (rows: DriveRow list) =
     dialog.AddButton(DialogStyle.button "_Ok")
     dialog
 
-let drives (dialog: Dialog) =
-    SubView.byType<ListView> dialog
+let drives (dialog: Dialog) = SubView.byType<ListView> dialog
 
 let private rowUnderCursor (dialog: DriveView) =
     (drives dialog).SelectedItem

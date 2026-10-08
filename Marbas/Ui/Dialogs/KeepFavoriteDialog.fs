@@ -48,7 +48,8 @@ let private asking (fs: IFileSystem) screenWidth place =
     let room = screenWidth - FrameWidth - QuestionLead.Length - QuestionTail.Length
 
     let path =
-        HistoryRow.place fs place |> PathText.shorten fs.Path.DirectorySeparatorChar room
+        HistoryRow.place fs place
+        |> PathText.shorten fs.Path.DirectorySeparatorChar room
 
     QuestionLead + path + QuestionTail
 

@@ -99,7 +99,11 @@ module Drives =
         fs.DriveInfo.GetDrives()
         |> Seq.choose read
         |> Seq.sortWith (fun a b ->
-            String.Compare(FileSystemPath.value a.Root, FileSystemPath.value b.Root, StringComparison.OrdinalIgnoreCase))
+            String.Compare(
+                FileSystemPath.value a.Root,
+                FileSystemPath.value b.Root,
+                StringComparison.OrdinalIgnoreCase
+            ))
         |> Seq.map MountedDrive
         |> List.ofSeq
 
@@ -115,7 +119,9 @@ module Drives =
 
     let volumeOf platform (fs: IFileSystem) (path: FileSystemPath) =
         let roots =
-            fs.DriveInfo.GetDrives() |> Seq.map (_.Name >> FileSystemPath.create) |> List.ofSeq
+            fs.DriveInfo.GetDrives()
+            |> Seq.map (_.Name >> FileSystemPath.create)
+            |> List.ofSeq
 
         deepestHolding platform roots path
         |> Option.orElse (FileSystemPath.root fs path)

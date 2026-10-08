@@ -40,7 +40,10 @@ let private invoke (target: obj) (flags: BindingFlags) (name: string) (arguments
 
 let private shortcutBySystem (location: string) (target: string) =
     let shell = Activator.CreateInstance(Type.GetTypeFromProgID "WScript.Shell")
-    let shortcut = invoke shell BindingFlags.InvokeMethod "CreateShortcut" [| location |]
+
+    let shortcut =
+        invoke shell BindingFlags.InvokeMethod "CreateShortcut" [| location |]
+
     invoke shortcut BindingFlags.SetProperty "TargetPath" [| target |] |> ignore
     invoke shortcut BindingFlags.InvokeMethod "Save" [||] |> ignore
 
@@ -62,7 +65,10 @@ let ``a junction copies the directory it leads into`` () =
 [<SymbolicLinkFact>]
 let ``a link below a linked directory is resolved by itself alone`` () =
     use scratch = withData ()
-    Directory.CreateSymbolicLink(scratch.At "data/place", scratch.At "data/work") |> ignore
+
+    Directory.CreateSymbolicLink(scratch.At "data/place", scratch.At "data/work")
+    |> ignore
+
     File.CreateSymbolicLink(scratch.At "data/work/twin.txt", "report.txt") |> ignore
 
     let result =
@@ -92,6 +98,7 @@ let ``a shortcut written by the Windows shell copies the file it names`` () =
     use scratch = withData ()
     shortcutBySystem (scratch.At "data/report.lnk") (scratch.At "data/work/report.txt")
 
-    let result = update disk LinkTargetsCopyRequested (standingIn scratch "data" "report.lnk")
+    let result =
+        update disk LinkTargetsCopyRequested (standingIn scratch "data" "report.lnk")
 
     Assert.Equal<Effect list>(copying [ scratch.At "data/work/report.txt" ], result.Effects)

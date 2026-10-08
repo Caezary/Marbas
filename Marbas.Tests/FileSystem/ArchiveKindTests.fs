@@ -5,9 +5,11 @@ open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Tests
 
-let private recognised raw = ArchiveKind.recognise (EntryName.create raw)
+let private recognised raw =
+    ArchiveKind.recognise (EntryName.create raw)
 
-let private format kind = ArchiveFormat.tryCreate kind |> Expect.some
+let private format kind =
+    ArchiveFormat.tryCreate kind |> Expect.some
 
 let private readWriteChange = Set [ Readable; Creatable; Changeable ]
 

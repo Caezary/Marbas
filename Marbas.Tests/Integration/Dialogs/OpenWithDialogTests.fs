@@ -29,7 +29,8 @@ let private laidOutRemembering remembered name handlers chosen =
     dialog.Layout(Size(90, 25)) |> ignore
     dialog
 
-let private laidOutWith name handlers chosen = laidOutRemembering [] name handlers chosen
+let private laidOutWith name handlers chosen =
+    laidOutRemembering [] name handlers chosen
 
 let private laidOut () = laidOutWith "page.html" known None
 
@@ -142,7 +143,8 @@ let ``everything on the dialog fits inside it`` () =
 
 [<Fact>]
 let ``the programs typed before are offered as the list of the program field`` () =
-    use dialog = laidOutRemembering [ "/opt/editor"; "/usr/bin/vim" ] "page.html" known None
+    use dialog =
+        laidOutRemembering [ "/opt/editor"; "/usr/bin/vim" ] "page.html" known None
 
     let offered =
         [ for item in (OpenWithDialog.field dialog :?> DropDownList).Source.ToList() -> string item ]
@@ -155,6 +157,8 @@ let ``the programs typed before are offered as the list of the program field`` (
 let ``the arrows are left to move between the fields of the open-with popup`` (spelled: string) =
     use dialog = laidOut ()
 
-    let taken = (OpenWithDialog.field dialog).KeyBindings.TryGet(Key.TryParse spelled |> snd) |> fst
+    let taken =
+        (OpenWithDialog.field dialog).KeyBindings.TryGet(Key.TryParse spelled |> snd)
+        |> fst
 
     Assert.False taken

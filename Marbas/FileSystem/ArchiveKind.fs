@@ -35,13 +35,11 @@ module ArchiveKind =
         match kind with
         | Zip
         | TarGz
-        | SevenZip ->
-            Set [ Readable; Creatable; Changeable ]
+        | SevenZip -> Set [ Readable; Creatable; Changeable ]
         | Tar
         | TarBz2
         | TarXz
-        | Rar ->
-            Set [ Readable ]
+        | Rar -> Set [ Readable ]
 
     let carriesPassword kind =
         match kind with

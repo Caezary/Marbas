@@ -17,7 +17,8 @@ type ByteOrderMark =
     | WithBom
     | WithoutBom
 
-type TextEncoding = { Charset: Charset; Bom: ByteOrderMark }
+type TextEncoding =
+    { Charset: Charset; Bom: ByteOrderMark }
 
 type Content =
     | Textual
@@ -64,7 +65,11 @@ module TextEncoding =
 
     let private wideCharset (probe: byte array) =
         let pairs = probe.Length / 2
-        let zeros side = Seq.init pairs (fun pair -> probe[pair * 2 + side]) |> Seq.filter ((=) 0uy) |> Seq.length
+
+        let zeros side =
+            Seq.init pairs (fun pair -> probe[pair * 2 + side])
+            |> Seq.filter ((=) 0uy)
+            |> Seq.length
 
         let leading = zeros 0
         let trailing = zeros 1
@@ -77,9 +82,12 @@ module TextEncoding =
     let private examine (probe: byte array) =
         let plain charset = { Charset = charset; Bom = WithoutBom }
 
-        if startsWith utf8Mark probe then { Charset = Utf8; Bom = WithBom }, Textual
-        elif startsWith utf16LeMark probe then { Charset = Utf16Le; Bom = WithBom }, Textual
-        elif startsWith utf16BeMark probe then { Charset = Utf16Be; Bom = WithBom }, Textual
+        if startsWith utf8Mark probe then
+            { Charset = Utf8; Bom = WithBom }, Textual
+        elif startsWith utf16LeMark probe then
+            { Charset = Utf16Le; Bom = WithBom }, Textual
+        elif startsWith utf16BeMark probe then
+            { Charset = Utf16Be; Bom = WithBom }, Textual
         else
             match wideCharset probe with
             | Some charset -> plain charset, Textual
@@ -91,7 +99,15 @@ module TextEncoding =
     let contentOf (probe: byte array) = examine probe |> snd
 
     let charsets =
-        [ Utf8; Utf16Le; Utf16Be; Latin1; Windows1250; Cp852; Iso88592; Windows1252; Cp437 ]
+        [ Utf8
+          Utf16Le
+          Utf16Be
+          Latin1
+          Windows1250
+          Cp852
+          Iso88592
+          Windows1252
+          Cp437 ]
 
     let charsetName charset =
         match charset with
@@ -183,7 +199,8 @@ module TextEncoding =
     let decode encoding (bytes: byte array) =
         (charsetEncoding encoding.Charset).GetString bytes
 
-    let decoder encoding = (charsetEncoding encoding.Charset).GetDecoder()
+    let decoder encoding =
+        (charsetEncoding encoding.Charset).GetDecoder()
 
     let maxChars encoding byteCount =
         (charsetEncoding encoding.Charset).GetMaxCharCount byteCount
@@ -204,7 +221,10 @@ module TextEncoding =
 
     let private utf16LengthAt charset (bytes: byte array) position =
         let unitAt at =
-            if at + 2 <= bytes.Length then Some(unitAt charset bytes at) else None
+            if at + 2 <= bytes.Length then
+                Some(unitAt charset bytes at)
+            else
+                None
 
         match unitAt position, unitAt (position + 2) with
         | None, _ -> None

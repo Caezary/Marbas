@@ -29,7 +29,8 @@ let ``a single line is spelled without a line break after it`` () =
 
 [<Fact>]
 let ``several lines are joined by the line break and not ended by one`` () =
-    let text = ClipboardText.tryCreate [ "docs"; "notes.txt"; "readme.txt" ] |> Expect.some
+    let text =
+        ClipboardText.tryCreate [ "docs"; "notes.txt"; "readme.txt" ] |> Expect.some
 
     let spelled = ClipboardText.joined WindowsBreak text
 

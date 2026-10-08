@@ -118,7 +118,8 @@ let watchedLocations (state: AppState) =
     |> List.distinct
 
 let private updateTab f (state: AppState) =
-    { state with Tabs = state.Tabs |> Zipper.update f }
+    { state with
+        Tabs = state.Tabs |> Zipper.update f }
 
 let private updatePanel side f (state: AppState) =
     updateTab
@@ -138,12 +139,14 @@ let activate side state =
     |> closeSearch Right
 
 let closeTab (state: AppState) =
-    { state with Tabs = state.Tabs |> Zipper.remove }
+    { state with
+        Tabs = state.Tabs |> Zipper.remove }
 
 let switchTab position (state: AppState) =
     let leaving = state |> closeSearch Left |> closeSearch Right
 
-    { leaving with Tabs = leaving.Tabs |> Zipper.refocus position }
+    { leaving with
+        Tabs = leaving.Tabs |> Zipper.refocus position }
 
 let cycleTab step (state: AppState) =
     let leaving = state |> closeSearch Left |> closeSearch Right
@@ -153,7 +156,8 @@ let cycleTab step (state: AppState) =
         | Forward -> Zipper.forward
         | Backward -> Zipper.backward
 
-    { leaving with Tabs = leaving.Tabs |> walk }
+    { leaving with
+        Tabs = leaving.Tabs |> walk }
 
 let opposite side =
     match side with
@@ -280,7 +284,8 @@ let forgetMarks (state: AppState) =
             Left = PanelState.forgetMarks tab.Left
             Right = PanelState.forgetMarks tab.Right }
 
-    { state with Tabs = state.Tabs |> Zipper.map forgotten }
+    { state with
+        Tabs = state.Tabs |> Zipper.map forgotten }
 
 let private asOperationError error =
     match error with
@@ -311,7 +316,8 @@ let private enteredLocation (fs: IFileSystem) panel (entry: Entry) =
     else
         childLocation fs panel entry.Name
 
-let withLastSearch (results: FindResults) state = { state with LastSearch = Some results }
+let withLastSearch (results: FindResults) state =
+    { state with LastSearch = Some results }
 
 let standOnHit (fs: IFileSystem) side (hit: FindHit) state =
     let showing =
@@ -347,9 +353,11 @@ let markedDirectories (fs: IFileSystem) panel =
     |> List.filter (fun entry -> entry.Kind = Directory)
     |> List.choose (enteredLocation fs panel)
 
-let activeDirectory state = PanelState.directory (activePanel state)
+let activeDirectory state =
+    PanelState.directory (activePanel state)
 
-let targetDirectory (state: AppState) = PanelState.directory (panel (opposite state.Active) state)
+let targetDirectory (state: AppState) =
+    PanelState.directory (panel (opposite state.Active) state)
 
 let driveLanding (fs: IFileSystem) side (row: DriveRow) (state: AppState) =
     let otherDirectory = PanelLocation.holding fs (panel (opposite side) state).Path
@@ -425,7 +433,11 @@ let private groupedByPlace (fs: IFileSystem) (hits: FindHit list) =
         | Some archive -> FromArchive(archive, held |> List.choose FindHit.archivePlace |> List.map snd))
 
 let private fromResults (fs: IFileSystem) panel =
-    match PanelState.operationTargets panel |> List.choose (PanelState.hitAt panel) |> groupedByPlace fs with
+    match
+        PanelState.operationTargets panel
+        |> List.choose (PanelState.hitAt panel)
+        |> groupedByPlace fs
+    with
     | [] -> None
     | [ single ] -> Some single
     | several -> Some(FromPlaces several)
@@ -473,7 +485,10 @@ type DeleteQuestion =
       AtLeast: DeleteScope }
 
 let private reachingContents targetsDirectory =
-    if targetsDirectory then WithDirectoryContents else NamedEntriesOnly
+    if targetsDirectory then
+        WithDirectoryContents
+    else
+        NamedEntriesOnly
 
 let deleteQuestion (fs: IFileSystem) panel =
     match panel.Path with
@@ -490,7 +505,10 @@ let deleteQuestion (fs: IFileSystem) panel =
 let deleteScope (fs: IFileSystem) (question: DeleteQuestion) =
     match question.AtLeast with
     | WithDirectoryContents -> WithDirectoryContents
-    | NamedEntriesOnly -> question.Probed |> List.exists (Operations.isNonEmptyDirectory fs) |> reachingContents
+    | NamedEntriesOnly ->
+        question.Probed
+        |> List.exists (Operations.isNonEmptyDirectory fs)
+        |> reachingContents
 
 let private sourceOf (fs: IFileSystem) panel (name: EntryName) =
     childLocation fs panel name
@@ -526,7 +544,8 @@ let private reload (fs: IFileSystem) side keep state =
 let private keepingUnfinished (fs: IFileSystem) results (previous: PanelState) =
     keepUnfinished fs results previous.Selected
 
-let private keepingSelected (previous: PanelState) = PanelState.keepSurviving previous.Selected
+let private keepingSelected (previous: PanelState) =
+    PanelState.keepSurviving previous.Selected
 
 let finishDelete (fs: IFileSystem) results (state: AppState) =
     reload fs state.Active (keepingUnfinished fs results) state
@@ -552,7 +571,10 @@ let archiveSuggestion (fs: IFileSystem) format state =
 let finishPack (fs: IFileSystem) (archive: EntryName) results (state: AppState) =
     result {
         let! active = reload fs state.Active (keepingUnfinished fs results) state
-        let! updated = reloadFocusing fs (opposite state.Active) (ByName archive) keepingSelected active
+
+        let! updated =
+            reloadFocusing fs (opposite state.Active) (ByName archive) keepingSelected active
+
         return updated, results
     }
 
@@ -560,7 +582,10 @@ let finishLinks (fs: IFileSystem) (made: FileSystemPath list) results (state: Ap
     let showing side keep state =
         let standing = PanelState.directory (panel side state)
 
-        match made |> List.tryFind (fun location -> Some(FileSystemPath.directory fs location) = standing) with
+        match
+            made
+            |> List.tryFind (fun location -> Some(FileSystemPath.directory fs location) = standing)
+        with
         | Some location -> reloadFocusing fs side (ByName(FileSystemPath.name fs location)) keep state
         | None -> reload fs side keep state
 
@@ -588,12 +613,22 @@ let makeEntryDirectory (fs: IFileSystem) side archive level name state : Result<
     Archive.makeEntryDirectory fs archive level name
     |> Result.bind (fun () -> madeDirectory fs side (InArchive(archive, level)) name state)
 
-let makeFile (fs: IFileSystem) side directory name state : Result<AppState * FileSystemPath, Operations.OperationError> =
+let makeFile
+    (fs: IFileSystem)
+    side
+    directory
+    name
+    state
+    : Result<AppState * FileSystemPath, Operations.OperationError> =
     let previous = panel side state
 
     result {
         let! path = Operations.makeFile fs directory name
-        let! loaded = loadPanelFocusing fs side directory (ByName name) state |> Result.mapError asOperationError
+
+        let! loaded =
+            loadPanelFocusing fs side directory (ByName name) state
+            |> Result.mapError asOperationError
+
         return updatePanel side (PanelState.keepSurviving previous.Selected) loaded, path
     }
 

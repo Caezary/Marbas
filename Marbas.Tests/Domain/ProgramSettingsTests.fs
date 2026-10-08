@@ -8,8 +8,7 @@ let private en = EntryName.create
 let private ext raw =
     FileExtension.tryCreate raw |> Option.get
 
-let private program raw =
-    ProgramPath.tryCreate raw |> Option.get
+let private program raw = ProgramPath.tryCreate raw |> Option.get
 
 let private associated role pairs =
     pairs
@@ -129,10 +128,7 @@ let ``associations are kept in role and extension order`` () =
         |> List.map (fun association -> association.Role, FileExtension.value association.Extension)
 
     Assert.Equal<(AssociationRole * string) list>(
-        [ ForEditing, "fs"
-          ForEditing, "txt"
-          ForOpening, "html"
-          ForOpening, "md" ],
+        [ ForEditing, "fs"; ForEditing, "txt"; ForOpening, "html"; ForOpening, "md" ],
         listed
     )
 

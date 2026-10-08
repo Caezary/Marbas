@@ -17,7 +17,8 @@ let private mockFs () =
     fs.AddFile(at "start/notes.txt", MockFileData "hi")
     fs
 
-let private read fs path = EntryProperties.read fs path |> Expect.ok
+let private read fs path =
+    EntryProperties.read fs path |> Expect.ok
 
 [<Fact>]
 let ``the properties of a directory are read off it`` () =
@@ -95,7 +96,11 @@ let ``the flags written to a directory are read back from it`` () =
 let ``clearing a flag takes it off the entry`` () =
     let fs = mockFs ()
     let path = fp (at "start/docs")
-    read fs path |> EntryProperties.withFlag HiddenFlag |> EntryProperties.write fs |> Expect.ok
+
+    read fs path
+    |> EntryProperties.withFlag HiddenFlag
+    |> EntryProperties.write fs
+    |> Expect.ok
 
     read fs path
     |> EntryProperties.withoutFlag HiddenFlag
@@ -109,7 +114,10 @@ let ``writing the properties keeps the entry a directory`` () =
     let fs = mockFs ()
     let path = fp (at "start/docs")
 
-    read fs path |> EntryProperties.withFlag ArchiveFlag |> EntryProperties.write fs |> Expect.ok
+    read fs path
+    |> EntryProperties.withFlag ArchiveFlag
+    |> EntryProperties.write fs
+    |> Expect.ok
 
     Assert.Equal(DirectoryEntry, FileSystemPath.kind fs path)
 
@@ -137,7 +145,10 @@ let ``the timestamps written to a directory are read back from it`` () =
 let ``a stamp written in another offset comes back as the same moment`` () =
     let fs = mockFs ()
     let path = fp (at "start/docs")
-    let elsewhere = DateTimeOffset(DateTime(2001, 2, 3, 4, 5, 6), TimeSpan.FromHours 5.0)
+
+    let elsewhere =
+        DateTimeOffset(DateTime(2001, 2, 3, 4, 5, 6), TimeSpan.FromHours 5.0)
+
     let properties = read fs path
 
     { properties with Created = elsewhere } |> EntryProperties.write fs |> Expect.ok

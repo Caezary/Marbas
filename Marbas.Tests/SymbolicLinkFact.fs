@@ -8,7 +8,8 @@ module private SymbolicLinks =
 
     let allowed =
         lazy
-            (let probe = Path.Combine(Path.GetTempPath(), $"marbas-link-probe-{Guid.NewGuid():N}")
+            (let probe =
+                Path.Combine(Path.GetTempPath(), $"marbas-link-probe-{Guid.NewGuid():N}")
 
              try
                  try

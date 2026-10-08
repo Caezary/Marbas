@@ -7,8 +7,7 @@ open Marbas.Ui
 open Marbas.Ui.Theme
 
 let private around title label (input: TextField) =
-    let dialog =
-        new Dialog(Title = title, Width = 50, Height = 6) |> DialogStyle.dress
+    let dialog = new Dialog(Title = title, Width = 50, Height = 6) |> DialogStyle.dress
 
     input.X <- 1
     input.Y <- 1
@@ -29,8 +28,7 @@ let create title label (suggestion: string) =
 let offering (remembered: string list) title label (suggestion: string) =
     around title label (HistoryField.create remembered suggestion)
 
-let field (dialog: Dialog) =
-    SubView.byType<TextField> dialog
+let field (dialog: Dialog) = SubView.byType<TextField> dialog
 
 let selecting (dialog: Dialog) =
     (field dialog).SelectAll() |> ignore

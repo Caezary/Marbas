@@ -25,7 +25,10 @@ let private loaded side path (fs: IFileSystem) state =
 [<Fact>]
 let ``entering a directory that vanished reports an error and keeps the panel`` () =
     let fs = fsWithVanishingDirectory ()
-    let state = create (fp (at "start")) |> loaded Left (fp (at "start")) fs |> setCursor Left 1
+
+    let state =
+        create (fp (at "start")) |> loaded Left (fp (at "start")) fs |> setCursor Left 1
+
     fs.Directory.Delete(at "start/docs")
 
     let result = enter fs state
@@ -35,7 +38,10 @@ let ``entering a directory that vanished reports an error and keeps the panel`` 
 [<Fact>]
 let ``failed navigation leaves the panel where it was`` () =
     let fs = fsWithVanishingDirectory ()
-    let state = create (fp (at "start")) |> loaded Left (fp (at "start")) fs |> setCursor Left 1
+
+    let state =
+        create (fp (at "start")) |> loaded Left (fp (at "start")) fs |> setCursor Left 1
+
     fs.Directory.Delete(at "start/docs")
 
     let failure = enter fs state |> Expect.error

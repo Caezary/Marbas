@@ -21,7 +21,8 @@ let private zipAt = fp (at "start/data.zip")
 
 let private tarAt = fp (at "start/old.tar")
 
-let private entry raw = ArchivePath.tryCreate raw |> Expect.some
+let private entry raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private zipFormat = ArchiveFormat.tryCreate Zip |> Expect.some
 
@@ -93,9 +94,12 @@ let ``a mark on the disk, one in a zip and one in a tar copy out in one batch`` 
 
     Assert.Equal<Message list>(
         [ CopyFinished
-              [ { Source = ItemOnDisk(fp (at "start/loose.txt")); Outcome = Ok() }
-                { Source = ItemInArchive(zipAt, entry "notes.txt"); Outcome = Ok() }
-                { Source = ItemInArchive(tarAt, entry "kept.txt"); Outcome = Ok() } ] ],
+              [ { Source = ItemOnDisk(fp (at "start/loose.txt"))
+                  Outcome = Ok() }
+                { Source = ItemInArchive(zipAt, entry "notes.txt")
+                  Outcome = Ok() }
+                { Source = ItemInArchive(tarAt, entry "kept.txt")
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -116,8 +120,10 @@ let ``moving the same three moves two and refuses the tar by name`` () =
 
     Assert.Equal<Message list>(
         [ MoveFinished
-              [ { Source = ItemOnDisk(fp (at "start/loose.txt")); Outcome = Ok() }
-                { Source = ItemInArchive(zipAt, entry "notes.txt"); Outcome = Ok() }
+              [ { Source = ItemOnDisk(fp (at "start/loose.txt"))
+                  Outcome = Ok() }
+                { Source = ItemInArchive(zipAt, entry "notes.txt")
+                  Outcome = Ok() }
                 refusedTar ] ],
         List.ofSeq sent
     )
@@ -136,8 +142,10 @@ let ``deleting the same three removes two and refuses the tar by name`` () =
 
     Assert.Equal<Message list>(
         [ DeleteFinished
-              [ { Source = ItemOnDisk(fp (at "start/loose.txt")); Outcome = Ok() }
-                { Source = ItemInArchive(zipAt, entry "notes.txt"); Outcome = Ok() }
+              [ { Source = ItemOnDisk(fp (at "start/loose.txt"))
+                  Outcome = Ok() }
+                { Source = ItemInArchive(zipAt, entry "notes.txt")
+                  Outcome = Ok() }
                 refusedTar ] ],
         List.ofSeq sent
     )
@@ -222,8 +230,7 @@ let ``a copy into a tar is refused as a failed item from one place and from two`
     Shell.interpret deps dispatch (CopyPlaces(scattered, intoTar))
 
     Assert.Equal<Message list>(
-        [ CopyFinished [ refusedTar ]
-          CopyFinished [ refusedTar; refusedTar ] ],
+        [ CopyFinished [ refusedTar ]; CopyFinished [ refusedTar; refusedTar ] ],
         List.ofSeq sent
     )
 

@@ -20,7 +20,8 @@ let private shownAs (fs: IFileSystem) (found: FoundEntries) (hit: FindHit) =
         Name = FindHit.displayName fs found.Ground hit }
 
 let private prefixes (segments: EntryName list) =
-    [ 1 .. segments.Length ] |> List.map (fun length -> List.truncate length segments)
+    [ 1 .. segments.Length ]
+    |> List.map (fun length -> List.truncate length segments)
 
 let private indexedPrefixes (fs: IFileSystem) (archive: FileSystemPath) =
     ArchiveIndex.read fs archive
@@ -81,7 +82,10 @@ let private leniently (fs: IFileSystem) (found: FoundEntries) (hit, survival) =
     match survival with
     | Standing -> Some(shownAs fs found hit)
     | Gone -> None
-    | Unconfirmed _ -> Some { shownAs fs found hit with Verification = Unverified }
+    | Unconfirmed _ ->
+        Some
+            { shownAs fs found hit with
+                Verification = Unverified }
 
 let private refusal (_, survival) =
     match survival with

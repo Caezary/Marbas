@@ -20,10 +20,7 @@ let ``a crash on the UI thread is stamped and names the exception`` () =
 
     let lines = LogEntry.lines moment entry
 
-    Assert.Equal<string>(
-        [ $"{stamp} crash on the UI thread: System.InvalidOperationException: the loop broke" ],
-        lines
-    )
+    Assert.Equal<string>([ $"{stamp} crash on the UI thread: System.InvalidOperationException: the loop broke" ], lines)
 
 [<Fact>]
 let ``a crash on another thread says where it happened`` () =

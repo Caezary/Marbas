@@ -17,7 +17,8 @@ let private running run elevation : CommandRun =
         { Program = { Text = "show"; Quoting = Bare }
           Arguments =
             [ { Text = "-x"; Quoting = Bare }
-              { Text = "it's mine.txt"; Quoting = Quoted } ]
+              { Text = "it's mine.txt"
+                Quoting = Quoted } ]
           ListFile = None }
       Run = run
       Elevation = elevation
@@ -45,7 +46,8 @@ let ``a run on Windows starts in the directory of the panel it came from`` () =
 
 [<Fact>]
 let ``a run as administrator on Windows asks for the rights the way Alt+Shift+R does`` () =
-    let described = CommandProcess.describe Windows (running InShellClosing AsAdministrator)
+    let described =
+        CommandProcess.describe Windows (running InShellClosing AsAdministrator)
 
     Assert.Equal(LaunchProcess.ElevatedVerb, (Expect.ok described).Verb)
 
@@ -71,10 +73,13 @@ let ``a shell run on Windows that keeps its window is cmd with k`` () =
     Assert.Equal("/s /k \"show -x \"it's mine.txt\"\"", (Expect.ok described).Arguments)
 
 [<Fact>]
-let ``a shell run on Windows as administrator changes to its directory first, not trusting the elevation to keep it`` () =
+let ``a shell run on Windows as administrator changes to its directory first, not trusting the elevation to keep it``
+    ()
+    =
     let directory = at "work"
 
-    let described = CommandProcess.describe Windows (running InShellKeptOpen AsAdministrator)
+    let described =
+        CommandProcess.describe Windows (running InShellKeptOpen AsAdministrator)
 
     Assert.Equal($"/s /k \"cd /d \"{directory}\" && show -x \"it's mine.txt\"\"", (Expect.ok described).Arguments)
 
@@ -117,6 +122,7 @@ let ``the list file holds the marked entries one per line, its directory made fi
     let written = CommandProcess.writeList fs listFile
 
     Assert.Equal(Ok(), written)
+
     Assert.Equal<string list>(
         [ at "work/a.txt"; at "work/b c.txt" ],
         List.ofArray (fs.File.ReadAllLines(at "temp/Marbas/session/marked-1.txt"))

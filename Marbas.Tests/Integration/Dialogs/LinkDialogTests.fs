@@ -28,7 +28,10 @@ let private hardRefusedElsewhere (text: string) (kind: LinkKind) =
 
 let private laidOutWith remembered refusal =
     DialogStyle.apply ()
-    let dialog = LinkDialog.create [ Symbolic; Hard; Junction ] refusal remembered suggestion
+
+    let dialog =
+        LinkDialog.create [ Symbolic; Hard; Junction ] refusal remembered suggestion
+
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore
@@ -119,7 +122,11 @@ let ``the answer carries what was typed and the kind that was chosen`` () =
 
     let choice = accepted dialog
 
-    Assert.Equal({ Target = Root.at "backup/twin.txt"; Kind = Junction }, choice)
+    Assert.Equal(
+        { Target = Root.at "backup/twin.txt"
+          Kind = Junction },
+        choice
+    )
 
 [<Fact>]
 let ``a cancelled dialog answers nothing`` () =
@@ -133,7 +140,8 @@ let ``a cancelled dialog answers nothing`` () =
 let ``the places linked at before are offered as the list of the target field`` () =
     use dialog = laidOutWith [ @"D:\links\one"; @"D:\links\two" ] nothingRefused
 
-    let offered = [ for item in (target dialog :?> DropDownList).Source.ToList() -> string item ]
+    let offered =
+        [ for item in (target dialog :?> DropDownList).Source.ToList() -> string item ]
 
     Assert.Equal<string list>([ @"D:\links\one"; @"D:\links\two" ], offered)
 

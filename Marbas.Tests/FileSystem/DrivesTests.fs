@@ -9,7 +9,8 @@ open Marbas.Tests
 
 let private fp = FileSystemPath.create
 
-let private roots rows = rows |> List.map (DriveRow.root >> FileSystemPath.value)
+let private roots rows =
+    rows |> List.map (DriveRow.root >> FileSystemPath.value)
 
 [<Fact>]
 let ``a mount is read into its root, label, kind, size and free space`` () =
@@ -42,7 +43,10 @@ let ``a mount is read into its root, label, kind, size and free space`` () =
 [<InlineData(DriveType.Ram, "Fixed")>]
 [<InlineData(DriveType.Unknown, "Fixed")>]
 let ``the system's drive type is read into one of four kinds`` (driveType: DriveType) (kind: string) =
-    let fs = Fakes.MountedFileSystem [ { Fakes.Mount.ext4 "/" with DriveType = driveType } ]
+    let fs =
+        Fakes.MountedFileSystem
+            [ { Fakes.Mount.ext4 "/" with
+                  DriveType = driveType } ]
 
     let rows = Drives.list fs None
 
@@ -51,7 +55,10 @@ let ``the system's drive type is read into one of four kinds`` (driveType: Drive
 
 [<Fact>]
 let ``a blank label is no label`` () =
-    let fs = Fakes.MountedFileSystem [ { Fakes.Mount.ext4 "/" with Label = "  " } ]
+    let fs =
+        Fakes.MountedFileSystem
+            [ { Fakes.Mount.ext4 "/" with
+                  Label = "  " } ]
 
     let rows = Drives.list fs None
 
@@ -68,7 +75,9 @@ let ``a blank label is no label`` () =
 [<Fact>]
 let ``a label that only repeats the root is no label`` () =
     let fs =
-        Fakes.MountedFileSystem [ { Fakes.Mount.ext4 "/mnt/backup" with Label = "/mnt/backup" } ]
+        Fakes.MountedFileSystem
+            [ { Fakes.Mount.ext4 "/mnt/backup" with
+                  Label = "/mnt/backup" } ]
 
     let rows = Drives.list fs None
 
@@ -85,7 +94,10 @@ let ``a label that only repeats the root is no label`` () =
 [<Fact>]
 let ``mounts are listed in alphabetical order of their roots`` () =
     let fs =
-        Fakes.MountedFileSystem [ Fakes.Mount.ext4 "/mnt/backup"; Fakes.Mount.ext4 "/"; Fakes.Mount.ext4 "/boot" ]
+        Fakes.MountedFileSystem
+            [ Fakes.Mount.ext4 "/mnt/backup"
+              Fakes.Mount.ext4 "/"
+              Fakes.Mount.ext4 "/boot" ]
 
     let rows = Drives.list fs None
 
@@ -94,7 +106,10 @@ let ``mounts are listed in alphabetical order of their roots`` () =
 [<Fact>]
 let ``a drive that is not ready is hidden`` () =
     let fs =
-        Fakes.MountedFileSystem [ Fakes.Mount.ext4 "/"; { Fakes.Mount.ext4 "/media/user/reader" with Ready = false } ]
+        Fakes.MountedFileSystem
+            [ Fakes.Mount.ext4 "/"
+              { Fakes.Mount.ext4 "/media/user/reader" with
+                  Ready = false } ]
 
     let rows = Drives.list fs None
 
@@ -103,7 +118,10 @@ let ``a drive that is not ready is hidden`` () =
 [<Fact>]
 let ``a drive whose size cannot be read is hidden`` () =
     let fs =
-        Fakes.MountedFileSystem [ Fakes.Mount.ext4 "/"; { Fakes.Mount.ext4 "/run/user/doc" with Readable = false } ]
+        Fakes.MountedFileSystem
+            [ Fakes.Mount.ext4 "/"
+              { Fakes.Mount.ext4 "/run/user/doc" with
+                  Readable = false } ]
 
     let rows = Drives.list fs None
 
@@ -121,7 +139,10 @@ let ``a drive whose size cannot be read is hidden`` () =
 [<InlineData("fuse.portal")>]
 let ``a mount that is not storage is hidden`` (format: string) =
     let fs =
-        Fakes.MountedFileSystem [ Fakes.Mount.ext4 "/"; { Fakes.Mount.ext4 "/snap/core/1" with Format = format } ]
+        Fakes.MountedFileSystem
+            [ Fakes.Mount.ext4 "/"
+              { Fakes.Mount.ext4 "/snap/core/1" with
+                  Format = format } ]
 
     let rows = Drives.list fs None
 
@@ -137,7 +158,8 @@ let ``the home directory is offered after the drives`` () =
 
 [<Fact>]
 let ``a home directory that is a drive's root is offered once`` () =
-    let fs = Fakes.MountedFileSystem [ Fakes.Mount.ext4 "/"; Fakes.Mount.ext4 "/home/user" ]
+    let fs =
+        Fakes.MountedFileSystem [ Fakes.Mount.ext4 "/"; Fakes.Mount.ext4 "/home/user" ]
 
     let rows = Drives.list fs (Some(fp "/home/user"))
 
@@ -166,7 +188,8 @@ let ``a path is held by the longest drive root it lies under`` (path: string) (e
 
 [<WindowsFact>]
 let ``a drive letter holds a path spelled in another case`` () =
-    let fs = Fakes.MountedFileSystem [ Fakes.Mount.ext4 @"C:\"; Fakes.Mount.ext4 @"D:\" ]
+    let fs =
+        Fakes.MountedFileSystem [ Fakes.Mount.ext4 @"C:\"; Fakes.Mount.ext4 @"D:\" ]
 
     let drive = Drives.holding fs (fp @"d:\data")
 

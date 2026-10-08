@@ -28,7 +28,8 @@ let private failedPath error =
 
 let private archive = at "backup/data.zip"
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private request password =
     { Path = fp archive
@@ -49,7 +50,8 @@ let private packedInto password =
 
 let private packedArchive () = packedInto None
 
-let private lockedArchive secret = packedInto (ArchivePassword.tryCreate secret)
+let private lockedArchive secret =
+    packedInto (ArchivePassword.tryCreate secret)
 
 [<Fact>]
 let ``a source knows the path and length of its file`` () =
@@ -96,7 +98,9 @@ let ``ranges can be read in any order`` () =
 
 [<Fact>]
 let ``the encoding is settled when the file is opened`` () =
-    let marked = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "first")
+    let marked =
+        Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "first")
+
     let fs = withFile (MockFileData marked)
 
     use source = opened fs
@@ -152,7 +156,8 @@ let ``a file that cannot be opened is an error value, not an exception`` () =
 let ``an entry of an archive is opened under the name of its place in it`` () =
     let fs = packedArchive ()
 
-    use source = FileWindow.openEntry fs None (fp archive) (inside "docs/inner.txt") |> Expect.ok
+    use source =
+        FileWindow.openEntry fs None (fp archive) (inside "docs/inner.txt") |> Expect.ok
 
     Assert.Equal(fp (at "backup/data.zip/docs/inner.txt"), source.Path)
     Assert.Equal("inner", Encoding.ASCII.GetString(source.Read(0L, 5)))
@@ -161,7 +166,8 @@ let ``an entry of an archive is opened under the name of its place in it`` () =
 let ``an entry at the top of an archive is opened as well`` () =
     let fs = packedArchive ()
 
-    use source = FileWindow.openEntry fs None (fp archive) (inside "notes.txt") |> Expect.ok
+    use source =
+        FileWindow.openEntry fs None (fp archive) (inside "notes.txt") |> Expect.ok
 
     Assert.Equal(5L, source.Length)
     Assert.Equal("notes", Encoding.ASCII.GetString(source.Read(0L, 5)))
@@ -170,7 +176,8 @@ let ``an entry at the top of an archive is opened as well`` () =
 let ``an entry the archive does not hold is refused under its own name`` () =
     let fs = packedArchive ()
 
-    let error = FileWindow.openEntry fs None (fp archive) (inside "gone.txt") |> Expect.error
+    let error =
+        FileWindow.openEntry fs None (fp archive) (inside "gone.txt") |> Expect.error
 
     Assert.Equal(ArchiveNotFound(fp (at "backup/data.zip/gone.txt")), error)
 
@@ -180,7 +187,8 @@ let ``an entry of a name that is no archive is refused before the file is opened
     fs.AddFile(at "backup/data.bin", MockFileData "whatever")
 
     let error =
-        FileWindow.openEntry fs None (fp (at "backup/data.bin")) (inside "notes.txt") |> Expect.error
+        FileWindow.openEntry fs None (fp (at "backup/data.bin")) (inside "notes.txt")
+        |> Expect.error
 
     Assert.Equal(KindCannotBeRead(fp (at "backup/data.bin")), error)
 
@@ -220,7 +228,10 @@ let private bigEntry () =
 [<Fact>]
 let ``an entry larger than a buffer is read as a stream, not held whole`` () =
     let fs = bigEntry ()
-    use source = FileWindow.openEntry fs None (fp archive) (inside "big.txt") |> Expect.ok
+
+    use source =
+        FileWindow.openEntry fs None (fp archive) (inside "big.txt") |> Expect.ok
+
     let before = fs.BytesRead
 
     let head = source.Read(0L, 16)
@@ -232,7 +243,9 @@ let ``an entry larger than a buffer is read as a stream, not held whole`` () =
 [<Fact>]
 let ``the end of a large entry is reached without the whole of it being held`` () =
     let fs = bigEntry ()
-    use source = FileWindow.openEntry fs None (fp archive) (inside "big.txt") |> Expect.ok
+
+    use source =
+        FileWindow.openEntry fs None (fp archive) (inside "big.txt") |> Expect.ok
 
     let tail = source.Read(int64 BigEntryLength - 8L, 8)
 
@@ -241,7 +254,9 @@ let ``the end of a large entry is reached without the whole of it being held`` (
 [<Fact>]
 let ``an entry is read back to front as often as the viewer asks`` () =
     let fs = packedArchive ()
-    use source = FileWindow.openEntry fs None (fp archive) (inside "notes.txt") |> Expect.ok
+
+    use source =
+        FileWindow.openEntry fs None (fp archive) (inside "notes.txt") |> Expect.ok
 
     let tail = Encoding.ASCII.GetString(source.Read(3L, 2))
     let head = Encoding.ASCII.GetString(source.Read(0L, 3))
@@ -254,8 +269,13 @@ let ``the lines of an entry are read in whatever order the viewer wants them`` (
     let fs = MockFileSystem()
     fs.AddDirectory(at "backup")
     fs.AddFile(at "work/notes.txt", MockFileData "first\nsecond\nthird")
-    Archive.write fs Operations.unattended (request None) [ fp (at "work/notes.txt") ] |> ignore
-    use source = FileWindow.openEntry fs None (fp archive) (inside "notes.txt") |> Expect.ok
+
+    Archive.write fs Operations.unattended (request None) [ fp (at "work/notes.txt") ]
+    |> ignore
+
+    use source =
+        FileWindow.openEntry fs None (fp archive) (inside "notes.txt") |> Expect.ok
+
     let index = LineIndex.Index(source, source.Encoding)
 
     index.ScanAll()

@@ -4,7 +4,8 @@ open Xunit
 open Marbas.Domain
 open Marbas.Tests
 
-let private pattern raw = NamePattern.tryCreate raw |> Expect.some
+let private pattern raw =
+    NamePattern.tryCreate raw |> Expect.some
 
 [<Theory>]
 [<InlineData("*.fs", "AppState.fs")>]

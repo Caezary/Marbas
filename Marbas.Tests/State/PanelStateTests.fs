@@ -46,7 +46,8 @@ let private panel =
 let private standingAt index = PanelState.withCursor index panel
 
 let private marked names =
-    { panel with Selected = names |> List.map en |> Set.ofList }
+    { panel with
+        Selected = names |> List.map en |> Set.ofList }
 
 let private names entries =
     entries |> List.map (_.Name >> EntryName.value)
@@ -129,7 +130,8 @@ let ``a pattern marks the names it matches and never the parent entry`` () =
 let ``a pattern unmarks only the names it matches`` () =
     let pattern = NamePattern.tryCreate "*.txt" |> Expect.some
 
-    let deselected = PanelState.applyPattern Deselect pattern (marked [ "docs"; "notes.txt" ])
+    let deselected =
+        PanelState.applyPattern Deselect pattern (marked [ "docs"; "notes.txt" ])
 
     Assert.Equal<string list>([ "docs" ], PanelState.selectedEntries deselected |> names)
 
@@ -149,7 +151,9 @@ let ``the parent entry under the cursor is never operated on`` () =
 
 [<Fact>]
 let ``marks are what is operated on, wherever the cursor stands`` () =
-    let standing = { marked [ "readme.txt" ] with Cursor = 1 }
+    let standing =
+        { marked [ "readme.txt" ] with
+            Cursor = 1 }
 
     let targets = PanelState.operationTargets standing
 
@@ -157,7 +161,8 @@ let ``marks are what is operated on, wherever the cursor stands`` () =
 
 [<Fact>]
 let ``only the marks still listed survive`` () =
-    let kept = PanelState.keepSurviving (Set.ofList [ en "notes.txt"; en "gone.txt" ]) panel
+    let kept =
+        PanelState.keepSurviving (Set.ofList [ en "notes.txt"; en "gone.txt" ]) panel
 
     Assert.Equal<string list>([ "notes.txt" ], PanelState.selectedEntries kept |> names)
 
@@ -175,7 +180,9 @@ let ``marked files alone make no search ground of directories`` () =
 
 [<Fact>]
 let ``the name a panel stands on skips the parent entry for the one it remembers`` () =
-    let remembering = { panel with Remembered = Some(en "readme.txt") }
+    let remembering =
+        { panel with
+            Remembered = Some(en "readme.txt") }
 
     let standing = PanelState.standingName remembering
 
@@ -193,7 +200,9 @@ let ``a cleared panel keeps its entries and loses its marks and its search`` () 
 
 [<Fact>]
 let ``a measured directory carries its size and takes its place in a sort by size`` () =
-    let bySize = { standingAt 1 with Sort = SortOrder.create BySize Descending }
+    let bySize =
+        { standingAt 1 with
+            Sort = SortOrder.create BySize Descending }
 
     let measured =
         PanelState.withMeasurements [ { Name = en "docs"; Size = Exact 100L } ] bySize
@@ -203,10 +212,12 @@ let ``a measured directory carries its size and takes its place in a sort by siz
 
 let private archive = FileSystemPath.create (Root.at "start/backup.zip")
 
-let private inArchive raw = ArchivePath.tryCreate raw |> Expect.some
+let private inArchive raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private archivePanel =
-    { panel with Path = InArchive(archive, inArchive "docs") }
+    { panel with
+        Path = InArchive(archive, inArchive "docs") }
 
 [<Fact>]
 let ``the file under the cursor inside an archive has its place there`` () =
@@ -246,7 +257,9 @@ let ``an entry on disk has no place inside an archive`` () =
 
 [<Fact>]
 let ``a marked directory inside an archive is a target that reaches into it`` () =
-    let marking = { archivePanel with Selected = Set.ofList [ en "docs"; en "notes.txt" ] }
+    let marking =
+        { archivePanel with
+            Selected = Set.ofList [ en "docs"; en "notes.txt" ] }
 
     let reaches = PanelState.targetsDirectoryInArchive marking
 
@@ -254,7 +267,9 @@ let ``a marked directory inside an archive is a target that reaches into it`` ()
 
 [<Fact>]
 let ``marked files inside an archive reach no directory`` () =
-    let marking = { archivePanel with Selected = Set.ofList [ en "notes.txt" ] }
+    let marking =
+        { archivePanel with
+            Selected = Set.ofList [ en "notes.txt" ] }
 
     let reaches = PanelState.targetsDirectoryInArchive marking
 

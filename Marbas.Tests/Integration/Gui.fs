@@ -11,8 +11,7 @@ open Marbas.Tests
 
 let private at = Root.at
 
-let panel id (window: Window) =
-    SubView.byId<View> id window
+let panel id (window: Window) = SubView.byId<View> id window
 
 let panelView id window = panel id window :?> FilePanel.PanelView
 
@@ -24,9 +23,11 @@ let drawnText (view: View) =
 let shownPath id window =
     (panelTitle id window).Split " [" |> Array.head
 
-let leftList window = FilePanel.listView (panel FilePanel.LeftId window)
+let leftList window =
+    FilePanel.listView (panel FilePanel.LeftId window)
 
-let rightList window = FilePanel.listView (panel FilePanel.RightId window)
+let rightList window =
+    FilePanel.listView (panel FilePanel.RightId window)
 
 let pressReturning (view: View) (key: Key) =
     let sent = Key key.KeyCode

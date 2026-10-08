@@ -25,10 +25,7 @@ let ``a temporary root nobody named falls back to the platform's own`` () =
 
     let path = Workspace.location fs "" session
 
-    Assert.Equal(
-        fs.Path.Combine(fs.Path.GetTempPath(), Workspace.DirectoryName, session),
-        FileSystemPath.value path
-    )
+    Assert.Equal(fs.Path.Combine(fs.Path.GetTempPath(), Workspace.DirectoryName, session), FileSystemPath.value path)
 
 [<Fact>]
 let ``a workspace asked for the first time is made`` () =

@@ -15,7 +15,10 @@ let private suggestion = Root.at "backup/src.zip"
 
 let private laidOutWith remembered =
     DialogStyle.apply ()
-    let dialog = PackDialog.create (ArchiveName.retarget (MockFileSystem())) remembered suggestion
+
+    let dialog =
+        PackDialog.create (ArchiveName.retarget (MockFileSystem())) remembered suggestion
+
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore
@@ -23,9 +26,11 @@ let private laidOutWith remembered =
 
 let private laidOut () = laidOutWith []
 
-let private target dialog = PackDialog.field dialog PackDialog.TargetId
+let private target dialog =
+    PackDialog.field dialog PackDialog.TargetId
 
-let private password dialog = PackDialog.field dialog PackDialog.PasswordId
+let private password dialog =
+    PackDialog.field dialog PackDialog.PasswordId
 
 let private choose dialog id index =
     (PackDialog.selector dialog id).Value <- Nullable index
@@ -139,7 +144,8 @@ let ``a password left behind on a format that cannot carry one is dropped`` () =
 let ``the archives packed into before are offered as the list of the target field`` () =
     use dialog = laidOutWith [ @"D:\one.zip"; @"D:\two.7z" ]
 
-    let offered = [ for item in (target dialog :?> DropDownList).Source.ToList() -> string item ]
+    let offered =
+        [ for item in (target dialog :?> DropDownList).Source.ToList() -> string item ]
 
     Assert.Equal<string list>([ @"D:\one.zip"; @"D:\two.7z" ], offered)
 

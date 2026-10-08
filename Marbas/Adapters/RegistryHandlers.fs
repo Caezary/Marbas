@@ -25,7 +25,8 @@ let private ProgIdValue = "ProgId"
 let private MostRecentlyUsed = "MRUList"
 
 [<Literal>]
-let private FileExtensions = @"Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts"
+let private FileExtensions =
+    @"Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts"
 
 [<Literal>]
 let private Applications = "Applications"
@@ -98,7 +99,8 @@ let private progIds (extension: string) =
     let classes = $".{extension}"
     let user = $@"{FileExtensions}\{classes}"
 
-    (valueIn Registry.CurrentUser $@"{user}\{UserChoice}" ProgIdValue |> Option.toList)
+    (valueIn Registry.CurrentUser $@"{user}\{UserChoice}" ProgIdValue
+     |> Option.toList)
     @ (valueIn Registry.ClassesRoot classes null |> Option.toList)
     @ namesIn Registry.ClassesRoot $@"{classes}\{OpenWithProgids}"
     @ namesIn Registry.CurrentUser $@"{user}\{OpenWithProgids}"

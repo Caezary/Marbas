@@ -35,7 +35,9 @@ let private opened prompt =
     dialog
 
 let private adding () =
-    opened { Editing = Adding; Others = [ compare ] }
+    opened
+        { Editing = Adding
+          Others = [ compare ] }
 
 let private fill (dialog: MenuEntryDialog.EntryView) hotkey label line =
     (MenuEntryDialog.field dialog MenuEntryDialog.HotkeyId).Text <- hotkey
@@ -67,7 +69,15 @@ let ``the way of running and the rights are read from their controls`` () =
 
     let answer = MenuEntryDialog.answer dialog
 
-    Assert.Equal(Some(CommandEntered { edit with Run = InShellKeptOpen; Elevation = AsAdministrator }), answer)
+    Assert.Equal(
+        Some(
+            CommandEntered
+                { edit with
+                    Run = InShellKeptOpen
+                    Elevation = AsAdministrator }
+        ),
+        answer
+    )
 
 [<Fact>]
 let ``a hotkey another entry holds is refused in the dialog, which stays open and says why`` () =
@@ -119,7 +129,10 @@ let ``choosing a line greys out the fields of an entry`` () =
 
 [<Fact>]
 let ``an entry being changed fills the fields and offers no line`` () =
-    use dialog = opened { Editing = Changing compare; Others = [ edit ] }
+    use dialog =
+        opened
+            { Editing = Changing compare
+              Others = [ edit ] }
 
     let fields =
         [ MenuEntryDialog.LabelId; MenuEntryDialog.HotkeyId; MenuEntryDialog.LineId ]
@@ -132,7 +145,11 @@ let ``an entry being changed fills the fields and offers no line`` () =
 
 [<Fact>]
 let ``an entry being changed keeps its own hotkey`` () =
-    use dialog = opened { Editing = Changing compare; Others = [ edit ] }
+    use dialog =
+        opened
+            { Editing = Changing compare
+              Others = [ edit ] }
+
     dialog.Result <- 1
 
     let answer = MenuEntryDialog.answer dialog

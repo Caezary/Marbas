@@ -131,6 +131,13 @@ the same pull request cancels the run still going for the previous one; pushes
 to `main` are left to finish, so the badge and the history keep a result for
 every commit.
 
+A `format` job runs beside the two legs, on `ubuntu-latest` alone: it restores
+the tools pinned in `.config/dotnet-tools.json` and runs
+`dotnet fantomas --check Marbas Marbas.Tests`, which fails when any file would be
+reformatted. One platform is enough, because the `.editorconfig` fixes the line
+endings to `lf` and the formatting does not depend on anything else the
+platforms differ in.
+
 What the suite cannot check on either platform — colours, a resized terminal,
 the mouse, a real permission bit, an editor sharing the terminal — is the
 checklist in [CROSS-PLATFORM.md](CROSS-PLATFORM.md).

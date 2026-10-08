@@ -27,7 +27,8 @@ module WantedBytes =
 
     let private gathered (tokens: string list) =
         let folding taken token =
-            taken |> Result.bind (fun bytes -> bytesOf token |> Result.map (List.append bytes))
+            taken
+            |> Result.bind (fun bytes -> bytesOf token |> Result.map (List.append bytes))
 
         tokens |> List.fold folding (Ok [])
 

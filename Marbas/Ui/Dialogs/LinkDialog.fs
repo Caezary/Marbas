@@ -48,11 +48,17 @@ let private offer
     Seq.zip selector.SubViews refusals
     |> Seq.iter (fun (option, refused) -> option.Enabled <- Option.isNone refused)
 
-    reason.Text <- refusals |> List.choose (Option.map LinkRefusalMessage.describe) |> String.concat "\n"
+    reason.Text <-
+        refusals
+        |> List.choose (Option.map LinkRefusalMessage.describe)
+        |> String.concat "\n"
 
     let chosen = chosenKind kinds selector
 
-    if List.zip kinds refusals |> List.exists (fun (kind, refused) -> kind = chosen && refused.IsSome) then
+    if
+        List.zip kinds refusals
+        |> List.exists (fun (kind, refused) -> kind = chosen && refused.IsSome)
+    then
         selector.Value <- Nullable 0
 
 let create
@@ -96,14 +102,12 @@ let create
     dialog.AddButton(DialogStyle.button "_Ok")
     dialog
 
-let field (dialog: Dialog) =
-    SubView.byId<TextField> TargetId dialog
+let field (dialog: Dialog) = SubView.byId<TextField> TargetId dialog
 
 let selector (dialog: Dialog) =
     SubView.byId<OptionSelector> KindId dialog
 
-let reason (dialog: Dialog) =
-    SubView.byId<Label> ReasonId dialog
+let reason (dialog: Dialog) = SubView.byId<Label> ReasonId dialog
 
 let choice (dialog: LinkView) =
     if dialog.Canceled then

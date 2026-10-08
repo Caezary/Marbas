@@ -17,7 +17,8 @@ let private bounded (text: string) index length atStart =
             not (WordMatch.isWordCharacter text[index - 1])
 
     let after =
-        index + length = text.Length || not (WordMatch.isWordCharacter text[index + length])
+        index + length = text.Length
+        || not (WordMatch.isWordCharacter text[index + length])
 
     before && after
 

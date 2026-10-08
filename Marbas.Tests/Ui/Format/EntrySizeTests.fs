@@ -22,11 +22,13 @@ let private entry kind size =
       Verification = Verified }
 
 let private measured size =
-    { entry Directory None with Measured = Some size }
+    { entry Directory None with
+        Measured = Some size }
 
 [<Fact>]
 let ``a file size is rendered by the given format`` () =
-    let grouped (size: int64) = size.ToString("N0", CultureInfo.InvariantCulture)
+    let grouped (size: int64) =
+        size.ToString("N0", CultureInfo.InvariantCulture)
 
     let plain = EntrySize.describe string (entry File (Some 12345L))
     let separated = EntrySize.describe grouped (entry File (Some 12345L))

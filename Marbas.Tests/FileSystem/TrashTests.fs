@@ -25,9 +25,11 @@ let private mockFs () =
     fs.AddDirectory(at "home")
     fs
 
-let private send fs source = Trash.send fs trash clock (fp (at source))
+let private send fs source =
+    Trash.send fs trash clock (fp (at source))
 
-let private inTrash directory name = at $"home/.local/share/Trash/{directory}/{name}"
+let private inTrash directory name =
+    at $"home/.local/share/Trash/{directory}/{name}"
 
 [<Fact>]
 let ``the data home holds the trash when it is set`` () =
@@ -60,7 +62,8 @@ let ``where the entry came from is recorded beside it`` () =
 
     send fs "start/notes.txt" |> Expect.ok
 
-    let recorded = fs.File.ReadAllText(inTrash Trash.InfoDirectory "notes.txt.trashinfo")
+    let recorded =
+        fs.File.ReadAllText(inTrash Trash.InfoDirectory "notes.txt.trashinfo")
 
     Assert.StartsWith(Trash.InfoHeader, recorded)
     Assert.Contains("notes.txt", recorded)
@@ -73,7 +76,8 @@ let ``a name the file system escapes is recorded encoded`` () =
 
     send fs "start/my notes.txt" |> Expect.ok
 
-    let recorded = fs.File.ReadAllText(inTrash Trash.InfoDirectory "my notes.txt.trashinfo")
+    let recorded =
+        fs.File.ReadAllText(inTrash Trash.InfoDirectory "my notes.txt.trashinfo")
 
     Assert.Contains("my%20notes.txt", recorded)
 

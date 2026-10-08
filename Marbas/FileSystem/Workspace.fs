@@ -28,7 +28,10 @@ let scratch (fs: IFileSystem) (workspace: FileSystemPath) =
     let rec free root ordinal =
         let path = FileSystemPath.combine fs root (string (ordinal: int))
 
-        if FileSystemPath.kind fs path = NoEntry then path else free root (ordinal + 1)
+        if FileSystemPath.kind fs path = NoEntry then
+            path
+        else
+            free root (ordinal + 1)
 
     result {
         let! root = ensure fs workspace
@@ -46,6 +49,9 @@ let listFile (fs: IFileSystem) (workspace: FileSystemPath) =
     let rec free ordinal =
         let path = FileSystemPath.combine fs workspace $"marked-{ordinal}.txt"
 
-        if FileSystemPath.kind fs path = NoEntry then path else free (ordinal + 1)
+        if FileSystemPath.kind fs path = NoEntry then
+            path
+        else
+            free (ordinal + 1)
 
     free 1

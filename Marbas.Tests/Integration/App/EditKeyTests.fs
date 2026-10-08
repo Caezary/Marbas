@@ -30,7 +30,15 @@ let private silent = ignore<Ports.ErrorReport>
 [<Fact>]
 let ``F4 hands the file under the cursor to the editor`` () =
     let edited = ResizeArray<FileSystemPath>()
-    use window = windowWith (mockFs ()) (fun _ path -> edited.Add path; Ok()) silent
+
+    use window =
+        windowWith
+            (mockFs ())
+            (fun _ path ->
+                edited.Add path
+                Ok())
+            silent
+
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F4
@@ -40,7 +48,15 @@ let ``F4 hands the file under the cursor to the editor`` () =
 [<Fact>]
 let ``F4 on a directory starts no editor`` () =
     let edited = ResizeArray<FileSystemPath>()
-    use window = windowWith (mockFs ()) (fun _ path -> edited.Add path; Ok()) silent
+
+    use window =
+        windowWith
+            (mockFs ())
+            (fun _ path ->
+                edited.Add path
+                Ok())
+            silent
+
     (leftList window).SelectedItem <- 1
 
     pressKey window Key.F4
@@ -78,7 +94,9 @@ let ``properties that come back from the popup reach the directory`` () =
 
     pressKey window Key.F4
 
-    let written = EntryProperties.read fs (FileSystemPath.create (at "start/docs")) |> Expect.ok
+    let written =
+        EntryProperties.read fs (FileSystemPath.create (at "start/docs")) |> Expect.ok
+
     Assert.True(EntryProperties.has ReadOnlyFlag written)
 
 [<Fact>]
@@ -92,13 +110,22 @@ let ``F4 opens the editor its extension is associated with`` () =
 
     fs.AddFile(
         at "marbas.conf",
-        MockFileData(String.concat "\n" (Settings.format { Settings.forPath (FileSystemPath.create (at "start")) with Programs = programs }))
+        MockFileData(
+            String.concat
+                "\n"
+                (Settings.format
+                    { Settings.forPath (FileSystemPath.create (at "start")) with
+                        Programs = programs })
+        )
     )
 
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Processes.StartEditor = fun editor _ -> started.Add editor; Ok() }
+                Processes.StartEditor =
+                    fun editor _ ->
+                        started.Add editor
+                        Ok() }
 
     (leftList window).SelectedItem <- 2
 
@@ -125,7 +152,10 @@ let ``F4 opens the editor a settings file written before the role named`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Processes.StartEditor = fun editor _ -> started.Add editor; Ok() }
+                Processes.StartEditor =
+                    fun editor _ ->
+                        started.Add editor
+                        Ok() }
 
     (leftList window).SelectedItem <- 2
 
@@ -136,8 +166,18 @@ let ``F4 opens the editor a settings file written before the role named`` () =
 [<Fact>]
 let ``F4 does not re-read the panel once the editor is started`` () =
     let fs = mockFs ()
-    let write () = fs.AddFile(at "start/notes.txt.bak", MockFileData "hi")
-    use window = windowWith fs (fun _ _ -> write (); Ok()) silent
+
+    let write () =
+        fs.AddFile(at "start/notes.txt.bak", MockFileData "hi")
+
+    use window =
+        windowWith
+            fs
+            (fun _ _ ->
+                write ()
+                Ok())
+            silent
+
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F4
@@ -147,8 +187,13 @@ let ``F4 does not re-read the panel once the editor is started`` () =
 [<Fact>]
 let ``an editor that could not be started is reported`` () =
     let reported = ResizeArray<string>()
-    let failure = OperationFailed(FileSystemPath.create (at "start/notes.txt"), "no editor")
-    use window = windowWith (mockFs ()) (fun _ _ -> Error failure) (fun report -> reported.Add report.Message)
+
+    let failure =
+        OperationFailed(FileSystemPath.create (at "start/notes.txt"), "no editor")
+
+    use window =
+        windowWith (mockFs ()) (fun _ _ -> Error failure) (fun report -> reported.Add report.Message)
+
     (leftList window).SelectedItem <- 2
 
     pressKey window Key.F4
@@ -164,7 +209,10 @@ let ``Shift+F4 creates the named file in the panel directory and opens it`` () =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
                 Prompts.AskName = fun _ -> Some "draft.md"
-                Processes.StartEditor = fun _ path -> edited.Add path; Ok() }
+                Processes.StartEditor =
+                    fun _ path ->
+                        edited.Add path
+                        Ok() }
 
     pressKey window KeyMap.newFileKey
 
@@ -197,8 +245,14 @@ let ``F12 hands the programs in force to the settings popup and takes back what 
                 Prompts.EditPrograms =
                     fun request ->
                         shown.Add request.Programs
-                        Some { request.Programs with DefaultEditor = Some chosen }
-                Processes.StartEditor = fun editor _ -> started.Add editor; Ok() }
+
+                        Some
+                            { request.Programs with
+                                DefaultEditor = Some chosen }
+                Processes.StartEditor =
+                    fun editor _ ->
+                        started.Add editor
+                        Ok() }
 
     pressKey window KeyMap.settingsKey
     (leftList window).SelectedItem <- 2
@@ -216,7 +270,10 @@ let ``F12 offers the executable under the cursor to the settings popup`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Prompts.EditPrograms = fun request -> offered.Add request.Candidate; None }
+                Prompts.EditPrograms =
+                    fun request ->
+                        offered.Add request.Candidate
+                        None }
 
     (leftList window).SelectedItem <- 3
 
@@ -232,7 +289,10 @@ let ``F12 offers nothing when the cursor is not on an executable`` () =
     use window =
         focusedWindow
             { Fakes.dependencies fs (at "start") with
-                Prompts.EditPrograms = fun request -> offered.Add request.Candidate; None }
+                Prompts.EditPrograms =
+                    fun request ->
+                        offered.Add request.Candidate
+                        None }
 
     (leftList window).SelectedItem <- 2
 

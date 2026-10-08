@@ -23,7 +23,8 @@ let private withLog (text: string) =
 let ``the log sits beside the settings, in a file of its own`` () =
     let fs = MockFileSystem()
 
-    let path = LogFile.beside fs (FileSystemPath.create (at "config/Marbas/settings.conf"))
+    let path =
+        LogFile.beside fs (FileSystemPath.create (at "config/Marbas/settings.conf"))
 
     Assert.Equal(at "config/Marbas/marbas.log", FileSystemPath.value path)
 

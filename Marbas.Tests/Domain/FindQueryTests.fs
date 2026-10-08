@@ -70,7 +70,8 @@ let ``a mask with no wildcard passes over a name without it`` raw name =
 
 [<Fact>]
 let ``a query without text keeps the targets it was given`` () =
-    let query = queryFor (FindWhat.create (NameMasks.read "*.fs") None FilesAndDirectories)
+    let query =
+        queryFor (FindWhat.create (NameMasks.read "*.fs") None FilesAndDirectories)
 
     let targets = FindQuery.targets query
 
@@ -78,7 +79,8 @@ let ``a query without text keeps the targets it was given`` () =
 
 [<Fact>]
 let ``a query with text finds files alone`` () =
-    let query = queryFor (FindWhat.create (NameMasks.read "*.fs") (Some(searchFor "let")) FilesAndDirectories)
+    let query =
+        queryFor (FindWhat.create (NameMasks.read "*.fs") (Some(searchFor "let")) FilesAndDirectories)
 
     let targets = FindQuery.targets query
 
@@ -95,7 +97,9 @@ let ``a query without text carries no text options`` () =
 [<Fact>]
 let ``a query with text carries the search it was given`` () =
     let search = searchFor "let"
-    let query = queryFor (FindWhat.create (NameMasks.read "*.fs") (Some search) FilesOnly)
+
+    let query =
+        queryFor (FindWhat.create (NameMasks.read "*.fs") (Some search) FilesOnly)
 
     let text = FindQuery.text query
 
@@ -103,9 +107,11 @@ let ``a query with text carries the search it was given`` () =
 
 [<Fact>]
 let ``the masks survive a query with text`` () =
-    let query = queryFor (FindWhat.create (NameMasks.read "*.fs") (Some(searchFor "let")) FilesOnly)
+    let query =
+        queryFor (FindWhat.create (NameMasks.read "*.fs") (Some(searchFor "let")) FilesOnly)
 
-    let matched = NameMasks.matches (FindQuery.masks query) (EntryName.create "AppState.fs")
+    let matched =
+        NameMasks.matches (FindQuery.masks query) (EntryName.create "AppState.fs")
 
     Assert.True matched
 

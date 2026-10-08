@@ -12,7 +12,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private zip = ArchiveFormat.tryCreate Zip |> Expect.some
 
@@ -36,7 +37,10 @@ let private tree () =
 
 let private packedInto format path password =
     let fs = tree ()
-    Archive.write fs Operations.unattended (request format path password) sources |> ignore
+
+    Archive.write fs Operations.unattended (request format path password) sources
+    |> ignore
+
     fs
 
 let private queryFor masks =
@@ -55,7 +59,9 @@ let private searchFor raw =
 
 let private hitsOf (fs: IFileSystem) query ground =
     let hits = ResizeArray<FindHit>()
-    let outcome = run fs Operations.unattended (fun report -> hits.Add report.Hit) query ground
+
+    let outcome =
+        run fs Operations.unattended (fun report -> hits.Add report.Hit) query ground
 
     outcome,
     hits
@@ -100,7 +106,10 @@ let ``a tar.gz is searched the same way`` () =
 [<Fact>]
 let ``an archive is left closed unless it is asked for`` () =
     let fs = packedInto zip (at "backup/data.zip") None
-    let query = { queryFor "*.txt" with Archives = SkipArchives }
+
+    let query =
+        { queryFor "*.txt" with
+            Archives = SkipArchives }
 
     let hits = inBackup fs query
 
@@ -124,10 +133,7 @@ let ``text is matched inside the entries of an archive`` () =
 
     let hits = inBackup fs query
 
-    Assert.Equal<string list>(
-        [ at "backup/data.zip/docs/deep/leaf.txt"; at "backup/data.zip/notes.txt" ],
-        hits
-    )
+    Assert.Equal<string list>([ at "backup/data.zip/docs/deep/leaf.txt"; at "backup/data.zip/notes.txt" ], hits)
 
 [<Fact>]
 let ``a directory inside an archive is a hit when directories are wanted`` () =
@@ -167,7 +173,13 @@ let ``an archive that wants a password is counted as skipped`` () =
               OtherRoots = [] }
         |> fst
 
-    Assert.Equal<FindOutcome>(Finished { Files = 0; Directories = 0; Skipped = 1 }, outcome)
+    Assert.Equal<FindOutcome>(
+        Finished
+            { Files = 0
+              Directories = 0
+              Skipped = 1 },
+        outcome
+    )
 
 [<Fact>]
 let ``a panel standing inside an archive searches below its level`` () =
@@ -179,15 +191,15 @@ let ``a panel standing inside an archive searches below its level`` () =
 
     let hits = hitsOf fs (queryFor "*.txt") ground |> snd
 
-    Assert.Equal<string list>(
-        [ at "backup/data.zip/docs/deep/leaf.txt"; at "backup/data.zip/docs/inner.txt" ],
-        hits
-    )
+    Assert.Equal<string list>([ at "backup/data.zip/docs/deep/leaf.txt"; at "backup/data.zip/docs/inner.txt" ], hits)
 
 [<Fact>]
 let ``a panel inside an archive searches it even with archives switched off`` () =
     let fs = packedInto zip (at "backup/data.zip") None
-    let query = { queryFor "*.txt" with Archives = SkipArchives }
+
+    let query =
+        { queryFor "*.txt" with
+            Archives = SkipArchives }
 
     let ground =
         { Roots = [ InArchive(fp (at "backup/data.zip"), ArchivePath.root) ]

@@ -15,7 +15,8 @@ let private request names scope =
       Mode = ToTrash }
 
 let private permanent names scope =
-    { request names scope with Mode = Permanently }
+    { request names scope with
+        Mode = Permanently }
 
 [<Fact>]
 let ``a single target is named in the question`` () =
@@ -60,7 +61,8 @@ let ``a permanent delete asks a question of its own, under a title of its own`` 
     Assert.Equal(DeleteConfirmation.PermanentTitle, DeleteConfirmation.title asked)
 
 let private wiping names scope =
-    { request names scope with Mode = ByWiping }
+    { request names scope with
+        Mode = ByWiping }
 
 [<Fact>]
 let ``a wipe asks under a title of its own`` () =
@@ -89,7 +91,6 @@ let ``a wipe reaching into a directory says the contents are wiped too`` () =
 
 [<Fact>]
 let ``a delete to the trash keeps the plain title`` () =
-    let title =
-        DeleteConfirmation.title (request [ en "notes.txt" ] NamedEntriesOnly)
+    let title = DeleteConfirmation.title (request [ en "notes.txt" ] NamedEntriesOnly)
 
     Assert.Equal(DeleteConfirmation.Title, title)

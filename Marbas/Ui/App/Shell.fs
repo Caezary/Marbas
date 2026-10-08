@@ -246,11 +246,13 @@ let private copyPiece (deps: Dependencies) target group : Piece option =
         |> Option.map (fun plan control -> Archive.extractAll fs control [ plan ])
     | FromDisk paths, ToArchive(targetArchive, level) ->
         pieceApprovedForArchive deps targetArchive level paths (fun approved control ->
-            Archive.addEntries fs control targetArchive level approved |> itemsOf targetArchive)
+            Archive.addEntries fs control targetArchive level approved
+            |> itemsOf targetArchive)
     | FromArchive(archive, entries), ToArchive(targetArchive, level) ->
         archiveToArchivePlan deps archive targetArchive level entries
         |> Option.map (fun plan control ->
-            Archive.copyToArchive fs control plan.Request plan.Targets targetArchive level |> itemsOf archive)
+            Archive.copyToArchive fs control plan.Request plan.Targets targetArchive level
+            |> itemsOf archive)
     | FromPlaces _, _ -> None
 
 let private movePiece (deps: Dependencies) target group : Piece option =
@@ -267,12 +269,14 @@ let private movePiece (deps: Dependencies) target group : Piece option =
                 Archive.moveToDirectory fs control plan.Request plan.Targets |> itemsOf archive))
     | FromDisk paths, ToArchive(targetArchive, level) ->
         pieceApprovedForArchive deps targetArchive level paths (fun approved control ->
-            Archive.moveFromDisk fs control targetArchive level approved |> itemsOf targetArchive)
+            Archive.moveFromDisk fs control targetArchive level approved
+            |> itemsOf targetArchive)
     | FromArchive(archive, entries), ToArchive(targetArchive, level) ->
         gated deps archive (fun () ->
             archiveToArchivePlan deps archive targetArchive level entries
             |> Option.map (fun plan control ->
-                Archive.moveToArchive fs control plan.Request plan.Targets targetArchive level |> itemsOf archive))
+                Archive.moveToArchive fs control plan.Request plan.Targets targetArchive level
+                |> itemsOf archive))
     | FromPlaces _, _ -> None
 
 let private deletePiece (deps: Dependencies) mode group : Piece option =
@@ -365,12 +369,10 @@ let private rememberTyped (deps: Dependencies) dispatch kind text =
 
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     match effect with
-    | ReportListingError error ->
-        report deps (ListingErrorMessage.title error) (ListingErrorMessage.describe error)
+    | ReportListingError error -> report deps (ListingErrorMessage.title error) (ListingErrorMessage.describe error)
     | ReportUnverifiedHits refused ->
         report deps ArchiveErrorMessage.Title (ArchiveErrorMessage.describeUnverified refused)
-    | ReportOperationError error ->
-        report deps OperationErrorMessage.Title (OperationErrorMessage.describe error)
+    | ReportOperationError error -> report deps OperationErrorMessage.Title (OperationErrorMessage.describe error)
     | ReportLaunchError error -> report deps LaunchErrorMessage.Title (LaunchErrorMessage.describe error)
     | ReportCommandError error -> report deps LaunchErrorMessage.CommandTitle (LaunchErrorMessage.describe error)
     | ReportExpansionRefusal refusal ->
@@ -469,7 +471,8 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
                 (fun control -> Archive.extractAll deps.FileSystem control plans)
                 (UnpackFinished >> dispatch)
     | RenameTarget(source, newName) ->
-        let finished outcome = dispatch (RenameFinished(newName, outcome))
+        let finished outcome =
+            dispatch (RenameFinished(newName, outcome))
 
         match Operations.startRename deps.FileSystem source newName with
         | Error error -> finished (Error error)
@@ -506,9 +509,12 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
             dispatch (HandlerChosen(path, choice)))
     | ShowTabs tabs -> deps.Prompts.ChooseTab tabs |> Option.iter (TabSwitched >> dispatch)
     | ShowProperties properties ->
-        deps.Prompts.EditProperties properties |> Option.iter (PropertiesEntered >> dispatch)
+        deps.Prompts.EditProperties properties
+        |> Option.iter (PropertiesEntered >> dispatch)
     | ShowSettings(programs, candidate) ->
-        deps.Prompts.EditPrograms { Programs = programs; Candidate = candidate }
+        deps.Prompts.EditPrograms
+            { Programs = programs
+              Candidate = candidate }
         |> Option.iter (ProgramsEntered >> dispatch)
     | PromptForTarget suggestion ->
         deps.Prompts.AskTarget
@@ -541,9 +547,15 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
               Remembered = typedBefore deps SelectionPattern }
         |> Option.iter (fun text ->
             rememberTyped deps dispatch SelectionPattern text
-            NamePattern.tryCreate text |> Option.iter (fun pattern -> dispatch (PatternEntered(mode, pattern))))
+
+            NamePattern.tryCreate text
+            |> Option.iter (fun pattern -> dispatch (PatternEntered(mode, pattern))))
     | PromptForRoot side ->
-        match deps.Prompts.ChooseDrive { Side = side; Drives = deps.Processes.ListDrives() } with
+        match
+            deps.Prompts.ChooseDrive
+                { Side = side
+                  Drives = deps.Processes.ListDrives() }
+        with
         | Some(StandOn row) -> dispatch (DriveChosen(side, row))
         | Some(HandOver row) -> dispatch (DriveHandedOver row)
         | None -> ()

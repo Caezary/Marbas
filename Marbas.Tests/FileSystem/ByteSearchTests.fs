@@ -24,7 +24,10 @@ let private filler length =
 
 let private withNeedlesAt (offsets: int list) length =
     let bytes = filler length
-    offsets |> List.iter (fun offset -> Array.blit needle 0 bytes offset needle.Length)
+
+    offsets
+    |> List.iter (fun offset -> Array.blit needle 0 bytes offset needle.Length)
+
     bytes
 
 let private sourceOf (bytes: byte array) =
@@ -40,8 +43,7 @@ let private stopping: WindowSearch.Control =
     { going with
         IsCancelled = fun () -> true }
 
-let private wanted raw =
-    WantedBytes.tryParse raw |> Expect.ok
+let private wanted raw = WantedBytes.tryParse raw |> Expect.ok
 
 let private forwards raw : Query =
     { Bytes = wanted raw
@@ -61,9 +63,11 @@ let private found offset length : WindowSearch.Answer<Match> =
 type private BrokenStream() =
     inherit MemoryStream(Array.zeroCreate<byte> 100)
 
-    override _.Read(_: byte array, _: int, _: int) : int = raise (IOException "the disk went away")
+    override _.Read(_: byte array, _: int, _: int) : int =
+        raise (IOException "the disk went away")
 
-    override _.Read(_: Span<byte>) : int = raise (IOException "the disk went away")
+    override _.Read(_: Span<byte>) : int =
+        raise (IOException "the disk went away")
 
 [<Fact>]
 let ``a run inside one window of bytes is found where it starts`` () =
@@ -87,7 +91,8 @@ let ``a run at the very end is found`` () =
 let ``a run split across two windows of bytes is found`` () =
     let offset = window - 2
 
-    let answer = searching going (withNeedlesAt [ offset ] (window + 100)) (forwards "FC FD FE FF") 0L
+    let answer =
+        searching going (withNeedlesAt [ offset ] (window + 100)) (forwards "FC FD FE FF") 0L
 
     Assert.Equal(found (int64 offset) 4, answer)
 
@@ -95,7 +100,8 @@ let ``a run split across two windows of bytes is found`` () =
 let ``a run past the first window of bytes is found`` () =
     let offset = window * 2 + 7
 
-    let answer = searching going (withNeedlesAt [ offset ] (window * 3)) (forwards "FC FD FE FF") 0L
+    let answer =
+        searching going (withNeedlesAt [ offset ] (window * 3)) (forwards "FC FD FE FF") 0L
 
     Assert.Equal(found (int64 offset) 4, answer)
 
@@ -113,13 +119,15 @@ let ``an empty file holds no run`` () =
 
 [<Fact>]
 let ``a search from an offset passes over a run before it`` () =
-    let answer = searching going (withNeedlesAt [ 10; 50 ] 100) (forwards "FC FD FE FF") 11L
+    let answer =
+        searching going (withNeedlesAt [ 10; 50 ] 100) (forwards "FC FD FE FF") 11L
 
     Assert.Equal(found 50L 4, answer)
 
 [<Fact>]
 let ``a search from where a run starts finds that run`` () =
-    let answer = searching going (withNeedlesAt [ 10; 50 ] 100) (forwards "FC FD FE FF") 10L
+    let answer =
+        searching going (withNeedlesAt [ 10; 50 ] 100) (forwards "FC FD FE FF") 10L
 
     Assert.Equal(found 10L 4, answer)
 
@@ -131,25 +139,29 @@ let ``a search past the last run ends at the end of the file`` () =
 
 [<Fact>]
 let ``a search back finds the last run starting before the offset`` () =
-    let answer = searching going (withNeedlesAt [ 10; 50 ] 100) (backwards "FC FD FE FF") 50L
+    let answer =
+        searching going (withNeedlesAt [ 10; 50 ] 100) (backwards "FC FD FE FF") 50L
 
     Assert.Equal(found 10L 4, answer)
 
 [<Fact>]
 let ``a search back finds a run that starts before the offset and ends after it`` () =
-    let answer = searching going (withNeedlesAt [ 10; 50 ] 100) (backwards "FC FD FE FF") 51L
+    let answer =
+        searching going (withNeedlesAt [ 10; 50 ] 100) (backwards "FC FD FE FF") 51L
 
     Assert.Equal(found 50L 4, answer)
 
 [<Fact>]
 let ``a search back from the end finds the last run`` () =
-    let answer = searching going (withNeedlesAt [ 10; 96 ] 100) (backwards "FC FD FE FF") 100L
+    let answer =
+        searching going (withNeedlesAt [ 10; 96 ] 100) (backwards "FC FD FE FF") 100L
 
     Assert.Equal(found 96L 4, answer)
 
 [<Fact>]
 let ``a search back before the first run ends at the start of the file`` () =
-    let answer = searching going (withNeedlesAt [ 10 ] 100) (backwards "FC FD FE FF") 10L
+    let answer =
+        searching going (withNeedlesAt [ 10 ] 100) (backwards "FC FD FE FF") 10L
 
     Assert.Equal(WindowSearch.NotFound, answer)
 
@@ -172,13 +184,15 @@ let ``a search back finds a run before the window it starts in`` () =
 
 [<Fact>]
 let ``a search told to stop stops before reading`` () =
-    let answer = searching stopping (withNeedlesAt [ 10 ] 100) (forwards "FC FD FE FF") 0L
+    let answer =
+        searching stopping (withNeedlesAt [ 10 ] 100) (forwards "FC FD FE FF") 0L
 
     Assert.Equal(WindowSearch.Stopped, answer)
 
 [<Fact>]
 let ``a search back told to stop stops before reading`` () =
-    let answer = searching stopping (withNeedlesAt [ 10 ] 100) (backwards "FC FD FE FF") 100L
+    let answer =
+        searching stopping (withNeedlesAt [ 10 ] 100) (backwards "FC FD FE FF") 100L
 
     Assert.Equal(WindowSearch.Stopped, answer)
 
@@ -186,9 +200,7 @@ let ``a search back told to stop stops before reading`` () =
 let ``a search says how far it has read`` () =
     let reached = ResizeArray<int64>()
 
-    let watching =
-        { going with
-            Reached = reached.Add }
+    let watching = { going with Reached = reached.Add }
 
     searching watching (filler (window + 10)) (forwards "FC FD") 0L |> ignore
 
@@ -198,17 +210,17 @@ let ``a search says how far it has read`` () =
 let ``a search back says how far it has read`` () =
     let reached = ResizeArray<int64>()
 
-    let watching =
-        { going with
-            Reached = reached.Add }
+    let watching = { going with Reached = reached.Add }
 
-    searching watching (filler (window + 10)) (backwards "FC FD") (int64 (window + 10)) |> ignore
+    searching watching (filler (window + 10)) (backwards "FC FD") (int64 (window + 10))
+    |> ignore
 
     Assert.Equal<int64 list>([ 10L; 0L ], List.ofSeq reached)
 
 [<Fact>]
 let ``a file that fails to read is answered with the failure`` () =
-    use source = new FileWindow.Source(fp notes, new BrokenStream(), { Charset = Utf8; Bom = WithoutBom })
+    use source =
+        new FileWindow.Source(fp notes, new BrokenStream(), { Charset = Utf8; Bom = WithoutBom })
 
     let answer = ByteSearch.run going source (forwards "4D") 0L
 

@@ -68,9 +68,7 @@ let entryFromInfo (info: IFileSystemInfo) =
           LinkTarget = FileSystemPath.linkTargetOfInfo info
           Verification = Verified }
 
-type Child =
-    { Path: FileSystemPath
-      Entry: Entry }
+type Child = { Path: FileSystemPath; Entry: Entry }
 
 let private childFromInfo (info: IFileSystemInfo) =
     { Path = FileSystemPath.create info.FullName
@@ -90,7 +88,10 @@ let existingEntry (fs: IFileSystem) (path: FileSystemPath) =
     else
         let directory = fs.DirectoryInfo.New raw
 
-        if directory.Exists then Some(entryFromInfo directory) else None
+        if directory.Exists then
+            Some(entryFromInfo directory)
+        else
+            None
 
 let read (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingError> =
     try
@@ -104,7 +105,8 @@ let read (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingEr
         Error(mapException path ex)
 
 let private groupRank entry =
-    if entry.Name = ParentName then 0
+    if entry.Name = ParentName then
+        0
     else
         match entry.Kind with
         | Directory -> 1

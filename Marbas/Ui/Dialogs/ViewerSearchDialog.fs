@@ -102,7 +102,10 @@ let private modeOf last =
 
 let private input (offer: SearchOffer) =
     let last = spelledLast offer.Last
-    let field = HistoryField.amongOthers (offer.Remembered |> List.map EnteredText.value) last
+
+    let field =
+        HistoryField.amongOthers (offer.Remembered |> List.map EnteredText.value) last
+
     field.X <- 1
     field.Y <- 1
     field.Width <- Dim.Fill 1
@@ -181,4 +184,7 @@ let create (refuse: SearchRefusal -> unit) (offer: SearchOffer) =
     dialog
 
 let answer (dialog: SearchView) =
-    if dialog.Canceled then None else Some(chosen dialog.Mode dialog)
+    if dialog.Canceled then
+        None
+    else
+        Some(chosen dialog.Mode dialog)

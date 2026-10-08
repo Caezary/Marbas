@@ -43,7 +43,13 @@ let ``a carriage return before the feed is not part of the line`` () =
 [<Fact>]
 let ``the lines are read in the encoding the index is given`` () =
     let source, _ = over (MockFileData [| 0x41uy; 0xB9uy; 0x0Auy; 0xA5uy |])
-    let index = LineIndex.Index(source, { Charset = Windows1250; Bom = WithoutBom })
+
+    let index =
+        LineIndex.Index(
+            source,
+            { Charset = Windows1250
+              Bom = WithoutBom }
+        )
 
     let lines = textsOf index 2
 
@@ -94,7 +100,9 @@ let ``a line past the end is nothing`` () =
 
 [<Fact>]
 let ``a byte order mark is no part of the first line`` () =
-    let marked = Array.append (Encoding.UTF8.GetPreamble()) (Encoding.UTF8.GetBytes "first\nsecond")
+    let marked =
+        Array.append (Encoding.UTF8.GetPreamble()) (Encoding.UTF8.GetBytes "first\nsecond")
+
     let index = over (MockFileData marked) |> snd
 
     let lines = textsOf index 2
@@ -103,7 +111,9 @@ let ``a byte order mark is no part of the first line`` () =
 
 [<Fact>]
 let ``wide lines are read in their own encoding`` () =
-    let wide = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "first\r\nsecond")
+    let wide =
+        Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "first\r\nsecond")
+
     let index = over (MockFileData wide) |> snd
 
     let lines = textsOf index 2
@@ -195,7 +205,8 @@ let private numbered count =
 
 [<Fact>]
 let ``the index remembers one start for every checkpoint's worth of lines`` () =
-    let index = indexing (String.replicate (100 * LineIndex.LinesPerCheckpoint) "line\n")
+    let index =
+        indexing (String.replicate (100 * LineIndex.LinesPerCheckpoint) "line\n")
 
     index.ScanAll()
 
@@ -240,7 +251,9 @@ let ``the line holding an offset past a checkpoint is the one that started befor
 
 [<Fact>]
 let ``a wide line past a checkpoint reads in its own encoding`` () =
-    let wide = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes(numbered 200))
+    let wide =
+        Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes(numbered 200))
+
     let index = over (MockFileData wide) |> snd
 
     let text = index.Text 150
@@ -265,7 +278,9 @@ let ``the last line ends before a feed at the very end`` () =
 
 [<Fact>]
 let ``a wide last line ends before a feed at the very end`` () =
-    let wide = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "first\r\nsecond\r\n")
+    let wide =
+        Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "first\r\nsecond\r\n")
+
     let index = over (MockFileData wide) |> snd
 
     let last = index.Text 1
@@ -323,7 +338,9 @@ let ``a wide walk passes the lines the index reads`` () =
 
 [<Fact>]
 let ``a walk passes lines that run across the window of bytes`` () =
-    let source, index = over (MockFileData(String('a', LineIndex.ChunkLength - 3) + "\nbcdefgh\nlast"))
+    let source, index =
+        over (MockFileData(String('a', LineIndex.ChunkLength - 3) + "\nbcdefgh\nlast"))
+
     let expected = everyLine index
 
     let lines = walked source 0L
@@ -332,7 +349,9 @@ let ``a walk passes lines that run across the window of bytes`` () =
 
 [<Fact>]
 let ``a walk cuts a line longer than the longest the viewer reads`` () =
-    let source, index = over (MockFileData(String('a', LineIndex.MaxLineLength + 10) + "\nnext"))
+    let source, index =
+        over (MockFileData(String('a', LineIndex.MaxLineLength + 10) + "\nnext"))
+
     let expected = everyLine index
 
     let lines = walked source 0L
@@ -421,7 +440,11 @@ let ``a wide walk back passes the lines the index reads`` () =
 [<Fact>]
 let ``a walk back passes lines that run across the window of bytes`` () =
     let content =
-        "head\n" + String('a', LineIndex.ChunkLength + 7) + "\nmiddle\n" + String('b', 20) + "\nlast"
+        "head\n"
+        + String('a', LineIndex.ChunkLength + 7)
+        + "\nmiddle\n"
+        + String('b', 20)
+        + "\nlast"
 
     let source, index = over (MockFileData content)
     let expected = everyLine index |> allButLastBackwards
@@ -432,7 +455,9 @@ let ``a walk back passes lines that run across the window of bytes`` () =
 
 [<Fact>]
 let ``a walk back cuts a line longer than the longest the viewer reads`` () =
-    let source, index = over (MockFileData("first\n" + String('a', LineIndex.MaxLineLength + 10) + "\nlast"))
+    let source, index =
+        over (MockFileData("first\n" + String('a', LineIndex.MaxLineLength + 10) + "\nlast"))
+
     let expected = everyLine index |> allButLastBackwards
 
     let lines = walkedBack source (lastStart index)
@@ -457,7 +482,9 @@ let ``a walk back from the first line of a marked file passes nothing`` () =
 
 [<Fact>]
 let ``a walk back says where it reads before each window of bytes`` () =
-    let source, _ = over (MockFileData(String('a', LineIndex.ChunkLength * 2 + 10) + "\nlast"))
+    let source, _ =
+        over (MockFileData(String('a', LineIndex.ChunkLength * 2 + 10) + "\nlast"))
+
     let before = int64 (LineIndex.ChunkLength * 2 + 11)
 
     let offsets = readingBackAt source before

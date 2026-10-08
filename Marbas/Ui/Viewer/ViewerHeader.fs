@@ -31,9 +31,12 @@ let private placeText place =
     | AtOffset offset -> HexDump.offsetText offset
 
 let private shorten width (text: string) =
-    if text.Length <= width then text
-    elif width <= Ellipsis.Length then text[text.Length - width ..]
-    else Ellipsis + text[text.Length - width + Ellipsis.Length ..]
+    if text.Length <= width then
+        text
+    elif width <= Ellipsis.Length then
+        text[text.Length - width ..]
+    else
+        Ellipsis + text[text.Length - width + Ellipsis.Length ..]
 
 let private marks bar =
     [ modeText bar.Mode

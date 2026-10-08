@@ -27,7 +27,9 @@ let private openedOn offer =
     openedRefusingInto (ResizeArray()) offer
 
 let private fresh () =
-    openedOn { Remembered = []; Last = LastText None }
+    openedOn
+        { Remembered = []
+          Last = LastText None }
 
 let private listed (dialog: Dialog) =
     let field = ViewerSearchDialog.field dialog :?> DropDownList
@@ -107,12 +109,17 @@ let ``a search asked again holds the last options`` () =
             Case = MatchingCase
             Direction = Backwards }
 
-    use dialog = openedOn { Remembered = []; Last = LastText(Some last) }
+    use dialog =
+        openedOn
+            { Remembered = []
+              Last = LastText(Some last) }
 
     let checkedBoxes = ticked dialog
 
     Assert.Equal<ViewerSearchDialog.SearchBox list>(
-        [ ViewerSearchDialog.CaseBox; ViewerSearchDialog.WordsBox; ViewerSearchDialog.BackwardsBox ],
+        [ ViewerSearchDialog.CaseBox
+          ViewerSearchDialog.WordsBox
+          ViewerSearchDialog.BackwardsBox ],
         checkedBoxes
     )
 
@@ -235,7 +242,12 @@ let ``a confirmed popup yields an expression without whole words`` () =
 
     let answer = ViewerSearchDialog.answer dialog
 
-    Assert.Equal(Some { plainAnswer "[0-9]+" with TypedAs = AsExpression }, answer)
+    Assert.Equal(
+        Some
+            { plainAnswer "[0-9]+" with
+                TypedAs = AsExpression },
+        answer
+    )
 
 [<Fact>]
 let ``a popup closed without confirming yields nothing`` () =
@@ -249,7 +261,13 @@ let ``a popup closed without confirming yields nothing`` () =
 [<Fact>]
 let ``confirming a pattern that does not parse refuses it and stays open`` () =
     let refusals = ResizeArray<SearchRefusal>()
-    use dialog = openedRefusingInto refusals { Remembered = []; Last = LastText None }
+
+    use dialog =
+        openedRefusingInto
+            refusals
+            { Remembered = []
+              Last = LastText None }
+
     (ViewerSearchDialog.field dialog).Text <- "("
     tick dialog ViewerSearchDialog.ExpressionBox
 
@@ -261,7 +279,13 @@ let ``confirming a pattern that does not parse refuses it and stays open`` () =
 [<Fact>]
 let ``Enter in the field on a pattern the linear engine cannot run refuses it`` () =
     let refusals = ResizeArray<SearchRefusal>()
-    use dialog = openedRefusingInto refusals { Remembered = []; Last = LastText None }
+
+    use dialog =
+        openedRefusingInto
+            refusals
+            { Remembered = []
+              Last = LastText None }
+
     (ViewerSearchDialog.field dialog).Text <- "a(?=b)"
     tick dialog ViewerSearchDialog.ExpressionBox
 
@@ -273,7 +297,13 @@ let ``Enter in the field on a pattern the linear engine cannot run refuses it`` 
 [<Fact>]
 let ``Enter on the box just ticked refuses a pattern that does not parse`` () =
     let refusals = ResizeArray<SearchRefusal>()
-    use dialog = openedRefusingInto refusals { Remembered = []; Last = LastText None }
+
+    use dialog =
+        openedRefusingInto
+            refusals
+            { Remembered = []
+              Last = LastText None }
+
     (ViewerSearchDialog.field dialog).Text <- "["
     tick dialog ViewerSearchDialog.ExpressionBox
 
@@ -285,7 +315,11 @@ let ``Enter on the box just ticked refuses a pattern that does not parse`` () =
 
 [<Fact>]
 let ``a refused pattern hands the focus back to the field`` () =
-    use dialog = openedOn { Remembered = []; Last = LastText None }
+    use dialog =
+        openedOn
+            { Remembered = []
+              Last = LastText None }
+
     (ViewerSearchDialog.field dialog).Text <- "("
     let expression = ViewerSearchDialog.checkBox dialog ViewerSearchDialog.ExpressionBox
     tick dialog ViewerSearchDialog.ExpressionBox
@@ -298,7 +332,13 @@ let ``a refused pattern hands the focus back to the field`` () =
 [<Fact>]
 let ``confirming a pattern that parses refuses nothing`` () =
     let refusals = ResizeArray<SearchRefusal>()
-    use dialog = openedRefusingInto refusals { Remembered = []; Last = LastText None }
+
+    use dialog =
+        openedRefusingInto
+            refusals
+            { Remembered = []
+              Last = LastText None }
+
     (ViewerSearchDialog.field dialog).Text <- "[0-9]+"
     tick dialog ViewerSearchDialog.ExpressionBox
 
@@ -309,7 +349,13 @@ let ``confirming a pattern that parses refuses nothing`` () =
 [<Fact>]
 let ``confirming plain text that would not parse refuses nothing`` () =
     let refusals = ResizeArray<SearchRefusal>()
-    use dialog = openedRefusingInto refusals { Remembered = []; Last = LastText None }
+
+    use dialog =
+        openedRefusingInto
+            refusals
+            { Remembered = []
+              Last = LastText None }
+
     (ViewerSearchDialog.field dialog).Text <- "("
 
     confirm dialog
@@ -317,7 +363,9 @@ let ``confirming plain text that would not parse refuses nothing`` () =
     Assert.Empty refusals
 
 let private freshBytes () =
-    openedOn { Remembered = []; Last = LastBytes None }
+    openedOn
+        { Remembered = []
+          Last = LastBytes None }
 
 let private lastBytes raw direction : ByteSearch.Query =
     { Bytes = WantedBytes.tryParse raw |> Expect.ok
@@ -375,7 +423,13 @@ let ``a confirmed popup for bytes yields them as bytes`` () =
 [<Fact>]
 let ``confirming a field that is not bytes refuses it and stays open`` () =
     let refusals = ResizeArray<SearchRefusal>()
-    use dialog = openedRefusingInto refusals { Remembered = []; Last = LastBytes None }
+
+    use dialog =
+        openedRefusingInto
+            refusals
+            { Remembered = []
+              Last = LastBytes None }
+
     (ViewerSearchDialog.field dialog).Text <- "MZ"
 
     confirm dialog
@@ -386,7 +440,13 @@ let ``confirming a field that is not bytes refuses it and stays open`` () =
 [<Fact>]
 let ``confirming bytes refuses nothing`` () =
     let refusals = ResizeArray<SearchRefusal>()
-    use dialog = openedRefusingInto refusals { Remembered = []; Last = LastBytes None }
+
+    use dialog =
+        openedRefusingInto
+            refusals
+            { Remembered = []
+              Last = LastBytes None }
+
     (ViewerSearchDialog.field dialog).Text <- "4D 5A"
 
     confirm dialog

@@ -12,7 +12,8 @@ let private menuPath = FileSystemPath.create (at "config/user-menu.conf")
 
 [<Fact>]
 let ``a file that cannot be read is named with the reason`` () =
-    let message = UserMenuErrorMessage.describe (UserMenuFailed(menuPath, "the disk is gone"))
+    let message =
+        UserMenuErrorMessage.describe (UserMenuFailed(menuPath, "the disk is gone"))
 
     Assert.Contains(at "config/user-menu.conf", message)
     Assert.Contains("the disk is gone", message)

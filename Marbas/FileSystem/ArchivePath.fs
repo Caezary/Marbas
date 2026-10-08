@@ -20,11 +20,9 @@ module ArchivePath =
     let value path =
         segments path |> List.map EntryName.value |> String.concat (string Separator)
 
-    let private names (raw: string) =
-        raw.Split Separator |> List.ofArray
+    let private names (raw: string) = raw.Split Separator |> List.ofArray
 
-    let private climbs (segment: string) =
-        segment = "." || segment = ".."
+    let private climbs (segment: string) = segment = "." || segment = ".."
 
     let private legal (segment: string) =
         not (String.IsNullOrWhiteSpace segment) && not (climbs segment)
@@ -35,8 +33,7 @@ module ArchivePath =
         | _ when names raw |> List.forall legal -> Some(ArchivePath(names raw |> List.map EntryName.create))
         | _ -> None
 
-    let child path (name: EntryName) =
-        ArchivePath(segments path @ [ name ])
+    let child path (name: EntryName) = ArchivePath(segments path @ [ name ])
 
     let depth path = segments path |> List.length
 

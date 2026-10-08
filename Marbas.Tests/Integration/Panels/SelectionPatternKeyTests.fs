@@ -33,7 +33,12 @@ let private marked (list: ListView) =
 [<Fact>]
 let ``the select key asks for a pattern and marks the matches`` () =
     let asked = ResizeArray<string>()
-    use window = windowWith (fun request -> asked.Add request.Title; Some "*.fs")
+
+    use window =
+        windowWith (fun request ->
+            asked.Add request.Title
+            Some "*.fs")
+
     let list = leftList window
 
     press list KeyMap.selectPatternKey
@@ -44,7 +49,12 @@ let ``the select key asks for a pattern and marks the matches`` () =
 [<Fact>]
 let ``the deselect key asks for a pattern and unmarks the matches`` () =
     let asked = ResizeArray<string>()
-    use window = windowWith (fun request -> asked.Add request.Title; Some "*.txt")
+
+    use window =
+        windowWith (fun request ->
+            asked.Add request.Title
+            Some "*.txt")
+
     let list = leftList window
     press list KeyMap.selectPatternKey
     let markedBefore = marked list

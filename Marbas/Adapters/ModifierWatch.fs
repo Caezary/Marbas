@@ -23,9 +23,12 @@ extern int16 private GetAsyncKeyState(int vKey)
 let private isDown vKey = GetAsyncKeyState vKey &&& 0x8000s <> 0s
 
 let private held () =
-    [ if isDown VkControl then Ctrl
-      if isDown VkAlt then Alt
-      if isDown VkShift then Shift ]
+    [ if isDown VkControl then
+          Ctrl
+      if isDown VkAlt then
+          Alt
+      if isDown VkShift then
+          Shift ]
     |> Modifiers.held
 
 let poll (app: IApplication) report =

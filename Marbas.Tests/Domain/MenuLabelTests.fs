@@ -15,6 +15,8 @@ let ``text that is blank or breaks a line is no label`` (raw: string) =
 
 [<Fact>]
 let ``a label is trimmed`` () =
-    let label = MenuLabel.tryCreate "  Compare with the other panel  " |> Option.map MenuLabel.value
+    let label =
+        MenuLabel.tryCreate "  Compare with the other panel  "
+        |> Option.map MenuLabel.value
 
     Assert.Equal(Some "Compare with the other panel", label)

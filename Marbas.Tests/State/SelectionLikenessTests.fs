@@ -13,7 +13,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private pattern raw = NamePattern.tryCreate raw |> Expect.some
+let private pattern raw =
+    NamePattern.tryCreate raw |> Expect.some
 
 let private mockFs () =
     let fs = MockFileSystem()
@@ -147,9 +148,7 @@ let ``the parent entry under the cursor marks nothing`` () =
 [<Fact>]
 let ``the parent entry under the cursor unmarks nothing`` () =
     let state =
-        loaded (mockFs ())
-        |> applyPattern Select Left (pattern "*")
-        |> standingOn ".."
+        loaded (mockFs ()) |> applyPattern Select Left (pattern "*") |> standingOn ".."
 
     let unmarked =
         state

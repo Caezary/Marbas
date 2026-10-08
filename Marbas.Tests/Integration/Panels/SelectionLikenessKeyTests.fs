@@ -17,7 +17,8 @@ let private mockFs () =
     fs.AddFile(at "start/readme.TXT", MockFileData "hi")
     fs
 
-let private window () = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
+let private window () =
+    focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
 
 let private markedRows (list: ListView) =
     [ for i in 0 .. list.Source.Count - 1 do

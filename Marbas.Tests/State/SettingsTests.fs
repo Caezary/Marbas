@@ -64,7 +64,9 @@ let ``a state built from settings gives each panel its own path, sort and hidden
 let ``a state built from settings has one tab for every stored tab`` () =
     let second =
         { storedTab with
-            Left = { storedTab.Left with Path = fp (at "start") }
+            Left =
+                { storedTab.Left with
+                    Path = fp (at "start") }
             Active = Right }
 
     let state =
@@ -93,7 +95,9 @@ let ``the settings of a state name every tab it holds`` () =
 
     Assert.Equal<string list>(
         [ at "start"; at "backup" ],
-        written.Tabs |> Zipper.items |> List.map (fun tab -> FileSystemPath.value tab.Left.Path)
+        written.Tabs
+        |> Zipper.items
+        |> List.map (fun tab -> FileSystemPath.value tab.Left.Path)
     )
 
     Assert.Equal(1, Zipper.position written.Tabs)
@@ -120,7 +124,9 @@ let ``the settings of a state are what its panels are set to`` () =
 [<Fact>]
 let ``a sorted panel says so in the settings`` () =
     let fs = mockFs ()
-    let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
+
+    let state =
+        create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
     let sorted = sortBy BySize Left state
 
@@ -130,7 +136,9 @@ let ``a sorted panel says so in the settings`` () =
 [<Fact>]
 let ``a panel showing its hidden entries says so in the settings`` () =
     let fs = mockFs ()
-    let state = create (fp (at "start")) |> loadPanel fs Right (fp (at "start")) |> Expect.ok
+
+    let state =
+        create (fp (at "start")) |> loadPanel fs Right (fp (at "start")) |> Expect.ok
 
     let toggled = toggleHidden fs Right state |> Expect.ok
 
@@ -140,7 +148,11 @@ let ``a panel showing its hidden entries says so in the settings`` () =
 [<Fact>]
 let ``a panel that has been navigated says where it is in the settings`` () =
     let fs = mockFs ()
-    let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start/docs")) |> Expect.ok
+
+    let state =
+        create (fp (at "start"))
+        |> loadPanel fs Left (fp (at "start/docs"))
+        |> Expect.ok
 
     let current = settings fs state
 
@@ -150,9 +162,12 @@ let ``a panel that has been navigated says where it is in the settings`` () =
 [<Fact>]
 let ``a panel inside an archive says the directory holding it in the settings`` () =
     let fs = mockFs ()
-    let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
-    let inside = state |> standingIn (InArchive(fp (at "start/backup.zip"), ArchivePath.root))
+    let state =
+        create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
+
+    let inside =
+        state |> standingIn (InArchive(fp (at "start/backup.zip"), ArchivePath.root))
 
     Assert.Equal(fp (at "start"), (settings fs inside).Left.Path)
 
@@ -225,7 +240,10 @@ let ``a panel opens on the entry the session remembered`` () =
                     stored.Tabs
                     |> Zipper.map (fun tab ->
                         { tab with
-                            Left = { tab.Left with Path = fp (at "start"); Cursor = Some(en "notes.txt") } }) }
+                            Left =
+                                { tab.Left with
+                                    Path = fp (at "start")
+                                    Cursor = Some(en "notes.txt") } }) }
         |> loadPanel fs Left (fp (at "start"))
         |> Expect.ok
 
@@ -242,7 +260,10 @@ let ``a remembered entry that is gone leaves the cursor at the top`` () =
                     stored.Tabs
                     |> Zipper.map (fun tab ->
                         { tab with
-                            Left = { tab.Left with Path = fp (at "start"); Cursor = Some(en "renamed.txt") } }) }
+                            Left =
+                                { tab.Left with
+                                    Path = fp (at "start")
+                                    Cursor = Some(en "renamed.txt") } }) }
         |> loadPanel fs Left (fp (at "start"))
         |> Expect.ok
 
@@ -259,7 +280,10 @@ let ``once a panel has been read it remembers its own cursor`` () =
                     stored.Tabs
                     |> Zipper.map (fun tab ->
                         { tab with
-                            Left = { tab.Left with Path = fp (at "start"); Cursor = Some(en "notes.txt") } }) }
+                            Left =
+                                { tab.Left with
+                                    Path = fp (at "start")
+                                    Cursor = Some(en "notes.txt") } }) }
         |> loadPanel fs Left (fp (at "start"))
         |> Expect.ok
         |> setCursor Left 1
@@ -270,7 +294,8 @@ let ``once a panel has been read it remembers its own cursor`` () =
 let ``a cursor resting on the way out remembers nothing`` () =
     let fs = mockFs ()
 
-    let state = create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
+    let state =
+        create (fp (at "start")) |> loadPanel fs Left (fp (at "start")) |> Expect.ok
 
     Assert.Equal(Some "..", PanelState.cursorEntry state.Left |> Option.map (_.Name >> EntryName.value))
     Assert.Equal(None, (settings fs state).Left.Cursor)

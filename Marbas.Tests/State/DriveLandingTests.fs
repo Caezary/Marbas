@@ -93,7 +93,9 @@ let ``a panel on a mount inside a drive stands on the mount and not on the drive
 [<Fact>]
 let ``the other panel inside an archive lends the directory that holds the archive`` () =
     let fs = mounted ()
-    Archive.write fs Operations.unattended (request Zip (at "backup/work.zip")) [ fp (at "work/notes.txt") ] |> ignore
+
+    Archive.write fs Operations.unattended (request Zip (at "backup/work.zip")) [ fp (at "work/notes.txt") ]
+    |> ignore
 
     let state =
         standing fs (at "media/stick/photos") (at "backup")
@@ -123,7 +125,11 @@ let ``a drive that went away is reported and the panel stays where it was`` () =
     let result = update fs (DriveChosen(Left, gone)) state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "media/gone"))) ], result.Effects)
+
+    Assert.Equal<Effect list>(
+        [ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "media/gone"))) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a drive handed over is started with the system's own choice, standing in its root`` () =

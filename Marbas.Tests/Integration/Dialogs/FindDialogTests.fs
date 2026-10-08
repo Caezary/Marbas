@@ -24,9 +24,11 @@ let private laidOut ground hidden = opened ground hidden None
 
 let private fresh () = laidOut NoDirectoryMarked Concealed
 
-let private masks dialog = FindDialog.field dialog FindDialog.MasksId
+let private masks dialog =
+    FindDialog.field dialog FindDialog.MasksId
 
-let private text dialog = FindDialog.field dialog FindDialog.TextId
+let private text dialog =
+    FindDialog.field dialog FindDialog.TextId
 
 let private scopes dialog = FindDialog.selector dialog
 
@@ -71,10 +73,7 @@ let ``a fresh popup asks for every name, no text, from the directory the panel s
 let ``every scope is offered`` () =
     use dialog = fresh ()
 
-    Assert.Equal<string list>(
-        FindDialog.scopes |> List.map FindDialog.scopeLabel,
-        List.ofSeq (scopes dialog).Labels
-    )
+    Assert.Equal<string list>(FindDialog.scopes |> List.map FindDialog.scopeLabel, List.ofSeq (scopes dialog).Labels)
 
 [<Fact>]
 let ``the scope that was chosen is the scope that comes back`` () =
@@ -202,7 +201,11 @@ let ``text asks about files alone, whatever the directories box was left on`` ()
 let ``the text and every option ticked beside it come back together`` () =
     use dialog = fresh ()
     (text dialog).Text <- "needle"
-    [ FindDialog.CaseBox; FindDialog.WordsBox; FindDialog.SenseBox; FindDialog.BinaryBox ]
+
+    [ FindDialog.CaseBox
+      FindDialog.WordsBox
+      FindDialog.SenseBox
+      FindDialog.BinaryBox ]
     |> List.iter (tick dialog)
 
     let search = FindQuery.text (accepted dialog) |> Expect.some
@@ -238,6 +241,7 @@ let ``the walk follows what the three boxes beneath the scope were left on`` () 
 [<Fact>]
 let ``the hidden entries, the links and the archives are asked for when they are ticked`` () =
     use dialog = fresh ()
+
     [ FindDialog.HiddenBox; FindDialog.LinksBox; FindDialog.ArchivesBox ]
     |> List.iter (tick dialog)
 
@@ -287,7 +291,8 @@ let ``the last results carry how many there are`` () =
 let ``asking for the last results is what the popup answers`` () =
     use dialog = opened NoDirectoryMarked Concealed (Some 123)
 
-    (FindDialog.lastResults dialog).InvokeCommand Terminal.Gui.Input.Command.Accept |> ignore
+    (FindDialog.lastResults dialog).InvokeCommand Terminal.Gui.Input.Command.Accept
+    |> ignore
 
     Assert.Equal(Some LastResults, FindDialog.choice dialog)
 

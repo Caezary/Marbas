@@ -88,11 +88,13 @@ let ``a panel inside an archive leaves it for the root of the volume`` () =
 let ``the root is the one of the volume the panel stands on`` () =
     let fs = MockFileSystem()
     fs.AddDirectory @"D:\data\deep"
-    let state = @"D:\data"
-                |> fp
-                |> create
-                |> loadPanel fs Left (fp @"D:\data\deep")
-                |> Expect.ok
+
+    let state =
+        @"D:\data"
+        |> fp
+        |> create
+        |> loadPanel fs Left (fp @"D:\data\deep")
+        |> Expect.ok
 
     let result = update fs VolumeRootRequested state
 

@@ -145,7 +145,8 @@ let private whileOpen action () =
 let private settingOnWindows blocks =
     whileOpen (fun () -> replacedBy blocks) ()
 
-let private nullTerminated (text: string) = Encoding.Unicode.GetBytes(text + "\000")
+let private nullTerminated (text: string) =
+    Encoding.Unicode.GetBytes(text + "\000")
 
 let private setOnWindows (text: ClipboardText) =
     settingOnWindows [ UnicodeText, nullTerminated (ClipboardText.joined Environment.NewLine text) ]

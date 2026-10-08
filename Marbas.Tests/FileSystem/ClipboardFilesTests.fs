@@ -27,7 +27,8 @@ let ``the files are kept in their order`` () =
 
 [<Fact>]
 let ``files put there to be copied say so`` () =
-    let files = ClipboardFiles.tryCreate ForCopying [ fp (at "start/notes.txt") ] |> Expect.some
+    let files =
+        ClipboardFiles.tryCreate ForCopying [ fp (at "start/notes.txt") ] |> Expect.some
 
     let intent = ClipboardFiles.intent files
 
@@ -35,7 +36,8 @@ let ``files put there to be copied say so`` () =
 
 [<Fact>]
 let ``files put there to be moved say so`` () =
-    let files = ClipboardFiles.tryCreate ForMoving [ fp (at "start/notes.txt") ] |> Expect.some
+    let files =
+        ClipboardFiles.tryCreate ForMoving [ fp (at "start/notes.txt") ] |> Expect.some
 
     let intent = ClipboardFiles.intent files
 

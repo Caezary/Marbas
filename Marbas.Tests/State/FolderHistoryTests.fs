@@ -64,7 +64,11 @@ let private results hits =
         { Roots = [ OnDisk(fp (at "start")) ]
           OtherRoots = [] }
       Hits = hits
-      Outcome = FileSearch.Finished { Files = List.length hits; Directories = 0; Skipped = 0 }
+      Outcome =
+        FileSearch.Finished
+            { Files = List.length hits
+              Directories = 0
+              Skipped = 0 }
       Cursor = 0 }
 
 let private moment = DateTimeOffset(2026, 9, 28, 14, 0, 0, TimeSpan.Zero)
@@ -93,7 +97,12 @@ let ``Enter on a directory remembers it`` () =
 [<Fact>]
 let ``walking out remembers the directory walked out to`` () =
     let fs = mockFs ()
-    let state = loadedBoth fs |> loadPanel fs Left (fp (at "start/docs")) |> Expect.ok |> setCursor Left 0
+
+    let state =
+        loadedBoth fs
+        |> loadPanel fs Left (fp (at "start/docs"))
+        |> Expect.ok
+        |> setCursor Left 0
 
     let result = update fs WalkIntoRequested state
 
@@ -129,13 +138,16 @@ let ``the root of the volume is remembered when the panel is sent there`` () =
 
 [<Fact>]
 let ``the directory a chosen drive lands in is remembered`` () =
-    let fs = Fakes.MountedFileSystem [ Fakes.Mount.ext4 (at ""); Fakes.Mount.ext4 (at "media/stick") ]
+    let fs =
+        Fakes.MountedFileSystem [ Fakes.Mount.ext4 (at ""); Fakes.Mount.ext4 (at "media/stick") ]
+
     fs.AddDirectory(at "start")
     fs.AddDirectory(at "backup")
     fs.AddDirectory(at "media/stick/photos")
     let state = loadedBoth fs
 
-    let result = update fs (DriveChosen(Left, MountedDrive(Fakes.driveAt (at "media/stick")))) state
+    let result =
+        update fs (DriveChosen(Left, MountedDrive(Fakes.driveAt (at "media/stick")))) state
 
     Assert.Contains(visited "media/stick", result.Effects)
 
@@ -145,7 +157,12 @@ let ``the directory a found hit lives in is remembered`` () =
     let state = loadedBoth fs |> loadPanel fs Left (fp (at "backup")) |> Expect.ok
 
     let result =
-        update fs (SearchAnswered { Landing = Some(AtHit(hitIn "start/docs" "notes.txt")); Results = results [] }) state
+        update
+            fs
+            (SearchAnswered
+                { Landing = Some(AtHit(hitIn "start/docs" "notes.txt"))
+                  Results = results [] })
+            state
 
     Assert.Contains(visited "start/docs", result.Effects)
 
@@ -155,7 +172,12 @@ let ``a panel showing search results remembers nothing`` () =
     let state = loadedBoth fs
 
     let result =
-        update fs (SearchAnswered { Landing = Some InPanel; Results = results [ hitIn "start" "notes.txt" ] }) state
+        update
+            fs
+            (SearchAnswered
+                { Landing = Some InPanel
+                  Results = results [ hitIn "start" "notes.txt" ] })
+            state
 
     Assert.Empty(historyChanges result.Effects)
 
@@ -268,7 +290,12 @@ let ``a history that could not be written is not reported again in the same sess
 [<Fact>]
 let ``going up one level remembers the directory it lands in`` () =
     let fs = mockFs ()
-    let state = loadedBoth fs |> loadPanel fs Left (fp (at "start/docs")) |> Expect.ok |> setCursor Left 1
+
+    let state =
+        loadedBoth fs
+        |> loadPanel fs Left (fp (at "start/docs"))
+        |> Expect.ok
+        |> setCursor Left 1
 
     let result = update fs UpOneLevelRequested state
 

@@ -46,7 +46,8 @@ let private noNative = Native().Links
 let ``a symbolic link is made and resolves to what it points at`` target location =
     let fs = data ()
 
-    Links.create noNative Windows fs (symbolic (at target) (at location)) |> Expect.ok
+    Links.create noNative Windows fs (symbolic (at target) (at location))
+    |> Expect.ok
 
     Assert.Equal(Some(fp (at target)), FileSystemPath.linkTarget fs (fp (at location)))
 
@@ -54,7 +55,8 @@ let ``a symbolic link is made and resolves to what it points at`` target locatio
 let ``a symbolic link to a directory is a directory`` () =
     let fs = data ()
 
-    Links.create noNative Unix fs (symbolic (at "data/docs") (at "data/twin")) |> Expect.ok
+    Links.create noNative Unix fs (symbolic (at "data/docs") (at "data/twin"))
+    |> Expect.ok
 
     Assert.Equal(DirectoryEntry, FileSystemPath.kind fs (fp (at "data/twin")))
 
@@ -176,7 +178,10 @@ let ``a junction to a file is refused without asking the system`` () =
 [<Fact>]
 let ``a junction with no native way to be made is refused as a kind this system lacks`` () =
     let fs = data ()
-    let native = { Native().Links with MakeJunction = None }
+
+    let native =
+        { Native().Links with
+            MakeJunction = None }
 
     let failure =
         Links.create native Windows fs (requested Junction (at "data/docs") (at "data/twin"))
@@ -193,7 +198,10 @@ let ``a system with a native junction offers all three kinds`` () =
 
 [<Fact>]
 let ``a system without a native junction offers no junction`` () =
-    let kinds = Links.available { Native().Links with MakeJunction = None }
+    let kinds =
+        Links.available
+            { Native().Links with
+                MakeJunction = None }
 
     Assert.Equal<LinkKind list>([ Symbolic; Hard ], kinds)
 
@@ -212,7 +220,8 @@ let ``a native link the system refuses is mapped the way every operation maps it
 let ``a symbolic link carries no refusal of its kind`` () =
     let fs = data ()
 
-    let refusal = Links.refusal Unix fs (symbolic (at "data/notes.txt") (at "data/twin.txt"))
+    let refusal =
+        Links.refusal Unix fs (symbolic (at "data/notes.txt") (at "data/twin.txt"))
 
     Assert.Equal(None, refusal)
 
@@ -220,7 +229,8 @@ let ``a symbolic link carries no refusal of its kind`` () =
 let ``the refusal of a kind can be asked before anything is made`` () =
     let fs = data ()
 
-    let refusal = Links.refusal Unix fs (requested Hard (at "data/docs") (at "data/twin"))
+    let refusal =
+        Links.refusal Unix fs (requested Hard (at "data/docs") (at "data/twin"))
 
     Assert.Equal(Some HardLinkToDirectory, refusal)
 
@@ -230,7 +240,8 @@ let private sources = [ fp (at "data/notes.txt"); fp (at "data/docs") ]
 let ``one entry is linked at the path that was typed`` () =
     let fs = data ()
 
-    let requests = Links.requests fs Hard [ fp (at "data/notes.txt") ] (fp (at "data")) (at "backup/twin.txt")
+    let requests =
+        Links.requests fs Hard [ fp (at "data/notes.txt") ] (fp (at "data")) (at "backup/twin.txt")
 
     Assert.Equal<LinkRequest list>([ requested Hard (at "data/notes.txt") (at "backup/twin.txt") ], requests)
 
@@ -238,7 +249,8 @@ let ``one entry is linked at the path that was typed`` () =
 let ``one entry given a bare name is linked beside itself`` () =
     let fs = data ()
 
-    let requests = Links.requests fs Symbolic [ fp (at "data/notes.txt") ] (fp (at "data")) " twin.txt "
+    let requests =
+        Links.requests fs Symbolic [ fp (at "data/notes.txt") ] (fp (at "data")) " twin.txt "
 
     Assert.Equal<LinkRequest list>([ symbolic (at "data/notes.txt") (at "data/twin.txt") ], requests)
 
@@ -247,7 +259,8 @@ let ``one entry given a directory that exists is linked inside it under its own 
     let fs = data ()
     fs.AddDirectory(at "backup")
 
-    let requests = Links.requests fs Symbolic [ fp (at "data/notes.txt") ] (fp (at "data")) (at "backup")
+    let requests =
+        Links.requests fs Symbolic [ fp (at "data/notes.txt") ] (fp (at "data")) (at "backup")
 
     Assert.Equal<LinkRequest list>([ symbolic (at "data/notes.txt") (at "backup/notes.txt") ], requests)
 

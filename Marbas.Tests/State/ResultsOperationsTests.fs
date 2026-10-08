@@ -75,10 +75,14 @@ let private insideArchive =
       Entry = file "inner.txt" }
 
 let private threeDirectories =
-    [ hitIn "start/a" "one.txt"; hitIn "start/b" "two.txt"; hitIn "start/c" "three.txt" ]
+    [ hitIn "start/a" "one.txt"
+      hitIn "start/b" "two.txt"
+      hitIn "start/c" "three.txt" ]
 
 let private sources =
-    [ fp (at "start/a/one.txt"); fp (at "start/b/two.txt"); fp (at "start/c/three.txt") ]
+    [ fp (at "start/a/one.txt")
+      fp (at "start/b/two.txt")
+      fp (at "start/c/three.txt") ]
 
 let private sentToPanel hits =
     SearchAnswered
@@ -279,10 +283,7 @@ let ``marks in one archive alone take the way an archive panel takes`` () =
     let result = update fs CopyRequested state
 
     Assert.Equal<Effect list>(
-        [ CopyPlaces(
-              [ FromArchive(fp (at "start/backup.zip"), [ inner "inner.txt" ]) ],
-              ToDirectory(fp (at "target"))
-          ) ],
+        [ CopyPlaces([ FromArchive(fp (at "start/backup.zip"), [ inner "inner.txt" ]) ], ToDirectory(fp (at "target"))) ],
         result.Effects
     )
 
@@ -295,7 +296,13 @@ let ``F3 on a hit inside an archive streams the entry rather than a path on disk
     let result = update fs ViewRequested state
 
     Assert.Equal<Effect list>(
-        [ ChangeHistory(Remember(Opened { Where = Place.InArchive(fp (at "start/backup.zip"), entry); How = Viewed }))
+        [ ChangeHistory(
+              Remember(
+                  Opened
+                      { Where = Place.InArchive(fp (at "start/backup.zip"), entry)
+                        How = Viewed }
+              )
+          )
           ViewArchiveEntry(fp (at "start/backup.zip"), entry) ],
         result.Effects
     )
@@ -308,7 +315,13 @@ let ``F4 edits the file a hit stands for`` () =
     let result = update fs EditRequested state
 
     Assert.Equal<Effect list>(
-        [ ChangeHistory(Remember(Opened { Where = Place.OnDisk(fp (at "start/b/two.txt")); How = Edited }))
+        [ ChangeHistory(
+              Remember(
+                  Opened
+                      { Where = Place.OnDisk(fp (at "start/b/two.txt"))
+                        How = Edited }
+              )
+          )
           EditFile(fp (at "start/b/two.txt"), None) ],
         result.Effects
     )
@@ -368,9 +381,7 @@ let ``a bare name typed for F6 refuses rather than renaming`` () =
     Assert.Equal<Effect list>(refused Renaming, result.Effects)
 
 let private facingResults (fs: MockFileSystem) =
-    showing fs threeDirectories
-    |> activate Right
-    |> setCursor Right 1
+    showing fs threeDirectories |> activate Right |> setCursor Right 1
 
 [<Fact>]
 let ``F5 into a results panel refuses`` () =
@@ -437,8 +448,7 @@ let ``Shift+F1 between two results panels names what the panel it stands in refu
 
     Assert.Equal<Effect list>(refused Packing, result.Effects)
 
-let private twinsOnDisk =
-    [ hitIn "start/a" "same.txt"; hitIn "start/b" "same.txt" ]
+let private twinsOnDisk = [ hitIn "start/a" "same.txt"; hitIn "start/b" "same.txt" ]
 
 let private twinInArchive =
     { Location = InArchive(fp (at "start/backup.zip"), ArchivePath.root)

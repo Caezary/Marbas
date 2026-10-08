@@ -54,7 +54,8 @@ let private cursorOn side name state =
     setCursor side (shown.Entries |> Array.findIndex (fun entry -> ownName shown entry = name)) state
 
 let private marking side names state =
-    names |> List.fold (fun marked name -> marked |> cursorOn side name |> toggleSelection side) state
+    names
+    |> List.fold (fun marked name -> marked |> cursorOn side name |> toggleSelection side) state
 
 let private panels (fs: IFileSystem) =
     create (fp (at "start"))
@@ -173,14 +174,19 @@ let ``with the right panel active the placeholders without a side speak of it`` 
     let expanded = expand fs listFile (line "show %n %p %s %d") state
 
     Assert.Equal<CommandWord list>(
-        [ quoted "report.pdf"; quoted (at "other/report.pdf"); quoted (at "other/report.pdf"); quoted (at "other") ],
+        [ quoted "report.pdf"
+          quoted (at "other/report.pdf")
+          quoted (at "other/report.pdf")
+          quoted (at "other") ],
         (Expect.ok expanded).Arguments
     )
 
 [<Fact>]
 let ``the marked entries are put in each as an argument of its own, the cursor left out`` () =
     let fs = mockFs ()
-    let state = panels fs |> marking Left [ "my file.txt"; "docs" ] |> cursorOn Left "notes.txt"
+
+    let state =
+        panels fs |> marking Left [ "my file.txt"; "docs" ] |> cursorOn Left "notes.txt"
 
     let expanded = expand fs listFile (line "pack %s") state
 
@@ -210,8 +216,12 @@ let ``the program is started once with every entry after the words typed before 
 
     let command = Expect.ok expanded
     Assert.Equal(bare "cmd", command.Program)
+
     Assert.Equal<CommandWord list>(
-        [ bare "/c"; bare "del"; quoted (at "start/my file.txt"); quoted (at "start/notes.txt") ],
+        [ bare "/c"
+          bare "del"
+          quoted (at "start/my file.txt")
+          quoted (at "start/notes.txt") ],
         command.Arguments
     )
 
@@ -223,7 +233,8 @@ let ``text joined to the marked entries goes to the first of them and to the las
     let expanded = expand fs listFile (line "tool --files=%s;") state
 
     Assert.Equal<CommandWord list>(
-        [ quoted ("--files=" + at "start/my file.txt"); quoted (at "start/notes.txt" + ";") ],
+        [ quoted ("--files=" + at "start/my file.txt")
+          quoted (at "start/notes.txt" + ";") ],
         (Expect.ok expanded).Arguments
     )
 
@@ -252,7 +263,8 @@ let ``a name that holds a double quote stays one argument`` () =
 let ``words typed in quotes are one word, and remembered as quoted`` () =
     let fs = mockFs ()
 
-    let expanded = expand fs listFile (line "\"C:\\Program Files\\tool.exe\" -x \"a b\"") (panels fs)
+    let expanded =
+        expand fs listFile (line "\"C:\\Program Files\\tool.exe\" -x \"a b\"") (panels fs)
 
     let command = Expect.ok expanded
     Assert.Equal(quoted "C:\\Program Files\\tool.exe", command.Program)
@@ -290,6 +302,7 @@ let ``the list file is put in by its path and asks for the marked entries`` () =
 
     let command = Expect.ok expanded
     Assert.Equal<CommandWord list>([ quoted ("@" + FileSystemPath.value listFile) ], command.Arguments)
+
     Assert.Equal(
         Some
             { FilePath = listFile
@@ -313,7 +326,8 @@ let ``a line without the list file asks for none`` () =
 let ``a placeholder naming a place inside an archive refuses the run`` (placeholder: string, named: string) =
     let fs = mockFs ()
 
-    let expanded = expand fs listFile (line $"show {placeholder}") (rightInsideArchive fs)
+    let expanded =
+        expand fs listFile (line $"show {placeholder}") (rightInsideArchive fs)
 
     Assert.Equal(Error(insideArchive fs named), expanded)
 
@@ -323,7 +337,10 @@ let ``a panel inside an archive refuses nothing that does not name it`` () =
 
     let expanded = expand fs listFile (line "show %p %Ld") (rightInsideArchive fs)
 
-    Assert.Equal<CommandWord list>([ quoted (at "start/notes.txt"); quoted (at "start") ], (Expect.ok expanded).Arguments)
+    Assert.Equal<CommandWord list>(
+        [ quoted (at "start/notes.txt"); quoted (at "start") ],
+        (Expect.ok expanded).Arguments
+    )
 
 [<Fact>]
 let ``in a panel of search results a hit is named by its own name and its own path`` () =
@@ -333,7 +350,9 @@ let ``in a panel of search results a hit is named by its own name and its own pa
     let expanded = expand fs listFile (line "show %n %p %s") state
 
     Assert.Equal<CommandWord list>(
-        [ quoted "plan.txt"; quoted (at "other/plan.txt"); quoted (at "other/plan.txt") ],
+        [ quoted "plan.txt"
+          quoted (at "other/plan.txt")
+          quoted (at "other/plan.txt") ],
         (Expect.ok expanded).Arguments
     )
 

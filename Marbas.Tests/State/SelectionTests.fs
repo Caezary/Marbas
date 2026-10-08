@@ -183,7 +183,8 @@ let ``one run after another marks page by page and never gives the last one back
     let pageAfterPage = [ 4; 9; 11; 11 ]
 
     let updated =
-        pageAfterPage |> List.fold (fun state target -> toggleSelectionShortOf Left target state) state
+        pageAfterPage
+        |> List.fold (fun state target -> toggleSelectionShortOf Left target state) state
 
     Assert.Equal(11, (PanelState.selectedEntries updated.Left).Length)
 
@@ -238,7 +239,11 @@ let ``marking undoes one entry of a pattern selection at a time`` () =
 [<Fact>]
 let ``selection belongs to one panel only`` () =
     let fs = mockFs ()
-    let state = create (fp (at "start")) |> loaded Left (fp (at "start")) fs |> loaded Right (fp (at "start")) fs
+
+    let state =
+        create (fp (at "start"))
+        |> loaded Left (fp (at "start")) fs
+        |> loaded Right (fp (at "start")) fs
 
     let updated = state |> setCursor Left 1 |> toggleSelectionMoving Downward Left
 

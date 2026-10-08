@@ -95,26 +95,40 @@ let ``a file link has the link colour whatever it points at`` name =
 [<InlineData("sources.zip")>]
 [<InlineData("setup.exe")>]
 let ``a file listed unverified has the unverified colour whatever it is`` name =
-    let color = classify { file name Executable with Verification = Unverified }
+    let color =
+        classify
+            { file name Executable with
+                Verification = Unverified }
 
     Assert.Equal(UnverifiedColor, color)
 
 [<Fact>]
 let ``a directory listed unverified has the unverified colour`` () =
-    let color = classify { directory "docs" with Verification = Unverified }
+    let color =
+        classify
+            { directory "docs" with
+                Verification = Unverified }
 
     Assert.Equal(UnverifiedColor, color)
 
 [<Fact>]
 let ``a link listed unverified has the unverified colour`` () =
-    let color = classify { linked (directory "twin") with Verification = Unverified }
+    let color =
+        classify
+            { linked (directory "twin") with
+                Verification = Unverified }
 
     Assert.Equal(UnverifiedColor, color)
 
 [<Fact>]
 let ``every colour is a distinct attribute of the classic palette`` () =
     let attributes =
-        [ DirectoryColor; PlainColor; ArchiveColor; ExecutableColor; LinkColor ; UnverifiedColor ]
+        [ DirectoryColor
+          PlainColor
+          ArchiveColor
+          ExecutableColor
+          LinkColor
+          UnverifiedColor ]
         |> List.map attribute
 
     Assert.Equal(6, attributes |> List.distinct |> List.length)

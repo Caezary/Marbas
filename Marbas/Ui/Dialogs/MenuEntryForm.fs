@@ -64,6 +64,5 @@ let describe refusal =
     match refusal with
     | NoLabel -> "An entry needs a label."
     | NoHotkey -> "The hotkey is one letter or one digit."
-    | HotkeyHeld holder ->
-        $"'{MenuHotkey.value holder.Hotkey}' already runs '{MenuLabel.value holder.Label}'."
+    | HotkeyHeld holder -> $"'{MenuHotkey.value holder.Hotkey}' already runs '{MenuLabel.value holder.Label}'."
     | NoCommandLine -> "An entry needs a command line."

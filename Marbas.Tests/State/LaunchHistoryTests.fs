@@ -54,7 +54,9 @@ let private finishedWell (fs: IFileSystem) state request =
     update fs (LaunchFinished(request, Ok())) state
 
 let private answered choice =
-    HistoryAnswered { Tab = RunHistoryTab; Choice = Some choice }
+    HistoryAnswered
+        { Tab = RunHistoryTab
+          Choice = Some choice }
 
 let private launchOf target =
     { Target = fp (at target)
@@ -76,8 +78,13 @@ let ``a file opened with Enter is remembered once it has started`` () =
 let ``a file opened with a program chosen for it is remembered with that program`` () =
     let fs = tree ()
     let state = loaded fs |> setCursor Left Notes
-    let choice = { Program = Expect.some (ProgramPath.tryCreate "code.exe"); Use = ThisTimeOnly }
-    let request = update fs (HandlerChosen(fp (at "start/notes.txt"), choice)) state |> started
+
+    let choice =
+        { Program = Expect.some (ProgramPath.tryCreate "code.exe")
+          Use = ThisTimeOnly }
+
+    let request =
+        update fs (HandlerChosen(fp (at "start/notes.txt"), choice)) state |> started
 
     let result = finishedWell fs state request
 
@@ -109,7 +116,10 @@ let ``a directory shown in the system file manager is not remembered`` () =
 let ``a drive handed to the system file manager is not remembered`` () =
     let fs = tree ()
     let state = loaded fs
-    let request = update fs (DriveHandedOver(MountedDrive(Fakes.driveAt (at "")))) state |> started
+
+    let request =
+        update fs (DriveHandedOver(MountedDrive(Fakes.driveAt (at "")))) state
+        |> started
 
     let result = finishedWell fs state request
 
@@ -121,7 +131,8 @@ let ``a start that failed is not remembered`` () =
     let state = loaded fs |> setCursor Left Notes
     let request = update fs EntryOpened state |> started
 
-    let result = update fs (LaunchFinished(request, Error(NothingAssociated request.Target))) state
+    let result =
+        update fs (LaunchFinished(request, Error(NothingAssociated request.Target))) state
 
     Assert.Empty(historyChanges result.Effects)
 
@@ -130,7 +141,8 @@ let ``a file started again from the history starts as it started the first time`
     let fs = tree ()
     let state = loaded fs
 
-    let result = update fs (answered (RunAgain(StartedFile(launchOf "start/tool.exe")))) state
+    let result =
+        update fs (answered (RunAgain(StartedFile(launchOf "start/tool.exe")))) state
 
     Assert.Equal<Effect list>([ RunProgram(launchOf "start/tool.exe") ], result.Effects)
 
@@ -139,7 +151,8 @@ let ``going to a started file stands the active panel beside it with the cursor 
     let fs = tree ()
     let state = loaded fs |> activate Right
 
-    let result = update fs (answered (GoTo(Place.OnDisk(fp (at "start/notes.txt"))))) state
+    let result =
+        update fs (answered (GoTo(Place.OnDisk(fp (at "start/notes.txt"))))) state
 
     Assert.Equal(OnDisk(fp (at "start")), result.State.Right.Path)
     Assert.Equal(Notes, result.State.Right.Cursor)
@@ -149,7 +162,8 @@ let ``going to a file whose directory is gone is reported and the panel stays`` 
     let fs = tree ()
     let state = loaded fs
 
-    let result = update fs (answered (GoTo(Place.OnDisk(fp (at "gone/notes.txt"))))) state
+    let result =
+        update fs (answered (GoTo(Place.OnDisk(fp (at "gone/notes.txt"))))) state
 
     Assert.Equal(OnDisk(fp (at "start")), result.State.Left.Path)
     Assert.Equal<Effect list>([ ReportListingError(DirectoryNotFound(fp (at "gone"))) ], result.Effects)

@@ -4,7 +4,7 @@ let segments width (text: string) =
     if width <= 0 || text.Length <= width then
         [ text ]
     else
-        [ for start in 0 .. width .. text.Length - 1 -> text.Substring(start, min width (text.Length - start)) ]
+        [ for start in 0..width .. text.Length - 1 -> text.Substring(start, min width (text.Length - start)) ]
 
 let height width text = List.length (segments width text)
 

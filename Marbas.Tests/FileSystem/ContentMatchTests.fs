@@ -59,7 +59,9 @@ let ``text that is not in the file is not found`` content needle =
 
 [<Fact>]
 let ``a case-sensitive search tells the cases apart`` () =
-    let search = { searchFor "let" with Case = MatchingCase }
+    let search =
+        { searchFor "let" with
+            Case = MatchingCase }
 
     let answer = answerFor (withText "LET x = 1") search
 
@@ -72,7 +74,9 @@ let ``a case-sensitive search tells the cases apart`` () =
 [<InlineData("(let)")>]
 [<InlineData("let.")>]
 let ``a whole-word search matches a word standing on its own`` content =
-    let search = { searchFor "let" with Words = WholeWords }
+    let search =
+        { searchFor "let" with
+            Words = WholeWords }
 
     let answer = answerFor (withText content) search
 
@@ -85,7 +89,9 @@ let ``a whole-word search matches a word standing on its own`` content =
 [<InlineData("let2")>]
 [<InlineData("2let")>]
 let ``a whole-word search passes over a word inside another`` content =
-    let search = { searchFor "let" with Words = WholeWords }
+    let search =
+        { searchFor "let" with
+            Words = WholeWords }
 
     let answer = answerFor (withText content) search
 
@@ -93,7 +99,8 @@ let ``a whole-word search passes over a word inside another`` content =
 
 [<Fact>]
 let ``a file with a UTF-8 byte order mark is searched as text`` () =
-    let bytes = Array.append (Encoding.UTF8.GetPreamble()) (Encoding.UTF8.GetBytes "let x = 1")
+    let bytes =
+        Array.append (Encoding.UTF8.GetPreamble()) (Encoding.UTF8.GetBytes "let x = 1")
 
     let answer = answerFor (withBytes bytes) (searchFor "let")
 
@@ -101,7 +108,8 @@ let ``a file with a UTF-8 byte order mark is searched as text`` () =
 
 [<Fact>]
 let ``a UTF-16 little-endian file is searched in its own encoding`` () =
-    let bytes = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "let x = 1")
+    let bytes =
+        Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "let x = 1")
 
     let answer = answerFor (withBytes bytes) (searchFor "let")
 
@@ -138,7 +146,10 @@ let ``a match straddling a buffer boundary is found`` padding =
 [<InlineData(65537)>]
 let ``a whole word straddling a buffer boundary keeps its boundaries`` padding =
     let content = String('a', padding) + " let " + String('b', 20)
-    let search = { searchFor "let" with Words = WholeWords }
+
+    let search =
+        { searchFor "let" with
+            Words = WholeWords }
 
     let answer = answerFor (withText content) search
 
@@ -150,7 +161,10 @@ let ``a whole word straddling a buffer boundary keeps its boundaries`` padding =
 [<InlineData(65536)>]
 let ``a word straddling a buffer boundary inside another word is passed over`` padding =
     let content = String('a', padding) + " letter " + String('b', 20)
-    let search = { searchFor "let" with Words = WholeWords }
+
+    let search =
+        { searchFor "let" with
+            Words = WholeWords }
 
     let answer = answerFor (withText content) search
 
@@ -167,7 +181,10 @@ let ``a binary file is passed over unless it is asked for`` () =
 [<Fact>]
 let ``a binary file asked for is searched as Latin-1`` () =
     let bytes = Array.append (Encoding.UTF8.GetBytes "let x = 1") [| 0uy; 1uy; 2uy |]
-    let search = { searchFor "let" with Binary = Searched }
+
+    let search =
+        { searchFor "let" with
+            Binary = Searched }
 
     let answer = answerFor (withBytes bytes) search
 
@@ -177,13 +194,16 @@ let ``a binary file asked for is searched as Latin-1`` () =
 let ``a file that cannot be read is neither a match nor a miss`` () =
     let fs = withText "let x = 1"
 
-    let answer = ContentMatch.search fs Operations.unattended (searchFor "let") (fp missing)
+    let answer =
+        ContentMatch.search fs Operations.unattended (searchFor "let") (fp missing)
 
     Assert.Equal<ContentAnswer>(FileUnreadable, answer)
 
 [<Fact>]
 let ``a file without the text matches a search for what does not contain it`` () =
-    let search = { searchFor "let" with Sense = NotContaining }
+    let search =
+        { searchFor "let" with
+            Sense = NotContaining }
 
     let answer = answerFor (withText "mutable x = 1") search
 
@@ -191,7 +211,9 @@ let ``a file without the text matches a search for what does not contain it`` ()
 
 [<Fact>]
 let ``a file with the text fails a search for what does not contain it`` () =
-    let search = { searchFor "let" with Sense = NotContaining }
+    let search =
+        { searchFor "let" with
+            Sense = NotContaining }
 
     let answer = answerFor (withText "let x = 1") search
 
@@ -200,7 +222,10 @@ let ``a file with the text fails a search for what does not contain it`` () =
 [<Fact>]
 let ``a file that cannot be read never passes as one that lacks the text`` () =
     let fs = withText "let x = 1"
-    let search = { searchFor "let" with Sense = NotContaining }
+
+    let search =
+        { searchFor "let" with
+            Sense = NotContaining }
 
     let answer = ContentMatch.search fs Operations.unattended search (fp missing)
 

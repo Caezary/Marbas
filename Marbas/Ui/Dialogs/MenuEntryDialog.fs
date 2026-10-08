@@ -77,9 +77,11 @@ let private chosen options (selector: OptionSelector) =
 
 let field (dialog: Dialog) id = SubView.byId<TextField> id dialog
 
-let runSelector (dialog: Dialog) = SubView.byId<OptionSelector> RunId dialog
+let runSelector (dialog: Dialog) =
+    SubView.byId<OptionSelector> RunId dialog
 
-let kindSelector (dialog: Dialog) = SubView.byId<OptionSelector> KindId dialog
+let kindSelector (dialog: Dialog) =
+    SubView.byId<OptionSelector> KindId dialog
 
 let administratorBox (dialog: Dialog) =
     SubView.byId<CheckBox> AdministratorId dialog

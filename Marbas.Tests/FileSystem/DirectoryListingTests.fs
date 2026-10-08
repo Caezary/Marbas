@@ -29,7 +29,9 @@ let ``directories have no size and files report theirs`` () =
     fs.AddFile(at "data/notes.txt", MockFileData "hello")
 
     let entries = read fs (fp (at "data")) |> Expect.ok
-    let byName name = entries |> List.find (fun e -> e.Name = EntryName.create name)
+
+    let byName name =
+        entries |> List.find (fun e -> e.Name = EntryName.create name)
 
     Assert.Equal(Directory, (byName "docs").Kind)
     Assert.Equal(None, (byName "docs").Size)
@@ -139,7 +141,8 @@ let ``a child knows both where it is and what it is`` () =
 let ``a child carries what one enumeration already said`` () =
     let fs = walked ()
 
-    let notes = children fs (fp (at "data")) |> List.find (fun child -> child.Entry.Kind = File)
+    let notes =
+        children fs (fp (at "data")) |> List.find (fun child -> child.Entry.Kind = File)
 
     Assert.Equal(Some 5L, notes.Entry.Size)
 

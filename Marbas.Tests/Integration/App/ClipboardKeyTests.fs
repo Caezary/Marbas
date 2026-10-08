@@ -146,7 +146,8 @@ let ``Ctrl+Shift+Ins sends the active panel into the directory on the clipboard`
 
 [<Fact>]
 let ``Alt+J sends the active panel beside the file on the clipboard`` () =
-    use window = focusedWindow (holding (mockFs ()) ("\"" + at "start/notes.txt" + "\""))
+    use window =
+        focusedWindow (holding (mockFs ()) ("\"" + at "start/notes.txt" + "\""))
 
     pressKey window KeyMap.spareClipboardPathKey
 
@@ -277,7 +278,8 @@ let ``Alt+Shift+X inside an archive is refused and nothing reaches the clipboard
     Assert.Contains(at "start/backup.zip/notes.txt", Assert.Single reported)
 
 let private filesOnClipboard intent paths =
-    ClipboardFiles.tryCreate intent (paths |> List.map (at >> FileSystemPath.create)) |> Expect.some
+    ClipboardFiles.tryCreate intent (paths |> List.map (at >> FileSystemPath.create))
+    |> Expect.some
 
 let private pasting fs files (asked: ResizeArray<string>) (emptied: ResizeArray<unit>) =
     { Fakes.dependencies fs (at "start") with
@@ -304,8 +306,7 @@ let ``Alt+Shift+V copies the files on the clipboard into the directory, asking b
     let fs = withWork (mockFs ())
     let asked = ResizeArray<string>()
 
-    use window =
-        focusedWindow (pasting fs bothOnClipboard asked (ResizeArray()))
+    use window = focusedWindow (pasting fs bothOnClipboard asked (ResizeArray()))
 
     pressKey window KeyMap.pasteFilesKey
 
@@ -339,8 +340,7 @@ let ``Alt+Shift+V inside an archive adds the files on the clipboard to it, askin
     let fs = withWork (Marbas.Tests.State.ArchiveFixture.packed ())
     let asked = ResizeArray<string>()
 
-    use window =
-        focusedWindow (pasting fs bothOnClipboard asked (ResizeArray()))
+    use window = focusedWindow (pasting fs bothOnClipboard asked (ResizeArray()))
 
     pressKey window Key.CursorDown
     pressKey window Key.Enter

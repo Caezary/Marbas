@@ -23,13 +23,15 @@ let ``a stamp is read whatever the space around it`` () =
 
 [<Fact>]
 let ``a stamp is written in the terms of its own offset`` () =
-    let elsewhere = DateTimeOffset(DateTime(2024, 3, 1, 9, 5, 7), TimeSpan.FromHours 5.0)
+    let elsewhere =
+        DateTimeOffset(DateTime(2024, 3, 1, 9, 5, 7), TimeSpan.FromHours 5.0)
 
     Assert.Equal("2024-03-01 09:05:07", TimestampText.format elsewhere)
 
 [<Fact>]
 let ``a stamp with no offset written down is read in the machine's own`` () =
-    let read: DateTimeOffset = TimestampText.tryParse "2024-03-01 09:05:07" |> Expect.some
+    let read: DateTimeOffset =
+        TimestampText.tryParse "2024-03-01 09:05:07" |> Expect.some
 
     Assert.Equal(TimeZoneInfo.Local.GetUtcOffset(DateTime(2024, 3, 1, 9, 5, 7)), read.Offset)
 

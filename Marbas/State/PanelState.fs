@@ -47,7 +47,8 @@ module PanelState =
     let withCursor index (p: PanelState) = { p with Cursor = index }
 
     let private withCursorClamped index (p: PanelState) =
-        { p with Cursor = index |> min (p.Entries.Length - 1) |> max 0 }
+        { p with
+            Cursor = index |> min (p.Entries.Length - 1) |> max 0 }
 
     let withoutSearch (p: PanelState) = { p with Search = None }
 
@@ -64,7 +65,8 @@ module PanelState =
             | Some index -> withCursor index p
             | None -> p
 
-    let private focusingSearch text (p: PanelState) = focusFirstMatch { p with Search = text }
+    let private focusingSearch text (p: PanelState) =
+        focusFirstMatch { p with Search = text }
 
     let typeIntoSearch character (p: PanelState) =
         match p.Search with
@@ -89,7 +91,9 @@ module PanelState =
             Cursor = cursor }
 
     let sortBy (key: SortKey) (p: PanelState) =
-        reorder { p with Sort = SortOrder.switchTo key p.Sort }
+        reorder
+            { p with
+                Sort = SortOrder.switchTo key p.Sort }
 
     let withMeasurements (measured: Measurement list) (p: PanelState) =
         let sizes = measured |> List.map (fun one -> one.Name, one.Size) |> Map.ofList
@@ -99,10 +103,13 @@ module PanelState =
             | Some size -> { entry with Measured = Some size }
             | None -> entry
 
-        reorder { p with Entries = p.Entries |> Array.map measuredEntry }
+        reorder
+            { p with
+                Entries = p.Entries |> Array.map measuredEntry }
 
     let withHiddenToggled (p: PanelState) =
-        { p with Hidden = HiddenEntries.toggle p.Hidden }
+        { p with
+            Hidden = HiddenEntries.toggle p.Hidden }
 
     let selectedEntries (p: PanelState) =
         p.Entries |> Array.filter (fun e -> p.Selected.Contains e.Name) |> List.ofArray
@@ -130,7 +137,8 @@ module PanelState =
         if marked.Selected = p.Selected then
             marked
         else
-            { marked with MarksBefore = Some p.Selected }
+            { marked with
+                MarksBefore = Some p.Selected }
 
     let private toggledShortOf target (p: PanelState) =
         let run = namesOf (runShortOf p.Cursor target) p
@@ -163,8 +171,12 @@ module PanelState =
 
     let private applyNames mode names (p: PanelState) =
         match mode with
-        | Select -> { p with Selected = Set.union p.Selected names }
-        | Deselect -> { p with Selected = Set.difference p.Selected names }
+        | Select ->
+            { p with
+                Selected = Set.union p.Selected names }
+        | Deselect ->
+            { p with
+                Selected = Set.difference p.Selected names }
 
     let applyPattern mode pattern (p: PanelState) =
         remembering (applyNames mode (matching pattern p)) p
@@ -190,21 +202,26 @@ module PanelState =
         remembering (applyNames mode (selectableNames (fun e -> e.Kind = File) p)) p
 
     let private inverted (p: PanelState) =
-        { p with Selected = Set.difference (selectableNames (fun _ -> true) p) p.Selected }
+        { p with
+            Selected = Set.difference (selectableNames (fun _ -> true) p) p.Selected }
 
     let invertSelection (p: PanelState) = remembering inverted p
 
     let keepSurviving selected (p: PanelState) =
         let listed = p.Entries |> Array.map _.Name |> Set.ofArray
 
-        { p with Selected = Set.intersect listed selected }
+        { p with
+            Selected = Set.intersect listed selected }
 
     let keepSurvivingMarks (previous: PanelState) (p: PanelState) =
-        { keepSurviving previous.Selected p with MarksBefore = previous.MarksBefore }
+        { keepSurviving previous.Selected p with
+            MarksBefore = previous.MarksBefore }
 
     let recallMarks (p: PanelState) =
         match p.MarksBefore with
-        | Some before -> { keepSurviving before p with MarksBefore = Some p.Selected }
+        | Some before ->
+            { keepSurviving before p with
+                MarksBefore = Some p.Selected }
         | None -> p
 
     let forgetMarks (p: PanelState) = { p with MarksBefore = None }
@@ -222,7 +239,8 @@ module PanelState =
     let private ownName (p: PanelState) (entry: Entry) =
         hitAt p entry |> Option.map _.Entry.Name |> Option.defaultValue entry.Name
 
-    let operationNames (p: PanelState) = operationTargets p |> List.map (ownName p)
+    let operationNames (p: PanelState) =
+        operationTargets p |> List.map (ownName p)
 
     let private entryInArchive (p: PanelState) (entry: Entry) =
         match p.Path with

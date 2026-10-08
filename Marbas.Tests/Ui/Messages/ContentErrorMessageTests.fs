@@ -25,7 +25,8 @@ let ``access denied is explained with its path`` () =
 
 [<Fact>]
 let ``unexpected failure includes the underlying reason`` () =
-    let message = ContentErrorMessage.describe (ReadFailed(fp (at "bad.txt"), "drive not ready"))
+    let message =
+        ContentErrorMessage.describe (ReadFailed(fp (at "bad.txt"), "drive not ready"))
 
     Assert.Contains(at "bad.txt", message)
     Assert.Contains("drive not ready", message)

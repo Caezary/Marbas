@@ -37,7 +37,9 @@ let private expression raw : Query =
       Case = IgnoringCase
       Direction = Forwards }
 
-let private placeAt lineStart column : Place = { LineStart = lineStart; Column = column }
+let private placeAt lineStart column : Place =
+    { LineStart = lineStart
+      Column = column }
 
 let private searchingFor query (content: string) lineStart column =
     use source = sourceOf (MockFileData content)
@@ -62,39 +64,71 @@ let private found lineStart column length =
 type private BrokenStream() =
     inherit MemoryStream(Array.zeroCreate<byte> 100)
 
-    override _.Read(_: byte array, _: int, _: int) : int = raise (IOException "the disk went away")
+    override _.Read(_: byte array, _: int, _: int) : int =
+        raise (IOException "the disk went away")
 
-    override _.Read(_: Span<byte>) : int = raise (IOException "the disk went away")
+    override _.Read(_: Span<byte>) : int =
+        raise (IOException "the disk went away")
 
 [<Fact>]
 let ``text on the line it starts from is found there`` () =
     let answer = searching "alpha beta\ngamma" "beta" 0L
 
-    Assert.Equal(Found { LineStart = 0L; Column = 6; Length = 4 }, answer)
+    Assert.Equal(
+        Found
+            { LineStart = 0L
+              Column = 6
+              Length = 4 },
+        answer
+    )
 
 [<Fact>]
 let ``text further down is found on its own line`` () =
     let answer = searching "alpha\nbeta gamma\ndelta" "gamma" 0L
 
-    Assert.Equal(Found { LineStart = 6L; Column = 5; Length = 5 }, answer)
+    Assert.Equal(
+        Found
+            { LineStart = 6L
+              Column = 5
+              Length = 5 },
+        answer
+    )
 
 [<Fact>]
 let ``a plain search does not mind the letter case`` () =
     let answer = searching "alpha\nGamma" "gAMMA" 0L
 
-    Assert.Equal(Found { LineStart = 6L; Column = 0; Length = 5 }, answer)
+    Assert.Equal(
+        Found
+            { LineStart = 6L
+              Column = 0
+              Length = 5 },
+        answer
+    )
 
 [<Fact>]
 let ``the first of several matches is the one found`` () =
     let answer = searching "one\ntwo two\ntwo" "two" 0L
 
-    Assert.Equal(Found { LineStart = 4L; Column = 0; Length = 3 }, answer)
+    Assert.Equal(
+        Found
+            { LineStart = 4L
+              Column = 0
+              Length = 3 },
+        answer
+    )
 
 [<Fact>]
 let ``what lies before the line the search starts from is not found`` () =
     let answer = searching "needle\nhay\nneedle" "needle" 4L
 
-    Assert.Equal(Found { LineStart = 11L; Column = 0; Length = 6 }, answer)
+    Assert.Equal(
+        Found
+            { LineStart = 11L
+              Column = 0
+              Length = 6 },
+        answer
+    )
 
 [<Fact>]
 let ``text past the first window of bytes is found`` () =
@@ -103,7 +137,13 @@ let ``text past the first window of bytes is found`` () =
 
     let answer = searching content "needle" 0L
 
-    Assert.Equal(Found { LineStart = int64 filler.Length; Column = 4; Length = 6 }, answer)
+    Assert.Equal(
+        Found
+            { LineStart = int64 filler.Length
+              Column = 4
+              Length = 6 },
+        answer
+    )
 
 [<Fact>]
 let ``text that is not in the file is not found`` () =
@@ -126,20 +166,37 @@ let ``an empty file holds nothing`` () =
 [<Fact>]
 let ``text is matched in the encoding it is read in`` () =
     use source = sourceOf (MockFileData [| 0x41uy; 0x0Auy; 0x42uy; 0xA5uy |])
-    let encoding = { Charset = Windows1250; Bom = WithoutBom }
+
+    let encoding =
+        { Charset = Windows1250
+          Bom = WithoutBom }
 
     let answer = run going source encoding (plain "Ą") (placeAt 0L 0)
 
-    Assert.Equal(Found { LineStart = 2L; Column = 1; Length = 1 }, answer)
+    Assert.Equal(
+        Found
+            { LineStart = 2L
+              Column = 1
+              Length = 1 },
+        answer
+    )
 
 [<Fact>]
 let ``a wide file is searched by its characters`` () =
-    let wide = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "first\nthe needle")
+    let wide =
+        Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "first\nthe needle")
+
     use source = sourceOf (MockFileData wide)
 
     let answer = run going source source.Encoding (plain "needle") (placeAt 0L 0)
 
-    Assert.Equal(Found { LineStart = 14L; Column = 4; Length = 6 }, answer)
+    Assert.Equal(
+        Found
+            { LineStart = 14L
+              Column = 4
+              Length = 6 },
+        answer
+    )
 
 [<Fact>]
 let ``a search told to stop stops before reading`` () =
@@ -158,9 +215,7 @@ let ``a search says how far it has read`` () =
     use source = sourceOf (MockFileData(String('a', LineIndex.ChunkLength + 10)))
     let reached = ResizeArray<int64>()
 
-    let watching =
-        { going with
-            Reached = reached.Add }
+    let watching = { going with Reached = reached.Add }
 
     run watching source source.Encoding (plain "needle") (placeAt 0L 0) |> ignore
 
@@ -168,7 +223,8 @@ let ``a search says how far it has read`` () =
 
 [<Fact>]
 let ``a file that fails to read is answered with the failure`` () =
-    use source = new FileWindow.Source(fp notes, new BrokenStream(), { Charset = Utf8; Bom = WithoutBom })
+    use source =
+        new FileWindow.Source(fp notes, new BrokenStream(), { Charset = Utf8; Bom = WithoutBom })
 
     let answer = run going source source.Encoding (plain "needle") (placeAt 0L 0)
 
@@ -263,16 +319,20 @@ let ``a search back finds text before the window of bytes it starts in`` () =
     let filler = String.replicate 5000 "hay and more hay\n"
     let content = "the needle\n" + filler + "last"
 
-    let answer = searchingFor (back (plain "needle")) content (int64 (11 + filler.Length)) 0
+    let answer =
+        searchingFor (back (plain "needle")) content (int64 (11 + filler.Length)) 0
 
     Assert.Equal(found 0L 4 6, answer)
 
 [<Fact>]
 let ``a wide file is searched back by its characters`` () =
-    let wide = Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "the needle\nlast")
+    let wide =
+        Array.append (Encoding.Unicode.GetPreamble()) (Encoding.Unicode.GetBytes "the needle\nlast")
+
     use source = sourceOf (MockFileData wide)
 
-    let answer = run going source source.Encoding (back (plain "needle")) (placeAt 24L 0)
+    let answer =
+        run going source source.Encoding (back (plain "needle")) (placeAt 24L 0)
 
     Assert.Equal(found 2L 4 6, answer)
 
@@ -284,27 +344,31 @@ let ``a search back told to stop stops before reading`` () =
         { going with
             IsCancelled = fun () -> true }
 
-    let answer = run stopping source source.Encoding (back (plain "needle")) (placeAt 7L 0)
+    let answer =
+        run stopping source source.Encoding (back (plain "needle")) (placeAt 7L 0)
 
     Assert.Equal(Stopped, answer)
 
 [<Fact>]
 let ``a search back says how far it has read`` () =
-    use source = sourceOf (MockFileData(String('a', LineIndex.ChunkLength + 10) + "\nlast"))
+    use source =
+        sourceOf (MockFileData(String('a', LineIndex.ChunkLength + 10) + "\nlast"))
+
     let start = int64 (LineIndex.ChunkLength + 11)
     let reached = ResizeArray<int64>()
 
-    let watching =
-        { going with
-            Reached = reached.Add }
+    let watching = { going with Reached = reached.Add }
 
-    run watching source source.Encoding (back (plain "needle")) (placeAt start 0) |> ignore
+    run watching source source.Encoding (back (plain "needle")) (placeAt start 0)
+    |> ignore
 
     Assert.Equal<int64 list>([ start; 10L; 0L ], List.ofSeq reached)
 
 [<Fact>]
 let ``case and whole words narrow a search together`` () =
-    let query = { whole "Need" with Case = MatchingCase }
+    let query =
+        { whole "Need" with
+            Case = MatchingCase }
 
     let answer = searchingFor query "need Needle Need" 0L 0
 
@@ -324,7 +388,9 @@ let ``whole words narrow a search back`` () =
 
 [<Fact>]
 let ``every option at once searches forward`` () =
-    let query = { whole "Need" with Case = MatchingCase }
+    let query =
+        { whole "Need" with
+            Case = MatchingCase }
 
     let answer = searchingFor query "need Need Needle need\nx" 0L 0
 
@@ -332,7 +398,10 @@ let ``every option at once searches forward`` () =
 
 [<Fact>]
 let ``every option at once searches back`` () =
-    let query = back { whole "Need" with Case = MatchingCase }
+    let query =
+        back
+            { whole "Need" with
+                Case = MatchingCase }
 
     let answer = searchingFor query "need Need Needle need\nx" 22L 0
 
@@ -340,7 +409,10 @@ let ``every option at once searches back`` () =
 
 [<Fact>]
 let ``every option at once ends at the start of the file`` () =
-    let query = back { whole "Need" with Case = MatchingCase }
+    let query =
+        back
+            { whole "Need" with
+                Case = MatchingCase }
 
     let answer = searchingFor query "need Need" 0L 5
 
@@ -348,7 +420,9 @@ let ``every option at once ends at the start of the file`` () =
 
 [<Fact>]
 let ``every option at once ends at the end of the file`` () =
-    let query = { whole "Need" with Case = MatchingCase }
+    let query =
+        { whole "Need" with
+            Case = MatchingCase }
 
     let answer = searchingFor query "Need Needle" 0L 4
 
@@ -441,7 +515,8 @@ let ``a pattern searched back finds text before the window it starts in`` () =
     let filler = String.replicate 5000 "hay and more hay\n"
     let content = "id 1234\n" + filler + "last"
 
-    let answer = searchingFor (back (expression "[0-9]{4}")) content (int64 (8 + filler.Length)) 0
+    let answer =
+        searchingFor (back (expression "[0-9]{4}")) content (int64 (8 + filler.Length)) 0
 
     Assert.Equal(found 0L 3 4, answer)
 
@@ -454,7 +529,10 @@ let ``a pattern searched back that matches nothing ends at the start of the file
 [<Fact>]
 let ``a pattern is matched in the code page the file is read in`` () =
     use source = sourceOf (MockFileData [| 0x41uy; 0x0Auy; 0x42uy; 0xA5uy |])
-    let encoding = { Charset = Windows1250; Bom = WithoutBom }
+
+    let encoding =
+        { Charset = Windows1250
+          Bom = WithoutBom }
 
     let answer = run going source encoding (expression "B[ĄĘ]") (placeAt 0L 0)
 

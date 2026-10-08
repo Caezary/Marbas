@@ -1,0 +1,5 @@
+root = true
+
+[*.{fs,fsx,fsi}]
+end_of_line = lf
+fsharp_multiline_bracket_style = cramped

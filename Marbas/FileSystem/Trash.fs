@@ -40,9 +40,11 @@ let location (fs: IFileSystem) (dataHome: string) (userProfile: string) =
 
     fs.Path.Combine(home, TrashDirectory) |> FileSystemPath.create
 
-let private storedFiles fs trash = FileSystemPath.combine fs trash FilesDirectory
+let private storedFiles fs trash =
+    FileSystemPath.combine fs trash FilesDirectory
 
-let private storedInfo fs trash = FileSystemPath.combine fs trash InfoDirectory
+let private storedInfo fs trash =
+    FileSystemPath.combine fs trash InfoDirectory
 
 let private guard (path: FileSystemPath) action =
     try
@@ -58,7 +60,8 @@ let private taken (fs: IFileSystem) trash (name: string) =
     let holds directory entry =
         FileSystemPath.combine fs directory entry |> FileSystemPath.kind fs <> NoEntry
 
-    holds (storedFiles fs trash) name || holds (storedInfo fs trash) (name + InfoSuffix)
+    holds (storedFiles fs trash) name
+    || holds (storedInfo fs trash) (name + InfoSuffix)
 
 let private numbered (fs: IFileSystem) (name: string) ordinal =
     let stem = fs.Path.GetFileNameWithoutExtension name
@@ -73,7 +76,10 @@ let private freeName (fs: IFileSystem) trash (name: EntryName) =
             else
                 numbered fs (EntryName.value name) ordinal
 
-        if taken fs trash candidate then pick (ordinal + 1) else candidate
+        if taken fs trash candidate then
+            pick (ordinal + 1)
+        else
+            candidate
 
     pick 1
 

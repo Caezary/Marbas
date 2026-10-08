@@ -80,7 +80,8 @@ let ``a separator is added the way an entry is`` () =
 
 [<Fact>]
 let ``an entry whose hotkey the menu already holds is refused, whatever its case`` () =
-    let added = UserMenu.apply (AddItem(CommandItem(entry "e" "Elsewhere" "nano %p"), None)) sample
+    let added =
+        UserMenu.apply (AddItem(CommandItem(entry "e" "Elsewhere" "nano %p"), None)) sample
 
     Assert.Equal(Error(HotkeyTaken(key "E")), added)
 
@@ -102,13 +103,15 @@ let ``a change may give an entry a hotkey nothing else holds`` () =
 
 [<Fact>]
 let ``a change to a hotkey another entry holds is refused`` () =
-    let changed = UserMenu.apply (ChangeCommand(key "E", entry "C" "Edit" "vim %p")) sample
+    let changed =
+        UserMenu.apply (ChangeCommand(key "E", entry "C" "Edit" "vim %p")) sample
 
     Assert.Equal(Error(HotkeyTaken(key "C")), changed)
 
 [<Fact>]
 let ``a change to an entry another copy removed is refused`` () =
-    let changed = UserMenu.apply (ChangeCommand(key "Q", entry "Q" "Query" "query %p")) sample
+    let changed =
+        UserMenu.apply (ChangeCommand(key "Q", entry "Q" "Query" "query %p")) sample
 
     Assert.Equal(Error(CommandGone(key "Q")), changed)
 
@@ -201,7 +204,12 @@ let ``what is formatted is what is parsed back`` () =
 
 [<Fact>]
 let ``each entry is written under its number, in the order of the menu`` () =
-    let menu = menuOf [ CommandItem { entry "E" "Edit" "vim %p" with Run = InShellClosing }; SeparatorItem ]
+    let menu =
+        menuOf
+            [ CommandItem
+                  { entry "E" "Edit" "vim %p" with
+                      Run = InShellClosing }
+              SeparatorItem ]
 
     let lines = UserMenu.format menu
 
@@ -229,7 +237,12 @@ let ``a way of running or an elevation missing or unreadable falls back to a dir
     (run: string, elevation: string)
     =
     let lines =
-        [ "entry.1=command"; "entry.1.hotkey=E"; "entry.1.label=Edit"; "entry.1.command=vim %p"; run; elevation ]
+        [ "entry.1=command"
+          "entry.1.hotkey=E"
+          "entry.1.label=Edit"
+          "entry.1.command=vim %p"
+          run
+          elevation ]
 
     let parsed = UserMenu.parse lines
 
@@ -336,7 +349,8 @@ let ``a refused change leaves the file as it was`` () =
     let fs = MockFileSystem()
     write fs (UserMenu.format sample)
 
-    let changed = UserMenu.change fs menuPath (AddItem(CommandItem(entry "Z" "Zap" "zap %p"), None))
+    let changed =
+        UserMenu.change fs menuPath (AddItem(CommandItem(entry "Z" "Zap" "zap %p"), None))
 
     let kept = fs.GetFile(FileSystemPath.value menuPath).TextContents
     Assert.Equal(Error(MenuRefused(HotkeyTaken(key "Z"))), changed)

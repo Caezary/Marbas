@@ -116,7 +116,12 @@ let ``a valid name creates the directory on the active side`` () =
     let result = update fs (NameEntered(en "work")) state
 
     Assert.True(fs.Directory.Exists(at "start/work"))
-    Assert.Equal(Some "work", PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
+
+    Assert.Equal(
+        Some "work",
+        PanelState.cursorEntry result.State.Left
+        |> Option.map (_.Name >> EntryName.value)
+    )
 
     Assert.Equal<Effect list>(
         [ ChangeHistory(Remember(Typed(NewDirectory, Expect.some (EnteredText.tryCreate "work")))) ],
@@ -179,6 +184,7 @@ let ``opening a missing path reports a listing error`` () =
     let result = update fs (PathOpened(Right, fp (at "gone"))) state
 
     Assert.Equal(state, result.State)
+
     Assert.Equal<Effect list>(
         [ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "gone"))) ],
         result.Effects
@@ -303,6 +309,7 @@ let ``a confirmed wipe hands the targets over to be wiped`` () =
 [<Fact>]
 let ``a finished wipe keeps the marks of what it did not get to`` () =
     let fs = mockFs ()
+
     let state =
         loaded fs
         |> setCursor Left 1
@@ -311,7 +318,8 @@ let ``a finished wipe keeps the marks of what it did not get to`` () =
         |> toggleSelectionMoving Downward Left
 
     let results =
-        [ { Source = ItemOnDisk(fp (at "start/docs")); Outcome = Ok() }
+        [ { Source = ItemOnDisk(fp (at "start/docs"))
+            Outcome = Ok() }
           { Source = ItemOnDisk(fp (at "start/notes.txt"))
             Outcome = Error(Cancelled(fp (at "start/notes.txt"))) } ]
 
@@ -428,7 +436,7 @@ let ``an entered path moves the targets into it`` () =
     let fs = mockFs ()
     let state = loadedBoth fs |> setCursor Left 2
 
-    let result = update fs (TargetEntered (at "backup")) state
+    let result = update fs (TargetEntered(at "backup")) state
 
     Assert.Equal<Effect list>(
         [ MovePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))) ],
@@ -494,7 +502,12 @@ let ``a finished rename puts the cursor on the new name`` () =
 
     let result = update fs (RenameFinished(en "zzz.txt", Ok())) state
 
-    Assert.Equal(Some "zzz.txt", PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
+    Assert.Equal(
+        Some "zzz.txt",
+        PanelState.cursorEntry result.State.Left
+        |> Option.map (_.Name >> EntryName.value)
+    )
+
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -509,7 +522,13 @@ let ``a failed rename is reported and leaves the panel alone`` () =
     Assert.Equal<Effect list>([ ReportOperationError taken ], result.Effects)
 
 let private opened path how =
-    ChangeHistory(Remember(Opened { Where = Place.OnDisk(fp (at path)); How = how }))
+    ChangeHistory(
+        Remember(
+            Opened
+                { Where = Place.OnDisk(fp (at path))
+                  How = how }
+        )
+    )
 
 let private notesOpened how = opened "start/notes.txt" how
 
@@ -541,7 +560,9 @@ let ``view requested on a directory leaves the panel until the measurement is in
 [<Fact>]
 let ``view requested ignores what is marked and takes the cursor entry`` () =
     let fs = mockFs ()
-    let state = loaded fs |> setCursor Left 3 |> toggleSelection Left |> setCursor Left 2
+
+    let state =
+        loaded fs |> setCursor Left 3 |> toggleSelection Left |> setCursor Left 2
 
     let result = update fs ViewRequested state
 
@@ -569,7 +590,8 @@ let ``edit requested names the editor the extension is associated with`` () =
     let result = update fs EditRequested state
 
     Assert.Equal<Effect list>(
-        [ opened "start/setup.fs" Edited; EditFile(fp (at "start/setup.fs"), Some chosen) ],
+        [ opened "start/setup.fs" Edited
+          EditFile(fp (at "start/setup.fs"), Some chosen) ],
         result.Effects
     )
 
@@ -598,6 +620,7 @@ let ``edit requested on the parent entry raises no effect`` () =
 let ``properties that come back are written and the panel re-read`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 1
+
     let changed =
         EntryProperties.read fs (fp (at "start/docs"))
         |> Expect.ok
@@ -606,7 +629,12 @@ let ``properties that come back are written and the panel re-read`` () =
     let result = update fs (PropertiesEntered changed) state
 
     Assert.Empty result.Effects
-    Assert.True(EntryProperties.read fs (fp (at "start/docs")) |> Expect.ok |> EntryProperties.has ReadOnlyFlag)
+
+    Assert.True(
+        EntryProperties.read fs (fp (at "start/docs"))
+        |> Expect.ok
+        |> EntryProperties.has ReadOnlyFlag
+    )
 
 [<Fact>]
 let ``properties that cannot be written are reported`` () =
@@ -632,18 +660,27 @@ let ``a new file is asked for by name`` () =
 let ``a named new file is created and handed to its editor`` () =
     let fs = mockFs ()
     let chosen = Expect.some (ProgramPath.tryCreate "code.exe")
+
     let programs =
         ProgramSettings.associate ForEditing (Expect.some (FileExtension.tryCreate "md")) chosen ProgramSettings.none
+
     let state = loaded fs |> withPrograms programs
 
     let result = update fs (FileNameEntered(en "draft.md")) state
 
     Assert.True(fs.File.Exists(at "start/draft.md"))
+
     Assert.Equal<Effect list>(
-        [ opened "start/draft.md" Edited; EditFile(fp (at "start/draft.md"), Some chosen) ],
+        [ opened "start/draft.md" Edited
+          EditFile(fp (at "start/draft.md"), Some chosen) ],
         result.Effects
     )
-    Assert.Equal(Some "draft.md", PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
+
+    Assert.Equal(
+        Some "draft.md",
+        PanelState.cursorEntry result.State.Left
+        |> Option.map (_.Name >> EntryName.value)
+    )
 
 [<Fact>]
 let ``a new file a directory already answers to is reported`` () =
@@ -658,9 +695,11 @@ let ``a new file a directory already answers to is reported`` () =
 [<Fact>]
 let ``a settings request hands over the programs in force`` () =
     let fs = mockFs ()
+
     let programs =
         { ProgramSettings.none with
             DefaultEditor = ProgramPath.tryCreate "code.exe" }
+
     let state = loaded fs |> withPrograms programs
 
     let result = update fs SettingsRequested state
@@ -692,6 +731,7 @@ let ``a settings request offers nothing when the cursor is not on an executable`
 [<Fact>]
 let ``programs that come back take the place of the ones in force`` () =
     let fs = mockFs ()
+
     let programs =
         { ProgramSettings.none with
             DefaultEditor = ProgramPath.tryCreate "code.exe" }
@@ -728,7 +768,8 @@ let ``an editor start the user turned down is silence, not a dialog`` () =
     let fs = mockFs ()
     let state = loaded fs |> setCursor Left 2
 
-    let result = update fs (EditorStarted(Error(StartDeclined(fp (at "start/notes.txt"))))) state
+    let result =
+        update fs (EditorStarted(Error(StartDeclined(fp (at "start/notes.txt"))))) state
 
     Assert.Equal(state, result.State)
     Assert.Empty result.Effects
@@ -755,7 +796,8 @@ let ``a program that could not be started is reported`` () =
     let state = loaded fs |> setCursor Left 2
     let failure = NothingAssociated(fp (at "start/notes.txt"))
 
-    let result = update fs (LaunchFinished(launching "start/notes.txt", Error failure)) state
+    let result =
+        update fs (LaunchFinished(launching "start/notes.txt", Error failure)) state
 
     Assert.Equal(state, result.State)
     Assert.Equal<Effect list>([ ReportLaunchError failure ], result.Effects)
@@ -766,7 +808,8 @@ let ``an elevation the user turned down is silence, not a dialog`` () =
     let state = loaded fs |> setCursor Left 2
     let declined = ElevationDeclined(fp (at "start/notes.txt"))
 
-    let result = update fs (LaunchFinished(launching "start/notes.txt", Error declined)) state
+    let result =
+        update fs (LaunchFinished(launching "start/notes.txt", Error declined)) state
 
     Assert.Equal(state, result.State)
     Assert.Empty result.Effects
@@ -792,6 +835,7 @@ let ``a hidden toggle of a vanished directory is reported`` () =
     let result = update fs HiddenToggled state
 
     Assert.Equal(state, result.State)
+
     Assert.Equal<Effect list>(
         [ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "start/docs"))) ],
         result.Effects
@@ -917,7 +961,13 @@ let ``a finished pack puts the cursor on the archive in the other panel`` () =
     let result = update fs (PackFinished(en "notes.zip", results)) state
 
     Assert.Contains("notes.zip", names result.State.Right.Entries)
-    Assert.Equal(Some "notes.zip", PanelState.cursorEntry result.State.Right |> Option.map (_.Name >> EntryName.value))
+
+    Assert.Equal(
+        Some "notes.zip",
+        PanelState.cursorEntry result.State.Right
+        |> Option.map (_.Name >> EntryName.value)
+    )
+
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -946,7 +996,9 @@ let ``a finished pack keeps the marks of what did not make it`` () =
 
     Assert.Equal<string list>(
         [ "notes.txt" ],
-        PanelState.selectedEntries result.State.Left |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
+        PanelState.selectedEntries result.State.Left
+        |> Seq.map (_.Name >> EntryName.value)
+        |> List.ofSeq
     )
 
 [<Fact>]
@@ -956,12 +1008,18 @@ let ``the password from the dialog rides into the request`` () =
     let secret = ArchivePassword.tryCreate "letmein"
 
     let result =
-        update fs (ArchiveEntered { chose (at "backup/all.zip") with Password = secret }) state
+        update
+            fs
+            (ArchiveEntered
+                { chose (at "backup/all.zip") with
+                    Password = secret })
+            state
 
     Assert.Equal<Effect list>(
         [ ArchiveTargets(
               [ fp (at "start/notes.txt") ],
-              { packRequest (at "backup/all.zip") with Password = secret }
+              { packRequest (at "backup/all.zip") with
+                  Password = secret }
           ) ],
         result.Effects
     )
@@ -1111,4 +1169,11 @@ let ``a tab whose directory is gone is stood on all the same, and the loss repor
     Assert.Equal(0, Zipper.position result.State.Tabs)
     Assert.Equal(2, List.length result.Effects)
     Assert.Contains(result.Effects, fun effect -> effect = SaveSettings(settings fs result.State))
-    Assert.Contains(result.Effects, (fun effect -> match effect with ReportListingError _ -> true | _ -> false))
+
+    Assert.Contains(
+        result.Effects,
+        (fun effect ->
+            match effect with
+            | ReportListingError _ -> true
+            | _ -> false)
+    )

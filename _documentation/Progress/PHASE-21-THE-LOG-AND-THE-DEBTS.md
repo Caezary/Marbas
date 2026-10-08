@@ -46,3 +46,18 @@ one, collected inside the test after `Crashes.watch` subscribed; it passed five
 runs in a row. The probe — a loop that throws from a timeout, run in a console
 of its own — left the stamped stack trace in the file, the pointer on standard
 error and exit code 1.
+
+**Between P21.1 and P21.2 the formatting became a check.** The style guide had
+asked for Fantomas defaults, but nothing ran Fantomas, and 325 of 470 files
+were not what Fantomas 8.0.7 would write. Its defaults had moved on since the
+rule was written: from version 7 a multi-line record or list opens and closes
+its brackets on lines of their own, which would have touched about 15,700
+lines. The code was written in the older `cramped` style, so the repository now
+carries an `.editorconfig` with `fsharp_multiline_bracket_style = cramped` and
+`end_of_line = lf`, and one reformat brought 277 files in line with it — mostly
+the width rules: a binding wider than 80 characters moves to a line of its own,
+a short pipeline is joined, a long one is broken. Fantomas is pinned in
+`.config/dotnet-tools.json`, a `format` job in CI runs `--check`, and the style
+rule that asked for one operation per line now asks for one statement, leaving
+where a pipeline breaks to the formatter. The suite passed unchanged after the
+reformat: 3766 tests, 15 skipped.

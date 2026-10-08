@@ -69,7 +69,12 @@ let ``a mark stays on an entry whose copy failed`` () =
 
     let updated = finished fs results (markedNotes state)
 
-    Assert.Equal<string list>([ "notes.txt" ], PanelState.selectedEntries updated.Left |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq)
+    Assert.Equal<string list>(
+        [ "notes.txt" ],
+        PanelState.selectedEntries updated.Left
+        |> Seq.map (_.Name >> EntryName.value)
+        |> List.ofSeq
+    )
 
 [<Fact>]
 let ``a transfer whose other panel vanished answers with an operation error`` () =

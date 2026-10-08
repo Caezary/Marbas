@@ -155,7 +155,8 @@ let ``copy reports a missing source`` () =
     let fs = MockFileSystem()
     fs.AddDirectory(at "backup")
 
-    let failure = copy fs unattended (fp (at "backup")) (fp (at "data/gone.txt")) |> Expect.error
+    let failure =
+        copy fs unattended (fp (at "backup")) (fp (at "data/gone.txt")) |> Expect.error
 
     Assert.Equal(SourceNotFound(fp (at "data/gone.txt")), failure)
 
@@ -279,7 +280,8 @@ let ``a rename carried out by copying leaves the source behind it`` () =
     let fs = Fakes.DirectoryMoveRefused()
     fs.AddFile(at "data/docs/inner.txt", MockFileData "x")
 
-    moveByCopying fs unattended (fp (at "data/docs")) (fp (at "data/papers")) |> Expect.ok
+    moveByCopying fs unattended (fp (at "data/docs")) (fp (at "data/papers"))
+    |> Expect.ok
 
     Assert.Equal("x", fs.File.ReadAllText(at "data/papers/inner.txt"))
     Assert.False(fs.Directory.Exists(at "data/docs"))
@@ -290,7 +292,8 @@ let ``a rename refuses an existing name`` () =
     fs.AddFile(at "data/notes.txt", MockFileData "hello")
     fs.AddFile(at "data/readme.txt", MockFileData "other")
 
-    let failure = startRename fs (fp (at "data/notes.txt")) (en "readme.txt") |> Expect.error
+    let failure =
+        startRename fs (fp (at "data/notes.txt")) (en "readme.txt") |> Expect.error
 
     Assert.Equal(TargetExists(fp (at "data/readme.txt")), failure)
 
@@ -299,7 +302,8 @@ let ``a rename reports a missing source`` () =
     let fs = MockFileSystem()
     fs.AddDirectory(at "data")
 
-    let failure = startRename fs (fp (at "data/gone.txt")) (en "readme.txt") |> Expect.error
+    let failure =
+        startRename fs (fp (at "data/gone.txt")) (en "readme.txt") |> Expect.error
 
     Assert.Equal(SourceNotFound(fp (at "data/gone.txt")), failure)
 
@@ -315,6 +319,7 @@ let ``batch results carry the source and keep the input order`` () =
         [ ItemOnDisk(fp (at "data/a.txt")); ItemOnDisk(fp (at "data/b.txt")) ],
         sources results
     )
+
     Assert.All(results, fun r -> Assert.Equal(Ok(), r.Outcome))
 
 [<Fact>]
@@ -322,7 +327,8 @@ let ``a failing item does not stop the rest of the batch`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/b.txt", MockFileData "b")
 
-    let results = deleteAll fs unattended [ fp (at "data/gone.txt"); fp (at "data/b.txt") ]
+    let results =
+        deleteAll fs unattended [ fp (at "data/gone.txt"); fp (at "data/b.txt") ]
 
     Assert.Equal(Error(SourceNotFound(fp (at "data/gone.txt"))), results[0].Outcome)
     Assert.Equal(Ok(), results[1].Outcome)
@@ -343,7 +349,8 @@ let private answering answers =
 
     asked, ask
 
-let private never (path: FileSystemPath) = failwith $"unexpected question about %A{path}"
+let private never (path: FileSystemPath) =
+    failwith $"unexpected question about %A{path}"
 
 let private twoSources () =
     let fs = MockFileSystem()
@@ -494,7 +501,8 @@ let ``no to all keeps the sources that do not collide`` () =
     fs.AddFile(at "backup/a.txt", MockFileData "old a")
     let asked, ask = answering [ NoToAll ]
 
-    let approved = approve fs ask (bothSources @ [ fp (at "data/c.txt") ]) (fp (at "backup"))
+    let approved =
+        approve fs ask (bothSources @ [ fp (at "data/c.txt") ]) (fp (at "backup"))
 
     Assert.Single asked |> ignore
     Assert.Equal<FileSystemPath list>([ fp (at "data/b.txt"); fp (at "data/c.txt") ], approved)
@@ -532,6 +540,7 @@ let ``copyAll copies every source it is given`` () =
         [ ItemOnDisk(fp (at "data/a.txt")); ItemOnDisk(fp (at "data/b.txt")) ],
         sources copied
     )
+
     Assert.Equal("new a", fs.File.ReadAllText(at "backup/a.txt"))
     Assert.Equal("new b", fs.File.ReadAllText(at "backup/b.txt"))
 
@@ -661,8 +670,7 @@ let private linked () =
     fs.AddDirectory(at "backup")
     fs
 
-let private linkTargetOf (fs: IO.Abstractions.IFileSystem) path =
-    fs.DirectoryInfo.New(path).LinkTarget
+let private linkTargetOf (fs: IO.Abstractions.IFileSystem) path = fs.DirectoryInfo.New(path).LinkTarget
 
 [<Fact>]
 let ``copy takes a directory link as a link rather than the tree behind it`` () =
@@ -716,7 +724,9 @@ let ``failures keeps only the items that went wrong`` () =
     let fs = MockFileSystem()
     fs.AddFile(at "data/b.txt", MockFileData "b")
 
-    let failed = deleteAll fs unattended [ fp (at "data/gone.txt"); fp (at "data/b.txt") ] |> failures
+    let failed =
+        deleteAll fs unattended [ fp (at "data/gone.txt"); fp (at "data/b.txt") ]
+        |> failures
 
     Assert.Equal<ItemSource list>([ ItemOnDisk(fp (at "data/gone.txt")) ], sources failed)
 
@@ -754,7 +764,8 @@ let ``an elevation prompt the user turned down maps to an error value`` () =
 
 [<Fact>]
 let ``a symbolic link refused for want of a privilege maps to an error value`` () =
-    let refusal = IO.IOException("A required privilege is not held by the client.", Fakes.PrivilegeNotHeld)
+    let refusal =
+        IO.IOException("A required privilege is not held by the client.", Fakes.PrivilegeNotHeld)
 
     let operationError = mapException (fp (at "data/twin")) refusal
 
@@ -767,7 +778,8 @@ let ``copying a directory link the system will not let this user make says so`` 
     fs.Directory.CreateSymbolicLink(at "data/twin", at "data/docs") |> ignore
     fs.AddDirectory(at "backup")
 
-    let failure = copy fs unattended (fp (at "backup")) (fp (at "data/twin")) |> Expect.error
+    let failure =
+        copy fs unattended (fp (at "backup")) (fp (at "data/twin")) |> Expect.error
 
     Assert.Equal(SymbolicLinkNotPermitted(fp (at "data/twin")), failure)
 
@@ -785,7 +797,8 @@ let ``copy reports a directory it may not read`` () =
     fs.AddFile(at "data/docs/inner.txt", MockFileData "inner")
     fs.AddDirectory(at "backup")
 
-    let failure = copy fs unattended (fp (at "backup")) (fp (at "data/docs")) |> Expect.error
+    let failure =
+        copy fs unattended (fp (at "backup")) (fp (at "data/docs")) |> Expect.error
 
     Assert.Equal(AccessDenied(fp (at "data/docs")), failure)
 
@@ -803,6 +816,7 @@ let ``a directory that may not be read leaves the other sources to finish`` () =
         [ ItemOnDisk(fp (at "data/docs")); ItemOnDisk(fp (at "data/notes.txt")) ],
         sources copied
     )
+
     Assert.Equal<ItemSource list>([ ItemOnDisk(fp (at "data/docs")) ], sources (failures copied))
     Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
 
@@ -818,7 +832,8 @@ let ``guarded answers what work that finishes answers`` () =
 
 [<Fact>]
 let ``guarded turns work that throws into one failure named after the batch`` () =
-    let work _ : ItemResult list = raise (InvalidOperationException "no writer for tar")
+    let work _ : ItemResult list =
+        raise (InvalidOperationException "no writer for tar")
 
     let results = guarded "Copying" work unattended
 

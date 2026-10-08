@@ -69,8 +69,7 @@ let ``narrow width falls back to name only`` () =
     Assert.Equal("abc.txt   ", shortName)
     Assert.Equal("very_long…", longName)
 
-let private measured name size =
-    { dir name with Measured = Some size }
+let private measured name size = { dir name with Measured = Some size }
 
 [<Theory>]
 [<InlineData(512L, "512 B")>]

@@ -55,7 +55,10 @@ let ``the progress dialog shows the underscore of the path it reports`` () =
 let ``an underscore in the shown path claims no hot key from the panel`` () =
     let fs = MockFileSystem()
     fs.AddDirectory(at "start/_sub")
-    use window = focusedWindow (Fakes.dependencies (fs :> IFileSystem) (at "start/_sub"))
+
+    use window =
+        focusedWindow (Fakes.dependencies (fs :> IFileSystem) (at "start/_sub"))
+
     window.Layout(Size(80, 24)) |> ignore
 
     let view = panel FilePanel.LeftId window

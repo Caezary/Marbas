@@ -12,7 +12,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private start = fp (at "start")
 
@@ -51,7 +52,11 @@ let ``a level below the top names its targets by where they stand`` () =
     let fs = packed ()
 
     let state =
-        standingInside fs Left |> setCursor Left 1 |> enter fs |> Expect.ok |> setCursor Left 2
+        standingInside fs Left
+        |> setCursor Left 1
+        |> enter fs
+        |> Expect.ok
+        |> setCursor Left 2
 
     let result = update fs CopyRequested state
 
@@ -93,7 +98,8 @@ let ``a mark whose entry made it out is dropped and one that failed stays`` () =
         |> toggleSelection Left
 
     let results: Operations.ItemResult list =
-        [ { Source = Operations.ItemInArchive(archive, inside "docs"); Outcome = Ok() }
+        [ { Source = Operations.ItemInArchive(archive, inside "docs")
+            Outcome = Ok() }
           { Source = Operations.ItemInArchive(archive, inside "notes.txt")
             Outcome = Error(Operations.Cancelled(fp (at "start/backup.zip/notes.txt"))) } ]
 

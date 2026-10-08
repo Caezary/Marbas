@@ -21,7 +21,8 @@ module private Kernel32 =
         nativeint securityAttributes,
         uint32 creationDisposition,
         uint32 flagsAndAttributes,
-        nativeint templateFile)
+        nativeint templateFile
+    )
 
     [<DllImport("kernel32.dll", SetLastError = true)>]
     extern bool DeviceIoControl(
@@ -32,7 +33,8 @@ module private Kernel32 =
         nativeint outBuffer,
         int outBufferSize,
         int& bytesReturned,
-        nativeint overlapped)
+        nativeint overlapped
+    )
 
 module private Libc =
 

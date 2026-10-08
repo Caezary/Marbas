@@ -77,7 +77,9 @@ let ``an executable under the cursor is handed to the system as well`` () =
 [<Fact>]
 let ``a file whose extension names a program runs that program`` () =
     let fs = tree ()
-    let state = loaded fs |> withPrograms (opening "html" "firefox.exe") |> setCursor Left Page
+
+    let state =
+        loaded fs |> withPrograms (opening "html" "firefox.exe") |> setCursor Left Page
 
     let request = update fs EntryOpened state |> launched
 
@@ -134,7 +136,9 @@ let ``an archive nothing is associated with opens as a location`` () =
 [<Fact>]
 let ``an archive whose extension names a program runs it instead of opening`` () =
     let fs = tree ()
-    let state = loaded fs |> withPrograms (opening "zip" "7zfm.exe") |> setCursor Left Backup
+
+    let state =
+        loaded fs |> withPrograms (opening "zip" "7zfm.exe") |> setCursor Left Backup
 
     let result = update fs EntryOpened state
 
@@ -144,7 +148,9 @@ let ``an archive whose extension names a program runs it instead of opening`` ()
 [<Fact>]
 let ``walking in is what reaches an archive its extension would run`` () =
     let fs = tree ()
-    let state = loaded fs |> withPrograms (opening "zip" "7zfm.exe") |> setCursor Left Backup
+
+    let state =
+        loaded fs |> withPrograms (opening "zip" "7zfm.exe") |> setCursor Left Backup
 
     let result = update fs WalkIntoRequested state
 
@@ -154,13 +160,16 @@ let ``walking in is what reaches an archive its extension would run`` () =
 [<Fact>]
 let ``the entry under the cursor runs, whatever is marked`` () =
     let fs = tree ()
-    let marked = update fs (SelectionToggled Downward) (loaded fs |> setCursor Left Notes)
+
+    let marked =
+        update fs (SelectionToggled Downward) (loaded fs |> setCursor Left Notes)
 
     let request = update fs EntryOpened marked.State |> launched
 
     Assert.Equal<string list>(
         [ "notes.txt" ],
-        PanelState.selectedEntries marked.State.Left |> List.map (_.Name >> EntryName.value)
+        PanelState.selectedEntries marked.State.Left
+        |> List.map (_.Name >> EntryName.value)
     )
 
     Assert.Equal(fp (at "start/page.html"), request.Target)
@@ -213,7 +222,9 @@ let ``an executable under the cursor is started with administrator rights`` () =
 [<Fact>]
 let ``the rights raised are the executable's own, not an associated program's`` () =
     let fs = tree ()
-    let state = loaded fs |> withPrograms (opening "exe" "sandbox.exe") |> setCursor Left Tool
+
+    let state =
+        loaded fs |> withPrograms (opening "exe" "sandbox.exe") |> setCursor Left Tool
 
     let request = update fs ElevatedRunRequested state |> launched
 

@@ -71,10 +71,12 @@ type SettingsView(programs: ProgramSettings, candidate: ProgramPath option) as t
         |> DialogStyle.typedInto
 
     let extension =
-        new TextField(X = 12, Y = 3, Width = 10, Height = 1, Id = ExtensionId) |> DialogStyle.typedInto
+        new TextField(X = 12, Y = 3, Width = 10, Height = 1, Id = ExtensionId)
+        |> DialogStyle.typedInto
 
     let program =
-        new TextField(X = 32, Y = 3, Width = Dim.Fill 1, Height = 1, Id = ProgramId) |> DialogStyle.typedInto
+        new TextField(X = 32, Y = 3, Width = Dim.Fill 1, Height = 1, Id = ProgramId)
+        |> DialogStyle.typedInto
 
     let role =
         new OptionSelector(
@@ -198,16 +200,19 @@ type SettingsView(programs: ProgramSettings, candidate: ProgramPath option) as t
             | None -> ())
 
         for field in [ defaultEditor; program ] do
-            field.HasFocusChanged.Add(fun _ -> if field.HasFocus then target <- field)
+            field.HasFocusChanged.Add(fun _ ->
+                if field.HasFocus then
+                    target <- field)
 
         fromCursor.Accepting.Add(fun args ->
             args.Handled <- true
             candidate |> Option.iter (fun picked -> target.Text <- ProgramPath.value picked))
 
         for section in [ ForEditing; ForOpening ] do
-            (listing section).ValueChanged.Add(fun args ->
-                if not refreshing then
-                    fill section (args.NewValue.GetValueOrDefault 0))
+            (listing section)
+                .ValueChanged.Add(fun args ->
+                    if not refreshing then
+                        fill section (args.NewValue.GetValueOrDefault 0))
 
         show ()
 
@@ -220,11 +225,9 @@ type SettingsView(programs: ProgramSettings, candidate: ProgramPath option) as t
 
 let create (programs: ProgramSettings) (candidate: ProgramPath option) = new SettingsView(programs, candidate)
 
-let field (dialog: Dialog) id =
-    SubView.byId<TextField> id dialog
+let field (dialog: Dialog) id = SubView.byId<TextField> id dialog
 
-let button (dialog: Dialog) id =
-    SubView.byId<Button> id dialog
+let button (dialog: Dialog) id = SubView.byId<Button> id dialog
 
 let selector (dialog: Dialog) =
     SubView.byId<OptionSelector> RoleId dialog

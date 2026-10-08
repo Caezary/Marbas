@@ -92,13 +92,19 @@ let watching (app: IApplication) (fs: IFileSystem) =
     let scheduling settled =
         app.AddTimeout(quiet, fun () -> settled ()) |> ignore
 
-    let touched () = app.Invoke(fun () -> collapse.Value ())
+    let touched () = app.Invoke(fun () -> collapse.Value())
 
-    let failed () = app.Invoke(fun () -> broken.Value <- true)
+    let failed () =
+        app.Invoke(fun () -> broken.Value <- true)
 
     let rewatch () =
         watchers.Value |> List.iter _.Dispose()
-        watchers.Value <- paths.Value |> List.map (target fs) |> List.choose (startedWatcher fs touched failed)
+
+        watchers.Value <-
+            paths.Value
+            |> List.map (target fs)
+            |> List.choose (startedWatcher fs touched failed)
+
         seen.Value <- standing fs paths.Value
 
     let looking () =

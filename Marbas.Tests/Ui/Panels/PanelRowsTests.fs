@@ -38,7 +38,9 @@ let private panel = panelOf [| file "a.txt"; file "b.txt" |]
 
 [<Fact>]
 let ``a painting carries the panel's own entries and marks`` () =
-    let marked = { panel with Selected = Set.ofList [ EntryName.create "a.txt" ] }
+    let marked =
+        { panel with
+            Selected = Set.ofList [ EntryName.create "a.txt" ] }
 
     let painting = PanelRows.painting 40 marked
 
@@ -74,7 +76,10 @@ let ``rows are rebuilt when the entries are another array of the same names`` ()
 [<Fact>]
 let ``rows are rebuilt when a mark was added`` () =
     let painted = PanelRows.painting 40 panel
-    let marked = { panel with Selected = Set.ofList [ EntryName.create "a.txt" ] }
+
+    let marked =
+        { panel with
+            Selected = Set.ofList [ EntryName.create "a.txt" ] }
 
     let rows = PanelRows.rows (Some painted) (PanelRows.painting 40 marked)
 
@@ -92,6 +97,7 @@ let ``rows are rebuilt when the panel changed width`` () =
 let ``rows are kept when only the cursor moved`` () =
     let painted = PanelRows.painting 40 panel
 
-    let rows = PanelRows.rows (Some painted) (PanelRows.painting 40 { panel with Cursor = 1 })
+    let rows =
+        PanelRows.rows (Some painted) (PanelRows.painting 40 { panel with Cursor = 1 })
 
     Assert.Equal(PanelRows.Kept, rows)

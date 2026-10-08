@@ -90,7 +90,10 @@ let ``the popup is told which kinds the place typed cannot carry`` () =
 let ``a kind the entry cannot carry is refused with a sentence`` () =
     let fs = mockFs ()
     let reported = ResizeArray<string>()
-    use window = windowWith fs (answering (at "backup/docs") Hard) (fun report -> reported.Add report.Message)
+
+    use window =
+        windowWith fs (answering (at "backup/docs") Hard) (fun report -> reported.Add report.Message)
+
     (leftList window).SelectedItem <- 1
 
     pressKey window KeyMap.linkKey

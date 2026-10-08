@@ -32,7 +32,10 @@ let private zipNamed (naming: Encoding) =
     use buffer = new MemoryStream()
 
     (use zip = new ZipArchive(buffer, ZipArchiveMode.Create, true, naming)
-     use writer = new StreamWriter(zip.CreateEntry(polish, CompressionLevel.NoCompression).Open())
+
+     use writer =
+         new StreamWriter(zip.CreateEntry(polish, CompressionLevel.NoCompression).Open())
+
      writer.Write "notes")
 
     buffer.ToArray()
@@ -105,7 +108,11 @@ let ``an entry named in the legacy code page lands under that name`` () =
           Destination = fp (at "out") }
 
     inCulture "pl-PL" (fun () ->
-        Archive.extract fs Operations.unattended request [ ArchivePath.child ArchivePath.root (EntryName.create polish) ]
+        Archive.extract
+            fs
+            Operations.unattended
+            request
+            [ ArchivePath.child ArchivePath.root (EntryName.create polish) ]
         |> Expect.ok)
     |> ignore
 
@@ -171,6 +178,7 @@ let ``an entry added under a non-ascii name says it is utf-8`` () =
     let added = archive.GetEntry "dodane ćwiczenie.txt"
 
     Assert.True(added.IsUnicodeText)
+
     Assert.Equal<string list>(
         [ "dodane ćwiczenie.txt"; polish ],
         inCulture "pl-PL" (fun () -> listedNames fs "own.zip") |> List.sort

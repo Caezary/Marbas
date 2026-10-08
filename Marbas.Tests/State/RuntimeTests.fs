@@ -70,7 +70,10 @@ let ``a runtime is not rendering before anything is dispatched`` () =
 let ``rendering is observable only while the render callback runs`` () =
     let observed = ResizeArray<bool>()
     let runtimeRef = ref Unchecked.defaultof<Runtime<int, Msg, Effect>>
-    let render _ = observed.Add runtimeRef.Value.IsRendering
+
+    let render _ =
+        observed.Add runtimeRef.Value.IsRendering
+
     let runtime = Runtime(0, step, (fun _ _ -> ()), render)
     runtimeRef.Value <- runtime
 

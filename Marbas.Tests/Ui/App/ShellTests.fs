@@ -18,11 +18,13 @@ let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
-let private entry raw = ArchivePath.tryCreate raw |> Expect.some
+let private entry raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private dataZip = fp (at "start/data.zip")
 
-let private noDeps () = Fakes.dependencies (MockFileSystem()) (at "start")
+let private noDeps () =
+    Fakes.dependencies (MockFileSystem()) (at "start")
 
 let private launching target =
     { Target = fp target
@@ -58,7 +60,10 @@ let private stopped =
 [<Fact>]
 let ``a supplied name is dispatched as NameEntered`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Prompts.AskName = fun _ -> Some "work" }
+
+    let deps =
+        { noDeps () with
+            Prompts.AskName = fun _ -> Some "work" }
 
     Shell.interpret deps dispatch PromptForName
 
@@ -76,7 +81,13 @@ let ``a cancelled name prompt dispatches nothing`` () =
 let ``the name prompt uses the mkdir label`` () =
     let _, dispatch = capture ()
     let mutable asked = ""
-    let deps = { noDeps () with Prompts.AskName = fun request -> asked <- request.Title; None }
+
+    let deps =
+        { noDeps () with
+            Prompts.AskName =
+                fun request ->
+                    asked <- request.Title
+                    None }
 
     Shell.interpret deps dispatch PromptForName
 
@@ -86,9 +97,13 @@ let ``the name prompt uses the mkdir label`` () =
 let ``a selecting pattern uses the select label and carries the answer back`` () =
     let sent, dispatch = capture ()
     let mutable asked = ""
+
     let deps =
         { noDeps () with
-            Prompts.AskPattern = fun request -> asked <- request.Title; Some "*.fs" }
+            Prompts.AskPattern =
+                fun request ->
+                    asked <- request.Title
+                    Some "*.fs" }
 
     Shell.interpret deps dispatch (PromptForPattern Select)
 
@@ -99,7 +114,13 @@ let ``a selecting pattern uses the select label and carries the answer back`` ()
 let ``a deselecting pattern uses the deselect label`` () =
     let _, dispatch = capture ()
     let mutable asked = ""
-    let deps = { noDeps () with Prompts.AskPattern = fun request -> asked <- request.Title; None }
+
+    let deps =
+        { noDeps () with
+            Prompts.AskPattern =
+                fun request ->
+                    asked <- request.Title
+                    None }
 
     Shell.interpret deps dispatch (PromptForPattern Deselect)
 
@@ -108,7 +129,10 @@ let ``a deselecting pattern uses the deselect label`` () =
 [<Fact>]
 let ``a chosen drive is dispatched with the side it was asked for`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Prompts.ChooseDrive = Fakes.choosingDrive (at "elsewhere") }
+
+    let deps =
+        { noDeps () with
+            Prompts.ChooseDrive = Fakes.choosingDrive (at "elsewhere") }
 
     Shell.interpret deps dispatch (PromptForRoot Right)
 
@@ -118,7 +142,10 @@ let ``a chosen drive is dispatched with the side it was asked for`` () =
 let ``a drive handed over is dispatched without a side`` () =
     let sent, dispatch = capture ()
     let stick = MountedDrive(Fakes.driveAt (at "media/stick"))
-    let deps = { noDeps () with Prompts.ChooseDrive = fun _ -> Some(HandOver stick) }
+
+    let deps =
+        { noDeps () with
+            Prompts.ChooseDrive = fun _ -> Some(HandOver stick) }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
 
@@ -127,7 +154,10 @@ let ``a drive handed over is dispatched without a side`` () =
 [<Fact>]
 let ``a chosen home directory is dispatched as it was chosen`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Prompts.ChooseDrive = fun _ -> Some(StandOn(HomeDirectory(fp (at "home/user")))) }
+
+    let deps =
+        { noDeps () with
+            Prompts.ChooseDrive = fun _ -> Some(StandOn(HomeDirectory(fp (at "home/user")))) }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
 
@@ -137,7 +167,13 @@ let ``a chosen home directory is dispatched as it was chosen`` () =
 let ``the chooser is told the side of the panel it was asked for`` () =
     let _, dispatch = capture ()
     let asked = ResizeArray<PanelSide>()
-    let deps = { noDeps () with Prompts.ChooseDrive = fun request -> asked.Add request.Side; None }
+
+    let deps =
+        { noDeps () with
+            Prompts.ChooseDrive =
+                fun request ->
+                    asked.Add request.Side
+                    None }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
     Shell.interpret deps dispatch (PromptForRoot Right)
@@ -161,7 +197,10 @@ let ``the chooser is offered every drive row as it was listed`` () =
     let deps =
         { noDeps () with
             Processes.ListDrives = fun () -> rows
-            Prompts.ChooseDrive = fun offering -> offered <- offering.Drives; None }
+            Prompts.ChooseDrive =
+                fun offering ->
+                    offered <- offering.Drives
+                    None }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
 
@@ -182,7 +221,10 @@ let ``the drives are listed again each time the chooser opens`` () =
 
     let deps =
         { noDeps () with
-            Processes.ListDrives = fun () -> listings <- listings + 1; [] }
+            Processes.ListDrives =
+                fun () ->
+                    listings <- listings + 1
+                    [] }
 
     Shell.interpret deps dispatch (PromptForRoot Left)
     Shell.interpret deps dispatch (PromptForRoot Right)
@@ -192,7 +234,10 @@ let ``the drives are listed again each time the chooser opens`` () =
 [<Fact>]
 let ``a listing error is reported under the listing title`` () =
     let mutable reported = ("", "")
-    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
+
+    let deps =
+        { noDeps () with
+            Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     Shell.interpret deps ignore (ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "gone"))))
 
@@ -202,10 +247,17 @@ let ``a listing error is reported under the listing title`` () =
 [<Fact>]
 let ``archives that cannot be read are reported in one message under the archive title`` () =
     let reported = ResizeArray<string * string>()
-    let deps = { noDeps () with Prompts.ReportError = fun report -> reported.Add(report.Title, report.Message) }
+
+    let deps =
+        { noDeps () with
+            Prompts.ReportError = fun report -> reported.Add(report.Title, report.Message) }
+
     let other = fp (at "start/other.zip")
 
-    Shell.interpret deps ignore (ReportUnverifiedHits [ ArchiveDamaged(dataZip, "bad header"); ArchiveDamaged(other, "bad header") ])
+    Shell.interpret
+        deps
+        ignore
+        (ReportUnverifiedHits [ ArchiveDamaged(dataZip, "bad header"); ArchiveDamaged(other, "bad header") ])
 
     let title, message = Assert.Single reported
     Assert.Equal(ArchiveErrorMessage.Title, title)
@@ -215,7 +267,10 @@ let ``archives that cannot be read are reported in one message under the archive
 [<Fact>]
 let ``an operation error is reported under the operation title`` () =
     let mutable reported = ("", "")
-    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
+
+    let deps =
+        { noDeps () with
+            Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     Shell.interpret deps ignore (ReportOperationError(TargetExists(fp (at "start/docs"))))
 
@@ -225,7 +280,10 @@ let ``an operation error is reported under the operation title`` () =
 [<Fact>]
 let ``a confirmed delete is dispatched back`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Prompts.Confirm = fun _ -> true }
+
+    let deps =
+        { noDeps () with
+            Prompts.Confirm = fun _ -> true }
 
     Shell.interpret deps dispatch (ConfirmDelete(deleteRequest [ en "notes.txt" ] NamedEntriesOnly))
 
@@ -243,7 +301,13 @@ let ``a refused delete dispatches nothing`` () =
 let ``the delete question carries its own title and the warning`` () =
     let _, dispatch = capture ()
     let mutable asked = ("", "")
-    let deps = { noDeps () with Prompts.Confirm = fun question -> asked <- (question.Title, question.Question); false }
+
+    let deps =
+        { noDeps () with
+            Prompts.Confirm =
+                fun question ->
+                    asked <- (question.Title, question.Question)
+                    false }
 
     Shell.interpret deps dispatch (ConfirmDelete(deleteRequest [ en "docs" ] WithDirectoryContents))
 
@@ -254,10 +318,17 @@ let ``the delete question carries its own title and the warning`` () =
 let ``a permanent delete asks under its own title`` () =
     let _, dispatch = capture ()
     let mutable asked = ("", "")
-    let deps = { noDeps () with Prompts.Confirm = fun question -> asked <- (question.Title, question.Question); false }
+
+    let deps =
+        { noDeps () with
+            Prompts.Confirm =
+                fun question ->
+                    asked <- (question.Title, question.Question)
+                    false }
 
     let request =
-        { deleteRequest [ en "notes.txt" ] NamedEntriesOnly with Mode = Permanently }
+        { deleteRequest [ en "notes.txt" ] NamedEntriesOnly with
+            Mode = Permanently }
 
     Shell.interpret deps dispatch (ConfirmDelete request)
 
@@ -266,10 +337,14 @@ let ``a permanent delete asks under its own title`` () =
 [<Fact>]
 let ``a confirmed permanent delete is dispatched back with its mode`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Prompts.Confirm = fun _ -> true }
+
+    let deps =
+        { noDeps () with
+            Prompts.Confirm = fun _ -> true }
 
     let request =
-        { deleteRequest [ en "notes.txt" ] NamedEntriesOnly with Mode = Permanently }
+        { deleteRequest [ en "notes.txt" ] NamedEntriesOnly with
+            Mode = Permanently }
 
     Shell.interpret deps dispatch (ConfirmDelete request)
 
@@ -284,7 +359,10 @@ let ``targets sent to the trash go through the port, not the file system`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            Processes.SendToTrash = fun path -> trashed.Add path; Ok() }
+            Processes.SendToTrash =
+                fun path ->
+                    trashed.Add path
+                    Ok() }
 
     Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToTrash))
 
@@ -292,7 +370,9 @@ let ``targets sent to the trash go through the port, not the file system`` () =
     Assert.True(fs.File.Exists(at "start/notes.txt"))
 
     Assert.Equal<Message list>(
-        [ DeleteFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
+        [ DeleteFinished
+              [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -313,10 +393,7 @@ let ``every entry sent to the trash is named while the batch runs`` () =
         dispatch
         (DeletePlaces([ FromDisk [ fp (at "start/notes.txt"); fp (at "start/readme.txt") ] ], ToTrash))
 
-    Assert.Equal<FileSystemPath list>(
-        [ fp (at "start/notes.txt"); fp (at "start/readme.txt") ],
-        List.ofSeq reported
-    )
+    Assert.Equal<FileSystemPath list>([ fp (at "start/notes.txt"); fp (at "start/readme.txt") ], List.ofSeq reported)
 
 [<Fact>]
 let ``a trash stopped with Esc leaves the entries it never reached`` () =
@@ -328,7 +405,10 @@ let ``a trash stopped with Esc leaves the entries it never reached`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            Processes.SendToTrash = fun path -> trashed.Add path; Ok()
+            Processes.SendToTrash =
+                fun path ->
+                    trashed.Add path
+                    Ok()
             Runners.Batch = fun _ work finish -> work stopped |> finish }
 
     Shell.interpret
@@ -339,7 +419,9 @@ let ``a trash stopped with Esc leaves the entries it never reached`` () =
     Assert.Equal<FileSystemPath list>([ fp (at "start/notes.txt") ], List.ofSeq trashed)
 
     Assert.Equal<Message list>(
-        [ DeleteFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
+        [ DeleteFinished
+              [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -356,10 +438,7 @@ let ``a permanent delete names every entry of the tree it removes`` () =
 
     Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/docs") ] ], Permanently))
 
-    Assert.Equal<FileSystemPath list>(
-        [ fp (at "start/docs"); fp (at "start/docs/inner.txt") ],
-        List.ofSeq reported
-    )
+    Assert.Equal<FileSystemPath list>([ fp (at "start/docs"); fp (at "start/docs/inner.txt") ], List.ofSeq reported)
 
 [<Fact>]
 let ``a permanent delete stopped with Esc leaves the rest of the tree`` () =
@@ -390,7 +469,9 @@ let ``a permanent delete removes the target itself`` () =
     Assert.False(fs.File.Exists(at "start/notes.txt"))
 
     Assert.Equal<Message list>(
-        [ DeleteFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
+        [ DeleteFinished
+              [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -415,7 +496,9 @@ let ``a wipe runs behind the progress window under a title of its own`` () =
     Assert.Empty(fs.Directory.GetFileSystemEntries(at "start"))
 
     Assert.Equal<Message list>(
-        [ DeleteFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
+        [ DeleteFinished
+              [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -458,14 +541,19 @@ let ``what the trash refused is reported item by item`` () =
     Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToTrash))
 
     Assert.Equal<Message list>(
-        [ DeleteFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Error refusal } ] ],
+        [ DeleteFinished
+              [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
+                  Outcome = Error refusal } ] ],
         List.ofSeq sent
     )
 
 [<Fact>]
 let ``item failures are reported under the operation title`` () =
     let mutable reported = ("", "")
-    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
+
+    let deps =
+        { noDeps () with
+            Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     let failed =
         [ { Source = ItemOnDisk(fp (at "start/gone.txt"))
@@ -494,8 +582,11 @@ let ``copy targets are copied and the outcome dispatched back`` () =
         (CopyPlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))))
 
     Assert.Equal("new", fs.File.ReadAllText(at "backup/notes.txt"))
+
     Assert.Equal<Message list>(
-        [ CopyFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
+        [ CopyFinished
+              [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -503,15 +594,20 @@ let ``copy targets are copied and the outcome dispatched back`` () =
 let ``a batch is handed to the runner under its own title`` () =
     let _, dispatch = capture ()
     let titles = ResizeArray<string>()
+
     let deps () =
         { noDeps () with
             FileSystem = copyReadyFs ()
-            Runners.Batch = fun title work finish -> titles.Add title; work unattended |> finish }
+            Runners.Batch =
+                fun title work finish ->
+                    titles.Add title
+                    work unattended |> finish }
 
     Shell.interpret
         (deps ())
         dispatch
         (CopyPlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ToDirectory(fp (at "backup"))))
+
     Shell.interpret
         (deps ())
         dispatch
@@ -525,11 +621,15 @@ let ``nothing is run when every collision is refused`` () =
     let fs = copyReadyFs ()
     fs.AddFile(at "backup/notes.txt", MockFileData "old")
     let mutable started = false
+
     let deps =
         { noDeps () with
             FileSystem = fs
             Prompts.AskOverwrite = (fun _ -> No)
-            Runners.Batch = fun _ work finish -> started <- true; work unattended |> finish }
+            Runners.Batch =
+                fun _ work finish ->
+                    started <- true
+                    work unattended |> finish }
 
     Shell.interpret
         deps
@@ -550,7 +650,10 @@ let ``a collision asks about the target that is already there`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            Prompts.AskOverwrite = fun request -> asked.Add request.Target; No }
+            Prompts.AskOverwrite =
+                fun request ->
+                    asked.Add request.Target
+                    No }
 
     Shell.interpret
         deps
@@ -564,6 +667,7 @@ let ``a collision asks about the target that is already there`` () =
 let ``the target prompt suggests a path and carries back what was typed`` () =
     let sent, dispatch = capture ()
     let mutable offered = ("", "")
+
     let deps =
         { noDeps () with
             Prompts.AskTarget =
@@ -598,8 +702,11 @@ let ``move targets are moved and the outcome dispatched back`` () =
 
     Assert.Equal("new", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.False(fs.File.Exists(at "start/notes.txt"))
+
     Assert.Equal<Message list>(
-        [ MoveFinished [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ] ],
+        [ MoveFinished
+              [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -623,7 +730,10 @@ let ``a rename the file system carries out itself asks for no batch`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            Runners.Batch = fun title work finish -> titles.Add title; work unattended |> finish }
+            Runners.Batch =
+                fun title work finish ->
+                    titles.Add title
+                    work unattended |> finish }
 
     Shell.interpret deps dispatch (RenameTarget(fp (at "start/notes.txt"), en "readme.txt"))
 
@@ -639,7 +749,10 @@ let ``a rename that fell back to copying runs behind the progress window`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            Runners.Batch = fun title work finish -> titles.Add title; work unattended |> finish }
+            Runners.Batch =
+                fun title work finish ->
+                    titles.Add title
+                    work unattended |> finish }
 
     Shell.interpret deps dispatch (RenameTarget(fp (at "start/docs"), en "papers"))
 
@@ -663,10 +776,7 @@ let ``a rename stopped with Esc while it copied leaves the source where it is`` 
 
     Assert.True(fs.Directory.Exists(at "start/docs"))
 
-    Assert.Equal<Message list>(
-        [ RenameFinished(en "papers", Error(Cancelled(fp (at "start/docs")))) ],
-        List.ofSeq sent
-    )
+    Assert.Equal<Message list>([ RenameFinished(en "papers", Error(Cancelled(fp (at "start/docs")))) ], List.ofSeq sent)
 
 [<Fact>]
 let ``a non-empty directory among the targets widens the scope that comes back`` () =
@@ -678,7 +788,11 @@ let ``a non-empty directory among the targets widens the scope that comes back``
     Shell.interpret
         deps
         dispatch
-        (InspectDelete({ Probed = [ fp (at "start/docs") ]; AtLeast = NamedEntriesOnly }, ToTrash))
+        (InspectDelete(
+            { Probed = [ fp (at "start/docs") ]
+              AtLeast = NamedEntriesOnly },
+            ToTrash
+        ))
 
     Assert.Equal<Message list>([ DeleteScopeLoaded(WithDirectoryContents, ToTrash) ], List.ofSeq sent)
 
@@ -692,7 +806,11 @@ let ``an empty directory keeps the scope that comes back to the named entries`` 
     Shell.interpret
         deps
         dispatch
-        (InspectDelete({ Probed = [ fp (at "start/docs") ]; AtLeast = NamedEntriesOnly }, Permanently))
+        (InspectDelete(
+            { Probed = [ fp (at "start/docs") ]
+              AtLeast = NamedEntriesOnly },
+            Permanently
+        ))
 
     Assert.Equal<Message list>([ DeleteScopeLoaded(NamedEntriesOnly, Permanently) ], List.ofSeq sent)
 
@@ -706,7 +824,11 @@ let ``a question that already reaches the contents asks nothing about its own pa
     Shell.interpret
         deps
         dispatch
-        (InspectDelete({ Probed = [ fp (at "start/docs") ]; AtLeast = WithDirectoryContents }, Permanently))
+        (InspectDelete(
+            { Probed = [ fp (at "start/docs") ]
+              AtLeast = WithDirectoryContents },
+            Permanently
+        ))
 
     Assert.Equal(0, fs.AskedAbout(at "start/docs"))
     Assert.Equal<Message list>([ DeleteScopeLoaded(WithDirectoryContents, Permanently) ], List.ofSeq sent)
@@ -720,10 +842,16 @@ let ``a viewed file is handed over opened under its own path`` () =
     let readOut (source: FileWindow.Source) =
         let index = LineIndex.Index(source, source.Encoding)
         index.ScanAll()
-        let lines = [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
+
+        let lines =
+            [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
+
         shown <- (FileSystemPath.value source.Path, lines)
 
-    let deps = { noDeps () with FileSystem = fs; Prompts.ShowFile = fun request -> readOut request.Source }
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            Prompts.ShowFile = fun request -> readOut request.Source }
 
     Shell.interpret deps ignore (ViewFile(fp (at "start/notes.txt")))
 
@@ -750,7 +878,13 @@ let ``a file that cannot be read is reported instead of shown`` () =
 let ``an edited file is handed to the editor and its outcome dispatched back`` () =
     let sent, dispatch = capture ()
     let edited = ResizeArray<FileSystemPath>()
-    let deps = { noDeps () with Processes.StartEditor = fun _ path -> edited.Add path; Ok() }
+
+    let deps =
+        { noDeps () with
+            Processes.StartEditor =
+                fun _ path ->
+                    edited.Add path
+                    Ok() }
 
     Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), None))
 
@@ -761,7 +895,14 @@ let ``an edited file is handed to the editor and its outcome dispatched back`` (
 let ``the editor the effect names is the one that is started`` () =
     let _, dispatch = capture ()
     let started = ResizeArray<ProgramPath option>()
-    let deps = { noDeps () with Processes.StartEditor = fun chosen _ -> started.Add chosen; Ok() }
+
+    let deps =
+        { noDeps () with
+            Processes.StartEditor =
+                fun chosen _ ->
+                    started.Add chosen
+                    Ok() }
+
     let chosen = ProgramPath.tryCreate "code.exe"
 
     Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), chosen))
@@ -772,7 +913,10 @@ let ``the editor the effect names is the one that is started`` () =
 let ``an editor that fails dispatches its failure back`` () =
     let sent, dispatch = capture ()
     let failure = OperationFailed(fp (at "start/notes.txt"), "no editor")
-    let deps = { noDeps () with Processes.StartEditor = fun _ _ -> Error failure }
+
+    let deps =
+        { noDeps () with
+            Processes.StartEditor = fun _ _ -> Error failure }
 
     Shell.interpret deps dispatch (EditFile(fp (at "start/notes.txt"), None))
 
@@ -781,7 +925,10 @@ let ``an editor that fails dispatches its failure back`` () =
 [<Fact>]
 let ``a name for a new file is dispatched as FileNameEntered`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Prompts.AskName = fun _ -> Some "draft.md" }
+
+    let deps =
+        { noDeps () with
+            Prompts.AskName = fun _ -> Some "draft.md" }
 
     Shell.interpret deps dispatch PromptForFileName
 
@@ -790,7 +937,10 @@ let ``a name for a new file is dispatched as FileNameEntered`` () =
 [<Fact>]
 let ``a cancelled new file prompt dispatches nothing`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Prompts.AskName = fun _ -> None }
+
+    let deps =
+        { noDeps () with
+            Prompts.AskName = fun _ -> None }
 
     Shell.interpret deps dispatch PromptForFileName
 
@@ -799,7 +949,13 @@ let ``a cancelled new file prompt dispatches nothing`` () =
 [<Fact>]
 let ``the new file prompt opens on nothing`` () =
     let offered = ResizeArray<EnteredText option>()
-    let deps = { noDeps () with Prompts.AskName = fun request -> offered.Add request.Suggestion; None }
+
+    let deps =
+        { noDeps () with
+            Prompts.AskName =
+                fun request ->
+                    offered.Add request.Suggestion
+                    None }
 
     Shell.interpret deps ignore PromptForFileName
 
@@ -808,14 +964,19 @@ let ``the new file prompt opens on nothing`` () =
 [<Fact>]
 let ``changed properties are dispatched back`` () =
     let sent, dispatch = capture ()
+
     let shown =
         { Path = fp (at "start/docs")
           Flags = Set.empty
           Created = DateTimeOffset(DateTime(2024, 1, 1))
           Modified = DateTimeOffset(DateTime(2024, 1, 1))
           Accessed = DateTimeOffset(DateTime(2024, 1, 1)) }
+
     let changed = EntryProperties.withFlag HiddenFlag shown
-    let deps = { noDeps () with Prompts.EditProperties = fun _ -> Some changed }
+
+    let deps =
+        { noDeps () with
+            Prompts.EditProperties = fun _ -> Some changed }
 
     Shell.interpret deps dispatch (ShowProperties shown)
 
@@ -824,6 +985,7 @@ let ``changed properties are dispatched back`` () =
 [<Fact>]
 let ``a dismissed properties dialog dispatches nothing`` () =
     let sent, dispatch = capture ()
+
     let shown =
         { Path = fp (at "start/docs")
           Flags = Set.empty
@@ -839,7 +1001,13 @@ let ``a dismissed properties dialog dispatches nothing`` () =
 let ``a program the effect names is handed to the launcher and its outcome dispatched back`` () =
     let sent, dispatch = capture ()
     let asked = ResizeArray<LaunchRequest>()
-    let deps = { noDeps () with Processes.Launch = fun request -> asked.Add request; Ok() }
+
+    let deps =
+        { noDeps () with
+            Processes.Launch =
+                fun request ->
+                    asked.Add request
+                    Ok() }
 
     Shell.interpret deps dispatch (RunProgram(launching (at "start/notes.txt")))
 
@@ -850,7 +1018,10 @@ let ``a program the effect names is handed to the launcher and its outcome dispa
 let ``a launch that fails dispatches its failure back`` () =
     let sent, dispatch = capture ()
     let failure = NothingAssociated(fp (at "start/notes.odd"))
-    let deps = { noDeps () with Processes.Launch = fun _ -> Error failure }
+
+    let deps =
+        { noDeps () with
+            Processes.Launch = fun _ -> Error failure }
 
     Shell.interpret deps dispatch (RunProgram(launching (at "start/notes.odd")))
 
@@ -859,7 +1030,10 @@ let ``a launch that fails dispatches its failure back`` () =
 [<Fact>]
 let ``a launch failure is reported under its own title`` () =
     let mutable reported = ("", "")
-    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
+
+    let deps =
+        { noDeps () with
+            Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     Shell.interpret deps ignore (ReportLaunchError(NothingAssociated(fp (at "start/notes.odd"))))
 
@@ -869,12 +1043,17 @@ let ``a launch failure is reported under its own title`` () =
 [<Fact>]
 let ``the handlers of the file the effect names are the ones offered`` () =
     let asked = ResizeArray<EntryName * Handler list * ProgramPath option>()
-    let firefox = Handler.tryCreate "Firefox" (ProgramPath.tryCreate "firefox.exe") |> Expect.some
+
+    let firefox =
+        Handler.tryCreate "Firefox" (ProgramPath.tryCreate "firefox.exe") |> Expect.some
 
     let deps =
         { noDeps () with
             Processes.HandlersFor = fun _ -> [ firefox ]
-            Prompts.AskHandler = fun request -> asked.Add(request.Name, request.Handlers, request.Chosen); None }
+            Prompts.AskHandler =
+                fun request ->
+                    asked.Add(request.Name, request.Handlers, request.Chosen)
+                    None }
 
     Shell.interpret deps ignore (ShowHandlers(fp (at "start/page.html"), ProgramPath.tryCreate "code.exe"))
 
@@ -892,7 +1071,9 @@ let ``a program picked out of the popup is dispatched back with the file it open
         { Program = Expect.some (ProgramPath.tryCreate "firefox.exe")
           Use = AlwaysThisWay }
 
-    let deps = { noDeps () with Prompts.AskHandler = fun _ -> Some choice }
+    let deps =
+        { noDeps () with
+            Prompts.AskHandler = fun _ -> Some choice }
 
     Shell.interpret deps dispatch (ShowHandlers(fp (at "start/page.html"), None))
 
@@ -909,10 +1090,14 @@ let ``a dismissed open-with popup dispatches nothing`` () =
 [<Fact>]
 let ``changed programs are dispatched back`` () =
     let sent, dispatch = capture ()
+
     let changed =
         { ProgramSettings.none with
             DefaultEditor = ProgramPath.tryCreate "code.exe" }
-    let deps = { noDeps () with Prompts.EditPrograms = fun _ -> Some changed }
+
+    let deps =
+        { noDeps () with
+            Prompts.EditPrograms = fun _ -> Some changed }
 
     Shell.interpret deps dispatch (ShowSettings(ProgramSettings.none, None))
 
@@ -921,7 +1106,14 @@ let ``changed programs are dispatched back`` () =
 [<Fact>]
 let ``the executable the effect names is offered to the settings popup`` () =
     let offered = ResizeArray<ProgramPath option>()
-    let deps = { noDeps () with Prompts.EditPrograms = fun request -> offered.Add request.Candidate; None }
+
+    let deps =
+        { noDeps () with
+            Prompts.EditPrograms =
+                fun request ->
+                    offered.Add request.Candidate
+                    None }
+
     let candidate = ProgramPath.tryCreate (at "start/rider64.exe")
 
     Shell.interpret deps ignore (ShowSettings(ProgramSettings.none, candidate))
@@ -941,7 +1133,11 @@ let ``saved settings are written where the settings path points`` () =
     let fs = MockFileSystem()
     fs.AddDirectory(at "start")
     let settings = Settings.forPath (fp (at "start"))
-    let deps = { noDeps () with FileSystem = fs; SettingsPath = fp (at "config/marbas.conf") }
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            SettingsPath = fp (at "config/marbas.conf") }
 
     Shell.interpret deps ignore (SaveSettings settings)
 
@@ -1005,7 +1201,10 @@ let ``a history change that could not be written is dispatched as the error`` ()
 [<Fact>]
 let ``a history that could not be written is reported with its path`` () =
     let mutable reported = ("", "")
-    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
+
+    let deps =
+        { noDeps () with
+            Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
     Shell.interpret deps ignore (ReportHistoryError(HistoryAccessDenied(fp (at "config/history.conf"))))
 
@@ -1017,7 +1216,11 @@ let ``the history is read afresh and offered on the tab asked for`` () =
     let fs = MockFileSystem()
     let now = DateTimeOffset(2026, 9, 28, 15, 30, 0, TimeSpan.FromHours 2.0)
     let path = fp (at "config/history.conf")
-    let stored = History.change fs path now (Remember(Visited(Place.OnDisk(fp (at "work"))))) |> Expect.ok
+
+    let stored =
+        History.change fs path now (Remember(Visited(Place.OnDisk(fp (at "work")))))
+        |> Expect.ok
+
     let asked = ResizeArray<Ports.HistoryPrompt>()
     let sent, dispatch = capture ()
 
@@ -1035,10 +1238,14 @@ let ``the history is read afresh and offered on the tab asked for`` () =
 
     Assert.Equal<(History * HistoryTab * DateTimeOffset) list>(
         [ stored, ViewHistoryTab, now ],
-        asked |> Seq.map (fun prompt -> prompt.History, prompt.Tab, prompt.Now) |> List.ofSeq
+        asked
+        |> Seq.map (fun prompt -> prompt.History, prompt.Tab, prompt.Now)
+        |> List.ofSeq
     )
+
     Assert.Equal<Message list>(
-        [ HistoryChanged stored; HistoryAnswered { Tab = ViewHistoryTab; Choice = None } ],
+        [ HistoryChanged stored
+          HistoryAnswered { Tab = ViewHistoryTab; Choice = None } ],
         List.ofSeq sent
     )
 
@@ -1074,7 +1281,11 @@ let ``an entry forgotten in the popup is gone from the file and the others stay`
 [<Fact>]
 let ``a list cleared in the popup is still empty when the file is read again`` () =
     let fs = MockFileSystem()
-    let seen = { Where = Place.OnDisk(fp (at "notes.md")); How = Viewed }
+
+    let seen =
+        { Where = Place.OnDisk(fp (at "notes.md"))
+          How = Viewed }
+
     storing fs [ visited "older"; visited "newer"; Opened seen ]
     let deps = changingFromPopup fs historyAt (ClearList FolderHistory) (ResizeArray())
 
@@ -1112,7 +1323,9 @@ let ``a change the file refused answers the popup nothing and reaches the state 
     fs.AddFile(at "blocked", MockFileData "x")
     let answers = ResizeArray<History option>()
     let sent, dispatch = capture ()
-    let deps = changingFromPopup fs (fp (at "blocked/history.conf")) (ClearList FolderHistory) answers
+
+    let deps =
+        changingFromPopup fs (fp (at "blocked/history.conf")) (ClearList FolderHistory) answers
 
     Shell.interpret deps dispatch (ShowHistory FolderHistoryTab)
 
@@ -1141,7 +1354,10 @@ let ``a history that cannot be read is reported instead of offered`` () =
 [<Fact>]
 let ``quit runs the quit port`` () =
     let mutable quit = false
-    let deps = { noDeps () with OnQuit = fun () -> quit <- true }
+
+    let deps =
+        { noDeps () with
+            OnQuit = fun () -> quit <- true }
 
     Shell.interpret deps ignore Quit
 
@@ -1161,7 +1377,8 @@ let ``quit takes the workspace of the session with it`` () =
 
     Assert.False(fs.Directory.Exists(at "temp/Marbas/session"))
 
-let private typed raw = EnteredText.tryCreate raw |> Expect.some
+let private typed raw =
+    EnteredText.tryCreate raw |> Expect.some
 
 let private rememberedIn (fs: MockFileSystem) kind =
     History.load fs (fp (at "history.conf"))
@@ -1182,7 +1399,13 @@ let ``the name prompt opens on the name the last directory was given`` () =
     let fs = MockFileSystem()
     typedEarlier fs NewDirectory [ "older"; "work" ]
     let mutable offered = None
-    let deps = { withFs fs with Prompts.AskName = fun request -> offered <- request.Suggestion; None }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskName =
+                fun request ->
+                    offered <- request.Suggestion
+                    None }
 
     Shell.interpret deps ignore PromptForName
 
@@ -1191,7 +1414,13 @@ let ``the name prompt opens on the name the last directory was given`` () =
 [<Fact>]
 let ``the name prompt starts empty when nothing was remembered`` () =
     let mutable offered = Some(typed "something")
-    let deps = { noDeps () with Prompts.AskName = fun request -> offered <- request.Suggestion; None }
+
+    let deps =
+        { noDeps () with
+            Prompts.AskName =
+                fun request ->
+                    offered <- request.Suggestion
+                    None }
 
     Shell.interpret deps ignore PromptForName
 
@@ -1202,7 +1431,13 @@ let ``the name prompt offers the names directories were given, newest first`` ()
     let fs = MockFileSystem()
     typedEarlier fs NewDirectory [ "older"; "work" ]
     let offered = ResizeArray<EnteredText list>()
-    let deps = { withFs fs with Prompts.AskName = fun request -> offered.Add request.Remembered; None }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskName =
+                fun request ->
+                    offered.Add request.Remembered
+                    None }
 
     Shell.interpret deps ignore PromptForName
 
@@ -1211,7 +1446,10 @@ let ``the name prompt offers the names directories were given, newest first`` ()
 [<Fact>]
 let ``a name given to a directory is left for the state to remember`` () =
     let fs = MockFileSystem()
-    let deps = { withFs fs with Prompts.AskName = fun _ -> Some "work" }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskName = fun _ -> Some "work" }
 
     Shell.interpret deps ignore PromptForName
 
@@ -1222,7 +1460,13 @@ let ``the target prompt offers the targets typed before, newest first`` () =
     let fs = MockFileSystem()
     typedEarlier fs CopyOrMoveTarget [ @"D:\older"; @"D:\newer" ]
     let offered = ResizeArray<EnteredText list>()
-    let deps = { withFs fs with Prompts.AskTarget = fun request -> offered.Add request.Remembered; None }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskTarget =
+                fun request ->
+                    offered.Add request.Remembered
+                    None }
 
     Shell.interpret deps ignore (PromptForTarget(fp (at "backup")))
 
@@ -1231,7 +1475,10 @@ let ``the target prompt offers the targets typed before, newest first`` () =
 [<Fact>]
 let ``a target confirmed is remembered as it was typed`` () =
     let fs = MockFileSystem()
-    let deps = { withFs fs with Prompts.AskTarget = fun _ -> Some @" D:\backup " }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskTarget = fun _ -> Some @" D:\backup " }
 
     Shell.interpret deps ignore (PromptForTarget(fp (at "backup")))
 
@@ -1248,7 +1495,10 @@ let ``a target prompt cancelled remembers nothing`` () =
 [<Fact>]
 let ``a blank target confirmed remembers nothing`` () =
     let fs = MockFileSystem()
-    let deps = { withFs fs with Prompts.AskTarget = fun _ -> Some "   " }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskTarget = fun _ -> Some "   " }
 
     Shell.interpret deps ignore (PromptForTarget(fp (at "backup")))
 
@@ -1259,7 +1509,13 @@ let ``the new file prompt offers the names typed before`` () =
     let fs = MockFileSystem()
     typedEarlier fs NewFile [ "notes.md" ]
     let offered = ResizeArray<EnteredText list>()
-    let deps = { withFs fs with Prompts.AskName = fun request -> offered.Add request.Remembered; None }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskName =
+                fun request ->
+                    offered.Add request.Remembered
+                    None }
 
     Shell.interpret deps ignore PromptForFileName
 
@@ -1268,7 +1524,10 @@ let ``the new file prompt offers the names typed before`` () =
 [<Fact>]
 let ``a name for a new file confirmed is remembered`` () =
     let fs = MockFileSystem()
-    let deps = { withFs fs with Prompts.AskName = fun _ -> Some "draft.md" }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskName = fun _ -> Some "draft.md" }
 
     Shell.interpret deps ignore PromptForFileName
 
@@ -1286,7 +1545,14 @@ let ``a new file prompt cancelled remembers nothing`` () =
 let ``the pattern prompts offer one list between selecting and deselecting`` () =
     let fs = MockFileSystem()
     let offered = ResizeArray<EnteredText list>()
-    let deps = { withFs fs with Prompts.AskPattern = fun request -> offered.Add request.Remembered; Some "*.fs" }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskPattern =
+                fun request ->
+                    offered.Add request.Remembered
+                    Some "*.fs" }
+
     Shell.interpret deps ignore (PromptForPattern Select)
 
     Shell.interpret deps ignore (PromptForPattern Deselect)
@@ -1296,7 +1562,10 @@ let ``the pattern prompts offer one list between selecting and deselecting`` () 
 [<Fact>]
 let ``a pattern confirmed is remembered`` () =
     let fs = MockFileSystem()
-    let deps = { withFs fs with Prompts.AskPattern = fun _ -> Some "*.txt" }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskPattern = fun _ -> Some "*.txt" }
 
     Shell.interpret deps ignore (PromptForPattern Deselect)
 
@@ -1314,7 +1583,10 @@ let ``a pattern prompt cancelled remembers nothing`` () =
 let ``a blank pattern is still applied but not remembered`` () =
     let fs = MockFileSystem()
     let sent, dispatch = capture ()
-    let deps = { withFs fs with Prompts.AskPattern = fun _ -> Some "  " }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskPattern = fun _ -> Some "  " }
 
     Shell.interpret deps dispatch (PromptForPattern Select)
 
@@ -1377,7 +1649,11 @@ let ``archive targets are packed and the outcome dispatched back`` () =
     Assert.True(fs.File.Exists(at "backup/notes.zip"))
 
     Assert.Equal<Message list>(
-        [ PackFinished(en "notes.zip", [ { Source = ItemOnDisk(fp (at "start/notes.txt")); Outcome = Ok() } ]) ],
+        [ PackFinished(
+              en "notes.zip",
+              [ { Source = ItemOnDisk(fp (at "start/notes.txt"))
+                  Outcome = Ok() } ]
+          ) ],
         List.ofSeq sent
     )
 
@@ -1424,7 +1700,11 @@ let ``a refused overwrite packs nothing`` () =
     let sent, dispatch = capture ()
     let fs = packReadyFs ()
     fs.AddFile(at "backup/notes.zip", MockFileData "old")
-    let deps = { noDeps () with FileSystem = fs; Prompts.Confirm = fun _ -> false }
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            Prompts.Confirm = fun _ -> false }
 
     Shell.interpret deps dispatch (ArchiveTargets([ fp (at "start/notes.txt") ], packing (at "backup/notes.zip")))
 
@@ -1435,7 +1715,11 @@ let ``an accepted overwrite replaces the archive`` () =
     let sent, dispatch = capture ()
     let fs = packReadyFs ()
     fs.AddFile(at "backup/notes.zip", MockFileData "old")
-    let deps = { noDeps () with FileSystem = fs; Prompts.Confirm = fun _ -> true }
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            Prompts.Confirm = fun _ -> true }
 
     Shell.interpret deps dispatch (ArchiveTargets([ fp (at "start/notes.txt") ], packing (at "backup/notes.zip")))
 
@@ -1475,8 +1759,10 @@ let ``an archive is emptied into the target directory and the outcome dispatched
 
     Assert.Equal<Message list>(
         [ UnpackFinished(
-              [ { Source = ItemInArchive(dataZip, entry "notes.txt"); Outcome = Ok() }
-                { Source = ItemInArchive(dataZip, entry "docs"); Outcome = Ok() } ]
+              [ { Source = ItemInArchive(dataZip, entry "notes.txt")
+                  Outcome = Ok() }
+                { Source = ItemInArchive(dataZip, entry "docs")
+                  Outcome = Ok() } ]
           ) ],
         List.ofSeq sent
     )
@@ -1621,10 +1907,17 @@ let ``an entry of an archive is handed over under the name of its place in it`` 
     let readOut (source: FileWindow.Source) =
         let index = LineIndex.Index(source, source.Encoding)
         index.ScanAll()
-        let lines = [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
+
+        let lines =
+            [ for line in 0 .. index.Known - 1 -> index.Text line |> Option.defaultValue "" ]
+
         shown <- (FileSystemPath.value source.Path, lines)
 
-    let deps = { noDeps () with FileSystem = fs; Prompts.ShowFile = fun request -> readOut request.Source }
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            Prompts.ShowFile = fun request -> readOut request.Source }
+
     let entry = ArchivePath.tryCreate "notes.txt" |> Expect.some
 
     Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/data.zip"), entry))
@@ -1672,7 +1965,10 @@ let ``a locked archive asks for its password before an entry is shown`` () =
     let deps =
         { noDeps () with
             FileSystem = fs
-            Prompts.AskPassword = fun _ -> asked <- asked + 1; ArchivePassword.tryCreate "opensesame"
+            Prompts.AskPassword =
+                fun _ ->
+                    asked <- asked + 1
+                    ArchivePassword.tryCreate "opensesame"
             Prompts.ShowFile = fun request -> shown <- Text.Encoding.ASCII.GetString(request.Source.Read(0L, 6)) }
 
     Shell.interpret deps ignore (ViewArchiveEntry(fp (at "backup/locked.zip"), entry))
@@ -1723,8 +2019,10 @@ let ``entries copied out of an archive land in the target directory and the outc
 
     Assert.Equal<Message list>(
         [ CopyFinished(
-              [ { Source = ItemInArchive(dataZip, entry "notes.txt"); Outcome = Ok() }
-                { Source = ItemInArchive(dataZip, entry "docs"); Outcome = Ok() } ]
+              [ { Source = ItemInArchive(dataZip, entry "notes.txt")
+                  Outcome = Ok() }
+                { Source = ItemInArchive(dataZip, entry "docs")
+                  Outcome = Ok() } ]
           ) ],
         List.ofSeq sent
     )
@@ -1838,7 +2136,11 @@ let ``copying out of a locked archive asks for the password once`` () =
 let ``copying out of a locked archive whose password is not given copies nothing`` () =
     let sent, dispatch = capture ()
     let fs = unpackReadyFs (ArchivePassword.tryCreate "opensesame")
-    let deps = { noDeps () with FileSystem = fs; Prompts.AskPassword = fun _ -> None }
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            Prompts.AskPassword = fun _ -> None }
 
     Shell.interpret
         deps
@@ -1873,8 +2175,11 @@ let ``sources added to an archive are in it and the outcome is dispatched back``
         (CopyPlaces([ FromDisk [ fp (at "backup/fresh.txt") ] ], ToArchive(zipAt, ArchivePath.root)))
 
     Assert.Equal<string list>([ "docs"; "fresh.txt"; "notes.txt" ], levelNames fs ArchivePath.root)
+
     Assert.Equal<Message list>(
-        [ CopyFinished [ { Source = ItemOnDisk(fp (at "backup/fresh.txt")); Outcome = Ok() } ] ],
+        [ CopyFinished
+              [ { Source = ItemOnDisk(fp (at "backup/fresh.txt"))
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -1977,8 +2282,11 @@ let ``a source moved into an archive is gone from disk once it is in`` () =
     Assert.Equal<string list>([ "docs"; "fresh.txt"; "notes.txt" ], levelNames fs ArchivePath.root)
     Assert.False(fs.File.Exists(at "backup/fresh.txt"))
     Assert.Equal<string list>([ Shell.MoveTitle ], List.ofSeq titles)
+
     Assert.Equal<Message list>(
-        [ MoveFinished [ { Source = ItemOnDisk(fp (at "backup/fresh.txt")); Outcome = Ok() } ] ],
+        [ MoveFinished
+              [ { Source = ItemOnDisk(fp (at "backup/fresh.txt"))
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -1994,8 +2302,11 @@ let ``an entry moved out of an archive is on disk and gone from the archive`` ()
 
     Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.Equal<string list>([ "docs" ], levelNames fs ArchivePath.root)
+
     Assert.Equal<Message list>(
-        [ MoveFinished [ { Source = ItemInArchive(zipAt, entry); Outcome = Ok() } ] ],
+        [ MoveFinished
+              [ { Source = ItemInArchive(zipAt, entry)
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -2018,8 +2329,11 @@ let ``entries removed from an archive are gone and the outcome is dispatched bac
 
     Assert.Equal<string list>([ "docs" ], levelNames fs ArchivePath.root)
     Assert.Equal<string list>([ Shell.DeleteTitle ], List.ofSeq titles)
+
     Assert.Equal<Message list>(
-        [ DeleteFinished [ { Source = ItemInArchive(zipAt, entry); Outcome = Ok() } ] ],
+        [ DeleteFinished
+              [ { Source = ItemInArchive(zipAt, entry)
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -2064,8 +2378,11 @@ let ``an entry copied across archives lands in the other and stays in its own`` 
     Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs otherAt ArchivePath.root)
     Assert.Equal<string list>([ "inner.txt" ], namesIn fs otherAt (entry "docs"))
     Assert.Equal<string list>([ "docs"; "notes.txt" ], namesIn fs zipAt ArchivePath.root)
+
     Assert.Equal<Message list>(
-        [ CopyFinished [ { Source = ItemInArchive(zipAt, entry "docs"); Outcome = Ok() } ] ],
+        [ CopyFinished
+              [ { Source = ItemInArchive(zipAt, entry "docs")
+                  Outcome = Ok() } ] ],
         List.ofSeq sent
     )
 
@@ -2200,7 +2517,11 @@ let private answering landing =
         { Query = searchFor FromDirectory
           Ground = { Roots = []; OtherRoots = [] }
           Hits = []
-          Outcome = FileSearch.Finished { Files = 0; Directories = 0; Skipped = 0 }
+          Outcome =
+            FileSearch.Finished
+                { Files = 0
+                  Directories = 0
+                  Skipped = 0 }
           Cursor = 0 } }
 
 [<Fact>]
@@ -2280,7 +2601,11 @@ let ``the find popup offers the masks and the texts typed before`` () =
     let offered = ResizeArray<EnteredText list * EnteredText list>()
 
     let deps =
-        { withFs fs with Prompts.AskFind = fun request -> offered.Add(request.Masks, request.Texts); None }
+        { withFs fs with
+            Prompts.AskFind =
+                fun request ->
+                    offered.Add(request.Masks, request.Texts)
+                    None }
 
     Shell.interpret deps ignore (PromptForFind(NoDirectoryMarked, Concealed, None))
 
@@ -2294,7 +2619,8 @@ let ``the viewer is offered the texts searched for before`` () =
     let offered = ResizeArray<EnteredText list>()
 
     let deps =
-        { withFs fs with Prompts.ShowFile = fun request -> offered.Add(request.Searches.Texts()) }
+        { withFs fs with
+            Prompts.ShowFile = fun request -> offered.Add(request.Searches.Texts()) }
 
     Shell.interpret deps ignore (ViewFile(fp (at "start/notes.txt")))
 
@@ -2308,7 +2634,8 @@ let ``a text the viewer searched for is remembered with the texts searched for b
     let sent, dispatch = capture ()
 
     let deps =
-        { withFs fs with Prompts.ShowFile = _.Searches.Remember(typed "needle") }
+        { withFs fs with
+            Prompts.ShowFile = _.Searches.Remember(typed "needle") }
 
     Shell.interpret deps dispatch (ViewFile(fp (at "start/notes.txt")))
 
@@ -2324,7 +2651,8 @@ let ``the viewer is offered the bytes searched for before, apart from the texts`
     let offered = ResizeArray<EnteredText list>()
 
     let deps =
-        { withFs fs with Prompts.ShowFile = fun request -> offered.Add(request.ByteSearches.Texts()) }
+        { withFs fs with
+            Prompts.ShowFile = fun request -> offered.Add(request.ByteSearches.Texts()) }
 
     Shell.interpret deps ignore (ViewFile(fp (at "start/notes.txt")))
 
@@ -2336,7 +2664,8 @@ let ``bytes the viewer searched for are remembered in their own list`` () =
     fs.AddFile(at "start/notes.txt", MockFileData "first")
 
     let deps =
-        { withFs fs with Prompts.ShowFile = _.ByteSearches.Remember(typed "4D 5A") }
+        { withFs fs with
+            Prompts.ShowFile = _.ByteSearches.Remember(typed "4D 5A") }
 
     Shell.interpret deps ignore (ViewFile(fp (at "start/notes.txt")))
 
@@ -2346,7 +2675,10 @@ let ``bytes the viewer searched for are remembered in their own list`` () =
 [<Fact>]
 let ``a search confirmed remembers its masks and its text as they were typed`` () =
     let fs = MockFileSystem()
-    let deps = { withFs fs with Prompts.AskFind = fun _ -> Some(searched "needle ") }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskFind = fun _ -> Some(searched "needle ") }
 
     Shell.interpret deps ignore (PromptForFind(NoDirectoryMarked, Concealed, None))
 
@@ -2356,7 +2688,10 @@ let ``a search confirmed remembers its masks and its text as they were typed`` (
 [<Fact>]
 let ``a search for names alone remembers no text`` () =
     let fs = MockFileSystem()
-    let deps = { withFs fs with Prompts.AskFind = fun _ -> Some(searched "") }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskFind = fun _ -> Some(searched "") }
 
     Shell.interpret deps ignore (PromptForFind(NoDirectoryMarked, Concealed, None))
 
@@ -2383,7 +2718,13 @@ let ``the pack popup offers the archives packed into before`` () =
     let fs = MockFileSystem()
     typedEarlier fs ArchiveTarget [ @"D:\one.zip" ]
     let offered = ResizeArray<EnteredText list>()
-    let deps = { withFs fs with Prompts.AskArchive = fun request -> offered.Add request.Remembered; None }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskArchive =
+                fun request ->
+                    offered.Add request.Remembered
+                    None }
 
     Shell.interpret deps ignore (PromptForArchive(fp (at "backup/notes.zip")))
 
@@ -2399,7 +2740,9 @@ let ``an archive confirmed remembers where it was packed and never its password`
           Compression = Normal
           Password = ArchivePassword.tryCreate "hunter2" }
 
-    let deps = { withFs fs with Prompts.AskArchive = fun _ -> Some packed }
+    let deps =
+        { withFs fs with
+            Prompts.AskArchive = fun _ -> Some packed }
 
     Shell.interpret deps ignore (PromptForArchive(fp (at "backup/notes.zip")))
 
@@ -2411,18 +2754,37 @@ let ``the link popup offers the places linked at before`` () =
     let fs = MockFileSystem()
     typedEarlier fs LinkDestination [ @"D:\links\one" ]
     let offered = ResizeArray<EnteredText list>()
-    let deps = { withFs fs with Prompts.AskLink = fun request -> offered.Add request.Remembered; None }
 
-    Shell.interpret deps ignore (PromptForLink([ fp (at "start/notes.txt") ], fp (at "backup"), fp (at "backup/notes.txt")))
+    let deps =
+        { withFs fs with
+            Prompts.AskLink =
+                fun request ->
+                    offered.Add request.Remembered
+                    None }
+
+    Shell.interpret
+        deps
+        ignore
+        (PromptForLink([ fp (at "start/notes.txt") ], fp (at "backup"), fp (at "backup/notes.txt")))
 
     Assert.Equal<EnteredText list>([ typed @"D:\links\one" ], Assert.Single offered)
 
 [<Fact>]
 let ``a link confirmed remembers where it was made`` () =
     let fs = MockFileSystem()
-    let deps = { withFs fs with Prompts.AskLink = fun _ -> Some { Target = @"D:\links\one"; Kind = Symbolic } }
 
-    Shell.interpret deps ignore (PromptForLink([ fp (at "start/notes.txt") ], fp (at "backup"), fp (at "backup/notes.txt")))
+    let deps =
+        { withFs fs with
+            Prompts.AskLink =
+                fun _ ->
+                    Some
+                        { Target = @"D:\links\one"
+                          Kind = Symbolic } }
+
+    Shell.interpret
+        deps
+        ignore
+        (PromptForLink([ fp (at "start/notes.txt") ], fp (at "backup"), fp (at "backup/notes.txt")))
 
     Assert.Equal<string list>([ @"D:\links\one" ], rememberedIn fs LinkDestination)
 
@@ -2431,7 +2793,13 @@ let ``the open-with popup offers the programs chosen before`` () =
     let fs = MockFileSystem()
     typedEarlier fs OpenWithProgram [ "code.exe" ]
     let offered = ResizeArray<EnteredText list>()
-    let deps = { withFs fs with Prompts.AskHandler = fun request -> offered.Add request.Remembered; None }
+
+    let deps =
+        { withFs fs with
+            Prompts.AskHandler =
+                fun request ->
+                    offered.Add request.Remembered
+                    None }
 
     Shell.interpret deps ignore (ShowHandlers(fp (at "start/page.html"), None))
 
@@ -2445,7 +2813,9 @@ let ``a program confirmed in the open-with popup is remembered`` () =
         { Program = Expect.some (ProgramPath.tryCreate "firefox.exe")
           Use = ThisTimeOnly }
 
-    let deps = { withFs fs with Prompts.AskHandler = fun _ -> Some choice }
+    let deps =
+        { withFs fs with
+            Prompts.AskHandler = fun _ -> Some choice }
 
     Shell.interpret deps ignore (ShowHandlers(fp (at "start/page.html"), None))
 
@@ -2458,7 +2828,12 @@ let ``popups of the larger dialogs cancelled remember nothing`` () =
 
     Shell.interpret deps ignore (PromptForFind(NoDirectoryMarked, Concealed, None))
     Shell.interpret deps ignore (PromptForArchive(fp (at "backup/notes.zip")))
-    Shell.interpret deps ignore (PromptForLink([ fp (at "start/notes.txt") ], fp (at "backup"), fp (at "backup/notes.txt")))
+
+    Shell.interpret
+        deps
+        ignore
+        (PromptForLink([ fp (at "start/notes.txt") ], fp (at "backup"), fp (at "backup/notes.txt")))
+
     Shell.interpret deps ignore (ShowHandlers(fp (at "start/page.html"), None))
 
     Assert.False(fs.File.Exists(at "history.conf"))
@@ -2471,7 +2846,9 @@ let private kept (deps: Ports.Dependencies) =
 
 [<Fact>]
 let ``a slot answered for a favourite keeps the place in it`` () =
-    let deps = { noDeps () with Prompts.AskFavoriteSlot = fun _ -> Some(favoriteSlot 3) }
+    let deps =
+        { noDeps () with
+            Prompts.AskFavoriteSlot = fun _ -> Some(favoriteSlot 3) }
 
     Shell.interpret deps ignore (PromptForFavoriteSlot(Place.OnDisk(fp (at "work"))))
 
@@ -2480,7 +2857,13 @@ let ``a slot answered for a favourite keeps the place in it`` () =
 [<Fact>]
 let ``the slot is asked for with the place it will keep`` () =
     let asked = ResizeArray<Place>()
-    let deps = { noDeps () with Prompts.AskFavoriteSlot = fun place -> asked.Add place; None }
+
+    let deps =
+        { noDeps () with
+            Prompts.AskFavoriteSlot =
+                fun place ->
+                    asked.Add place
+                    None }
 
     Shell.interpret deps ignore (PromptForFavoriteSlot(Place.OnDisk(fp (at "work"))))
 
@@ -2553,7 +2936,14 @@ let private keptIn (deps: Ports.Dependencies) digit path =
 [<Fact>]
 let ``the favourites popup is offered what the file holds and the place to keep`` () =
     let asked = ResizeArray<Ports.FavoritesPrompt>()
-    let deps = { noDeps () with Prompts.ChooseFavorite = fun prompt -> asked.Add prompt; None }
+
+    let deps =
+        { noDeps () with
+            Prompts.ChooseFavorite =
+                fun prompt ->
+                    asked.Add prompt
+                    None }
+
     keptIn deps 2 "work"
 
     Shell.interpret deps ignore (ShowFavorites(Some(Place.OnDisk(fp (at "start")))))
@@ -2565,7 +2955,10 @@ let ``the favourites popup is offered what the file holds and the place to keep`
 [<Fact>]
 let ``a place chosen in the favourites popup is dispatched as found`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with Prompts.ChooseFavorite = fun _ -> Some(Place.OnDisk(fp (at "work"))) }
+
+    let deps =
+        { noDeps () with
+            Prompts.ChooseFavorite = fun _ -> Some(Place.OnDisk(fp (at "work"))) }
 
     Shell.interpret deps dispatch (ShowFavorites None)
 
@@ -2589,7 +2982,10 @@ let ``favourites that cannot be read are reported and the popup is not shown`` (
     let deps =
         { Fakes.dependencies fs (at "start") with
             Prompts.ReportError = fun report -> reported <- report.Title
-            Prompts.ChooseFavorite = fun _ -> shown <- true; None }
+            Prompts.ChooseFavorite =
+                fun _ ->
+                    shown <- true
+                    None }
 
     Shell.interpret deps ignore (ShowFavorites None)
 
@@ -2800,7 +3196,10 @@ let ``entries for the clipboard are extracted into a scratch directory of the se
 [<Fact>]
 let ``what was extracted for the clipboard is dispatched back with the scratch directory`` () =
     let sent, dispatch = capture ()
-    let deps = { noDeps () with FileSystem = unpackReadyFs None }
+
+    let deps =
+        { noDeps () with
+            FileSystem = unpackReadyFs None }
 
     Shell.interpret deps dispatch (ExtractForClipboard forClipboard)
 
@@ -2808,8 +3207,10 @@ let ``what was extracted for the clipboard is dispatched back with the scratch d
         [ ClipboardExtractFinished(
               forClipboard,
               fp (at "temp/Marbas/session/1"),
-              [ { Source = ItemInArchive(dataZip, entry "notes.txt"); Outcome = Ok() }
-                { Source = ItemInArchive(dataZip, entry "docs"); Outcome = Ok() } ]
+              [ { Source = ItemInArchive(dataZip, entry "notes.txt")
+                  Outcome = Ok() }
+                { Source = ItemInArchive(dataZip, entry "docs")
+                  Outcome = Ok() } ]
           ) ],
         List.ofSeq sent
     )
@@ -2847,6 +3248,7 @@ let ``a locked archive whose password is not given is left off the clipboard wit
     Shell.interpret deps dispatch (ExtractForClipboard forClipboard)
 
     Assert.Empty batches
+
     Assert.Equal<Message list>(
         [ ClipboardExtractFinished(forClipboard, fp (at "temp/Marbas/session/1"), []) ],
         List.ofSeq sent
@@ -2924,7 +3326,11 @@ let ``pasted files to be moved are moved and the outcome dispatched back`` () =
 [<Fact>]
 let ``the clipboard is emptied once the files on it were moved`` () =
     let emptied = ResizeArray<unit>()
-    let deps = { noDeps () with FileSystem = pasteReadyFs () } |> emptying emptied cut
+
+    let deps =
+        { noDeps () with
+            FileSystem = pasteReadyFs () }
+        |> emptying emptied cut
 
     Shell.interpret deps ignore (MovePastedFiles(cut, ToDirectory(fp (at "start"))))
 
@@ -2951,7 +3357,11 @@ let ``the clipboard is kept when nothing was moved`` () =
 let ``the clipboard is kept when it no longer holds the files that were moved`` () =
     let emptied = ResizeArray<unit>()
     let other = clipboardFiles ForCopying [ at "elsewhere/report.txt" ]
-    let deps = { noDeps () with FileSystem = pasteReadyFs () } |> emptying emptied other
+
+    let deps =
+        { noDeps () with
+            FileSystem = pasteReadyFs () }
+        |> emptying emptied other
 
     Shell.interpret deps ignore (MovePastedFiles(cut, ToDirectory(fp (at "start"))))
 
@@ -2972,7 +3382,11 @@ let ``pasted files to be moved into an archive are added to it and leave the dis
     |> ignore
 
     fs.File.WriteAllText(at "work/notes.txt", "newer")
-    let deps = { noDeps () with FileSystem = fs; Prompts.AskOverwrite = fun _ -> Yes }
+
+    let deps =
+        { noDeps () with
+            FileSystem = fs
+            Prompts.AskOverwrite = fun _ -> Yes }
 
     Shell.interpret deps ignore (MovePastedFiles(cut, ToArchive(fp (at "start/data.zip"), ArchivePath.root)))
 
@@ -3005,10 +3419,20 @@ let private ranCommand: CommandRun =
 [<Fact>]
 let ``the user menu popup is handed the menu its file holds`` () =
     let fs = MockFileSystem()
-    let written = UserMenu.apply (AddItem(CommandItem(menuEntry "S" "Show" "show %p"), None)) UserMenu.empty |> Expect.ok
+
+    let written =
+        UserMenu.apply (AddItem(CommandItem(menuEntry "S" "Show" "show %p"), None)) UserMenu.empty
+        |> Expect.ok
+
     fs.AddFile(at "user-menu.conf", MockFileData(String.concat "\n" (UserMenu.format written)))
     let asked = ResizeArray<Ports.UserMenuPrompt>()
-    let deps = { Fakes.dependencies fs (at "start") with Prompts.ChooseFromUserMenu = fun prompt -> asked.Add prompt; None }
+
+    let deps =
+        { Fakes.dependencies fs (at "start") with
+            Prompts.ChooseFromUserMenu =
+                fun prompt ->
+                    asked.Add prompt
+                    None }
 
     Shell.interpret deps ignore ShowUserMenu
 
@@ -3017,7 +3441,13 @@ let ``the user menu popup is handed the menu its file holds`` () =
 [<Fact>]
 let ``with no file the user menu popup is handed an empty menu`` () =
     let asked = ResizeArray<Ports.UserMenuPrompt>()
-    let deps = { noDeps () with Prompts.ChooseFromUserMenu = fun prompt -> asked.Add prompt; None }
+
+    let deps =
+        { noDeps () with
+            Prompts.ChooseFromUserMenu =
+                fun prompt ->
+                    asked.Add prompt
+                    None }
 
     Shell.interpret deps ignore ShowUserMenu
 
@@ -3027,11 +3457,17 @@ let ``with no file the user menu popup is handed an empty menu`` () =
 let ``an entry chosen in the user menu is dispatched with a list file in the session's working directory`` () =
     let sent, dispatch = capture ()
     let chosen = menuEntry "S" "Show" "show %f"
-    let deps = { noDeps () with Prompts.ChooseFromUserMenu = fun _ -> Some chosen }
+
+    let deps =
+        { noDeps () with
+            Prompts.ChooseFromUserMenu = fun _ -> Some chosen }
 
     Shell.interpret deps dispatch ShowUserMenu
 
-    Assert.Equal<Message list>([ MenuCommandChosen(chosen, fp (at "temp/Marbas/session/marked-1.txt")) ], List.ofSeq sent)
+    Assert.Equal<Message list>(
+        [ MenuCommandChosen(chosen, fp (at "temp/Marbas/session/marked-1.txt")) ],
+        List.ofSeq sent
+    )
 
 [<Fact>]
 let ``a user menu that cannot be read is reported and the popup is not shown`` () =
@@ -3043,7 +3479,10 @@ let ``a user menu that cannot be read is reported and the popup is not shown`` (
     let deps =
         { Fakes.dependencies fs (at "start") with
             Prompts.ReportError = fun report -> reported <- report.Title
-            Prompts.ChooseFromUserMenu = fun _ -> shown <- true; None }
+            Prompts.ChooseFromUserMenu =
+                fun _ ->
+                    shown <- true
+                    None }
 
     Shell.interpret deps ignore ShowUserMenu
 
@@ -3054,7 +3493,13 @@ let ``a user menu that cannot be read is reported and the popup is not shown`` (
 let ``a command run is handed to the process port and its outcome dispatched back`` () =
     let sent, dispatch = capture ()
     let handed = ResizeArray<CommandRun>()
-    let deps = { noDeps () with Processes.RunCommand = fun run -> handed.Add run; Ok() }
+
+    let deps =
+        { noDeps () with
+            Processes.RunCommand =
+                fun run ->
+                    handed.Add run
+                    Ok() }
 
     Shell.interpret deps dispatch (RunCommand ranCommand)
 
@@ -3064,7 +3509,10 @@ let ``a command run is handed to the process port and its outcome dispatched bac
 [<Fact>]
 let ``a refused expansion is reported under the command title`` () =
     let mutable reported = ""
-    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- report.Title }
+
+    let deps =
+        { noDeps () with
+            Prompts.ReportError = fun report -> reported <- report.Title }
 
     Shell.interpret deps ignore (ReportExpansionRefusal Marbas.State.CommandExpansion.NoProgram)
 
@@ -3073,7 +3521,10 @@ let ``a refused expansion is reported under the command title`` () =
 [<Fact>]
 let ``a command that could not start is reported under the command title`` () =
     let mutable reported = ""
-    let deps = { noDeps () with Prompts.ReportError = fun report -> reported <- report.Title }
+
+    let deps =
+        { noDeps () with
+            Prompts.ReportError = fun report -> reported <- report.Title }
 
     Shell.interpret deps ignore (ReportCommandError(LaunchRefused(fp "show", "denied")))
 

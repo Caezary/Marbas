@@ -14,9 +14,12 @@ module Modifiers =
     let held modifiers = Set.ofList modifiers
 
     let ofKey (key: Key) =
-        [ if key.IsCtrl then Ctrl
-          if key.IsAlt then Alt
-          if key.IsShift then Shift ]
+        [ if key.IsCtrl then
+              Ctrl
+          if key.IsAlt then
+              Alt
+          if key.IsShift then
+              Shift ]
         |> Set.ofList
 
     let apply modifiers (key: Key) =

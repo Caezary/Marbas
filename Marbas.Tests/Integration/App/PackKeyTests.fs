@@ -54,11 +54,9 @@ let ``Shift+F1 offers an archive named after the entry under the cursor`` () =
     let mutable offered = ""
 
     use window =
-        windowWith
-            fs
-            (fun request ->
-                offered <- FileSystemPath.value request.Suggestion
-                None)
+        windowWith fs (fun request ->
+            offered <- FileSystemPath.value request.Suggestion
+            None)
 
     (leftList window).SelectedItem <- 2
 

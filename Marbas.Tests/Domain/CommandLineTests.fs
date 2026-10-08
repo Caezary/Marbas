@@ -15,6 +15,8 @@ let ``text that is blank or breaks a line is no command line`` (raw: string) =
 
 [<Fact>]
 let ``a command line is trimmed and otherwise kept as it was typed`` () =
-    let line = CommandLine.tryCreate "  code --diff %Lp %Rp=1  " |> Option.map CommandLine.value
+    let line =
+        CommandLine.tryCreate "  code --diff %Lp %Rp=1  "
+        |> Option.map CommandLine.value
 
     Assert.Equal(Some "code --diff %Lp %Rp=1", line)

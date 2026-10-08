@@ -6,7 +6,8 @@ open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Tests
 
-let private created raw = ArchivePath.tryCreate raw |> Expect.some
+let private created raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private en = EntryName.create
 

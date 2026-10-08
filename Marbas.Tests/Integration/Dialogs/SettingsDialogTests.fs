@@ -9,7 +9,8 @@ open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Tests
 
-let private ext raw = Expect.some (FileExtension.tryCreate raw)
+let private ext raw =
+    Expect.some (FileExtension.tryCreate raw)
 
 let private program raw = Expect.some (ProgramPath.tryCreate raw)
 
@@ -232,7 +233,9 @@ let ``an association picked out of the opening list chooses its role too`` () =
 [<Fact>]
 let ``the executable under the panel cursor fills the default editor`` () =
     use dialog = laidOutWith stored (Some(program "C:/tools/notepad++.exe"))
-    (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).SetFocus() |> ignore
+
+    (SettingsDialog.field dialog SettingsDialog.DefaultEditorId).SetFocus()
+    |> ignore
 
     press dialog SettingsDialog.CandidateId
 
@@ -280,7 +283,10 @@ let ``every button fits inside the dialog`` () =
 let ``every field fits inside the dialog`` () =
     use dialog = laidOut stored
 
-    for id in [ SettingsDialog.DefaultEditorId; SettingsDialog.ExtensionId; SettingsDialog.ProgramId ] do
+    for id in
+        [ SettingsDialog.DefaultEditorId
+          SettingsDialog.ExtensionId
+          SettingsDialog.ProgramId ] do
         let frame = (SettingsDialog.field dialog id).Frame
         Assert.True(frame.Width > 0, $"the field {id} must be wide enough to type into")
         Assert.True(frame.Bottom <= dialog.Viewport.Height, $"the field {id} at %A{frame} is clipped")

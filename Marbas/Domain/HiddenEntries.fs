@@ -11,7 +11,10 @@ type HiddenEntries =
 module EntryVisibility =
 
     let ofName (name: EntryName) =
-        if (EntryName.value name).StartsWith '.' then Hidden else Plain
+        if (EntryName.value name).StartsWith '.' then
+            Hidden
+        else
+            Plain
 
     let classify name marked =
         match ofName name with

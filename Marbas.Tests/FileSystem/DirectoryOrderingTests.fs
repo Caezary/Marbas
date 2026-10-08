@@ -15,9 +15,10 @@ let private fp = FileSystemPath.create
 let private entry name kind =
     { Name = EntryName.create name
       Kind = kind
-      Size = (match kind with
-              | File -> Some 1L
-              | Directory -> None)
+      Size =
+        (match kind with
+         | File -> Some 1L
+         | Directory -> None)
       Measured = None
       Modified = DateTimeOffset(DateTime(2026, 1, 1))
       Visibility = Plain
@@ -26,13 +27,16 @@ let private entry name kind =
       Verification = Verified }
 
 let private sized name size =
-    { entry name File with Size = Some size }
+    { entry name File with
+        Size = Some size }
 
 let private dated name day =
-    { entry name File with Modified = DateTimeOffset(DateTime(2026, 1, day)) }
+    { entry name File with
+        Modified = DateTimeOffset(DateTime(2026, 1, day)) }
 
 let private measured name size =
-    { entry name Directory with Measured = Some size }
+    { entry name Directory with
+        Measured = Some size }
 
 let private names (entries: Entry seq) =
     entries |> Seq.map (_.Name >> EntryName.value) |> List.ofSeq
@@ -68,9 +72,7 @@ let ``names are sorted alphabetically ignoring case`` () =
 [<Fact>]
 let ``names starting with punctuation come before names starting with a letter`` () =
     let unordered =
-        [ entry "beta.txt" File
-          entry "_notes.txt" File
-          entry "alpha.txt" File ]
+        [ entry "beta.txt" File; entry "_notes.txt" File; entry "alpha.txt" File ]
 
     let ordered = order byName unordered
 
@@ -107,9 +109,7 @@ let ``directories stay before files whatever the direction`` () =
 [<Fact>]
 let ``sorting by extension groups the files by what follows the last dot`` () =
     let unordered =
-        [ entry "notes.txt" File
-          entry "build.fsproj" File
-          entry "app.fs" File ]
+        [ entry "notes.txt" File; entry "build.fsproj" File; entry "app.fs" File ]
 
     let ordered = order (ascending SortKey.ByExtension) unordered
 
@@ -125,7 +125,8 @@ let ``entries sharing an extension are sorted by name`` () =
 
 [<Fact>]
 let ``sorting by date puts the oldest entry first`` () =
-    let unordered = [ dated "newest.txt" 30; dated "oldest.txt" 1; dated "middle.txt" 15 ]
+    let unordered =
+        [ dated "newest.txt" 30; dated "oldest.txt" 1; dated "middle.txt" 15 ]
 
     let ordered = order (ascending SortKey.ByDate) unordered
 
@@ -141,7 +142,8 @@ let ``sorting by date descending puts the newest entry first`` () =
 
 [<Fact>]
 let ``sorting by size puts the smallest entry first`` () =
-    let unordered = [ sized "big.txt" 4096L; sized "small.txt" 12L; sized "medium.txt" 512L ]
+    let unordered =
+        [ sized "big.txt" 4096L; sized "small.txt" 12L; sized "medium.txt" 512L ]
 
     let ordered = order (ascending SortKey.BySize) unordered
 
@@ -160,9 +162,7 @@ let ``directories are sorted by what was measured`` () =
 
 [<Fact>]
 let ``a directory measured only in part is sorted by what was counted`` () =
-    let unordered =
-        [ measured "partly" (AtLeast 9000L)
-          measured "whole" (Exact 500L) ]
+    let unordered = [ measured "partly" (AtLeast 9000L); measured "whole" (Exact 500L) ]
 
     let ordered = order (ascending SortKey.BySize) unordered
 
@@ -170,9 +170,7 @@ let ``a directory measured only in part is sorted by what was counted`` () =
 
 [<Fact>]
 let ``a directory nobody measured counts as nothing`` () =
-    let unordered =
-        [ measured "counted" (Exact 10L)
-          entry "unknown" Directory ]
+    let unordered = [ measured "counted" (Exact 10L); entry "unknown" Directory ]
 
     let ordered = order (ascending SortKey.BySize) unordered
 
@@ -231,7 +229,8 @@ let ``the parent entry stays first whatever the sort`` () =
     fs.AddFile(at "start/sub/a.txt", MockFileData "x")
 
     let entries =
-        listForDisplay fs (descending SortKey.ByName) Concealed (fp (at "start/sub")) |> Expect.ok
+        listForDisplay fs (descending SortKey.ByName) Concealed (fp (at "start/sub"))
+        |> Expect.ok
 
     Assert.Equal<string list>([ ".."; "inner"; "a.txt" ], names entries)
 

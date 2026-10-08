@@ -24,10 +24,14 @@ let private page (list: ListView) =
       PageJump.Count = count list }
 
 let private searchMessage (key: Key) =
-    if key = KeyMap.cancelKey then Some SearchCancelled
-    elif key = Key.Backspace then Some SearchBackspaced
-    elif KeyMap.printable key then Some(SearchTyped(char key.AsRune.Value))
-    else None
+    if key = KeyMap.cancelKey then
+        Some SearchCancelled
+    elif key = Key.Backspace then
+        Some SearchBackspaced
+    elif KeyMap.printable key then
+        Some(SearchTyped(char key.AsRune.Value))
+    else
+        None
 
 let private stopsAtEdge (list: ListView) (key: Key) =
     if key = Key.CursorUp || key = Key.PageUp || key = Key.Home then
@@ -51,7 +55,9 @@ let private jumpDirection (key: Key) =
     else None
 
 let private pageMessage side (list: ListView) (key: Key) =
-    let pageCursor direction = { Side = side; Index = pageTarget list direction }
+    let pageCursor direction =
+        { Side = side
+          Index = pageTarget list direction }
 
     match KeyMap.selectionPageDirection key with
     | Some direction -> Some(SelectionToggledTo(pageCursor direction))

@@ -69,7 +69,16 @@ let ``the ten slots are listed in order, each with its digit and its place`` () 
     let rows = shown dialog
 
     Assert.Equal<string list>(
-        [ "0"; "1"; "2  " + at "work"; "3"; "4"; "5  " + at "backup"; "6"; "7"; "8"; "9" ],
+        [ "0"
+          "1"
+          "2  " + at "work"
+          "3"
+          "4"
+          "5  " + at "backup"
+          "6"
+          "7"
+          "8"
+          "9" ],
         rows
     )
 

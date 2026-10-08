@@ -48,7 +48,10 @@ let ``walking out answers with the directory walked out to`` () =
     let fs = mockFs ()
 
     let state =
-        loadedBoth fs |> loadPanel fs Left (fp (at "start/docs")) |> Expect.ok |> setCursor Left 0
+        loadedBoth fs
+        |> loadPanel fs Left (fp (at "start/docs"))
+        |> Expect.ok
+        |> setCursor Left 0
 
     let result = update fs WalkIntoRequested state
 
@@ -71,7 +74,10 @@ let ``both panels in one directory are watched once`` () =
     let fs = mockFs ()
 
     let state =
-        loadedBoth fs |> loadPanel fs Right (fp (at "start/docs")) |> Expect.ok |> setCursor Left 1
+        loadedBoth fs
+        |> loadPanel fs Right (fp (at "start/docs"))
+        |> Expect.ok
+        |> setCursor Left 1
 
     let result = update fs WalkIntoRequested state
 
@@ -89,9 +95,7 @@ let ``a panel sent to a root is watched where it lands`` () =
 [<Fact>]
 let ``a panel sent to the root of its volume is watched where it lands`` () =
     let fs = mockFs ()
-    let state = loadedBoth fs
-                |> loadPanel fs Left (fp (at "start/docs"))
-                |> Expect.ok
+    let state = loadedBoth fs |> loadPanel fs Left (fp (at "start/docs")) |> Expect.ok
 
     let result = update fs VolumeRootRequested state
 

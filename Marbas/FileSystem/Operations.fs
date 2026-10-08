@@ -125,8 +125,7 @@ let private moveReplacing target fs source = moveFile fs true source target
 
 let private getFileSystemEntries (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
-    fs.Directory.EnumerateFileSystemEntries raw
-    |> Seq.map FileSystemPath.create
+    fs.Directory.EnumerateFileSystemEntries raw |> Seq.map FileSystemPath.create
 
 let isNonEmptyDirectory (fs: IFileSystem) (path: FileSystemPath) =
     match FileSystemPath.kind fs path with
@@ -319,7 +318,8 @@ let private renameDirectory (fs: IFileSystem) (source: FileSystemPath) (target: 
     | ex -> RenameFailed(mapException source ex)
 
 let private mustFinish (control: BatchControl) =
-    { control with IsCancelled = fun () -> false }
+    { control with
+        IsCancelled = fun () -> false }
 
 let moveByCopying (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath) (target: FileSystemPath) =
     result {
@@ -344,9 +344,7 @@ let moveToPath (fs: IFileSystem) (control: BatchControl) (source: FileSystemPath
         attempt fs source (moveReplacing target)
 
 let move (fs: IFileSystem) control (targetDirectory: FileSystemPath) (source: FileSystemPath) =
-    source
-    |> landingInDirectory fs targetDirectory
-    |> moveToPath fs control source
+    source |> landingInDirectory fs targetDirectory |> moveToPath fs control source
 
 type RenameStep =
     | RenameDone
@@ -360,8 +358,7 @@ let startRename (fs: IFileSystem) (source: FileSystemPath) (newName: EntryName) 
 
     match FileSystemPath.kind fs target, FileSystemPath.kind fs source with
     | NoEntry, NoEntry -> Error(SourceNotFound source)
-    | NoEntry, FileEntry ->
-        attempt fs source (moveReplacing target) |> Result.map (fun () -> RenameDone)
+    | NoEntry, FileEntry -> attempt fs source (moveReplacing target) |> Result.map (fun () -> RenameDone)
     | NoEntry, DirectoryEntry ->
         match renameDirectory fs source target with
         | Renamed -> Ok RenameDone
@@ -404,8 +401,7 @@ let approveLandings
         | source :: rest ->
             let target = landing source
 
-            let answer =
-                if occupied target then answerFor standing target else Yes
+            let answer = if occupied target then answerFor standing target else Yes
 
             match answer with
             | Cancel -> []
@@ -417,7 +413,8 @@ let approveLandings
     run AskEachTime [] sources
 
 let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources targetDirectory =
-    let occupied target = FileSystemPath.kind fs target <> NoEntry
+    let occupied target =
+        FileSystemPath.kind fs target <> NoEntry
 
     approveLandings (landingInDirectory fs targetDirectory) occupied ask sources
 

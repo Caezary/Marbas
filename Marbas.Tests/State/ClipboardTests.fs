@@ -36,7 +36,8 @@ let private indexOf name state =
     (activePanel state).Entries
     |> Array.findIndex (fun entry -> EntryName.value entry.Name = name)
 
-let private standingOn name state = setCursor Left (indexOf name state) state
+let private standingOn name state =
+    setCursor Left (indexOf name state) state
 
 let private markedOn names state =
     names
@@ -104,7 +105,9 @@ let ``a directory is named without a separator after it`` () =
 [<Fact>]
 let ``the marked entries are named in the order of the listing, whatever the cursor stands on`` () =
     let fs = mockFs ()
-    let state = started fs |> markedOn [ "readme.txt"; "docs" ] |> standingOn "notes.txt"
+
+    let state =
+        started fs |> markedOn [ "readme.txt"; "docs" ] |> standingOn "notes.txt"
 
     let result = update fs NamesCopyRequested state
 
@@ -206,7 +209,9 @@ let ``the full path of a directory carries no separator after it`` () =
 [<Fact>]
 let ``the full paths of the marked entries come in the order of the listing`` () =
     let fs = mockFs ()
-    let state = started fs |> markedOn [ "readme.txt"; "docs" ] |> standingOn "notes.txt"
+
+    let state =
+        started fs |> markedOn [ "readme.txt"; "docs" ] |> standingOn "notes.txt"
 
     let result = update fs PathsCopyRequested state
 
@@ -297,10 +302,7 @@ let ``each hit in a panel of search results gives its own full path, inside an a
 
     let result = update fs PathsCopyRequested state
 
-    Assert.Equal<Effect list>(
-        copying [ at "start/a/one.txt"; at "start/backup.zip/docs/inner.txt" ],
-        result.Effects
-    )
+    Assert.Equal<Effect list>(copying [ at "start/a/one.txt"; at "start/backup.zip/docs/inner.txt" ], result.Effects)
 
 let private linked () =
     let fs = mockFs ()
@@ -424,7 +426,10 @@ let ``a file read from the clipboard puts the active panel beside it with the cu
 
     let result = update fs (ClipboardPathRead(fp (at "start/b/two.txt"))) (started fs)
 
-    let standing = PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value)
+    let standing =
+        PanelState.cursorEntry result.State.Left
+        |> Option.map (_.Name >> EntryName.value)
+
     Assert.Equal(OnDisk(fp (at "start/b")), result.State.Left.Path)
     Assert.Equal(Some "two.txt", standing)
 
@@ -464,7 +469,10 @@ let ``a path to an entry inside an archive read from the clipboard puts the curs
     let result =
         update fs (ClipboardPathRead(fp (at "start/backup.zip/docs/inner.txt"))) (ArchiveFixture.loaded fs)
 
-    let standing = PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value)
+    let standing =
+        PanelState.cursorEntry result.State.Left
+        |> Option.map (_.Name >> EntryName.value)
+
     Assert.Equal(InArchive(ArchiveFixture.archive, docs), result.State.Left.Path)
     Assert.Equal(Some "inner.txt", standing)
 
@@ -482,7 +490,8 @@ let ``a path into an archive that does not hold it changes nothing and says noth
     let fs = ArchiveFixture.packed ()
     let state = ArchiveFixture.loaded fs
 
-    let result = update fs (ClipboardPathRead(fp (at "start/backup.zip/docs/gone.txt"))) state
+    let result =
+        update fs (ClipboardPathRead(fp (at "start/backup.zip/docs/gone.txt"))) state
 
     Assert.Equal(state.Left.Path, result.State.Left.Path)
     Assert.Empty result.Effects
@@ -495,7 +504,8 @@ let private insideArchiveRoot (fs: IFileSystem) =
     |> standInside fs Left (InArchive(ArchiveFixture.archive, ArchivePath.root))
     |> Expect.ok
 
-let private entry raw = ArchivePath.tryCreate raw |> Expect.some
+let private entry raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private mixedResults (fs: MockFileSystem) =
     fs.AddFile(at "start/a/one.txt", MockFileData "1")
@@ -526,7 +536,9 @@ let ``the file under the cursor is put on the clipboard to be copied`` () =
 [<Fact>]
 let ``the marked entries are put on the clipboard to be moved, in the order of the listing`` () =
     let fs = mockFs ()
-    let state = started fs |> markedOn [ "readme.txt"; "docs" ] |> standingOn "notes.txt"
+
+    let state =
+        started fs |> markedOn [ "readme.txt"; "docs" ] |> standingOn "notes.txt"
 
     let result = update fs (FilesOnClipboardRequested ForMoving) state
 
@@ -709,7 +721,9 @@ let ``pasting inside an archive of a kind that cannot be changed is refused by n
 [<Fact>]
 let ``pasting into a panel of search results is refused as a copy into one is`` () =
     let fs = mockFs ()
-    let state = started fs |> update fs (sentToPanel [ hitIn "start/a" "one.txt" ]) |> _.State
+
+    let state =
+        started fs |> update fs (sentToPanel [ hitIn "start/a" "one.txt" ]) |> _.State
 
     let result = update fs FilesPasteRequested state
 

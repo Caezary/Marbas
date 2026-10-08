@@ -17,7 +17,8 @@ let private fp = FileSystemPath.create
 
 let private en = EntryName.create
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private Docs = 1
 
@@ -37,7 +38,9 @@ let private historyChanges effects =
         | _ -> None)
 
 let private revisited visit =
-    HistoryAnswered { Tab = ViewHistoryTab; Choice = Some(Revisit visit) }
+    HistoryAnswered
+        { Tab = ViewHistoryTab
+          Choice = Some(Revisit visit) }
 
 let private notesOnDisk = Place.OnDisk(fp (at "work/notes.txt"))
 
@@ -60,7 +63,8 @@ let ``a file viewed inside an archive is remembered inside it`` () =
     let result = update fs ViewRequested state
 
     Assert.Equal<Effect list>(
-        [ remembered notesInArchive Viewed; ViewArchiveEntry(archive, inside "notes.txt") ],
+        [ remembered notesInArchive Viewed
+          ViewArchiveEntry(archive, inside "notes.txt") ],
         result.Effects
     )
 
@@ -80,7 +84,10 @@ let ``a file edited is remembered as edited before the editor runs`` () =
 
     let result = update fs EditRequested state
 
-    Assert.Equal<Effect list>([ remembered notesOnDisk Edited; EditFile(fp (at "work/notes.txt"), None) ], result.Effects)
+    Assert.Equal<Effect list>(
+        [ remembered notesOnDisk Edited; EditFile(fp (at "work/notes.txt"), None) ],
+        result.Effects
+    )
 
 [<Fact>]
 let ``a new file is remembered as edited before its editor runs`` () =
@@ -130,7 +137,8 @@ let ``an archive entry viewed again from the history is viewed inside the archiv
     let result = update fs (revisited { Where = notesInArchive; How = Viewed }) state
 
     Assert.Equal<Effect list>(
-        [ remembered notesInArchive Viewed; ViewArchiveEntry(archive, inside "notes.txt") ],
+        [ remembered notesInArchive Viewed
+          ViewArchiveEntry(archive, inside "notes.txt") ],
         result.Effects
     )
 
@@ -147,7 +155,8 @@ let ``a file edited again from the history goes to the editor its extension name
     let result = update fs (revisited { Where = notesOnDisk; How = Edited }) state
 
     Assert.Equal<Effect list>(
-        [ remembered notesOnDisk Edited; EditFile(fp (at "work/notes.txt"), Some chosen) ],
+        [ remembered notesOnDisk Edited
+          EditFile(fp (at "work/notes.txt"), Some chosen) ],
         result.Effects
     )
 
@@ -189,7 +198,17 @@ let ``going to a file viewed inside an archive stands the active panel beside it
     let state = inWork fs
 
     let result =
-        update fs (HistoryAnswered { Tab = ViewHistoryTab; Choice = Some(GoTo notesInArchive) }) state
+        update
+            fs
+            (HistoryAnswered
+                { Tab = ViewHistoryTab
+                  Choice = Some(GoTo notesInArchive) })
+            state
 
     Assert.Equal(InArchive(archive, ArchivePath.root), result.State.Left.Path)
-    Assert.Equal(Some "notes.txt", PanelState.cursorEntry result.State.Left |> Option.map (_.Name >> EntryName.value))
+
+    Assert.Equal(
+        Some "notes.txt",
+        PanelState.cursorEntry result.State.Left
+        |> Option.map (_.Name >> EntryName.value)
+    )

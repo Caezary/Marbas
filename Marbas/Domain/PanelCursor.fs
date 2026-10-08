@@ -1,5 +1,3 @@
 namespace Marbas.Domain
 
-type PanelCursor =
-    { Side: PanelSide
-      Index: int }
+type PanelCursor = { Side: PanelSide; Index: int }

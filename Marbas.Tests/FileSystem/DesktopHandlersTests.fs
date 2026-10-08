@@ -23,10 +23,7 @@ let private desktop name program =
 let private tree () =
     let fs = MockFileSystem()
 
-    fs.AddFile(
-        at "usr/share/mime/globs",
-        text [ "text/html:*.html"; "text/html:*.htm"; "application/pdf:*.pdf" ]
-    )
+    fs.AddFile(at "usr/share/mime/globs", text [ "text/html:*.html"; "text/html:*.htm"; "application/pdf:*.pdf" ])
 
     fs.AddFile(
         at "home/.config/mimeapps.list",
@@ -52,8 +49,7 @@ let ``an extension the mime database does not know has no handlers`` () =
     Assert.Empty(read (tree ()) "notes.zzq")
 
 [<Fact>]
-let ``a name with no extension has no handlers`` () =
-    Assert.Empty(read (tree ()) "README")
+let ``a name with no extension has no handlers`` () = Assert.Empty(read (tree ()) "README")
 
 [<Fact>]
 let ``a type nothing is registered for has no handlers`` () =

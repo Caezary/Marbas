@@ -76,7 +76,10 @@ let ``a file that vanished is reported instead of shown`` () =
     let fs = mockFs ()
     let shown = ResizeArray<string>()
     let reported = ResizeArray<string>()
-    use window = windowWith fs (recording shown) (fun report -> reported.Add report.Message)
+
+    use window =
+        windowWith fs (recording shown) (fun report -> reported.Add report.Message)
+
     (leftList window).SelectedItem <- 2
     fs.File.Delete(at "start/notes.txt")
 

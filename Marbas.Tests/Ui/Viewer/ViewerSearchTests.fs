@@ -11,8 +11,7 @@ let private wanted raw = FindText.tryCreate raw |> Option.get
 let private pattern raw =
     SearchPattern.tryCreate raw |> Expect.ok
 
-let private bytes raw =
-    WantedBytes.tryParse raw |> Expect.ok
+let private bytes raw = WantedBytes.tryParse raw |> Expect.ok
 
 let private typed raw : SearchAnswer =
     { Typed = raw
@@ -36,7 +35,8 @@ let ``text that is not there is named in the message`` () =
 
 [<Fact>]
 let ``a pattern that matched nothing is named in the message`` () =
-    let message = ViewerSearch.describe (TextNotFound(WindowSearch.Pattern(pattern "[0-9]+")))
+    let message =
+        ViewerSearch.describe (TextNotFound(WindowSearch.Pattern(pattern "[0-9]+")))
 
     Assert.Equal("'[0-9]+' was not found.", message)
 
@@ -50,7 +50,8 @@ let ``bytes that are not there are named in the message`` () =
 let ``a file that failed to read names the failure`` () =
     let path = FileSystemPath.create (Root.at "start/notes.txt")
 
-    let message = ViewerSearch.describe (SearchFailed(ReadFailed(path, "the disk went away")))
+    let message =
+        ViewerSearch.describe (SearchFailed(ReadFailed(path, "the disk went away")))
 
     Assert.Contains("the disk went away", message)
 
@@ -123,7 +124,9 @@ let ``an expression is not narrowed to whole words`` () =
 
 [<Fact>]
 let ``an expression that does not parse is refused`` () =
-    let answer = { typed "(" with TypedAs = AsExpression }
+    let answer =
+        { typed "(" with
+            TypedAs = AsExpression }
 
     let query = ViewerSearch.query answer
 

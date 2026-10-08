@@ -120,7 +120,8 @@ let ``a cancelled run names the file it had begun`` () =
     fs.AddFile(at "data/docs/secret.txt", MockFileData secret)
     let reported = ResizeArray<FileSystemPath>()
 
-    let failure = wipe fs (stoppingAfter 1 reported) (fp (at "data/docs")) |> Expect.error
+    let failure =
+        wipe fs (stoppingAfter 1 reported) (fp (at "data/docs")) |> Expect.error
 
     Assert.Equal(Cancelled(fp (at "data/docs/secret.txt")), failure)
 
@@ -192,6 +193,7 @@ let ``wipeAll wipes every source it is given and stops where it is cancelled`` (
         [ Operations.ItemOnDisk(fp (at "data/a.txt")) ],
         wiped |> List.map _.Source
     )
+
     Assert.True(fs.File.Exists(at "data/b.txt"))
 
 let private watched () =

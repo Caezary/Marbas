@@ -10,6 +10,8 @@ let format (stamp: DateTimeOffset) =
     stamp.ToString(Pattern, CultureInfo.InvariantCulture)
 
 let tryParse (text: string) =
-    match DateTimeOffset.TryParseExact(text.Trim(), Pattern, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal) with
+    match
+        DateTimeOffset.TryParseExact(text.Trim(), Pattern, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal)
+    with
     | true, stamp -> Some stamp
     | _ -> None

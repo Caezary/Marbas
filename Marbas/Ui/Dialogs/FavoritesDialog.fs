@@ -29,8 +29,7 @@ let private ListHeight = 10
 let private FrameHeight = 5
 
 type FavoritesView(favorites: Favorites) =
-    inherit
-        Dialog(Title = Title, Width = Dim.Percent SizeShare, Height = Dim.Absolute(ListHeight + FrameHeight))
+    inherit Dialog(Title = Title, Width = Dim.Percent SizeShare, Height = Dim.Absolute(ListHeight + FrameHeight))
 
     member val Favorites = favorites with get, set
 
@@ -49,7 +48,8 @@ let private rows fs width favorites =
 let private positionOf slot = FavoriteSlot.value slot
 
 let private fill (changing: Changing) (dialog: FavoritesView) =
-    let cursor = changing.Slots.SelectedItem |> Option.ofNullable |> Option.defaultValue 0
+    let cursor =
+        changing.Slots.SelectedItem |> Option.ofNullable |> Option.defaultValue 0
 
     rows changing.Fs changing.Slots.Viewport.Width dialog.Favorites
     |> ObservableCollection
@@ -82,7 +82,8 @@ let private keeping (changing: Changing) dialog =
     | _ -> ()
 
 let private emptying (changing: Changing) dialog =
-    slotUnderCursor changing.Slots |> Option.iter (EmptySlot >> changed changing dialog)
+    slotUnderCursor changing.Slots
+    |> Option.iter (EmptySlot >> changed changing dialog)
 
 let private answer (changing: Changing) (dialog: FavoritesView) (key: Key) =
     let handled act =

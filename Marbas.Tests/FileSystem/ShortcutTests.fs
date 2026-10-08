@@ -28,7 +28,16 @@ let private wideLocalInfo (basePath: string) (suffix: string) =
     let size = wideSuffixAt + wideSuffix.Length
 
     Array.concat
-        [ int32s [ size; LongInfoHeader; 1; 0; LongInfoHeader; 0; narrowSuffixAt; wideBaseAt; wideSuffixAt ]
+        [ int32s
+              [ size
+                LongInfoHeader
+                1
+                0
+                LongInfoHeader
+                0
+                narrowSuffixAt
+                wideBaseAt
+                wideSuffixAt ]
           narrowBase
           narrowSuffix
           wideBase
@@ -36,12 +45,18 @@ let private wideLocalInfo (basePath: string) (suffix: string) =
 
 let private networkInfo (share: string) (suffix: string) =
     let shareName = ansi share
-    let network = Array.append (int32s [ NetworkHeader + shareName.Length; 0; NetworkHeader; 0; 0 ]) shareName
+
+    let network =
+        Array.append (int32s [ NetworkHeader + shareName.Length; 0; NetworkHeader; 0; 0 ]) shareName
+
     let suffixAt = ShortInfoHeader + network.Length
     let suffixBytes = ansi suffix
     let size = suffixAt + suffixBytes.Length
 
-    Array.concat [ int32s [ size; ShortInfoHeader; 2; 0; 0; ShortInfoHeader; suffixAt ]; network; suffixBytes ]
+    Array.concat
+        [ int32s [ size; ShortInfoHeader; 2; 0; 0; ShortInfoHeader; suffixAt ]
+          network
+          suffixBytes ]
 
 let private parsed bytes = Shortcut.parse bytes
 
@@ -55,7 +70,8 @@ let ``a shortcut to a local file names the path it holds`` () =
 
 [<Fact>]
 let ``the common suffix follows the local base path`` () =
-    let bytes = shortcut HasLinkInfo [ localInfo (ansi @"C:\work\") (ansi @"docs\notes.txt") ]
+    let bytes =
+        shortcut HasLinkInfo [ localInfo (ansi @"C:\work\") (ansi @"docs\notes.txt") ]
 
     let target = parsed bytes
 
@@ -116,7 +132,8 @@ let ``a shortcut naming no place has no target`` () =
 
 [<Fact>]
 let ``bytes that do not open with the shell link header are no shortcut`` () =
-    let bytes = Encoding.ASCII.GetBytes "[InternetShortcut]\r\nURL=https://example.com\r\n"
+    let bytes =
+        Encoding.ASCII.GetBytes "[InternetShortcut]\r\nURL=https://example.com\r\n"
 
     let target = parsed bytes
 
@@ -150,7 +167,10 @@ let ``a name not ending in .lnk is no shortcut`` (name: string) =
 [<Fact>]
 let ``the target of a shortcut on disk is read from its bytes`` () =
     let fs = MockFileSystem()
-    let bytes = shortcut HasLinkInfo [ localInfo (ansi (at "work/notes.txt")) (ansi "") ]
+
+    let bytes =
+        shortcut HasLinkInfo [ localInfo (ansi (at "work/notes.txt")) (ansi "") ]
+
     fs.AddFile(at "start/notes.lnk", MockFileData bytes)
 
     let target = Shortcut.target fs (fp (at "start/notes.lnk"))

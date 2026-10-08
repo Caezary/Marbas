@@ -121,7 +121,8 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
     let visited = HashSet<string>(FileSystemPath.comparer platform)
 
     let crosses path =
-        ground.OtherRoots |> List.exists (fun root -> FileSystemPath.sameEntry platform root path)
+        ground.OtherRoots
+        |> List.exists (fun root -> FileSystemPath.sameEntry platform root path)
 
     let depth = depthOf query
     let wantsDirectories = FindQuery.targets query = FilesAndDirectories
@@ -161,9 +162,11 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
         | None -> hit (OnDisk directory) entry
         | Some search -> byAnswer (OnDisk directory) entry (ContentMatch.search fs control search path)
 
-    let firstVisit (identity: FileSystemPath) = visited.Add(FileSystemPath.value identity)
+    let firstVisit (identity: FileSystemPath) =
+        visited.Add(FileSystemPath.value identity)
 
-    let identityOf (entry: Entry) path = entry.LinkTarget |> Option.defaultValue path
+    let identityOf (entry: Entry) path =
+        entry.LinkTarget |> Option.defaultValue path
 
     let follows (entry: Entry) =
         match entry.LinkTarget, query.Links with
@@ -291,4 +294,7 @@ let run (fs: IFileSystem) (control: BatchControl) (report: FindReport -> unit) (
 
     start ground.Roots
 
-    if stopped then Stopped(counted ()) else Finished(counted ())
+    if stopped then
+        Stopped(counted ())
+    else
+        Finished(counted ())

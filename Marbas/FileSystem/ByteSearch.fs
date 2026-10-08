@@ -60,7 +60,7 @@ let rec private backFrom
 
 let run (control: Control) (source: FileWindow.Source) (query: Query) (from: int64) : Answer<Match> =
     let wanted = WantedBytes.value query.Bytes
-    let buffer = Array.zeroCreate<byte> (max LineIndex.ChunkLength (wanted.Length * 2))
+    let buffer = Array.zeroCreate<byte>(max LineIndex.ChunkLength (wanted.Length * 2))
 
     try
         match query.Direction with

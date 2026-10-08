@@ -27,7 +27,8 @@ let private mockFs () =
     fs.AddFile(at "start/sources.zip", MockFileData "hi")
     fs
 
-let private window () = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
+let private window () =
+    focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
 
 let private paintedRow (list: ListView) row =
     let args = ListViewRowEventArgs row
@@ -102,7 +103,9 @@ let ``a marked entry under the cursor of an unfocused panel is painted with the 
     list.SelectedItem <- 1
     press list KeyMap.selectionKeys.Head
     list.SelectedItem <- 1
-    window.AdvanceFocus(NavigationDirection.Forward, Nullable TabBehavior.TabStop) |> ignore
+
+    window.AdvanceFocus(NavigationDirection.Forward, Nullable TabBehavior.TabStop)
+    |> ignore
 
     let painted = paintedRow list 1
 
@@ -286,7 +289,11 @@ let private sentToPanel =
             { Roots = [ OnDisk(fp (at "start")) ]
               OtherRoots = [] }
           Hits = acrossArchives
-          Outcome = FileSearch.Finished { Files = 4; Directories = 0; Skipped = 0 }
+          Outcome =
+            FileSearch.Finished
+                { Files = 4
+                  Directories = 0
+                  Skipped = 0 }
           Cursor = 0 } }
 
 let private resultsWindow (reported: ResizeArray<string>) =

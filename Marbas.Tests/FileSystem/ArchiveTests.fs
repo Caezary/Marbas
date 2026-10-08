@@ -39,8 +39,7 @@ let private packed () =
     fs.AddFile(at "work/docs/deep/leaf.txt", MockFileData "leaf")
     fs
 
-let private opened (fs: IFileSystem) path =
-    fs.File.OpenRead path :> Stream
+let private opened (fs: IFileSystem) path = fs.File.OpenRead path :> Stream
 
 let private zipEntries (fs: IFileSystem) path =
     use stream = opened fs path
@@ -83,10 +82,12 @@ let private watching cancelAfter =
     reported, control
 
 let private itemNames (fs: IFileSystem) (results: ItemResult list) =
-    results |> List.map (fun item -> EntryName.value (ItemSource.name fs item.Source))
+    results
+    |> List.map (fun item -> EntryName.value (ItemSource.name fs item.Source))
 
 let private outcomes (fs: IFileSystem) (results: ItemResult list) =
-    results |> List.map (fun result -> EntryName.value (ItemSource.name fs result.Source), result.Outcome)
+    results
+    |> List.map (fun result -> EntryName.value (ItemSource.name fs result.Source), result.Outcome)
 
 [<Fact>]
 let ``a file is packed under its own name`` () =
@@ -103,7 +104,8 @@ let ``a file is packed under its own name`` () =
 let ``a directory is packed with the whole tree below it`` () =
     let fs = packed ()
 
-    Archive.write fs unattended (requested zip target) [ fp (at "work/docs") ] |> ignore
+    Archive.write fs unattended (requested zip target) [ fp (at "work/docs") ]
+    |> ignore
 
     Assert.Equal<string list>(
         [ "docs/"; "docs/deep/"; "docs/deep/leaf.txt"; "docs/inner.txt" ],
@@ -117,7 +119,8 @@ let ``an empty directory is kept as an entry of its own`` () =
     let fs = packed ()
     fs.AddDirectory(at "work/empty")
 
-    Archive.write fs unattended (requested zip target) [ fp (at "work/empty") ] |> ignore
+    Archive.write fs unattended (requested zip target) [ fp (at "work/empty") ]
+    |> ignore
 
     Assert.Equal<string list>([ "empty/" ], zipEntries fs target)
 
@@ -157,7 +160,8 @@ let ``the modification time of a file survives the packing`` () =
     file.LastWriteTime <- DateTimeOffset modified
     fs.AddFile(at "work/dated.txt", file)
 
-    Archive.write fs unattended (requested zip target) [ fp (at "work/dated.txt") ] |> ignore
+    Archive.write fs unattended (requested zip target) [ fp (at "work/dated.txt") ]
+    |> ignore
 
     Assert.Equal(modified, zipEntry fs target "dated.txt")
 
@@ -179,7 +183,8 @@ let ``several sources land side by side in one archive`` () =
 let ``a tar gz keeps the same tree with directories of its own`` () =
     let fs = packed ()
 
-    Archive.write fs unattended (requested tarGz tarTarget) [ fp (at "work/docs") ] |> ignore
+    Archive.write fs unattended (requested tarGz tarTarget) [ fp (at "work/docs") ]
+    |> ignore
 
     Assert.Equal<(string * TarEntryType) list>(
         [ "docs/", TarEntryType.Directory
@@ -209,7 +214,8 @@ let ``every packed file is reported as it goes in`` () =
     let fs = packed ()
     let reported, control = watching Int32.MaxValue
 
-    Archive.write fs control (requested zip target) [ fp (at "work/docs") ] |> ignore
+    Archive.write fs control (requested zip target) [ fp (at "work/docs") ]
+    |> ignore
 
     Assert.Equal<string list>(
         [ at "work/docs/deep/leaf.txt"; at "work/docs/inner.txt" ],
@@ -236,7 +242,8 @@ let ``a cancelled packing leaves no archive behind and nothing packed`` () =
 let ``the zip is one that any reader can open`` () =
     let fs = packed ()
 
-    Archive.write fs unattended (requested zip target) [ fp (at "work/docs") ] |> ignore
+    Archive.write fs unattended (requested zip target) [ fp (at "work/docs") ]
+    |> ignore
 
     use stream = opened fs target
     use archive = new ZipArchive(stream, ZipArchiveMode.Read)
@@ -273,7 +280,8 @@ let ``an archive that is one of the sources would pack itself`` () =
 let ``an archive in a differently cased sibling is allowed where case tells them apart`` () =
     let fs = packed ()
 
-    let refused = Archive.wouldPackItself fs (fp (at "work/DOCS/data.zip")) [ fp (at "work/docs") ]
+    let refused =
+        Archive.wouldPackItself fs (fp (at "work/DOCS/data.zip")) [ fp (at "work/docs") ]
 
     Assert.False refused
 
@@ -281,7 +289,8 @@ let ``an archive in a differently cased sibling is allowed where case tells them
 let ``an archive in a differently cased sibling would pack itself where case is ignored`` () =
     let fs = packed ()
 
-    let refused = Archive.wouldPackItself fs (fp (at "work/DOCS/data.zip")) [ fp (at "work/docs") ]
+    let refused =
+        Archive.wouldPackItself fs (fp (at "work/DOCS/data.zip")) [ fp (at "work/docs") ]
 
     Assert.True refused
 
@@ -335,7 +344,8 @@ let ``a protected zip opens with the password it was given`` () =
 let ``a zip without a password is not encrypted`` () =
     let fs = packed ()
 
-    Archive.write fs unattended (requested zip target) [ fp (at "work/notes.txt") ] |> ignore
+    Archive.write fs unattended (requested zip target) [ fp (at "work/notes.txt") ]
+    |> ignore
 
     use stream = opened fs target
     use archive = new ZipFile(stream)

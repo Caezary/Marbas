@@ -132,7 +132,11 @@ module ArchiveReader =
 
         while reading = KeepReading && walker.MoveNext() do
             let entry, openContent = walker.Current
-            reading <- step.Invoke { Info = infoOf entry; OpenContent = openContent }
+
+            reading <-
+                step.Invoke
+                    { Info = infoOf entry
+                      OpenContent = openContent }
 
     let private readingSequentially password (step: ArchiveStep) (stream: Stream) =
         use reader = ReaderFactory.OpenReader(stream, options password)
@@ -140,7 +144,11 @@ module ArchiveReader =
 
     let private readingWholeArchive password (step: ArchiveStep) (stream: Stream) =
         use archive = ArchiveFactory.OpenArchive(stream, options password)
-        walk step (archive.Entries |> Seq.map (fun entry -> entry :> IEntry, fun () -> entry.OpenEntryStream()))
+
+        walk
+            step
+            (archive.Entries
+             |> Seq.map (fun entry -> entry :> IEntry, fun () -> entry.OpenEntryStream()))
 
     let private isSequential kind =
         match kind with

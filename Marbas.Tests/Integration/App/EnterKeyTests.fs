@@ -36,7 +36,12 @@ let private Tool = 4
 [<Fact>]
 let ``Enter hands the document under the cursor to the system`` () =
     let started = ResizeArray<LaunchRequest>()
-    use window = windowWith (mockFs ()) (fun request -> started.Add request; Ok())
+
+    use window =
+        windowWith (mockFs ()) (fun request ->
+            started.Add request
+            Ok())
+
     (leftList window).SelectedItem <- Notes
 
     pressKey window Key.Enter
@@ -67,7 +72,11 @@ let ``Enter starts the program the extension is associated with`` () =
         )
     )
 
-    use window = windowWith fs (fun request -> started.Add request; Ok())
+    use window =
+        windowWith fs (fun request ->
+            started.Add request
+            Ok())
+
     (leftList window).SelectedItem <- Page
 
     pressKey window Key.Enter
@@ -77,7 +86,12 @@ let ``Enter starts the program the extension is associated with`` () =
 [<Fact>]
 let ``Enter on a directory walks into it and starts nothing`` () =
     let started = ResizeArray<LaunchRequest>()
-    use window = windowWith (mockFs ()) (fun request -> started.Add request; Ok())
+
+    use window =
+        windowWith (mockFs ()) (fun request ->
+            started.Add request
+            Ok())
+
     (leftList window).SelectedItem <- 1
 
     pressKey window Key.Enter
@@ -88,7 +102,12 @@ let ``Enter on a directory walks into it and starts nothing`` () =
 [<Fact>]
 let ``the walk-in key walks into a directory the way Enter used to`` () =
     let started = ResizeArray<LaunchRequest>()
-    use window = windowWith (mockFs ()) (fun request -> started.Add request; Ok())
+
+    use window =
+        windowWith (mockFs ()) (fun request ->
+            started.Add request
+            Ok())
+
     (leftList window).SelectedItem <- 1
 
     pressKey window KeyMap.walkIntoKey
@@ -102,7 +121,10 @@ let private askedThrough key =
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Prompts.AskHandler = fun request -> asked.Add request.Name; None }
+                Prompts.AskHandler =
+                    fun request ->
+                        asked.Add request.Name
+                        None }
 
     (leftList window).SelectedItem <- Page
 
@@ -127,8 +149,14 @@ let ``the open-with key offers the programs the system knows and starts the one 
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Processes.Launch = fun request -> started.Add request; Ok()
-                Processes.HandlersFor = fun name -> offered.Add name; []
+                Processes.Launch =
+                    fun request ->
+                        started.Add request
+                        Ok()
+                Processes.HandlersFor =
+                    fun name ->
+                        offered.Add name
+                        []
                 Prompts.AskHandler = fun _ -> Some { Program = chosen; Use = ThisTimeOnly } }
 
     (leftList window).SelectedItem <- Page
@@ -146,8 +174,14 @@ let ``the open-with key on a directory reaches the desktop without asking`` () =
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Processes.Launch = fun request -> started.Add request; Ok()
-                Prompts.AskHandler = fun request -> asked.Add request.Name; None }
+                Processes.Launch =
+                    fun request ->
+                        started.Add request
+                        Ok()
+                Prompts.AskHandler =
+                    fun request ->
+                        asked.Add request.Name
+                        None }
 
     (leftList window).SelectedItem <- 1
 
@@ -176,7 +210,12 @@ let ``a launch that fails is reported`` () =
 [<Fact>]
 let ``the elevated key hands an executable to the system with its rights raised`` () =
     let started = ResizeArray<LaunchRequest>()
-    use window = windowWith (mockFs ()) (fun request -> started.Add request; Ok())
+
+    use window =
+        windowWith (mockFs ()) (fun request ->
+            started.Add request
+            Ok())
+
     (leftList window).SelectedItem <- Tool
 
     pressKey window KeyMap.elevatedRunKey
@@ -194,7 +233,10 @@ let ``the elevated key on a document starts nothing and says why`` () =
     use window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Processes.Launch = fun request -> started.Add request; Ok()
+                Processes.Launch =
+                    fun request ->
+                        started.Add request
+                        Ok()
                 Prompts.ReportError = fun report -> reported.Add report.Message }
 
     (leftList window).SelectedItem <- Notes
@@ -223,7 +265,12 @@ let ``an elevation the user turns down leaves no trace on the screen`` () =
 [<Fact>]
 let ``Ctrl+PgDn walks in as well, where a terminal delivers it`` () =
     let started = ResizeArray<LaunchRequest>()
-    use window = windowWith (mockFs ()) (fun request -> started.Add request; Ok())
+
+    use window =
+        windowWith (mockFs ()) (fun request ->
+            started.Add request
+            Ok())
+
     (leftList window).SelectedItem <- 1
 
     pressKey window KeyMap.classicWalkIntoKey
@@ -234,7 +281,12 @@ let ``Ctrl+PgDn walks in as well, where a terminal delivers it`` () =
 [<Fact>]
 let ``Ctrl+Alt+Enter raises the rights as well, where a terminal delivers it`` () =
     let started = ResizeArray<LaunchRequest>()
-    use window = windowWith (mockFs ()) (fun request -> started.Add request; Ok())
+
+    use window =
+        windowWith (mockFs ()) (fun request ->
+            started.Add request
+            Ok())
+
     (leftList window).SelectedItem <- Tool
 
     pressKey window KeyMap.classicElevatedRunKey

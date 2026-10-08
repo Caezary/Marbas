@@ -48,7 +48,8 @@ let read (fs: IFileSystem) (path: FileSystemPath) (level: ArchivePath) : Result<
     ArchiveIndex.read fs path |> Result.map (atLevel level)
 
 let private archiveParent (fs: IFileSystem) (path: FileSystemPath) =
-    DateTimeOffset(fs.FileInfo.New(FileSystemPath.value path).LastWriteTime) |> parentEntry
+    DateTimeOffset(fs.FileInfo.New(FileSystemPath.value path).LastWriteTime)
+    |> parentEntry
 
 let listForDisplay (fs: IFileSystem) (sort: SortOrder) (hidden: HiddenEntries) path level =
     read fs path level

@@ -23,7 +23,8 @@ let private tarArchive = at "backup/data.tar.gz"
 
 let private destination = at "out"
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private packing format path password =
     { Path = fp path
@@ -56,7 +57,9 @@ let private packed password =
 
 let private keyedByHand (fs: IFileSystem) path (keys: string list) =
     use stream = fs.File.Create path
-    use written = new IO.Compression.ZipArchive(stream, IO.Compression.ZipArchiveMode.Create, true)
+
+    use written =
+        new IO.Compression.ZipArchive(stream, IO.Compression.ZipArchiveMode.Create, true)
 
     keys |> List.iter (written.CreateEntry >> ignore)
 
@@ -78,16 +81,19 @@ let private damagedPath error =
     | _ -> None
 
 let private itemNames (fs: IFileSystem) (results: ItemResult list) =
-    results |> List.map (fun item -> EntryName.value (ItemSource.name fs item.Source))
+    results
+    |> List.map (fun item -> EntryName.value (ItemSource.name fs item.Source))
 
 let private outcomes (fs: IFileSystem) (results: ItemResult list) =
-    results |> List.map (fun result -> EntryName.value (ItemSource.name fs result.Source), result.Outcome)
+    results
+    |> List.map (fun result -> EntryName.value (ItemSource.name fs result.Source), result.Outcome)
 
 [<Fact>]
 let ``a file target is written under the destination`` () =
     let fs = packed None
 
-    extracted fs unattended (unpacking archive None) [ inside "notes.txt" ] |> ignore
+    extracted fs unattended (unpacking archive None) [ inside "notes.txt" ]
+    |> ignore
 
     Assert.Equal("notes", fs.File.ReadAllText(at "out/notes.txt"))
 
@@ -105,7 +111,8 @@ let ``a directory target takes the tree below it`` () =
 let ``a target deeper in the archive is written under its own name`` () =
     let fs = packed None
 
-    extracted fs unattended (unpacking archive None) [ inside "docs/deep" ] |> ignore
+    extracted fs unattended (unpacking archive None) [ inside "docs/deep" ]
+    |> ignore
 
     Assert.Equal("leaf", fs.File.ReadAllText(at "out/deep/leaf.txt"))
     Assert.False(fs.Directory.Exists(at "out/docs"))
@@ -124,7 +131,9 @@ let ``what was packed comes back as the tree it started from`` () =
 
     Assert.Equal<string list>(
         [ at "out/docs/deep"; at "out/docs/empty"; at "out/docs/inner.txt" ],
-        fs.Directory.EnumerateFileSystemEntries(at "out/docs") |> List.ofSeq |> List.sort
+        fs.Directory.EnumerateFileSystemEntries(at "out/docs")
+        |> List.ofSeq
+        |> List.sort
     )
 
 [<Fact>]
@@ -144,9 +153,12 @@ let ``the modification time of a file is restored`` () =
     let file = MockFileData "dated"
     file.LastWriteTime <- DateTimeOffset modified
     fs.AddFile(at "work/dated.txt", file)
-    Archive.write fs unattended (packing zip archive None) [ fp (at "work/dated.txt") ] |> ignore
 
-    extracted fs unattended (unpacking archive None) [ inside "dated.txt" ] |> ignore
+    Archive.write fs unattended (packing zip archive None) [ fp (at "work/dated.txt") ]
+    |> ignore
+
+    extracted fs unattended (unpacking archive None) [ inside "dated.txt" ]
+    |> ignore
 
     Assert.Equal(modified, fs.FileInfo.New(at "out/dated.txt").LastWriteTime)
 
@@ -154,12 +166,10 @@ let ``the modification time of a file is restored`` () =
 let ``every target answers for itself`` () =
     let fs = packed None
 
-    let results = extracted fs unattended (unpacking archive None) [ inside "notes.txt"; inside "docs" ]
+    let results =
+        extracted fs unattended (unpacking archive None) [ inside "notes.txt"; inside "docs" ]
 
-    Assert.Equal<(string * Result<unit, OperationError>) list>(
-        [ "notes.txt", Ok(); "docs", Ok() ],
-        outcomes fs results
-    )
+    Assert.Equal<(string * Result<unit, OperationError>) list>([ "notes.txt", Ok(); "docs", Ok() ], outcomes fs results)
 
 [<Fact>]
 let ``every entry is reported as it is written`` () =
@@ -178,7 +188,8 @@ let ``a cancelled run stops where it stood and keeps what it wrote`` () =
     let fs = packed None
     let _, control = watching 1
 
-    let results = extracted fs control (unpacking archive None) [ inside "notes.txt"; inside "docs" ]
+    let results =
+        extracted fs control (unpacking archive None) [ inside "notes.txt"; inside "docs" ]
 
     Assert.Equal<string list>([ "notes.txt" ], itemNames fs results)
     Assert.Equal("notes", fs.File.ReadAllText(at "out/notes.txt"))
@@ -201,7 +212,8 @@ let ``a file target written before the run was cancelled counts as unpacked`` ()
     let fs = packed None
     let _, control = watching 1
 
-    let results = extracted fs control (unpacking archive None) [ inside "notes.txt"; inside "docs" ]
+    let results =
+        extracted fs control (unpacking archive None) [ inside "notes.txt"; inside "docs" ]
 
     Assert.Equal<(string * Result<unit, OperationError>) list>([ "notes.txt", Ok() ], outcomes fs results)
 
@@ -210,7 +222,8 @@ let ``a cancelled run leaves out the targets the archive had not reached, whatev
     let fs = packed None
     let _, control = watching 1
 
-    let results = extracted fs control (unpacking archive None) [ inside "docs"; inside "notes.txt" ]
+    let results =
+        extracted fs control (unpacking archive None) [ inside "docs"; inside "notes.txt" ]
 
     Assert.Equal<string list>([ "notes.txt" ], itemNames fs results)
     Assert.False(fs.Directory.Exists(at "out/docs"))
@@ -219,21 +232,21 @@ let ``a cancelled run leaves out the targets the archive had not reached, whatev
 let ``the targets answer in the order they were given, not in the archive's`` () =
     let fs = packed None
 
-    let results = extracted fs unattended (unpacking archive None) [ inside "docs"; inside "notes.txt" ]
+    let results =
+        extracted fs unattended (unpacking archive None) [ inside "docs"; inside "notes.txt" ]
 
-    Assert.Equal<(string * Result<unit, OperationError>) list>(
-        [ "docs", Ok(); "notes.txt", Ok() ],
-        outcomes fs results
-    )
+    Assert.Equal<(string * Result<unit, OperationError>) list>([ "docs", Ok(); "notes.txt", Ok() ], outcomes fs results)
 
 [<Fact>]
 let ``a target the archive does not hold is not found beside the ones it does`` () =
     let fs = packed None
 
-    let results = extracted fs unattended (unpacking archive None) [ inside "missing.txt"; inside "notes.txt" ]
+    let results =
+        extracted fs unattended (unpacking archive None) [ inside "missing.txt"; inside "notes.txt" ]
 
     Assert.Equal<(string * Result<unit, OperationError>) list>(
-        [ "missing.txt", Error(SourceNotFound(fp (at "backup/data.zip/missing.txt"))); "notes.txt", Ok() ],
+        [ "missing.txt", Error(SourceNotFound(fp (at "backup/data.zip/missing.txt")))
+          "notes.txt", Ok() ],
         outcomes fs results
     )
 
@@ -243,12 +256,20 @@ let ``a target the archive does not hold is not found beside the ones it does`` 
 let ``an unpack of many targets reads the archive once`` name =
     let fs = planted (Fakes.ReadCounting())
     let path = at ("backup/" + name)
-    let format = ArchiveKind.recognise (EntryName.create name) |> Option.bind ArchiveFormat.tryCreate |> Expect.some
-    Archive.write fs unattended (packing format path None) (sources @ [ fp (at "work/docs/deep") ]) |> ignore
+
+    let format =
+        ArchiveKind.recognise (EntryName.create name)
+        |> Option.bind ArchiveFormat.tryCreate
+        |> Expect.some
+
+    Archive.write fs unattended (packing format path None) (sources @ [ fp (at "work/docs/deep") ])
+    |> ignore
+
     ArchiveIndex.read fs (fp path) |> ignore
     let before = fs.Reads path
 
-    extracted fs unattended (unpacking path None) [ inside "notes.txt"; inside "docs"; inside "deep" ] |> ignore
+    extracted fs unattended (unpacking path None) [ inside "notes.txt"; inside "docs"; inside "deep" ]
+    |> ignore
 
     Assert.Equal(1, fs.Reads path - before)
 
@@ -256,7 +277,8 @@ let ``an unpack of many targets reads the archive once`` name =
 let ``a target the archive does not hold is not found`` () =
     let fs = packed None
 
-    let results = extracted fs unattended (unpacking archive None) [ inside "missing.txt" ]
+    let results =
+        extracted fs unattended (unpacking archive None) [ inside "missing.txt" ]
 
     Assert.Equal<(string * Result<unit, OperationError>) list>(
         [ "missing.txt", Error(SourceNotFound(fp (at "backup/data.zip/missing.txt"))) ],
@@ -282,7 +304,8 @@ let ``a target that fails leaves the others in the same walk to be unpacked`` ()
     let fs = tree ()
     keyedByHand fs archive [ "docs/../../evil.txt"; "notes.txt" ]
 
-    let results = extracted fs unattended (unpacking archive None) [ inside "docs"; inside "notes.txt" ]
+    let results =
+        extracted fs unattended (unpacking archive None) [ inside "docs"; inside "notes.txt" ]
 
     Assert.Equal<(string * Result<unit, OperationError>) list>(
         [ "docs", Error(EntryOutsideTarget(fp (at "evil.txt"))); "notes.txt", Ok() ],
@@ -293,7 +316,9 @@ let ``a target that fails leaves the others in the same walk to be unpacked`` ()
 let ``a protected archive says a password is needed`` () =
     let fs = packed (ArchivePassword.tryCreate "letmein")
 
-    let error = Archive.extract fs unattended (unpacking archive None) [ inside "notes.txt" ] |> Expect.error
+    let error =
+        Archive.extract fs unattended (unpacking archive None) [ inside "notes.txt" ]
+        |> Expect.error
 
     Assert.Equal(PasswordNeeded(fp archive), error)
 
@@ -345,6 +370,7 @@ let private plan path password targets =
 [<Fact>]
 let ``several archives are emptied in one batch`` () =
     let fs = packed None
+
     Archive.write fs unattended (packing zip (at "backup/other.zip") None) [ fp (at "work/docs") ]
     |> ignore
 
@@ -355,10 +381,7 @@ let ``several archives are emptied in one batch`` () =
             [ plan archive None [ inside "notes.txt" ]
               plan (at "backup/other.zip") None [ inside "docs" ] ]
 
-    Assert.Equal<(string * Result<unit, OperationError>) list>(
-        [ "notes.txt", Ok(); "docs", Ok() ],
-        outcomes fs results
-    )
+    Assert.Equal<(string * Result<unit, OperationError>) list>([ "notes.txt", Ok(); "docs", Ok() ], outcomes fs results)
 
     Assert.Equal("notes", fs.File.ReadAllText(at "out/notes.txt"))
     Assert.Equal("inner", fs.File.ReadAllText(at "out/docs/inner.txt"))

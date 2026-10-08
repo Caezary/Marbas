@@ -35,7 +35,8 @@ let ``a protected archive says a password is needed`` () =
 
 [<Fact>]
 let ``a damaged archive carries the reason it gave`` () =
-    let message = ArchiveErrorMessage.describe (ArchiveDamaged(fp archive, "unknown header"))
+    let message =
+        ArchiveErrorMessage.describe (ArchiveDamaged(fp archive, "unknown header"))
 
     Assert.Contains(archive, message)
     Assert.Contains("unknown header", message)
@@ -45,7 +46,8 @@ let ``archives that cannot be read are each named, with the hits inside them sai
     let other = at "backup/other.zip"
 
     let message =
-        ArchiveErrorMessage.describeUnverified [ ArchiveDamaged(fp archive, "unknown header"); PasswordNeeded(fp other) ]
+        ArchiveErrorMessage.describeUnverified
+            [ ArchiveDamaged(fp archive, "unknown header"); PasswordNeeded(fp other) ]
 
     Assert.Contains(archive, message)
     Assert.Contains("unknown header", message)
@@ -68,7 +70,8 @@ let ``a kind that cannot be changed says so with its path`` () =
 
 [<Fact>]
 let ``an archive behind a password says why it cannot be changed`` () =
-    let message = ArchiveErrorMessage.describe (ProtectedArchiveCannotBeChanged(fp archive))
+    let message =
+        ArchiveErrorMessage.describe (ProtectedArchiveCannotBeChanged(fp archive))
 
     Assert.Contains(archive, message)
     Assert.Contains("password", message)

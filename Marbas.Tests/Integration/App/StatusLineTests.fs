@@ -19,7 +19,8 @@ let private mockFs () =
 
 let private statusText (window: Window) = (panel StatusLine.Id window).Text
 
-let private startedWindow () = focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
+let private startedWindow () =
+    focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
 
 [<Fact>]
 let ``the window has a status line above the function key bar`` () =

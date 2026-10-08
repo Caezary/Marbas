@@ -170,15 +170,13 @@ let private stay state = { State = state; Effects = [] }
 
 let private request state effect = { State = state; Effects = [ effect ] }
 
-let private reporting state error = request state (ReportOperationError error)
+let private reporting state error =
+    request state (ReportOperationError error)
 
 let private refuseUnchangeable (fs: IFileSystem) state archives effect =
     match archives |> List.tryFind (Archive.changeableKind fs >> Option.isNone) with
     | None -> request state effect
-    | Some unchangeable ->
-        KindCannotBeChanged unchangeable
-        |> Operations.ArchiveFailed
-        |> reporting state
+    | Some unchangeable -> KindCannotBeChanged unchangeable |> Operations.ArchiveFailed |> reporting state
 
 let private places source =
     match source with
@@ -379,7 +377,12 @@ let private editing (fs: IFileSystem) state =
     | Some(archive, entry) -> notEditable fs archive entry |> reporting state
     | None ->
         match cursorFilePath fs target, cursorDirectoryPath fs target with
-        | Some path, _ -> visiting fs state { Where = Place.OnDisk path; How = Edited }
+        | Some path, _ ->
+            visiting
+                fs
+                state
+                { Where = Place.OnDisk path
+                  How = Edited }
         | _, Some path -> EntryProperties.read fs path |> showingProperties state
         | None, None -> stay state
 
@@ -433,7 +436,9 @@ let private handingOver intent paths =
 
 let private filesOnClipboard (fs: IFileSystem) state intent groups =
     match archiveEntries groups, intent with
-    | [], _ -> { State = state; Effects = handingOver intent (diskPaths groups) }
+    | [], _ ->
+        { State = state
+          Effects = handingOver intent (diskPaths groups) }
     | (archive, entry) :: _, ForMoving ->
         ArchivePath.spelled fs archive entry
         |> Operations.ArchiveEntryNotCut
@@ -493,7 +498,8 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         match (activePanel state).Path with
         | OnDisk directory -> makeDirectory fs state.Active directory name state |> applyMade name state
         | InArchive(archive, level) ->
-            makeEntryDirectory fs state.Active archive level name state |> applyMade name state
+            makeEntryDirectory fs state.Active archive level name state
+            |> applyMade name state
         | SearchResults _ -> stay state
     | DeleteRequested mode ->
         let target = activePanel state
@@ -650,8 +656,18 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         let target = activePanel state
 
         match cursorFilePath fs target, PanelState.cursorFileInArchive target with
-        | Some path, _ -> visiting fs state { Where = Place.OnDisk path; How = Viewed }
-        | _, Some(archive, entry) -> visiting fs state { Where = Place.InArchive(archive, entry); How = Viewed }
+        | Some path, _ ->
+            visiting
+                fs
+                state
+                { Where = Place.OnDisk path
+                  How = Viewed }
+        | _, Some(archive, entry) ->
+            visiting
+                fs
+                state
+                { Where = Place.InArchive(archive, entry)
+                  How = Viewed }
         | None, None ->
             match measureTargets fs target with
             | [] -> stay state
@@ -669,7 +685,12 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | Some directory ->
             match makeFile fs state.Active directory name state with
             | Error error -> reporting state error
-            | Ok(updated, path) -> visiting fs updated { Where = Place.OnDisk path; How = Edited }
+            | Ok(updated, path) ->
+                visiting
+                    fs
+                    updated
+                    { Where = Place.OnDisk path
+                      How = Edited }
     | PropertiesEntered properties -> applyProperties fs properties state |> applyOperation state
     | SettingsRequested ->
         let candidate =
@@ -746,7 +767,11 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | None -> stay state
     | ClipboardRefused ClipboardUnavailable ->
         match state.ClipboardReport with
-        | Unreported -> request { state with ClipboardReport = Reported } (ReportClipboardError ClipboardUnavailable)
+        | Unreported ->
+            request
+                { state with
+                    ClipboardReport = Reported }
+                (ReportClipboardError ClipboardUnavailable)
         | Reported -> stay state
     | ClipboardRefused error -> request state (ReportClipboardError error)
     | FilesOnClipboardRequested intent ->
@@ -786,7 +811,8 @@ let private movesPanelsItself msg =
     | _ -> false
 
 let private landedPlace before after side =
-    let placeIn state = Place.ofLocation (panel side state).Path
+    let placeIn state =
+        Place.ofLocation (panel side state).Path
 
     match placeIn after with
     | Some landed when placeIn before <> Some landed -> Some landed

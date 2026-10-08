@@ -17,7 +17,8 @@ let private slot digit =
 
 [<Fact>]
 let ``a slot holding a directory shows its digit and the path`` () =
-    let row = FavoriteRow.describe (MockFileSystem()) 60 (slot 3) (Some(Place.OnDisk(fp (at "work"))))
+    let row =
+        FavoriteRow.describe (MockFileSystem()) 60 (slot 3) (Some(Place.OnDisk(fp (at "work"))))
 
     Assert.Equal("3  " + at "work", row)
 
@@ -29,7 +30,8 @@ let ``an empty slot is its digit and nothing else`` () =
 
 [<Fact>]
 let ``a level inside an archive shows the archive's path and the level`` () =
-    let place = Place.InArchive(fp (at "backup.zip"), Expect.some (ArchivePath.tryCreate "docs/2024"))
+    let place =
+        Place.InArchive(fp (at "backup.zip"), Expect.some (ArchivePath.tryCreate "docs/2024"))
 
     let row = FavoriteRow.describe (MockFileSystem()) 60 (slot 7) (Some place)
 
@@ -37,7 +39,8 @@ let ``a level inside an archive shows the archive's path and the level`` () =
 
 [<Fact>]
 let ``a path wider than the row is shortened in the middle`` () =
-    let place = Place.OnDisk(fp (at "projects/clients/northwind/reports/quarterly/2026/drafts"))
+    let place =
+        Place.OnDisk(fp (at "projects/clients/northwind/reports/quarterly/2026/drafts"))
 
     let row = FavoriteRow.describe (MockFileSystem()) 30 (slot 5) (Some place)
 

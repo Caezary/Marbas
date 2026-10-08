@@ -11,7 +11,8 @@ let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private inside raw = ArchivePath.tryCreate raw |> Expect.some
+let private inside raw =
+    ArchivePath.tryCreate raw |> Expect.some
 
 let private source = fp (at "start/from.zip")
 
@@ -59,7 +60,8 @@ let private names (fs: IFileSystem) archive level =
     |> List.sort
 
 let private outcomes (fs: IFileSystem) (results: Operations.ItemResult list) =
-    results |> List.map (fun item -> EntryName.value (Operations.ItemSource.name fs item.Source), item.Outcome)
+    results
+    |> List.map (fun item -> EntryName.value (Operations.ItemSource.name fs item.Source), item.Outcome)
 
 let private stopped () =
     { Operations.unattended with
@@ -92,7 +94,9 @@ let ``a directory copied between archives brings the tree below it`` () =
 [<Fact>]
 let ``an entry copied into a level below the top lands there`` () =
     let fs = both Zip Zip
-    Archive.makeEntryDirectory fs target ArchivePath.root (EntryName.create "held") |> Expect.ok
+
+    Archive.makeEntryDirectory fs target ArchivePath.root (EntryName.create "held")
+    |> Expect.ok
 
     Archive.copyToArchive fs Operations.unattended (request source) [ inside "notes.txt" ] target (inside "held")
     |> Expect.ok
@@ -104,7 +108,9 @@ let ``an entry copied into a level below the top lands there`` () =
 [<InlineData("tar.gz")>]
 [<InlineData("7z")>]
 let ``an entry crosses between kinds that are not the same`` extension =
-    let intoKind = ArchiveKind.recognise (EntryName.create $"into.{extension}") |> Expect.some
+    let intoKind =
+        ArchiveKind.recognise (EntryName.create $"into.{extension}") |> Expect.some
+
     let into = fp (at $"start/into.{extension}")
 
     let fs =
@@ -117,7 +123,9 @@ let ``an entry crosses between kinds that are not the same`` extension =
             fs
 
     packing (at "start/from.zip") Zip [ fp (at "work/notes.txt") ] fs |> ignore
-    packing (at $"start/into.{extension}") intoKind [ fp (at "other/kept.txt") ] fs |> ignore
+
+    packing (at $"start/into.{extension}") intoKind [ fp (at "other/kept.txt") ] fs
+    |> ignore
 
     Archive.copyToArchive fs Operations.unattended (request source) [ inside "notes.txt" ] into ArchivePath.root
     |> Expect.ok
@@ -160,7 +168,13 @@ let ``a target archive that cannot be changed refuses the whole crossing`` () =
     let unchangeable = fp (at "start/into.rar")
 
     let refusal =
-        Archive.copyToArchive fs Operations.unattended (request source) [ inside "notes.txt" ] unchangeable ArchivePath.root
+        Archive.copyToArchive
+            fs
+            Operations.unattended
+            (request source)
+            [ inside "notes.txt" ]
+            unchangeable
+            ArchivePath.root
         |> Expect.error
 
     Assert.Equal(KindCannotBeChanged unchangeable, refusal)
