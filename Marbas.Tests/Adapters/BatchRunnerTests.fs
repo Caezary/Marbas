@@ -4,6 +4,7 @@ open System
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.State
 open Marbas.Adapters
 open Marbas.Tests
 
@@ -70,3 +71,27 @@ let ``a report made after the batch is cancelled is not queued`` () =
     control.Report path
 
     Assert.Empty queued
+
+[<Fact>]
+let ``every report of a batch is counted`` () =
+    let counted = ref 0
+
+    let control =
+        BatchRunner.counting (fun () -> counted.Value <- counted.Value + 1) Operations.unattended
+
+    control.Report path
+    control.Report path
+
+    Assert.Equal(2, counted.Value)
+
+[<Fact>]
+let ``a batch that ran to its end concludes as finished`` () =
+    let entry = BatchRunner.concluded "Copying" (fun () -> false) 12
+
+    Assert.Equal(BatchFinished("Copying", 12), entry)
+
+[<Fact>]
+let ``a cancelled batch concludes as cancelled, with what it reported before it stopped`` () =
+    let entry = BatchRunner.concluded "Copying" (fun () -> true) 3
+
+    Assert.Equal(BatchCancelled("Copying", 3), entry)

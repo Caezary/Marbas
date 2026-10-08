@@ -23,10 +23,12 @@ let private following dispatch effect =
     | FollowUp -> dispatch Bump
     | Marked _ -> ()
 
+let private unobserved _ _ = ()
+
 [<Fact>]
 let ``dispatch applies the update and renders the new state`` () =
     let renders = ResizeArray<int>()
-    let runtime = Runtime(0, step, (fun _ _ -> ()), renders.Add)
+    let runtime = Runtime(0, step, (fun _ _ -> ()), renders.Add, unobserved)
 
     runtime.Dispatch Bump
 
@@ -36,7 +38,7 @@ let ``dispatch applies the update and renders the new state`` () =
 [<Fact>]
 let ``effects are interpreted after the render and can dispatch a follow-up`` () =
     let renders = ResizeArray<int>()
-    let runtime = Runtime(0, step, following, renders.Add)
+    let runtime = Runtime(0, step, following, renders.Add, unobserved)
 
     runtime.Dispatch Cascade
 
@@ -51,7 +53,7 @@ let ``the effects of the message that dispatched run before the effects it dispa
         seen.Add effect
         following dispatch effect
 
-    let runtime = Runtime(0, step, watching, ignore)
+    let runtime = Runtime(0, step, watching, ignore, unobserved)
 
     runtime.Dispatch Branching
 
@@ -60,7 +62,7 @@ let ``the effects of the message that dispatched run before the effects it dispa
 
 [<Fact>]
 let ``a runtime is not rendering before anything is dispatched`` () =
-    let runtime = Runtime(0, step, (fun _ _ -> ()), ignore)
+    let runtime = Runtime(0, step, (fun _ _ -> ()), ignore, unobserved)
 
     let rendering = runtime.IsRendering
 
@@ -74,7 +76,7 @@ let ``rendering is observable only while the render callback runs`` () =
     let render _ =
         observed.Add runtimeRef.Value.IsRendering
 
-    let runtime = Runtime(0, step, (fun _ _ -> ()), render)
+    let runtime = Runtime(0, step, (fun _ _ -> ()), render, unobserved)
     runtimeRef.Value <- runtime
 
     runtime.Dispatch Bump
@@ -85,9 +87,20 @@ let ``rendering is observable only while the render callback runs`` () =
 [<Fact>]
 let ``refresh re-renders the current state without changing it`` () =
     let renders = ResizeArray<int>()
-    let runtime = Runtime(7, step, (fun _ _ -> ()), renders.Add)
+    let runtime = Runtime(7, step, (fun _ _ -> ()), renders.Add, unobserved)
 
     runtime.Refresh()
 
     Assert.Equal(7, runtime.State)
     Assert.Equal<int list>([ 7 ], List.ofSeq renders)
+
+[<Fact>]
+let ``each drained message is observed with the state it arrives at`` () =
+    let observed = ResizeArray<Msg * int>()
+
+    let runtime =
+        Runtime(0, step, following, ignore, (fun msg state -> observed.Add(msg, state)))
+
+    runtime.Dispatch Cascade
+
+    Assert.Equal<(Msg * int) list>([ Cascade, 0; Bump, 10 ], List.ofSeq observed)

@@ -5,6 +5,7 @@ open System.IO.Abstractions
 open Terminal.Gui.App
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.State
 open Marbas.Ui.App
 
 let private sendToTrash (fs: IFileSystem) (env: HostEnvironment) =
@@ -40,7 +41,7 @@ let private handlersFor (fs: IFileSystem) (env: HostEnvironment) =
 let private runEditor (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) =
     EditorProcess.run fs (fun () -> app.ClearScreenNextIteration <- true) env.Editor env.Platform
 
-let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.Dependencies =
+let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) (log: LogEntry -> unit) : Ports.Dependencies =
     let links = NativeLinks.forPlatform env.Platform
     let settingsPath = Settings.location fs env.ApplicationData env.UserProfile
 
@@ -53,6 +54,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
       WorkspacePath = Workspace.location fs env.TemporaryRoot env.Session
       Clock = fun () -> DateTimeOffset.Now
       OnQuit = fun () -> app.RequestStop()
+      Log = log
       Prompts =
         { ReportError = Prompts.reportError app
           Confirm = Prompts.confirm app
@@ -91,6 +93,6 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) : Ports.
         { Modifiers = watchModifiers app env
           Locations = DirectoryWatch.watching app fs }
       Runners =
-        { Batch = BatchRunner.run app
-          Measure = BatchRunner.runMeasuring app
+        { Batch = BatchRunner.run app log
+          Measure = BatchRunner.runMeasuring app log
           Search = SearchRunner.run app fs } }

@@ -232,6 +232,7 @@
     <Compile Include="Ui\App\EditorCommandTests.fs" />
     <Compile Include="Ui\App\ShellTests.fs" />
     <Compile Include="Ui\App\ShellPlacesTests.fs" />
+    <Compile Include="Ui\App\ShellLogTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -244,6 +245,7 @@
     <Compile Include="Adapters\NativeLinksTests.fs" />
     <Compile Include="Adapters\SystemClipboardTests.fs" />
     <Compile Include="Adapters\CrashesTests.fs" />
+    <Compile Include="Adapters\DebugLogTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -327,6 +329,7 @@
 
   <ItemGroup>
     <Compile Include="Integration\App\MainWindowTests.fs" />
+    <Compile Include="Integration\App\DebugLogTests.fs" />
     <Compile Include="Integration\App\AppViewTests.fs" />
     <Compile Include="Integration\App\StatusLineTests.fs" />
     <Compile Include="Integration\App\ListingErrorTests.fs" />

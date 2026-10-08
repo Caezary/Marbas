@@ -157,9 +157,10 @@ Marbas/
     CommandExpansion.fs   a user menu command line + the panels -> the program and its arguments,
                           or why it refuses
     Update.fs             messages and effects: message + state -> state + effects
-    LogEntry.fs           what the log records, and the stamped lines each entry becomes
+    LogEntry.fs           what the log records, the panel a message concerns, and the
+                          stamped lines each entry becomes, case names only
     Runtime.fs            generic host: the single mutable cell, the message
-                          queue, one drain loop over update/render/interpret
+                          queue, one drain loop over observe/update/render/interpret
   Ui/                     nine folders, compiled in this order; every
                           dependency points at a folder listed above it
     Theme/                the look, applied before any view is built
@@ -253,13 +254,13 @@ Marbas/
       StatusLine.fs         the status line view
       TabCounter.fs         which tab is in front, of how many, in the corner
       AppView.fs            window, both panels, the status line and the counter
-      Ports.fs              the ports: prompts, processes, watches and runners
+      Ports.fs              the ports: prompts, processes, watches, runners and the log
       Shell.fs              the effect interpreter
       EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
       MainWindow.fs         composition: views, runtime, event wiring
   Adapters/               the real implementations of Ports.Dependencies;
                           the only folder allowed to touch the OS
-    HostEnvironment.fs    platform, home directories and `$EDITOR`, read once
+    HostEnvironment.fs    platform, home directories, `$EDITOR` and `--debug`, read once
     WindowSearchRunner.fs the viewer's search on a background task under the progress dialog
     Prompts.fs            the message boxes and popups the application runs
     RecycleBin.fs         the Windows recycle bin, through the VB runtime
@@ -268,17 +269,20 @@ Marbas/
     CommandProcess.fs     a user menu command started directly or through the shell, never waited on
     NativeLinks.fs        hard links and junctions through kernel32 and libc
     RegistryHandlers.fs   the Windows registry -> the handlers a name has
-    BatchRunner.fs        a batch on a background task under the progress dialog
+    BatchRunner.fs        a batch on a background task under the progress dialog;
+                          its start and its end, with the items it reported, logged
     SearchRunner.fs       the walk on a background task, hits gathered ten times a second
     ModifierWatch.fs      held Ctrl / Alt / Shift, polled on Windows, absent elsewhere
     DirectoryWatch.fs     the directories on screen watched, bursts collapsed,
                           what the watcher cannot say polled for
     Crashes.fs            a session that throws, an unhandled thread and an
                           unawaited task -> a crash written to the log
+    DebugLog.fs           the log port: every entry with `--debug`, none without
     Dependencies.fs       every port bound to one implementation, platform picked here
     Session.fs            quit key, application, theme, dependencies, window, run
                           under the crash hooks; the pointer to the log after a crash
-  Program.fs              hands the real file system and environment to Session.run
+  Program.fs              hands its arguments, the real file system and the
+                          environment to Session.run
   Properties/PublishProfiles/
     win-x64.pubxml        self-contained single-file build for Windows
     linux-x64.pubxml      the same for Linux

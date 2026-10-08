@@ -3,6 +3,21 @@ namespace Marbas.Adapters
 open System
 open Marbas.Domain
 
+type Logging =
+    | CrashesOnly
+    | EveryTransition
+
+module Logging =
+
+    [<Literal>]
+    let DebugSwitch = "--debug"
+
+    let ofArguments (arguments: string array) =
+        if Array.contains DebugSwitch arguments then
+            EveryTransition
+        else
+            CrashesOnly
+
 type HostEnvironment =
     { Platform: Platform
       UserProfile: string
@@ -14,7 +29,8 @@ type HostEnvironment =
       TemporaryRoot: string
       Session: string
       SearchPath: string
-      Editor: string option }
+      Editor: string option
+      Logging: Logging }
 
 module HostEnvironment =
 
@@ -36,7 +52,7 @@ module HostEnvironment =
     [<Literal>]
     let SearchPathVariable = "PATH"
 
-    let current () =
+    let current (arguments: string array) =
         { Platform = if OperatingSystem.IsWindows() then Windows else Unix
           UserProfile = Environment.GetFolderPath Environment.SpecialFolder.UserProfile
           ApplicationData = Environment.GetFolderPath Environment.SpecialFolder.ApplicationData
@@ -47,7 +63,8 @@ module HostEnvironment =
           TemporaryRoot = IO.Path.GetTempPath()
           Session = Guid.NewGuid().ToString "N"
           SearchPath = Environment.GetEnvironmentVariable SearchPathVariable
-          Editor = Environment.GetEnvironmentVariable EditorVariable |> Option.ofObj }
+          Editor = Environment.GetEnvironmentVariable EditorVariable |> Option.ofObj
+          Logging = Logging.ofArguments arguments }
 
     let variable (name: string) =
         match Environment.GetEnvironmentVariable name with

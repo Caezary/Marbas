@@ -10,7 +10,7 @@ open Marbas.Tests
 
 let private disk = FileSystem() :> IFileSystem
 
-let private platform = HostEnvironment.current().Platform
+let private platform = (HostEnvironment.current [||]).Platform
 
 let private make = Links.create (NativeLinks.forPlatform platform) platform disk
 

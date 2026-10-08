@@ -4,5 +4,5 @@ open System.IO.Abstractions
 open Marbas.Adapters
 
 [<EntryPoint>]
-let main _ =
-    Session.run (FileSystem()) (HostEnvironment.current ())
+let main arguments =
+    Session.run (FileSystem()) (HostEnvironment.current arguments)

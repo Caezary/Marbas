@@ -681,3 +681,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   task nobody awaited are written the same way. Every line of the log is
   stamped with the moment it was written, and each start cuts the file to its
   last megabyte.
+- `--debug` on the command line turns on the transition log for that session:
+  every message handled, with the panel it concerns, every effect carried out,
+  every batch started, finished or cancelled with the items it reported, and
+  every error shown are written to the same `marbas.log`. Messages and effects
+  are written by their names alone, so no password, file content or clipboard
+  text reaches the file. Nothing is saved; a start without the switch writes
+  crashes only.

@@ -61,3 +61,40 @@ a short pipeline is joined, a long one is broken. Fantomas is pinned in
 rule that asked for one operation per line now asks for one statement, leaving
 where a pipeline breaks to the formatter. The suite passed unchanged after the
 reformat: 3766 tests, 15 skipped.
+
+**P21.2 added debug mode.** `Marbas --debug` records, for that session, every
+message `Runtime` drains with the panel it concerns, every effect
+`Shell.interpret` carries out, every error `Shell` shows, and every batch
+`BatchRunner` starts, finishes or sees cancelled, with the items it reported.
+`Program.fs` passes its arguments to `HostEnvironment.current`, where
+`Logging.ofArguments` turns `--debug` into `EveryTransition`, and
+`DebugLog.writer` makes the new `Log` port of `Dependencies` either the crash
+log's writer or `ignore`. The port came in here rather than in P21.1, with its
+first callers.
+
+- **Names come from reflection.** `LogEntry` carries the message and the effect
+  themselves, and `LogEntry.lines` writes only the case name. Redaction is
+  therefore not a list of cases to remember: no case's payload reaches the file,
+  including the cases added after this task. The two cases that carry an
+  `ArchivePassword` and the one that carries clipboard text are held to it by
+  tests.
+- **The panel a message concerns** is the one it names, where it names one —
+  including the side inside a `PanelCursor`, which the probe showed `CursorMoved`
+  had been logged without — and the active panel otherwise. An effect is
+  written without one.
+- **Errors are written with their words.** The plan's list of entries had an
+  error reported to the user; it is logged in `Shell`'s single `report`, with
+  the title and the sentence of the dialog, which is the only way a path reaches
+  the debug log.
+- **A batch is counted, not listed.** Every path a batch reports adds to a
+  counter, and the end of the batch writes the count beside `finished` or
+  `cancelled`. The plan allowed paths for batch items; a line per file of a
+  large copy was more than any question so far needed.
+
+`Runtime` gained a fifth constructor argument, the observer, and every test that
+builds one passes a do-nothing `unobserved`. Twenty-six tests were added: the
+lines of every entry, the panel of a message, the three redactions, the observer
+seeing a follow-up message with the state it arrives at, a key in a real
+`MainWindow`, `Shell`'s effect and error, the batch's count and its conclusion,
+and the switch on and off. A probe ran the real window with `--debug` and the
+real adapters against a scratch settings directory and read the file back.

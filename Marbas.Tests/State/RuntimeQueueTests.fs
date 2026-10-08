@@ -12,6 +12,8 @@ open Marbas.Tests
 
 let private at = Root.at
 
+let private unobserved _ _ = ()
+
 let private fp = FileSystemPath.create
 
 let private mockFs () =
@@ -42,7 +44,7 @@ let ``a dispatch from inside an effect waits for the outer effects to finish`` (
         | SaveSettings _ -> dispatch (PathOpened(Right, fp (at "start/docs/inner")))
         | _ -> ()
 
-    let runtime = Runtime(twoTabs fs, step fs, interpret, ignore)
+    let runtime = Runtime(twoTabs fs, step fs, interpret, ignore, unobserved)
 
     runtime.Dispatch(TabCycled Backward)
 

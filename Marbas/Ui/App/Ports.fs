@@ -5,6 +5,7 @@ open System.IO.Abstractions
 open Marbas.Collections
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Ui.Keys
 open Marbas.Ui.Viewer
@@ -156,6 +157,7 @@ type Dependencies =
       WorkspacePath: FileSystemPath
       Clock: unit -> DateTimeOffset
       OnQuit: unit -> unit
+      Log: LogEntry -> unit
       Prompts: Prompts
       Processes: Processes
       Clipboard: Clipboard

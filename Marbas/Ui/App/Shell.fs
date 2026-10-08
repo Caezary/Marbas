@@ -2,6 +2,7 @@ module Marbas.Ui.App.Shell
 
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Ui.Messages
@@ -52,6 +53,7 @@ let private patternTitle mode =
     | Deselect -> DeselectPrompt
 
 let private report (deps: Dependencies) title message =
+    deps.Log(ErrorReported(title, message))
     deps.Prompts.ReportError { Title = title; Message = message }
 
 let private askOverwrite (deps: Dependencies) target =
@@ -368,6 +370,8 @@ let private rememberTyped (deps: Dependencies) dispatch kind text =
     |> Option.iter (fun typed -> changeHistory deps dispatch (Remember(Typed(kind, typed))) |> ignore)
 
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
+    deps.Log(EffectInterpreted effect)
+
     match effect with
     | ReportListingError error -> report deps (ListingErrorMessage.title error) (ListingErrorMessage.describe error)
     | ReportUnverifiedHits refused ->

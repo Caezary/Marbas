@@ -7,7 +7,8 @@ type Runtime<'state, 'msg, 'effect>
         initial: 'state,
         update: 'msg -> 'state -> 'state * 'effect list,
         interpret: ('msg -> unit) -> 'effect -> unit,
-        render: 'state -> unit
+        render: 'state -> unit,
+        observe: 'msg -> 'state -> unit
     ) =
     let pending = Queue<'msg>()
     let mutable state = initial
@@ -31,7 +32,9 @@ type Runtime<'state, 'msg, 'effect>
 
             try
                 while pending.Count > 0 do
-                    let next, effects = update (pending.Dequeue()) state
+                    let drained = pending.Dequeue()
+                    observe drained state
+                    let next, effects = update drained state
                     state <- next
                     paint ()
                     effects |> List.iter (interpret this.Dispatch)

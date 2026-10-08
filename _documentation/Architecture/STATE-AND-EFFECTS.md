@@ -5,6 +5,10 @@ from the old one; `Update.update` folds a `Message` into that state plus a list
 of `Effect` values, and the generic `Runtime` holds the only mutable reference,
 re-renders after each dispatch and hands the effects to the interpreter.
 Handlers send messages, they never mutate. See PLAN.md, *State handling*.
+`Runtime` also hands each message it drains, with the state it arrives at, to
+an observer; `MainWindow` makes that the debug log's `MessageHandled`, so the
+transitions can be recorded without `Update` knowing (see
+[Diagnostics](DIAGNOSTICS.md)).
 
 **A transition may read and write through `IFileSystem`, and through nothing
 else.** That is the boundary, and it is drawn by kind rather than by cost: a

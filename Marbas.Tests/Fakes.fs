@@ -474,6 +474,7 @@ let dependencies (fs: IFileSystem) (startPath: string) : Ports.Dependencies =
       WorkspacePath = FileSystemPath.create (at "temp/Marbas/session")
       Clock = fun () -> DateTimeOffset(2026, 9, 28, 12, 0, 0, TimeSpan.Zero)
       OnQuit = ignore
+      Log = ignore
       Prompts =
         { ReportError = ignore
           Confirm = fun _ -> false

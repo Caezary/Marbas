@@ -20,7 +20,13 @@ let create (deps: Ports.Dependencies) =
     let appState = AppState.restore settings
 
     let runtime =
-        Runtime(appState, Update.step deps.FileSystem, Shell.interpret deps, AppView.render deps.FileSystem view)
+        Runtime(
+            appState,
+            Update.step deps.FileSystem,
+            Shell.interpret deps,
+            AppView.render deps.FileSystem view,
+            fun message state -> deps.Log(LogEntry.handling message state)
+        )
 
     let dispatch = runtime.Dispatch
     let keyBar = FunctionKeyBar.create dispatch

@@ -17,6 +17,13 @@ same directory as its settings — `%APPDATA%\Marbas` on Windows,
 back. That file is what to attach to a bug report. It keeps only its last
 megabyte, so it never grows without bound.
 
+To find out what led up to a problem, start Marbas with `--debug`
+(`Marbas --debug`). For that session the same file also records every key's
+command and every action taken, by name only, every batch with how many items
+it went through, and every error shown, in the words it was shown with. No file
+contents, no passwords and no clipboard text are written. The switch lasts for one session; the next start
+without it records crashes alone again.
+
 ## Panels and the cursor
 
 - `Tab` switches which panel is active — the active one has a double border.

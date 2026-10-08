@@ -249,6 +249,7 @@
         <Compile Include="Adapters\NativeLinks.fs" />
         <Compile Include="Adapters\SystemClipboard.fs" />
         <Compile Include="Adapters\Crashes.fs" />
+        <Compile Include="Adapters\DebugLog.fs" />
         <Compile Include="Adapters\Dependencies.fs" />
         <Compile Include="Adapters\Session.fs" />
     </ItemGroup>

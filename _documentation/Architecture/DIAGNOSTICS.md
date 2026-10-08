@@ -32,7 +32,7 @@ single session can grow the file past a megabyte, and the next start trims it.
 
 **A log that cannot be written is passed over, except after a crash.** The log
 is the last place a failure can be told, so nothing reports a log that refuses
-a cut or an entry written from another thread. After a crash on the UI thread
+a cut, an entry of debug mode or an entry written from another thread. After a crash on the UI thread
 there is still a console to say it on: `Crashes.guarded` answers
 `CrashUnwritten` with the `LogFileError`, and `Session.run` prints the reason
 the file refused instead of the pointer, followed by the exception itself, so
@@ -40,12 +40,67 @@ the stack trace reaches the user either way.
 
 ## What is recorded
 
-`LogEntry` is the union of what the log records. P21.1 gave it the crash,
-`Crashed of CrashSite * exn`, where the site says which of the three hooks
-caught it. `LogEntry.lines` turns an entry into its stamped lines and
-`LogEntry.write` appends them through `LogFile.append`, both on `IFileSystem`.
-It sits in `State`, after `Update`, because the entries P21.2 adds — a message
-handled, an effect interpreted — carry the types `Update` defines.
+`LogEntry` is the union of what the log records, and `LogEntry.lines` is the one
+place that decides what of it reaches the file:
+
+| Entry | Written by | Line |
+|-------|------------|------|
+| `MessageHandled(message, panel)` | the observer `MainWindow` hands `Runtime` | `message HiddenToggled on the left panel` |
+| `EffectInterpreted effect` | `Shell.interpret`, before it acts | `effect ViewFile` |
+| `ErrorReported(title, message)` | `Shell`'s one `report`, before the dialog | `error shown: Cannot copy: Access denied to '…'.` |
+| `BatchStarted title` | `BatchRunner`, before the work starts | `batch started: Copying` |
+| `BatchFinished(title, items)` | `BatchRunner`, on the UI thread when the work returns | `batch finished: Copying, 12 items` |
+| `BatchCancelled(title, items)` | the same, when `Esc` closed the window first | `batch cancelled: Copying, 3 items` |
+| `Crashed(site, exn)` | the three hooks below | `crash on the UI thread: System.…` and the stack trace |
+
+`LogEntry.write` appends the lines through `LogFile.append`, both on
+`IFileSystem`. The union sits in `State`, after `Update`, because two of its
+cases carry `Message` and `Effect`.
+
+**Names, not contents.** A message and an effect carry the whole value, and
+`lines` writes only its case name, read through `FSharpValue.GetUnionFields`.
+Nothing a case carries — a path, an archive password, clipboard text, a typed
+name — can reach the file through them, and the rule holds for every case added
+later without anyone remembering it. Tests hold the two cases that carry an
+`ArchivePassword` (`ArchiveEntered`, `ArchiveTargets`) and `PutOnClipboard` to
+it. Paths reach the log only inside an error's words, which are the sentence
+the user was shown, and in a crash's message.
+
+**The panel a message concerns.** `LogEntry.handling` names the panel the
+message carries — `PanelFocused`, `RootRequested`, `PathOpened`, `DriveChosen`
+and the two that carry a `PanelCursor` — and otherwise the active one, read
+from the state the message arrives at. An effect has no panel: it is written
+right after the message that raised it.
+
+**A batch's items are counted, not listed.** `BatchRunner.counting` wraps the
+control's `Report` so every path a batch reports adds one to a counter shared
+with the worker thread (`Interlocked.Increment`), and `BatchRunner.concluded`
+reads whether the cancellation was asked for when the work returns. The count
+is a plain `int` on purpose: it is an ordinal, written and never computed with.
+Writing each reported path would have made a large copy write a line per file
+for no question anyone has asked yet.
+
+## Debug mode
+
+**Asked for on the command line, for one session.** `Marbas --debug` turns on
+every entry above but the crash, which is written whatever the switch says.
+`Program.fs` hands its arguments to `HostEnvironment.current`, the adapter that
+reads the environment, and `Logging.ofArguments` answers `EveryTransition` when
+`--debug` is among them and `CrashesOnly` otherwise. Nothing is saved, so a
+switch forgotten in a shortcut is the only way to keep it on. Any other argument
+is ignored, as all of them were before.
+
+**The switch is decided once, at the port.** `Ports.Dependencies` carries
+`Log: LogEntry -> unit`, and `DebugLog.writer` fills it in `Session.run`: the
+same `LogEntry.write` the crash hooks use when the switch is on, `ignore` when
+it is off. `Runtime`, `Shell` and `BatchRunner` call it unconditionally and never
+learn which it is, which is what lets a test hand them a recording fake. The
+fake in `Fakes.dependencies` is `ignore`.
+
+**`Update` stays pure.** `Runtime` takes an observer, `'msg -> 'state -> unit`,
+and calls it with each message it drains and the state that message arrives at,
+before the update. It is the one place that sees every transition, including
+the ones a transition's own effects dispatch.
 
 ## The three hooks
 
@@ -96,3 +151,20 @@ record holds its exception. The hook around `app.Run` was proved with a probe
 whose loop throws from a timeout, run in a console of its own: the log held the
 stamped stack trace down to `ApplicationImpl.Run`, standard error held the
 pointer, and the exit code was 1.
+
+Debug mode is held by tests with a recording fake for `Log`: a key pressed in a
+real `MainWindow` leaves its `MessageHandled`, `Shell.interpret` leaves the
+effect and the error it reports, `BatchRunner.concluded` answers a cancelled
+batch, and `DebugLog.writer` writes nothing with the switch off. A probe ran the
+real window with the real adapters and `--debug` against a scratch settings
+directory, pressed four keys, and the file read:
+
+```
+… message PathOpened on the left panel
+… message PathOpened on the right panel
+… effect WatchLocations
+… message PanelFocused on the left panel
+… message HiddenToggled on the left panel
+… message CursorMoved on the left panel
+… message PanelFocused on the right panel
+```

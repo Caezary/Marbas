@@ -17,13 +17,15 @@ let private ClosedExitCode = 0
 [<Literal>]
 let private CrashExitCode = 1
 
-let private show (fs: IFileSystem) (env: HostEnvironment) () =
+let private show (fs: IFileSystem) (env: HostEnvironment) (record: RecordLogEntry) () =
     MainWindow.configureQuitKey ()
     use app = Application.Create().Init()
     DialogStyle.apply ()
     HistoryField.apply app
 
-    let dependencies = Dependencies.create app fs env
+    let dependencies =
+        Dependencies.create app fs env (DebugLog.writer env.Logging record)
+
     use window = MainWindow.create dependencies
 
     app.Run window |> ignore
@@ -39,7 +41,7 @@ let run (fs: IFileSystem) (env: HostEnvironment) =
 
     use _crashes = watch record
 
-    let runApplication = show fs env
+    let runApplication = show fs env record
 
     match guarded record runApplication with
     | Closed -> ClosedExitCode
