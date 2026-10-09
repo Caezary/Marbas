@@ -36,7 +36,7 @@ schedules the fix. A rule here beats a habit found in an older file.
 | `strictlyUnder`, `atOrUnder` | `below`, `under` | a preposition alone hides whether the boundary is strict |
 | `segmentsFromTargetName` | `beneath` | say what is compared, not where it sits |
 | `moveFromDisk`, `moveToArchive` | `moveIn`, `moveAcross` | a direction names both ends |
-| `refuseUnchangeable` | `guarding` | a gate is named for what it refuses |
+| `requestIfChangeable`, `requestUnlessRefused` | `guarding`, `refuseUnchangeable` | a gate is named for what it does when it lets through, and the condition says when it does not; a name that only refuses lies on the path where nothing is refused |
 | `makeDirectory fs state name` | `makeDirectory'` | no primed aliases; pass the argument |
 | `cursorEntry` | `getCursorEntry` | a function is named for what it answers |
 | `keepUnfinished`, `wouldPackItself` | `handleResults`, `check` | the name carries the rule |

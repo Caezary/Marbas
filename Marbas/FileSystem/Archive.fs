@@ -209,10 +209,7 @@ let write (fs: IFileSystem) control (request: ArchiveRequest) sources =
                 failingEvery sources error
 
 let wouldPackItself (fs: IFileSystem) (target: FileSystemPath) sources =
-    let platform = FileSystemPath.platformOf fs
-
-    sources
-    |> List.exists (fun source -> FileSystemPath.atOrUnder platform source target)
+    Operations.landsWithinSource fs target sources
 
 let private entryAtOrUnder (target: ArchivePath) (info: ArchiveEntryInfo) =
     ArchivePath.atOrUnder target info.Segments

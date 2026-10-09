@@ -180,7 +180,10 @@ and typing a bare name puts it beside the entries being packed.
 **An archive that would pack itself is refused before anything is written.**
 `Archive.wouldPackItself` answers true when the target *is* one of the sources
 or lies inside one of them, and `Update` turns that into `TargetWithinSource`,
-an `OperationError` like any other, worded by `OperationErrorMessage`. An
+an `OperationError` like any other, worded by `OperationErrorMessage`. Since
+P21.4 it asks `Operations.landsWithinSource`, the check every copy and move
+makes too (see [File operations](FILE-OPERATIONS.md)), so packing and the
+transfers refuse with one rule and one sentence. An
 archive beside what it packs is fine — the sources are a fixed list of names,
 and a file created afterwards is not one of them. The comparison is
 `FileSystemPath.atOrUnder`, so it ignores case on Windows and minds it on Unix:
@@ -776,8 +779,9 @@ outcomes.
 
 **Both archives are gated, and each for its own reason.** `F5` needs only the
 *target* to be changeable — copying out of a rar into a zip is fine. `F6` needs
-the source as well, since it removes from it, which is why `Update.refuseUnchangeable`
-now takes a list of archives and names the first that refuses. `Shell` asks the
+the source as well, since it removes from it, which is why
+`Update.requestIfChangeable` now takes a list of archives and names the first
+that refuses. `Shell` asks the
 source archive for its password once before the batch and puts the target
 level's own names through the same five-answer overwrite question, spelled
 `…\into.zip\notes.txt` like every other place inside an archive.

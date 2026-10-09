@@ -68,6 +68,25 @@ refusal left lives in `startRename`, which checks its own target. (P5.1 had the
 flag, P5.4 had the batch asking as it went; P5.6 made both untenable, because a
 background thread cannot open a dialog and wait on it.)
 
+**A transfer into itself is refused before it is asked about.** The walk of
+`copying` lists a directory's children only when it reaches them, so a
+directory copied into its own subdirectory meets its fresh copy among them and
+copies it again, one level deeper each time, until a path grows too long — or,
+with a subdirectory listed before the files, until the stack runs out. A move
+that cannot rename goes through the same copy. `Operations.landsWithinSource`
+beside `approve` answers whether a target is one of the sources or lies under
+one, by `FileSystemPath.atOrUnder` on the platform's rules, and
+`Update.requestIfOutsideSource` puts every copy and move from the disk through
+it before its effect is requested: `F5` and `F6` into the other panel, a typed
+`F6` target, a paste of copied or cut files, and a copy or move into an archive,
+where the target compared is the archive's file — it would be read while it is
+written. A refusal is `TargetWithinSource` naming that target, the error and
+sentence packing uses, and it comes before the unchangeable-kind refusal, so no
+question is asked and no batch starts. Entries carried out of an archive have
+no path on disk to land under and are not compared. The comparison is of paths:
+a target that reaches a source only through a link is not caught, the same
+limit `Archive.wouldPackItself` has, since it calls the same function.
+
 **One question per item covers the whole tree.** `approve` asks only when the
 *top-level* target already exists — and if it does not, nothing inside it can
 exist either, so no conflict can appear deeper in the recursion. That is what

@@ -418,6 +418,12 @@ let approve (fs: IFileSystem) (ask: FileSystemPath -> OverwriteAnswer) sources t
 
     approveLandings (landingInDirectory fs targetDirectory) occupied ask sources
 
+let landsWithinSource (fs: IFileSystem) (target: FileSystemPath) sources =
+    let platform = FileSystemPath.platformOf fs
+
+    sources
+    |> List.exists (fun source -> FileSystemPath.atOrUnder platform source target)
+
 let allWatched (control: BatchControl) apply sources =
     let rec run finished remaining =
         match remaining with

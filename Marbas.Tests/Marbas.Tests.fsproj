@@ -123,6 +123,7 @@
     <Compile Include="State\MkdirTests.fs" />
     <Compile Include="State\DeleteTests.fs" />
     <Compile Include="State\TransferTests.fs" />
+    <Compile Include="State\TransferIntoItselfTests.fs" />
     <Compile Include="State\SearchTests.fs" />
     <Compile Include="State\NewFileTests.fs" />
     <Compile Include="State\RunTests.fs" />

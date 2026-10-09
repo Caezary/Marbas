@@ -27,6 +27,14 @@ let ``an existing target is explained with its path`` () =
     Assert.Contains("already exists", message)
 
 [<Fact>]
+let ``a target within its source is explained with the target's path for every transfer`` () =
+    let message =
+        OperationErrorMessage.describe (TargetWithinSource(fp (at "data/docs/sub")))
+
+    Assert.Contains(at "data/docs/sub", message)
+    Assert.Contains("lies inside what would be copied, moved or packed into it", message)
+
+[<Fact>]
 let ``access denied is explained with its path`` () =
     let message = OperationErrorMessage.describe (AccessDenied(fp (at "locked")))
 

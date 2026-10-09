@@ -210,7 +210,7 @@ is `segmentsFromTargetName`, not a path after the target. `withCursorWithin`
 clamped the index to the listing, and is `withCursorClamped`.
 
 The `changing` and `opened` families are named for what they do rather than
-the verb they share: `Update.refuseUnchangeable`, `openCursorEntry`,
+the verb they share: `Update.requestIfChangeable`, `openCursorEntry`,
 `openFile`, `openWithHandler`, `reportNotRunnable`, `reportResultsRefusal`,
 `rereadAndSave`; `Archive.withArchiveOpenForChange` hands its work an
 `OpenForChange` of `Held` entries and a `Sink`, and dispatches to

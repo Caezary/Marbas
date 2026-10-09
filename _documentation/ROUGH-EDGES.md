@@ -233,6 +233,11 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   one extra listing if the disk also changed while its progress window was up:
   the held re-read arrives just after. It keeps the cursor and the marks, so it
   costs a directory read and nothing else.
+- A copy, a move or an archive into itself is refused by comparing paths as
+  written, so a target that reaches one of the sources only through a link — the
+  other panel standing in a link to a directory under the source — is not
+  caught, and the copy runs away as it did before P21.4. Resolving both sides to
+  their final paths first would close it.
 
 ## Watching the disk
 
@@ -335,15 +340,6 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   between two panels on one directory: it asks whether to replace each file
   with itself, and the system refuses the copy. Explorer makes `notes - Copy.txt`
   instead; Marbas has no such naming yet.
-- Neither `F5`, `F6` nor a paste checks that the target directory lies outside
-  the directories being copied. Read from `Operations.copying`, which lists a
-  directory's children only when it reaches them, a directory copied into its
-  own subdirectory meets its own fresh copy among them and copies it again,
-  deeper each time, until a path grows too long; a move that cannot rename goes
-  the same way before it deletes. Pasting puts it three keys away — `Alt+Shift+C`
-  on a directory, `Enter`, `Alt+Shift+V`. Refusing a target at or under a
-  source, as `Archive.wouldPackItself` does for packing, is the fix;
-  [phase 21](Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md) schedules it.
 - Files Explorer cut or copied from inside a zip probably reach the clipboard
   only as virtual files (`FileGroupDescriptorW` and `FileContents`, not
   `CF_HDROP`), which `GetFiles` does not read, so `Alt+Shift+V` pastes nothing

@@ -122,3 +122,45 @@ The three tests of the old control, which replayed a queued report around a
 cancel, gave way to four: a report only overwrites the cell, a tick shows the
 latest path, a second tick with nothing new shows nothing, and the control still
 answers the cancel flag.
+
+**P21.4 kept a directory out of itself.** A test on `MockFileSystem` showed the
+runaway first, and showed it worse than the plan had read it: `MockFileSystem`
+lists a subdirectory before the files beside it, so a directory copied into its
+own subdirectory went deeper without reporting a single file, and the test, bounded
+at first by the number of reports, ended the test host with a stack overflow.
+It is bounded now by the number of times the walk asks whether it was
+cancelled, and asserts a copy three levels below where the source tree ends.
+
+`Operations.landsWithinSource` beside `approve` is the check, and
+`Archive.wouldPackItself` calls it. In `Update`, `requestIfOutsideSource` puts
+every copy and move from the disk through it before the effect is requested —
+`F5` and `F6` into the other panel, a typed `F6` target, a paste of copied or
+cut files, and a copy or move into an archive whose file lies under a source —
+and answers `TargetWithinSource` with the target's name. It joins the refusal
+of an archive whose kind cannot be changed through one `requestUnlessRefused`,
+the place under the source decided first. `TargetWithinSource` now reads "'…'
+lies inside what would be copied, moved or packed into it", for packing too.
+
+- **The gates are named for what they let through.** The first names were
+  `refuseFirst`, `refuseTransfer` and the older `refuseUnchangeable`, and each
+  read as if it always refused, though on the common path it requests the
+  effect. They are `requestUnlessRefused`, `requestIfOutsideSource` and
+  `requestIfChangeable`, and the row of
+  [Coding style](../coding-style-conventions.md) that had named a gate for what
+  it refuses now names it for what it does when it lets through.
+
+- **A move is refused at the typed target, not at `F6`.** `F6` from the disk
+  into a directory always opens the prompt first, and its answer is what is
+  checked, so a move into the other panel under the source and a target typed
+  under it are one refusal reached two ways. A move into an archive skips the
+  prompt and is refused at `F6`.
+- **A link is not followed.** The comparison is of paths, as packing's was, so
+  a target that reaches a source only through a link still runs away. The
+  entry in [Rough edges](../ROUGH-EDGES.md) for a transfer into itself is gone
+  and a narrower one for the link takes its place.
+
+The suite gained twenty-two cases, one of which skips on each platform: the
+runaway, the target at or under a source and the one beside or above it on both
+case rules, the five refusals and the two archive ones by name, a copy beside
+the source and into a name that merely begins with the source's, a move into
+the latter, and the sentence.

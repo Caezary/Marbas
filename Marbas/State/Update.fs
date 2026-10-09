@@ -173,15 +173,46 @@ let private request state effect = { State = state; Effects = [ effect ] }
 let private reporting state error =
     request state (ReportOperationError error)
 
-let private refuseUnchangeable (fs: IFileSystem) state archives effect =
-    match archives |> List.tryFind (Archive.changeableKind fs >> Option.isNone) with
+let private requestUnlessRefused state refusals effect =
+    match List.tryPick id refusals with
     | None -> request state effect
-    | Some unchangeable -> KindCannotBeChanged unchangeable |> Operations.ArchiveFailed |> reporting state
+    | Some error -> reporting state error
+
+let private unchangeableArchive (fs: IFileSystem) archives =
+    archives
+    |> List.tryFind (Archive.changeableKind fs >> Option.isNone)
+    |> Option.map (KindCannotBeChanged >> Operations.ArchiveFailed)
+
+let private requestIfChangeable (fs: IFileSystem) state archives effect =
+    requestUnlessRefused state [ unchangeableArchive fs archives ] effect
 
 let private places source =
     match source with
     | FromPlaces groups -> groups
     | group -> [ group ]
+
+let private diskPaths groups =
+    groups
+    |> List.collect (function
+        | FromDisk paths -> paths
+        | FromArchive _
+        | FromPlaces _ -> [])
+
+let private landingPlace target =
+    match target with
+    | ToDirectory directory -> directory
+    | ToArchive(archive, _) -> archive
+
+let private landingWithinSource (fs: IFileSystem) groups target =
+    let landing = landingPlace target
+
+    if Operations.landsWithinSource fs landing (diskPaths groups) then
+        Some(Operations.TargetWithinSource landing)
+    else
+        None
+
+let private requestIfOutsideSource (fs: IFileSystem) state groups target archives effect =
+    requestUnlessRefused state [ landingWithinSource fs groups target; unchangeableArchive fs archives ] effect
 
 let private sourceArchives groups =
     groups
@@ -415,13 +446,6 @@ let private copyingText state lines =
     |> Option.map (PutOnClipboard >> request state)
     |> Option.defaultValue (stay state)
 
-let private diskPaths groups =
-    groups
-    |> List.collect (function
-        | FromDisk paths -> paths
-        | FromArchive _
-        | FromPlaces _ -> [])
-
 let private archiveEntries groups =
     groups
     |> List.collect (function
@@ -492,7 +516,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | MakeDirectoryRequested ->
         match (activePanel state).Path with
         | OnDisk _ -> request state PromptForName
-        | InArchive(archive, _) -> refuseUnchangeable fs state [ archive ] PromptForName
+        | InArchive(archive, _) -> requestIfChangeable fs state [ archive ] PromptForName
         | SearchResults _ -> stay state
     | NameEntered name ->
         match (activePanel state).Path with
@@ -511,7 +535,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | _, None -> stay state
         | InArchive(archive, _), _
         | SearchResults _, Some(FromArchive(archive, _)) ->
-            refuseUnchangeable fs state [ archive ] (inspected Permanently)
+            requestIfChangeable fs state [ archive ] (inspected Permanently)
         | _, Some(FromPlaces _) -> request state (inspected (forGood mode))
         | _ -> request state (inspected mode)
     | DeleteScopeLoaded(scope, mode) ->
@@ -531,19 +555,23 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | None, _
         | _, None -> stay state
         | Some source, Some target ->
-            refuseUnchangeable fs state (targetArchives target) (CopyPlaces(places source, target))
+            let groups = places source
+
+            requestIfOutsideSource fs state groups target (targetArchives target) (CopyPlaces(groups, target))
     | CopyFinished results -> finishTransfer fs results state |> applyBatch state
     | MoveRequested ->
         match transferSource fs (activePanel state), transferTarget state with
         | None, _
         | _, None -> stay state
         | Some(FromArchive _ as group), Some(ToDirectory target) ->
-            refuseUnchangeable fs state (sourceArchives [ group ]) (MovePlaces([ group ], ToDirectory target))
+            requestIfChangeable fs state (sourceArchives [ group ]) (MovePlaces([ group ], ToDirectory target))
         | Some _, Some(ToDirectory target) -> request state (PromptForTarget target)
         | Some source, Some target ->
             let groups = places source
 
-            refuseUnchangeable fs state (targetArchives target @ sourceArchives groups) (MovePlaces(groups, target))
+            let archives = targetArchives target @ sourceArchives groups
+
+            requestIfOutsideSource fs state groups target archives (MovePlaces(groups, target))
     | TargetEntered text ->
         let panel = activePanel state
 
@@ -564,7 +592,10 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             request state (RenameTarget(single, EntryName.create trimmed))
         | _, Some(FromArchive _), _ -> stay state
         | _, Some source, Some place ->
-            request state (MovePlaces(places source, ToDirectory(FileSystemPath.combine fs place trimmed)))
+            let groups = places source
+            let target = ToDirectory(FileSystemPath.combine fs place trimmed)
+
+            requestIfOutsideSource fs state groups target [] (MovePlaces(groups, target))
     | MoveFinished results -> finishTransfer fs results state |> applyBatch state
     | FindRequested ->
         let panel = activePanel state
@@ -783,12 +814,14 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         match (activePanel state).Path with
         | OnDisk directory -> request state (ReadClipboardFiles(ToDirectory directory))
         | InArchive(archive, level) ->
-            refuseUnchangeable fs state [ archive ] (ReadClipboardFiles(ToArchive(archive, level)))
+            requestIfChangeable fs state [ archive ] (ReadClipboardFiles(ToArchive(archive, level)))
         | SearchResults _ -> stay state
     | ClipboardFilesRead(files, target) ->
+        let groups = [ FromDisk(ClipboardFiles.paths files) ]
+
         match ClipboardFiles.intent files with
-        | ForCopying -> request state (CopyPlaces([ FromDisk(ClipboardFiles.paths files) ], target))
-        | ForMoving -> request state (MovePastedFiles(files, target))
+        | ForCopying -> requestIfOutsideSource fs state groups target [] (CopyPlaces(groups, target))
+        | ForMoving -> requestIfOutsideSource fs state groups target [] (MovePastedFiles(files, target))
     | QuitRequested ->
         { State = state
           Effects = [ SaveSettings(settings fs state); Quit ] }

@@ -291,6 +291,14 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   a directory whose new name lies across a mount point — the copy it falls back
   to runs behind the progress window with `Esc`, like any other batch. An empty
   answer or a cancelled prompt does nothing.
+- A copy or a move into itself is refused by the target's name before anything
+  is asked or written: `F5` or `F6` while the other panel stands in one of the
+  directories being acted on or below it, an `F6` target typed under one, a
+  paste of copied or cut files into a place under one of them, and an archive
+  whose file lies under one of them. A target beside the source, or in a
+  directory whose name merely begins with the source's (`docs-old` beside
+  `docs`), goes ahead. Paths are compared as written, ignoring case on Windows
+  only; a target reached through a link is not followed back to its source.
 - `Alt+F6` makes a link to the operation targets. The popup offers the other
   panel's directory plus the name of the entry under the cursor — or the
   directory alone when several are marked — and the kinds this system can make:
