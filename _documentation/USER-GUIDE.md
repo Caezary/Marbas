@@ -150,8 +150,9 @@ cursor when nothing is marked.
 - `F4` opens it in your `$EDITOR`, or the platform default (`notepad` on
   Windows, `vi` on Unix). On Windows Marbas does not wait for the editor — a
   console editor opens in a window of its own — and you can go on working in
-  the panels; what you save shows up in them by itself. On Unix Marbas waits
-  until the editor is closed.
+  the panels; what you save shows up in them by itself. On Unix the editor
+  takes over the terminal — `vi` or `nano` full screen, with every key — and
+  the panels come back when you close it.
 
 Copying, moving, wiping and measuring run in the background behind a progress
 window; `Esc` stops them. A wipe stopped part way leaves the file it was working
@@ -572,11 +573,9 @@ keep moving between the fields. The password of an archive is never kept.
 - **The clipboard is Windows-only for now.** On Linux it needs `xclip` or
   `wl-clipboard` for text, which Marbas does not call yet; copying there is
   refused, and the refusal is shown once per session.
-- **`F4` waits for the editor on Unix, and a full-screen console editor**
-  (`vi`, `nano`) does not work well there yet, because the terminal is shared
-  with a driver that has not let go of it. Use a windowed editor, or
-  `EDITOR="code -w"`, until this is fixed. On Windows the editor gets a window
-  of its own and is not waited for.
+- **`F4` waits for the editor on Unix.** The editor is given the terminal
+  until it closes, so the panels are out of reach meanwhile. On Windows the
+  editor gets a window of its own and is not waited for.
 
 See [Cross-platform](Architecture/CROSS-PLATFORM.md) for the full picture and
 the reasons behind these differences.

@@ -157,19 +157,6 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 - Nothing checks that a configured editor exists before `F4` starts it. A path
   that names nothing is reported the way any other failed start is, after the
   key was pressed, rather than when it was typed into the popup.
-- On Unix `F4` still waits for the editor. Windows gives a console editor a
-  window of its own, so there `F4` starts it and lets go; Unix has no such
-  window, and a console editor such as `vi` can only share the terminal the
-  panels are drawn in. So on Unix the editor runs as a child process sharing
-  this terminal, the panels hold still until it ends, and only a redraw
-  (`ClearScreenNextIteration`) is forced when it returns. A windowed editor —
-  VS Code, `gedit` — round-trips cleanly. A full-screen console editor shares
-  the terminal with a Terminal.Gui driver that is still reading input, and
-  there is no suspend/resume in the v2 API for a child process
-  (`IDriver.Suspend` is `SIGTSTP`, a different thing). If that turns out to
-  matter, the fix is to shut the driver down around the process and
-  re-initialise afterwards, on the waiting branch alone; it touches
-  `Adapters/EditorProcess.fs` only.
 - On Windows a window program Marbas starts can write over the panels. Every
   start goes through the shell verb, which gives a console program a console
   of its own and a window program none, and an Electron program — `Code.exe`

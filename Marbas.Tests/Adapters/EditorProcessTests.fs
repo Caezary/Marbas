@@ -16,6 +16,17 @@ let private mockFs () =
     fs.AddFile(at "start/notes.txt", MockFileData "hi")
     fs
 
+let private missingEditor = ProgramPath.tryCreate "marbas-no-such-editor"
+
+let private handingOver () =
+    let handedOver = ResizeArray<unit>()
+
+    let handOver (work: unit -> unit) =
+        handedOver.Add()
+        work ()
+
+    handedOver, handOver
+
 [<Fact>]
 let ``on Windows the editor is started without waiting for it`` () =
     let fs = mockFs ()
@@ -33,12 +44,32 @@ let ``on Windows the editor goes through the shell, so a console editor gets a w
     Assert.True editor.Start.UseShellExecute
 
 [<Fact>]
-let ``on Unix the editor is waited for, because a console editor can only share the terminal`` () =
+let ``on Unix the editor takes the terminal, because a console editor has no other to run in`` () =
     let fs = mockFs ()
 
     let editor = EditorProcess.describe fs None Unix None notes
 
-    Assert.Equal(EditorProcess.WaitsForExit, editor.Wait)
+    Assert.Equal(EditorProcess.TakesTheTerminal, editor.Wait)
+
+[<Fact>]
+let ``on Unix the editor is started inside the terminal handed over to it`` () =
+    let fs = mockFs ()
+    let handedOver, handOver = handingOver ()
+
+    let started = EditorProcess.run fs handOver None Unix missingEditor notes
+
+    Assert.Equal(1, handedOver.Count)
+    Assert.True(Result.isError started)
+
+[<WindowsFact("The shell verb exists only on Windows")>]
+let ``on Windows the editor is started without handing the terminal over`` () =
+    let fs = mockFs ()
+    let handedOver, handOver = handingOver ()
+
+    let started = EditorProcess.run fs handOver None Windows missingEditor notes
+
+    Assert.Empty handedOver
+    Assert.True(Result.isError started)
 
 [<Fact>]
 let ``on Unix the editor is started directly in the terminal the panels are drawn in`` () =

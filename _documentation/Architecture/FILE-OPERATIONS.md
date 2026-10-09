@@ -565,11 +565,42 @@ an `EditorWait` — and `run` only carries it out. On Windows the wait is
 `StartsDetached` and the start goes through the shell (`UseShellExecute`), so a
 console editor gets a console window of its own instead of drawing over the
 panels, and `F4` hands the keyboard back at once. On Unix the wait is
-`WaitsForExit` and the editor is started directly: a console editor such as
-`vi` has no window to open and can only share the terminal, so the panels hold
-still until it ends and the screen is repainted afterwards. The choice is the
-platform's and nothing else's, and `EditorProcessTests` prove both
-descriptions without starting anything.
+`TakesTheTerminal` and the editor is started directly: a console editor such as
+`vi` has no window to open, so it is given the terminal the panels are drawn in
+and waited for. The choice is the platform's and nothing else's, and
+`EditorProcessTests` prove both descriptions, and that `run` hands the terminal
+over on Unix and never on Windows, with a fake hand-over and an editor that is
+not there.
+
+**On Unix the driver lets go of the terminal while the editor runs.** Until
+P21.5 the editor shared the terminal with a Terminal.Gui driver still in raw
+mode, on the alternate screen, with mouse reporting on and an input thread
+polling standard input, so a full-screen editor lost keys to the panels and
+left them half drawn. `TerminalHandOver.lend` now runs the start and the wait
+between a stop and a start of the driver. The stop is
+`IMainLoopCoordinator.Stop`: the input thread ends, the input gives raw mode
+back and the output leaves the alternate screen. The start is what `Init` does
+— a new coordinator with its own input thread, output and driver, its events
+subscribed — and then the terminal's size, read through `Console.WindowWidth`
+and `WindowHeight`, and a forced `LayoutAndDraw`. The views, the timers and
+the session stack belong to the application and are untouched, so the loop
+that was running goes on with the new driver on its next iteration. The start
+is in a `finally`, so an editor that fails to start leaves the panels working
+and its error is reported as any other.
+
+Terminal.Gui 2.4.17 has no public way to do this — `IDriver.Suspend` sends
+`SIGTSTP` to the whole process, and `Dispose` and `Init` would reset the
+application along with the driver — so `lend` reaches three non-public members
+of `ApplicationImpl` by reflection: the `Coordinator` property, `CreateDriver`
+and `SubscribeDriverEvents`. `TerminalHandOverTests` assert that the version in
+use has them, so an upgrade that renames one fails the suite rather than the
+user's `F4`; should they be missing at run time anyway, `lend` falls back to
+what Unix did before — the editor shares the terminal and a redraw is forced
+when it returns. The size is set by hand because a rebuilt driver asks the
+terminal for it with an ANSI query that is answered only on a later iteration;
+until then the screen measures 0×0, and the error dialog of an editor that
+could not be started threw on it. The spike that settled all this is in
+[the phase 21 journal](../Progress/PHASE-21-THE-LOG-AND-THE-DEBTS.md).
 
 **A started editor re-reads nothing.** `EditorStarted Ok` leaves the state as
 it is. Until P20.1 it ran the refresh `Ctrl+R` runs, which made sense only

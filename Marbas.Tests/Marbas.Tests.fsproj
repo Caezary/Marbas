@@ -243,6 +243,7 @@
     <Compile Include="Adapters\LaunchProcessTests.fs" />
     <Compile Include="Adapters\CommandProcessTests.fs" />
     <Compile Include="Adapters\EditorProcessTests.fs" />
+    <Compile Include="Adapters\TerminalHandOverTests.fs" />
     <Compile Include="Adapters\NativeLinksTests.fs" />
     <Compile Include="Adapters\SystemClipboardTests.fs" />
     <Compile Include="Adapters\CrashesTests.fs" />

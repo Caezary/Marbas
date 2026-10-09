@@ -319,8 +319,7 @@ program: `StartEditor` answers as soon as the editor is running, on Windows in
 a window of its own, and `EditorStarted Ok` changes nothing — what the editor
 writes reaches the panels through the directory watch, the way a change made
 by any other program does. Unix is the one exception, where a console editor
-can only share the terminal and is still waited for, but the transition is the
-same there. `EditorStarted` answers `Operations.StartDeclined` the way
+is handed the terminal and waited for, but the transition is the same there. `EditorStarted` answers `Operations.StartDeclined` the way
 `LaunchFinished` answers `ElevationDeclined`, so a prompt the
 user turns down is silence whichever key started the program: `mapException`
 turns the Windows code for it into that value before the transition ever sees

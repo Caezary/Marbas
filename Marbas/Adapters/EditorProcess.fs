@@ -7,7 +7,7 @@ open Marbas.FileSystem
 open Marbas.Ui.App
 
 type EditorWait =
-    | WaitsForExit
+    | TakesTheTerminal
     | StartsDetached
 
 type EditorStart =
@@ -17,7 +17,7 @@ type EditorStart =
 let private waitOn platform =
     match platform with
     | Windows -> StartsDetached
-    | Unix -> WaitsForExit
+    | Unix -> TakesTheTerminal
 
 let describe (fs: IFileSystem) (configured: string option) platform (chosen: ProgramPath option) path =
     let editor = chosen |> Option.map ProgramPath.value |> Option.orElse configured
@@ -28,9 +28,21 @@ let describe (fs: IFileSystem) (configured: string option) platform (chosen: Pro
     start.UseShellExecute <- (wait = StartsDetached)
     { Start = start; Wait = wait }
 
+let private startDetached (start: ProcessStartInfo) =
+    match Process.Start start with
+    | null -> ()
+    | started -> started.Dispose()
+
+let private startAndWait (start: ProcessStartInfo) () =
+    match Process.Start start with
+    | null -> ()
+    | started ->
+        use started = started
+        started.WaitForExit()
+
 let run
     (fs: IFileSystem)
-    (repaint: unit -> unit)
+    (handOver: (unit -> unit) -> unit)
     (configured: string option)
     platform
     (chosen: ProgramPath option)
@@ -39,13 +51,9 @@ let run
     let editor = describe fs configured platform chosen path
 
     try
-        match Process.Start editor.Start, editor.Wait with
-        | null, _ -> ()
-        | started, StartsDetached -> started.Dispose()
-        | started, WaitsForExit ->
-            use started = started
-            started.WaitForExit()
-            repaint ()
+        match editor.Wait with
+        | StartsDetached -> startDetached editor.Start
+        | TakesTheTerminal -> handOver (startAndWait editor.Start)
 
         Ok()
     with ex ->

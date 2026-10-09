@@ -39,7 +39,7 @@ let private handlersFor (fs: IFileSystem) (env: HostEnvironment) =
         |> DesktopHandlers.read fs
 
 let private runEditor (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) =
-    EditorProcess.run fs (fun () -> app.ClearScreenNextIteration <- true) env.Editor env.Platform
+    EditorProcess.run fs (TerminalHandOver.lend app) env.Editor env.Platform
 
 let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) (log: LogEntry -> unit) : Ports.Dependencies =
     let links = NativeLinks.forPlatform env.Platform

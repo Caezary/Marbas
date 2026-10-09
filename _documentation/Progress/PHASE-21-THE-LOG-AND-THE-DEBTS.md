@@ -164,3 +164,49 @@ runaway, the target at or under a source and the one beside or above it on both
 case rules, the five refusals and the two archive ones by name, a copy beside
 the source and into a name that merely begins with the source's, a move into
 the latter, and the sentence.
+
+**P21.5 gave a console editor the terminal.** On Unix `F4` now stops the
+Terminal.Gui driver before it starts the editor and builds it again when the
+editor exits, inside the one `IApplication` the session runs; Windows starts the
+editor through the shell as before. `EditorWait.WaitsForExit` is
+`TakesTheTerminal`, `EditorProcess.run` takes the hand-over where it took a
+repaint, and `TerminalHandOver.lend` in `Adapters` is the hand-over. How it
+works is in [File operations](../Architecture/FILE-OPERATIONS.md).
+
+The spike came first, as the plan asked. Terminal.Gui 2.4.17 was decompiled to
+find a way that is not public: `IDriver.Suspend` sends `SIGTSTP` to the whole
+process, and `Dispose` followed by `Init` resets the application with the
+driver. What does the job is the internal `MainLoopCoordinator` — its `Stop`
+ends the input thread and gives raw mode and the main screen back — and the
+private `CreateDriver` and internal `SubscribeDriverEvents` that `Init` itself
+calls, reached by reflection. A throwaway program stopped the driver from a key
+handler, ran a child that read a line, and started the driver again; driven
+through `script` on WSL the child got the line and the window got the keys
+after it, and driven through tmux the same program round-tripped `vim` full
+screen with the window redrawn.
+
+- **The size had to be given by hand.** The first run of the real binary with an
+  editor that does not exist crashed: the rebuilt driver learns the terminal's
+  size from an ANSI query answered on a later iteration, the error dialog was
+  laid out before that against a 0×0 screen, and `MessageBox` threw — the log
+  of P21.1 said where. The size is now read through `Console.WindowWidth` and
+  `WindowHeight` and set before the redraw, which also brings back a window
+  resized while the editor held it.
+- **Missing members fall back, and a test watches for them.** If an upgrade of
+  Terminal.Gui renames one of the three members, `lend` lets the editor share
+  the terminal as before and forces a redraw; `TerminalHandOverTests` asserts
+  that the version in use has them, so the suite says so first.
+- **Done by probe, not yet by hand.** The real binary was driven in tmux on WSL
+  (Ubuntu 24.04) with `EDITOR=vim`: a line added and saved, the window resized
+  while `vim` held it, the panels back at the new size with the file's new
+  length, a second `F4`, `Up` reaching the panel, `F10` ending with 0; and with
+  an editor that is not there, its error in a dialog over whole panels and the
+  panels taking keys after it. Running it at a Linux desktop is left to P21.16,
+  whose row in [Cross-platform](../Architecture/CROSS-PLATFORM.md) stays
+  *manual*.
+
+The suite gained four tests: the hand-over on Unix, none on Windows (a Windows
+fact, since only Windows has the shell verb), the members found on the
+Terminal.Gui in use, and none found on a type without them. The test of the
+Unix description now names `TakesTheTerminal`. The entry in
+[Rough edges](../ROUGH-EDGES.md) is gone.

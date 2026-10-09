@@ -264,7 +264,10 @@ Marbas/
     WindowSearchRunner.fs the viewer's search on a background task under the progress dialog
     Prompts.fs            the message boxes and popups the application runs
     RecycleBin.fs         the Windows recycle bin, through the VB runtime
-    EditorProcess.fs      the editor started detached on Windows, waited on on Unix
+    TerminalHandOver.fs   the Terminal.Gui driver stopped while a program holds the
+                          terminal and built again after it, inside one application
+    EditorProcess.fs      the editor started detached on Windows; on Unix handed the
+                          terminal and waited on
     LaunchProcess.fs      a program handed to the system, and never waited on
     CommandProcess.fs     a user menu command started directly or through the shell, never waited on
     NativeLinks.fs        hard links and junctions through kernel32 and libc

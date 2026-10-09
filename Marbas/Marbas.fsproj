@@ -238,6 +238,7 @@
         <Compile Include="Adapters\WindowSearchRunner.fs" />
         <Compile Include="Adapters\Prompts.fs" />
         <Compile Include="Adapters\RecycleBin.fs" />
+        <Compile Include="Adapters\TerminalHandOver.fs" />
         <Compile Include="Adapters\EditorProcess.fs" />
         <Compile Include="Adapters\LaunchProcess.fs" />
         <Compile Include="Adapters\CommandProcess.fs" />

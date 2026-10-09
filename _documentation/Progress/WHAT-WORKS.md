@@ -500,8 +500,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   settings, otherwise whatever `$EDITOR` names, otherwise `notepad` on Windows
   and `vi` elsewhere. On Windows Marbas does not wait for the editor: it is
   started through the shell, a console editor in a console window of its own,
-  and the panels take keys again at once. On Unix, where a console editor can
-  only share the terminal, Marbas waits for it to close. Either way nothing is
+  and the panels take keys again at once. On Unix, where a console editor has
+  no window to open, Marbas hands it the terminal — the editor gets every key
+  and the whole screen — and waits for it to close; then the panels are drawn
+  whole again, at whatever size the terminal has by then. Either way nothing is
   re-read when the editor starts or ends; a file saved meanwhile reaches the
   panel through the directory watch, with the cursor and the marks where they
   were. An editor that cannot be started is reported in a dialog; `..` under

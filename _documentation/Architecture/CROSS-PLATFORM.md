@@ -550,10 +550,11 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | A flag written to a directory is read back | same | **manual** | suite (mock) |
 | `Shift+F4` creates a file and opens it | same | same | suite |
 | `F12` opens the settings popup | same | same | suite |
-| `F4` waits for the editor | **no**, started through the shell | yes, it shares the terminal | suite |
+| `F4` waits for the editor | **no**, started through the shell | yes, with the terminal handed over | suite |
 | A console editor gets a window of its own | yes, a console of its own | n/a | **manual** |
 | A file saved in the editor shows in the panel | the directory watch | the directory watch | **manual** |
-| The screen is whole again after the editor exits | n/a, nothing waited | **manual, and see below** | manual |
+| A full-screen console editor gets every key and gives the terminal back | n/a, a console of its own | yes, the driver stopped and built again | suite (the switch); probe (tmux); **manual** |
+| The screen is whole again after the editor exits, at the size it has then | n/a, nothing waited | yes | probe (tmux); **manual** |
 | `Enter` walks into a directory and an archive | same | same | suite |
 | `Enter` runs a document, an executable and an associated file | same | same | suite |
 | `Alt+W` walks into the entry under the cursor | same | same | suite |
@@ -577,22 +578,19 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | The handlers of a common extension are listed | registry | XDG mime database | Windows: **manual**; Unix: suite |
 | An extension the system knows nothing about lists nothing | same | same | Windows: **manual**; Unix: suite |
 
-**The known one.** On Windows `F4` has not waited for the editor since P20.1:
-it goes through the shell verb, so `notepad` opens its own window and a console
-editor its own console, and the panels stay live behind both. On Unix there is
-no window to hand a console editor, so `F4` still starts it as a child process
-sharing this terminal and waits, and Terminal.Gui's driver keeps reading input
-while it runs. A windowed editor (VS Code, `gedit`) round-trips cleanly. A
-full-screen console editor on Unix — `vi`, `nano` — shares the terminal with a
-driver that has not
-let go of it, and the v2 API has no suspend/resume for a child process
-(`IDriver.Suspend` is `SIGTSTP`, a different thing). The fix is to shut the
-driver down around the process and re-initialise afterwards; it touches
-`Adapters/EditorProcess.fs` only, and it is deliberately not done yet — it
-would be dead weight on Windows, where nothing is waited for any more, so it
-belongs on the `WaitsForExit` branch alone.
-Until then, `EDITOR=code -w`, a default editor named in the settings popup, or
-any windowed editor is the way to use `F4` on Linux.
+**The terminal handed over.** On Windows `F4` has not waited for the editor
+since P20.1: it goes through the shell verb, so `notepad` opens its own window
+and a console editor its own console, and the panels stay live behind both. On
+Unix there is no window to hand a console editor, and since P21.5 `F4` hands it
+the terminal instead: the driver is stopped, the editor runs and is waited for,
+and the driver is built again inside the same `IApplication` and draws the
+whole screen. How, and why it reaches past the public API, is in
+[File operations](FILE-OPERATIONS.md). A probe drove the real binary in tmux on
+WSL (Ubuntu 24.04) with `EDITOR=vim`: a line added and saved, the window
+resized while `vim` held it, the panels back at the new size with the file's
+new length, a second `F4`, and an editor that is not there named in a dialog
+over whole panels. A person at a Linux desktop has not run it yet; the row
+stays *manual* for P21.16.
 
 **`Shift+Enter` was tried and does not arrive.** Under Windows Terminal the
 modifier is dropped and the panel is handed a bare carriage return, which the
