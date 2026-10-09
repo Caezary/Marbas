@@ -190,12 +190,22 @@ so the batch stops at its next file; if instead the batch finished first, its
 `Invoke` callback closes the dialog and the cancel that follows changes
 nothing. The same flag guards the stop request, so a batch that finishes after
 the window is already gone cannot stop the main window by mistake — which
-would quit the application. A progress report is checked twice: once on the
-worker, so nothing is queued after a cancel, and again when the UI thread runs
-it, because a report queued just before `Esc` is still waiting in the loop
-after the dialog has been disposed. Without that second look it asked the
-disposed dialog for its line, found none, and the exception took the
-application down.
+would quit the application.
+
+**A progress report queues nothing.** Until P21.3 each report queued an
+`Invoke` that wrote the path into the dialog's line, so a batch of many small
+files flooded the UI thread with callbacks it worked through long after the
+work was done, and a report still queued when `Esc` closed the window asked the
+disposed dialog for its line and took the application down — the crash that
+opened phase 21, guarded until then by checking the cancel flag a second time
+on the UI thread. Now a report overwrites one cell, `latest`, from the worker
+(`Volatile.Write`), and a timer the runner adds on the UI thread takes what the
+cell holds every 100 ms, the cadence `SearchRunner` gathers at, and shows it
+(`Interlocked.Exchange` with `None`, so a tick with nothing new shows nothing).
+The timer is removed the moment `app.Run dialog` returns, before the dialog is
+disposed, so nothing can reach a closed window by construction. The window
+shows the latest path at most ten times a second, which is as much as anyone
+can read.
 
 **A stopped entry is reported, not passed over in silence.** Cancelling inside
 a tree leaves it half-copied, so the item answers `Cancelled path`, counts as a

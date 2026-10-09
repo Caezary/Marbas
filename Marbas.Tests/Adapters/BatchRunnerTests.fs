@@ -33,44 +33,49 @@ let ``a measurement that throws answers the failure instead of an empty one`` ()
 
 let private path = FileSystemPath.create (Root.at "start/notes.txt")
 
-[<Fact>]
-let ``a report made while the batch runs reaches the dialog`` () =
-    let pending = ref ignore
-    let shown = ResizeArray<FileSystemPath>()
+let private later = FileSystemPath.create (Root.at "start/todo.txt")
 
-    let control =
-        BatchRunner.control (fun action -> pending.Value <- action) shown.Add (fun () -> false)
+[<Fact>]
+let ``a report queues nothing, it overwrites the one path waiting to be shown`` () =
+    let latest = ref None
+    let control = BatchRunner.control latest (fun () -> false)
 
     control.Report path
+    control.Report later
 
-    pending.Value()
+    Assert.Equal(Some later, latest.Value)
+
+[<Fact>]
+let ``a tick shows the latest path reported since the one before`` () =
+    let latest = ref None
+    let shown = ResizeArray<FileSystemPath>()
+    let control = BatchRunner.control latest (fun () -> false)
+    control.Report path
+    control.Report later
+
+    BatchRunner.showLatest latest shown.Add
+
+    Assert.Equal<FileSystemPath list>([ later ], List.ofSeq shown)
+
+[<Fact>]
+let ``a tick with nothing reported since the one before shows nothing`` () =
+    let latest = ref None
+    let shown = ResizeArray<FileSystemPath>()
+    let control = BatchRunner.control latest (fun () -> false)
+    control.Report path
+    BatchRunner.showLatest latest shown.Add
+
+    BatchRunner.showLatest latest shown.Add
 
     Assert.Equal<FileSystemPath list>([ path ], List.ofSeq shown)
 
 [<Fact>]
-let ``a report still queued when the batch is cancelled never reaches the closed dialog`` () =
-    let pending = ref ignore
-    let cancelled = ref false
-    let shown = ResizeArray<FileSystemPath>()
+let ``the control answers whether the batch was cancelled`` () =
+    let control = BatchRunner.control (ref None) (fun () -> true)
 
-    let control =
-        BatchRunner.control (fun action -> pending.Value <- action) shown.Add (fun () -> cancelled.Value)
+    let cancelled = control.IsCancelled()
 
-    control.Report path
-    cancelled.Value <- true
-
-    pending.Value()
-
-    Assert.Empty shown
-
-[<Fact>]
-let ``a report made after the batch is cancelled is not queued`` () =
-    let queued = ResizeArray<unit -> unit>()
-    let control = BatchRunner.control queued.Add ignore (fun () -> true)
-
-    control.Report path
-
-    Assert.Empty queued
+    Assert.True cancelled
 
 [<Fact>]
 let ``every report of a batch is counted`` () =

@@ -688,3 +688,7 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   are written by their names alone, so no password, file content or clipboard
   text reaches the file. Nothing is saved; a start without the switch writes
   crashes only.
+- The progress window shows the path a batch has most recently reached,
+  refreshed ten times a second however fast the batch goes, so a batch of many
+  small items is never held up by its own progress and the window closes as soon
+  as the work is done.

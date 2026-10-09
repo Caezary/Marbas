@@ -1,5 +1,6 @@
 module Marbas.Adapters.BatchRunner
 
+open System
 open System.Threading
 open System.Threading.Tasks
 open Terminal.Gui.App
@@ -7,18 +8,14 @@ open Marbas.FileSystem
 open Marbas.State
 open Marbas.Ui.Dialogs
 
-let control
-    (invoke: (unit -> unit) -> unit)
-    (show: FileSystemPath -> unit)
-    (isCancelled: unit -> bool)
-    : Operations.BatchControl =
-    { Report =
-        fun path ->
-            if not (isCancelled ()) then
-                invoke (fun () ->
-                    if not (isCancelled ()) then
-                        show path)
+let private Showing = TimeSpan.FromMilliseconds 100.0
+
+let control (latest: FileSystemPath option ref) (isCancelled: unit -> bool) : Operations.BatchControl =
+    { Report = fun path -> Volatile.Write(&latest.contents, Some path)
       IsCancelled = isCancelled }
+
+let showLatest (latest: FileSystemPath option ref) (show: FileSystemPath -> unit) =
+    Interlocked.Exchange(&latest.contents, None) |> Option.iter show
 
 let counting (count: unit -> unit) (control: Operations.BatchControl) : Operations.BatchControl =
     { control with
@@ -43,11 +40,20 @@ let private drive
     use cancellation = new CancellationTokenSource()
     use dialog = ProgressDialog.create title
     let reported = ref 0
+    let latest = ref None
     let isCancelled () = cancellation.IsCancellationRequested
 
     let control =
-        control app.Invoke (FileSystemPath.value >> ProgressDialog.report dialog) isCancelled
+        control latest isCancelled
         |> counting (fun () -> Interlocked.Increment &reported.contents |> ignore)
+
+    let showing =
+        app.AddTimeout(
+            Showing,
+            fun () ->
+                showLatest latest (FileSystemPath.value >> ProgressDialog.report dialog)
+                true
+        )
 
     log (BatchStarted title)
 
@@ -64,6 +70,7 @@ let private drive
     |> ignore
 
     app.Run dialog |> ignore
+    app.RemoveTimeout showing |> ignore
     cancellation.Cancel()
 
 let run app log title work finish =

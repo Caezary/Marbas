@@ -98,3 +98,27 @@ seeing a follow-up message with the state it arrives at, a key in a real
 `MainWindow`, `Shell`'s effect and error, the batch's count and its conclusion,
 and the switch on and off. A probe ran the real window with `--debug` and the
 real adapters against a scratch settings directory and read the file back.
+
+**P21.3 stopped the progress window from being flooded.** A batch's report used
+to queue an `Invoke` per path; now `BatchRunner.control` overwrites one cell,
+and a timer the runner adds on the UI thread calls `BatchRunner.showLatest`
+every 100 ms, which takes the cell's path, if any, and shows it. The timer is
+removed as soon as the window's loop returns, before the window is disposed, so
+the second look at the cancel flag that guarded a queued report against a
+closed window had nothing left to guard and went with the queue.
+`WindowSearchRunner`, the viewer's search, keeps its own control: it reports an
+offset only when the text it shows changes, and was not part of the task.
+
+The measurement is in [Measurements](MEASUREMENTS.md#the-progress-window-flooded-and-drained-p213-2026-10-09).
+A batch that only reports paths closed its window 0.6 s after its work at ten
+thousand paths and 35 s after it at a million; it now closes within a tick at
+every size, and the work itself no longer slows down. Copying small files on a
+disk never flooded the window and costs what it did. Getting the numbers took
+two attempts: a probe that started its batch from a timeout waited forever, the
+pitfall the `render-tui-screen` skill already names, and starting it from the
+loop's `Iteration` event instead is what works.
+
+The three tests of the old control, which replayed a queued report around a
+cancel, gave way to four: a report only overwrites the cell, a tick shows the
+latest path, a second tick with nothing new shows nothing, and the control still
+answers the cancel flag.

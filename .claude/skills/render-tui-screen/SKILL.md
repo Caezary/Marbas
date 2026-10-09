@@ -80,7 +80,10 @@ Pitfalls measured in P18.6 — the probe's, not the application's:
   one — opens the window, and the work never comes back. Swap only the runner
   for the synchronous one the tests use,
   `Runners.Batch = fun _ work finish -> work Operations.unattended |> finish`,
-  and leave the file system and the other ports real.
+  and leave the file system and the other ports real. When the real runner is
+  the point — timing a batch, watching its window — start it from the loop's
+  `app.Iteration` event (once, behind a flag) instead of a timeout: the batch
+  then finishes and `BatchRunner.run` returns, as measured in P21.3.
 - **`app.RequestStop()` stops the top runnable, not the scene.** With a
   progress window open it closes that window, the batch reports itself
   stopped, and the main window keeps the probe alive. End a scene over

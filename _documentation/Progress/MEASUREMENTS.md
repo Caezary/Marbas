@@ -70,3 +70,45 @@ looking up each entry's own prefixes rather than by comparing it with every
 target, so matching does not bring the square back either. What is left is the
 constant factor against `7z x` that P15.17 put down to writing through
 `IFileSystem`.
+
+## The progress window flooded and drained (P21.3, 2026-10-09)
+
+Until P21.3 every path a batch reported queued an `Invoke` that wrote it into
+the progress window's line. P21.3 replaced that with one cell the worker
+overwrites and a timer on the UI thread that shows what it holds every 100 ms.
+A probe ran the real `BatchRunner.run` under a real `Application`, in a console
+of its own, from a Release build, before and after the change: once with a
+batch that only reports *n* paths and does nothing else — the limit a batch of
+very small, very fast items approaches — and once with a batch that copies *n*
+files of 100 bytes on the same disk with `File.Copy` and reports each. *work* is
+when the batch's work returned on the worker, *closed* when `BatchRunner.run`
+returned to its caller, which is when the window is gone and the panels can
+move again. Milliseconds, one run per cell, on one Windows machine.
+
+| Batch | n | work before | closed before | work after | closed after |
+|---|---|---|---|---|---|
+| reports only | 10 000 | 29 | 612 | 25 | 91 |
+| reports only | 100 000 | 1 709 | 3 217 | 3 | 65 |
+| reports only | 1 000 000 | 68 718 | 103 854 | 25 | 67 |
+| copies | 2 000 | 2 262 | 2 324 | 2 189 | 2 239 |
+| copies | 10 000 | 7 527 | 7 586 | 8 104 | 8 167 |
+| copies | 40 000 | 29 194 | 29 248 | 34 031 | 34 102 |
+
+**A fast batch was held up by its own progress, twice over.** Before, the
+window stayed open long after the work was done — 583 ms for 10 000 reports,
+35 s for a million — while the UI thread worked through one callback per path,
+and the work itself slowed down, from 29 ms for 10 000 reports to 69 s for a
+million, as each report queued a callback the UI thread was busy taking off
+the same queue. After, both are flat: the work costs what the work costs, and the
+window closes within a tick of it.
+
+**A batch that touches the disk did not flood, and does not change.** Copying a
+file takes about a millisecond here, slower than the UI thread drains a callback, so
+the queue never grew and the window closed some 60 ms after the work, before as
+after. The copy rows differ by up to 17 % in the work itself, in both
+directions across sizes, which is the disk and not the window: the runner
+does nothing between two copies that it did not do before, except write a
+cell instead of queuing a callback. What the change buys a copy is the bound
+— a batch of entries the disk answers quickly, such as a move inside one
+volume, a delete or an archive's small entries, can no longer outrun the
+window.
