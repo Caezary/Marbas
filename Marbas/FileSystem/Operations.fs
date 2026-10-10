@@ -109,19 +109,23 @@ let private deleteFile (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
     fs.File.Delete raw
 
-let private copyFile (fs: IFileSystem) overwrite (source: FileSystemPath) (target: FileSystemPath) =
+type private ExistingTarget =
+    | Replaced
+    | Kept
+
+let private copyFile (fs: IFileSystem) (source: FileSystemPath) (target: FileSystemPath) =
     let rawSource = FileSystemPath.value source
     let rawTarget = FileSystemPath.value target
-    fs.File.Copy(rawSource, rawTarget, overwrite)
+    fs.File.Copy(rawSource, rawTarget, true)
 
-let private moveFile (fs: IFileSystem) overwrite (source: FileSystemPath) (target: FileSystemPath) =
+let private moveFile (fs: IFileSystem) existing (source: FileSystemPath) (target: FileSystemPath) =
     let rawSource = FileSystemPath.value source
     let rawTarget = FileSystemPath.value target
-    fs.File.Move(rawSource, rawTarget, overwrite)
+    fs.File.Move(rawSource, rawTarget, (existing = Replaced))
 
-let private copyReplacing target fs source = copyFile fs true source target
+let private copyReplacing target fs source = copyFile fs source target
 
-let private moveReplacing target fs source = moveFile fs true source target
+let private moveReplacing target fs source = moveFile fs Replaced source target
 
 let private getFileSystemEntries (fs: IFileSystem) (path: FileSystemPath) =
     let raw = FileSystemPath.value path
@@ -225,7 +229,7 @@ let private anonymousName (fs: IFileSystem) (path: FileSystemPath) =
 let private anonymize (fs: IFileSystem) (path: FileSystemPath) =
     match anonymousName fs path with
     | Some target ->
-        attempt fs path (fun fs source -> moveFile fs false source target)
+        attempt fs path (fun fs source -> moveFile fs Kept source target)
         |> Result.map (fun () -> target)
     | None -> Ok path
 

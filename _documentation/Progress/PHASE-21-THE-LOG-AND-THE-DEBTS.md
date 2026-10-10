@@ -405,3 +405,21 @@ built on the real adapter put text and exited, then files and exited; another
 program read both back with no owner left on the clipboard, and the system
 shell pasted the files, a directory and what it held among them. Marbas itself
 quitting with `F10` and a paste into an editor has not been done by a person.
+
+**P21.9 said replacing by name.** `Operations.copyFile` lost its `bool`: every
+copy replaces what stands at the target, so there was nothing to choose.
+`moveFile` takes an `ExistingTarget` where it took one — `Replaced` for every
+transfer and for the rename `startRename` makes of a file, `Kept` for the
+anonymous rename a wipe makes before it deletes. The type is private to the
+module, like the two functions, and the one place it becomes the `bool` that
+`File.Move` asks for is inside `moveFile`. The `true` handed to `File.Copy`,
+`Flush` and `GetHexString` stays: those are the system's signatures, not
+functions of `Operations`.
+
+No test was written first, since none could fail: the functions are private
+and nothing they do changed. The suite passes unchanged, 3916 tests with 16
+skipped on Windows. Swapping the two cases inside `moveFile` to see the suite
+notice failed one test, `move replaces whatever is already there`; nothing
+fails for `Kept` taken as `Replaced`, because the name a wipe moves to is
+drawn at random until one is free and no test can put a file in its way —
+which was as true of the `false` it replaced.
