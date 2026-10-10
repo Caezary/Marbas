@@ -613,7 +613,7 @@ WSL (Ubuntu 24.04) with `EDITOR=vim`: a line added and saved, the window
 resized while `vim` held it, the panels back at the new size with the file's
 new length, a second `F4`, and an editor that is not there named in a dialog
 over whole panels. A person at a Linux desktop has not run it yet; the row
-stays *manual* for P21.16.
+stays *manual* for P21.17.
 
 **`Shift+Enter` was tried and does not arrive.** Under Windows Terminal the
 modifier is dropped and the panel is handed a bare carriage return, which the

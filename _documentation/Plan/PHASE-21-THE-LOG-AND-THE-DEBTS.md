@@ -10,7 +10,9 @@ directories left in the temporary directory by every session that did not end
 with `F10`, a Windows clipboard opened without a window and so not held while
 it is written, a flag
 argument, four ways of landing a panel that say the same thing, the effect
-interpreter sitting in the wrong layer, ports whose types
+interpreter sitting in the wrong layer, the wording it reads left without a
+layer of its own, an error paired with its words at every place it is
+reported, ports whose types
 say how they are called but not what they are for, mutation that nothing
 demands, test files too long to find a test in, and the manual checks no
 person has yet run.
@@ -268,7 +270,33 @@ so the task proves it before it fixes it.
   nothing under `State` opens a `Terminal.Gui` namespace, the dependency rule in
   [Overview](../Architecture/OVERVIEW.md) is restated for the new layout, and
   the suite passes with its tests moved alongside.
-- **P21.12 Ports say what they are for** — a port that takes functions takes a
+- **P21.12 The wording gets a layer of its own** — P21.11 took the wording down
+  to `State/Messages/` because `Shell` reads it, and left it compiled in the
+  middle of its parent, after the transitions and before the ports: the one
+  folder that does not depend only on the folders below it. Fourteen of its
+  sixteen modules read nothing but `Domain` and `FileSystem`; the other two read
+  `DeleteRequest` and `ExpansionRefusal`, which are made of `Domain` types alone
+  and move there. The wording then becomes `Marbas/Messages/`, a layer between
+  `FileSystem` and `State` — `Adapters` → `Ui` → `State` → `Messages` →
+  `FileSystem` → `Domain` — and no higher, because `Shell` writes the worded
+  text to the log. With the layer in place, what pairs an error with its words
+  leaves `Shell`, where a title and a description are put together at sixteen
+  call sites. A union in `Messages`, `Problem`, names everything that is
+  reported to the user, from a listing that failed to a settings file that could
+  not be written, and one module answers the title and the description of each
+  case. It is a union and not a title per module because the title does not
+  follow the module: a command and a launch share a description under two
+  titles, and a listing error picks its title by its case. The nine `Report…`
+  effects become one that carries a `Problem`, and what `Shell` finds wrong by
+  itself — the settings, the favourites, the user menu, the history, a file that
+  cannot be viewed — is reported through the same value. *Done when:* `Messages`
+  is a top-level folder that opens nothing of `State`, the exception for
+  `State/Messages/` is gone from [Overview](../Architecture/OVERVIEW.md) and
+  [Coding style](../coding-style-conventions.md), `Effect` has one case that
+  reports and `Shell.interpret` one arm for it, every case of `Problem` is held
+  to its title and its description by a test, and the suite passes with its
+  tests moved alongside and only the renamed effects changed.
+- **P21.13 Ports say what they are for** — a port that takes functions takes a
   request record instead, the way the prompts already do: `Runners.Batch` takes
   a title, the work and what to do with the result as named fields, and so do
   `Measure`, `Search` and the two `Watches`. A function type that stays a field
@@ -276,7 +304,7 @@ so the task proves it before it fixes it.
   given a name that says what it answers. *Done when:* no field of
   `Dependencies` is a function whose argument is another function, and `Fakes`
   builds every port from named parts.
-- **P21.13 Where mutation is allowed** — a rule in
+- **P21.14 Where mutation is allowed** — a rule in
   [Coding style](../coding-style-conventions.md) says where a mutable binding or
   a reference cell earns its place: a measured hot loop confined to one
   function (`LineIndex`, `TextEncoding`, `ArchiveReader`, `RewindingStream`), an
@@ -287,7 +315,7 @@ so the task proves it before it fixes it.
   a returned value. *Done when:* each remaining mutable binding outside `Ui`
   falls under a clause of the rule, the hot loops are timed before and after in
   [Measurements](../Progress/MEASUREMENTS.md), and the suite passes unchanged.
-- **P21.14 Views keep their state in one value** — `FileViewer`,
+- **P21.15 Views keep their state in one value** — `FileViewer`,
   `ResultsWindow`, `ResultRow` and `SettingsDialog` hold a handful of mutable
   locals each, changed from several event handlers. Each gathers them into one
   immutable record behind one cell, with the changes written as functions over
@@ -297,7 +325,7 @@ so the task proves it before it fixes it.
 
 ## Stage 7 — The suite and the platforms
 
-- **P21.15 Test files by feature** — no test file runs past a thousand lines.
+- **P21.16 Test files by feature** — no test file runs past a thousand lines.
   `ShellTests` (about 2,600 lines, 161 tests) splits along the features its
   helpers already group — transfers, history, typed text, packing, unpacking
   and the rest — the way `ShellPlacesTests` was split from it, and `UpdateTests`
@@ -305,7 +333,7 @@ so the task proves it before it fixes it.
   `ArchiveFixture` does for the archive tests. *Done when:* the longest test
   file is under a thousand lines, the count of tests is the same before and
   after, and [Testing](../Architecture/TESTING.md) states the limit.
-- **P21.16 The manual rows, by hand** — every row of
+- **P21.17 The manual rows, by hand** — every row of
   [Cross-platform](../Architecture/CROSS-PLATFORM.md) marked *manual* is run
   against the published binaries of this phase, on Windows and on a Linux
   desktop, by a person at the terminal: colours, a resized terminal, the mouse,

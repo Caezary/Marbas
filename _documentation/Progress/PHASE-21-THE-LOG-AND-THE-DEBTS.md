@@ -201,7 +201,7 @@ screen with the window redrawn.
   while `vim` held it, the panels back at the new size with the file's new
   length, a second `F4`, `Up` reaching the panel, `F10` ending with 0; and with
   an editor that is not there, its error in a dialog over whole panels and the
-  panels taking keys after it. Running it at a Linux desktop is left to P21.16,
+  panels taking keys after it. Running it at a Linux desktop is left to P21.17,
   whose row in [Cross-platform](../Architecture/CROSS-PLATFORM.md) stays
   *manual*.
 
