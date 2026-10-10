@@ -14,7 +14,8 @@ interpreter sitting in the wrong layer, the wording it reads left without a
 layer of its own, an error paired with its words at every place it is
 reported, ports whose types
 say how they are called but not what they are for, mutation that nothing
-demands, test files too long to find a test in, and the manual checks no
+demands, two loops that take seconds over work that takes a fraction of one,
+test files too long to find a test in, and the manual checks no
 person has yet run.
 
 The phase was opened by a crash. `Esc` during a large `F5` closed the progress
@@ -28,8 +29,8 @@ that.
 Three rules decide the order. Diagnostics come first, because every task after
 them is safer with a log to read. The fixes a user can see come next. The
 structural work runs from the lowest layer up and from the smallest change to
-the largest, and the test files are divided last, once the modules they test
-have stopped moving. The manual pass closes the phase, because it should be
+the largest, what its timing turned up is looked into after it, and the test
+files are divided last, once the modules they test have stopped moving. The manual pass closes the phase, because it should be
 run against the binaries the phase ends with.
 
 Five decisions run through the first stage.
@@ -323,9 +324,44 @@ so the task proves it before it fixes it.
   view has a single cell, its transitions have unit tests, and the rendered
   screens are unchanged before and after.
 
-## Stage 7 — The suite and the platforms
+## Stage 7 — What the timing turned up
 
-- **P21.16 Test files by feature** — no test file runs past a thousand lines.
+P21.14 timed the loops it left mutable, to have a number for each, and two of
+the numbers are out of proportion to the work.
+`LineIndex.Index.ScanAll` takes about four seconds over a text of a million
+lines, 69 MB, where `LineIndex.walkFrom` reads the same bytes line by line in a
+fifth of a second — and `End` in the viewer waits for the first.
+`TextEncoding.detect` takes 0.3 ms for an 8 KB probe of UTF-8 with letters
+outside ASCII in it, and a search for text pays that twice for every file it
+opens, because `ContentMatch` asks `detect` and `contentOf` and each examines
+the probe afresh. The measurement says how long and not why: neither was
+looked into, and both stand in [Rough edges](../ROUGH-EDGES.md).
+
+- **P21.16 Two slow loops, looked into** — each is profiled before anything in
+  it is changed, so that its cause is a number and not a guess. For the index:
+  how the four seconds divide between reading a chunk, finding the line feeds
+  in it and noting a line start. The scan asks the source for its length at
+  every line start it finds, which is the first thing to rule in or out. For
+  detection: how the time divides between the test for a wide encoding, which
+  walks the probe twice through a sequence, the search for a zero byte, and the
+  UTF-8 walk, which slices the probe at every sequence longer than a byte.
+  Then each gets the smallest change its own numbers point to, timed before
+  and after with the probe of P21.14, and `ContentMatch` reads the encoding and
+  whether the file is binary from one examination of the probe. A cause that
+  turns out to need a redesign — the index kept another way, say — is written
+  up and left: this task finds out and fixes what is cheap, it does not
+  rebuild the viewer. Whatever a fix leaves mutable falls under the rule of
+  P21.14. *Done when:* [Measurements](../Progress/MEASUREMENTS.md) says where
+  the time went in each, with the numbers; the index scans the million lines
+  in a time of the order of the walk's, or its entry in Rough edges says what
+  stands in the way; a search for text examines each probe once; detection and
+  the index are timed before and after; what the viewer and a search show is
+  unchanged, by the suite; and the two entries in Rough edges are gone or
+  narrowed to what is left.
+
+## Stage 8 — The suite and the platforms
+
+- **P21.17 Test files by feature** — no test file runs past a thousand lines.
   `ShellTests` (about 2,600 lines, 161 tests) splits along the features its
   helpers already group — transfers, history, typed text, packing, unpacking
   and the rest — the way `ShellPlacesTests` was split from it, and `UpdateTests`
@@ -333,7 +369,7 @@ so the task proves it before it fixes it.
   `ArchiveFixture` does for the archive tests. *Done when:* the longest test
   file is under a thousand lines, the count of tests is the same before and
   after, and [Testing](../Architecture/TESTING.md) states the limit.
-- **P21.17 The manual rows, by hand** — every row of
+- **P21.18 The manual rows, by hand** — every row of
   [Cross-platform](../Architecture/CROSS-PLATFORM.md) marked *manual* is run
   against the published binaries of this phase, on Windows and on a Linux
   desktop, by a person at the terminal: colours, a resized terminal, the mouse,

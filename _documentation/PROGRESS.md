@@ -70,7 +70,7 @@ written up as the checklist in
 | 18 — The clipboard | P18.1–P18.7 | done | [journal](Progress/PHASE-18-THE-CLIPBOARD.md) |
 | 19 — The viewer finds and decodes | P19.1–P19.6 | done | [journal](Progress/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) |
 | 20 — The user menu | P20.1–P20.5 | done | [journal](Progress/PHASE-20-THE-USER-MENU.md) |
-| 21 — The log and the debts | P21.1–P21.17 | in progress (14 of 17) | [journal](Progress/PHASE-21-THE-LOG-AND-THE-DEBTS.md) |
+| 21 — The log and the debts | P21.1–P21.18 | in progress (14 of 18) | [journal](Progress/PHASE-21-THE-LOG-AND-THE-DEBTS.md) |
 
 ## What works today
 
