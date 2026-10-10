@@ -31,14 +31,23 @@ let private argued (command: string) arguments =
     arguments |> List.iter start.ArgumentList.Add
     start
 
-let private throughShell (request: LaunchRequest) =
+let detached command arguments =
+    let start = argued command arguments
+    start.UseShellExecute <- false
+    start.RedirectStandardOutput <- true
+    start.RedirectStandardError <- true
+    start
+
+let private programAndArguments (request: LaunchRequest) =
     let target = FileSystemPath.value request.Target
 
-    let start =
-        match request.Program with
-        | Some program -> argued (ProgramPath.value program) [ target ]
-        | None -> argued target []
+    match request.Program with
+    | Some program -> ProgramPath.value program, [ target ]
+    | None -> target, []
 
+let private throughShell (request: LaunchRequest) =
+    let program, arguments = programAndArguments request
+    let start = argued program arguments
     start.UseShellExecute <- true
 
     match request.Elevation with
@@ -47,12 +56,13 @@ let private throughShell (request: LaunchRequest) =
 
     start
 
-let detached command arguments =
-    let start = argued command arguments
-    start.UseShellExecute <- false
-    start.RedirectStandardOutput <- true
-    start.RedirectStandardError <- true
-    start
+let private onWindows windowProgram (request: LaunchRequest) =
+    let program, arguments = programAndArguments request
+
+    match request.Elevation, windowProgram request.WorkingDirectory program with
+    | AsUser, Some resolved -> detached (FileSystemPath.value resolved) arguments
+    | AsUser, None
+    | AsAdministrator, _ -> throughShell request
 
 let private ofItsOwn (fs: IFileSystem) (request: LaunchRequest) =
     let target = FileSystemPath.value request.Target
@@ -65,10 +75,10 @@ let private ofItsOwn (fs: IFileSystem) (request: LaunchRequest) =
         | Executable -> detached target []
         | NotExecutable -> detached DesktopOpener [ target ]
 
-let describe (fs: IFileSystem) platform (request: LaunchRequest) =
+let describe (fs: IFileSystem) platform windowProgram (request: LaunchRequest) =
     match platform, request.Elevation with
     | Unix, AsAdministrator -> Error(LaunchRefused(request.Target, ElevationUnavailable))
-    | Windows, _ -> Ok(throughShell request)
+    | Windows, _ -> Ok(onWindows windowProgram request)
     | Unix, AsUser -> Ok(ofItsOwn fs request)
 
 let drained (child: Process) =
@@ -85,9 +95,9 @@ let private failure (request: LaunchRequest) (ex: exn) =
         | _ -> LaunchRefused(request.Target, refusal.Message)
     | _ -> LaunchRefused(request.Target, ex.Message)
 
-let start (fs: IFileSystem) platform (request: LaunchRequest) =
+let start (fs: IFileSystem) platform windowProgram (request: LaunchRequest) =
     try
-        match describe fs platform request with
+        match describe fs platform windowProgram request with
         | Error refusal -> Error refusal
         | Ok describing ->
             describing.WorkingDirectory <- FileSystemPath.value request.WorkingDirectory

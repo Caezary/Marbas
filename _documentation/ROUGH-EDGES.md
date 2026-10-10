@@ -157,17 +157,16 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 - Nothing checks that a configured editor exists before `F4` starts it. A path
   that names nothing is reported the way any other failed start is, after the
   key was pressed, rather than when it was typed into the popup.
-- On Windows a window program Marbas starts can write over the panels. Every
-  start goes through the shell verb, which gives a console program a console
-  of its own and a window program none, and an Electron program — `Code.exe`
-  named in a user menu entry, as the editor of `F4` or as the program `Enter`
-  opens a file with — then attaches to the console of its parent, the terminal
-  the panels are drawn in, and writes its log there. Terminal.Gui does not
-  know, so the text stays until those cells are drawn again. The shell verb
-  cannot redirect the streams, and starting without it would take the window
-  of its own away from a console program; the fix is to read the subsystem
-  from the program's header and start a window program with its streams
-  drained, which leaves a start through a file's association as it is.
+- On Windows a window program the system picks can still write over the
+  panels. `Enter` on a document whose association is an Electron program — a
+  `.json` opened by VS Code, say — goes through the shell verb, because only
+  the system knows the program and the verb cannot redirect its streams; the
+  program then attaches to the console of its parent and, under ConEmu
+  (cmder), writes its log there until those cells are drawn again. Windows
+  Terminal and conhost showed nothing of it. A start that names its program —
+  a user menu entry, `F4`, a program chosen for the extension — is resolved
+  and drained since P21.6. Reading the association's command and starting
+  that program the same way would close it;
   `ELECTRON_NO_ATTACH_CONSOLE=1` in the user's environment is Electron's own
   switch against attaching and has not been tried here.
 - The open-with popup lists the programs but never says which one the system

@@ -52,6 +52,7 @@
         <Compile Include="FileSystem\ArchiveError.fs" />
         <Compile Include="FileSystem\TextEncoding.fs" />
         <Compile Include="FileSystem\LaunchRequest.fs" />
+        <Compile Include="FileSystem\ProgramImage.fs" />
         <Compile Include="FileSystem\CommandRun.fs" />
         <Compile Include="FileSystem\Handler.fs" />
         <Compile Include="FileSystem\ProgramCommand.fs" />
@@ -239,10 +240,11 @@
         <Compile Include="Adapters\Prompts.fs" />
         <Compile Include="Adapters\RecycleBin.fs" />
         <Compile Include="Adapters\TerminalHandOver.fs" />
-        <Compile Include="Adapters\EditorProcess.fs" />
         <Compile Include="Adapters\LaunchProcess.fs" />
+        <Compile Include="Adapters\EditorProcess.fs" />
         <Compile Include="Adapters\CommandProcess.fs" />
         <Compile Include="Adapters\RegistryHandlers.fs" />
+        <Compile Include="Adapters\ProgramResolution.fs" />
         <Compile Include="Adapters\BatchRunner.fs" />
         <Compile Include="Adapters\SearchRunner.fs" />
         <Compile Include="Adapters\DirectoryWatch.fs" />

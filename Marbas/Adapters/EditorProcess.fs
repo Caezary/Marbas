@@ -19,19 +19,44 @@ let private waitOn platform =
     | Windows -> StartsDetached
     | Unix -> TakesTheTerminal
 
-let describe (fs: IFileSystem) (configured: string option) platform (chosen: ProgramPath option) path =
-    let editor = chosen |> Option.map ProgramPath.value |> Option.orElse configured
-    let wait = waitOn platform
-    let start = ProcessStartInfo(EditorCommand.choose editor platform)
+let private starting (editor: string) (path: FileSystemPath) =
+    let start = ProcessStartInfo editor
     start.ArgumentList.Add(FileSystemPath.value path)
-    start.WorkingDirectory <- FileSystemPath.value (FileSystemPath.directory fs path)
-    start.UseShellExecute <- (wait = StartsDetached)
-    { Start = start; Wait = wait }
+    start
+
+let private throughShell editor path =
+    let start = starting editor path
+    start.UseShellExecute <- true
+    start
+
+let private onWindows windowProgram directory editor path =
+    match windowProgram directory editor with
+    | Some program -> LaunchProcess.detached (FileSystemPath.value program) [ FileSystemPath.value path ]
+    | None -> throughShell editor path
+
+let describe (fs: IFileSystem) (configured: string option) platform windowProgram (chosen: ProgramPath option) path =
+    let named = chosen |> Option.map ProgramPath.value |> Option.orElse configured
+    let editor = EditorCommand.choose named platform
+    let directory = FileSystemPath.directory fs path
+
+    let start =
+        match platform with
+        | Windows -> onWindows windowProgram directory editor path
+        | Unix -> starting editor path
+
+    start.WorkingDirectory <- FileSystemPath.value directory
+
+    { Start = start
+      Wait = waitOn platform }
 
 let private startDetached (start: ProcessStartInfo) =
     match Process.Start start with
     | null -> ()
-    | started -> started.Dispose()
+    | started ->
+        if start.RedirectStandardOutput then
+            LaunchProcess.drained started
+
+        started.Dispose()
 
 let private startAndWait (start: ProcessStartInfo) () =
     match Process.Start start with
@@ -45,10 +70,11 @@ let run
     (handOver: (unit -> unit) -> unit)
     (configured: string option)
     platform
+    windowProgram
     (chosen: ProgramPath option)
     path
     =
-    let editor = describe fs configured platform chosen path
+    let editor = describe fs configured platform windowProgram chosen path
 
     try
         match editor.Wait with

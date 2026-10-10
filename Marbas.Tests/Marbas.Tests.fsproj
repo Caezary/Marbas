@@ -16,6 +16,8 @@
     <Compile Include="SymbolicLinkFact.fs" />
     <Compile Include="Expect.fs" />
     <Compile Include="ShortcutBytes.fs" />
+    <Compile Include="ProgramImageBytes.fs" />
+    <Compile Include="WindowPrograms.fs" />
     <Compile Include="Collections\ZipperTests.fs" />
     <Compile Include="Fakes.fs" />
   </ItemGroup>
@@ -94,6 +96,7 @@
     <Compile Include="FileSystem\PastedPathTests.fs" />
     <Compile Include="FileSystem\TrashTests.fs" />
     <Compile Include="FileSystem\WorkspaceTests.fs" />
+    <Compile Include="FileSystem\ProgramImageTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -242,6 +245,8 @@
     <Compile Include="Adapters\DirectoryWatchTests.fs" />
     <Compile Include="Adapters\LaunchProcessTests.fs" />
     <Compile Include="Adapters\CommandProcessTests.fs" />
+    <Compile Include="Adapters\ProgramResolutionTests.fs" />
+    <Compile Include="Adapters\HostEnvironmentTests.fs" />
     <Compile Include="Adapters\EditorProcessTests.fs" />
     <Compile Include="Adapters\TerminalHandOverTests.fs" />
     <Compile Include="Adapters\NativeLinksTests.fs" />

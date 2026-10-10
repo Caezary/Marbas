@@ -67,6 +67,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   the system, which covers an executable, a document and a shortcut alike —
   Windows through the shell verb, so a console program gets a console of its
   own, and Linux through `xdg-open` unless the entry carries an execute bit.
+  On Windows a window program — the executable itself, or the program chosen
+  for the extension — is started from its file with its output thrown away
+  instead, so one such as VS Code cannot write its log over the panels; the
+  same holds for `F4` and for a user menu entry run directly.
   Marbas does not wait for what it started, and the program begins in the
   directory the panel is standing in. Whatever is marked is ignored: the entry
   under the cursor is the one that runs.

@@ -54,7 +54,7 @@ let private cmdLine (run: CommandRun) =
 let private throughCmd (run: CommandRun) =
     ProcessStartInfo(WindowsShell, $"/s {cmdSwitch run.Run} \"{cmdLine run}\"")
 
-let private onWindows (run: CommandRun) =
+let private throughShellOnWindows (run: CommandRun) =
     let start =
         match run.Run with
         | Directly -> directProcess run.Command.Program.Text (argumentTexts run)
@@ -69,6 +69,16 @@ let private onWindows (run: CommandRun) =
 
     start
 
+let private onWindows windowProgram (run: CommandRun) =
+    match run.Run, run.Elevation with
+    | Directly, AsUser ->
+        windowProgram run.WorkingDirectory run.Command.Program.Text
+        |> Option.map (fun program -> LaunchProcess.detached (FileSystemPath.value program) (argumentTexts run))
+        |> Option.defaultWith (fun () -> throughShellOnWindows run)
+    | Directly, AsAdministrator
+    | InShellClosing, _
+    | InShellKeptOpen, _ -> throughShellOnWindows run
+
 let private onUnix (run: CommandRun) =
     match run.Run with
     | Directly -> LaunchProcess.detached run.Command.Program.Text (argumentTexts run)
@@ -79,10 +89,10 @@ let private startingIn (run: CommandRun) (start: ProcessStartInfo) =
     start.WorkingDirectory <- FileSystemPath.value run.WorkingDirectory
     start
 
-let describe platform (run: CommandRun) =
+let describe platform windowProgram (run: CommandRun) =
     match platform, run.Elevation with
     | Unix, AsAdministrator -> Error(LaunchRefused(programPath run, LaunchProcess.ElevationUnavailable))
-    | Windows, _ -> Ok(startingIn run (onWindows run))
+    | Windows, _ -> Ok(startingIn run (onWindows windowProgram run))
     | Unix, AsUser -> Ok(startingIn run (onUnix run))
 
 let writeList (fs: IFileSystem) (listFile: ListFile) =
@@ -124,9 +134,9 @@ let private launched (run: CommandRun) (start: ProcessStartInfo) =
 let private listWritten (fs: IFileSystem) (run: CommandRun) =
     run.Command.ListFile |> Option.map (writeList fs) |> Option.defaultValue (Ok())
 
-let start (fs: IFileSystem) platform (run: CommandRun) =
+let start (fs: IFileSystem) platform windowProgram (run: CommandRun) =
     result {
-        let! described = describe platform run
+        let! described = describe platform windowProgram run
         do! listWritten fs run
         return! launched run described
     }

@@ -564,7 +564,8 @@ reads the environment and asks. A blank `$EDITOR` counts as unset.
 an `EditorWait` — and `run` only carries it out. On Windows the wait is
 `StartsDetached` and the start goes through the shell (`UseShellExecute`), so a
 console editor gets a console window of its own instead of drawing over the
-panels, and `F4` hands the keyboard back at once. On Unix the wait is
+panels, and `F4` hands the keyboard back at once; a window editor is started
+from its file with its streams drained instead, as the launcher below explains. On Unix the wait is
 `TakesTheTerminal` and the editor is started directly: a console editor such as
 `vi` has no window to open, so it is given the terminal the panels are drawn in
 and waited for. The choice is the platform's and nothing else's, and
@@ -623,15 +624,45 @@ lives in `LaunchErrorMessage` beside every other message module.
 starts the program and returns; since P20.1 `EditorProcess` does the same on
 Windows and blocks on `WaitForExit` only on Unix, where a console editor has
 nowhere to run but the terminal the panels are drawn in. Nothing re-reads a panel afterwards either — there is no
-"afterwards" to hook. On Windows every launch goes through the shell verb
+"afterwards" to hook. On Windows a launch goes through the shell verb
 (`UseShellExecute`), which is what gives a console program a console of its own
 instead of letting it write over the panels, and `runas` is the same call with
-one field set. On Unix there is no shell verb: an executable entry is started
+one field set — unless the program it names is a window program, below. On
+Unix there is no shell verb: an executable entry is started
 directly with both its streams redirected and drained into `Stream.Null` — the
 terminal belongs to the panels — and anything else is handed to `xdg-open`.
 Which of the two an entry is comes from `EntryAttributes.executability` — the execute
 bit and nothing else, because a name that looks like a Windows program is not
 one a Linux kernel will run.
+
+**On Windows a window program is started from its file, with its streams
+drained.** The shell verb gives a console program a console of its own and a
+window program none, and an Electron program such as `Code.exe`, started that
+way from a console, attaches to the console of its parent and writes its log
+there. Under ConEmu (cmder) a fresh VS Code wrote some twenty lines over the
+panels; under Windows Terminal and conhost it wrote nothing, which is why the
+first spike of P21.6 saw nothing. Started without the verb and with both
+streams redirected and drained, as Unix starts everything, it holds valid
+standard handles and writes nowhere. So every start that names its program
+asks first what kind of program that is: a user menu entry run `Directly`,
+`Enter` on an executable or with a program chosen for the extension, and `F4`.
+`ProgramResolution.resolve` in `Adapters` finds the file the way the shell
+would — the name as written, against the panel's directory, then each
+directory of `PATH`, then the App Paths of the registry (current user, then the
+machine); a name without an extension is tried with each extension of
+`PATHEXT` in order and never bare, and only a bare name is looked up on `PATH`
+and in App Paths. `ProgramImage.subsystem` in `FileSystem` reads the PE header
+over `IFileSystem` and answers `WindowSubsystem`, `ConsoleSubsystem`,
+`OtherSubsystem`, `NotAnImage` or `UnreadableImage`. Only a resolved
+`WindowSubsystem` is started directly, by its full path; a console program, a
+script (`code` resolves to `code.cmd`), anything else and anything not found go
+through the shell as before, and so does every run as administrator, since
+`runas` exists only as a verb. A shell run of the user menu is `cmd` whatever
+its line starts with, and a file opened through its association, where the
+system picks the program, cannot be redirected and keeps the verb. The three
+describers take the lookup as an argument — `Dependencies` binds it once, with
+`PATH` and `PATHEXT` read at start — so their tests describe each start with a
+fake that knows one window program, and no test starts anything.
 
 **What the system already knows is a port too, and the parsing is not.**
 `Processes.HandlersFor` takes an `EntryName` and answers a `Handler list` —

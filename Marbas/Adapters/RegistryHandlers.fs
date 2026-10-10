@@ -54,7 +54,7 @@ let private reading root path pick =
         use key = key
         pick key)
 
-let private valueIn root path name =
+let valueIn root path name =
     reading root path (fun key -> textOf key name) |> Option.flatten
 
 let private namesIn root path =

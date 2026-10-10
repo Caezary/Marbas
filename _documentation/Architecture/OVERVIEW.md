@@ -106,6 +106,7 @@ Marbas/
     FileSystemPath.fs     single-case path type wrapping a raw string
     EntryAttributes.fs    what FileAttributes and UnixFileMode say, in the Domain's words
     LaunchRequest.fs      what to start, with what, where, and with which rights
+    ProgramImage.fs       the subsystem a program's PE header names: window, console, other, none
     CommandRun.fs         a user menu command as expanded, and how and where it ran
     Handler.fs            a program the system offers for a name, and its display name
     ProgramCommand.fs     a command line -> the program it starts
@@ -266,12 +267,14 @@ Marbas/
     RecycleBin.fs         the Windows recycle bin, through the VB runtime
     TerminalHandOver.fs   the Terminal.Gui driver stopped while a program holds the
                           terminal and built again after it, inside one application
+    LaunchProcess.fs      a program handed to the system, or on Windows a window program
+                          started from its file with its streams drained; never waited on
     EditorProcess.fs      the editor started detached on Windows; on Unix handed the
                           terminal and waited on
-    LaunchProcess.fs      a program handed to the system, and never waited on
     CommandProcess.fs     a user menu command started directly or through the shell, never waited on
     NativeLinks.fs        hard links and junctions through kernel32 and libc
     RegistryHandlers.fs   the Windows registry -> the handlers a name has
+    ProgramResolution.fs  a program's name -> its file: as written, `PATH` with `PATHEXT`, App Paths
     BatchRunner.fs        a batch on a background task under the progress dialog;
                           its start and its end, with the items it reported, logged
     SearchRunner.fs       the walk on a background task, hits gathered ten times a second

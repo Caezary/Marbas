@@ -210,3 +210,58 @@ fact, since only Windows has the shell verb), the members found on the
 Terminal.Gui in use, and none found on a type without them. The test of the
 Unix description now names `TakesTheTerminal`. The entry in
 [Rough edges](../ROUGH-EDGES.md) is gone.
+
+**P21.6 kept a window program off the panels.** On Windows a start that names
+its program — a user menu entry run `Directly`, `Enter` on an executable or with
+a program chosen for the extension, and `F4` — now resolves the name to its
+file and reads the subsystem from its PE header; a window program is started
+from that file without the shell verb, its streams redirected and drained, and
+everything else goes through the shell as before. `ProgramImage.subsystem` in
+`FileSystem` reads the header, `ProgramResolution` in `Adapters` finds the file
+and asks App Paths, and `HostEnvironment` gained `ProgramExtensions` from
+`PATHEXT`. How the pieces fit is in
+[File operations](../Architecture/FILE-OPERATIONS.md).
+
+The spike came first and at first found nothing. A throwaway program started
+`Code.exe` through the shell verb, then from its file with its streams drained,
+then `cmd` through the verb, then `cmd` inheriting the console as a control, and
+after each read its own console buffer back with
+`ReadConsoleOutputCharacterW`. Run from a fresh console window — Windows
+Terminal — the control left its marker and nothing else did, VS Code fresh or
+already running. The user had seen the log in cmder, and under ConEmu the same
+program read back the log they had pasted: `[main …]` lines, the `DEP0169`
+deprecation warnings and `Unknown channel: agentHostClientProxy`, from a fresh
+VS Code started through the verb. Started from its file with its streams
+drained, a fresh VS Code wrote nothing and opened the file; `cmd` through the
+verb still got a console of its own.
+
+- **The terminal decides whether it shows.** The defect is real under ConEmu
+  and invisible under Windows Terminal and conhost, which is written down in
+  [Cross-platform](../Architecture/CROSS-PLATFORM.md) beside the row it belongs
+  to.
+- **The subsystem is a union of five.** Beside a window and a console program,
+  `OtherSubsystem` keeps a native or EFI image from passing for either,
+  `NotAnImage` covers a file too short, a script and a header that points
+  nowhere, and `UnreadableImage` a file that cannot be opened. Only a window
+  program changes how anything starts.
+- **A name without an extension never stands alone.** `code` is looked up as
+  `code.com`, `code.exe`, `code.bat`, `code.cmd` in each directory in turn, the
+  way Windows does it, so the shell script `code` beside `code.cmd` in VS Code's
+  `bin` is never taken; `code` therefore resolves to the script and keeps the
+  shell verb, while `code.exe` resolves through App Paths to the window program.
+  Run against this machine, `notepad` and `explorer.exe` came out window
+  programs and `cmd` a console one.
+- **Run as administrator keeps the verb**, since `runas` exists only as one, and
+  a user menu shell run stays `cmd` whatever its line names.
+- **Done by probe, the hand check left to the user.** A probe under ConEmu ran a
+  user menu entry `code.exe <file>` through the real `CommandProcess.start` with
+  a fresh VS Code: the file opened and the console held nothing but the probe's
+  own line. `code.exe %p` from the real `F2` menu in cmder has not been run by a
+  person yet.
+
+The suite gained thirty-six tests: eight on the header — a window program, a
+console one, another subsystem, a file too short, a script, a header pointing
+past the end and one without the signature, a file that is not there —
+fourteen on the resolution, four on `PATHEXT`, and ten describing the starts of
+`Enter`, `F2` and `F4` with a fake that knows one window program. The entry in
+[Rough edges](../ROUGH-EDGES.md) is narrowed to a start through an association.

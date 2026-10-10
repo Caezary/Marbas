@@ -29,6 +29,7 @@ type HostEnvironment =
       TemporaryRoot: string
       Session: string
       SearchPath: string
+      ProgramExtensions: string list
       Editor: string option
       Logging: Logging }
 
@@ -52,6 +53,22 @@ module HostEnvironment =
     [<Literal>]
     let SearchPathVariable = "PATH"
 
+    [<Literal>]
+    let ProgramExtensionsVariable = "PATHEXT"
+
+    let private defaultProgramExtensions = [ ".COM"; ".EXE"; ".BAT"; ".CMD" ]
+
+    let programExtensions (raw: string) =
+        let listed =
+            (Option.ofObj raw |> Option.defaultValue "").Split ';'
+            |> Array.toList
+            |> List.map _.Trim()
+            |> List.filter ((<>) "")
+
+        match listed with
+        | [] -> defaultProgramExtensions
+        | extensions -> extensions
+
     let current (arguments: string array) =
         { Platform = if OperatingSystem.IsWindows() then Windows else Unix
           UserProfile = Environment.GetFolderPath Environment.SpecialFolder.UserProfile
@@ -63,6 +80,7 @@ module HostEnvironment =
           TemporaryRoot = IO.Path.GetTempPath()
           Session = Guid.NewGuid().ToString "N"
           SearchPath = Environment.GetEnvironmentVariable SearchPathVariable
+          ProgramExtensions = programExtensions (Environment.GetEnvironmentVariable ProgramExtensionsVariable)
           Editor = Environment.GetEnvironmentVariable EditorVariable |> Option.ofObj
           Logging = Logging.ofArguments arguments }
 

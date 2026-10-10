@@ -559,7 +559,8 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | `Enter` runs a document, an executable and an associated file | same | same | suite |
 | `Alt+W` walks into the entry under the cursor | same | same | suite |
 | `Ctrl+PgDn` reaches the panel as a key at all | **yes** | **manual** | manual (Windows Terminal) |
-| A started program leaves the panels un-scribbled | own console, shell verb | streams drained | **manual** |
+| A started program leaves the panels un-scribbled | a console program: own console, shell verb; a window program: started from its file, streams drained | streams drained | suite (the start described); probe (ConEmu); **manual** |
+| A program named by its start is resolved to its file | as written, `PATH` with `PATHEXT`, App Paths | n/a | suite (mock); probe |
 | A started program does not hold the loop up | same | same | **manual** |
 | `F2` opens the user menu, a letter and `Enter` run an entry | same | same | suite; probe on Windows |
 | A user menu entry is started the way it names | shell verb; `cmd /s /c`, `cmd /s /k` | drained; `/bin/sh -c` for both shell ways | suite (the start described); **manual** (each way run) |
@@ -659,11 +660,19 @@ still builds on one framework for both systems with no Windows-flavoured target
 and no extra dependency in the single-file publish.
 
 **Starting a program is where the two systems differ most.** Windows has one
-answer for everything — `ShellExecuteEx`, which `UseShellExecute` reaches — and
-it gives a console program a console of its own, so nothing it prints can reach
-the panels; `runas` is the same call with the verb set, and it is the only way
-a terminal application asks for administrator rights without a password prompt
-on a screen it does not own. Unix has no such verb. An executable entry is
+answer for almost everything — `ShellExecuteEx`, which `UseShellExecute`
+reaches — and it gives a console program a console of its own, so nothing it
+prints can reach the panels; `runas` is the same call with the verb set, and it
+is the only way a terminal application asks for administrator rights without a
+password prompt on a screen it does not own. A window program is the
+exception: the verb gives it no console, an Electron program then attaches to
+Marbas's own, and under ConEmu (cmder) a fresh VS Code wrote its log over the
+panels, while under Windows Terminal and conhost it wrote nothing. Since P21.6
+a window program named by a start is resolved to its file and started without
+the verb, its streams drained, as
+[File operations](FILE-OPERATIONS.md) describes; a probe under ConEmu ran a
+user menu entry `code.exe <file>` through the real adapter with a fresh VS Code
+and found nothing in the console but what the probe wrote itself. Unix has no such verb. An executable entry is
 started directly with both of its streams redirected and drained, because it
 would otherwise inherit the terminal the panels are drawn on, and anything else
 goes to `xdg-open`, which is the desktop's own idea of what opens a file. The

@@ -38,11 +38,20 @@ let private handlersFor (fs: IFileSystem) (env: HostEnvironment) =
         XdgDirectories.resolve fs env.UserProfile env.DataHome env.DataDirectories env.ConfigHome env.ConfigDirectories
         |> DesktopHandlers.read fs
 
-let private runEditor (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) =
-    EditorProcess.run fs (TerminalHandOver.lend app) env.Editor env.Platform
+let private windowProgram (fs: IFileSystem) (env: HostEnvironment) =
+    let search: ProgramResolution.ProgramSearch =
+        { Directories = FindGround.pathDirectories fs (pathSeparator env.Platform) env.SearchPath
+          Extensions = env.ProgramExtensions
+          AppPath = ProgramResolution.registeredAppPath }
+
+    ProgramResolution.windowProgram fs search
+
+let private runEditor (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) windowPrograms =
+    EditorProcess.run fs (TerminalHandOver.lend app) env.Editor env.Platform windowPrograms
 
 let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) (log: LogEntry -> unit) : Ports.Dependencies =
     let links = NativeLinks.forPlatform env.Platform
+    let windowPrograms = windowProgram fs env
     let settingsPath = Settings.location fs env.ApplicationData env.UserProfile
 
     { FileSystem = fs
@@ -79,9 +88,9 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) (log: Lo
       Processes =
         { ListDrives = fun () -> Drives.list fs (home env)
           SendToTrash = sendToTrash fs env
-          StartEditor = runEditor app fs env
-          Launch = LaunchProcess.start fs env.Platform
-          RunCommand = CommandProcess.start fs env.Platform
+          StartEditor = runEditor app fs env windowPrograms
+          Launch = LaunchProcess.start fs env.Platform windowPrograms
+          RunCommand = CommandProcess.start fs env.Platform windowPrograms
           LinkKinds = Links.available links
           RefuseLink = Links.refusal env.Platform fs
           MakeLink = Links.create links env.Platform fs
