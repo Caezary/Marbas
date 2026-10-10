@@ -6,7 +6,6 @@ open Terminal.Gui.App
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.State
-open Marbas.Ui.App
 
 let private sendToTrash (fs: IFileSystem) (env: HostEnvironment) =
     match env.Platform with

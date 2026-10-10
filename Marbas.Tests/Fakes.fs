@@ -6,7 +6,7 @@ open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Marbas.Domain
 open Marbas.FileSystem
-open Marbas.Ui.App
+open Marbas.State
 open Marbas.Tests
 
 let private at = Root.at

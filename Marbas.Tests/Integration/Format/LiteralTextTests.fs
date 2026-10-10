@@ -5,6 +5,7 @@ open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Terminal.Gui.Input
 open Xunit
+open Marbas.State
 open Marbas.Ui.Panels
 open Marbas.Ui.Dialogs
 open Marbas.Ui.App

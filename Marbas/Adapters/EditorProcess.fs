@@ -4,7 +4,6 @@ open System.Diagnostics
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
-open Marbas.Ui.App
 
 type EditorWait =
     | TakesTheTerminal

@@ -9,10 +9,32 @@ take longer than a keystroke is an effect as well, so it runs off the UI thread
 behind the progress window; [State and effects](STATE-AND-EFFECTS.md) draws that
 line where the code draws it. The generic `State/Runtime.fs` host holds the only
 mutable cell and drives the update/render/effect loop. The outside world (file
-system, dialogs, quit) is injected through `Ports.Dependencies` — four
-sub-records, `Prompts`, `Processes`, `Watches` and `Runners` — and run by
-`Shell.interpret`; `Adapters/` holds the real implementations of those ports and
-`Adapters/Dependencies.fs` is the one place that wires them.
+system, dialogs, quit) is injected through `Ports.Dependencies` — five
+sub-records, `Prompts`, `Processes`, `Clipboard`, `Watches` and `Runners` — and
+run by `Shell.interpret`; `Adapters/` holds the real implementations of those
+ports and `Adapters/Dependencies.fs` is the one place that wires them.
+
+**`State` holds the ports and the interpreter, below the line its transitions
+cannot see past.** Neither `Ports` nor `Shell` draws anything — one is the
+shape of the outside world, the other turns an `Effect` into a call on it — so
+both live in `State`, with the wording the interpreter says (`State/Messages/`)
+and `Startup`, which decides how a session begins. Nothing under `State/` opens
+a `Terminal.Gui` namespace or a `Marbas.Ui` one. The rule that a transition
+reaches no port but `IFileSystem` is now held by the compile order inside the
+layer, which runs in three steps:
+
+1. `PanelState`, `AppState`, `CommandExpansion`, `Update`, `LogEntry`,
+   `Runtime` — the state, its transitions and the host. Nothing here can name a
+   port: `Ports` is not compiled yet.
+2. `Messages/` — the words for what the first step answers. It reads `Update`
+   and `CommandExpansion` for the two values it words that are theirs, and
+   everything else from `FileSystem` and `Domain`.
+3. `Ports`, `Shell`, `Startup` — the outside world, the interpreter that
+   carries an effect out into it, and the first steps of a session.
+
+`Ui` sits on all three and only draws and wires: a view may read a message's
+wording or take a port's request record, and `MainWindow` hands `Shell.interpret`
+to the runtime, but no view decides what an effect does.
 
 **Terminal.Gui 2.4 over Spectre.Console and Consolonia.** Only Terminal.Gui is
 a full TUI framework (windows, focus, event loop) with a large, active
@@ -26,9 +48,9 @@ See [Testing](TESTING.md) for how the suite itself is organised.
 
 **No code comments.** Intent lives in names, tests and these documents.
 
-**`Ui` is one layer in nine folders.** Forty-odd modules under a single folder
+**`Ui` is one layer in eight folders.** Forty-odd modules under a single folder
 stopped being navigable, so they are grouped by what they are about — theme,
-formatting, keys, messages, panels, viewer, dialogs, the search results, and the
+formatting, keys, panels, viewer, dialogs, the search results, and the
 application's own composition root — and each folder is a namespace:
 `Marbas.Ui.Panels.FilePanel`.
 The folder order in the code map below is also the compile order, and every
@@ -37,7 +59,7 @@ the layer acyclic without any tooling. `Ui` is still one layer of `Adapters` →
 `Ui` → `State` → `FileSystem` → `Domain`; the folders divide it by subject, not
 by rank.
 
-**`Adapters` is where the operating system is allowed in.** `Ui/App/Ports.fs`
+**`Adapters` is where the operating system is allowed in.** `State/Ports.fs`
 declares the ports; every real implementation of one lives in `Adapters/`, and
 nothing below that folder opens `System.Diagnostics`, imports `user32.dll` or
 asks which operating system it is running on. The answer to that last question
@@ -102,6 +124,7 @@ Marbas/
     MenuHotkey.fs         the one letter or digit that runs a user menu entry, kept in capitals
     MenuLabel.fs          the name a user menu entry is shown under
     CommandLine.fs        what a user menu entry runs, not yet expanded, and how it is started
+    Modifier.fs           Ctrl, Alt or Shift, as the ports and the key table both name them
   FileSystem/
     FileSystemPath.fs     single-case path type wrapping a raw string
     EntryAttributes.fs    what FileAttributes and UnixFileMode say, in the Domain's words
@@ -110,6 +133,7 @@ Marbas/
     CommandRun.fs         a user menu command as expanded, and how and where it ran
     Handler.fs            a program the system offers for a name, and its display name
     ProgramCommand.fs     a command line -> the program it starts
+    EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
     DesktopEntry.fs       one .desktop file -> the handler it describes
     MimeDatabase.fs       globs -> mime types, mimeapps.list -> desktop entries
     DesktopHandlers.fs    the XDG directories -> the handlers a name has
@@ -166,7 +190,30 @@ Marbas/
                           stamped lines each entry becomes, case names only
     Runtime.fs            generic host: the single mutable cell, the message
                           queue, one drain loop over observe/update/render/interpret
-  Ui/                     nine folders, compiled in this order; every
+    Messages/             the words the application says, from values it holds;
+                          compiled after the transitions and before the interpreter
+      ListingErrorMessage.fs    ListingError -> user-facing text
+      ContentErrorMessage.fs    ContentError -> user-facing text
+      ArchiveErrorMessage.fs    ArchiveError -> user-facing text
+      LinkRefusalMessage.fs     LinkRefusal -> the one sentence saying why
+      OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
+      LaunchErrorMessage.fs     LaunchError -> user-facing text
+      ExpansionRefusalMessage.fs  why a user menu command was refused -> user-facing text
+      UserMenuErrorMessage.fs     UserMenuError -> user-facing text
+      CrashMessage.fs           a crash -> the line printed once the terminal is back
+      SettingsErrorMessage.fs   SettingsError -> user-facing text
+      HistoryErrorMessage.fs    HistoryError -> user-facing text
+      FavoritesErrorMessage.fs  FavoritesError -> user-facing text
+      ClipboardErrorMessage.fs  ClipboardError -> user-facing text
+      DeleteConfirmation.fs     delete targets -> confirmation question
+      OverwriteQuestion.fs      collision -> question text, answer buttons and mapping
+      PasswordQuestion.fs       protected archive -> the words of the password prompt
+    Ports.fs              the ports: prompts, processes, the clipboard, watches,
+                          runners and the log
+    Shell.fs              the effect interpreter
+    Startup.fs            how a session begins: the state the settings restore, the
+                          first paths opened, the first watch and the sweep
+  Ui/                     eight folders, compiled in this order; every
                           dependency points at a folder listed above it
     Theme/                the look, applied before any view is built
       ClassicScheme.fs      the five schemes the screen is painted with
@@ -180,26 +227,14 @@ Marbas/
       PathText.fs           a path too long for the room -> C:\...\parent\current
       QueryText.fs          a query and where it ran -> the words a title and a summary use
     Keys/                 what a keystroke means, and the bar that names them
-      Modifiers.fs          Ctrl / Alt / Shift as a set, the set a key carries,
+      Modifiers.fs          the modifiers as a set, the set a key carries,
                             and the key a set makes of a plain one
       KeyMap.fs             every key binding: key, bar label, message; the twelve
                             bar slots of a set of modifiers; the shifted page keys,
                             which only carry a direction
       KeyBarLayout.fs       bar width -> where each of the twelve slots sits
       FunctionKeyBar.fs     bottom bar: a slot per function key, F1 to F12
-    Messages/             the words the application says, from values it holds
-      ListingErrorMessage.fs    ListingError -> user-facing text
-      ContentErrorMessage.fs    ContentError -> user-facing text
-      ArchiveErrorMessage.fs    ArchiveError -> user-facing text
-      LinkRefusalMessage.fs     LinkRefusal -> the one sentence saying why
-      OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
-      LaunchErrorMessage.fs     LaunchError -> user-facing text
-      ExpansionRefusalMessage.fs  why a user menu command was refused -> user-facing text
-      UserMenuErrorMessage.fs     UserMenuError -> user-facing text
-      CrashMessage.fs           a crash -> the line printed once the terminal is back
-      DeleteConfirmation.fs     delete targets -> confirmation question
-      OverwriteQuestion.fs      collision -> question text, answer buttons and mapping
-      PasswordQuestion.fs       protected archive -> the words of the password prompt
+
     Panels/               the two panels and everything drawn inside one
       EntryColor.fs         one entry -> its colour group, and that group's attribute
       PageJump.fs           where a page key lands, from the page on screen
@@ -254,14 +289,11 @@ Marbas/
       FindSummary.fs        the walk so far, or its outcome -> the summary line
       ResultRow.fs          hits -> header and hit rows, grouped by where they live
       ResultsWindow.fs      the window: list, summary, bar, and the answer it gives
-    App/                  the composition root, and the way out to the world
+    App/                  the screen as a whole and the composition root
       CursorInfo.fs         cursor entry -> status line text
       StatusLine.fs         the status line view
       TabCounter.fs         which tab is in front, of how many, in the corner
       AppView.fs            window, both panels, the status line and the counter
-      Ports.fs              the ports: prompts, processes, watches, runners and the log
-      Shell.fs              the effect interpreter
-      EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
       MainWindow.fs         composition: views, runtime, event wiring
   Adapters/               the real implementations of Ports.Dependencies;
                           the only folder allowed to touch the OS
@@ -306,9 +338,10 @@ Marbas.Tests/
   Expect.fs               Result unwrapping, so act and assert stay apart
   Fakes.fs                the do-nothing Ports.Dependencies every test starts from
   FileSystem/             unit tests, one module per FileSystem module
-  State/                  unit tests, one module per State module
-  Ui/                     unit tests of the pure Ui modules and the Shell
-                          interpreter, in the same nine folders as the source
+  State/                  unit tests, one module per State module; the wording
+                          under Messages/, the interpreter in the Shell* files
+  Ui/                     unit tests of the pure Ui modules, in the same eight
+                          folders as the source
   Integration/            every test that constructs a Terminal.Gui view, in
                           those same folders
     Gui.fs                 focusedWindow, leftList, rightList, press, panel,

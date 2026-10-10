@@ -2,7 +2,6 @@ module Marbas.Ui.App.MainWindow
 
 open Terminal.Gui.App
 open Terminal.Gui.Input
-open Marbas.FileSystem
 open Marbas.State
 open Marbas.State.Runtime
 open Marbas.Ui.Keys
@@ -14,14 +13,9 @@ let configureQuitKey () =
 let create (deps: Ports.Dependencies) =
     let view = AppView.create ()
 
-    let settings =
-        Settings.load deps.FileSystem (Settings.forPath deps.StartPath) deps.SettingsPath
-
-    let appState = AppState.restore settings
-
     let runtime =
         Runtime(
-            appState,
+            Startup.restored deps,
             Update.step deps.FileSystem,
             Shell.interpret deps,
             AppView.render deps.FileSystem view,
@@ -33,17 +27,7 @@ let create (deps: Ports.Dependencies) =
 
     view.Window.Add keyBar |> ignore
 
-    for side, _ in AppView.panels view do
-        (AppState.panel side appState).Path
-        |> PanelLocation.directory
-        |> Option.iter (fun path -> dispatch (Update.PathOpened(side, path)))
-
-    runtime.State
-    |> AppState.watchedLocations
-    |> Update.WatchLocations
-    |> Shell.interpret deps dispatch
-
-    Shell.interpret deps dispatch Update.SweepLeftovers
+    Startup.firstSteps deps dispatch (fun () -> runtime.State)
 
     let host: PanelWiring.Host =
         { Dispatch = dispatch

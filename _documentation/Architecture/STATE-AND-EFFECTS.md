@@ -63,8 +63,8 @@ appends can no longer be overtaken by a nested one and then re-armed on the
 older directories. And a batch that finishes inside `deps.Runners.Batch`, which
 dispatches from within the dialog's own event loop, no longer re-enters the
 runtime several dispatches deep. The drain is still synchronous: `Dispatch`
-returns with the queue empty, which is what lets `MainWindow.create` read
-`Runtime.State` straight after seeding the panels.
+returns with the queue empty, which is what lets `Startup.firstSteps` read
+the state straight after seeding the panels.
 
 **The outside world is injected.** `Ports.Dependencies` names every port and
 groups them by what they do to the world: `Prompts` asks the person something
@@ -115,17 +115,29 @@ work a message did not change, which
 that function, not a second notion of what the screen shows. The side-to-view pairing lives in `FilePanel.Panels` and
 `FilePanel.pairs`, which is what render, seeding and wiring all iterate.
 `MainWindow.create` is left with four steps: build the view, build the runtime,
-seed both panels, attach the wiring. The function key bar is added after the
-runtime exists, because it needs `dispatch` — which needs the runtime, which
+let the session begin, attach the wiring. The function key bar is added after
+the runtime exists, because it needs `dispatch` — which needs the runtime, which
 needs the render function, which needs the views.
+
+**How a session begins is decided in `State`, not in the window.** `Startup`
+holds what `MainWindow.create` used to decide for itself. `Startup.restored`
+reads the settings file over the defaults for the start path and answers the
+state the runtime is built on. `Startup.firstSteps` takes the dependencies, the
+runtime's `dispatch` and a way to read its state, and does three things in
+order: it dispatches `PathOpened` for each panel that stands in a directory,
+left then right; it interprets `WatchLocations` over where the panels stand
+once those have been handled; and it interprets `SweepLeftovers`. The window
+calls the two and knows none of it, so the same beginning can be tested with
+the fake dependencies and no view.
 
 **Panel event wiring is its own module, attached after the panels are seeded.**
 `PanelWiring.attach` subscribes one panel's `ListView` and frame to a
 `PanelWiring.Host` — dispatch, repaint, and the "am I rendering?" question —
 so `MainWindow` only builds views and hands over that host, and the wiring can
 be tested against a bare `FilePanel` with a recording host instead of a whole
-window. `MainWindow` keeps two loops over the panels on purpose: the first
-dispatches the startup `PathOpened`, the second attaches the wiring. While the
+window. The panels are still gone over twice on purpose: `Startup.firstSteps`
+dispatches the startup `PathOpened`, and only then does `MainWindow` attach the
+wiring. While the
 initial state is being seeded no handler exists yet, so nothing can re-enter
 the runtime — the `IsRendering` guard covers `ValueChanged`, but the
 `FrameChanged` handler calls `Runtime.Refresh` directly, and a nested `paint`
@@ -212,7 +224,7 @@ had to change when the operations moved off the UI thread.
 **Work nobody waits for has a runner of its own.** `Runners.Background` takes
 the work and nothing else: no title, no control, no result. `BatchRunner.runUnseen`
 puts it on a task and returns, and the fake runs it inline. Its one caller is
-the sweep of earlier sessions' working directories, which `MainWindow.create`
+the sweep of earlier sessions' working directories, which `Startup.firstSteps`
 raises as the effect `SweepLeftovers` once the panels stand — an effect no
 transition asks for, interpreted like any other so that debug mode records it.
 What the work has to say it says to the log, from its own thread

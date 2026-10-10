@@ -963,7 +963,7 @@ takes `FileViewer.Ports` and the `Source`: `Close`, `ChooseCodePage`,
 `AskSearch`, `Searches`, `RunSearch` and `Report`. `Prompts.showFile` fills it
 with the application's own dialogs and runner; a test fills it with answers and
 runs the search on its own thread. `Shell` hands the adapter a `ViewRequest`,
-the source and a `SearchHistory` — `Texts`, read from the history file each
+the source and a `Ports.SearchHistory` — `Texts`, read from the history file each
 time `F7` is pressed, and `Remember`, which writes a text through the same
 `changeHistory` every other field uses and dispatches `HistoryChanged`. So the
 viewer reads and writes the history without knowing there is a file, and only

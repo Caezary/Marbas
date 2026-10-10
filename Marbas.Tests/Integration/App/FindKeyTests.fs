@@ -3,8 +3,8 @@ module Marbas.Tests.Integration.App.FindKeyTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
+open Marbas.State
 open Marbas.Ui.Keys
-open Marbas.Ui.App
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 

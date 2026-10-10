@@ -6,8 +6,8 @@ open Terminal.Gui.Input
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
+open Marbas.State
 open Marbas.Ui.Keys
-open Marbas.Ui.App
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 

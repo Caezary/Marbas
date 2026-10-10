@@ -64,6 +64,7 @@
     <Compile Include="FileSystem\SearchListingTests.fs" />
     <Compile Include="FileSystem\HandlerTests.fs" />
     <Compile Include="FileSystem\ProgramCommandTests.fs" />
+    <Compile Include="FileSystem\EditorCommandTests.fs" />
     <Compile Include="FileSystem\DesktopEntryTests.fs" />
     <Compile Include="FileSystem\MimeDatabaseTests.fs" />
     <Compile Include="FileSystem\XdgDirectoriesTests.fs" />
@@ -150,6 +151,24 @@
     <Compile Include="State\LogEntryTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
     <Compile Include="State\RuntimeQueueTests.fs" />
+    <Compile Include="State\Messages\ListingErrorMessageTests.fs" />
+    <Compile Include="State\Messages\ContentErrorMessageTests.fs" />
+    <Compile Include="State\Messages\ArchiveErrorMessageTests.fs" />
+    <Compile Include="State\Messages\LinkRefusalMessageTests.fs" />
+    <Compile Include="State\Messages\OperationErrorMessageTests.fs" />
+    <Compile Include="State\Messages\LaunchErrorMessageTests.fs" />
+    <Compile Include="State\Messages\ExpansionRefusalMessageTests.fs" />
+    <Compile Include="State\Messages\UserMenuErrorMessageTests.fs" />
+    <Compile Include="State\Messages\CrashMessageTests.fs" />
+    <Compile Include="State\Messages\DeleteConfirmationTests.fs" />
+    <Compile Include="State\Messages\OverwriteQuestionTests.fs" />
+    <Compile Include="State\Messages\PasswordQuestionTests.fs" />
+    <Compile Include="State\Messages\ClipboardErrorMessageTests.fs" />
+    <Compile Include="State\ShellTests.fs" />
+    <Compile Include="State\ShellPlacesTests.fs" />
+    <Compile Include="State\ShellLogTests.fs" />
+    <Compile Include="State\ShellLeftoversTests.fs" />
+    <Compile Include="State\StartupTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -172,22 +191,6 @@
     <Compile Include="Ui\Keys\ModifiersTests.fs" />
     <Compile Include="Ui\Keys\KeyMapTests.fs" />
     <Compile Include="Ui\Keys\KeyBarLayoutTests.fs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Compile Include="Ui\Messages\ListingErrorMessageTests.fs" />
-    <Compile Include="Ui\Messages\ContentErrorMessageTests.fs" />
-    <Compile Include="Ui\Messages\ArchiveErrorMessageTests.fs" />
-    <Compile Include="Ui\Messages\LinkRefusalMessageTests.fs" />
-    <Compile Include="Ui\Messages\OperationErrorMessageTests.fs" />
-    <Compile Include="Ui\Messages\LaunchErrorMessageTests.fs" />
-    <Compile Include="Ui\Messages\ExpansionRefusalMessageTests.fs" />
-    <Compile Include="Ui\Messages\UserMenuErrorMessageTests.fs" />
-    <Compile Include="Ui\Messages\CrashMessageTests.fs" />
-    <Compile Include="Ui\Messages\DeleteConfirmationTests.fs" />
-    <Compile Include="Ui\Messages\OverwriteQuestionTests.fs" />
-    <Compile Include="Ui\Messages\PasswordQuestionTests.fs" />
-    <Compile Include="Ui\Messages\ClipboardErrorMessageTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -234,11 +237,6 @@
   <ItemGroup>
     <Compile Include="Ui\App\CursorInfoTests.fs" />
     <Compile Include="Ui\App\TabCounterTests.fs" />
-    <Compile Include="Ui\App\EditorCommandTests.fs" />
-    <Compile Include="Ui\App\ShellTests.fs" />
-    <Compile Include="Ui\App\ShellPlacesTests.fs" />
-    <Compile Include="Ui\App\ShellLogTests.fs" />
-    <Compile Include="Ui\App\ShellLeftoversTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

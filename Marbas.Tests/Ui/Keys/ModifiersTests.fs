@@ -2,6 +2,7 @@ module Marbas.Tests.Ui.Keys.ModifiersTests
 
 open Xunit
 open Terminal.Gui.Input
+open Marbas.Domain
 open Marbas.Ui.Keys
 
 [<Fact>]

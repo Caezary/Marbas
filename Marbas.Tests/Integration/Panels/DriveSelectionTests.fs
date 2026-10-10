@@ -3,9 +3,9 @@ module Marbas.Tests.Integration.Panels.DriveSelectionTests
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.State
 open Marbas.Ui.Keys
 open Marbas.Ui.Panels
-open Marbas.Ui.App
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 

@@ -4,8 +4,8 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Terminal.Gui.Input
+open Marbas.State
 open Marbas.Ui.Keys
-open Marbas.Ui.App
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 

@@ -6,9 +6,9 @@ open Terminal.Gui.Input
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.State
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
-open Marbas.Ui.App
 
 let private laidOut suggestion =
     DialogStyle.apply ()

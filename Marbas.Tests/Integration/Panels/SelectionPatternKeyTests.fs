@@ -3,10 +3,9 @@ module Marbas.Tests.Integration.Panels.SelectionPatternKeyTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Views
-open Marbas.Domain
+open Marbas.State
 open Marbas.Ui.Keys
 open Marbas.Ui.Panels
-open Marbas.Ui.App
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 

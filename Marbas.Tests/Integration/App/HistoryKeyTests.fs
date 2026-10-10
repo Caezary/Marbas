@@ -3,10 +3,10 @@ module Marbas.Tests.Integration.App.HistoryKeyTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Ui.Keys
 open Marbas.Ui.Panels
-open Marbas.Ui.App
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 

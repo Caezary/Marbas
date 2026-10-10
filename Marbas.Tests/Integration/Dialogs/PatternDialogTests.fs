@@ -3,9 +3,9 @@ module Marbas.Tests.Integration.Dialogs.PatternDialogTests
 open System.Drawing
 open Xunit
 open Terminal.Gui.Views
+open Marbas.State
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
-open Marbas.Ui.App
 
 let private laidOut remembered title =
     DialogStyle.apply ()

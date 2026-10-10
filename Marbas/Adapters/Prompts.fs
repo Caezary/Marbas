@@ -8,10 +8,10 @@ open Marbas.Collections
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.State.AppState
-open Marbas.Ui.Messages
+open Marbas.State.Messages
+open Marbas.State.Ports
 open Marbas.Ui.Viewer
 open Marbas.Ui.Dialogs
-open Marbas.Ui.App.Ports
 
 let private running<'view, 'answer when 'view :> IRunnable and 'view :> IDisposable>
     (app: IApplication)

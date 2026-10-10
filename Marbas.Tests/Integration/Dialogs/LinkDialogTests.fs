@@ -9,7 +9,7 @@ open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
-open Marbas.Ui.Messages
+open Marbas.State.Messages
 open Marbas.Tests
 
 let private suggestion = Root.at "backup/notes.txt"

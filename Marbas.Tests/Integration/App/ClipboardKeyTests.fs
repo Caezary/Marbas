@@ -6,7 +6,7 @@ open Terminal.Gui.Input
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Keys
-open Marbas.Ui.Messages
+open Marbas.State.Messages
 open Marbas.Ui.Panels
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui

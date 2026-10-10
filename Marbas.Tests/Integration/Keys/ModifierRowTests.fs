@@ -3,6 +3,7 @@ module Marbas.Tests.Integration.Keys.ModifierRowTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
+open Marbas.Domain
 open Marbas.Ui.Keys
 open Marbas.Ui.Panels
 open Marbas.Tests

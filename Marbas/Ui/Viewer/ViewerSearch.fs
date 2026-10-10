@@ -2,7 +2,7 @@ namespace Marbas.Ui.Viewer
 
 open Marbas.Domain
 open Marbas.FileSystem
-open Marbas.Ui.Messages
+open Marbas.State.Messages
 
 type LastSearch =
     | LastText of WindowSearch.Query option
@@ -31,10 +31,6 @@ type Asked =
 type SearchRefusal =
     | BrokenPattern of PatternError
     | BrokenBytes of BytesError
-
-type SearchHistory =
-    { Texts: unit -> EnteredText list
-      Remember: EnteredText -> unit }
 
 type SearchReport =
     | TextNotFound of WindowSearch.Wanted

@@ -2,9 +2,9 @@ module Marbas.Tests.Integration.Dialogs.ProgressDialogTests
 
 open System.Drawing
 open Xunit
+open Marbas.State
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
-open Marbas.Ui.App
 open Marbas.Tests
 
 let private at = Root.at

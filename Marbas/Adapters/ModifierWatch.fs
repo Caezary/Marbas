@@ -3,6 +3,7 @@ module Marbas.Adapters.ModifierWatch
 open System
 open System.Runtime.InteropServices
 open Terminal.Gui.App
+open Marbas.Domain
 open Marbas.Ui.Keys
 
 [<Literal>]

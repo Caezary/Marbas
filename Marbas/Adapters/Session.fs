@@ -5,9 +5,9 @@ open System.IO.Abstractions
 open Terminal.Gui.App
 open Marbas.FileSystem
 open Marbas.State
+open Marbas.State.Messages
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
-open Marbas.Ui.Messages
 open Marbas.Ui.App
 open Marbas.Adapters.Crashes
 

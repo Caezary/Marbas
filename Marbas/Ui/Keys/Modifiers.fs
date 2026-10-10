@@ -1,11 +1,7 @@
 namespace Marbas.Ui.Keys
 
 open Terminal.Gui.Input
-
-type Modifier =
-    | Ctrl
-    | Alt
-    | Shift
+open Marbas.Domain
 
 module Modifiers =
 

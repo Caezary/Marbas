@@ -12,8 +12,8 @@ schedules the fix. A rule here beats a habit found in an older file.
 | `Collections/` | `Zipper` and the like — no domain knowledge | nothing |
 | `Domain/` | the vocabulary: `EntryName`, `FileSystemPath`, `NamePattern`, `SortOrder`, `HiddenEntries`, `FindQuery` | `Collections` |
 | `FileSystem/` | reading and writing disks and archives, every call through `IFileSystem` | `Domain` |
-| `State/` | `AppState`, messages, transitions, `Effect`; `Runtime` holds the one mutable cell | `FileSystem`, `Domain` |
-| `Ui/` | views, key maps, `Ports.Dependencies` as ports, `Shell.interpret` | `State` and below |
+| `State/` | `AppState`, messages, transitions, `Effect`; `Runtime` holds the one mutable cell; then the wording in `Messages/`, `Ports.Dependencies` as ports, `Shell.interpret` and `Startup` | `FileSystem`, `Domain` |
+| `Ui/` | views, key maps, and the wiring of both to the runtime | `State` and below |
 | `Adapters/` | the real ports: dialogs, processes, registry, watches, runners | everything above it |
 | `Program.fs` | starts the application, nothing else | `Adapters` |
 
@@ -25,7 +25,14 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] A type belongs to the lowest layer that speaks it, not the one that needed
       it first.
 - [ ] One folder is one namespace, and a folder may only depend on folders above
-      it in the compile order.
+      it in the compile order. `State/Messages/` is the one folder compiled in
+      the middle of its parent: after the transitions it words, before the
+      interpreter that says them.
+- [ ] Inside `State`, the ports come last. A transition cannot name `Ports` or
+      `Shell`, because neither is compiled yet where `Update` is; what it wants
+      from the world it raises as an `Effect`.
+- [ ] Nothing under `State/` opens a `Terminal.Gui` namespace. A module that
+      needs one is a view or its wiring, and belongs to `Ui`.
 - [ ] `AppState` is immutable. A transition answers a new state; handlers never
       mutate.
 

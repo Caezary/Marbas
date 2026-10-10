@@ -121,7 +121,7 @@ let ``a favourite that has gone is reported and the panel stays where it was`` (
     Assert.Equal(at "start", shownPath FilePanel.LeftId window)
 
 let private opened (asked: ResizeArray<Place option>) =
-    fun (prompt: Marbas.Ui.App.Ports.FavoritesPrompt) ->
+    fun (prompt: Marbas.State.Ports.FavoritesPrompt) ->
         asked.Add prompt.Current
         None
 

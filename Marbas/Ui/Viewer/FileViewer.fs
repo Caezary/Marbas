@@ -24,8 +24,8 @@ type Ports =
     { Close: Window -> unit
       ChooseCodePage: CodePageOffer -> CodePage option
       AskSearch: SearchOffer -> SearchAnswer option
-      Searches: SearchHistory
-      ByteSearches: SearchHistory
+      Searches: Marbas.State.Ports.SearchHistory
+      ByteSearches: Marbas.State.Ports.SearchHistory
       RunSearch:
           (WindowSearch.Control -> WindowSearch.Answer<WindowSearch.Match>) -> WindowSearch.Answer<WindowSearch.Match>
       RunByteSearch:
@@ -383,7 +383,7 @@ let private searchingBytes (ports: Ports) (source: FileWindow.Source) (content: 
     | WindowSearch.Stopped -> ()
     | WindowSearch.Unreadable error -> ports.Report(SearchFailed error)
 
-let private remembering (history: SearchHistory) (answer: SearchAnswer) =
+let private remembering (history: Marbas.State.Ports.SearchHistory) (answer: SearchAnswer) =
     EnteredText.tryCreate answer.Typed |> Option.iter history.Remember
 
 let create (ports: Ports) (source: FileWindow.Source) =

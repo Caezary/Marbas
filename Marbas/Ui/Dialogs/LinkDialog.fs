@@ -5,8 +5,8 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.State.Messages
 open Marbas.Ui
-open Marbas.Ui.Messages
 open Marbas.Ui.Theme
 
 [<Literal>]

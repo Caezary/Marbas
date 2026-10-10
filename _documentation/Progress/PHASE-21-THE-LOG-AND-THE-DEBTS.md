@@ -453,3 +453,48 @@ entries of an archive landed beside, and the root of an archive with nothing
 to land beside, and one on a search answer that lands beside an entry. Four
 tests changed only in the renamed case, `AtDirectory location` to
 `At(Into location)`; the rest pass untouched.
+
+**P21.11 moved `Shell` and `Ports` into `State`.** `Ui/App/Ports.fs` and
+`Ui/App/Shell.fs` are `State/Ports.fs` and `State/Shell.fs`, the sixteen
+modules of `Ui/Messages/` are `State/Messages/` under the namespace
+`Marbas.State.Messages`, the type `Modifier` is `Domain/Modifier.fs`, and
+`State/Startup.fs` is new. Nothing under `State/` opens a `Terminal.Gui` or a
+`Marbas.Ui` namespace, and `Ui/App` is left with three views, the text of the
+status line and `MainWindow`.
+[Overview](../Architecture/OVERVIEW.md) restates the dependency rule: the
+transitions are compiled first, the wording second, the ports and the
+interpreter last, so `Update` cannot name a port.
+
+- **`Messages/` is a folder inside `State`, compiled in the middle of it.**
+  Two of its modules word values of `Update` and `CommandExpansion`, and
+  `Shell` says all of them, so the folder cannot stand wholly before or after
+  its parent. The rule that a folder depends only on folders above it now
+  names that one exception in [Coding style](../coding-style-conventions.md).
+- **`SearchHistory` moved with the ports.** The plan did not list it, but
+  `Ports.ViewRequest` carried the type from `Ui/Viewer/ViewerSearch.fs`, which
+  was the one thing in `Ports` that only `Ui` could give it. It is a type of
+  `Ports` now, and `FileViewer` names it from there.
+- **`EditorCommand` went to `FileSystem`.** It was not on the plan's list
+  either, but it is a choice between two program names and no view, and the
+  task is done when `Ui/App` holds views and wiring only. It sits beside
+  `ProgramCommand`, and its tests moved with it.
+- **Only the type left `Ui/Keys/Modifiers.fs`.** The plan kept
+  `Modifiers.ofKey` in `Ui`; `apply` reads a key as well, and `none` and `held`
+  are two lines the key bar and the watch both use, so the module stayed whole.
+- **`Startup` is two functions, and the runtime is still built by the
+  window.** `Startup.restored` answers the state the settings restore, and
+  `Startup.firstSteps` opens each panel's directory, raises the first watch
+  over where the panels then stand, and raises the sweep. Building the
+  `Runtime` out of the step function, the interpreter, the renderer and the
+  observer was left in `MainWindow.create`: it decides nothing, it joins four
+  things two layers apart.
+
+The suite gained five tests, on `Startup`: the start path with nothing saved,
+what an earlier session saved, the two openings in order, the watch over where
+the panels stand, and the sweep handed to the background runner. Everything
+else is the suite as it was, moved: the thirteen test files of the wording to
+`State/Messages/`, the four `Shell*Tests` files to `State/`, and
+`EditorCommandTests` to `FileSystem/`, with their modules renamed after their
+folders — 3930 pass and 16 skip on Windows. The probe of the `render-tui-screen`
+skill, which builds a `MainWindow`, was built against the new layout and needed
+no change.

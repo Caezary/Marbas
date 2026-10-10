@@ -164,7 +164,9 @@ listed with one.
 cover, one test module per module under test, and namespaces follow:
 `Marbas.Tests.State.UpdateTests` covers `Marbas.State.Update`. `Ui/` mirrors the
 source down to the subfolder, so `Ui/Panels/PanelTitleTests.fs` covers
-`Ui/Panels/PanelTitle.fs` as `Marbas.Tests.Ui.Panels.PanelTitleTests`.
+`Ui/Panels/PanelTitle.fs` as `Marbas.Tests.Ui.Panels.PanelTitleTests`, and so
+does `State/Messages/`. The interpreter's tests are the `Shell*Tests` files of
+`State/`: they run `Shell.interpret` over `Fakes.dependencies` and build no view.
 Everything in them is a unit test — pure, fast, no Terminal.Gui.
 
 `Integration/` holds every test that constructs a Terminal.Gui view, from a lone
@@ -172,8 +174,7 @@ dialog up to a whole `MainWindow` driven by keystrokes. That is the line: a test
 that touches Terminal.Gui needs `BeginInit`/`EndInit`, a layout pass and the
 process-wide statics that force parallelisation off, so it belongs on the other
 side of the fence from the pure ones. It carries the same subfolders as
-`Marbas/Ui` — all but `Messages/`, whose modules are pure text and never build a
-view — so a feature's unit tests and its Terminal.Gui tests sit at matching
+`Marbas/Ui`, so a feature's unit tests and its Terminal.Gui tests sit at matching
 paths on either side. `Disk/` and `Clipboard/` are the two subfolders with no
 `Ui` counterpart: they hold the tests that need the real file system or the
 real clipboard rather than a view, which are integration tests for the same
@@ -300,7 +301,7 @@ the same arrangement for the session's working directory, which is why "quitting
 takes it with it" is an ordinary `ShellTests` assertion.
 
 **Every window a test builds claims a working directory.** `MainWindow.create`
-raises the sweep of P21.7, and the fake `Runners.Background` runs it inline, so
+raises the sweep of P21.7 through `Startup.firstSteps`, and the fake `Runners.Background` runs it inline, so
 after `MainWindow.create` the mock file system holds
 `temp/Marbas/session/owner`. The fake `Processes.IsRunning` answers yes to every
 owner, so nothing a test planted under `temp/Marbas` is removed unless the test

@@ -234,7 +234,7 @@ only way out that releases the directory. A console window closed with its
 button, a logoff, a killed or crashed process and `Ctrl+Q` pressed while a
 dialog holds focus all skip it, and a handler for the console's close signal
 would only narrow that: nothing runs when a process is killed. So the fix is
-at the other end. `MainWindow.create` raises one more effect once the panels
+at the other end. `Startup.firstSteps` raises one more effect once the panels
 stand, `SweepLeftovers`, and `Shell` hands the work to `Runners.Background`, off
 the UI thread, so a large leftover cannot hold up the first screen:
 
