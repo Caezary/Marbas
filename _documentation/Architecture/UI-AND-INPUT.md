@@ -717,8 +717,8 @@ mode in the state would have had to decide what every other message does while
 it waits. `Alt+0` … `Alt+9` are ten rows of `bindings`, one per `FavoriteSlot`,
 each raising `FavoriteRequested slot`; the transition answers `LookUpFavorite
 slot`, `Shell` reads `favorites.conf` afresh, and a slot holding a place comes
-back as `FavoriteFound place`, which stands the active panel in it through
-`standInside` — the way a directory chosen from the history does. An empty slot
+back as `FavoriteFound place`, which lands the active panel on
+`Landing.inside place` — the way a directory chosen from the history does. An empty slot
 answers nothing, a place that has gone is the listing error every other landing
 reports with the panel left where it was, and the folder history remembers the
 landing through the usual post-step. `Shift+Alt+0` … `Shift+Alt+9` is bound to

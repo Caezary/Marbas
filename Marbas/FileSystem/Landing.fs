@@ -42,3 +42,13 @@ module Landing =
             Some(Beside(OnDisk(FileSystemPath.directory fs found), FileSystemPath.name fs found))
         | Some(archive, FileEntry, below) when isReadableArchive fs archive -> inArchive fs archive below
         | _ -> None
+
+    let inside (place: Place) = Into(Place.toLocation place)
+
+    let beside (fs: IFileSystem) (place: Place) =
+        match place with
+        | Place.OnDisk path -> Some(Beside(OnDisk(FileSystemPath.directory fs path), FileSystemPath.name fs path))
+        | Place.InArchive(archive, entry) ->
+            ArchivePath.name entry
+            |> Option.map (fun name ->
+                Beside(InArchive(archive, ArchivePath.parent entry |> Option.defaultValue ArchivePath.root), name))

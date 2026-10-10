@@ -230,8 +230,11 @@ since a window closed while its walk ran has been disposed.
 **What the window answers decides where the panel goes.** `AtHit` stands the
 active panel where the hit lives with the cursor on it — beside a directory hit,
 not inside it — turning hidden entries on first if the hit is concealed, and
-walking into the archive level for a hit inside one. `AtDirectory`, from a group
-header, stands the panel inside that directory. `InPanel`, from `F2`, makes the
+walking into the archive level for a hit inside one. `At` carries a `Landing`,
+the answer every other change of place by name gives; a group header answers
+`At(Into location)`, which stands the panel inside that directory. `AtHit` is
+not folded into it, because a `Landing` says nothing of hidden entries and a
+hit has to show them. `InPanel`, from `F2`, makes the
 list the panel's own listing. `F3` is not an answer: it views a file hit over
 the window through the same `showPath` the panel's `F3` uses, asking an
 archive's password first, and `Esc` in the viewer comes back to the list.

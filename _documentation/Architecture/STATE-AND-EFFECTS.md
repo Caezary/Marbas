@@ -557,7 +557,7 @@ with the query, the location the panel returns to and its marked directories;
 walk runs its hits live in the results window, not in `AppState`. The window
 answers a `FindAnswer` when it closes, which comes back as `SearchAnswered`: the
 `FindResults` in it become `AppState.LastSearch`, and the `FindLanding` beside
-them — a hit, a directory, the panel, or nothing — decides where the active
+them — a hit, a `Landing`, the panel, or nothing — decides where the active
 panel goes. `LastSearch` belongs to the session rather than to a tab and is
 never written to the settings file; `LastResultsRequested` drops what is gone
 from it and raises `ShowLastResults`, which fills the same window from the kept

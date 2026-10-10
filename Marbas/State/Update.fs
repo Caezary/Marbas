@@ -242,6 +242,15 @@ let private applyListing state result =
     | Ok updated -> stay updated
     | Error error -> request state (ReportListingError error)
 
+let private landingOn (fs: IFileSystem) (state: AppState) landing =
+    match landing with
+    | Into location -> standInside fs state.Active location state
+    | Beside(location, name) -> standBeside fs state.Active location name state
+    |> applyListing state
+
+let private landingIfAnywhere (fs: IFileSystem) state landing =
+    landing |> Option.map (landingOn fs state) |> Option.defaultValue (stay state)
+
 let private applyListingWithRefusals state result =
     match result with
     | Ok(updated, []) -> stay updated
@@ -433,14 +442,11 @@ let private runningFromMenu (fs: IFileSystem) state (command: MenuCommand) listF
 let private chosenFromHistory (fs: IFileSystem) state choice =
     match choice with
     | None -> stay state
-    | Some(OpenPlace place) -> standInside fs state.Active (Place.toLocation place) state |> applyListing state
+    | Some(OpenPlace place) -> Landing.inside place |> landingOn fs state
     | Some(RunAgain(StartedFile started)) -> request state (RunProgram started)
     | Some(RunAgain(StartedCommand run)) -> request state (RunCommand run)
     | Some(Revisit visit) -> visiting fs state visit
-    | Some(GoTo place) ->
-        match Place.beside fs place with
-        | Some(location, name) -> standBeside fs state.Active location name state |> applyListing state
-        | None -> stay state
+    | Some(GoTo place) -> Landing.beside fs place |> landingIfAnywhere fs state
 
 let private copyingText state lines =
     ClipboardText.tryCreate lines
@@ -621,7 +627,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         match answer.Landing with
         | None -> stay remembered
         | Some(AtHit hit) -> standOnHit fs state.Active hit remembered |> applyListing remembered
-        | Some(AtDirectory location) -> standInside fs state.Active location remembered |> applyListing remembered
+        | Some(At landing) -> landingOn fs remembered landing
         | Some InPanel ->
             showResults fs state.Active answer.Results remembered
             |> applyListingWithRefusals remembered
@@ -772,7 +778,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         | Some place -> request state (PromptForFavoriteSlot place)
         | None -> stay state
     | FavoriteRequested slot -> request state (LookUpFavorite slot)
-    | FavoriteFound place -> standInside fs state.Active (Place.toLocation place) state |> applyListing state
+    | FavoriteFound place -> Landing.inside place |> landingOn fs state
     | FavoritesRequested -> request state (ShowFavorites(Place.ofLocation (activePanel state).Path))
     | NamesCopyRequested ->
         PanelState.operationNames (activePanel state)
@@ -792,11 +798,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
         PanelLocation.holding fs (activePanel state).Path
         |> ReadClipboardPath
         |> request state
-    | ClipboardPathRead path ->
-        match Landing.ofPath fs path with
-        | Some(Into location) -> standInside fs state.Active location state |> applyListing state
-        | Some(Beside(location, name)) -> standBeside fs state.Active location name state |> applyListing state
-        | None -> stay state
+    | ClipboardPathRead path -> Landing.ofPath fs path |> landingIfAnywhere fs state
     | ClipboardRefused ClipboardUnavailable ->
         match state.ClipboardReport with
         | Unreported ->

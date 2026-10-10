@@ -154,7 +154,7 @@ let private standOn (window: ResultsView) (close: Window -> unit) =
         window.Landing <-
             match row with
             | ResultRow.Hit hit -> Some(AtHit hit)
-            | ResultRow.GroupHeader location -> Some(AtDirectory location)
+            | ResultRow.GroupHeader location -> Some(At(Into location))
 
         close window
 

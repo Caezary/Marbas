@@ -6,7 +6,7 @@ open Marbas.FileSystem.FileSearch
 
 type FindLanding =
     | AtHit of hit: FindHit
-    | AtDirectory of location: PanelLocation
+    | At of landing: Landing
     | InPanel
 
 type FindResults =

@@ -195,9 +195,20 @@ let ``Enter on a group header stands the panel inside that directory`` () =
     let state = loaded fs
 
     let result =
-        update fs (SearchAnswered(landing (AtDirectory(OnDisk(fp (at "start/docs")))))) state
+        update fs (SearchAnswered(landing (At(Into(OnDisk(fp (at "start/docs"))))))) state
 
     Assert.Equal(OnDisk(fp (at "start/docs")), (activePanel result.State).Path)
+
+[<Fact>]
+let ``a landing beside an entry stands the panel in its directory, on the entry`` () =
+    let fs = treeWith ()
+    let state = loaded fs |> loadPanel fs Left (fp (at "backup")) |> Expect.ok
+    let beside = Beside(OnDisk(fp (at "start")), EntryName.create "notes.txt")
+
+    let result = update fs (SearchAnswered(landing (At beside))) state
+
+    Assert.Equal(OnDisk(fp (at "start")), (activePanel result.State).Path)
+    Assert.Equal(Some "notes.txt", cursorName result.State)
 
 [<Fact>]
 let ``a window left without a landing moves nothing`` () =
@@ -215,7 +226,7 @@ let ``a landing whose directory is gone says so instead of moving`` () =
     let state = loaded fs
 
     let result =
-        update fs (SearchAnswered(landing (AtDirectory(OnDisk(fp (at "start/gone")))))) state
+        update fs (SearchAnswered(landing (At(Into(OnDisk(fp (at "start/gone"))))))) state
 
     Assert.Equal<Effect list>([ ReportListingError(DirectoryNotFound(fp (at "start/gone"))) ], result.Effects)
 

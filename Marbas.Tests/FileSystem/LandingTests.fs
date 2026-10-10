@@ -118,3 +118,51 @@ let ``a path below a directory that does not hold it lands nowhere`` () =
     let landing = Landing.ofPath fs (fp (at "start/gone/deeper"))
 
     Assert.Equal(None, landing)
+
+[<Fact>]
+let ``a directory kept as a place is landed in`` () =
+    let place = Place.OnDisk(fp (at "work/docs"))
+
+    let landing = Landing.inside place
+
+    Assert.Equal(Into(OnDisk(fp (at "work/docs"))), landing)
+
+[<Theory>]
+[<InlineData("")>]
+[<InlineData("docs/deep")>]
+let ``a level of an archive kept as a place is landed in`` (level: string) =
+    let place = Place.InArchive(archive, inside level)
+
+    let landing = Landing.inside place
+
+    Assert.Equal(Into(InArchive(archive, inside level)), landing)
+
+[<Fact>]
+let ``a file kept as a place is landed beside, in the directory holding it`` () =
+    let fs = MockFileSystem()
+    let place = Place.OnDisk(fp (at "work/notes.txt"))
+
+    let landing = Landing.beside fs place
+
+    Assert.Equal(Some(Beside(OnDisk(fp (at "work")), en "notes.txt")), landing)
+
+[<Theory>]
+[<InlineData("", "notes.txt")>]
+[<InlineData("docs", "inner.txt")>]
+[<InlineData("docs/deep", "leaf.txt")>]
+let ``an entry of an archive kept as a place is landed beside, at its level`` (level: string, name: string) =
+    let fs = MockFileSystem()
+    let place = Place.InArchive(archive, ArchivePath.child (inside level) (en name))
+
+    let landing = Landing.beside fs place
+
+    Assert.Equal(Some(Beside(InArchive(archive, inside level), en name)), landing)
+
+[<Fact>]
+let ``the root of an archive kept as a place has nothing to be landed beside`` () =
+    let fs = MockFileSystem()
+    let place = Place.InArchive(archive, ArchivePath.root)
+
+    let landing = Landing.beside fs place
+
+    Assert.Equal(None, landing)

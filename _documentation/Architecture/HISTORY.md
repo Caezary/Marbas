@@ -149,9 +149,10 @@ another copy remembered since is there — dispatches it as `HistoryChanged`, an
 hands it to `Prompts.ChooseHistory` with the tab and `deps.Clock()`. The answer
 is a `HistoryAnswer`: the tab the popup was left on, always, and a
 `HistoryChoice` when a row was chosen. `HistoryAnswered` stores the tab and, for
-`OpenPlace place`, stands the active panel in `Place.toLocation place` through
-the same `standInside` a search's group header uses, so a directory that is gone
-is a listing error and the panel stays. The comparison of P16.3 then remembers
+`OpenPlace place`, lands the active panel on `Landing.inside place` through
+`Update.landingOn`, the one function a search's group header, a favourite and a
+path from the clipboard land through as well, so a directory that is gone is a
+listing error and the panel stays. The comparison of P16.3 then remembers
 the place again, which moves it to the top. A file that cannot be read is
 reported and the popup is not shown.
 
@@ -200,9 +201,11 @@ On the *History* tab `[Open]` answers `RunAgain request`, which the state turns
 straight back into `RunProgram request`: the same target, program, working
 directory and elevation as the first time, and the start that follows is
 remembered again, which moves it to the top. `[Go to]`, and `Alt+G`, answer
-`GoTo place`; `Place.beside` turns a file's place into the location holding it
-and its name — a directory on disk, or the level of an archive above an entry —
-and `AppState.standBeside` loads that location with the cursor on the name.
+`GoTo place`; `Landing.beside` turns a file's place into a `Beside` — the
+location holding it and its name, a directory on disk or the level of an
+archive above an entry — and `Update.landingOn` loads that location with the
+cursor on the name. The root of an archive has no name to stand beside and
+lands nowhere.
 `[Go to]` is enabled only while the tab in front has a row — on *Folder
 history* it answers `OpenPlace`, the same as `[Open]`; it follows the tab through `Tabs.ValueChanged`. That handler also runs while the
 dialog is being disposed and its tables removed, so the tab in front is read
@@ -295,7 +298,7 @@ they asked for in `HistoryView.AskedUse`, the way `DriveDialog` keeps
 `HandingOver`, and `answer` reads it beside `Result`. They act only while *View
 history* is in front and has a row; elsewhere they are passed over and the popup
 stays open. `[Go to]` and `Alt+G` answer `GoTo` with the visit's place, which
-`Place.beside` already turns into the archive level above an entry.
+`Landing.beside` already turns into the archive level above an entry.
 
 ## Forgetting and clearing
 

@@ -423,3 +423,33 @@ notice failed one test, `move replaces whatever is already there`; nothing
 fails for `Kept` taken as `Replaced`, because the name a wipe moves to is
 drawn at random until one is free and no test can put a file in its way —
 which was as true of the `false` it replaced.
+
+**P21.10 left one way to land a panel.** `Update.landingOn` takes a `Landing`
+and is the only caller of `AppState.standInside` and `standBeside`. A place
+opened from the history and a favourite reach it through `Landing.inside`,
+`[Go to]` through `Landing.beside`, a path from the clipboard through
+`Landing.ofPath` as before, and a search's group header through
+`FindLanding.At`, which carries a `Landing` where `AtDirectory` carried a
+location. `AtHit` and `InPanel` are as they were. The two answers that may
+lead nowhere — `Landing.beside` and `Landing.ofPath` — share
+`landingIfAnywhere`.
+
+- **The conversions are in `Landing`, not in `Place`.** The plan had `Place`
+  gain them. `Place` is compiled before `History` and `Favorites`, which are
+  built on it, and `Landing` after the archive listing its `ofPath` reads, so
+  `Place` cannot name a `Landing` without the type being split from its
+  module. `Place.beside` is gone as the plan asked, its body now
+  `Landing.beside` answering a `Beside`; `Place.toLocation` stays, with
+  `Landing.inside` its one caller.
+- **A search can now land beside an entry**, since the case carries any
+  `Landing`. Nothing in the results window answers one — a group header is
+  always `Into` — and one test holds the transition to it.
+
+The folder history records what it did: the remembering is a post-step over
+the place the panel ends in, and the same two functions of `AppState` still put
+it there. The suite gained nine tests — eight on the two conversions, a
+directory and two levels of an archive landed in, a file on disk and three
+entries of an archive landed beside, and the root of an archive with nothing
+to land beside, and one on a search answer that lands beside an entry. Four
+tests changed only in the renamed case, `AtDirectory location` to
+`At(Into location)`; the rest pass untouched.

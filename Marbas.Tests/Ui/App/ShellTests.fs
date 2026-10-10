@@ -2552,7 +2552,7 @@ let ``the directories of PATH are the ground of the scope that names them`` () =
 [<Fact>]
 let ``what the results window answered becomes a message`` () =
     let sent, dispatch = capture ()
-    let landing = AtDirectory(OnDisk(fp (at "start/docs")))
+    let landing = At(Into(OnDisk(fp (at "start/docs"))))
 
     let deps =
         { noDeps () with

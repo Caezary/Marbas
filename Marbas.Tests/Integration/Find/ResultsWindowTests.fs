@@ -349,7 +349,7 @@ let ``Enter on the header of a group answers the directory it names`` () =
 
     press (ResultsWindow.list window) Key.Enter
 
-    Assert.Equal(Some(AtDirectory(OnDisk(fp (at "start/docs")))), (ResultsWindow.answer window).Landing)
+    Assert.Equal(Some(At(Into(OnDisk(fp (at "start/docs"))))), (ResultsWindow.answer window).Landing)
 
 [<Fact>]
 let ``the panel key answers with the whole list and closes the window`` () =

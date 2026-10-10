@@ -844,7 +844,13 @@ Windows, not a variable, and `%` is an ordinary character on Unix. What
 `PastedPath.read` answers is dispatched as `ClipboardPathRead`, and the state
 asks `Landing.ofPath` where it leads: `Into` a location, or `Beside` an entry
 in one. Nothing at all is passed over without an effect, which is the silence
-the plan asked for. Several lines, blank text and a clipboard with no text
+the plan asked for. `Landing` is the one answer to where a panel goes by name:
+`Landing.inside` and `Landing.beside` make one of a `Place` kept in the history
+or the favourites, a search's group header answers one, and
+`Update.landingOn` is the only caller of `AppState.standInside` and
+`standBeside`. The conversions sit in `Landing` rather than in `Place` because
+`Place` is compiled first — `History` and `Favorites` are built on it — and
+`Landing.ofPath` needs the archive listing, which comes after them. Several lines, blank text and a clipboard with no text
 never reach the state. The landing is a change of place like any other, so
 `Update.remembering` puts it in the folder history without a line of its own —
 a level inside an archive as a `Place.InArchive`, which the history already
