@@ -28,19 +28,11 @@ let private stampOf (fs: IFileSystem) (path: FileSystemPath) =
     { Length = file.Length
       Modified = DateTimeOffset file.LastWriteTimeUtc }
 
+let private listing =
+    ArchiveStep<ArchiveEntryInfo list>(fun items item -> KeepReading(item.Info :: items))
+
 let private scan (fs: IFileSystem) kind path =
-    let items = ResizeArray<ArchiveEntryInfo>()
-
-    ArchiveReader.withItems
-        fs
-        None
-        kind
-        path
-        (ArchiveStep(fun item ->
-            items.Add item.Info
-            KeepReading))
-
-    List.ofSeq items
+    ArchiveReader.fold fs None kind path listing [] |> List.rev
 
 let private keep (cache: ResizeArray<Indexed>) indexed =
     cache.RemoveAll(fun held -> held.Path = indexed.Path) |> ignore

@@ -1,5 +1,6 @@
 module Marbas.FileSystem.WindowSearch
 
+open System.Collections.Generic
 open System.Text.RegularExpressions
 open Marbas.Domain
 
@@ -101,17 +102,20 @@ let private matchIn (occurrencesIn: string -> (int * int) seq) direction (place:
           Column = column
           Length = length })
 
-let private throughFirstLine (steps: LineIndex.Step seq) =
+let rec private upToFirstLine (walked: IEnumerator<LineIndex.Step>) =
     seq {
-        use walked = steps.GetEnumerator()
-        let reading = ref true
-
-        while reading.Value && walked.MoveNext() do
+        if walked.MoveNext() then
             yield walked.Current
 
             match walked.Current with
-            | LineIndex.LineRead _ -> reading.Value <- false
-            | LineIndex.Reading _ -> ()
+            | LineIndex.LineRead _ -> ()
+            | LineIndex.Reading _ -> yield! upToFirstLine walked
+    }
+
+let private throughFirstLine (steps: LineIndex.Step seq) =
+    seq {
+        use walked = steps.GetEnumerator()
+        yield! upToFirstLine walked
     }
 
 let private stepsFrom (source: FileWindow.Source) encoding direction (place: Place) =

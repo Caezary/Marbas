@@ -96,25 +96,35 @@ let private packedIn (tree: MockFileSystem) =
 
 let private packed () = packedIn (MockFileSystem())
 
-let private walking (tree: MockFileSystem) (step: ArchiveStep) =
-    ArchiveReader.withItems tree None Zip (fp archive) step
-
 let private keyOf (info: ArchiveEntryInfo) =
     info.Segments |> List.map EntryName.value |> String.concat "/"
 
-let private noting (seen: ResizeArray<string>) =
-    ArchiveStep(fun item ->
-        seen.Add(keyOf item.Info)
-        StopReading)
+let private textIn (content: IO.Stream) =
+    use reader = new IO.StreamReader(content)
+    reader.ReadToEnd()
 
-let private writingNotes (target: IO.Stream) =
-    ArchiveStep(fun item ->
+let private notingEvery =
+    ArchiveStep<string list>(fun seen item -> KeepReading(keyOf item.Info :: seen))
+
+let private notingOne =
+    ArchiveStep<string list>(fun seen item -> StopReading(keyOf item.Info :: seen))
+
+let private readingNotes =
+    ArchiveStep<string option>(fun read item ->
         if item.Info.Segments = [ en "notes.txt" ] then
             use content = item.OpenContent()
-            content.CopyTo target
-            StopReading
+            StopReading(Some(textIn content))
         else
-            KeepReading)
+            KeepReading read)
+
+[<Literal>]
+let private Refusal = "the step gave up"
+
+let private failingOnSecond =
+    ArchiveStep<string list>(fun seen item ->
+        match seen with
+        | [] -> KeepReading [ keyOf item.Info ]
+        | _ -> failwith Refusal)
 
 let private itemType =
     typeof<ArchiveEntryInfo>.Assembly.GetType "Marbas.FileSystem.ArchiveItem"
@@ -126,26 +136,56 @@ let ``an item handed to the walk may not outlive it`` () =
     Assert.True scoped
 
 [<Fact>]
-let ``the walk stops where the step says it should`` () =
+let ``a walk read through answers what every step made of it`` () =
     let tree = packed ()
-    let seen = ResizeArray<string>()
 
-    walking tree (noting seen)
+    let seen = ArchiveReader.fold tree None Zip (fp archive) notingEvery []
 
-    Assert.Equal(1, seen.Count)
+    Assert.Equal<string list>([ "docs"; "docs/inner.txt"; "notes.txt" ], List.sort seen)
 
 [<Fact>]
-let ``the content of an entry is written while the walk stands on it`` () =
+let ``the walk stops where the step says it should`` () =
     let tree = packed ()
-    use content = new IO.MemoryStream()
 
-    walking tree (writingNotes content)
+    let seen = ArchiveReader.fold tree None Zip (fp archive) notingOne []
 
-    Assert.Equal("notes", Text.Encoding.UTF8.GetString(content.ToArray()))
+    Assert.Equal(1, seen.Length)
 
-let private textIn (content: IO.Stream) =
-    use reader = new IO.StreamReader(content)
-    reader.ReadToEnd()
+[<Fact>]
+let ``the content of an entry is read while the walk stands on it`` () =
+    let tree = packed ()
+
+    let read = ArchiveReader.fold tree None Zip (fp archive) readingNotes None
+
+    Assert.Equal(Some "notes", read)
+
+[<Fact>]
+let ``a walk that breaks answers what it had reached and what broke it`` () =
+    let tree = packed ()
+
+    let walked = ArchiveReader.walk tree None Zip (fp archive) failingOnSecond []
+
+    Assert.Equal(1, walked |> ArchiveWalked.reached |> List.length)
+    Assert.Equal(Some Refusal, walked |> ArchiveWalked.failure |> Option.map _.Message)
+
+[<Fact>]
+let ``a file that is no archive breaks the walk where it began`` () =
+    let tree = MockFileSystem()
+    tree.AddFile(archive, MockFileData "not an archive at all")
+
+    let walked = ArchiveReader.walk tree None Zip (fp archive) notingEvery []
+
+    Assert.Empty(ArchiveWalked.reached walked)
+    Assert.True(walked |> ArchiveWalked.failure |> Option.isSome)
+
+[<Fact>]
+let ``a fold over a walk that breaks throws what broke it`` () =
+    let tree = packed ()
+
+    let folding () =
+        ArchiveReader.fold tree None Zip (fp archive) failingOnSecond [] |> ignore
+
+    Assert.Throws<Exception>(folding) |> ignore
 
 [<Fact>]
 let ``one entry is described without its content being touched`` () =

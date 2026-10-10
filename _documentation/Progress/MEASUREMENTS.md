@@ -199,3 +199,68 @@ after the window was destroyed on its own thread, and after the process that
 made it had exited, with `GetClipboardOwner` answering no window both times.
 An attempt to destroy the window from another thread was refused, access
 denied, which is why nothing tries to at exit.
+
+## The walks without their counters (P21.14, 2026-10-11)
+
+P21.14 took the mutable counters and the set of visited places out of
+`FileSearch.run`, the two dictionaries and two flags out of its scan of an
+archive, the mutable record out of the unpack walk, and turned
+`ArchiveReader`'s callback walk into a fold, so that each of them threads a
+value and answers it. All four are paths a user waits on, so they were timed
+before and after: a probe built in Release once against the source of the
+last commit and once against the changed tree, run alternately on the same
+data on a real disk. The data: a tree of 200 directories of 100 one-byte files;
+that tree packed by Marbas into a stored zip of 20 201 entries; and two flat
+zips of 2 000 and of 8 000 files of 400 bytes. Milliseconds, on one Windows
+machine. Each cell is the range, over the rounds, of the fastest run and of the
+median run — three rounds of fifteen runs for the first two rows, two rounds of
+seven for the last two.
+
+| What | Fastest before | Median before | Fastest after | Median after |
+|---|---|---|---|---|
+| the tree walked, every file a hit (20 000) | 698–709 | 1 028–1 066 | 697–718 | 1 026–1 043 |
+| the three archives searched into (30 204 hits) | 99–131 | 145–186 | 120–126 | 187–190 |
+| 2 000 targets unpacked into memory | 77–83 | 89–90 | 80–82 | 90–95 |
+| 8 000 targets unpacked into memory | 156–175 | 229–248 | 181–210 | 232–262 |
+
+**Nothing a user waits on got slower.** Every row overlaps its own spread:
+the walk of a tree is the directory listings, the search inside an archive is
+the reader, and what either does with a count between two entries does not show
+beside them. Unpacking was timed into a `MockFileSystem` on purpose. To a real
+disk the same 8 000 targets took 5.7 to 6.4 s before and 5.9 to 7.4 s after,
+across runs that each wrote into a directory tree larger than the one before —
+a spread several times wider than the quarter of a second the whole read and
+its bookkeeping come to in memory, so the disk rows say nothing about the
+change either way. Reading the index of the 20 201 entries cold took 99 to
+116 ms before and 76 to 101 ms after.
+
+**One version on the way was slower, and the probe is why it was caught.** The
+first immutable bookkeeping of an archive's directory levels wrote the map on
+every entry, where the dictionaries it replaced were written only when an entry
+was newer than what was held. The search into the archives took 224 and 254 ms
+with it, against 197 to 228 ms before. Leaving the map alone when an entry
+changes nothing — the same test the dictionary version made — brought it back
+to the row above.
+
+**The loops that stayed mutable were timed as they stand.**
+[Coding style](../coding-style-conventions.md) lets a hot loop keep a mutable
+binding where it was timed, so the four that keep one have a number now. None
+of them was changed, and the same binaries gave the same figures before and
+after; the ranges are across seven runs of the whole probe.
+
+| What | Milliseconds |
+|---|---|
+| `LineIndex.Index.ScanAll` over a text of 1 000 000 lines, 69 MB | 3 814–4 082 |
+| `LineIndex.walkFrom` over the same file, every line | 202–228 |
+| `TextEncoding.detect` on an 8 KB probe of UTF-8, 20 000 times | 6 074–6 387 |
+| `RewindingStream`, 69 MB read through and a seek back to the middle | 22–25 |
+
+**Two of them are slow, and not because of how they hold a variable.** The
+index takes nineteen times as long as the walk over the same bytes, and
+detection costs 0.31 ms a probe, 38 ns a byte. Both loops are exactly as
+mutable as the walk that reads 69 MB in a fifth of a second, so the binding is
+not what the time goes to; what it does go to was not looked into in this task.
+Detection is more than its one mutable loop — the probe is also examined for a
+wide encoding and for a zero byte — and a search for text runs all of it twice
+per file, once for the encoding and once for whether the file is binary.
+Both are entries in [Rough edges](../ROUGH-EDGES.md) now.

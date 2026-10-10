@@ -176,7 +176,7 @@ Marbas/
     ArchivePath.fs        a place inside an archive: never rooted, never climbing
     ArchiveFormat.fs      which kinds can be created, and what each one carries
     ArchiveName.fs        the name an archive is offered under, and its extension
-    ArchiveReader.fs      opening an archive: its entries as a walk, one entry as a stream
+    ArchiveReader.fs      opening an archive: its entries folded over, one entry as a stream
     ArchiveListing.fs     reading one level of an archive as the entries a directory gives
     SearchListing.fs      search hits as the entries a directory gives, named by their path
     SessionOwner.fs       the process a working directory belongs to: its id and the

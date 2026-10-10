@@ -33,26 +33,26 @@ let private survivalIn (held: Result<Set<EntryName list>, ArchiveError>) segment
     | Ok _ -> Gone
     | Error error -> Unconfirmed error
 
+type private IndexedArchives = Map<FileSystemPath, Result<Set<EntryName list>, ArchiveError>>
+
+let private heldIn (fs: IFileSystem) (archives: IndexedArchives) archive =
+    match Map.tryFind archive archives with
+    | Some known -> known, archives
+    | None ->
+        let read = indexedPrefixes fs archive
+        read, Map.add archive read archives
+
+let private survival (fs: IFileSystem) (archives: IndexedArchives) (hit: FindHit) =
+    match hit.Location with
+    | _ when not (FindHit.exists fs hit) -> (hit, Gone), archives
+    | InArchive(archive, level) ->
+        let held, known = heldIn fs archives archive
+        (hit, survivalIn held (ArchivePath.segments level @ [ hit.Entry.Name ])), known
+    | OnDisk _
+    | SearchResults _ -> (hit, Standing), archives
+
 let private survivals (fs: IFileSystem) (found: FoundEntries) =
-    let archives =
-        Collections.Generic.Dictionary<FileSystemPath, Result<Set<EntryName list>, ArchiveError>>()
-
-    let held archive =
-        match archives.TryGetValue archive with
-        | true, known -> known
-        | _ ->
-            let read = indexedPrefixes fs archive
-            archives[archive] <- read
-            read
-
-    let survival (hit: FindHit) =
-        match hit.Location with
-        | _ when not (FindHit.exists fs hit) -> Gone
-        | InArchive(archive, level) -> survivalIn (held archive) (ArchivePath.segments level @ [ hit.Entry.Name ])
-        | OnDisk _
-        | SearchResults _ -> Standing
-
-    found.Hits |> List.map (fun hit -> hit, survival hit)
+    found.Hits |> List.mapFold (survival fs) Map.empty |> fst
 
 let hitFor (found: FoundEntries) (name: EntryName) = found.Shown |> Map.tryFind name
 

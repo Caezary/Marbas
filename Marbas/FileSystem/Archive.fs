@@ -264,9 +264,12 @@ type private WalkEnd =
     | StoppedByUser
 
 type private UnpackWalk =
-    { Progress: TargetProgress array
-      mutable Unsettled: int
-      mutable End: WalkEnd }
+    { Progress: Map<int, TargetProgress>
+      Unsettled: int
+      End: WalkEnd }
+
+let private progressOf (walk: UnpackWalk) index =
+    walk.Progress |> Map.tryFind index |> Option.defaultValue NotReached
 
 let private isTargetItself (target: ArchivePath) (info: ArchiveEntryInfo) =
     not (ArchiveEntryInfo.isDirectory info)
@@ -303,37 +306,44 @@ let private prefixesOf (segments: EntryName list) =
     [ 0 .. segments.Length ]
     |> List.map (fun length -> List.truncate length segments)
 
-let private unpackingAll fs control destination (targets: ArchivePath array) (walk: UnpackWalk) =
+let private settling before after (walk: UnpackWalk) =
+    if settled after && not (settled before) then
+        walk.Unsettled - 1
+    else
+        walk.Unsettled
+
+let private unpackingAll fs control destination (targets: ArchivePath array) =
     let bySegments = targetsBySegments targets
 
-    let reached (info: ArchiveEntryInfo) =
+    let reached (walk: UnpackWalk) (info: ArchiveEntryInfo) =
         prefixesOf info.Segments
         |> List.collect (fun prefix -> bySegments |> Map.tryFind prefix |> Option.defaultValue [])
-        |> List.filter (fun index -> stillOpen walk.Progress[index])
+        |> List.filter (progressOf walk >> stillOpen)
 
-    let unpackInto info openContent index =
+    let unpackInto info openContent (walk: UnpackWalk) index =
         let target = targets[index]
-        let before = walk.Progress[index]
+        let before = progressOf walk index
 
         let after =
             advanced target info (unpackEntry fs control destination target info openContent)
 
-        if settled after && not (settled before) then
-            walk.Unsettled <- walk.Unsettled - 1
+        { walk with
+            Progress = Map.add index after walk.Progress
+            Unsettled = settling before after walk }
 
-        walk.Progress[index] <- after
-
-    ArchiveStep(fun item ->
+    ArchiveStep<UnpackWalk>(fun walk item ->
         if control.IsCancelled() then
-            walk.End <- StoppedByUser
-            StopReading
+            StopReading { walk with End = StoppedByUser }
         else
             let info = item.Info
             let openContent = item.OpenContent
 
-            reached info |> List.iter (unpackInto info openContent)
+            let unpacked = reached walk info |> List.fold (unpackInto info openContent) walk
 
-            if walk.Unsettled = 0 then StopReading else KeepReading)
+            if unpacked.Unsettled = 0 then
+                StopReading unpacked
+            else
+                KeepReading unpacked)
 
 let private targetLanding (fs: IFileSystem) destination target =
     ArchivePath.segments target
@@ -364,19 +374,23 @@ let private entryResult archive target outcome : Operations.ItemResult =
 
 let private unpackingEach (fs: IFileSystem) control (request: ExtractRequest) kind (targets: ArchivePath list) =
     let asked = Array.ofList targets
+    let step = unpackingAll fs control request.Destination asked
 
     let walk =
-        { Progress = Array.create asked.Length NotReached
-          Unsettled = asked.Length
-          End = ReadThrough }
+        ArchiveReader.fold
+            fs
+            request.Password
+            kind
+            request.Archive
+            step
+            { Progress = Map.empty
+              Unsettled = asked.Length
+              End = ReadThrough }
 
-    let step = unpackingAll fs control request.Destination asked walk
-
-    ArchiveReader.withItems fs request.Password kind request.Archive step
-
-    List.zip targets (List.ofArray walk.Progress)
-    |> List.choose (fun (target, reached) ->
-        outcomeOf fs request walk.End target reached
+    targets
+    |> List.indexed
+    |> List.choose (fun (index, target) ->
+        outcomeOf fs request walk.End target (progressOf walk index)
         |> Option.map (entryResult request.Archive target))
 
 let private eachTarget (control: Operations.BatchControl) (archive: FileSystemPath) unpack targets =
@@ -522,22 +536,22 @@ let private keyOf (info: ArchiveEntryInfo) =
     info.Segments |> List.map EntryName.value |> String.concat "/"
 
 let private keeping (dropped: ArchivePath list) (control: Operations.BatchControl) sink =
-    ArchiveStep(fun item ->
+    ArchiveStep<unit>(fun () item ->
         let info = item.Info
 
         if control.IsCancelled() then
-            StopReading
+            StopReading()
         elif dropped |> List.exists (fun target -> entryAtOrUnder target info) then
-            KeepReading
+            KeepReading()
         elif ArchiveEntryInfo.isDirectory info then
             sink.AddDirectory (keyOf info) (known info.Modified)
-            KeepReading
+            KeepReading()
         else
             sink.AddFile (keyOf info) (buffered info item.OpenContent)
-            KeepReading)
+            KeepReading())
 
 let private copyKept (fs: IFileSystem) archive kind dropped control sink =
-    ArchiveReader.withItems fs None kind archive (keeping dropped control sink)
+    ArchiveReader.fold fs None kind archive (keeping dropped control sink) ()
 
 let private workingFile (fs: IFileSystem) (archive: FileSystemPath) =
     let candidate ordinal =

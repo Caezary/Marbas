@@ -109,8 +109,29 @@ schedules the fix. A rule here beats a habit found in an older file.
       [Flat decisions](DEVELOPMENT.md#flat-decisions) works the rules through
       the sites they were first applied to, and says when a tuple match is the
       wrong answer.
-- [ ] Mutation is allowed inside a walk that needs an early exit, and nowhere
-      else; even there it is threaded, not scattered.
+- [ ] Outside `Ui`, a `mutable` binding, a reference cell, a `ResizeArray`, a
+      `Dictionary` or an array written to after it was made earns its place in
+      five ways, and in no other:
+
+| Where | What it covers | Today |
+|-------|----------------|-------|
+| a hot loop that was timed | a loop over bytes or entries, confined to one function or to the private state of one type; nothing mutable leaves it | `LineIndex` (the scan of a chunk, the two splits, the binary search), `TextEncoding.isUtf8`, `ArchiveReader.stepping` |
+| a contract .NET sets | a `byref` an interop call fills; the position a `Stream` subclass has to keep | `NativeLinks`, `SystemClipboard`, the queue read in `SearchRunner`; `RewindingStream`, `OwningStream` |
+| a cache that only saves work | private to one module or one object, and what it answers is the same with it and without it | `ArchiveIndex`; the checkpoints, blocks and texts of `LineIndex.Index` and how far it has scanned |
+| what an adapter keeps for the system | what it has to remember between two callbacks or timer ticks, or share with a thread it started | `BatchRunner`, `SearchRunner`, `WindowSearchRunner`, `DirectoryWatch`, `ModifierWatch` |
+| the runtime's cell | the state, the queue of messages and the two flags of the one loop | `State/Runtime.fs` |
+
+- [ ] Everything else is a fold or a returned value. A walk threads a record
+      and answers it — `FileSearch.run` its counts, the places it has visited
+      and whether it was stopped; unpacking its progress per target — and a
+      read that calls back is a fold: `ArchiveReader.fold` hands each step what
+      the steps before it made, and `ArchiveReader.walk` answers what was
+      reached even when the archive breaks half-way.
+- [ ] Setting a property of an object a library made — a `ProcessStartInfo`, a
+      zip entry's date, a stream's position — is a call into that library, not a
+      binding of ours, and the rule does not count it.
+- [ ] `Ui` is outside the rule: a view holds what is on screen. What a view
+      keeps is its own subject.
 - [ ] A function that grows past one screen has lost a seam — lift the inner
       walk out with explicit inputs and an explicit result.
 - [ ] Partial access (`.Value`, `List.head`, `Seq.pick`) only where the type

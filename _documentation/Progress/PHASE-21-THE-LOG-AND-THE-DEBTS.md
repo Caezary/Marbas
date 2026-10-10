@@ -594,3 +594,62 @@ nothing, and no port taking a function. `Fakes` builds the runners from the
 fields of the request — `fun request -> request.Work Operations.unattended |>
 request.Finish` — and the 41 overrides in nine test files read the request the
 same way; no assertion changed. 3961 pass and 16 skip on Windows.
+
+**P21.14 said where mutation is allowed, and took it out everywhere else
+below `Ui`.** [Coding style](../coding-style-conventions.md) names five places a
+mutable binding, a reference cell or a mutable collection earns its place — a
+hot loop that was timed, a contract .NET sets, a cache that only saves work,
+what an adapter keeps for the system, and the runtime's cell — with the modules
+that fall under each, and says that everything else is a fold or a returned
+value. What did not fall under one was rewritten: `FileSearch.run`, its scan of
+an archive, the unpack walk, the archive index, `ArchiveReader.entryInfo`, the
+memo of `SearchListing` and a flag in `WindowSearch`.
+
+- **The reader's callback became a fold, because the callers could not stop
+  mutating without one.** `ArchiveReader.withItems` called a step per entry
+  and answered nothing, so every caller gathered into a cell beside it.
+  `ArchiveReader.fold` hands each step what the steps before it made and
+  answers the last value; `ArchiveStep` and `ArchiveWalk` carry that value.
+  The one mutable binding left in the reader is the loop variable of that
+  fold.
+- **A walk that breaks still answers what it reached.** A search counts and
+  reports hits while it reads an archive, and until now a damaged archive left
+  those counts standing because they were mutated in place. A plain fold
+  would have thrown them away with the exception, so `ArchiveReader.walk`
+  answers `Walked` or `WalkBroken` with the value reached and what was thrown,
+  and `fold` is `walk` that raises. Only the search needs the first.
+- **The rule has five clauses where the plan had four, and two of the four are
+  wider.** A cache is the fifth: `ArchiveIndex` and the blocks, texts and
+  checkpoints of `LineIndex.Index` are neither hot loops nor anything the plan
+  listed, and they cannot be a returned value. The interop clause also covers
+  the position a `Stream` subclass has to keep, which is where
+  `RewindingStream` belongs rather than under hot loops, and the adapter
+  clause covers what is kept between two callbacks as well as what is shared
+  with a thread — `DirectoryWatch` and `ModifierWatch` mutate on the UI thread
+  only.
+- **Setting a property of a library's object is not counted.** The
+  `ProcessStartInfo` of the three process adapters, a zip entry's date and a
+  stream's position are calls into the library; the rule says so.
+- **The visited places are an immutable set with the comparer the mutable one
+  had.** `ImmutableHashSet` takes `FileSystemPath.comparer`, so two spellings
+  of one directory are still one visit on Windows without a second rule for
+  what makes them equal.
+- **The order of hits is what it was.** The walk folds over the children of a
+  directory in the order it listed them, and the directory levels of an
+  archive keep the order they were first seen in, which the dictionary gave
+  for free and the map is told to keep.
+- **Timing caught one slower version and two slow loops nobody had timed.**
+  [Measurements](../Progress/MEASUREMENTS.md) has the tables: nothing a user
+  waits on changed beyond its own spread, after a first version of the level
+  bookkeeping that cost the archive search a tenth or more was put right. The
+  four loops that stayed mutable were timed as they stand, and two of them —
+  the line index and the detection of an encoding — turned out slow for
+  reasons the binding has nothing to do with. Both are in
+  [Rough edges](../ROUGH-EDGES.md); neither was touched.
+
+The suite is the suite as it was, with the tests of the reader rewritten for
+the fold: the two that drove `withItems` through a cell now read what the
+fold answers, and four are new — every entry folded, a walk broken by its own
+step answering what it reached and why, a file that is no archive breaking the
+walk where it began, and `fold` raising what broke it. 3965 pass and 16 skip
+on Windows.

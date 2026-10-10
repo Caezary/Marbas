@@ -25,11 +25,28 @@ type ArchiveItem =
     { Info: ArchiveEntryInfo
       OpenContent: unit -> Stream }
 
-type ArchiveWalk =
-    | KeepReading
-    | StopReading
+[<Struct>]
+type ArchiveWalk<'walked> =
+    | KeepReading of kept: 'walked
+    | StopReading of stopped: 'walked
 
-type ArchiveStep = delegate of ArchiveItem -> ArchiveWalk
+type ArchiveStep<'walked> = delegate of 'walked * ArchiveItem -> ArchiveWalk<'walked>
+
+type ArchiveWalked<'walked> =
+    | Walked of 'walked
+    | WalkBroken of reached: 'walked * failure: exn
+
+module ArchiveWalked =
+
+    let reached walked =
+        match walked with
+        | Walked reached
+        | WalkBroken(reached, _) -> reached
+
+    let failure walked =
+        match walked with
+        | Walked _ -> None
+        | WalkBroken(_, failure) -> Some failure
 
 type internal OwningStream(content: Stream, owned: IDisposable list) =
     inherit Stream()
@@ -126,29 +143,40 @@ module ArchiveReader =
                 yield reader.Entry, (fun () -> reader.OpenEntryStream() :> Stream)
         }
 
-    let private walk (step: ArchiveStep) (entries: seq<IEntry * (unit -> Stream)>) =
-        use walker = entries.GetEnumerator()
-        let mutable reading = KeepReading
+    let private stepping (step: ArchiveStep<'walked>) (initial: 'walked) (entries: seq<IEntry * (unit -> Stream)>) =
+        let mutable walked = initial
+        let mutable reading = true
 
-        while reading = KeepReading && walker.MoveNext() do
-            let entry, openContent = walker.Current
+        try
+            use walker = entries.GetEnumerator()
 
-            reading <-
-                step.Invoke
+            while reading && walker.MoveNext() do
+                let entry, openContent = walker.Current
+
+                let item =
                     { Info = infoOf entry
                       OpenContent = openContent }
 
-    let private readingSequentially password (step: ArchiveStep) (stream: Stream) =
-        use reader = ReaderFactory.OpenReader(stream, options password)
-        walk step (streaming reader)
+                match step.Invoke(walked, item) with
+                | KeepReading kept -> walked <- kept
+                | StopReading stopped ->
+                    walked <- stopped
+                    reading <- false
 
-    let private readingWholeArchive password (step: ArchiveStep) (stream: Stream) =
+            Walked walked
+        with failure ->
+            WalkBroken(walked, failure)
+
+    let private readingSequentially password step initial (stream: Stream) =
+        use reader = ReaderFactory.OpenReader(stream, options password)
+        stepping step initial (streaming reader)
+
+    let private readingWholeArchive password step initial (stream: Stream) =
         use archive = ArchiveFactory.OpenArchive(stream, options password)
 
-        walk
-            step
-            (archive.Entries
-             |> Seq.map (fun entry -> entry :> IEntry, fun () -> entry.OpenEntryStream()))
+        archive.Entries
+        |> Seq.map (fun entry -> entry :> IEntry, fun () -> entry.OpenEntryStream())
+        |> stepping step initial
 
     let private isSequential kind =
         match kind with
@@ -160,27 +188,38 @@ module ArchiveReader =
         | SevenZip
         | Rar -> false
 
-    let withItems (fs: IFileSystem) password (kind: ArchiveKind) (path: FileSystemPath) (step: ArchiveStep) =
-        use stream = fs.File.OpenRead(FileSystemPath.value path)
+    let walk
+        (fs: IFileSystem)
+        password
+        (kind: ArchiveKind)
+        (path: FileSystemPath)
+        (step: ArchiveStep<'walked>)
+        (initial: 'walked)
+        =
+        try
+            use stream = fs.File.OpenRead(FileSystemPath.value path)
 
-        if isSequential kind then
-            readingSequentially password step stream
-        else
-            readingWholeArchive password step stream
+            if isSequential kind then
+                readingSequentially password step initial stream
+            else
+                readingWholeArchive password step initial stream
+        with failure ->
+            WalkBroken(initial, failure)
+
+    let fold fs password kind path (step: ArchiveStep<'walked>) (initial: 'walked) =
+        match walk fs password kind path step initial with
+        | Walked walked -> walked
+        | WalkBroken(_, failure) -> raise failure
 
     let entryInfo fs password kind path (segments: EntryName list) =
-        let found = ref None
-
         let looking =
-            ArchiveStep(fun item ->
+            ArchiveStep<ArchiveEntryInfo option>(fun found item ->
                 if ArchiveEntryInfo.isDirectory item.Info || item.Info.Segments <> segments then
-                    KeepReading
+                    KeepReading found
                 else
-                    found.Value <- Some item.Info
-                    StopReading)
+                    StopReading(Some item.Info))
 
-        withItems fs password kind path looking
-        found.Value
+        fold fs password kind path looking None
 
     let private wanted (segments: EntryName list) (entry: IEntry) =
         not entry.IsDirectory

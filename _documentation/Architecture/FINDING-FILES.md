@@ -76,7 +76,11 @@ it never reached.
 **`FileSearch.run` walks the places it is given and hands every hit over as it
 finds it.** It takes the `FindGround` — the places to start from and the roots
 not to cross — and a function to report hits through, and answers `Finished` or
-`Stopped` with its counts of files, directories and skipped entries. A hit is a
+`Stopped` with its counts of files, directories and skipped entries. Since
+P21.14 nothing in it is mutable: the counts, the places already visited and
+whether the walk was stopped are one record every step is handed and answers,
+folded over the children of a directory and over the entries of an archive, and
+the only thing a step does besides is report. A hit is a
 `FindHit`: the `PanelLocation` holding it and the `Entry` a listing would give
 for it, built by the very functions `DirectoryListing` builds its own with, so
 what the results show and what a panel shows cannot drift.
@@ -147,10 +151,12 @@ of them — and an archive inside an archive is a hit by name and nothing more.
 
 **The scan is a function of its own, and it answers rather than sets flags.**
 `FileSearch.ArchiveScan.run` takes what it needs — the archive, its kind, the
-level to start from and how deep the walk goes — and one function to call per
-entry, which reports the hit and says whether to keep reading. It answers
+level to start from and how deep the walk goes — one function to call per
+entry and the caller's own value, which that function is handed and answers
+anew with the hit counted in it, saying whether to keep reading. It answers
 `Levels` with the directory levels it gathered, or `Locked`, `Cancelled` or
-`Unreadable`, and the caller decides what each of those means for its counters.
+`Unreadable`, each beside the caller's value as the scan left it, and the
+caller decides what each of those means for its counts.
 The level bookkeeping — which implied directory exists and what time to show it
 under — lives in that module too. `run` used to hold all of it inline, over a
 `while` loop and two flags nobody outside the loop could read.

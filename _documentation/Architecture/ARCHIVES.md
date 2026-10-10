@@ -244,11 +244,20 @@ names an entry as well as a level. There used to be three copies of the first
 and one of the second, all spelled out by hand.
 
 **One reader under both, with two openers chosen by kind.** `ArchiveReader` is
-where an archive is opened, and it opens one only for the length of a walk:
-`withItems` takes an `ArchiveStep` and calls it once per entry with an
+where an archive is opened, and it opens one only for the length of a walk.
+The walk is a fold: `fold` takes an `ArchiveStep` and a value to start from,
+and calls the step once per entry with what the steps before it made and an
 `ArchiveItem` — the entry's `ArchiveEntryInfo` and an `OpenContent` that opens
 its content as a stream — until the step answers `StopReading` or the entries
-run out. Zip, 7z
+run out; either answer carries the value on. What the walk made comes back as
+the answer, so a caller gathers nothing in a cell beside it: the index folds
+the entries into a list, `entryInfo` into the one it looks for, unpacking into
+the progress of its targets. `walk` is the same read for a caller that has to
+know how far it got: it answers `Walked` with the value, or `WalkBroken` with
+the value reached and what the library threw, which is how a search keeps the
+hits it already reported from an archive that turns out to be damaged further
+in. The loop variable of that fold is the one binding the reader mutates, and
+it never leaves the function. Zip, 7z
 and rar go through `ArchiveFactory.OpenArchive`, which seeks and reads the
 archive's own table of contents; the tar family goes through
 `ReaderFactory.OpenReader`, which streams, because `ArchiveFactory` sees a
@@ -431,12 +440,13 @@ its own headers is opened with the password it was given rather than asked
 about first.
 
 **One walk serves every target.** `unpackingEach` opens one walk through
-`ArchiveReader.withItems` for the whole list. The targets are grouped by their
+`ArchiveReader.fold` for the whole list. The targets are grouped by their
 segments once, so each entry finds the targets it falls under by looking up its
 own prefixes — as many lookups as the entry is deep, however many targets were
 asked for. Every target keeps a `TargetProgress` — not reached, unpacking,
 whole (a file target whose entry is written) or failed — in one `UnpackWalk`
-record threaded through the walk, with a count of the targets not yet settled,
+record the fold hands from step to step and answers at the end, immutable
+since P21.14, with a count of the targets not yet settled,
 so the walk stops as soon as every target is whole or failed and a single file
 taken out of a large archive does not read the rest of it. The `ItemResult`s are
 built at the end from that record, in the order the targets were given. The

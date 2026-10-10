@@ -135,6 +135,13 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   bounds them; P14.5 described them as never entered, which holds only for
   *All drives*, where they are never a starting place. The fix is to hand
   `FindGround.resolve` the filtered mounts as roots not to cross.
+- Telling what a file is encoded in costs about 0.3 ms for a full 8 KB probe of
+  UTF-8 with letters outside ASCII in it — `TextEncoding.detect`, measured in
+  P21.14 — and a search for text pays it twice for every file it opens, since
+  `ContentMatch` asks `detect` and `contentOf` and each examines the probe
+  afresh: some twelve seconds over twenty thousand such files before a line of
+  any of them is searched. Which part of the examination the time goes to was
+  not looked into.
 
 ## Running and editing
 
@@ -266,6 +273,11 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 - A single line longer than `LineIndex.MaxLineLength` (a megabyte) is cut there.
   Nothing in a viewer can show more of one line than a screen holds, but
   scrolling right past that point stops rather than going on.
+- Indexing a large text is slow. `End` in a file of a million lines, 69 MB,
+  waits about four seconds while `LineIndex.Index` scans to the last line; the
+  same bytes are walked line by line in a fifth of a second, so it is not the
+  reading. Measured in P21.14 and not looked into;
+  [Measurements](Progress/MEASUREMENTS.md) has the numbers.
 
 ## History
 
