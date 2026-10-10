@@ -1,7 +1,11 @@
 module Marbas.Tests.Integration.Clipboard.WindowsClipboardTests
 
+open System
+open System.Collections.Concurrent
 open System.IO
 open System.Runtime.InteropServices
+open System.Threading
+open System.Threading.Tasks
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
@@ -14,6 +18,12 @@ let private Win32 = "The adapter speaks the Win32 clipboard"
 
 [<Literal>]
 let private AccessDenied = 5
+
+[<Literal>]
+let private HeldMilliseconds = 300
+
+[<Literal>]
+let private UnansweredOwnerMilliseconds = 5000L
 
 let private clipboard = SystemClipboard.forPlatform Windows
 
@@ -240,3 +250,93 @@ let ``a clipboard held open by another program refuses to be read, with the reas
     let answer = clipboard.GetFiles()
 
     Assert.Equal(Error(ClipboardFailed(Marshal.GetPInvokeErrorMessage AccessDenied)), answer)
+
+[<WindowsFact(Win32)>]
+let ``a clipboard a program opened with no window is opened all the same by another that brings none`` () =
+    use _kept = new KeptClipboard()
+    use _held = OtherProgram.holdingClipboardWithNoWindow ()
+
+    let answer = OtherProgram.openingWithNoWindow ()
+
+    Assert.Equal(Ok(), answer)
+
+[<WindowsFact(Win32)>]
+let ``a clipboard a program opened with no window is refused to another that brings one`` () =
+    use _kept = new KeptClipboard()
+    use _held = OtherProgram.holdingClipboardWithNoWindow ()
+
+    let answer = OtherProgram.opening ()
+
+    Assert.Equal(Error AccessDenied, answer)
+
+[<WindowsFact(Win32)>]
+let ``a clipboard a program opened with a window is refused to another that brings none`` () =
+    use _kept = new KeptClipboard()
+    use _held = OtherProgram.holdingClipboard ()
+
+    let answer = OtherProgram.openingWithNoWindow ()
+
+    Assert.Equal(Error AccessDenied, answer)
+
+[<WindowsFact(Win32)>]
+let ``while Marbas holds the clipboard open a program that brings no window is refused it`` () =
+    use _kept = new KeptClipboard()
+
+    let answer = SystemClipboard.whileOpen (OtherProgram.openingWithNoWindow >> Ok) ()
+
+    Assert.Equal(Ok(Error AccessDenied), answer)
+
+[<WindowsFact(Win32)>]
+let ``while Marbas holds the clipboard open a program that brings a window is refused it`` () =
+    use _kept = new KeptClipboard()
+
+    let answer = SystemClipboard.whileOpen (OtherProgram.opening >> Ok) ()
+
+    Assert.Equal(Ok(Error AccessDenied), answer)
+
+[<WindowsFact(Win32)>]
+let ``once Marbas has closed the clipboard another program opens it`` () =
+    use _kept = new KeptClipboard()
+    SystemClipboard.whileOpen Ok () |> Expect.ok
+
+    let answer = OtherProgram.opening ()
+
+    Assert.Equal(Ok(), answer)
+
+[<WindowsFact(Win32)>]
+let ``Marbas owns the clipboard it has written`` () =
+    use _kept = new KeptClipboard()
+    clipboard.SetText(text [ "notes.txt" ]) |> Expect.ok
+
+    let owner = OtherProgram.ownerProcess ()
+
+    Assert.Equal(Environment.ProcessId, owner)
+
+[<WindowsFact(Win32)>]
+let ``another program replaces what Marbas owns without waiting for Marbas to answer`` () =
+    use _kept = new KeptClipboard()
+    clipboard.SetText(text [ "notes.txt" ]) |> Expect.ok
+
+    let waited = OtherProgram.millisecondsPuttingText "from another program"
+
+    Assert.InRange(waited, 0L, UnansweredOwnerMilliseconds / 2L)
+
+[<WindowsFact(Win32)>]
+let ``a second request of Marbas waits until the first has closed the clipboard`` () =
+    use _kept = new KeptClipboard()
+    let finished = ConcurrentQueue<string>()
+
+    let readingBehindTheFirst () =
+        clipboard.GetText() |> ignore
+        finished.Enqueue "second"
+
+    let first () =
+        let second = Task.Run(Action readingBehindTheFirst)
+        Thread.Sleep HeldMilliseconds
+        finished.Enqueue "first"
+        Ok second
+
+    let waited = SystemClipboard.whileOpen first () |> Result.map _.Wait()
+
+    Assert.Equal(Ok(), waited)
+    Assert.Equal<string list>([ "first"; "second" ], List.ofSeq finished)

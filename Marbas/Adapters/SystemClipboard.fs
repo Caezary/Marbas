@@ -4,12 +4,45 @@ open System
 open System.Runtime.InteropServices
 open System.Text
 open System.Threading
+open System.Threading.Tasks
 open FsToolkit.ErrorHandling
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.App
 
+[<Struct; StructLayout(LayoutKind.Sequential)>]
+type private QueuedMessage =
+    { Window: nativeint
+      Kind: uint32
+      WordParameter: unativeint
+      LongParameter: nativeint
+      Time: uint32
+      X: int32
+      Y: int32 }
+
 module private User32 =
+
+    [<DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode, EntryPoint = "CreateWindowExW")>]
+    extern nativeint CreateWindowEx(
+        uint32 extendedStyle,
+        string className,
+        string windowName,
+        uint32 style,
+        int x,
+        int y,
+        int width,
+        int height,
+        nativeint parent,
+        nativeint menu,
+        nativeint instance,
+        nativeint parameter
+    )
+
+    [<DllImport("user32.dll", EntryPoint = "GetMessageW")>]
+    extern int GetMessage(QueuedMessage& message, nativeint window, uint32 first, uint32 last)
+
+    [<DllImport("user32.dll", EntryPoint = "DispatchMessageW")>]
+    extern nativeint DispatchMessage(QueuedMessage& message)
 
     [<DllImport("user32.dll", SetLastError = true)>]
     extern bool OpenClipboard(nativeint owner)
@@ -85,6 +118,22 @@ let private EveryDroppedFile = 0xFFFFFFFFu
 let private Moveable = 0x0002u
 
 [<Literal>]
+let private PlainClass = "STATIC"
+
+[<Literal>]
+let private OwnerName = "Marbas clipboard"
+
+[<Literal>]
+let private NoStyle = 0u
+
+[<Literal>]
+let private AnyMessage = 0u
+
+let private anyWindow = 0n
+
+let private messageOnly = -3n
+
+[<Literal>]
 let private OpenAttempts = 10
 
 [<Literal>]
@@ -100,13 +149,39 @@ let private freedAfter failure (memory: nativeint) =
     Kernel32.GlobalFree memory |> ignore
     failure
 
-let rec private opened attemptsLeft =
-    match User32.OpenClipboard 0n, attemptsLeft with
+let private messageWindow () =
+    match User32.CreateWindowEx(NoStyle, PlainClass, OwnerName, NoStyle, 0, 0, 0, 0, messageOnly, 0n, 0n, 0n) with
+    | 0n -> lastFailure ()
+    | window -> Ok window
+
+let private dispatchingMessages () =
+    let mutable message = Unchecked.defaultof<QueuedMessage>
+
+    while User32.GetMessage(&message, anyWindow, AnyMessage, AnyMessage) > 0 do
+        User32.DispatchMessage(&message) |> ignore
+
+let private ownerOnItsOwnThread () =
+    let made = TaskCompletionSource<Result<nativeint, ClipboardError>>()
+
+    let owning () =
+        let window = messageWindow ()
+        made.SetResult window
+        window |> Result.iter (ignore >> dispatchingMessages)
+
+    Thread(owning, IsBackground = true, Name = OwnerName).Start()
+    made.Task.Result
+
+let private owner = lazy (ownerOnItsOwnThread ())
+
+let private oneRequestAtATime = obj ()
+
+let rec private opened (window: nativeint) attemptsLeft =
+    match User32.OpenClipboard window, attemptsLeft with
     | true, _ -> Ok()
     | false, 1 -> lastFailure ()
     | false, _ ->
         Thread.Sleep OpenPauseMilliseconds
-        opened (attemptsLeft - 1)
+        opened window (attemptsLeft - 1)
 
 let private filled (bytes: byte array) (memory: nativeint) =
     match Kernel32.GlobalLock memory with
@@ -134,13 +209,17 @@ let private replacedBy blocks =
     else
         lastFailure ()
 
-let private whileOpen action () =
-    opened OpenAttempts
+let private heldBy window action =
+    opened window OpenAttempts
     |> Result.bind (fun () ->
         try
             action ()
         finally
             User32.CloseClipboard() |> ignore)
+
+let whileOpen action () =
+    owner.Value
+    |> Result.bind (fun window -> lock oneRequestAtATime (fun () -> heldBy window action))
 
 let private settingOnWindows blocks =
     whileOpen (fun () -> replacedBy blocks) ()

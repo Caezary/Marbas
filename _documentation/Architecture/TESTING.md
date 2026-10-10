@@ -77,14 +77,17 @@ and writes through Windows Forms — the text, the `CF_HDROP` list and
 `Preferred DropEffect` — the way an ordinary program does, and asks the system
 shell to paste through `Shell.Application`'s `paste` verb, the handler
 Explorer's own Paste runs. It also holds the clipboard open from that process
-to prove a refusal arrives as `ClipboardFailed` with the system's reason; the
-holder opens it with a window handle, since an `OpenClipboard(NULL)` in one
-process did not keep another out when this was measured. The tests are
+to prove a refusal arrives as `ClipboardFailed` with the system's reason. Who
+a held clipboard keeps out is itself under test there, between two such
+programs — with a window and with none on either side — and so is the
+adapter's own hold: `SystemClipboard.whileOpen` is public for that, and a test
+runs the other program's `OpenClipboard` inside it. The tests are
 `[<WindowsFact>]` and run on the Windows CI runner too. Each starts with a
 `KeptClipboard`, which reads the text on the clipboard and puts it back when
 the test ends — the text only: files or a picture someone had copied before a
-local run are gone after it. A full run of the folder takes about six seconds,
-most of it starting PowerShell.
+local run are gone after it. They share one module on purpose: xUnit runs the
+tests of a module one after another, and there is one clipboard. A full run of
+the folder takes about eleven seconds, most of it starting PowerShell.
 
 **One suite, two platforms.** Every path in an arrange block is built with
 `Root.at`, which answers `C:\start\docs` on Windows and `/start/docs` on Linux,

@@ -50,6 +50,13 @@ let text () =
 let putText (text: string) =
     run $"[Windows.Forms.Clipboard]::SetText({quoted text})" |> ignore
 
+let millisecondsPuttingText (text: string) =
+    run
+        $"$clock = [Diagnostics.Stopwatch]::StartNew(); \
+          [Windows.Forms.Clipboard]::SetText({quoted text}); \
+          [Console]::Out.Write($clock.ElapsedMilliseconds)"
+    |> Int64.Parse
+
 let files () =
     run "[Console]::Out.Write(([Windows.Forms.Clipboard]::GetFileDropList() -join \"`n\"))"
     |> lines
@@ -96,17 +103,48 @@ type HeldClipboard(program: Process) =
             program.WaitForExit()
             program.Dispose()
 
-let holdingClipboard () =
+let private user32 =
+    "Add-Type -Namespace Held -Name User32 -MemberDefinition \
+     '[DllImport(\"user32.dll\", SetLastError = true)] public static extern bool OpenClipboard(IntPtr owner); \
+      [DllImport(\"user32.dll\")] public static extern bool CloseClipboard(); \
+      [DllImport(\"user32.dll\")] public static extern IntPtr GetClipboardOwner(); \
+      [DllImport(\"user32.dll\")] public static extern uint GetWindowThreadProcessId(IntPtr window, out uint process); \
+      public static int Refusal(IntPtr owner) \
+      { if (!OpenClipboard(owner)) return Marshal.GetLastWin32Error(); CloseClipboard(); return 0; } \
+      public static uint OwnerProcess() \
+      { uint process; GetWindowThreadProcessId(GetClipboardOwner(), out process); return process; }'; \
+     $window = New-Object Windows.Forms.Form; "
+
+let private holding (owner: string) =
     let program =
-        started
-            "Add-Type -Namespace Held -Name User32 -MemberDefinition \
-             '[DllImport(\"user32.dll\")] public static extern bool OpenClipboard(IntPtr owner); \
-              [DllImport(\"user32.dll\")] public static extern bool CloseClipboard();'; \
-             $window = New-Object Windows.Forms.Form; \
-             [void][Held.User32]::OpenClipboard($window.Handle); \
-             [Console]::Out.WriteLine('held'); \
-             [void][Console]::In.ReadLine(); \
-             [void][Held.User32]::CloseClipboard()"
+        started (
+            user32
+            + $"[void][Held.User32]::OpenClipboard({owner}); \
+                [Console]::Out.WriteLine('held'); \
+                [void][Console]::In.ReadLine(); \
+                [void][Held.User32]::CloseClipboard()"
+        )
 
     program.StandardOutput.ReadLine() |> ignore
     new HeldClipboard(program)
+
+let holdingClipboard () = holding "$window.Handle"
+
+let holdingClipboardWithNoWindow () = holding "[IntPtr]::Zero"
+
+let private refusalOrNone (code: string) =
+    match Int32.Parse code with
+    | 0 -> Ok()
+    | refusal -> Error refusal
+
+let private openingFor (owner: string) =
+    run (user32 + $"[Console]::Out.Write([Held.User32]::Refusal({owner}))")
+    |> refusalOrNone
+
+let opening () = openingFor "$window.Handle"
+
+let openingWithNoWindow () = openingFor "[IntPtr]::Zero"
+
+let ownerProcess () =
+    run (user32 + "[Console]::Out.Write([Held.User32]::OwnerProcess())")
+    |> Int32.Parse

@@ -347,3 +347,61 @@ runner rather than done, seven on the two entries and on what counts as a
 failure, one on the writer with the switch off, ten on the real process and
 the two seconds, and one that builds the window over a leftover.
 `Fakes.HeldOpen` is the file that will not be deleted.
+
+**P21.8 opened the clipboard with a window of Marbas's own.**
+`SystemClipboard` makes one message-only window the first time the clipboard is
+asked for, on a background thread that runs a message loop for it, and every
+request opens the clipboard with that window, one request at a time. While a
+request runs no other program can open the clipboard, and Marbas is the owner
+of what it writes. How it fits is in
+[State and effects](../Architecture/STATE-AND-EFFECTS.md), and what the spike
+measured is in
+[Measurements](MEASUREMENTS.md#who-a-held-clipboard-keeps-out-p218-2026-10-10).
+
+Three things went differently from the plan.
+
+- **The gap was not the one the plan described.** The plan had a clipboard
+  opened with no window keeping no other process out. The first version of the
+  test said so and failed: a second program that brought a window was refused.
+  What the system does is know an open clipboard by its window, and let a
+  second caller in when it brings the same one — and no window is the same as
+  no window. The second process of the phase 18 measurement was the adapter,
+  which brought none. So the adapter had been safe from every program that
+  opens with a window and open to every one that does not, and the tests now
+  say both.
+- **Two threads of Marbas were never kept apart either**, which the plan did
+  not ask about, and a window alone does not change that: two requests opening
+  with the one window are both let in, and the first to close closes it for the
+  other. A lock around `whileOpen` takes them in turn. The plan had requests
+  reaching the adapter from the UI thread and from batches alike; read again,
+  every one of them comes from the UI thread — `BatchRunner` runs a batch's
+  `finish`, which empties the clipboard after a pasted move, through
+  `app.Invoke`. The lock therefore guards what the port allows rather than
+  what the application does today.
+- **The window has a thread of its own.** The plan asked which thread may make
+  the window. Any thread may open the clipboard with it, but the one that made
+  it has to outlive every request and has to answer the window's messages, or
+  another program's write waits five seconds for it; neither the UI thread nor
+  a batch's does both.
+
+`whileOpen` is public, the seam the plan asked for: a test runs another
+program's `OpenClipboard` inside it. Nothing destroys the window at exit, since
+what was handed over stays without it.
+
+Done by test and by probe. The suite gained nine tests in
+`WindowsClipboardTests`: three on what the system answers between two other
+programs — none against none, none against a window, a window against none —
+two on another program refused while Marbas holds the clipboard, with a window
+and without, one on the clipboard free again afterwards, one on Marbas being
+the owner of what it wrote, one on another program's write not waiting for
+Marbas, and one on a second request of Marbas waiting for the first. Three of
+them failed before the change: the program without a window was let in, the
+owner was nobody, and the second request ran inside the first. One mutation was
+tried, the message loop replaced by a sleep: the two pastes of the system shell
+failed in a run of the folder, and the test of the wait failed at five seconds
+run alone but passed in that run, for a reason that was not taken apart. The
+twenty-three older tests pass unchanged. For the exit, a throwaway program
+built on the real adapter put text and exited, then files and exited; another
+program read both back with no owner left on the clipboard, and the system
+shell pasted the files, a directory and what it held among them. Marbas itself
+quitting with `F10` and a paste into an editor has not been done by a person.

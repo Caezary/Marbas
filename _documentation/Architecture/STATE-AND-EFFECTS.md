@@ -170,6 +170,31 @@ then passed over, through `AppState.ClipboardReport`, the same
 because a clipboard another program held a moment ago may well be free on the
 next press.
 
+**The clipboard is opened with a window of Marbas's own.** Windows knows an
+open clipboard by the window it was opened with, and a second `OpenClipboard`
+with the same window is let in — no window being the same as no window, in any
+process. So the adapter makes one message-only window (`HWND_MESSAGE`, of the
+system's `STATIC` class) the first time the clipboard is asked for and keeps it
+for the session, and `SystemClipboard.whileOpen`, which every request goes
+through, opens with it: while a request runs no other program can open the
+clipboard, whatever it brings, and `EmptyClipboard` records Marbas as the
+owner. The window lives on a background thread of its own that runs a message
+loop and nothing else. A window is destroyed with the thread that made it, so a
+batch's thread could not hold it; and the system sends the owner
+`WM_DESTROYCLIPBOARD` when another program empties the clipboard and waits five
+seconds for an owner that does not answer, so the UI thread, which runs
+Terminal.Gui's loop and no Windows one, could not either. Any thread may open
+the clipboard with the window. Every request comes from the UI thread today —
+a batch's `finish`, which empties the clipboard after a pasted move, is run
+there too — but the port promises no thread, and two requests opening with the
+one window would both be let in, so a lock around `whileOpen` takes them one
+at a time. A
+window that cannot be made is a `ClipboardFailed` with the system's reason, for
+that request and every later one. Nothing destroys the window when Marbas
+quits: the blocks handed over belong to the system and stay on the clipboard
+after their owner is gone. What was measured is in
+[Measurements](../Progress/MEASUREMENTS.md#who-a-held-clipboard-keeps-out-p218-2026-10-10).
+
 **The environment is read through a port.** `Processes.EnvironmentVariable`
 answers the value of a variable, or nothing when it is unset or empty;
 `HostEnvironment.variable` fills it. `PastedPath.read` takes it as a function,

@@ -147,3 +147,55 @@ under the time in which an id comes round to another process. What the
 allowance does not cover is a wall clock stepped by more than that while a
 session runs, which moves the start a later process computes by the size of the
 step; that is an entry in [Rough edges](../ROUGH-EDGES.md).
+
+## Who a held clipboard keeps out (P21.8, 2026-10-10)
+
+P21.8 was written against one observation from phase 18: a process that had
+opened the clipboard with `OpenClipboard(NULL)` did not keep a second one from
+opening it. Before the adapter was changed, a throwaway program compiled into
+PowerShell 7 through `Add-Type` asked the system each question in turn, on
+Windows 11 (10.0.26200). The first table is what `OpenClipboard` answers a
+second caller while a first holds the clipboard open:
+
+| The holder opened with | The second brings no window | The second brings a window of its own |
+|---|---|---|
+| no window | opens | refused, access denied |
+| a window | refused, access denied | refused, access denied |
+
+**An open clipboard is known by its window, not by who opened it.** A second
+`OpenClipboard` with the same window succeeds, and no window is the same as no
+window: across two processes, and across two threads of one. The `CloseClipboard`
+that follows closes the clipboard for both, so the holder goes on writing to a
+clipboard that is no longer held — its own `CloseClipboard` answered `false`.
+The observation of phase 18 was this row: the second process there was the
+adapter, which brought no window either. A program that opens with a window was
+kept out even then, so the gap was narrower than the plan read it, and wider in
+one direction: two threads of Marbas itself were never kept apart.
+
+The second table is what decides where the window lives. A message-only window
+was made on a thread of its own, the clipboard was opened with it from other
+threads, and another program then replaced what the window owned:
+
+| The window's thread | Opening with it from another thread | Another program's write, once the window owns the clipboard |
+|---|---|---|
+| has ended | — the window is gone with its thread | — |
+| sleeps | opens, writes, the window is the owner | 5014 ms raw, 5019 ms through Windows Forms |
+| runs a message loop | opens, writes, the window is the owner | 4 ms |
+
+**So the window has a thread of its own that does nothing but answer it.** The
+system sends the owner `WM_DESTROYCLIPBOARD` when someone else empties the
+clipboard, and waits five seconds for a thread that never looks. Neither the UI
+thread nor a batch's can be that thread: the first runs Terminal.Gui's loop,
+not a Windows one, and the second ends and would take the window with it. Two
+threads opening with the one window were let in together, as the first table
+says they would be, so a lock stands around every request. Opening right after
+a write was refused once and let in on the second attempt ten milliseconds
+later — presumably something that listens for a change of the clipboard had
+opened it in between, which was not looked into; the ten attempts the adapter
+already made are what that needs.
+
+What was written stayed after the owner was gone: text read by another process
+after the window was destroyed on its own thread, and after the process that
+made it had exited, with `GetClipboardOwner` answering no window both times.
+An attempt to destroy the window from another thread was refused, access
+denied, which is why nothing tries to at exit.
