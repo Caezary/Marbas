@@ -216,7 +216,10 @@ let private extractForClipboard (deps: Dependencies) dispatch groups =
         match groups |> List.choose (clipboardPlan deps scratch) with
         | [] -> finished []
         | plans ->
-            deps.Runners.Batch UnpackTitle (fun control -> Archive.extractAll deps.FileSystem control plans) finished
+            deps.Runners.Batch
+                { Title = UnpackTitle
+                  Work = fun control -> Archive.extractAll deps.FileSystem control plans
+                  Finish = finished }
 
 let private archiveToArchivePlan (deps: Dependencies) source target level entries =
     planFor deps deps.WorkspacePath source (fun () -> entriesApprovedForArchive deps source target level entries)
@@ -309,7 +312,11 @@ let private untilStopped (control: Operations.BatchControl) (pieces: Piece list)
 let private runPlaces (deps: Dependencies) title (pieces: Piece option list) finished =
     match List.choose id pieces with
     | [] -> ()
-    | ready -> deps.Runners.Batch title (fun control -> untilStopped control ready) finished
+    | ready ->
+        deps.Runners.Batch
+            { Title = title
+              Work = fun control -> untilStopped control ready
+              Finish = finished }
 
 let private emptyClipboard (deps: Dependencies) dispatch =
     match deps.Clipboard.Empty() with
@@ -422,9 +429,15 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         let ground =
             FindGround.resolve deps.FileSystem location marked deps.Processes.PathDirectories query.Scope
 
-        deps.Runners.Search (Walk(query, ground)) (showHit deps dispatch) (SearchAnswered >> dispatch)
+        deps.Runners.Search
+            { Run = Walk(query, ground)
+              View = showHit deps dispatch
+              Finish = SearchAnswered >> dispatch }
     | ShowLastResults(results, gone) ->
-        deps.Runners.Search (Reopen(results, gone)) (showHit deps dispatch) (SearchAnswered >> dispatch)
+        deps.Runners.Search
+            { Run = Reopen(results, gone)
+              View = showHit deps dispatch
+              Finish = SearchAnswered >> dispatch }
     | PromptForLink(sources, directory, suggestion) ->
         let refusalOf text kind =
             Links.requests deps.FileSystem kind sources directory text
@@ -461,9 +474,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
 
         if allowed then
             deps.Runners.Batch
-                PackTitle
-                (fun control -> Archive.write deps.FileSystem control archive sources)
-                (fun results -> dispatch (PackFinished(FileSystemPath.name deps.FileSystem target, results)))
+                { Title = PackTitle
+                  Work = fun control -> Archive.write deps.FileSystem control archive sources
+                  Finish = fun results -> dispatch (PackFinished(FileSystemPath.name deps.FileSystem target, results)) }
     | CopyPlaces(groups, target) ->
         runPlaces deps CopyTitle (groups |> List.map (copyPiece deps target)) (CopyFinished >> dispatch)
     | MovePlaces(groups, target) ->
@@ -475,9 +488,9 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | [] -> ()
         | plans ->
             deps.Runners.Batch
-                UnpackTitle
-                (fun control -> Archive.extractAll deps.FileSystem control plans)
-                (UnpackFinished >> dispatch)
+                { Title = UnpackTitle
+                  Work = fun control -> Archive.extractAll deps.FileSystem control plans
+                  Finish = UnpackFinished >> dispatch }
     | RenameTarget(source, newName) ->
         let finished outcome =
             dispatch (RenameFinished(newName, outcome))
@@ -487,16 +500,17 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Ok Operations.RenameDone -> finished (Ok())
         | Ok(Operations.CopyNeeded target) ->
             deps.Runners.Batch
-                RenameTitle
-                (fun control ->
-                    [ Operations.moveByCopying deps.FileSystem control source target
-                      |> Operations.itemResult source ])
-                (Operations.wholeOutcome >> finished)
+                { Title = RenameTitle
+                  Work =
+                    fun control ->
+                        [ Operations.moveByCopying deps.FileSystem control source target
+                          |> Operations.itemResult source ]
+                  Finish = Operations.wholeOutcome >> finished }
     | MeasureTargets targets ->
         deps.Runners.Measure
-            MeasureTitle
-            (fun control -> DirectoryMeasure.measureAll deps.FileSystem control targets)
-            (MeasureFinished >> dispatch)
+            { Title = MeasureTitle
+              Measure = fun control -> DirectoryMeasure.measureAll deps.FileSystem control targets
+              Finish = MeasureFinished >> dispatch }
     | ViewFile path -> showPath deps dispatch path
     | ViewArchiveEntry(archive, entry) ->
         withPassword deps archive (fun password -> showEntry deps dispatch archive password entry)
@@ -567,7 +581,10 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Some(StandOn row) -> dispatch (DriveChosen(side, row))
         | Some(HandOver row) -> dispatch (DriveHandedOver row)
         | None -> ()
-    | WatchLocations paths -> deps.Watches.Locations paths (fun () -> dispatch ExternalChangeDetected)
+    | WatchLocations paths ->
+        deps.Watches.Locations
+            { Paths = paths
+              Notify = fun () -> dispatch ExternalChangeDetected }
     | ChangeHistory change -> changeHistory deps dispatch change |> ignore
     | ShowHistory tab ->
         match History.load deps.FileSystem deps.HistoryPath with
@@ -619,7 +636,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Error error -> dispatch (ClipboardRefused error)
         | Ok files -> files |> Option.iter (fun held -> dispatch (ClipboardFilesRead(held, target)))
     | MovePastedFiles(files, target) -> movePasted deps dispatch files target
-    | SweepLeftovers -> deps.Runners.Background(sweepLeftovers deps)
+    | SweepLeftovers -> deps.Runners.Background { Work = sweepLeftovers deps }
     | SaveSettings settings ->
         match Settings.save deps.FileSystem deps.SettingsPath settings with
         | Ok() -> ()

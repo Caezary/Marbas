@@ -14,8 +14,8 @@ answers nothing for is left alone, which is one panel in practice: a results
 panel, whose hits are checked when it is shown and when the user asks, never
 because something happened in the directory beside it. Neither the state nor `Update` knows that
 a `FileSystemWatcher` exists; `Ports.Watches.Locations` is the port,
-`Adapters/DirectoryWatch.fs` the only implementation, and the callback it is
-handed dispatches that one message.
+`Adapters/DirectoryWatch.fs` the only implementation, and the `LocationsWatch`
+it is handed carries the paths and `Notify`, which dispatches that one message.
 
 **The effect is raised by comparing, not by remembering to raise it.** `update`
 is `transition` — the whole former body — followed by `watching`, which asks

@@ -46,10 +46,12 @@ type FindAsked =
       Masks: string
       Text: string }
 
+type TypedLinkRefusal = string -> LinkKind -> LinkRefusal option
+
 type LinkPrompt =
     { Kinds: LinkKind list
       Suggestion: FileSystemPath
-      Refusal: string -> LinkKind -> LinkRefusal option
+      Refusal: TypedLinkRefusal
       Remembered: EnteredText list }
 
 type HandlerPrompt =
@@ -66,20 +68,26 @@ type DrivePrompt =
     { Side: PanelSide
       Drives: DriveRow list }
 
+type FavoritesAfter = FavoriteChange -> Favorites option
+
 type FavoritesPrompt =
     { Favorites: Favorites
       Current: Place option
-      Change: FavoriteChange -> Favorites option }
+      Change: FavoritesAfter }
+
+type UserMenuAfter = MenuChange -> UserMenu option
 
 type UserMenuPrompt =
     { Menu: UserMenu
-      Change: MenuChange -> UserMenu option }
+      Change: UserMenuAfter }
+
+type HistoryAfter = HistoryChange -> History option
 
 type HistoryPrompt =
     { History: History
       Tab: HistoryTab
       Now: DateTimeOffset
-      Change: HistoryChange -> History option }
+      Change: HistoryAfter }
 
 type SearchHistory =
     { Texts: unit -> EnteredText list
@@ -134,23 +142,38 @@ type Clipboard =
       GetFiles: unit -> Result<ClipboardFiles option, ClipboardError>
       Empty: unit -> Result<unit, ClipboardError> }
 
+type ModifiersWatch = { Report: Set<Modifier> -> unit }
+
+type LocationsWatch =
+    { Paths: FileSystemPath list
+      Notify: unit -> unit }
+
 type Watches =
-    { Modifiers: (Set<Modifier> -> unit) -> unit
-      Locations: FileSystemPath list -> (unit -> unit) -> unit }
+    { Modifiers: ModifiersWatch -> unit
+      Locations: LocationsWatch -> unit }
+
+type BatchRequest =
+    { Title: string
+      Work: Operations.BatchControl -> Operations.ItemResult list
+      Finish: Operations.ItemResult list -> unit }
+
+type MeasureRequest =
+    { Title: string
+      Measure: Operations.BatchControl -> Measurement list
+      Finish: Result<Measurement list, Operations.OperationError> -> unit }
+
+type SearchRequest =
+    { Run: SearchRun
+      View: FindHit -> unit
+      Finish: FindAnswer -> unit }
+
+type BackgroundRequest = { Work: unit -> unit }
 
 type Runners =
-    { Batch:
-        string
-            -> (Operations.BatchControl -> Operations.ItemResult list)
-            -> (Operations.ItemResult list -> unit)
-            -> unit
-      Measure:
-          string
-              -> (Operations.BatchControl -> Measurement list)
-              -> (Result<Measurement list, Operations.OperationError> -> unit)
-              -> unit
-      Search: SearchRun -> (FindHit -> unit) -> (FindAnswer -> unit) -> unit
-      Background: (unit -> unit) -> unit }
+    { Batch: BatchRequest -> unit
+      Measure: MeasureRequest -> unit
+      Search: SearchRequest -> unit
+      Background: BackgroundRequest -> unit }
 
 type Dependencies =
     { FileSystem: IFileSystem

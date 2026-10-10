@@ -907,8 +907,8 @@ Terminal.Gui 2.4.17 has the vocabulary for it — `Key.IsModifierOnly`,
 Windows input processor returns from every key-up before anything is raised
 (`if (!inputEvent.KeyEvent.bKeyDown) { return; }`) and never surfaces a
 standalone `Ctrl`, so there is no event to listen to on the platform Marbas is
-developed on. `Watches.Modifiers` is therefore a port that hands over
-a callback; `ModifierWatch` is the only place that knows about
+developed on. `Watches.Modifiers` is therefore a port that is handed a
+`ModifiersWatch`, whose `Report` it calls; `ModifierWatch` is the only place that knows about
 `GetAsyncKeyState` and `app.AddTimeout`, polls ten times a second and reports
 only when the set changes. On anything but Windows it registers nothing and
 the bar keeps the classic row. Everything above the port — which row a set of

@@ -87,6 +87,32 @@ modules (`PatternDialog`) so their layout can be tested too — a field placed
 outside the dialog's content area is invisible yet still typable, which no
 behaviour test would notice.
 
+**A port takes a value, never a function beside one.** Until P21.13 the runners
+and the watches were curried: `Runners.Batch` took a title, the work and a
+continuation as three arguments, `Runners.Search` a run and two callbacks,
+`Watches.Locations` the paths and what to call. A call site read as a row of
+lambdas and a fake as `fun _ work finish -> …`, which says how the port is
+called and not what each argument is for. Each takes one record now, as the
+prompts do:
+
+| Port | Takes | Fields |
+|------|-------|--------|
+| `Runners.Batch` | `BatchRequest` | `Title`, `Work`, `Finish` |
+| `Runners.Measure` | `MeasureRequest` | `Title`, `Measure`, `Finish` |
+| `Runners.Search` | `SearchRequest` | `Run`, `View`, `Finish` |
+| `Runners.Background` | `BackgroundRequest` | `Work` |
+| `Watches.Modifiers` | `ModifiersWatch` | `Report` |
+| `Watches.Locations` | `LocationsWatch` | `Paths`, `Notify` |
+
+A function a prompt carries stays a field, and its type has a name that says
+what it answers: `TypedLinkRefusal` — why a link of this kind to the target
+typed so far would be refused, if it would — and `HistoryAfter`,
+`FavoritesAfter` and `UserMenuAfter`, each the list after a change, or nothing
+when its file could not be written. The dialogs that are handed those functions
+name the same types. `State/PortsTests.fs` reads the records by reflection and
+fails, naming the field, on any field of `Dependencies` or of its five records
+that is a function taking a function.
+
 **No message carries a cursor except the one that moves it.** `CursorMoved` is
 the only message with a `PanelCursor`; `EntryOpened`, `SelectionToggled`,
 `SortRequested`, `RefreshRequested` and the pattern pair say what happened and
@@ -214,7 +240,7 @@ which is what lets a test expand `%DATA%`, `$DATA` and `~` against a map
 instead of against the machine running the suite.
 
 **The background thread is a port, not a thread.** `Runners.Batch`
-takes the progress title, the work to do (handed a `BatchControl` to report
+takes a `BatchRequest`: the progress title, the work to do (handed a `BatchControl` to report
 through and to ask whether it should stop) and what to do with the results.
 `BatchRunner` is the only place that knows about `Task.Run`, `app.Invoke` and
 running the progress dialog modally; the tests pass a runner that does the work
@@ -222,7 +248,8 @@ inline, which is why every `F5`/`F6` test stayed synchronous and none of them
 had to change when the operations moved off the UI thread.
 
 **Work nobody waits for has a runner of its own.** `Runners.Background` takes
-the work and nothing else: no title, no control, no result. `BatchRunner.runUnseen`
+a `BackgroundRequest`, the work and nothing else: no title, no control, no
+result. `BatchRunner.runUnseen`
 puts it on a task and returns, and the fake runs it inline. Its one caller is
 the sweep of earlier sessions' working directories, which `Startup.firstSteps`
 raises as the effect `SweepLeftovers` once the panels stand — an effect no
@@ -576,8 +603,8 @@ Raising it arm by arm would have meant seven places to keep in step — and
 `EntryOpened` alone moves a panel four ways — while the comparison also keeps
 every other transition silent. The first watch of a session is not a transition
 at all: at startup the panels already stand where the settings put them, so
-`MainWindow` arms it by interpreting one `WatchLocations` itself, next to the
-`Watches.Modifiers` it already wires. See [Auto-refresh](AUTO-REFRESH.md).
+`Startup.firstSteps` arms it by interpreting one `WatchLocations` itself, and
+`MainWindow` wires `Watches.Modifiers` after it. See [Auto-refresh](AUTO-REFRESH.md).
 `remembering` follows `watching` the same way: it compares where each panel of
 the tab in front stood before and after the message and appends a history
 change for a panel that landed somewhere new — see [History](HISTORY.md).

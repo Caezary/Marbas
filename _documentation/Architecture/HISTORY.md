@@ -303,7 +303,8 @@ stays open. `[Go to]` and `Alt+G` answer `GoTo` with the visit's place, which
 ## Forgetting and clearing
 
 **The popup changes the file in place, through a function `Shell` hands it.**
-`HistoryPrompt` carries `Change: HistoryChange -> History option`. `Shell`
+`HistoryPrompt` carries `Change`, a `HistoryAfter`: the history after a change,
+or nothing when it could not be written. `Shell`
 builds it from the same `changeHistory` that answers the `ChangeHistory`
 effect: `History.change` over `deps.HistoryPath`, stamped by `deps.Clock()`,
 with the result dispatched to the state as `HistoryChanged`, or

@@ -6,6 +6,7 @@ open System.IO.Abstractions
 open Terminal.Gui.App
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.State
 
 [<Literal>]
 let QuietMilliseconds = 200.0
@@ -117,8 +118,8 @@ let watching (app: IApplication) (fs: IFileSystem) =
 
     app.AddTimeout(poll, looking) |> ignore
 
-    fun (wanted: FileSystemPath list) report ->
-        collapse.Value <- collapsing (fun () -> DateTimeOffset.Now) quiet scheduling panelsInFront report
-        paths.Value <- wanted
+    fun (watch: Ports.LocationsWatch) ->
+        collapse.Value <- collapsing (fun () -> DateTimeOffset.Now) quiet scheduling panelsInFront watch.Notify
+        paths.Value <- watch.Paths
         broken.Value <- false
         rewatch ()

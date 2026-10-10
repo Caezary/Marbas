@@ -8,6 +8,7 @@ open System.Threading.Tasks
 open Terminal.Gui.App
 open Marbas.FileSystem
 open Marbas.FileSystem.FileSearch
+open Marbas.State
 open Marbas.Ui.Find
 
 let private Gathering = TimeSpan.FromMilliseconds 100.0
@@ -64,21 +65,15 @@ let private walk
 
     timer
 
-let run
-    (app: IApplication)
-    (fs: IFileSystem)
-    (asked: SearchRun)
-    (view: FindHit -> unit)
-    (finished: FindAnswer -> unit)
-    =
+let run (app: IApplication) (fs: IFileSystem) (request: Ports.SearchRequest) =
     use cancellation = new CancellationTokenSource()
     let mutable showing = true
 
     let window =
-        ResultsWindow.create fs asked view (fun () -> cancellation.Cancel()) _.RequestStop()
+        ResultsWindow.create fs request.Run request.View (fun () -> cancellation.Cancel()) _.RequestStop()
 
     let timer =
-        match asked with
+        match request.Run with
         | Walk(query, ground) -> walk app fs window cancellation (fun () -> showing) query ground |> Some
         | Reopen _ -> None
 
@@ -86,5 +81,5 @@ let run
     showing <- false
     cancellation.Cancel()
     timer |> Option.iter (app.RemoveTimeout >> ignore)
-    finished (ResultsWindow.answer window)
+    request.Finish(ResultsWindow.answer window)
     window.Dispose()

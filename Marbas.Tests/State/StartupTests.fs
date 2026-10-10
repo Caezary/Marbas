@@ -60,7 +60,7 @@ let ``the first steps put under watch where the panels stand by then`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            Watches.Locations = fun paths _ -> watched.Add paths }
+            Watches.Locations = fun watch -> watched.Add watch.Paths }
 
     let opened =
         Startup.restored deps |> loadPanel fs Right (fp (at "backup")) |> Expect.ok
@@ -75,7 +75,7 @@ let ``the first steps hand the sweep of what earlier sessions left to the backgr
 
     let deps =
         { Fakes.dependencies (mockFs ()) (at "start") with
-            Runners.Background = fun work -> handed.Add work }
+            Runners.Background = fun request -> handed.Add request.Work }
 
     let state = Startup.restored deps
 

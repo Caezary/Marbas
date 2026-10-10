@@ -30,6 +30,10 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] `Messages` words values and holds none of its own but `Problem`. A value
       it has to word is declared in `Domain` or `FileSystem`; a transition names
       a `Problem` and never a title or a sentence.
+- [ ] A port takes one value. Where it has to be handed something to call, the
+      function is a named field of a request record — `BatchRequest.Finish`,
+      `LocationsWatch.Notify` — never a second argument, and a function a prompt
+      carries has a type whose name says what it answers (`HistoryAfter`).
 - [ ] Inside `State`, the ports come last. A transition cannot name `Ports` or
       `Shell`, because neither is compiled yet where `Update` is; what it wants
       from the world it raises as an `Effect`.

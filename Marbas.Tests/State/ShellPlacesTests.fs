@@ -71,9 +71,9 @@ let private capture () =
 let private recording (fs: MockFileSystem) (titles: ResizeArray<string>) =
     { Fakes.dependencies fs (at "start") with
         Runners.Batch =
-            fun title work finish ->
-                titles.Add title
-                work unattended |> finish }
+            fun request ->
+                titles.Add request.Title
+                request.Work unattended |> request.Finish }
 
 let private refusedTar =
     { Source = ItemOnDisk tarAt
@@ -168,7 +168,7 @@ let ``a batch stopped before it starts touches none of the places`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            Runners.Batch = fun _ work finish -> work stopped |> finish }
+            Runners.Batch = fun request -> request.Work stopped |> request.Finish }
 
     Shell.interpret deps dispatch (MovePlaces(places, ToDirectory(fp (at "backup"))))
 

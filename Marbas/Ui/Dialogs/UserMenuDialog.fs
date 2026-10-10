@@ -7,6 +7,7 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.State
 open Marbas.Ui
 open Marbas.Ui.Dialogs.MenuEntryForm
 open Marbas.Ui.Dialogs.MenuRemoval
@@ -35,7 +36,7 @@ let private FrameHeight = 6
 type MenuEditing =
     { AskEntry: EntryPrompt -> EntryAnswer option
       AskRemoval: RemovalPrompt -> RemovalChoice option
-      Change: MenuChange -> UserMenu option }
+      Change: Ports.UserMenuAfter }
 
 let private listHeight (menu: UserMenu) =
     UserMenu.items menu |> List.length |> max 1 |> min TallestList

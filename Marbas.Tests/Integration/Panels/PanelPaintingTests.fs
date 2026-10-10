@@ -307,7 +307,7 @@ let private resultsWindow (reported: ResizeArray<string>) =
                               Masks = "*.*"
                               Text = "" }
                 Prompts.ReportError = fun report -> reported.Add report.Message
-                Runners.Search = fun _ _ answer -> answer sentToPanel }
+                Runners.Search = fun request -> request.Finish sentToPanel }
 
     pressKey window KeyMap.findKey
     window

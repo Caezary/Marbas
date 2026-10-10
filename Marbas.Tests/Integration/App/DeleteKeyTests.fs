@@ -120,9 +120,9 @@ let ``Alt and Del wipe the entry behind the progress window after a question of 
                         true
                 Processes.SendToTrash = bin.Send
                 Runners.Batch =
-                    fun title work finish ->
-                        batches.Add title
-                        work Operations.unattended |> finish }
+                    fun request ->
+                        batches.Add request.Title
+                        request.Work Operations.unattended |> request.Finish }
 
     (leftList window).SelectedItem <- 3
 
@@ -149,13 +149,13 @@ let ``F8 sends the entry to the trash behind the progress window, naming it on t
                 Prompts.Confirm = agreeing
                 Processes.SendToTrash = bin.Send
                 Runners.Batch =
-                    fun title work finish ->
-                        batches.Add title
+                    fun request ->
+                        batches.Add request.Title
 
-                        work
+                        request.Work
                             { Report = reported.Add
                               IsCancelled = fun () -> false }
-                        |> finish }
+                        |> request.Finish }
 
     (leftList window).SelectedItem <- 3
 
@@ -175,13 +175,13 @@ let ``Shift and F8 name every entry of the tree they remove behind the progress 
             { Fakes.dependencies fs (at "start") with
                 Prompts.Confirm = agreeing
                 Runners.Batch =
-                    fun title work finish ->
-                        batches.Add title
+                    fun request ->
+                        batches.Add request.Title
 
-                        work
+                        request.Work
                             { Report = reported.Add
                               IsCancelled = fun () -> false }
-                        |> finish }
+                        |> request.Finish }
 
     (leftList window).SelectedItem <- 1
 
@@ -210,7 +210,7 @@ let ``a trash stopped with Esc leaves the entries it never reached`` () =
                 Prompts.Confirm = agreeing
                 Prompts.ReportError = silent
                 Processes.SendToTrash = bin.Send
-                Runners.Batch = fun _ work finish -> work stopped |> finish }
+                Runners.Batch = fun request -> request.Work stopped |> request.Finish }
 
     let left = leftList window
     left.SelectedItem <- 3
@@ -236,7 +236,7 @@ let ``a wipe stopped with Esc leaves the entries it never reached and says where
             { Fakes.dependencies fs (at "start") with
                 Prompts.Confirm = agreeing
                 Prompts.ReportError = fun report -> reported.Add report.Message
-                Runners.Batch = fun _ work finish -> work stopped |> finish }
+                Runners.Batch = fun request -> request.Work stopped |> request.Finish }
 
     (leftList window).SelectedItem <- 3
 

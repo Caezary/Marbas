@@ -73,8 +73,8 @@ let private drive
     app.RemoveTimeout showing |> ignore
     cancellation.Cancel()
 
-let run app log title work finish =
-    drive app log title (Operations.guarded title work) finish
+let run app log (request: Ports.BatchRequest) =
+    drive app log request.Title (Operations.guarded request.Title request.Work) request.Finish
 
 let measured (work: Operations.BatchControl -> Measurement list) control =
     try
@@ -82,7 +82,7 @@ let measured (work: Operations.BatchControl -> Measurement list) control =
     with ex ->
         Error(Operations.BatchFailed ex.Message)
 
-let runMeasuring app log title work finish =
-    drive app log title (measured work) finish
+let runMeasuring app log (request: Ports.MeasureRequest) =
+    drive app log request.Title (measured request.Measure) request.Finish
 
-let runUnseen (work: unit -> unit) = Task.Run(work) |> ignore
+let runUnseen (request: Ports.BackgroundRequest) = Task.Run(request.Work) |> ignore

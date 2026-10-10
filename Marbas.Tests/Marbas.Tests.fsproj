@@ -168,6 +168,7 @@
     <Compile Include="State\LogEntryTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
     <Compile Include="State\RuntimeQueueTests.fs" />
+    <Compile Include="State\PortsTests.fs" />
     <Compile Include="State\ShellTests.fs" />
     <Compile Include="State\ShellPlacesTests.fs" />
     <Compile Include="State\ShellLogTests.fs" />

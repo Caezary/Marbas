@@ -126,7 +126,7 @@ let ``the sweep is handed to the runner that works off the UI thread`` () =
 
     let deps =
         { whereNobodyRuns fs with
-            Runners.Background = handed.Add }
+            Runners.Background = fun request -> handed.Add request.Work }
 
     Shell.interpret deps ignore SweepLeftovers
 

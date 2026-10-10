@@ -386,7 +386,7 @@ let ``every entry sent to the trash is named while the batch runs`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            Runners.Batch = fun _ work finish -> work (recording reported) |> finish }
+            Runners.Batch = fun request -> request.Work(recording reported) |> request.Finish }
 
     Shell.interpret
         deps
@@ -409,7 +409,7 @@ let ``a trash stopped with Esc leaves the entries it never reached`` () =
                 fun path ->
                     trashed.Add path
                     Ok()
-            Runners.Batch = fun _ work finish -> work stopped |> finish }
+            Runners.Batch = fun request -> request.Work stopped |> request.Finish }
 
     Shell.interpret
         deps
@@ -434,7 +434,7 @@ let ``a permanent delete names every entry of the tree it removes`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            Runners.Batch = fun _ work finish -> work (recording reported) |> finish }
+            Runners.Batch = fun request -> request.Work(recording reported) |> request.Finish }
 
     Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/docs") ] ], Permanently))
 
@@ -448,7 +448,7 @@ let ``a permanent delete stopped with Esc leaves the rest of the tree`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            Runners.Batch = fun _ work finish -> work stopped |> finish }
+            Runners.Batch = fun request -> request.Work stopped |> request.Finish }
 
     Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/docs") ] ], Permanently))
 
@@ -486,9 +486,9 @@ let ``a wipe runs behind the progress window under a title of its own`` () =
         { Fakes.dependencies fs (at "start") with
             Processes.SendToTrash = fun path -> failwith $"the trash was asked for {FileSystemPath.value path}"
             Runners.Batch =
-                fun title work finish ->
-                    titles.Add title
-                    work unattended |> finish }
+                fun request ->
+                    titles.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret deps dispatch (DeletePlaces([ FromDisk [ fp (at "start/notes.txt") ] ], ByWiping))
 
@@ -511,7 +511,7 @@ let ``a stopped wipe hands back the file it stopped at`` () =
 
     let deps =
         { Fakes.dependencies fs (at "start") with
-            Runners.Batch = fun _ work finish -> work stopped |> finish }
+            Runners.Batch = fun request -> request.Work stopped |> request.Finish }
 
     Shell.interpret
         deps
@@ -599,9 +599,9 @@ let ``a batch is handed to the runner under its own title`` () =
         { noDeps () with
             FileSystem = copyReadyFs ()
             Runners.Batch =
-                fun title work finish ->
-                    titles.Add title
-                    work unattended |> finish }
+                fun request ->
+                    titles.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret
         (deps ())
@@ -627,9 +627,9 @@ let ``nothing is run when every collision is refused`` () =
             FileSystem = fs
             Prompts.AskOverwrite = (fun _ -> No)
             Runners.Batch =
-                fun _ work finish ->
+                fun request ->
                     started <- true
-                    work unattended |> finish }
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret
         deps
@@ -731,9 +731,9 @@ let ``a rename the file system carries out itself asks for no batch`` () =
         { noDeps () with
             FileSystem = fs
             Runners.Batch =
-                fun title work finish ->
-                    titles.Add title
-                    work unattended |> finish }
+                fun request ->
+                    titles.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret deps dispatch (RenameTarget(fp (at "start/notes.txt"), en "readme.txt"))
 
@@ -750,9 +750,9 @@ let ``a rename that fell back to copying runs behind the progress window`` () =
         { noDeps () with
             FileSystem = fs
             Runners.Batch =
-                fun title work finish ->
-                    titles.Add title
-                    work unattended |> finish }
+                fun request ->
+                    titles.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret deps dispatch (RenameTarget(fp (at "start/docs"), en "papers"))
 
@@ -770,7 +770,7 @@ let ``a rename stopped with Esc while it copied leaves the source where it is`` 
     let deps =
         { noDeps () with
             FileSystem = fs
-            Runners.Batch = fun _ work finish -> work stopped |> finish }
+            Runners.Batch = fun request -> request.Work stopped |> request.Finish }
 
     Shell.interpret deps dispatch (RenameTarget(fp (at "start/docs"), en "papers"))
 
@@ -1666,9 +1666,9 @@ let ``packing runs under its own title`` () =
         { noDeps () with
             FileSystem = packReadyFs ()
             Runners.Batch =
-                fun title work finish ->
-                    titles.Add title
-                    work unattended |> finish }
+                fun request ->
+                    titles.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret deps dispatch (ArchiveTargets([ fp (at "start/notes.txt") ], packing (at "backup/notes.zip")))
 
@@ -1776,9 +1776,9 @@ let ``unpacking runs under its own title`` () =
         { noDeps () with
             FileSystem = unpackReadyFs None
             Runners.Batch =
-                fun title work finish ->
-                    titles.Add title
-                    work unattended |> finish }
+                fun request ->
+                    titles.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret deps dispatch (ExtractTargets([ fp (at "start/data.zip") ], fp (at "backup")))
 
@@ -2051,9 +2051,9 @@ let ``copying out of an archive runs under the copying title and leaves the arch
         { noDeps () with
             FileSystem = fs
             Runners.Batch =
-                fun title work finish ->
-                    titles.Add title
-                    work unattended |> finish }
+                fun request ->
+                    titles.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret
         deps
@@ -2098,9 +2098,9 @@ let ``a refused overwrite copies nothing and starts no batch`` () =
             FileSystem = fs
             Prompts.AskOverwrite = fun _ -> No
             Runners.Batch =
-                fun title work finish ->
-                    batches.Add title
-                    work unattended |> finish }
+                fun request ->
+                    batches.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret
         deps
@@ -2217,7 +2217,7 @@ let ``a kind that cannot be changed comes back as a failed item`` () =
         { noDeps () with
             FileSystem = fs
             Prompts.ReportError = fun report -> reported <- (report.Title, report.Message)
-            Runners.Batch = fun _ work finish -> work unattended |> finish }
+            Runners.Batch = fun request -> request.Work unattended |> request.Finish }
 
     Shell.interpret
         deps
@@ -2244,7 +2244,7 @@ let ``an archive behind a password comes back as a failed item`` () =
         { noDeps () with
             FileSystem = fs
             Prompts.ReportError = fun report -> reported <- (report.Title, report.Message)
-            Runners.Batch = fun _ work finish -> work unattended |> finish }
+            Runners.Batch = fun request -> request.Work unattended |> request.Finish }
 
     Shell.interpret
         deps
@@ -2270,9 +2270,9 @@ let ``a source moved into an archive is gone from disk once it is in`` () =
         { noDeps () with
             FileSystem = fs
             Runners.Batch =
-                fun title work finish ->
-                    titles.Add title
-                    work unattended |> finish }
+                fun request ->
+                    titles.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret
         deps
@@ -2321,9 +2321,9 @@ let ``entries removed from an archive are gone and the outcome is dispatched bac
         { noDeps () with
             FileSystem = fs
             Runners.Batch =
-                fun title work finish ->
-                    titles.Add title
-                    work unattended |> finish }
+                fun request ->
+                    titles.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret deps dispatch (DeletePlaces([ FromArchive(zipAt, [ entry ]) ], Permanently))
 
@@ -2484,7 +2484,7 @@ let ``the paths under watch are handed to the watch`` () =
 
     let deps =
         { noDeps () with
-            Watches.Locations = fun paths _ -> watched <- paths }
+            Watches.Locations = fun watch -> watched <- watch.Paths }
 
     Shell.interpret deps dispatch (WatchLocations [ fp (at "start"); fp (at "backup") ])
 
@@ -2497,7 +2497,7 @@ let ``what the watch reports is dispatched as an external change`` () =
 
     let deps =
         { noDeps () with
-            Watches.Locations = fun _ reported -> report <- reported }
+            Watches.Locations = fun watch -> report <- watch.Notify }
 
     Shell.interpret deps dispatch (WatchLocations [ fp (at "start") ])
     report ()
@@ -2530,7 +2530,7 @@ let ``the search runs over the ground its scope names`` () =
 
     let deps =
         { noDeps () with
-            Runners.Search = fun run _ _ -> asked <- SearchRun.ground run }
+            Runners.Search = fun request -> asked <- SearchRun.ground request.Run }
 
     Shell.interpret deps ignore (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
 
@@ -2543,7 +2543,7 @@ let ``the directories of PATH are the ground of the scope that names them`` () =
     let deps =
         { noDeps () with
             Processes.PathDirectories = [ fp (at "tools") ]
-            Runners.Search = fun run _ _ -> asked <- SearchRun.ground run }
+            Runners.Search = fun request -> asked <- SearchRun.ground request.Run }
 
     Shell.interpret deps ignore (RunSearch(searchFor PathDirectories, OnDisk(fp (at "start")), []))
 
@@ -2556,7 +2556,7 @@ let ``what the results window answered becomes a message`` () =
 
     let deps =
         { noDeps () with
-            Runners.Search = fun _ _ finished -> finished (answering (Some landing)) }
+            Runners.Search = _.Finish(answering (Some landing)) }
 
     Shell.interpret deps dispatch (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
 
@@ -2576,7 +2576,7 @@ let ``a hit the results window asks to view is read out of the file it names`` (
         { noDeps () with
             FileSystem = fs
             Prompts.ShowFile = fun request -> shown <- FileSystemPath.value request.Source.Path
-            Runners.Search = fun _ view _ -> view hit }
+            Runners.Search = fun request -> request.View hit }
 
     Shell.interpret deps ignore (RunSearch(searchFor FromDirectory, OnDisk(fp (at "start")), []))
 
@@ -3223,9 +3223,9 @@ let ``extracting for the clipboard runs under the unpacking title`` () =
         { noDeps () with
             FileSystem = unpackReadyFs None
             Runners.Batch =
-                fun title work finish ->
-                    titles.Add title
-                    work unattended |> finish }
+                fun request ->
+                    titles.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret deps ignore (ExtractForClipboard forClipboard)
 
@@ -3241,9 +3241,9 @@ let ``a locked archive whose password is not given is left off the clipboard wit
             FileSystem = unpackReadyFs (ArchivePassword.tryCreate "letmein")
             Prompts.AskPassword = fun _ -> None
             Runners.Batch =
-                fun title work finish ->
-                    batches.Add title
-                    work unattended |> finish }
+                fun request ->
+                    batches.Add request.Title
+                    request.Work unattended |> request.Finish }
 
     Shell.interpret deps dispatch (ExtractForClipboard forClipboard)
 

@@ -8,6 +8,7 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.State
 open Marbas.Ui
 open Marbas.Ui.Format
 open Marbas.Ui.Keys
@@ -38,7 +39,7 @@ type FavoritesView(favorites: Favorites) =
 type private Changing =
     { Fs: IFileSystem
       Current: Place option
-      Change: FavoriteChange -> Favorites option
+      Change: Ports.FavoritesAfter
       Slots: ListView }
 
 let private rows fs width favorites =

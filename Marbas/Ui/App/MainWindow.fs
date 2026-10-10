@@ -38,6 +38,6 @@ let create (deps: Ports.Dependencies) =
     for side, panel in AppView.panels view do
         PanelWiring.attach host side panel
 
-    deps.Watches.Modifiers(FunctionKeyBar.show keyBar)
+    deps.Watches.Modifiers { Report = FunctionKeyBar.show keyBar }
 
     view.Window

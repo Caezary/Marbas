@@ -268,7 +268,8 @@ which is exactly "the user pressed Ok".
 
 **Background work is a port, so tests stay synchronous.** `Runners.Batch` is the
 dependency that copies and moves go through; `Fakes` supplies one that
-runs the work inline with `Operations.unattended`, so a test presses `F5` and
+runs the work inline — `fun request -> request.Work Operations.unattended |>
+request.Finish`, the request read by its fields — so a test presses `F5` and
 finds the files already copied when the call returns. Nothing in the suite
 waits on a thread. What that does *not* cover is `BatchRunner` — the real
 runner, its progress dialog and the `Application.Invoke` marshalling are only
@@ -279,8 +280,8 @@ is the timer's tick, called by hand to show that it takes the latest path and
 that a second tick with nothing new shows nothing; `counting` and `concluded`
 are the debug log's count and verdict.
 
-**Held modifiers are a port too.** `Watches.Modifiers` is handed a callback at
-startup; a test keeps the callback and calls it with the modifiers it wants
+**Held modifiers are a port too.** `Watches.Modifiers` is handed a `ModifiersWatch` at
+startup; a test keeps its `Report` and calls it with the modifiers it wants
 held, which is how `Integration/Keys/ModifierRowTests.fs` presses no key at all and
 still asserts what the bottom bar shows. The polling itself lives in
 `ModifierWatch` and is only exercised by running the app.

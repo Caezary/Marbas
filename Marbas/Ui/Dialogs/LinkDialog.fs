@@ -6,6 +6,7 @@ open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Messages
+open Marbas.State
 open Marbas.Ui
 open Marbas.Ui.Theme
 
@@ -38,7 +39,7 @@ let private chosenKind kinds (selector: OptionSelector) =
 
 let private offer
     kinds
-    (refusal: string -> LinkKind -> LinkRefusal option)
+    (refusal: Ports.TypedLinkRefusal)
     (target: TextField)
     (selector: OptionSelector)
     (reason: Label)
@@ -61,12 +62,7 @@ let private offer
     then
         selector.Value <- Nullable 0
 
-let create
-    (kinds: LinkKind list)
-    (refusal: string -> LinkKind -> LinkRefusal option)
-    (remembered: string list)
-    (suggestion: string)
-    =
+let create (kinds: LinkKind list) (refusal: Ports.TypedLinkRefusal) (remembered: string list) (suggestion: string) =
     let dialog = new LinkView(kinds, Title = Title, Width = 64, Height = 14)
     DialogStyle.dress dialog |> ignore
 

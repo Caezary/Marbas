@@ -22,7 +22,7 @@ let private watchedWindow () =
     let window =
         focusedWindow
             { Fakes.dependencies (mockFs ()) (at "start") with
-                Watches.Modifiers = watchers.Add }
+                Watches.Modifiers = fun watch -> watchers.Add watch.Report }
 
     let hold modifiers =
         for watcher in watchers do

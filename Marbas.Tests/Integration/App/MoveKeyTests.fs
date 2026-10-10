@@ -117,9 +117,9 @@ let ``a bare name for a directory the file system will not move renames it behin
             { Fakes.dependencies fs (at "start") with
                 Prompts.AskTarget = fun _ -> Some "papers"
                 Runners.Batch =
-                    fun title work finish ->
-                        batches.Add title
-                        work unattended |> finish }
+                    fun request ->
+                        batches.Add request.Title
+                        request.Work unattended |> request.Finish }
 
     (leftList window).SelectedItem <- 1
 

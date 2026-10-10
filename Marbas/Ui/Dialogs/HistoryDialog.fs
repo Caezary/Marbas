@@ -9,6 +9,7 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.State
 open Marbas.State.AppState
 open Marbas.Ui
 open Marbas.Ui.Format
@@ -345,7 +346,7 @@ type private Changing =
     { Fs: IFileSystem
       Now: DateTimeOffset
       Confirm: string -> string -> bool
-      Change: HistoryChange -> History option
+      Change: Ports.HistoryAfter
       Tables: (HistoryTab * TableView) list
       Line: Label }
 

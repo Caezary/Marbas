@@ -540,12 +540,12 @@ let dependencies (fs: IFileSystem) (startPath: string) : Ports.Dependencies =
           Empty = fun () -> Ok() }
       Watches =
         { Modifiers = ignore
-          Locations = fun _ _ -> () }
+          Locations = ignore }
       Runners =
-        { Batch = fun _ work finish -> work Operations.unattended |> finish
-          Measure = fun _ work finish -> work Operations.unattended |> Ok |> finish
-          Search = fun _ _ _ -> ()
-          Background = fun work -> work () } }
+        { Batch = fun request -> request.Work Operations.unattended |> request.Finish
+          Measure = fun request -> request.Measure Operations.unattended |> Ok |> request.Finish
+          Search = ignore
+          Background = _.Work() } }
 
 [<Literal>]
 let PrivilegeNotHeld = 0x80070522

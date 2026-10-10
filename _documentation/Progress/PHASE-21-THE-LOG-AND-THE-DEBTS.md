@@ -549,3 +549,48 @@ modules renamed, and the tests that name a report effect, 57 places in 22
 files, name `Report` and its `Problem` instead; nothing else in them changed
 but the `open` lines —
 3959 pass and 16 skip on Windows.
+
+**P21.13 made the ports say what they are for.** The four runners and the two
+watches each take one request record where they took a row of arguments, some
+of them functions: `BatchRequest` (`Title`, `Work`, `Finish`), `MeasureRequest`
+(`Title`, `Measure`, `Finish`), `SearchRequest` (`Run`, `View`, `Finish`),
+`BackgroundRequest` (`Work`), `ModifiersWatch` (`Report`) and `LocationsWatch`
+(`Paths`, `Notify`). No field of `Dependencies`, or of the five records it
+holds, is a function whose argument is another function.
+
+- **The task is done when a test says so.** `State/PortsTests.fs` reads
+  `Dependencies` and its records by reflection and lists every field that is a
+  function taking a function. Before the change it named six —
+  `Watches.Modifiers`, `Watches.Locations`, `Runners.Batch`, `Runners.Measure`,
+  `Runners.Search` and `Runners.Background` — and a port added later is held to
+  the same rule without anyone remembering it.
+- **`Runners.Background` was not on the plan's list.** The plan was written
+  before P21.7 added it. It took one function and nothing else, so its record
+  has one field; the rule is the same for it.
+- **The two requests behind the progress window do not share a field for their
+  work.** `BatchRequest.Work` answers item results and `MeasureRequest.Measure`
+  answers sizes. Two records with the same three labels would have made every
+  call site say which one it builds.
+- **The functions the prompts carry have named types.** `LinkPrompt.Refusal`
+  is a `TypedLinkRefusal`, and the `Change` of `HistoryPrompt`,
+  `FavoritesPrompt` and `UserMenuPrompt` — the third was not on the plan's
+  list either — is a `HistoryAfter`, a `FavoritesAfter` and a `UserMenuAfter`:
+  the list after a change, or nothing when its file could not be written. The
+  field names stayed. `LinkDialog`, `HistoryDialog`, `FavoritesDialog` and
+  `UserMenuDialog`, which are handed those functions, name the same types
+  instead of spelling the arrows again. `SearchHistory` was left as it is: it is
+  a record of two named functions already.
+- **The adapters read the record; nothing else in them changed.**
+  `BatchRunner.run`, `runMeasuring` and `runUnseen`, `SearchRunner.run`,
+  `DirectoryWatch.watching` and the two functions of `ModifierWatch` take the
+  request, and `Dependencies.create` wires them as before.
+- **A sentence left over from P21.11 was corrected.**
+  [State and effects](../Architecture/STATE-AND-EFFECTS.md) still said
+  `MainWindow` arms the first watch; `Startup.firstSteps` does.
+
+The suite gained two tests, both in `PortsTests`: the five records
+`Dependencies` holds, by name, so the reflection cannot pass by reading
+nothing, and no port taking a function. `Fakes` builds the runners from the
+fields of the request — `fun request -> request.Work Operations.unattended |>
+request.Finish` — and the 41 overrides in nine test files read the request the
+same way; no assertion changed. 3961 pass and 16 skip on Windows.

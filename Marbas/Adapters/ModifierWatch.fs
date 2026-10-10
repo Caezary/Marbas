@@ -4,6 +4,7 @@ open System
 open System.Runtime.InteropServices
 open Terminal.Gui.App
 open Marbas.Domain
+open Marbas.State
 open Marbas.Ui.Keys
 
 [<Literal>]
@@ -32,7 +33,7 @@ let private held () =
           Shift ]
     |> Modifiers.held
 
-let poll (app: IApplication) report =
+let poll (app: IApplication) (watch: Ports.ModifiersWatch) =
     let reported = ref Modifiers.none
 
     app.AddTimeout(
@@ -42,10 +43,10 @@ let poll (app: IApplication) report =
 
             if current <> reported.Value then
                 reported.Value <- current
-                report current
+                watch.Report current
 
             true
     )
     |> ignore
 
-let unsupported (_: Set<Modifier> -> unit) = ()
+let unsupported (_: Ports.ModifiersWatch) = ()
