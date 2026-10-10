@@ -265,3 +265,85 @@ past the end and one without the signature, a file that is not there —
 fourteen on the resolution, four on `PATHEXT`, and ten describing the starts of
 `Enter`, `F2` and `F4` with a fake that knows one window program. The entry in
 [Rough edges](../ROUGH-EDGES.md) is narrowed to a start through an association.
+
+**P21.7 swept old sessions at start.** A session now makes its working
+directory as it starts and writes the file `owner` into it, the process id and
+the moment the process started, and then reads the directories beside its own
+under `<temporary root>\Marbas`: one whose owner no longer runs is removed
+whole, one with no owner once nothing in it has been written for a day.
+`SessionOwner` and `Workspace.claim` and `sweep` in `FileSystem` are the rules,
+`SessionProcess` in `Adapters` fills the two new fields of `Processes` — the
+session's `Owner` and `IsRunning` — and `MainWindow.create` raises the new
+effect `SweepLeftovers`, which `Shell` hands to the new `Runners.Background`, a
+task with no window. How the pieces fit is in
+[File operations](../Architecture/FILE-OPERATIONS.md).
+
+Four things went differently from the plan.
+
+- **The directory is made at the start, not at first use.** The plan had the
+  owner file written when the session makes its directory, which until now
+  was whenever something first needed it. Three places make it —
+  `Workspace.scratch` from `Shell`, the same from `Archive.copyToArchive`,
+  which holds a path and nothing else, and `CommandProcess.writeList` for a
+  list file — and each would have needed the owner. One `Workspace.claim` at
+  the start covers them, and every session now holds an empty directory with a
+  file of two lines for as long as it runs.
+- **"Started at that moment" is within two seconds.** The comparison was going
+  to be an equality. A script under WSL showed three processes reading the
+  start of a fourth up to 2.8 ms apart, where Windows hands every reader the
+  same tick, so an equality would have let each session on Linux remove the
+  directory of every other one still running.
+  `SessionProcess.sameStart` allows two seconds; the numbers are in
+  [Measurements](MEASUREMENTS.md#one-start-read-by-two-processes-p217-2026-10-10).
+- **The line in the log is written without `--debug` too.** The log port wrote
+  nothing without the switch, and a leftover that is not shown and not written
+  would have been skipped in silence. `LogEntry.isFailure` now names what is
+  written whatever the switch says — a crash, `LeftoverKept` and
+  `WorkspaceUnclaimed` — `DebugLog.writer` lets those through, and
+  `CrashesOnly` became `FailuresOnly`. The entries carry the reason as the
+  sentence `OperationErrorMessage` makes of it, built in `Shell`, the way
+  `ErrorReported` carries its words.
+- **The log has one writer at a time.** The sweep writes from its own thread
+  while the UI thread may be writing a transition, and an append that met the
+  file open would have lost its line. `Session.run` takes a lock around the
+  write, which also covers the crash hooks that were already writing from
+  other threads.
+
+Three smaller choices were made along the way.
+
+- **A claim that fails is logged, not shown.** When the working directory
+  cannot be made the session goes on, the sweep still runs, and whatever needs
+  the directory later reports it the way it always did.
+- **A directory read as nobody's waits a day.** An `owner` that cannot be read
+  as one — half written, or a session caught between making the directory and
+  writing the file — is treated like none at all, and the day decides.
+- **Two entries in [Rough edges](../ROUGH-EDGES.md) came out of it.** A wall
+  clock stepped by more than two seconds makes a running session on Linux look
+  dead to the next one, reasoned from the measurement and not seen; and on
+  Unix every user's sessions share one `Marbas` directory under the temporary
+  one, which only its first user can write to — older than this task, but the
+  claim is where it now shows first. The entry the task was written against is
+  gone, and the one about a run from the history that recreates an old
+  session's directory now says when that directory goes.
+
+Done by probe on both systems, with the temporary directory pointed at a
+scratch one. On Windows a session in a console window of its own was closed by
+its button — `WM_CLOSE` posted to the window — and the next start removed its
+directory, one planted with the id of a running process and another start, and
+an unclaimed one dated two days back, and kept a fresh unclaimed one, a file
+beside them and, on a third start, the directory of the second session still
+running. Under WSL three sessions in tmux showed a running one kept and a
+killed one removed. The Linux leg of the suite was run there as well, from a
+copy of the tree: 3870 passed and 50 skipped.
+
+The suite gained fifty-three tests: eleven on the owner's two lines, sixteen on
+the claim and the sweep on `MockFileSystem` — a dead session, an id that
+belongs to another start, a live session, the session's own, the day from
+both sides and with one fresh file deep inside, an owner that names nobody, a
+directory that refuses and one after it that still goes, a file beside the
+directories, a directory beside `Marbas`, and no `Marbas` at all — seven on
+`Shell`, among them the log line with no dialog and the work handed to the
+runner rather than done, seven on the two entries and on what counts as a
+failure, one on the writer with the switch off, ten on the real process and
+the two seconds, and one that builds the window over a leftover.
+`Fakes.HeldOpen` is the file that will not be deleted.

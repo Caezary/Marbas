@@ -250,6 +250,12 @@ person with a `sudo`-owned file to hand.
 | Starting restores every tab, and opens on the one it was left on | same | same | suite |
 | Each tab comes back with both cursors where they stood | same | same | suite |
 | A session written before tabs existed still opens, as one tab | same | same | suite |
+| A session writes who owns its working directory when it starts | `%TEMP%\Marbas\<session>\owner` | `$TMPDIR/Marbas/<session>/owner`, else `/tmp/…` | suite, probe, WSL |
+| The directory of a session closed with the console window's button is gone after the next start | removed | no window to close; a killed session's is removed | probe, WSL |
+| The directory of a session still running is kept by one started beside it | kept | kept | probe, WSL |
+| A directory whose owner's id belongs to a process started at another moment is removed | removed | same | suite, probe |
+| A directory nobody claimed is removed a day after its last write, and kept before | same | same | suite, probe, WSL |
+| A process's start read by another process | the same to the tick | up to 2.8 ms apart; two seconds allowed | probe, WSL |
 
 `Settings.location` is what makes the Linux column true: .NET answers
 `SpecialFolder.ApplicationData` with an **empty string** on a machine whose
@@ -257,6 +263,22 @@ person with a `sudo`-owned file to hand.
 a *relative* path — so the session was written to `./Marbas/settings.conf`,
 wherever the app happened to be started from. The fallback to `$HOME/.config` is
 tested and was confirmed by running the app.
+
+The rows on the working directory were run on 2026-10-10 with the built
+application and the temporary directory pointed at a scratch one (`TEMP` and
+`TMP` on Windows, `TMPDIR` under WSL). On Windows each session ran in a console
+window of its own (`conhost.exe Marbas.exe`) and was ended by posting `WM_CLOSE`
+to that window, which is what its close button does: the first session's
+directory stayed, with its `owner`, and was gone when looked for six seconds
+after the second session started, together with a directory planted with the id of a running process
+and another start, and one planted unclaimed and dated two days back; an
+unclaimed one just made and a file beside the directories stayed, and so did
+the second session's directory when a third started beside it. Under WSL three
+sessions ran in tmux: the first was kept by the second while it ran — the row
+that an equality on the start would have failed — and removed by the third
+after `kill -9`. Closing a window by its button has no counterpart there; a
+terminal emulator closed on a Linux desktop sends `SIGHUP`, which ends the
+process the same way and is left to the manual pass.
 
 ## Keyboard and terminal
 

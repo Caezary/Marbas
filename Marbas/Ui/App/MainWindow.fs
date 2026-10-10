@@ -43,6 +43,8 @@ let create (deps: Ports.Dependencies) =
     |> Update.WatchLocations
     |> Shell.interpret deps dispatch
 
+    Shell.interpret deps dispatch Update.SweepLeftovers
+
     let host: PanelWiring.Host =
         { Dispatch = dispatch
           Refresh = fun () -> runtime.Refresh()

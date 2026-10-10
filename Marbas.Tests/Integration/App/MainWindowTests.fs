@@ -1,5 +1,6 @@
 module Marbas.Tests.Integration.App.MainWindowTests
 
+open System
 open System.Drawing
 open System.IO.Abstractions.TestingHelpers
 open Xunit
@@ -78,3 +79,24 @@ let ``the directories the panels start in are put under watch`` () =
                 Watches.Locations = fun paths _ -> watched.Add paths }
 
     Assert.Equal<FileSystemPath list list>([ [ FileSystemPath.create (Root.at "start") ] ], List.ofSeq watched)
+
+[<Fact>]
+let ``what a session that no longer runs left behind is swept when the window starts`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(Root.at "start")
+    fs.AddFile(Root.at "temp/Marbas/earlier/1/left.txt", MockFileData "left")
+
+    Workspace.claim
+        fs
+        { ProcessId = 3980
+          Started = DateTimeOffset(2026, 9, 27, 9, 0, 0, TimeSpan.Zero) }
+        (FileSystemPath.create (Root.at "temp/Marbas/earlier"))
+    |> Expect.ok
+
+    use _ =
+        MainWindow.create
+            { Fakes.dependencies fs (Root.at "start") with
+                Processes.IsRunning = fun _ -> false }
+
+    Assert.False(fs.Directory.Exists(Root.at "temp/Marbas/earlier"))
+    Assert.True(fs.File.Exists(Root.at "temp/Marbas/session/owner"))

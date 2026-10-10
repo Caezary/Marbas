@@ -112,6 +112,57 @@ let ``an error shown to the user is written with its title and its words`` () =
     Assert.Equal<string>([ $"{stamp} error shown: Cannot copy: Access denied to 'notes.txt'." ], lines)
 
 [<Fact>]
+let ``a leftover that was not removed is written with its directory and the reason`` () =
+    let directory = Root.at "temp/Marbas/earlier"
+
+    let lines =
+        LogEntry.lines moment (LeftoverKept(FileSystemPath.create directory, "Access denied to 'left.txt'."))
+
+    Assert.Equal<string>([ $"{stamp} leftover kept: {directory}: Access denied to 'left.txt'." ], lines)
+
+[<Fact>]
+let ``a working directory that was not claimed is written with the reason`` () =
+    let directory = Root.at "temp/Marbas/session"
+
+    let lines =
+        LogEntry.lines moment (WorkspaceUnclaimed(FileSystemPath.create directory, "Access denied to 'session'."))
+
+    Assert.Equal<string>([ $"{stamp} working directory not claimed: {directory}: Access denied to 'session'." ], lines)
+
+[<Fact>]
+let ``a crash is a failure`` () =
+    let failed =
+        LogEntry.isFailure (Crashed(UiThread, InvalidOperationException "the loop broke"))
+
+    Assert.True failed
+
+[<Fact>]
+let ``a leftover that was not removed is a failure`` () =
+    let failed =
+        LogEntry.isFailure (LeftoverKept(FileSystemPath.create (Root.at "temp/Marbas/earlier"), "held open"))
+
+    Assert.True failed
+
+[<Fact>]
+let ``a working directory that was not claimed is a failure`` () =
+    let failed =
+        LogEntry.isFailure (WorkspaceUnclaimed(FileSystemPath.create (Root.at "temp/Marbas/session"), "denied"))
+
+    Assert.True failed
+
+[<Fact>]
+let ``an interpreted effect is no failure`` () =
+    let failed = LogEntry.isFailure (EffectInterpreted Quit)
+
+    Assert.False failed
+
+[<Fact>]
+let ``an error shown to the user is no failure of its own`` () =
+    let failed = LogEntry.isFailure (ErrorReported("Cannot copy", "Access denied."))
+
+    Assert.False failed
+
+[<Fact>]
 let ``a message carrying an archive password does not write it`` () =
     let choice: ArchiveChoice =
         { Target = "backup.zip"

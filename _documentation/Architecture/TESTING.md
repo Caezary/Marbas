@@ -244,8 +244,9 @@ the key back, for the tests whose subject is whether it was handled.
 the three paths at the top, then four sub-records: `Prompts` (error reporter,
 confirmation, overwrite question, the name, target, pattern and password
 prompts, the drive, tab, find, link, handler, properties and settings popups,
-the file viewer), `Processes` (trash, editor, launch, links, handlers, drives),
-`Watches` (modifiers, directories) and `Runners` (batch, measure, search).
+the file viewer), `Processes` (trash, editor, launch, links, handlers, drives,
+the session's owner and whether an owner runs), `Watches` (modifiers,
+directories) and `Runners` (batch, measure, search, background).
 Everything that would open a modal dialog, start a process or end the process
 is a function, so tests pass fakes and assert on what was requested.
 `Adapters/Prompts.fs` is the only place that supplies the real `MessageBox` dialogs.
@@ -294,6 +295,19 @@ send another panel to a second drive, press `Ctrl+Q`, then build a second window
 over the *same* mock file system and read the titles back. `WorkspacePath` is
 the same arrangement for the session's working directory, which is why "quitting
 takes it with it" is an ordinary `ShellTests` assertion.
+
+**Every window a test builds claims a working directory.** `MainWindow.create`
+raises the sweep of P21.7, and the fake `Runners.Background` runs it inline, so
+after `MainWindow.create` the mock file system holds
+`temp/Marbas/session/owner`. The fake `Processes.IsRunning` answers yes to every
+owner, so nothing a test planted under `temp/Marbas` is removed unless the test
+overrides it. The sweep's own rules are tested below the window:
+`WorkspaceTests` hands `Workspace.sweep` the moment it is and a function for
+who runs, and dates an unclaimed directory by setting `LastWriteTime` on the
+file and on each directory above it — a mock directory is otherwise as old as
+the test. `Fakes.HeldOpen` is the file that will not be deleted.
+`SessionProcessTests` is the one place that asks the real system: about the
+test host itself, and about an id no process has.
 
 **A failure is arranged on the file, not faked around it.** `MockFileData` is
 what makes the error paths testable: `Attributes <- FileAttributes.ReadOnly`

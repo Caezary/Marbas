@@ -36,8 +36,10 @@ let run (fs: IFileSystem) (env: HostEnvironment) =
 
     LogFile.cut fs logPath |> ignore
 
+    let oneWriter = obj ()
+
     let record entry =
-        LogEntry.write fs logPath DateTimeOffset.Now entry
+        lock oneWriter (fun () -> LogEntry.write fs logPath DateTimeOffset.Now entry)
 
     use _crashes = watch record
 

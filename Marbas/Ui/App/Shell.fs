@@ -369,6 +369,23 @@ let private rememberTyped (deps: Dependencies) dispatch kind text =
     EnteredText.tryCreate text
     |> Option.iter (fun typed -> changeHistory deps dispatch (Remember(Typed(kind, typed))) |> ignore)
 
+let private claimWorkspace (deps: Dependencies) =
+    match Workspace.claim deps.FileSystem deps.Processes.Owner deps.WorkspacePath with
+    | Ok() -> ()
+    | Error error ->
+        WorkspaceUnclaimed(deps.WorkspacePath, OperationErrorMessage.describe error)
+        |> deps.Log
+
+let private logKept (deps: Dependencies) (refusal: Workspace.SweepRefusal) =
+    LeftoverKept(refusal.Directory, OperationErrorMessage.describe refusal.Reason)
+    |> deps.Log
+
+let private sweepLeftovers (deps: Dependencies) () =
+    claimWorkspace deps
+
+    Workspace.sweep deps.FileSystem deps.Processes.IsRunning (deps.Clock()) deps.WorkspacePath
+    |> List.iter (logKept deps)
+
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     deps.Log(EffectInterpreted effect)
 
@@ -617,6 +634,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Ok files -> files |> Option.iter (fun held -> dispatch (ClipboardFilesRead(held, target)))
     | MovePastedFiles(files, target) -> movePasted deps dispatch files target
     | ReportClipboardError error -> report deps ClipboardErrorMessage.Title (ClipboardErrorMessage.describe error)
+    | SweepLeftovers -> deps.Runners.Background(sweepLeftovers deps)
     | SaveSettings settings ->
         match Settings.save deps.FileSystem deps.SettingsPath settings with
         | Ok() -> ()

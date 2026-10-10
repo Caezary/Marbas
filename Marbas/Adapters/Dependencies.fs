@@ -96,7 +96,9 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) (log: Lo
           MakeLink = Links.create links env.Platform fs
           HandlersFor = handlersFor fs env
           PathDirectories = FindGround.pathDirectories fs (pathSeparator env.Platform) env.SearchPath
-          EnvironmentVariable = HostEnvironment.variable }
+          EnvironmentVariable = HostEnvironment.variable
+          Owner = SessionProcess.current ()
+          IsRunning = SessionProcess.isRunning }
       Clipboard = SystemClipboard.forPlatform env.Platform
       Watches =
         { Modifiers = watchModifiers app env
@@ -104,4 +106,5 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) (log: Lo
       Runners =
         { Batch = BatchRunner.run app log
           Measure = BatchRunner.runMeasuring app log
-          Search = SearchRunner.run app fs } }
+          Search = SearchRunner.run app fs
+          Background = BatchRunner.runUnseen } }

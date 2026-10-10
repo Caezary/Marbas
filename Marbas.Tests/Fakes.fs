@@ -125,6 +125,26 @@ type UnwritableDirectory(denied: string) =
         let current = base.Directory.GetCurrentDirectory()
         once making (fun () -> UncreatableDirectory(this, current, denied) :> IDirectory)
 
+[<Literal>]
+let HeldOpenReason =
+    "The process cannot access the file because it is being used by another process."
+
+type private UndeletableContents(accessor: IMockFileDataAccessor, held: string) =
+    inherit MockFile(accessor)
+
+    override this.Delete(path: string) =
+        if path = held then
+            raise (IOException HeldOpenReason)
+        else
+            base.Delete path
+
+type HeldOpen(held: string) =
+    inherit MockFileSystem()
+
+    let deleting = Replaced<IFile>()
+
+    override this.File = once deleting (fun () -> UndeletableContents(this, held) :> IFile)
+
 type private UnreadableContents(accessor: IMockFileDataAccessor, denied: string) =
     inherit MockFile(accessor)
 
@@ -507,7 +527,11 @@ let dependencies (fs: IFileSystem) (startPath: string) : Ports.Dependencies =
           MakeLink = fun _ -> Ok()
           HandlersFor = fun _ -> []
           PathDirectories = []
-          EnvironmentVariable = fun _ -> None }
+          EnvironmentVariable = fun _ -> None
+          Owner =
+            { ProcessId = 4120
+              Started = DateTimeOffset(2026, 9, 28, 11, 0, 0, TimeSpan.Zero) }
+          IsRunning = fun _ -> true }
       Clipboard =
         { SetText = fun _ -> Ok()
           GetText = fun () -> Ok None
@@ -520,7 +544,8 @@ let dependencies (fs: IFileSystem) (startPath: string) : Ports.Dependencies =
       Runners =
         { Batch = fun _ work finish -> work Operations.unattended |> finish
           Measure = fun _ work finish -> work Operations.unattended |> Ok |> finish
-          Search = fun _ _ _ -> () } }
+          Search = fun _ _ _ -> ()
+          Background = fun work -> work () } }
 
 [<Literal>]
 let PrivilegeNotHeld = 0x80070522

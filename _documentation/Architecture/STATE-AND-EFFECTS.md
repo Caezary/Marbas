@@ -184,6 +184,16 @@ running the progress dialog modally; the tests pass a runner that does the work
 inline, which is why every `F5`/`F6` test stayed synchronous and none of them
 had to change when the operations moved off the UI thread.
 
+**Work nobody waits for has a runner of its own.** `Runners.Background` takes
+the work and nothing else: no title, no control, no result. `BatchRunner.runUnseen`
+puts it on a task and returns, and the fake runs it inline. Its one caller is
+the sweep of earlier sessions' working directories, which `MainWindow.create`
+raises as the effect `SweepLeftovers` once the panels stand — an effect no
+transition asks for, interpreted like any other so that debug mode records it.
+What the work has to say it says to the log, from its own thread
+([Diagnostics](DIAGNOSTICS.md) has the lock that makes that safe); it never
+reaches a prompt.
+
 **Cancelling means "the progress window is gone".** The token is cancelled the
 moment `app.Run dialog` returns, whatever the reason. `Esc` closes the dialog,
 so the batch stops at its next file; if instead the batch finished first, its

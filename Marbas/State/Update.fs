@@ -159,6 +159,7 @@ type Effect =
     | ExtractForClipboard of groups: TransferSource list
     | ReadClipboardFiles of target: TransferTarget
     | MovePastedFiles of files: ClipboardFiles * target: TransferTarget
+    | SweepLeftovers
     | SaveSettings of Settings
     | Quit
 

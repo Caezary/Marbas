@@ -217,19 +217,80 @@ entry on its way from one archive to another, above all. `Workspace.location`
 answers `<temporary root>\Marbas\<session>`, where the root is the platform's
 own (`%TEMP%`, `$TMPDIR`, `/tmp`, read once into `HostEnvironment`) and the
 session is a fresh id per run, so two Marbas processes never share a directory.
-`Workspace.ensure` makes it the first time something asks — answering an
-ordinary `OperationError` if it cannot, never an exception — and
-`Workspace.release` removes it whole.
+`Workspace.claim` makes it when the session starts and writes who owns it,
+`Workspace.ensure` makes it again should something have removed it since —
+each answering an ordinary `OperationError` if it cannot, never an exception —
+and `Workspace.release` removes it whole.
 
 **The workspace is a path on `Dependencies`, not a port**, the same choice
 `SettingsPath` made and for the same reason: `Workspace` is ordinary
 `IFileSystem` code, so it runs against `MockFileSystem` in the tests, while an
 opaque function port would have left it untestable. `Shell.interpret` releases
 it on `Quit`, beside the settings write, which is what makes "gone after the
-application quits" a test rather than a claim. The one way out that skips it is
-`Ctrl+Q` pressed while a dialog holds focus, which does not pass through
-`Update` at all — the same hole that already loses the session file; the
-operating system sweeps its own temporary directory eventually.
+application quits" a test rather than a claim.
+
+**What a session could not take with it, the next one removes.** `Quit` is the
+only way out that releases the directory. A console window closed with its
+button, a logoff, a killed or crashed process and `Ctrl+Q` pressed while a
+dialog holds focus all skip it, and a handler for the console's close signal
+would only narrow that: nothing runs when a process is killed. So the fix is
+at the other end. `MainWindow.create` raises one more effect once the panels
+stand, `SweepLeftovers`, and `Shell` hands the work to `Runners.Background`, off
+the UI thread, so a large leftover cannot hold up the first screen:
+
+1. `Workspace.claim` makes the session's own directory and writes the file
+   `owner` into it: two lines, the process id and the moment the process
+   started, as `SessionOwner.lines` spells them — the id in invariant digits,
+   the moment as a `DateTimeOffset` in the round-trip format. The pair names
+   one process even after the system has given the id to another.
+2. `Workspace.sweep` reads the directories directly under
+   `<temporary root>\Marbas` other than the session's own. One whose `owner`
+   names a process `Processes.IsRunning` does not find is removed whole, with
+   `Operations.delete`. One with no `owner`, or one that cannot be read as an
+   owner — a session of a version from before P21.7, or a file half written —
+   is removed once neither it nor anything under it has been written for a
+   day, so an older Marbas still running beside a new one keeps its files.
+   The walk for the latest write stops at a link, as the delete does.
+3. A directory that will not go — a file in it held open — is left where it
+   is, and `sweep` answers it as a `SweepRefusal` with the `OperationError`.
+   `Shell` writes each as a `LeftoverKept` entry to the log and shows nothing:
+   the user did nothing to cause it. The next start tries again.
+
+Only directories directly under `Marbas` are looked at. A file beside them and
+anything beside `Marbas` itself are never touched, and a `Marbas` directory
+that is not there yet is no error.
+
+**The directory is made at the start, not at first use.** Until P21.7 a session
+that never needed its working directory never made one. Writing the owner file
+where the directory is made would have meant every place that makes it:
+`Workspace.scratch`, which `Archive.copyToArchive` calls with nothing but a
+path, and `CommandProcess.writeList`, which makes the directory of a list file
+on its own. One claim at the start covers all of them, at the price of an empty
+directory and a file of two lines for the length of every session.
+
+**Whether a process runs is a port.** `Processes.Owner` is the session's own
+process and `Processes.IsRunning` answers whether an owner's process is still
+there; `SessionProcess` in `Adapters` fills both from
+`System.Diagnostics.Process`. A process id nobody has, and a process that ends
+while it is being asked about, are not running. One whose start cannot be read
+— Windows refusing access to a process of another account — is taken to be
+running, because keeping a leftover costs a directory and removing a live
+session's costs its files.
+
+**The same start is the same moment within two seconds.** Windows hands every
+reader the same start time for a process, to the tick. Linux does not: .NET
+adds the ticks since boot from `/proc/<pid>/stat` to a boot time each process
+works out for itself, and two processes reading the start of a third came out
+up to 2.8 ms apart
+([Measurements](../Progress/MEASUREMENTS.md#one-start-read-by-two-processes-p217-2026-10-10)).
+Compared to the tick, every session on Linux would have looked dead to the
+next one. `SessionProcess.sameStart` therefore allows two seconds either way.
+The allowance errs towards keeping: a process that took over the id within two
+seconds of the owner's start would be mistaken for it, and the leftover would
+wait for that process to end.
+
+The process id is an `int` on purpose: it is the system's number, written and
+compared and never computed with.
 
 **Delete is an effect now, like copy and move.** It used to happen inside the
 `AppState` transition for `DeleteConfirmed`, which left no room for a port that

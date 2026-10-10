@@ -701,7 +701,20 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   every error shown are written to the same `marbas.log`. Messages and effects
   are written by their names alone, so no password, file content or clipboard
   text reaches the file. Nothing is saved; a start without the switch writes
-  crashes only.
+  crashes and the failures of the sweep below, and nothing else.
+- What an earlier session left in the temporary directory is removed when the
+  next one starts. Every session makes its working directory,
+  `<temporary root>\Marbas\<session>`, as it starts and writes into it who owns
+  it — the process id and the moment the process started. `F10` and `Ctrl+Q`
+  remove the directory; a console window closed with its button, a logoff, a
+  kill and a crash do not, and the next start then removes every directory
+  under `Marbas` whose owner is no longer a running process started at that
+  moment, in the background, after the panels are on screen. A directory with
+  no owner written in it — from a version before this one — goes once nothing
+  in it has been written for a day. The directory of a session still running
+  beside the new one is kept. One that cannot be removed, because a file in it
+  is held open, is left for the next start and written to `marbas.log`, with or
+  without `--debug`; no dialog is shown.
 - The progress window shows the path a batch has most recently reached,
   refreshed ten times a second however fast the batch goes, so a batch of many
   small items is never held up by its own progress and the window closes as soon

@@ -139,6 +139,10 @@ Marbas/
     ArchiveReader.fs      opening an archive: its entries as a walk, one entry as a stream
     ArchiveListing.fs     reading one level of an archive as the entries a directory gives
     SearchListing.fs      search hits as the entries a directory gives, named by their path
+    SessionOwner.fs       the process a working directory belongs to: its id and the
+                          moment it started, and the two lines they are written as
+    Workspace.fs          the session's working directory: claimed, scratch directories
+                          in it, released; what earlier sessions left behind swept
     Archive.fs            writing one and taking one apart: the walk, cancelling, the password
     Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     ContentError.fs       what can go wrong reading a file, as values
@@ -276,14 +280,17 @@ Marbas/
     RegistryHandlers.fs   the Windows registry -> the handlers a name has
     ProgramResolution.fs  a program's name -> its file: as written, `PATH` with `PATHEXT`, App Paths
     BatchRunner.fs        a batch on a background task under the progress dialog;
-                          its start and its end, with the items it reported, logged
+                          its start and its end, with the items it reported, logged;
+                          and work on a background task with no window at all
     SearchRunner.fs       the walk on a background task, hits gathered ten times a second
     ModifierWatch.fs      held Ctrl / Alt / Shift, polled on Windows, absent elsewhere
     DirectoryWatch.fs     the directories on screen watched, bursts collapsed,
                           what the watcher cannot say polled for
+    SessionProcess.fs     the process of this session as an owner, and whether an
+                          owner's process still runs
     Crashes.fs            a session that throws, an unhandled thread and an
                           unawaited task -> a crash written to the log
-    DebugLog.fs           the log port: every entry with `--debug`, none without
+    DebugLog.fs           the log port: every entry with `--debug`, the failures without
     Dependencies.fs       every port bound to one implementation, platform picked here
     Session.fs            quit key, application, theme, dependencies, window, run
                           under the crash hooks; the pointer to the log after a crash

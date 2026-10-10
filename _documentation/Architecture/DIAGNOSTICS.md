@@ -30,6 +30,11 @@ multi-byte character cannot be split, since `\n` is never part of one in UTF-8.
 Cutting at the start rather than on every write keeps a write to an append; a
 single session can grow the file past a megabyte, and the next start trims it.
 
+**One writer at a time.** `Session.run` takes a lock around `LogEntry.write`, so
+an entry from the UI thread, one from the sweep of P21.7 on its background task
+and one from a crash hook on a thread of its own are appended one after the
+other, and none loses its line to a file the other holds open.
+
 **A log that cannot be written is passed over, except after a crash.** The log
 is the last place a failure can be told, so nothing reports a log that refuses
 a cut, an entry of debug mode or an entry written from another thread. After a crash on the UI thread
@@ -51,6 +56,8 @@ place that decides what of it reaches the file:
 | `BatchStarted title` | `BatchRunner`, before the work starts | `batch started: Copying` |
 | `BatchFinished(title, items)` | `BatchRunner`, on the UI thread when the work returns | `batch finished: Copying, 12 items` |
 | `BatchCancelled(title, items)` | the same, when `Esc` closed the window first | `batch cancelled: Copying, 3 items` |
+| `WorkspaceUnclaimed(directory, reason)` | `Shell`, when the session's working directory could not be made or its owner written | `working directory not claimed: …\Marbas\0f3c…: Access denied to '…'.` |
+| `LeftoverKept(directory, reason)` | `Shell`, for each directory the sweep at start could not remove | `leftover kept: …\Marbas\69bd…: Could not complete '…': …` |
 | `Crashed(site, exn)` | the three hooks below | `crash on the UI thread: System.…` and the stack trace |
 
 `LogEntry.write` appends the lines through `LogFile.append`, both on
@@ -64,7 +71,16 @@ name — can reach the file through them, and the rule holds for every case adde
 later without anyone remembering it. Tests hold the two cases that carry an
 `ArchivePassword` (`ArchiveEntered`, `ArchiveTargets`) and `PutOnClipboard` to
 it. Paths reach the log only inside an error's words, which are the sentence
-the user was shown, and in a crash's message.
+the user was shown, in a crash's message, and in the two entries of the sweep,
+which name a directory under the temporary one and the reason it refused.
+
+**A failure is written whatever the switch says.** `LogEntry.isFailure` answers
+yes for a crash and for the two entries of the sweep at start
+([File operations](FILE-OPERATIONS.md) has the sweep itself), and no for
+everything debug mode adds. A leftover that will not go is not shown to the
+user, who did nothing to cause it, so the log is the one place it is told; a
+line that only `--debug` wrote would have told nobody. An error shown in a
+dialog is no failure in this sense: the user has read it.
 
 **The panel a message concerns.** `LogEntry.handling` names the panel the
 message carries — `PanelFocused`, `RootRequested`, `PathOpened`, `DriveChosen`
@@ -83,17 +99,17 @@ for no question anyone has asked yet.
 ## Debug mode
 
 **Asked for on the command line, for one session.** `Marbas --debug` turns on
-every entry above but the crash, which is written whatever the switch says.
+every entry above but the failures, which are written whatever the switch says.
 `Program.fs` hands its arguments to `HostEnvironment.current`, the adapter that
 reads the environment, and `Logging.ofArguments` answers `EveryTransition` when
-`--debug` is among them and `CrashesOnly` otherwise. Nothing is saved, so a
+`--debug` is among them and `FailuresOnly` otherwise. Nothing is saved, so a
 switch forgotten in a shortcut is the only way to keep it on. Any other argument
 is ignored, as all of them were before.
 
 **The switch is decided once, at the port.** `Ports.Dependencies` carries
 `Log: LogEntry -> unit`, and `DebugLog.writer` fills it in `Session.run`: the
-same `LogEntry.write` the crash hooks use when the switch is on, `ignore` when
-it is off. `Runtime`, `Shell` and `BatchRunner` call it unconditionally and never
+same `LogEntry.write` the crash hooks use when the switch is on, and that write
+behind `LogEntry.isFailure` when it is off. `Runtime`, `Shell` and `BatchRunner` call it unconditionally and never
 learn which it is, which is what lets a test hand them a recording fake. The
 fake in `Fakes.dependencies` is `ignore`.
 
@@ -155,7 +171,8 @@ pointer, and the exit code was 1.
 Debug mode is held by tests with a recording fake for `Log`: a key pressed in a
 real `MainWindow` leaves its `MessageHandled`, `Shell.interpret` leaves the
 effect and the error it reports, `BatchRunner.concluded` answers a cancelled
-batch, and `DebugLog.writer` writes nothing with the switch off. A probe ran the
+batch, and `DebugLog.writer` writes no transition with the switch off and a
+failure all the same. A probe ran the
 real window with the real adapters and `--debug` against a scratch settings
 directory, pressed four keys, and the file read:
 

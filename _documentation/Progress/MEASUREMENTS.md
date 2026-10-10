@@ -112,3 +112,38 @@ cell instead of queuing a callback. What the change buys a copy is the bound
 — a batch of entries the disk answers quickly, such as a move inside one
 volume, a delete or an archive's small entries, can no longer outrun the
 window.
+
+## One start read by two processes (P21.7, 2026-10-10)
+
+P21.7 names the owner of a working directory by its process id and the moment
+the process started, and a later session asks whether a process with that id,
+started at that moment, still runs. The plan read that as an equality. Before
+it was written as one, a script printed its own id and
+`Process.GetCurrentProcess().StartTime` and slept, and three more runs of the
+script read `Process.GetProcessById(id).StartTime` of the sleeping one, on .NET
+10 under WSL 2 (Ubuntu 24.04, kernel 6.6):
+
+| Reader | Start it read | Apart from what the process wrote |
+|---|---|---|
+| the process itself | `03:16:43.3317007` | — |
+| second process | `03:16:43.3298761` | −1.82 ms |
+| third process | `03:16:43.3318333` | +0.13 ms |
+| fourth process | `03:16:43.3289356` | −2.77 ms |
+
+**On Linux no two processes agree on a start to the tick.** The kernel keeps a
+process's start as ticks since boot, and .NET turns that into a time of day by
+adding the moment of the boot, which every process that asks has to work out
+for itself. The spread is what that leaves; where exactly it comes from was not
+taken apart, only measured. Windows keeps the start as a time of
+day and gave every reader the same value: the owner file of a session started
+by the probe of this task and `Get-Process` in another process both read
+`03:17:12.4615735`.
+
+**So the comparison allows two seconds.** An equality would have let every
+session on Linux sweep the working directory of every other one still running.
+`SessionProcess.sameStart` takes two starts within two seconds of each other
+for one — three orders of magnitude over the spread measured, and still far
+under the time in which an id comes round to another process. What the
+allowance does not cover is a wall clock stepped by more than that while a
+session runs, which moves the start a later process computes by the size of the
+step; that is an entry in [Rough edges](../ROUGH-EDGES.md).

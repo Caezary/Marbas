@@ -4,7 +4,7 @@ open System
 open Marbas.Domain
 
 type Logging =
-    | CrashesOnly
+    | FailuresOnly
     | EveryTransition
 
 module Logging =
@@ -16,7 +16,7 @@ module Logging =
         if Array.contains DebugSwitch arguments then
             EveryTransition
         else
-            CrashesOnly
+            FailuresOnly
 
 type HostEnvironment =
     { Platform: Platform

@@ -92,6 +92,7 @@
         <Compile Include="FileSystem\FindGround.fs" />
         <Compile Include="FileSystem\FileSearch.fs" />
         <Compile Include="FileSystem\FindAnswer.fs" />
+        <Compile Include="FileSystem\SessionOwner.fs" />
         <Compile Include="FileSystem\Workspace.fs" />
         <Compile Include="FileSystem\Archive.fs" />
         <Compile Include="FileSystem\EntryProperties.fs" />
@@ -251,6 +252,7 @@
         <Compile Include="Adapters\ModifierWatch.fs" />
         <Compile Include="Adapters\NativeLinks.fs" />
         <Compile Include="Adapters\SystemClipboard.fs" />
+        <Compile Include="Adapters\SessionProcess.fs" />
         <Compile Include="Adapters\Crashes.fs" />
         <Compile Include="Adapters\DebugLog.fs" />
         <Compile Include="Adapters\Dependencies.fs" />

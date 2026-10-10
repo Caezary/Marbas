@@ -95,6 +95,7 @@
     <Compile Include="FileSystem\ShortcutTests.fs" />
     <Compile Include="FileSystem\PastedPathTests.fs" />
     <Compile Include="FileSystem\TrashTests.fs" />
+    <Compile Include="FileSystem\SessionOwnerTests.fs" />
     <Compile Include="FileSystem\WorkspaceTests.fs" />
     <Compile Include="FileSystem\ProgramImageTests.fs" />
   </ItemGroup>
@@ -237,6 +238,7 @@
     <Compile Include="Ui\App\ShellTests.fs" />
     <Compile Include="Ui\App\ShellPlacesTests.fs" />
     <Compile Include="Ui\App\ShellLogTests.fs" />
+    <Compile Include="Ui\App\ShellLeftoversTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -253,6 +255,7 @@
     <Compile Include="Adapters\SystemClipboardTests.fs" />
     <Compile Include="Adapters\CrashesTests.fs" />
     <Compile Include="Adapters\DebugLogTests.fs" />
+    <Compile Include="Adapters\SessionProcessTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -84,3 +84,5 @@ let measured (work: Operations.BatchControl -> Measurement list) control =
 
 let runMeasuring app log title work finish =
     drive app log title (measured work) finish
+
+let runUnseen (work: unit -> unit) = Task.Run(work) |> ignore

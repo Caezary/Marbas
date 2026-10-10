@@ -19,6 +19,8 @@ type LogEntry =
     | BatchFinished of title: string * items: int
     | BatchCancelled of title: string * items: int
     | ErrorReported of title: string * message: string
+    | WorkspaceUnclaimed of directory: FileSystemPath * reason: string
+    | LeftoverKept of directory: FileSystemPath * reason: string
     | Crashed of site: CrashSite * failure: exn
 
 module LogEntry =
@@ -62,7 +64,22 @@ module LogEntry =
         | BatchFinished(title, items) -> $"batch finished: {title}, {items} items"
         | BatchCancelled(title, items) -> $"batch cancelled: {title}, {items} items"
         | ErrorReported(title, message) -> $"error shown: {title}: {message}"
+        | WorkspaceUnclaimed(directory, reason) ->
+            $"working directory not claimed: {FileSystemPath.value directory}: {reason}"
+        | LeftoverKept(directory, reason) -> $"leftover kept: {FileSystemPath.value directory}: {reason}"
         | Crashed(site, failure) -> $"crash {siteText site}: {failure}"
+
+    let isFailure entry =
+        match entry with
+        | WorkspaceUnclaimed _
+        | LeftoverKept _
+        | Crashed _ -> true
+        | MessageHandled _
+        | EffectInterpreted _
+        | BatchStarted _
+        | BatchFinished _
+        | BatchCancelled _
+        | ErrorReported _ -> false
 
     let lines (moment: DateTimeOffset) entry =
         let stamp = moment.ToString MomentFormat

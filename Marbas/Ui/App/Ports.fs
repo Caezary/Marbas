@@ -121,7 +121,9 @@ type Processes =
       MakeLink: LinkRequest -> Result<unit, Operations.OperationError>
       HandlersFor: EntryName -> Handler list
       PathDirectories: FileSystemPath list
-      EnvironmentVariable: string -> string option }
+      EnvironmentVariable: string -> string option
+      Owner: SessionOwner
+      IsRunning: SessionOwner -> bool }
 
 type Clipboard =
     { SetText: ClipboardText -> Result<unit, ClipboardError>
@@ -145,7 +147,8 @@ type Runners =
               -> (Operations.BatchControl -> Measurement list)
               -> (Result<Measurement list, Operations.OperationError> -> unit)
               -> unit
-      Search: SearchRun -> (FindHit -> unit) -> (FindAnswer -> unit) -> unit }
+      Search: SearchRun -> (FindHit -> unit) -> (FindAnswer -> unit) -> unit
+      Background: (unit -> unit) -> unit }
 
 type Dependencies =
     { FileSystem: IFileSystem

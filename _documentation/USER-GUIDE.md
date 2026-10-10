@@ -22,7 +22,14 @@ To find out what led up to a problem, start Marbas with `--debug`
 command and every action taken, by name only, every batch with how many items
 it went through, and every error shown, in the words it was shown with. No file
 contents, no passwords and no clipboard text are written. The switch lasts for one session; the next start
-without it records crashes alone again.
+without it records crashes alone again — and, should it ever happen, a line for
+each leftover of an earlier session that could not be cleared away.
+
+While it runs, Marbas keeps a working directory of its own under the system's
+temporary directory (`%TEMP%\Marbas` on Windows, `/tmp/Marbas` elsewhere) and
+removes it when you quit. If a session ends some other way — the console
+window is closed, the machine shuts down — the next start of Marbas clears away
+what it left, so nothing there needs tidying by hand.
 
 ## Panels and the cursor
 
