@@ -7,6 +7,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.Messages
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -152,7 +153,7 @@ let ``a favourite that is gone is reported and the panel stays where it was`` ()
     let result = update fs (FavoriteFound(Place.OnDisk(fp (at "gone")))) state
 
     Assert.Equal(OnDisk(fp (at "start")), result.State.Left.Path)
-    Assert.Equal<Effect list>([ ReportListingError(DirectoryNotFound(fp (at "gone"))) ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Listing(DirectoryNotFound(fp (at "gone")))) ], result.Effects)
 
 [<Fact>]
 let ``the favourites popup is shown with the place the active panel stands in`` () =

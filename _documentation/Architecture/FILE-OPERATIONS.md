@@ -305,7 +305,7 @@ working on and stop where `Esc` was pressed, like the wipe beside them.
 
 **Per-item failures share one dialog.** `Operations.deleteAll` answers for every
 target, `Operations.failures` keeps the ones that went wrong, and the
-`ReportItemFailures` effect renders them through
+`Report` effect carries them as `Problem.ItemFailures`, worded by
 `OperationErrorMessage.describeFailures` as one `name: reason` line each. The
 panel is refreshed first, so what survived a partial failure is on screen
 before the dialog appears.
@@ -394,7 +394,7 @@ results copying and deleting answer with, and measuring answers with sizes.
 A walk that falls over answers `Error` rather than an empty measurement:
 `BatchRunner.measured` wraps the work the way `Operations.guarded` wraps a
 batch, `MeasureFinished` carries a `Result`, and `Update` turns the `Error`
-into `ReportOperationError`. An empty list is a directory with nothing in it,
+into `Report(Problem.Operation …)`. An empty list is a directory with nothing in it,
 not a walk that failed, and the two used to look alike.
 
 **A stopped measurement changes nothing, and a re-read forgets a finished one.**
@@ -602,7 +602,7 @@ top of the one being closed.
 place that knows about `Process.Start`, `WaitForExit` and repainting the
 screen afterwards, and it maps whatever the start threw through
 `Operations.mapException`. That reuses the error type, the
-`ReportOperationError` effect and `OperationErrorMessage` rather than inventing
+`Problem.Operation` case and `OperationErrorMessage` rather than inventing
 a second failure vocabulary for one case — an editor that will not start failed
 on a path, like every other operation error. The tests pass a `StartEditor`
 that records the path and can write to the mock file system, which is what

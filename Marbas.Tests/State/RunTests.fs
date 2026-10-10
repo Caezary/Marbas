@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
 open Marbas.Domain
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -182,7 +183,7 @@ let ``a file inside an archive says why it will not run`` () =
     let result = update fs EntryOpened state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.ArchiveEntryNotRunnable(fp (at "start/backup.zip/notes.txt"))) ],
+        [ Report(Problem.Operation(Operations.ArchiveEntryNotRunnable(fp (at "start/backup.zip/notes.txt")))) ],
         result.Effects
     )
 
@@ -238,7 +239,7 @@ let ``a document has no rights of its own to raise`` () =
 
     let result = update fs ElevatedRunRequested state
 
-    Assert.Equal<Effect list>([ ReportLaunchError(NotAProgram(fp (at "start/notes.txt"))) ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Launch(NotAProgram(fp (at "start/notes.txt")))) ], result.Effects)
 
 [<Fact>]
 let ``a directory is no more a program than a document is`` () =
@@ -248,7 +249,7 @@ let ``a directory is no more a program than a document is`` () =
     let result = update fs ElevatedRunRequested state
 
     Assert.Equal(OnDisk(fp (at "start")), result.State.Left.Path)
-    Assert.Equal<Effect list>([ ReportLaunchError(NotAProgram(fp (at "start/docs"))) ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Launch(NotAProgram(fp (at "start/docs")))) ], result.Effects)
 
 [<Fact>]
 let ``the parent entry is nothing to raise the rights of`` () =
@@ -268,6 +269,6 @@ let ``an entry inside an archive says why it will not run elevated either`` () =
     let result = update fs ElevatedRunRequested state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.ArchiveEntryNotRunnable(fp (at "start/backup.zip/notes.txt"))) ],
+        [ Report(Problem.Operation(Operations.ArchiveEntryNotRunnable(fp (at "start/backup.zip/notes.txt")))) ],
         result.Effects
     )

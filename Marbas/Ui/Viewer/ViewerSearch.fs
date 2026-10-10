@@ -2,7 +2,7 @@ namespace Marbas.Ui.Viewer
 
 open Marbas.Domain
 open Marbas.FileSystem
-open Marbas.State.Messages
+open Marbas.Messages
 
 type LastSearch =
     | LastText of WindowSearch.Query option

@@ -7,6 +7,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.Messages
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -129,7 +130,7 @@ let private entryItem archive name outcome : Operations.ItemResult =
       Outcome = outcome }
 
 let private refused refusal =
-    [ ReportOperationError(Operations.NotInSearchResults refusal) ]
+    [ Report(Problem.Operation(Operations.NotInSearchResults refusal)) ]
 
 [<Fact>]
 let ``marked hits from three directories are copied in one batch`` () =

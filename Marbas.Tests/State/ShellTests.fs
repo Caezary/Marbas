@@ -6,10 +6,10 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Domain
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
-open Marbas.State.Messages
 open Marbas.Tests
 
 let private at = Root.at
@@ -239,7 +239,7 @@ let ``a listing error is reported under the listing title`` () =
         { noDeps () with
             Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
-    Shell.interpret deps ignore (ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "gone"))))
+    Shell.interpret deps ignore (Report(Problem.Listing(DirectoryListing.DirectoryNotFound(fp (at "gone")))))
 
     Assert.Equal(ListingErrorMessage.Title, fst reported)
     Assert.Contains(at "gone", snd reported)
@@ -257,7 +257,7 @@ let ``archives that cannot be read are reported in one message under the archive
     Shell.interpret
         deps
         ignore
-        (ReportUnverifiedHits [ ArchiveDamaged(dataZip, "bad header"); ArchiveDamaged(other, "bad header") ])
+        (Report(Problem.UnverifiedHits [ ArchiveDamaged(dataZip, "bad header"); ArchiveDamaged(other, "bad header") ]))
 
     let title, message = Assert.Single reported
     Assert.Equal(ArchiveErrorMessage.Title, title)
@@ -272,7 +272,7 @@ let ``an operation error is reported under the operation title`` () =
         { noDeps () with
             Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
-    Shell.interpret deps ignore (ReportOperationError(TargetExists(fp (at "start/docs"))))
+    Shell.interpret deps ignore (Report(Problem.Operation(TargetExists(fp (at "start/docs")))))
 
     Assert.Equal(OperationErrorMessage.Title, fst reported)
     Assert.Contains("docs", snd reported)
@@ -559,7 +559,7 @@ let ``item failures are reported under the operation title`` () =
         [ { Source = ItemOnDisk(fp (at "start/gone.txt"))
             Outcome = Error(SourceNotFound(fp (at "start/gone.txt"))) } ]
 
-    Shell.interpret deps ignore (ReportItemFailures failed)
+    Shell.interpret deps ignore (Report(Problem.ItemFailures failed))
 
     Assert.Equal(OperationErrorMessage.Title, fst reported)
     Assert.Contains("gone.txt", snd reported)
@@ -1035,7 +1035,7 @@ let ``a launch failure is reported under its own title`` () =
         { noDeps () with
             Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
-    Shell.interpret deps ignore (ReportLaunchError(NothingAssociated(fp (at "start/notes.odd"))))
+    Shell.interpret deps ignore (Report(Problem.Launch(NothingAssociated(fp (at "start/notes.odd")))))
 
     Assert.Equal(LaunchErrorMessage.Title, fst reported)
     Assert.Contains("notes.odd", snd reported)
@@ -1206,7 +1206,7 @@ let ``a history that could not be written is reported with its path`` () =
         { noDeps () with
             Prompts.ReportError = fun report -> reported <- (report.Title, report.Message) }
 
-    Shell.interpret deps ignore (ReportHistoryError(HistoryAccessDenied(fp (at "config/history.conf"))))
+    Shell.interpret deps ignore (Report(Problem.History(HistoryAccessDenied(fp (at "config/history.conf")))))
 
     Assert.Equal(HistoryErrorMessage.Title, fst reported)
     Assert.Contains(at "config/history.conf", snd reported)
@@ -3091,7 +3091,7 @@ let ``a clipboard error is reported under its title`` () =
         { noDeps () with
             Prompts.ReportError = fun report -> reported <- report.Title }
 
-    Shell.interpret deps ignore (ReportClipboardError ClipboardUnavailable)
+    Shell.interpret deps ignore (Report(Problem.Clipboard ClipboardUnavailable))
 
     Assert.Equal(ClipboardErrorMessage.Title, reported)
 
@@ -3514,7 +3514,7 @@ let ``a refused expansion is reported under the command title`` () =
         { noDeps () with
             Prompts.ReportError = fun report -> reported <- report.Title }
 
-    Shell.interpret deps ignore (ReportExpansionRefusal Marbas.State.CommandExpansion.NoProgram)
+    Shell.interpret deps ignore (Report(Problem.Expansion NoProgram))
 
     Assert.Equal(ExpansionRefusalMessage.Title, reported)
 
@@ -3526,7 +3526,7 @@ let ``a command that could not start is reported under the command title`` () =
         { noDeps () with
             Prompts.ReportError = fun report -> reported <- report.Title }
 
-    Shell.interpret deps ignore (ReportCommandError(LaunchRefused(fp "show", "denied")))
+    Shell.interpret deps ignore (Report(Problem.Command(LaunchRefused(fp "show", "denied"))))
 
     Assert.Equal(LaunchErrorMessage.CommandTitle, reported)
 

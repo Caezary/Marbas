@@ -1,7 +1,8 @@
 # Architecture overview
 
-Dependencies flow downward only: `Adapters` → `Ui` → `State` → `FileSystem` →
-`Domain`. `AppState` transitions are deterministic functions of the state and
+Dependencies flow downward only: `Adapters` → `Ui` → `State` → `Messages` →
+`FileSystem` → `Domain`. `AppState` transitions are deterministic functions of
+the state and
 the `IFileSystem` they are given, and `IFileSystem` is the only port they may
 reach: every other way out to the world — a dialog, the trash, a process, the
 clock of a watcher — is an `Effect` the interpreter carries out. Work that can
@@ -17,24 +18,37 @@ ports and `Adapters/Dependencies.fs` is the one place that wires them.
 **`State` holds the ports and the interpreter, below the line its transitions
 cannot see past.** Neither `Ports` nor `Shell` draws anything — one is the
 shape of the outside world, the other turns an `Effect` into a call on it — so
-both live in `State`, with the wording the interpreter says (`State/Messages/`)
-and `Startup`, which decides how a session begins. Nothing under `State/` opens
+both live in `State`, with `Startup`, which decides how a session begins.
+Nothing under `State/` opens
 a `Terminal.Gui` namespace or a `Marbas.Ui` one. The rule that a transition
 reaches no port but `IFileSystem` is now held by the compile order inside the
-layer, which runs in three steps:
+layer, which runs in two steps:
 
 1. `PanelState`, `AppState`, `CommandExpansion`, `Update`, `LogEntry`,
    `Runtime` — the state, its transitions and the host. Nothing here can name a
    port: `Ports` is not compiled yet.
-2. `Messages/` — the words for what the first step answers. It reads `Update`
-   and `CommandExpansion` for the two values it words that are theirs, and
-   everything else from `FileSystem` and `Domain`.
-3. `Ports`, `Shell`, `Startup` — the outside world, the interpreter that
+2. `Ports`, `Shell`, `Startup` — the outside world, the interpreter that
    carries an effect out into it, and the first steps of a session.
 
-`Ui` sits on all three and only draws and wires: a view may read a message's
+`Ui` sits on both and only draws and wires: a view may read a message's
 wording or take a port's request record, and `MainWindow` hands `Shell.interpret`
 to the runtime, but no view decides what an effect does.
+
+**The wording is a layer of its own, between `FileSystem` and `State`.**
+`Messages/` holds the words the application says — what an error means in a
+sentence, what a question asks — as functions from a value to text, with no
+view in them. Its readers are `Update`, which names what an effect reports,
+`Shell`, which says the words, two adapters and two views, so it has to sit
+below all of them; it cannot sit above `State`, because `Shell` writes the
+worded text to the log. And it reads nothing of
+`State`: every value it words is one `FileSystem` or `Domain` speaks. Two of
+them were declared higher only because that is where they were first needed —
+what a delete asks to have confirmed and why a command line was not expanded —
+and moved down to `Domain/DeleteRequest.fs` and
+`FileSystem/ExpansionRefusal.fs` when the layer was made. `Problem` is the
+layer's one type: everything that is reported to the user, each case carrying
+the error it reports, with its title and its description answered by one
+module. [State and effects](STATE-AND-EFFECTS.md) says why it is a union.
 
 **Terminal.Gui 2.4 over Spectre.Console and Consolonia.** Only Terminal.Gui is
 a full TUI framework (windows, focus, event loop) with a large, active
@@ -56,8 +70,8 @@ application's own composition root — and each folder is a namespace:
 The folder order in the code map below is also the compile order, and every
 dependency inside `Ui` points at a folder listed above it, which is what keeps
 the layer acyclic without any tooling. `Ui` is still one layer of `Adapters` →
-`Ui` → `State` → `FileSystem` → `Domain`; the folders divide it by subject, not
-by rank.
+`Ui` → `State` → `Messages` → `FileSystem` → `Domain`; the folders divide it by
+subject, not by rank.
 
 **`Adapters` is where the operating system is allowed in.** `State/Ports.fs`
 declares the ports; every real implementation of one lives in `Adapters/`, and
@@ -112,6 +126,7 @@ Marbas/
     CursorDirection.fs    up or down, for a mark that moves the cursor with it
     DeleteScope.fs        whether a delete reaches into a directory's contents
     DeleteMode.fs         to the trash, or past it
+    DeleteRequest.fs      the entries a delete names, how deep it reaches and how it removes
     DirectorySize.fs      a measured size, exact or a lower bound
     LinkKind.fs           symbolic, hard or junction, and why a kind is refused
     DriveKind.fs          fixed, removable, network or optical, not `System.IO.DriveType`
@@ -131,6 +146,7 @@ Marbas/
     LaunchRequest.fs      what to start, with what, where, and with which rights
     ProgramImage.fs       the subsystem a program's PE header names: window, console, other, none
     CommandRun.fs         a user menu command as expanded, and how and where it ran
+    ExpansionRefusal.fs   why a user menu command line was not expanded
     Handler.fs            a program the system offers for a name, and its display name
     ProgramCommand.fs     a command line -> the program it starts
     EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
@@ -179,6 +195,25 @@ Marbas/
     WindowSearch.fs       the viewer's search: a text or a pattern, its case and a direction,
                           from a place in a line, stoppable
     ByteSearch.fs         the dump's search: a run of bytes from an offset, either way, stoppable
+  Messages/               the words the application says, from values the two
+                          layers below it speak
+    ListingErrorMessage.fs    ListingError -> user-facing text
+    ContentErrorMessage.fs    ContentError -> user-facing text
+    ArchiveErrorMessage.fs    ArchiveError -> user-facing text
+    LinkRefusalMessage.fs     LinkRefusal -> the one sentence saying why
+    OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
+    LaunchErrorMessage.fs     LaunchError -> user-facing text
+    ExpansionRefusalMessage.fs  why a user menu command was refused -> user-facing text
+    UserMenuErrorMessage.fs     UserMenuError -> user-facing text
+    CrashMessage.fs           a crash -> the line printed once the terminal is back
+    SettingsErrorMessage.fs   SettingsError -> user-facing text
+    HistoryErrorMessage.fs    HistoryError -> user-facing text
+    FavoritesErrorMessage.fs  FavoritesError -> user-facing text
+    ClipboardErrorMessage.fs  ClipboardError -> user-facing text
+    Problem.fs                everything reported to the user -> its title and its description
+    DeleteConfirmation.fs     delete targets -> confirmation question
+    OverwriteQuestion.fs      collision -> question text, answer buttons and mapping
+    PasswordQuestion.fs       protected archive -> the words of the password prompt
   State/
     PanelState.fs         one panel: cursor, marks, search and sort, never the disk
     AppState.fs           tabs and app state: loaders, finish* transitions and the
@@ -190,24 +225,6 @@ Marbas/
                           stamped lines each entry becomes, case names only
     Runtime.fs            generic host: the single mutable cell, the message
                           queue, one drain loop over observe/update/render/interpret
-    Messages/             the words the application says, from values it holds;
-                          compiled after the transitions and before the interpreter
-      ListingErrorMessage.fs    ListingError -> user-facing text
-      ContentErrorMessage.fs    ContentError -> user-facing text
-      ArchiveErrorMessage.fs    ArchiveError -> user-facing text
-      LinkRefusalMessage.fs     LinkRefusal -> the one sentence saying why
-      OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
-      LaunchErrorMessage.fs     LaunchError -> user-facing text
-      ExpansionRefusalMessage.fs  why a user menu command was refused -> user-facing text
-      UserMenuErrorMessage.fs     UserMenuError -> user-facing text
-      CrashMessage.fs           a crash -> the line printed once the terminal is back
-      SettingsErrorMessage.fs   SettingsError -> user-facing text
-      HistoryErrorMessage.fs    HistoryError -> user-facing text
-      FavoritesErrorMessage.fs  FavoritesError -> user-facing text
-      ClipboardErrorMessage.fs  ClipboardError -> user-facing text
-      DeleteConfirmation.fs     delete targets -> confirmation question
-      OverwriteQuestion.fs      collision -> question text, answer buttons and mapping
-      PasswordQuestion.fs       protected archive -> the words of the password prompt
     Ports.fs              the ports: prompts, processes, the clipboard, watches,
                           runners and the log
     Shell.fs              the effect interpreter
@@ -338,8 +355,9 @@ Marbas.Tests/
   Expect.fs               Result unwrapping, so act and assert stay apart
   Fakes.fs                the do-nothing Ports.Dependencies every test starts from
   FileSystem/             unit tests, one module per FileSystem module
-  State/                  unit tests, one module per State module; the wording
-                          under Messages/, the interpreter in the Shell* files
+  Messages/               unit tests of the wording, one module per module
+  State/                  unit tests, one module per State module; the
+                          interpreter in the Shell* files
   Ui/                     unit tests of the pure Ui modules, in the same eight
                           folders as the source
   Integration/            every test that constructs a Terminal.Gui view, in

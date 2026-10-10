@@ -5,6 +5,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -229,5 +230,5 @@ let ``a measurement that fell over is reported instead of emptying the sizes`` (
 
     let result = update fs (MeasureFinished(Error failure)) state
 
-    Assert.Equal<Effect list>([ ReportOperationError failure ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Operation failure) ], result.Effects)
     Assert.Equal(None, measurementOf "docs" result.State.Left)

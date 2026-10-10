@@ -73,6 +73,9 @@ later without anyone remembering it. Tests hold the two cases that carry an
 it. Paths reach the log only inside an error's words, which are the sentence
 the user was shown, in a crash's message, and in the two entries of the sweep,
 which name a directory under the temporary one and the reason it refused.
+Every error reported is one effect since P21.12, so its line is `effect Report`
+whatever went wrong; which error it was is the `error shown:` line `Shell.report`
+writes right after it.
 
 **A failure is written whatever the switch says.** `LogEntry.isFailure` answers
 yes for a crash and for the two entries of the sweep at start

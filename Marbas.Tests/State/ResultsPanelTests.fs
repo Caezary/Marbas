@@ -7,6 +7,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -327,7 +328,7 @@ let private damagedArchive error =
 let private unverifiedReports (effects: Effect list) =
     effects
     |> List.choose (function
-        | ReportUnverifiedHits refused -> Some(refused |> List.choose damagedArchive)
+        | Report(Problem.UnverifiedHits refused) -> Some(refused |> List.choose damagedArchive)
         | _ -> None)
 
 let private showingAcross fs state =

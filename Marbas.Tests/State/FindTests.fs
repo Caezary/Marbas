@@ -6,6 +6,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -228,7 +229,7 @@ let ``a landing whose directory is gone says so instead of moving`` () =
     let result =
         update fs (SearchAnswered(landing (At(Into(OnDisk(fp (at "start/gone"))))))) state
 
-    Assert.Equal<Effect list>([ ReportListingError(DirectoryNotFound(fp (at "start/gone"))) ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Listing(DirectoryNotFound(fp (at "start/gone")))) ], result.Effects)
 
 [<Fact>]
 let ``Enter on a hit inside an archive walks the panel into that level`` () =

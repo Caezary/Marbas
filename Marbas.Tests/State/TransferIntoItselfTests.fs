@@ -6,6 +6,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Domain
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -45,7 +46,7 @@ let private onClipboard intent paths =
     ClipboardFiles.tryCreate intent paths |> Expect.some
 
 let private refusedAt path =
-    [ ReportOperationError(TargetWithinSource path) ]
+    [ Report(Problem.Operation(TargetWithinSource path)) ]
 
 [<Fact>]
 let ``a copy into a directory under its source is refused by the target's name`` () =

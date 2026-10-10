@@ -5,6 +5,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -127,7 +128,7 @@ let ``a drive that went away is reported and the panel stays where it was`` () =
     Assert.Equal(state, result.State)
 
     Assert.Equal<Effect list>(
-        [ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "media/gone"))) ],
+        [ Report(Problem.Listing(DirectoryListing.DirectoryNotFound(fp (at "media/gone")))) ],
         result.Effects
     )
 

@@ -6,6 +6,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Domain
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -31,7 +32,7 @@ let private opened (fs: IFileSystem) state = enter fs state |> Expect.ok
 
 let private damagedArchive effect =
     match effect with
-    | ReportListingError(ArchiveUnreadable(ArchiveDamaged(path, _))) -> Some path
+    | Report(Problem.Listing(ArchiveUnreadable(ArchiveDamaged(path, _)))) -> Some path
     | _ -> None
 
 [<Fact>]

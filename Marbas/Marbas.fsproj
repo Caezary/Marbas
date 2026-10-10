@@ -26,6 +26,7 @@
         <Compile Include="Domain\CursorDirection.fs" />
         <Compile Include="Domain\DeleteScope.fs" />
         <Compile Include="Domain\DeleteMode.fs" />
+        <Compile Include="Domain\DeleteRequest.fs" />
         <Compile Include="Domain\DirectorySize.fs" />
         <Compile Include="Domain\LinkKind.fs" />
         <Compile Include="Domain\DriveKind.fs" />
@@ -55,6 +56,7 @@
         <Compile Include="FileSystem\LaunchRequest.fs" />
         <Compile Include="FileSystem\ProgramImage.fs" />
         <Compile Include="FileSystem\CommandRun.fs" />
+        <Compile Include="FileSystem\ExpansionRefusal.fs" />
         <Compile Include="FileSystem\Handler.fs" />
         <Compile Include="FileSystem\ProgramCommand.fs" />
         <Compile Include="FileSystem\EditorCommand.fs" />
@@ -107,28 +109,32 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="Messages\ArchiveErrorMessage.fs" />
+        <Compile Include="Messages\ListingErrorMessage.fs" />
+        <Compile Include="Messages\ContentErrorMessage.fs" />
+        <Compile Include="Messages\LinkRefusalMessage.fs" />
+        <Compile Include="Messages\OperationErrorMessage.fs" />
+        <Compile Include="Messages\LaunchErrorMessage.fs" />
+        <Compile Include="Messages\ExpansionRefusalMessage.fs" />
+        <Compile Include="Messages\UserMenuErrorMessage.fs" />
+        <Compile Include="Messages\CrashMessage.fs" />
+        <Compile Include="Messages\SettingsErrorMessage.fs" />
+        <Compile Include="Messages\HistoryErrorMessage.fs" />
+        <Compile Include="Messages\FavoritesErrorMessage.fs" />
+        <Compile Include="Messages\ClipboardErrorMessage.fs" />
+        <Compile Include="Messages\Problem.fs" />
+        <Compile Include="Messages\DeleteConfirmation.fs" />
+        <Compile Include="Messages\OverwriteQuestion.fs" />
+        <Compile Include="Messages\PasswordQuestion.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Compile Include="State\PanelState.fs" />
         <Compile Include="State\AppState.fs" />
         <Compile Include="State\CommandExpansion.fs" />
         <Compile Include="State\Update.fs" />
         <Compile Include="State\LogEntry.fs" />
         <Compile Include="State\Runtime.fs" />
-        <Compile Include="State\Messages\ArchiveErrorMessage.fs" />
-        <Compile Include="State\Messages\ListingErrorMessage.fs" />
-        <Compile Include="State\Messages\ContentErrorMessage.fs" />
-        <Compile Include="State\Messages\LinkRefusalMessage.fs" />
-        <Compile Include="State\Messages\OperationErrorMessage.fs" />
-        <Compile Include="State\Messages\LaunchErrorMessage.fs" />
-        <Compile Include="State\Messages\ExpansionRefusalMessage.fs" />
-        <Compile Include="State\Messages\UserMenuErrorMessage.fs" />
-        <Compile Include="State\Messages\CrashMessage.fs" />
-        <Compile Include="State\Messages\SettingsErrorMessage.fs" />
-        <Compile Include="State\Messages\HistoryErrorMessage.fs" />
-        <Compile Include="State\Messages\FavoritesErrorMessage.fs" />
-        <Compile Include="State\Messages\ClipboardErrorMessage.fs" />
-        <Compile Include="State\Messages\DeleteConfirmation.fs" />
-        <Compile Include="State\Messages\OverwriteQuestion.fs" />
-        <Compile Include="State\Messages\PasswordQuestion.fs" />
         <Compile Include="State\Ports.fs" />
         <Compile Include="State\Shell.fs" />
         <Compile Include="State\Startup.fs" />

@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
 open Marbas.Domain
+open Marbas.Messages
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -101,7 +102,7 @@ let ``a panel standing inside an archive refuses`` () =
     let result = update fs OpenWithRequested state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.ArchiveEntryNotRunnable(fp (at "start/backup.zip/notes.txt"))) ],
+        [ Report(Problem.Operation(Operations.ArchiveEntryNotRunnable(fp (at "start/backup.zip/notes.txt")))) ],
         result.Effects
     )
 
@@ -113,7 +114,7 @@ let ``a panel inside an archive refuses on the way out too`` () =
     let result = update fs OpenWithRequested state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.ArchiveEntryNotRunnable(fp (at "start/backup.zip"))) ],
+        [ Report(Problem.Operation(Operations.ArchiveEntryNotRunnable(fp (at "start/backup.zip")))) ],
         result.Effects
     )
 

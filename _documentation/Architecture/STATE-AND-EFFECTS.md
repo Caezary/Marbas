@@ -261,10 +261,29 @@ finished. Entries the batch never reached are simply absent. A move that was
 interrupted never deletes its source: the delete is sequenced after the copy in
 the same `result` block, so a failed copy skips it.
 
-**`ReportError` carries a title.** Listing failures and operation failures want
-different dialog captions, so the dependency is `title -> message -> unit`;
-`ListingErrorMessage`/`OperationErrorMessage` each own their `Title`, and
-`Prompts.reportError` just forwards both to the message box.
+**One effect reports, and what it carries says what went wrong.** `Report`
+carries a `Problem`, a union in `Messages` with a case for everything that is
+reported to the user: a listing, hits that could not be verified, an operation,
+the items a batch failed on, a launch, a command, a command line that was not
+expanded, the history, the clipboard — and what `Shell` finds wrong by itself
+once a transition is over: the settings, the favourites, the user menu, a file
+or an archive entry that cannot be viewed. `Problem.title` answers the caption
+and `Problem.describe` the sentence; `Shell.report` takes a `Problem`, writes
+both to the log and hands them to `Prompts.ReportError` as `{ Title; Message }`,
+which `Prompts.reportError` forwards to the message box. A transition names the
+problem and never words it.
+
+Until P21.12 there were nine `Report…` effects, one per kind of error, and
+`Shell` put a title and a description together at sixteen call sites. Which
+words go with which error is a fact about the wording, not about the
+interpreter, so it moved to the layer that holds the words. It is a union and
+not a `Title` per message module because the title does not follow the module:
+a launch and a command share `LaunchErrorMessage.describe` under two titles,
+hits that could not be verified are archive errors with a sentence of their
+own, and a listing error picks its title by its case — an archive that cannot
+be read is titled as an archive, not as a directory. A new kind of error is a
+case of `Problem` and an arm in each of its two functions; `Effect` and
+`Shell.interpret` do not change.
 
 **Operation errors are mapped, not re-thrown, inside a transition.**
 `AppState.makeDirectory` creates the directory and then reloads the panel; the
@@ -283,7 +302,7 @@ is also the only place that knows which editor an extension is associated with:
 
 **Reading and writing properties happen inside a transition, like making a
 directory.** `EditRequested` reads them (`EntryProperties.read`, mapped to
-`ReportOperationError` when the entry is gone) and `PropertiesEntered` writes
+`Report(Problem.Operation …)` when the entry is gone) and `PropertiesEntered` writes
 them and re-reads the panel, so a directory that has just been marked hidden
 disappears from a panel that conceals hidden entries without anyone asking for a
 refresh. The popup itself is a port — `Prompts.EditProperties` takes the
@@ -340,7 +359,7 @@ table.** `ElevatedRunRequested` raises the same `RunProgram` effect with
 rights of the entry under the cursor, so a `ForOpening` row — which would make
 `Enter` start something else entirely — has no business here. Only
 `cursorExecutablePath` answers it. Anything else on disk that has a path, a
-document or a directory, becomes `ReportLaunchError(NotAProgram …)`, which is a
+document or a directory, becomes `Report(Problem.Launch(NotAProgram …))`, which is a
 `LaunchError` no adapter ever returns: refusing before the port is the same kind
 of answer as refusing inside it, and putting it in the same type means it is
 worded in the same place. `..` has no path of its own to run and raises nothing.
@@ -358,7 +377,7 @@ what pressing it means anywhere else in the world either.
 a `LaunchRequest` and `LaunchFinished` brings the answer back, and the
 transition for it does nothing to the panels either way: nothing here says when
 the program is done — or that it ever will be. A failure becomes
-`ReportLaunchError`, except `ElevationDeclined`, which becomes nothing at all.
+`Report(Problem.Launch …)`, except `ElevationDeclined`, which becomes nothing at all.
 
 **Nothing Marbas starts is waited for, and nothing re-reads a panel when it
 ends.** Since P20.1 the editor of `F4` is started the way `Enter` starts a
@@ -423,7 +442,7 @@ first `marked-N.txt` nothing there holds yet. Naming it is the shell's job
 because the state may read the disk only through the transition it is in, and
 where the session works is a port's fact; nothing is written yet.
 
-The transition expands the line. A refusal becomes `ReportExpansionRefusal`;
+The transition expands the line. A refusal becomes `Report(Problem.Expansion …)`;
 an expansion becomes `RunCommand` of a `CommandRun` — the label, the
 `ExpandedCommand`, the way of running and the rights from the entry, and the
 working directory `PanelLocation.holding` answers for the active panel, the
@@ -432,7 +451,7 @@ live in `FileSystem/CommandRun.fs`, below the state, because the history file
 stores them. `Shell` hands the run to `Processes.RunCommand` and dispatches
 `CommandFinished(run, outcome)`; `Ok` is remembered with
 `ChangeHistory(Remember(Ran run))`, `ElevationDeclined` is silence as it is for
-`Alt+Shift+R`, and any other `LaunchError` becomes `ReportCommandError`, worded
+`Alt+Shift+R`, and any other `LaunchError` becomes `Report(Problem.Command …)`, worded
 by `LaunchErrorMessage` under *Cannot run command* rather than *Cannot run
 file*. Nothing is re-read when the run ends, and nothing waits for it to.
 
@@ -528,7 +547,7 @@ stays in `Shell.interpret`. `TabSwitched` and `TabCycled` do one thing more:
 tab that has been in the background may be standing in a directory that is
 gone. A listing that fails there does not undo the switch — the state is the
 tab that was asked for, and the effects are the save *and* a
-`ReportListingError` beside it.
+`Report(Problem.Listing …)` beside it.
 
 **The tab popup is a port like every other dialog.** `ShowTabs` carries the
 `Zipper<Tab>` — the rows and which one is current in one value — and

@@ -160,12 +160,14 @@ listed with one.
 
 ## Layout
 
-`Domain/`, `FileSystem/`, `State/` and `Ui/` mirror the source folders they
-cover, one test module per module under test, and namespaces follow:
-`Marbas.Tests.State.UpdateTests` covers `Marbas.State.Update`. `Ui/` mirrors the
-source down to the subfolder, so `Ui/Panels/PanelTitleTests.fs` covers
-`Ui/Panels/PanelTitle.fs` as `Marbas.Tests.Ui.Panels.PanelTitleTests`, and so
-does `State/Messages/`. The interpreter's tests are the `Shell*Tests` files of
+`Domain/`, `FileSystem/`, `Messages/`, `State/` and `Ui/` mirror the source
+folders they cover, one test module per module under test, and namespaces
+follow: `Marbas.Tests.State.UpdateTests` covers `Marbas.State.Update`. `Ui/`
+mirrors the source down to the subfolder, so `Ui/Panels/PanelTitleTests.fs`
+covers `Ui/Panels/PanelTitle.fs` as `Marbas.Tests.Ui.Panels.PanelTitleTests`.
+`Messages/ProblemTests.fs` holds every case of `Problem` to the title and the
+description of the module that words it, so a case wired to another module's
+words fails by name. The interpreter's tests are the `Shell*Tests` files of
 `State/`: they run `Shell.interpret` over `Fakes.dependencies` and build no view.
 Everything in them is a unit test — pure, fast, no Terminal.Gui.
 

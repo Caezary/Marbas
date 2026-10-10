@@ -3,6 +3,7 @@ module Marbas.Tests.State.ArchivePanelTests
 open Xunit
 open Marbas.FileSystem
 open Marbas.Domain
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -53,7 +54,7 @@ let ``an entry inside an archive refuses to be edited`` () =
     let result = update fs EditRequested state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.ArchiveEntryNotEditable(fp (at "start/backup.zip/notes.txt"))) ],
+        [ Report(Problem.Operation(Operations.ArchiveEntryNotEditable(fp (at "start/backup.zip/notes.txt")))) ],
         result.Effects
     )
 

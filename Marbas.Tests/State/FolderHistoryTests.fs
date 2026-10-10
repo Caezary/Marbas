@@ -7,6 +7,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.Messages
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -275,7 +276,7 @@ let ``a history that could not be written is reported the first time`` () =
 
     let result = update fs (HistoryUnwritten error) state
 
-    Assert.Equal<Effect list>([ ReportHistoryError error ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.History error) ], result.Effects)
 
 [<Fact>]
 let ``a history that could not be written is not reported again in the same session`` () =

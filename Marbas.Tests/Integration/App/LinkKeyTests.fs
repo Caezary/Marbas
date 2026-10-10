@@ -4,9 +4,9 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Messages
 open Marbas.State
 open Marbas.Ui.Keys
-open Marbas.State.Messages
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui
 

@@ -498,3 +498,54 @@ else is the suite as it was, moved: the thirteen test files of the wording to
 folders — 3930 pass and 16 skip on Windows. The probe of the `render-tui-screen`
 skill, which builds a `MainWindow`, was built against the new layout and needed
 no change.
+
+**P21.12 gave the wording a layer of its own.** `State/Messages/` is
+`Marbas/Messages/` under the namespace `Marbas.Messages`, compiled between
+`FileSystem` and `State`, and the dependency rule reads `Adapters` → `Ui` →
+`State` → `Messages` → `FileSystem` → `Domain`. The folder that was compiled in
+the middle of its parent is gone, and with it the one exception
+[Coding style](../coding-style-conventions.md) named; `State` is two steps
+again, the transitions and then the ports. A new type, `Problem`, names
+everything that is reported to the user, and the nine `Report…` effects are one
+`Report` that carries it.
+
+- **One of the two types went to `FileSystem`, not to `Domain`.** The plan had
+  both `DeleteRequest` and `ExpansionRefusal` made of `Domain` types alone.
+  `DeleteRequest` is — names, a scope and a mode — and is
+  `Domain/DeleteRequest.fs`. `ExpansionRefusal` names the place inside an
+  archive it refuses as a `FileSystemPath`, which `FileSystem` declares, so it
+  is `FileSystem/ExpansionRefusal.fs`, beside `CommandRun`. Either way the
+  wording reads nothing of `State` any more.
+- **`Problem` has fourteen cases and is named through its type.** Nine are
+  what the effects carried — a listing, hits that could not be verified, an
+  operation, the items a batch failed on, a launch, a command, an expansion,
+  the history, the clipboard — and five are what `Shell` reported without an
+  effect: the settings, the favourites, the user menu, a file and an archive
+  entry that cannot be viewed. The cases are short words that are also the
+  names of modules (`Settings`, `History`, `Archive`), so the union requires
+  qualified access, as `Place` does: `Report(Problem.Operation error)`.
+- **`Shell` words nothing it reports.** `Shell.report` takes a `Problem` and
+  asks `Problem.title` and `Problem.describe` for the caption and the
+  sentence; the sixteen call sites that paired a `Title` with a `describe` are
+  gone, and so are the two helpers that existed to pair them for the favourites
+  and the user menu. `Shell.interpret` has one arm that reports. The port is
+  unchanged: `Prompts.ReportError` still takes a title and a message, because
+  the viewer reports a failed search through it with words of its own.
+- **`Shell` still names one message module.** The two log entries of the sweep
+  at start carry a reason worded by `OperationErrorMessage.describe`. They are
+  written to the log and shown to nobody, so they are no `Problem`.
+- **The debug log says less on one line and the same on two.** An effect is
+  logged by its case name, so every report is now `effect Report`; the
+  `error shown:` line that follows it carries the title and the sentence, as
+  before. [Diagnostics](../Architecture/DIAGNOSTICS.md) says so.
+
+The suite gained twenty-nine tests, in `Messages/ProblemTests.fs`: a title and
+a description for each of the fourteen cases, each held to the module that
+words it, and the title of a listing error for an archive beside the one for a
+directory. With `Problem.Command` given the title of `Problem.Launch`, two
+tests fail — the new one and the `Shell` test of a command that could not
+start. The thirteen test files of the wording moved to `Messages/` with their
+modules renamed, and the tests that name a report effect, 57 places in 22
+files, name `Report` and its `Problem` instead; nothing else in them changed
+but the `open` lines —
+3959 pass and 16 skip on Windows.

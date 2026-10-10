@@ -7,6 +7,7 @@ open Marbas.Collections
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Domain
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -136,7 +137,7 @@ let ``a duplicate name reports an operation error and keeps state`` () =
     let result = update fs (NameEntered(en "docs")) state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportOperationError(TargetExists(fp (at "start/docs"))) ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Operation(TargetExists(fp (at "start/docs")))) ], result.Effects)
 
 [<Fact>]
 let ``pattern requested defers to a pattern prompt`` () =
@@ -186,7 +187,7 @@ let ``opening a missing path reports a listing error`` () =
     Assert.Equal(state, result.State)
 
     Assert.Equal<Effect list>(
-        [ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "gone"))) ],
+        [ Report(Problem.Listing(DirectoryListing.DirectoryNotFound(fp (at "gone")))) ],
         result.Effects
     )
 
@@ -348,9 +349,11 @@ let ``a delete that fails is reported item by item`` () =
     let result = update fs (DeleteFinished results) state
 
     Assert.Equal<Effect list>(
-        [ ReportItemFailures
-              [ { Source = ItemOnDisk(fp (at "start/gone.txt"))
-                  Outcome = Error(SourceNotFound(fp (at "start/gone.txt"))) } ] ],
+        [ Report(
+              Problem.ItemFailures
+                  [ { Source = ItemOnDisk(fp (at "start/gone.txt"))
+                      Outcome = Error(SourceNotFound(fp (at "start/gone.txt"))) } ]
+          ) ],
         result.Effects
     )
 
@@ -398,7 +401,7 @@ let ``a finished copy reports the items that failed`` () =
 
     let result = update fs (CopyFinished failed) state
 
-    Assert.Equal<Effect list>([ ReportItemFailures failed ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.ItemFailures failed) ], result.Effects)
 
 [<Fact>]
 let ``a finished copy reports the panel it could no longer read`` () =
@@ -409,7 +412,7 @@ let ``a finished copy reports the panel it could no longer read`` () =
 
     let result = update fs (CopyFinished results) state
 
-    Assert.Equal<Effect list>([ ReportOperationError(SourceNotFound(fp (at "backup"))) ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Operation(SourceNotFound(fp (at "backup")))) ], result.Effects)
     Assert.Equal(state, result.State)
 
 [<Fact>]
@@ -519,7 +522,7 @@ let ``a failed rename is reported and leaves the panel alone`` () =
     let result = update fs (RenameFinished(en "docs", Error taken)) state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportOperationError taken ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Operation taken) ], result.Effects)
 
 let private opened path how =
     ChangeHistory(
@@ -645,7 +648,7 @@ let ``properties that cannot be written are reported`` () =
 
     let result = update fs (PropertiesEntered changed) state
 
-    Assert.Equal<Effect list>([ ReportOperationError(SourceNotFound(fp (at "start/docs"))) ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Operation(SourceNotFound(fp (at "start/docs")))) ], result.Effects)
 
 [<Fact>]
 let ``a new file is asked for by name`` () =
@@ -690,7 +693,7 @@ let ``a new file a directory already answers to is reported`` () =
     let result = update fs (FileNameEntered(en "docs")) state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportOperationError(TargetExists(fp (at "start/docs"))) ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Operation(TargetExists(fp (at "start/docs")))) ], result.Effects)
 
 [<Fact>]
 let ``a settings request hands over the programs in force`` () =
@@ -761,7 +764,7 @@ let ``an editor that could not be started is reported`` () =
     let result = update fs (EditorStarted(Error failure)) state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportOperationError failure ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Operation failure) ], result.Effects)
 
 [<Fact>]
 let ``an editor start the user turned down is silence, not a dialog`` () =
@@ -800,7 +803,7 @@ let ``a program that could not be started is reported`` () =
         update fs (LaunchFinished(launching "start/notes.txt", Error failure)) state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportLaunchError failure ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Launch failure) ], result.Effects)
 
 [<Fact>]
 let ``an elevation the user turned down is silence, not a dialog`` () =
@@ -837,7 +840,7 @@ let ``a hidden toggle of a vanished directory is reported`` () =
     Assert.Equal(state, result.State)
 
     Assert.Equal<Effect list>(
-        [ ReportListingError(DirectoryListing.DirectoryNotFound(fp (at "start/docs"))) ],
+        [ Report(Problem.Listing(DirectoryListing.DirectoryNotFound(fp (at "start/docs")))) ],
         result.Effects
     )
 
@@ -937,7 +940,7 @@ let ``an archive that would land inside what it packs is refused`` () =
     let result = update fs (ArchiveEntered(chose (at "start/docs/all.zip"))) state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(TargetWithinSource(fp (at "start/docs/all.zip"))) ],
+        [ Report(Problem.Operation(TargetWithinSource(fp (at "start/docs/all.zip")))) ],
         result.Effects
     )
 
@@ -981,7 +984,7 @@ let ``a finished pack reports the items that failed`` () =
 
     let result = update fs (PackFinished(en "notes.zip", failed)) state
 
-    Assert.Equal<Effect list>([ ReportItemFailures failed ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.ItemFailures failed) ], result.Effects)
 
 [<Fact>]
 let ``a finished pack keeps the marks of what did not make it`` () =
@@ -1065,7 +1068,7 @@ let ``a finished unpack reports the archives that failed`` () =
 
     let result = update fs (UnpackFinished failed) state
 
-    Assert.Equal<Effect list>([ ReportItemFailures failed ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.ItemFailures failed) ], result.Effects)
 
 [<Fact>]
 let ``opening a tab adds one to the session and writes it`` () =
@@ -1174,6 +1177,6 @@ let ``a tab whose directory is gone is stood on all the same, and the loss repor
         result.Effects,
         (fun effect ->
             match effect with
-            | ReportListingError _ -> true
+            | Report(Problem.Listing _) -> true
             | _ -> false)
     )

@@ -102,6 +102,23 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Messages\ListingErrorMessageTests.fs" />
+    <Compile Include="Messages\ContentErrorMessageTests.fs" />
+    <Compile Include="Messages\ArchiveErrorMessageTests.fs" />
+    <Compile Include="Messages\LinkRefusalMessageTests.fs" />
+    <Compile Include="Messages\OperationErrorMessageTests.fs" />
+    <Compile Include="Messages\LaunchErrorMessageTests.fs" />
+    <Compile Include="Messages\ExpansionRefusalMessageTests.fs" />
+    <Compile Include="Messages\UserMenuErrorMessageTests.fs" />
+    <Compile Include="Messages\CrashMessageTests.fs" />
+    <Compile Include="Messages\ClipboardErrorMessageTests.fs" />
+    <Compile Include="Messages\ProblemTests.fs" />
+    <Compile Include="Messages\DeleteConfirmationTests.fs" />
+    <Compile Include="Messages\OverwriteQuestionTests.fs" />
+    <Compile Include="Messages\PasswordQuestionTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="State\PanelStateTests.fs" />
     <Compile Include="State\AppStateTests.fs" />
     <Compile Include="State\TabTests.fs" />
@@ -151,19 +168,6 @@
     <Compile Include="State\LogEntryTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
     <Compile Include="State\RuntimeQueueTests.fs" />
-    <Compile Include="State\Messages\ListingErrorMessageTests.fs" />
-    <Compile Include="State\Messages\ContentErrorMessageTests.fs" />
-    <Compile Include="State\Messages\ArchiveErrorMessageTests.fs" />
-    <Compile Include="State\Messages\LinkRefusalMessageTests.fs" />
-    <Compile Include="State\Messages\OperationErrorMessageTests.fs" />
-    <Compile Include="State\Messages\LaunchErrorMessageTests.fs" />
-    <Compile Include="State\Messages\ExpansionRefusalMessageTests.fs" />
-    <Compile Include="State\Messages\UserMenuErrorMessageTests.fs" />
-    <Compile Include="State\Messages\CrashMessageTests.fs" />
-    <Compile Include="State\Messages\DeleteConfirmationTests.fs" />
-    <Compile Include="State\Messages\OverwriteQuestionTests.fs" />
-    <Compile Include="State\Messages\PasswordQuestionTests.fs" />
-    <Compile Include="State\Messages\ClipboardErrorMessageTests.fs" />
     <Compile Include="State\ShellTests.fs" />
     <Compile Include="State\ShellPlacesTests.fs" />
     <Compile Include="State\ShellLogTests.fs" />

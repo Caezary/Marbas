@@ -36,7 +36,8 @@ CI fails on any file `dotnet fantomas --check Marbas Marbas.Tests` would change.
   explaining goes into `_documentation/*.md`.
 - **The user commits manually.** Never run `git commit`.
 - **Dependencies flow downward only:** `Adapters` → `Ui` → `State` →
-  `FileSystem` → `Domain`. `AppState` transitions may read and write through the
+  `Messages` → `FileSystem` → `Domain`. `AppState` transitions may read and
+  write through the
   `IFileSystem` they are given and reach no other port, and what outlasts a
   keystroke is an effect instead; the generic
   `State/Runtime.fs` host holds the only mutable cell and drives the

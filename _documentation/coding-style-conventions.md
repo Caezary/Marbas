@@ -12,7 +12,8 @@ schedules the fix. A rule here beats a habit found in an older file.
 | `Collections/` | `Zipper` and the like — no domain knowledge | nothing |
 | `Domain/` | the vocabulary: `EntryName`, `FileSystemPath`, `NamePattern`, `SortOrder`, `HiddenEntries`, `FindQuery` | `Collections` |
 | `FileSystem/` | reading and writing disks and archives, every call through `IFileSystem` | `Domain` |
-| `State/` | `AppState`, messages, transitions, `Effect`; `Runtime` holds the one mutable cell; then the wording in `Messages/`, `Ports.Dependencies` as ports, `Shell.interpret` and `Startup` | `FileSystem`, `Domain` |
+| `Messages/` | the words the application says: an error or a question -> text, and `Problem`, everything that is reported to the user | `FileSystem`, `Domain` |
+| `State/` | `AppState`, messages, transitions, `Effect`; `Runtime` holds the one mutable cell; then `Ports.Dependencies` as ports, `Shell.interpret` and `Startup` | `Messages` and below |
 | `Ui/` | views, key maps, and the wiring of both to the runtime | `State` and below |
 | `Adapters/` | the real ports: dialogs, processes, registry, watches, runners | everything above it |
 | `Program.fs` | starts the application, nothing else | `Adapters` |
@@ -25,9 +26,10 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] A type belongs to the lowest layer that speaks it, not the one that needed
       it first.
 - [ ] One folder is one namespace, and a folder may only depend on folders above
-      it in the compile order. `State/Messages/` is the one folder compiled in
-      the middle of its parent: after the transitions it words, before the
-      interpreter that says them.
+      it in the compile order. No folder is compiled in the middle of another.
+- [ ] `Messages` words values and holds none of its own but `Problem`. A value
+      it has to word is declared in `Domain` or `FileSystem`; a transition names
+      a `Problem` and never a title or a sentence.
 - [ ] Inside `State`, the ports come last. A transition cannot name `Ports` or
       `Shell`, because neither is compiled yet where `Update` is; what it wants
       from the world it raises as an `Effect`.

@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
 open Marbas.Domain
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -193,7 +194,7 @@ let ``a name already in the archive is refused`` () =
     let result = update fs (NameEntered(en "docs")) state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.TargetExists(fp (at "start/backup.zip/docs"))) ],
+        [ Report(Problem.Operation(Operations.TargetExists(fp (at "start/backup.zip/docs")))) ],
         result.Effects
     )
 
@@ -250,7 +251,7 @@ let ``a move between archives needs the one it takes from to be changeable`` () 
     let copied = update fs CopyRequested state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged unchangeable)) ],
+        [ Report(Problem.Operation(Operations.ArchiveFailed(KindCannotBeChanged unchangeable))) ],
         moved.Effects
     )
 
@@ -260,7 +261,7 @@ let ``a move between archives needs the one it takes from to be changeable`` () 
     )
 
 let private refusal =
-    ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged tarball))
+    Report(Problem.Operation(Operations.ArchiveFailed(KindCannotBeChanged tarball)))
 
 [<Fact>]
 let ``a copy into a kind that cannot be changed is refused by name`` () =

@@ -5,6 +5,7 @@ open Marbas.Collections
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.Messages
 open Marbas.State.AppState
 
 type Message =
@@ -102,19 +103,8 @@ type Message =
     | ClipboardFilesRead of files: ClipboardFiles * target: TransferTarget
     | QuitRequested
 
-type DeleteRequest =
-    { Targets: EntryName list
-      Scope: DeleteScope
-      Mode: DeleteMode }
-
 type Effect =
-    | ReportListingError of ListingError
-    | ReportUnverifiedHits of refused: ArchiveError list
-    | ReportOperationError of Operations.OperationError
-    | ReportLaunchError of LaunchError
-    | ReportCommandError of LaunchError
-    | ReportExpansionRefusal of CommandExpansion.ExpansionRefusal
-    | ReportItemFailures of Operations.ItemResult list
+    | Report of Problem
     | InspectDelete of question: DeleteQuestion * mode: DeleteMode
     | ConfirmDelete of DeleteRequest
     | ArchiveTargets of sources: FileSystemPath list * request: ArchiveRequest
@@ -147,14 +137,12 @@ type Effect =
     | ShowTabs of Zipper<Tab>
     | WatchLocations of paths: FileSystemPath list
     | ChangeHistory of HistoryChange
-    | ReportHistoryError of HistoryError
     | ShowHistory of HistoryTab
     | PromptForFavoriteSlot of Place
     | LookUpFavorite of FavoriteSlot
     | ShowFavorites of current: Place option
     | PutOnClipboard of ClipboardText
     | ReadClipboardPath of directory: FileSystemPath
-    | ReportClipboardError of ClipboardError
     | PutFilesOnClipboard of ClipboardFiles
     | ExtractForClipboard of groups: TransferSource list
     | ReadClipboardFiles of target: TransferTarget
@@ -172,7 +160,7 @@ let private stay state = { State = state; Effects = [] }
 let private request state effect = { State = state; Effects = [ effect ] }
 
 let private reporting state error =
-    request state (ReportOperationError error)
+    request state (Report(Problem.Operation error))
 
 let private requestUnlessRefused state refusals effect =
     match List.tryPick id refusals with
@@ -235,12 +223,12 @@ let private rereadAndSave (fs: IFileSystem) state =
     | Ok updated -> saving fs updated
     | Error error ->
         { State = state
-          Effects = [ SaveSettings(settings fs state); ReportListingError error ] }
+          Effects = [ SaveSettings(settings fs state); Report(Problem.Listing error) ] }
 
 let private applyListing state result =
     match result with
     | Ok updated -> stay updated
-    | Error error -> request state (ReportListingError error)
+    | Error error -> request state (Report(Problem.Listing error))
 
 let private landingOn (fs: IFileSystem) (state: AppState) landing =
     match landing with
@@ -254,8 +242,8 @@ let private landingIfAnywhere (fs: IFileSystem) state landing =
 let private applyListingWithRefusals state result =
     match result with
     | Ok(updated, []) -> stay updated
-    | Ok(updated, refused) -> request updated (ReportUnverifiedHits refused)
-    | Error error -> request state (ReportListingError error)
+    | Ok(updated, refused) -> request updated (Report(Problem.UnverifiedHits refused))
+    | Error error -> request state (Report(Problem.Listing error))
 
 let private applyOperation state result =
     match result with
@@ -278,7 +266,7 @@ let private applyBatch state result =
     | Ok(updated, results) ->
         match Operations.failures results with
         | [] -> stay updated
-        | failed -> request updated (ReportItemFailures failed)
+        | failed -> request updated (Report(Problem.ItemFailures failed))
 
 let private sentToRoot (fs: IFileSystem) (state: AppState) =
     let panel = activePanel state
@@ -366,7 +354,7 @@ let private runElevated (fs: IFileSystem) state =
         | None ->
             cursorFilePath fs panel
             |> Option.orElseWith (fun () -> cursorDirectoryPath fs panel)
-            |> Option.map (NotAProgram >> ReportLaunchError >> request state)
+            |> Option.map (NotAProgram >> Problem.Launch >> Report >> request state)
             |> Option.defaultValue (stay state)
 
 let private chosen (fs: IFileSystem) state path (choice: OpenWithChoice) =
@@ -429,7 +417,7 @@ let private editing (fs: IFileSystem) state =
 
 let private runningFromMenu (fs: IFileSystem) state (command: MenuCommand) listFile =
     match CommandExpansion.expand fs listFile command.Line state with
-    | Error refusal -> request state (ReportExpansionRefusal refusal)
+    | Error refusal -> request state (Report(Problem.Expansion refusal))
     | Ok expanded ->
         { Label = command.Label
           Command = expanded
@@ -487,7 +475,7 @@ let private extractedForClipboard (fs: IFileSystem) state groups scratch results
     let reported =
         match Operations.failures results with
         | [] -> []
-        | failed -> [ ReportItemFailures failed ]
+        | failed -> [ Report(Problem.ItemFailures failed) ]
 
     { State = state
       Effects = handingOver ForCopying (diskPaths groups @ landed) @ reported }
@@ -743,14 +731,14 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | LaunchFinished(started, outcome) ->
         match outcome with
         | Error(ElevationDeclined _) -> stay state
-        | Error error -> request state (ReportLaunchError error)
+        | Error error -> request state (Report(Problem.Launch error))
         | Ok() when FileSystemPath.kind fs started.Target = FileEntry ->
             request state (ChangeHistory(Remember(Launched started)))
         | Ok() -> stay state
     | UserMenuRequested -> request state ShowUserMenu
     | MenuCommandChosen(command, listFile) -> runningFromMenu fs state command listFile
     | CommandFinished(_, Error(ElevationDeclined _)) -> stay state
-    | CommandFinished(_, Error error) -> request state (ReportCommandError error)
+    | CommandFinished(_, Error error) -> request state (Report(Problem.Command error))
     | CommandFinished(run, Ok()) -> request state (ChangeHistory(Remember(Ran run)))
     | OpenWithRequested -> openWithHandler fs state
     | HandlerChosen(path, choice) -> chosen fs state path choice
@@ -769,7 +757,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | HistoryChanged history -> stay { state with History = history }
     | HistoryUnwritten error ->
         match state.HistoryReport with
-        | Unreported -> request { state with HistoryReport = Reported } (ReportHistoryError error)
+        | Unreported -> request { state with HistoryReport = Reported } (Report(Problem.History error))
         | Reported -> stay state
     | HistoryRequested -> request state (ShowHistory state.HistoryTab)
     | HistoryAnswered answer -> chosenFromHistory fs { state with HistoryTab = answer.Tab } answer.Choice
@@ -805,9 +793,9 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
             request
                 { state with
                     ClipboardReport = Reported }
-                (ReportClipboardError ClipboardUnavailable)
+                (Report(Problem.Clipboard ClipboardUnavailable))
         | Reported -> stay state
-    | ClipboardRefused error -> request state (ReportClipboardError error)
+    | ClipboardRefused error -> request state (Report(Problem.Clipboard error))
     | FilesOnClipboardRequested intent ->
         match transferSource fs (activePanel state) with
         | Some source -> filesOnClipboard fs state intent (places source)

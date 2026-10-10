@@ -8,12 +8,6 @@ open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 open Marbas.State.AppState
 
-type ExpansionRefusal =
-    | InsideArchive of place: FileSystemPath
-    | NoEntryChosen of side: PanelSide
-    | NoDirectory of side: PanelSide
-    | NoProgram
-
 type private Pick =
     | CursorName
     | CursorPath

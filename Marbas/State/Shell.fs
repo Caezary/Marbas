@@ -2,10 +2,10 @@ module Marbas.State.Shell
 
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
-open Marbas.State.Messages
 open Marbas.State.Ports
 
 [<Literal>]
@@ -52,7 +52,9 @@ let private patternTitle mode =
     | Select -> SelectPrompt
     | Deselect -> DeselectPrompt
 
-let private report (deps: Dependencies) title message =
+let private report (deps: Dependencies) problem =
+    let title = Problem.title problem
+    let message = Problem.describe deps.FileSystem problem
     deps.Log(ErrorReported(title, message))
     deps.Prompts.ReportError { Title = title; Message = message }
 
@@ -121,7 +123,7 @@ let private viewerSearches (deps: Dependencies) dispatch kind : SearchHistory =
     { Texts = fun () -> typedBefore deps kind
       Remember = fun text -> changeHistory deps dispatch (Remember(Typed(kind, text))) |> ignore }
 
-let private showOpened (deps: Dependencies) dispatch title describe opened =
+let private showOpened (deps: Dependencies) dispatch problem opened =
     match opened with
     | Ok source ->
         use source = source
@@ -130,15 +132,15 @@ let private showOpened (deps: Dependencies) dispatch title describe opened =
             { Source = source
               Searches = viewerSearches deps dispatch SearchedText
               ByteSearches = viewerSearches deps dispatch SearchedBytes }
-    | Error error -> report deps title (describe error)
+    | Error error -> report deps (problem error)
 
 let private showPath (deps: Dependencies) dispatch path =
     FileWindow.openFile deps.FileSystem path
-    |> showOpened deps dispatch ContentErrorMessage.Title ContentErrorMessage.describe
+    |> showOpened deps dispatch Problem.Content
 
 let private showEntry (deps: Dependencies) dispatch archive password entry =
     FileWindow.openEntry deps.FileSystem password archive entry
-    |> showOpened deps dispatch ArchiveErrorMessage.Title ArchiveErrorMessage.describe
+    |> showOpened deps dispatch Problem.Archive
 
 let private showHit (deps: Dependencies) dispatch (hit: FindHit) =
     match hit.Location with
@@ -206,7 +208,7 @@ let private clipboardPlan (deps: Dependencies) scratch group =
 
 let private extractForClipboard (deps: Dependencies) dispatch groups =
     match Workspace.scratch deps.FileSystem deps.WorkspacePath with
-    | Error error -> report deps OperationErrorMessage.Title (OperationErrorMessage.describe error)
+    | Error error -> report deps (Problem.Operation error)
     | Ok scratch ->
         let finished results =
             dispatch (ClipboardExtractFinished(groups, scratch, results))
@@ -334,29 +336,23 @@ let private deleteTitle mode =
     | ToTrash
     | Permanently -> DeleteTitle
 
-let private reportFavorites (deps: Dependencies) error =
-    report deps FavoritesErrorMessage.Title (FavoritesErrorMessage.describe error)
-
 let private changeFavorites (deps: Dependencies) change =
     match Favorites.change deps.FileSystem deps.FavoritesPath change with
     | Ok favorites -> Some favorites
     | Error error ->
-        reportFavorites deps error
+        report deps (Problem.Favorites error)
         None
-
-let private reportUserMenu (deps: Dependencies) error =
-    report deps UserMenuErrorMessage.Title (UserMenuErrorMessage.describe error)
 
 let private changeUserMenu (deps: Dependencies) change =
     match UserMenu.change deps.FileSystem deps.UserMenuPath change with
     | Ok menu -> Some menu
     | Error error ->
-        reportUserMenu deps error
+        report deps (Problem.UserMenu error)
         None
 
 let private showUserMenu (deps: Dependencies) dispatch =
     match UserMenu.load deps.FileSystem deps.UserMenuPath with
-    | Error error -> reportUserMenu deps error
+    | Error error -> report deps (Problem.UserMenu error)
     | Ok menu ->
         deps.Prompts.ChooseFromUserMenu
             { Menu = menu
@@ -390,16 +386,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
     deps.Log(EffectInterpreted effect)
 
     match effect with
-    | ReportListingError error -> report deps (ListingErrorMessage.title error) (ListingErrorMessage.describe error)
-    | ReportUnverifiedHits refused ->
-        report deps ArchiveErrorMessage.Title (ArchiveErrorMessage.describeUnverified refused)
-    | ReportOperationError error -> report deps OperationErrorMessage.Title (OperationErrorMessage.describe error)
-    | ReportLaunchError error -> report deps LaunchErrorMessage.Title (LaunchErrorMessage.describe error)
-    | ReportCommandError error -> report deps LaunchErrorMessage.CommandTitle (LaunchErrorMessage.describe error)
-    | ReportExpansionRefusal refusal ->
-        report deps ExpansionRefusalMessage.Title (ExpansionRefusalMessage.describe refusal)
-    | ReportItemFailures failures ->
-        report deps OperationErrorMessage.Title (OperationErrorMessage.describeFailures deps.FileSystem failures)
+    | Report problem -> report deps problem
     | InspectDelete(question, mode) -> dispatch (DeleteScopeLoaded(deleteScope deps.FileSystem question, mode))
     | ConfirmDelete request ->
         if
@@ -582,7 +569,6 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | None -> ()
     | WatchLocations paths -> deps.Watches.Locations paths (fun () -> dispatch ExternalChangeDetected)
     | ChangeHistory change -> changeHistory deps dispatch change |> ignore
-    | ReportHistoryError error -> report deps HistoryErrorMessage.Title (HistoryErrorMessage.describe error)
     | ShowHistory tab ->
         match History.load deps.FileSystem deps.HistoryPath with
         | Ok history ->
@@ -595,7 +581,7 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
                   Change = changeHistory deps dispatch }
             |> HistoryAnswered
             |> dispatch
-        | Error error -> report deps HistoryErrorMessage.Title (HistoryErrorMessage.describe error)
+        | Error error -> report deps (Problem.History error)
     | PromptForFavoriteSlot place ->
         deps.Prompts.AskFavoriteSlot place
         |> Option.iter (fun slot -> changeFavorites deps (Keep(slot, place)) |> ignore)
@@ -607,11 +593,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
                   Current = current
                   Change = changeFavorites deps }
             |> Option.iter (FavoriteFound >> dispatch)
-        | Error error -> reportFavorites deps error
+        | Error error -> report deps (Problem.Favorites error)
     | LookUpFavorite slot ->
         match Favorites.load deps.FileSystem deps.FavoritesPath with
         | Ok favorites -> Favorites.placeIn slot favorites |> Option.iter (FavoriteFound >> dispatch)
-        | Error error -> reportFavorites deps error
+        | Error error -> report deps (Problem.Favorites error)
     | ReadClipboardPath directory ->
         match deps.Clipboard.GetText() with
         | Error error -> dispatch (ClipboardRefused error)
@@ -633,12 +619,11 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
         | Error error -> dispatch (ClipboardRefused error)
         | Ok files -> files |> Option.iter (fun held -> dispatch (ClipboardFilesRead(held, target)))
     | MovePastedFiles(files, target) -> movePasted deps dispatch files target
-    | ReportClipboardError error -> report deps ClipboardErrorMessage.Title (ClipboardErrorMessage.describe error)
     | SweepLeftovers -> deps.Runners.Background(sweepLeftovers deps)
     | SaveSettings settings ->
         match Settings.save deps.FileSystem deps.SettingsPath settings with
         | Ok() -> ()
-        | Error error -> report deps SettingsErrorMessage.Title (SettingsErrorMessage.describe error)
+        | Error error -> report deps (Problem.Settings error)
     | Quit ->
         Workspace.release deps.FileSystem deps.WorkspacePath
         deps.OnQuit()

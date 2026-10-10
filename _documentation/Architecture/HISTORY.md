@@ -135,7 +135,7 @@ first change reads the file, so nothing at startup has to.
 
 **A history that cannot be written says so once.** Every change of directory
 would otherwise raise the same dialog. `AppState.HistoryReport` is `Unreported`
-until the first `HistoryUnwritten`, which answers `ReportHistoryError` and turns
+until the first `HistoryUnwritten`, which answers `Report(Problem.History …)` and turns
 it `Reported`; every later one is passed over for the rest of the session. The
 dialog is `HistoryErrorMessage`, titled *History not saved*, naming the file.
 

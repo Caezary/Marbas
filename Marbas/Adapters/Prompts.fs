@@ -7,8 +7,8 @@ open Terminal.Gui.Views
 open Marbas.Collections
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Messages
 open Marbas.State.AppState
-open Marbas.State.Messages
 open Marbas.State.Ports
 open Marbas.Ui.Viewer
 open Marbas.Ui.Dialogs

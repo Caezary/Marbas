@@ -6,6 +6,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -141,5 +142,5 @@ let ``a link that could not be made is reported and keeps its mark`` () =
 
     let result = update fs (LinksMade([], results)) state
 
-    Assert.Equal<Effect list>([ ReportItemFailures results ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.ItemFailures results) ], result.Effects)
     Assert.Equal<string list>([ "notes.txt" ], PanelState.selectedEntries result.State.Left |> names)

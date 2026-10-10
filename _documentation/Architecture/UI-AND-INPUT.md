@@ -328,7 +328,7 @@ with, and it is prepended after the filter anyway, so it can never be concealed.
 panel already holds, but nothing can display what was never read, so
 `AppState.toggleHidden` switches the flag and then runs the same
 `loadPanelFocusing` that `Ctrl+R` does — which is why it answers with a
-`Result`, reports a `ListingError` through `ReportListingError`, and a directory
+`Result`, reports a `ListingError` as a `Problem.Listing`, and a directory
 that vanished meanwhile leaves the panel where it was. Keeping every entry in
 the state and filtering at render time was the alternative and was dropped: the
 cursor is an index into what is displayed, so two lists would mean two

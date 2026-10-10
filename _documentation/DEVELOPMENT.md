@@ -109,7 +109,8 @@ Keep the build outputs apart from the Windows ones with
   `MockFileSystem` and never touch the disk.
 - No code comments — names and tests carry the intent; anything that needs
   explaining goes into `_documentation/*.md`.
-- Dependencies flow downward only: `Ui` → `State` → `FileSystem` → `Domain`.
+- Dependencies flow downward only: `Adapters` → `Ui` → `State` → `Messages` →
+  `FileSystem` → `Domain`.
 
 ## Flat decisions
 
@@ -141,9 +142,9 @@ its own arm. What is left after that goes into a named helper — the inner bloc
 of `Update.editing` is `showingProperties`, the third level of `Links.create`
 is `make`, the body of `Archive.copyToArchive` is `carriedInto`.
 
-**A chain of three constructors becomes a pipeline.** `request state
-(ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged path)))` is
-read inside-out; the same thing as
+**A chain of constructors becomes a pipeline.** `request state
+(Report(Problem.Operation(Operations.ArchiveFailed(KindCannotBeChanged path))))`
+is read inside-out; the same thing as
 `KindCannotBeChanged path |> Operations.ArchiveFailed |> reporting state` is
 read left to right. Where the innermost two are always the same pair, a helper
 named after the whole — `Update.reporting` — removes a level everywhere at

@@ -3,9 +3,9 @@ module Marbas.Tests.State.ShellLogTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.Update
-open Marbas.State.Messages
 open Marbas.Tests
 
 let private logging () =
@@ -30,6 +30,6 @@ let ``an error shown to the user leaves its title and its words`` () =
     let logged, deps = logging ()
     let error = Operations.BatchFailed "the walk fell over"
 
-    Shell.interpret deps ignore (ReportOperationError error)
+    Shell.interpret deps ignore (Report(Problem.Operation error))
 
     Assert.Contains(ErrorReported(OperationErrorMessage.Title, OperationErrorMessage.describe error), logged)

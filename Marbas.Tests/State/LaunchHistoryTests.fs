@@ -6,6 +6,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.Messages
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
@@ -166,4 +167,4 @@ let ``going to a file whose directory is gone is reported and the panel stays`` 
         update fs (answered (GoTo(Place.OnDisk(fp (at "gone/notes.txt"))))) state
 
     Assert.Equal(OnDisk(fp (at "start")), result.State.Left.Path)
-    Assert.Equal<Effect list>([ ReportListingError(DirectoryNotFound(fp (at "gone"))) ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Listing(DirectoryNotFound(fp (at "gone")))) ], result.Effects)

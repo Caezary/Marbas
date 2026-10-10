@@ -7,6 +7,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -167,7 +168,7 @@ let ``a clipboard the system does not offer is reported the first time`` () =
 
     let result = update fs (ClipboardRefused ClipboardUnavailable) (started fs)
 
-    Assert.Equal<Effect list>([ ReportClipboardError ClipboardUnavailable ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Clipboard ClipboardUnavailable) ], result.Effects)
 
 [<Fact>]
 let ``a clipboard the system does not offer is not reported again in the same session`` () =
@@ -186,7 +187,7 @@ let ``a clipboard that failed is reported every time`` () =
 
     let result = update fs (ClipboardRefused failure) reported.State
 
-    Assert.Equal<Effect list>([ ReportClipboardError failure ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Clipboard failure) ], result.Effects)
 
 [<Fact>]
 let ``the full path of the entry under the cursor is put on the clipboard`` () =
@@ -592,7 +593,7 @@ let ``cutting from inside an archive is refused by the name of the entry`` () =
     let result = update fs (FilesOnClipboardRequested ForMoving) state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.ArchiveEntryNotCut(fp (at "start/backup.zip/notes.txt"))) ],
+        [ Report(Problem.Operation(Operations.ArchiveEntryNotCut(fp (at "start/backup.zip/notes.txt")))) ],
         result.Effects
     )
 
@@ -618,7 +619,7 @@ let ``cutting search results that hold a hit inside an archive is refused by its
     let result = update fs (FilesOnClipboardRequested ForMoving) state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.ArchiveEntryNotCut(fp (at "start/backup.zip/docs/inner.txt"))) ],
+        [ Report(Problem.Operation(Operations.ArchiveEntryNotCut(fp (at "start/backup.zip/docs/inner.txt")))) ],
         result.Effects
     )
 
@@ -661,7 +662,8 @@ let ``what could not be extracted for the clipboard is reported and the rest is 
     let result = update fs finished (ArchiveFixture.loaded fs)
 
     Assert.Equal<Effect list>(
-        handing ForCopying [ "temp/1/notes.txt" ] @ [ ReportItemFailures [ failed ] ],
+        handing ForCopying [ "temp/1/notes.txt" ]
+        @ [ Report(Problem.ItemFailures [ failed ]) ],
         result.Effects
     )
 
@@ -714,7 +716,7 @@ let ``pasting inside an archive of a kind that cannot be changed is refused by n
     let result = update fs FilesPasteRequested state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.ArchiveFailed(KindCannotBeChanged tarball)) ],
+        [ Report(Problem.Operation(Operations.ArchiveFailed(KindCannotBeChanged tarball))) ],
         result.Effects
     )
 
@@ -727,7 +729,7 @@ let ``pasting into a panel of search results is refused as a copy into one is`` 
 
     let result = update fs FilesPasteRequested state
 
-    Assert.Equal<Effect list>([ ReportOperationError(Operations.NotInSearchResults Receiving) ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Operation(Operations.NotInSearchResults Receiving)) ], result.Effects)
 
 [<Fact>]
 let ``files on the clipboard to be copied are copied through the batch F5 runs`` () =

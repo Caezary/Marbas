@@ -4,9 +4,9 @@ open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.Update
-open Marbas.State.Messages
 open Marbas.Tests
 
 let private at = Root.at

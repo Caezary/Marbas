@@ -4,8 +4,8 @@ open System
 open System.IO.Abstractions
 open Terminal.Gui.App
 open Marbas.FileSystem
+open Marbas.Messages
 open Marbas.State
-open Marbas.State.Messages
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Ui.App

@@ -5,6 +5,7 @@ open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
+open Marbas.Messages
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
@@ -168,7 +169,7 @@ let ``an archive entry edited from the history is refused the way the panel refu
     let result = update fs (revisited { Where = notesInArchive; How = Edited }) state
 
     Assert.Equal<Effect list>(
-        [ ReportOperationError(Operations.ArchiveEntryNotEditable(fp (at "start/backup.zip/notes.txt"))) ],
+        [ Report(Problem.Operation(Operations.ArchiveEntryNotEditable(fp (at "start/backup.zip/notes.txt")))) ],
         result.Effects
     )
 

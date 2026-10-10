@@ -5,8 +5,8 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Messages
 open Marbas.State.AppState
-open Marbas.State.CommandExpansion
 open Marbas.State.Update
 open Marbas.Tests
 
@@ -110,7 +110,7 @@ let ``a line the panels refuse is reported and nothing runs`` () =
     let result = update fs (MenuCommandChosen(entry "show %p", listFile)) state
 
     Assert.Equal(state, result.State)
-    Assert.Equal<Effect list>([ ReportExpansionRefusal(NoEntryChosen Left) ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Expansion(NoEntryChosen Left)) ], result.Effects)
 
 [<Fact>]
 let ``a command that started is remembered on the history`` () =
@@ -138,7 +138,7 @@ let ``a command that could not start is reported and not remembered`` () =
 
     let result = update fs (CommandFinished(showing, Error failure)) (loaded fs)
 
-    Assert.Equal<Effect list>([ ReportCommandError failure ], result.Effects)
+    Assert.Equal<Effect list>([ Report(Problem.Command failure) ], result.Effects)
 
 [<Fact>]
 let ``a command chosen on the history runs again exactly as it ran`` () =

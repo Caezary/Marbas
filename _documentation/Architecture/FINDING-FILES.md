@@ -318,7 +318,7 @@ wears its own colour, `ClassicScheme.unverifiedEntry` (bright red on blue),
 whatever its kind, because it is the warning that matters and not whether it is
 an archive or a program; the footer adds `2 unverified` beside the counts,
 which a panel too narrow to show much of a name still shows. The refusal
-reaches the user as one message, `ReportUnverifiedHits`, naming each archive
+reaches the user as one message, `Problem.UnverifiedHits`, naming each archive
 and why, and only where the user asked for the listing: when the hits are sent
 to the panel and on `Ctrl+R`. The reloads nobody asked for — after an
 operation, toggling hidden entries, a finished edit — go through
