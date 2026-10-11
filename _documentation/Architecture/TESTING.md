@@ -162,14 +162,40 @@ listed with one.
 
 `Domain/`, `FileSystem/`, `Messages/`, `State/` and `Ui/` mirror the source
 folders they cover, one test module per module under test, and namespaces
-follow: `Marbas.Tests.State.UpdateTests` covers `Marbas.State.Update`. `Ui/`
-mirrors the source down to the subfolder, so `Ui/Panels/PanelTitleTests.fs`
-covers `Ui/Panels/PanelTitle.fs` as `Marbas.Tests.Ui.Panels.PanelTitleTests`.
-`Messages/ProblemTests.fs` holds every case of `Problem` to the title and the
-description of the module that words it, so a case wired to another module's
-words fails by name. The interpreter's tests are the `Shell*Tests` files of
-`State/`: they run `Shell.interpret` over `Fakes.dependencies` and build no view.
-Everything in them is a unit test — pure, fast, no Terminal.Gui.
+follow: `Marbas.Tests.State.PanelStateTests` covers `Marbas.State.PanelState`.
+`Ui/` mirrors the source down to the subfolder, so
+`Ui/Panels/PanelTitleTests.fs` covers `Ui/Panels/PanelTitle.fs` as
+`Marbas.Tests.Ui.Panels.PanelTitleTests`. `Messages/ProblemTests.fs` holds
+every case of `Problem` to the title and the description of the module that
+words it, so a case wired to another module's words fails by name. The
+interpreter's tests are the `Shell*Tests` files of `State/Shell/`: they run
+`Shell.interpret` over `Fakes.dependencies` and build no view. Everything in
+them is a unit test — pure, fast, no Terminal.Gui.
+
+**No test file runs past a thousand lines.** That is a ceiling and not a size
+to aim at: most files are a few hundred lines, and a split leaves files of that
+size. A module whose tests would not fit is split along the features it covers,
+one file per feature, each named for the module and then the feature —
+`ShellDeleteTests`, `OperationsBatchTests`, `FileViewerSearchTests`,
+`HistoryDialogFilterTests`, `ClipboardPathTests`. Where a split leaves more
+files than sit comfortably among the others, they get a folder under the folder
+of their layer, named for the module, and the namespace follows it:
+`State/Shell/` holds the interpreter's tests as
+`Marbas.Tests.State.Shell.ShellDeleteTests`, and `State/Update/` those of
+`Update`. The others stay where the one file was — the `Operations*Tests` of
+`FileSystem/`, the `Clipboard*Tests` of `State/`, the `FileViewer*Tests` of
+`Integration/Viewer/` and the `HistoryDialog*Tests` of `Integration/Dialogs/`.
+
+**What the files of one split share is a fixture module.** It sits beside them,
+is compiled before them and is opened by name: `ShellFixture` carries the
+do-nothing dependencies, the `capture` that records what was dispatched and the
+helpers for text typed earlier; `ShellArchiveFixture` the archive most of the
+archive tests unpack; `UpdateFixture`, `OperationsFixture`, `ClipboardFixture`,
+`FileViewerFixture` and `HistoryDialogFixture` the arrange code of their
+namesakes, as `ArchiveFixture` has done for the archive tests of `State/` since
+before the split. A fixture holds no test, and a helper only one file needs
+stays `private` in that file; the aliases every file writes for itself — `at`,
+`fp`, `en` — are not shared either.
 
 `Integration/` holds every test that constructs a Terminal.Gui view, from a lone
 dialog up to a whole `MainWindow` driven by keystrokes. That is the line: a test
@@ -301,7 +327,7 @@ promise of P7.4 in one test: build a window, sort it, show its hidden entries,
 send another panel to a second drive, press `Ctrl+Q`, then build a second window
 over the *same* mock file system and read the titles back. `WorkspacePath` is
 the same arrangement for the session's working directory, which is why "quitting
-takes it with it" is an ordinary `ShellTests` assertion.
+takes it with it" is an ordinary `ShellQuitTests` assertion.
 
 **Every window a test builds claims a working directory.** `MainWindow.create`
 raises the sweep of P21.7 through `Startup.firstSteps`, and the fake `Runners.Background` runs it inline, so

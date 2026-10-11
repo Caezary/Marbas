@@ -1,4 +1,4 @@
-module Marbas.Tests.State.ShellPlacesTests
+module Marbas.Tests.State.Shell.ShellPlacesTests
 
 open System.Formats.Tar
 open System.IO.Abstractions.TestingHelpers
@@ -10,25 +10,16 @@ open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update
 open Marbas.Tests
+open Marbas.Tests.State.Shell.ShellFixture
+open Marbas.Tests.State.Shell.ShellArchiveFixture
 
 let private at = Root.at
 
 let private fp = FileSystemPath.create
 
-let private en = EntryName.create
-
 let private zipAt = fp (at "start/data.zip")
 
 let private tarAt = fp (at "start/old.tar")
-
-let private entry raw =
-    ArchivePath.tryCreate raw |> Expect.some
-
-let private zipFormat = ArchiveFormat.tryCreate Zip |> Expect.some
-
-let private stopped =
-    { Report = ignore
-      IsCancelled = fun () -> true }
 
 let private placesFs password =
     let fs = MockFileSystem()
@@ -63,10 +54,6 @@ let private zipNames (fs: MockFileSystem) =
     |> Expect.ok
     |> List.map (_.Name >> EntryName.value)
     |> List.sort
-
-let private capture () =
-    let sent = ResizeArray<Message>()
-    sent, fun (msg: Message) -> sent.Add msg
 
 let private recording (fs: MockFileSystem) (titles: ResizeArray<string>) =
     { Fakes.dependencies fs (at "start") with

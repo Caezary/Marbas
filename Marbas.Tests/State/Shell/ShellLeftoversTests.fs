@@ -1,4 +1,4 @@
-module Marbas.Tests.State.ShellLeftoversTests
+module Marbas.Tests.State.Shell.ShellLeftoversTests
 
 open System
 open System.IO.Abstractions.TestingHelpers

@@ -215,6 +215,11 @@ schedules the fix. A rule here beats a habit found in an older file.
       column. The affirming rows and the denying rows are two theories, each
       named for what it claims, and each asserting one way.
 - [ ] One test module per module under test, mirroring the folder layout.
+- [ ] No test file runs past a thousand lines, and most are a few hundred. One
+      that would not fit is split by feature — `ShellDeleteTests`,
+      `OperationsBatchTests` — and what the parts share moves into a fixture
+      module compiled before them; a helper with one caller stays `private`
+      beside it. [Testing](Architecture/TESTING.md#layout) has the folders.
 - [ ] A fake overrides one field of the dependencies record, or subclasses
       `MockFileSystem`; the whole interface is never stubbed by hand.
 - [ ] What a view remembers is tested on its record, with no view built: one

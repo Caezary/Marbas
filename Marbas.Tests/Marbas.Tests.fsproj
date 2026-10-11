@@ -90,7 +90,13 @@
     <Compile Include="FileSystem\ArchiveChangeTests.fs" />
     <Compile Include="FileSystem\ArchiveAcrossTests.fs" />
     <Compile Include="FileSystem\EveryKindTests.fs" />
+    <Compile Include="FileSystem\OperationsFixture.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
+    <Compile Include="FileSystem\OperationsBatchTests.fs" />
+    <Compile Include="FileSystem\OperationsApprovalTests.fs" />
+    <Compile Include="FileSystem\OperationsIntoItselfTests.fs" />
+    <Compile Include="FileSystem\OperationsWalkTests.fs" />
+    <Compile Include="FileSystem\OperationsErrorTests.fs" />
     <Compile Include="FileSystem\WipeTests.fs" />
     <Compile Include="FileSystem\LinksTests.fs" />
     <Compile Include="FileSystem\ShortcutTests.fs" />
@@ -158,22 +164,63 @@
     <Compile Include="State\ResultsOperationsTests.fs" />
     <Compile Include="State\CommandExpansionTests.fs" />
     <Compile Include="State\UserMenuRunTests.fs" />
-    <Compile Include="State\ClipboardTests.fs" />
+    <Compile Include="State\ClipboardFixture.fs" />
+    <Compile Include="State\ClipboardNameTests.fs" />
+    <Compile Include="State\ClipboardPathTests.fs" />
+    <Compile Include="State\ClipboardLandingTests.fs" />
+    <Compile Include="State\ClipboardFilesTests.fs" />
     <Compile Include="State\FolderHistoryTests.fs" />
     <Compile Include="State\HistoryPopupTests.fs" />
     <Compile Include="State\FavoriteTests.fs" />
     <Compile Include="State\LaunchHistoryTests.fs" />
     <Compile Include="State\FileHistoryTests.fs" />
-    <Compile Include="State\UpdateTests.fs" />
     <Compile Include="State\LogEntryTests.fs" />
     <Compile Include="State\RuntimeTests.fs" />
     <Compile Include="State\RuntimeQueueTests.fs" />
     <Compile Include="State\PortsTests.fs" />
-    <Compile Include="State\ShellTests.fs" />
-    <Compile Include="State\ShellPlacesTests.fs" />
-    <Compile Include="State\ShellLogTests.fs" />
-    <Compile Include="State\ShellLeftoversTests.fs" />
     <Compile Include="State\StartupTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="State\Update\UpdateFixture.fs" />
+    <Compile Include="State\Update\UpdateTests.fs" />
+    <Compile Include="State\Update\UpdateDeleteTests.fs" />
+    <Compile Include="State\Update\UpdateTransferTests.fs" />
+    <Compile Include="State\Update\UpdateViewAndEditTests.fs" />
+    <Compile Include="State\Update\UpdateProgramsTests.fs" />
+    <Compile Include="State\Update\UpdatePackTests.fs" />
+    <Compile Include="State\Update\UpdateTabTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="State\Shell\ShellFixture.fs" />
+    <Compile Include="State\Shell\ShellArchiveFixture.fs" />
+    <Compile Include="State\Shell\ShellPromptTests.fs" />
+    <Compile Include="State\Shell\ShellDriveTests.fs" />
+    <Compile Include="State\Shell\ShellReportTests.fs" />
+    <Compile Include="State\Shell\ShellDeleteTests.fs" />
+    <Compile Include="State\Shell\ShellTransferTests.fs" />
+    <Compile Include="State\Shell\ShellViewTests.fs" />
+    <Compile Include="State\Shell\ShellPropertiesTests.fs" />
+    <Compile Include="State\Shell\ShellLaunchTests.fs" />
+    <Compile Include="State\Shell\ShellSettingsTests.fs" />
+    <Compile Include="State\Shell\ShellHistoryTests.fs" />
+    <Compile Include="State\Shell\ShellTypedInPromptsTests.fs" />
+    <Compile Include="State\Shell\ShellTypedInPopupsTests.fs" />
+    <Compile Include="State\Shell\ShellPackTests.fs" />
+    <Compile Include="State\Shell\ShellUnpackTests.fs" />
+    <Compile Include="State\Shell\ShellArchiveCopyTests.fs" />
+    <Compile Include="State\Shell\ShellArchiveChangeTests.fs" />
+    <Compile Include="State\Shell\ShellArchiveCrossingTests.fs" />
+    <Compile Include="State\Shell\ShellPlacesTests.fs" />
+    <Compile Include="State\Shell\ShellSearchTests.fs" />
+    <Compile Include="State\Shell\ShellFavoriteTests.fs" />
+    <Compile Include="State\Shell\ShellClipboardTests.fs" />
+    <Compile Include="State\Shell\ShellUserMenuTests.fs" />
+    <Compile Include="State\Shell\ShellWatchTests.fs" />
+    <Compile Include="State\Shell\ShellQuitTests.fs" />
+    <Compile Include="State\Shell\ShellLogTests.fs" />
+    <Compile Include="State\Shell\ShellLeftoversTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -315,7 +362,13 @@
 
   <ItemGroup>
     <Compile Include="Integration\Viewer\CodePageDialogTests.fs" />
+    <Compile Include="Integration\Viewer\FileViewerFixture.fs" />
     <Compile Include="Integration\Viewer\FileViewerTests.fs" />
+    <Compile Include="Integration\Viewer\FileViewerCodePageTests.fs" />
+    <Compile Include="Integration\Viewer\FileViewerSearchTests.fs" />
+    <Compile Include="Integration\Viewer\FileViewerSearchAgainTests.fs" />
+    <Compile Include="Integration\Viewer\FileViewerPatternSearchTests.fs" />
+    <Compile Include="Integration\Viewer\FileViewerHexSearchTests.fs" />
     <Compile Include="Integration\Viewer\ViewKeyTests.fs" />
   </ItemGroup>
 
@@ -326,7 +379,11 @@
     <Compile Include="Integration\Dialogs\PropertiesDialogTests.fs" />
     <Compile Include="Integration\Dialogs\SettingsDialogTests.fs" />
     <Compile Include="Integration\Dialogs\TabDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\HistoryDialogFixture.fs" />
     <Compile Include="Integration\Dialogs\HistoryDialogTests.fs" />
+    <Compile Include="Integration\Dialogs\HistoryDialogFilesTests.fs" />
+    <Compile Include="Integration\Dialogs\HistoryDialogForgetTests.fs" />
+    <Compile Include="Integration\Dialogs\HistoryDialogFilterTests.fs" />
     <Compile Include="Integration\Dialogs\DriveDialogTests.fs" />
     <Compile Include="Integration\Dialogs\KeepFavoriteDialogTests.fs" />
     <Compile Include="Integration\Dialogs\FavoritesDialogTests.fs" />

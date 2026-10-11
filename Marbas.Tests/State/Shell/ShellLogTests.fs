@@ -1,4 +1,4 @@
-module Marbas.Tests.State.ShellLogTests
+module Marbas.Tests.State.Shell.ShellLogTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit

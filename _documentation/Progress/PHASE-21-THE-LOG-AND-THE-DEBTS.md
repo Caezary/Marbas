@@ -788,3 +788,74 @@ two, three and four bytes, and four sequences broken at their second, third or
 fourth byte. The suite gained sixteen — 4114 pass and 16 skip on Windows.
 
 Both entries in [Rough edges](../ROUGH-EDGES.md) are gone.
+
+**P21.17 split the test files by feature.** The longest test file is 669 lines
+where it was 3,572, and the six files that were split left fifty of 39 to 372
+lines each, with seven fixture modules for what they share. No test was added,
+removed or renamed, and one gained the assertion it lacked. The limit and the layout are in
+[Testing](../Architecture/TESTING.md#layout) and a line of
+[Coding style](../coding-style-conventions.md).
+
+| Was | Lines | Tests | Is now | Longest |
+|-----|-------|-------|--------|---------|
+| `State/ShellTests` | 3,572 | 197 | 23 files in `State/Shell/` | 372 |
+| `Integration/Viewer/FileViewerTests` | 1,372 | 97 | 6 `FileViewer*Tests` | 370 |
+| `State/UpdateTests` | 1,182 | 92 | 7 files in `State/Update/` | 247 |
+| `FileSystem/OperationsTests` | 943 | 81 | 6 `Operations*Tests` | 337 |
+| `Integration/Dialogs/HistoryDialogTests` | 907 | 76 | 4 `HistoryDialog*Tests` | 260 |
+| `State/ClipboardTests` | 755 | 52 | 4 `Clipboard*Tests` | 273 |
+
+Five things went differently from the plan, or further than it.
+
+- **`ShellTests` had grown by a third since the plan counted it.** It stood at
+  3,572 lines and 197 tests, not 2,600 and 161, and it split into twenty-three
+  files: prompts, the drive chooser, reports, deleting, transfers, viewing and
+  editing, properties, launching, settings, the history, text typed into the
+  prompts and into the larger popups, packing, unpacking, copying out of an
+  archive, changing one, crossing between two, searching, favourites, the
+  clipboard, the user menu, the watch and quitting.
+- **A third file was past the limit.** The plan named `ShellTests` and
+  `UpdateTests`; `FileViewerTests` stood at 1,372 lines and was split the same
+  way, into the viewer itself, the code page, the search, the search repeated,
+  the search by pattern and the search for bytes.
+- **Three files under the limit were split as well.** A thousand is a ceiling
+  and not a size to aim at, and `OperationsTests`, `HistoryDialogTests` and
+  `ClipboardTests` stood at 943, 907 and 755 — one feature away from it. What
+  is left above five hundred lines is `KeyMapTests` and `ViewerStateTests`,
+  each about one table or one record, `LineIndexTests`, `WindowSearchTests` and
+  `HistoryTests`; none was touched.
+- **The interpreter's tests and those of `Update` have folders.** Thirty-six
+  files among the fifty-odd of `State/` would have buried both, so they are
+  `State/Shell/` and `State/Update/`, and `ShellPlacesTests`,
+  `ShellLogTests` and `ShellLeftoversTests`, split off in earlier tasks, moved
+  in with the rest. Their modules are `Marbas.Tests.State.Shell.*` now, which
+  is the one thing a filter by name has to know. The other four splits stayed
+  in the folder the one file was in.
+- **Two fixtures for the interpreter, not one.** `ShellFixture` holds what
+  nearly every file starts from; the archive that five of them unpack, with its
+  path, its format and the entry names inside it, is `ShellArchiveFixture`, so
+  that a file about prompts does not open an archive it never uses.
+
+Four small things were found on the way.
+
+- **`ShellPlacesTests` carried its own copies of four helpers** — `capture`,
+  `stopped`, `entry` and `zipFormat` — word for word those of `ShellTests`.
+  It opens the two fixtures instead.
+- **Two helpers had no caller**: `cursor` in `ShellTests` and the `en` alias in
+  `ShellPlacesTests`. Both are gone. `zipAt`, a second name `ShellTests` gave
+  to `dataZip` half-way down, is `dataZip` everywhere.
+- **Every new file opens only what it needs.** Each started from the opens of
+  the file it came from; each `open` was then taken out in turn and put back
+  only where the file no longer built without it.
+- **One test asserted nothing.** `a locked archive whose password is not given
+  shows nothing`, now in `ShellViewTests`, recorded whether the viewer was
+  shown and never read it. It was moved like the rest and given its
+  `Assert.False shown` afterwards — the one line of a test this task changed.
+
+The split was made by line ranges out of the files as they stood, not by hand,
+and then checked three ways. Every line of the six files and of the three that
+moved, sorted, against every line of what replaced them: the same, but for the
+module and `open` lines, the aliases each file declares, `private` dropped
+where a helper moved into a fixture, and the four findings above. The names of
+the 612 tests in them: the same list. And the suite: 4114 pass and 16 skip on
+Windows, 4130 in all, as before.

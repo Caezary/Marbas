@@ -359,8 +359,9 @@ Marbas.Tests/
   Fakes.fs                the do-nothing Ports.Dependencies every test starts from
   FileSystem/             unit tests, one module per FileSystem module
   Messages/               unit tests of the wording, one module per module
-  State/                  unit tests, one module per State module; the
-                          interpreter in the Shell* files
+  State/                  unit tests, one module per State module
+    Update/               the tests of Update, one file per feature
+    Shell/                the tests of the interpreter, one file per feature
   Ui/                     unit tests of the pure Ui modules, in the same eight
                           folders as the source
   Integration/            every test that constructs a Terminal.Gui view, in
