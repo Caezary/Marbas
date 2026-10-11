@@ -299,3 +299,93 @@ file when it is laid out, sixteen bytes and three on either side, where a line
 of text comes out of the lines the index has already decoded. That difference
 was seen, not taken apart: at a fifth of a millisecond a screenful nobody waits
 on it.
+
+## Where two slow loops spent their time (P21.16, 2026-10-11)
+
+P21.14 left two numbers out of proportion to the work: `LineIndex.Index.ScanAll`
+over a million lines, and `TextEncoding.detect` on a full probe. Each was taken
+apart before anything in it was changed. A probe built in Release ran copies of
+the two loops with their parts added one at a time, on the file of P21.14 — a
+million lines of 72 bytes, 69 MB, UTF-8 with Polish letters — and on its first
+8 KB as the probe of detection. Milliseconds, on one Windows machine; the range
+is of the fastest of five runs over two runs of the probe.
+
+| The scan of the index, a part added per row | Milliseconds |
+|---|---|
+| every chunk read, and nothing else | 16–17 |
+| and every line feed in it found | 47–50 |
+| and the source asked for its length at every line start | 2 815–2 839 |
+| and every start noted, each sixty-fourth kept | 2 825–2 844 |
+| the source asked for its length a million times, and nothing else | 2 746–2 761 |
+
+**The index spent its time asking how long the file is.** Reading 69 MB takes
+17 ms, finding a million line feeds in it 31 ms more, noting them about ten,
+and the rest — 2.77 of 2.83 seconds, 98 of every hundred — is one comparison a
+line start, `start < source.Length`, which keeps a feed at the very end of the
+file from starting an empty line. `Source.Length` is the stream's length, and a
+file opened for shared writing, as the viewer opens one, has the system asked
+each time: 2.8 microseconds a question, a million questions. A stream over the
+same file opened for shared reading only answers a million times in 2 ms, so it
+is the sharing that makes the question dear, and the viewer keeps it: a file
+another program is writing can still be read. The walk of the same file never
+asks, which is why it read the same bytes in a twentieth of the time.
+
+| One examination of the probe, by its parts, 20 000 times | Milliseconds |
+|---|---|
+| the three byte order marks | 2 |
+| the test for a wide encoding | 5 300–5 336 |
+| the search for a zero byte | 50 |
+| the UTF-8 walk, 1 026 sequences longer than a byte | 530–537 |
+
+**Detection spent its time counting zero bytes through a sequence.** The test
+for UTF-16 without a mark counts the zeros on each side of every pair of bytes,
+and did it with a sequence of the pair's bytes, filtered and measured, built
+twice: 265 microseconds of the 295 an examination took. The UTF-8 walk cut a
+slice out of the probe for every sequence longer than a byte to ask whether its
+later bytes continue it, and came to 27. The marks and the zero byte are
+nothing beside them.
+
+**Each got the change its numbers pointed to.** The scan asks for the length
+once a chunk, after reading it, and compares every start in the chunk with that
+answer. The wide test counts with a recursion over the pairs, and the walk asks
+the bytes where they lie; no array or sequence is made for either.
+`ContentMatch`, which asked `detect` for the encoding and `contentOf` for
+whether the file is binary and so examined every probe twice, takes both from
+one `TextEncoding.examine`. The rows below are the probe of P21.14 with three
+added, built once against the code before and once against the code after and
+run alternately, three rounds; fastest of five runs, then the median.
+
+| What | Fastest before | Median before | Fastest after | Median after |
+|---|---|---|---|---|
+| the index over the million lines | 2 801–2 823 | 2 810–2 829 | 67–68 | 68 |
+| the same, and sixteen lines near the end read | 2 828–2 841 | 2 842–2 847 | 63 | 66–68 |
+| the walk over the same file, every line | 140–142 | 142–144 | 142–151 | 222–230 |
+| detection, 20 000 probes of UTF-8 with Polish letters | 5 820–5 832 | 5 823–5 858 | 399–405 | 403–407 |
+| detection, 20 000 probes of plain ASCII | 5 682–5 718 | 5 705–5 727 | 444–448 | 447–452 |
+| detection, 20 000 probes Latin-1 at byte 8 000 | 5 683–5 694 | 5 698–5 701 | 438–441 | 441–448 |
+| a text searched for in 2 000 files of 16 KB, in none | 1 413–1 418 | 1 422–1 428 | 220–224 | 223–234 |
+
+**The index is forty times faster and now quicker than the walk.** `End` in the
+million lines waits 68 ms where it waited 2.8 seconds. P21.14 read 3.8 to 4.1
+seconds for the same scan and 202 to 228 ms for the walk; in these runs the
+same code gave 2.8 seconds and 142 ms, so the figures of the two entries are
+not to be set side by side, only the rows of one table.
+
+**Reading a line near the end no longer costs what a rescan cost.** A block of
+sixty-four line starts is found again by reading a chunk from its checkpoint,
+and the rescan asked for the length at every feed in that chunk, some nine
+hundred of them. Sixteen such blocks cost about thirty milliseconds on top of
+the scan before, and nothing that shows after.
+
+**Detection costs 20 microseconds a probe, from 290, and a search pays it
+once.** Over the two thousand files a search for text took 0.71 ms a file
+and takes 0.11; the 0.58 ms the two examinations came to is 0.02 for the one.
+Timed apart again after the change, the wide test takes 1.9 microseconds, the
+zero byte 2.5 and the UTF-8 walk 15, or 17 over a probe that is all ASCII. The
+walk is what is left, and it was not taken further.
+
+**The walk was not touched, and its slower median is not the code.** Its
+fastest run is what it was. After the change the walk starts half a second into
+the process where it started seventeen seconds in, and with tiered compilation
+switched off both binaries walk the file in 246 to 252 ms, so what differs is
+how far the runtime had warmed up when the row began.

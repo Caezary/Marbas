@@ -303,7 +303,7 @@ let ``latin-1 bytes decode one character to the byte`` () =
 let ``a nul byte with no mark and no wide pattern means binary`` () =
     let probe = Array.append (bytes "MZ") [| 0x00uy; 0x01uy; 0x02uy |]
 
-    let content = TextEncoding.contentOf probe
+    let _, content = TextEncoding.examine probe
 
     Assert.Equal<Content>(Binary, content)
 
@@ -311,7 +311,7 @@ let ``a nul byte with no mark and no wide pattern means binary`` () =
 let ``plain text is not binary`` () =
     let probe = bytes "{ \"name\": \"value\" }"
 
-    let content = TextEncoding.contentOf probe
+    let _, content = TextEncoding.examine probe
 
     Assert.Equal<Content>(Textual, content)
 
@@ -319,7 +319,7 @@ let ``plain text is not binary`` () =
 let ``marked utf-16 is text, nul bytes and all`` () =
     let probe = Array.append [| 0xFFuy; 0xFEuy |] (wide "first")
 
-    let content = TextEncoding.contentOf probe
+    let _, content = TextEncoding.examine probe
 
     Assert.Equal<Content>(Textual, content)
 
@@ -327,6 +327,80 @@ let ``marked utf-16 is text, nul bytes and all`` () =
 let ``unmarked utf-16 is text, nul bytes and all`` () =
     let probe = wide "first line of the file"
 
-    let content = TextEncoding.contentOf probe
+    let _, content = TextEncoding.examine probe
 
     Assert.Equal<Content>(Textual, content)
+
+[<Fact>]
+let ``one examination answers the encoding beside whether it is text`` () =
+    let probe = Array.append (bytes "MZ") [| 0x00uy; 0x01uy; 0x02uy |]
+
+    let examined = TextEncoding.examine probe
+
+    Assert.Equal(({ Charset = Latin1; Bom = WithoutBom }, Binary), examined)
+
+[<Fact>]
+let ``what is detected is the encoding an examination answers`` () =
+    let probe = wide "first line of the file"
+
+    let encoding = TextEncoding.detect probe
+
+    Assert.Equal(fst (TextEncoding.examine probe), encoding)
+
+[<Fact>]
+let ``unmarked utf-16 of an odd length is recognised by the pairs it holds`` () =
+    let probe = Array.append (wide "first") [| 0x21uy |]
+
+    let encoding = TextEncoding.detect probe
+
+    Assert.Equal({ Charset = Utf16Le; Bom = WithoutBom }, encoding)
+
+[<Fact>]
+let ``zero bytes in no more than half the pairs are not utf-16`` () =
+    let probe = [| 0x41uy; 0x00uy; 0x42uy; 0x43uy |]
+
+    let examined = TextEncoding.examine probe
+
+    Assert.Equal(({ Charset = Latin1; Bom = WithoutBom }, Binary), examined)
+
+[<Fact>]
+let ``a zero byte on the other side of one pair keeps the rest from counting as utf-16`` () =
+    let probe = [| 0x41uy; 0x00uy; 0x42uy; 0x00uy; 0x00uy; 0x43uy |]
+
+    let examined = TextEncoding.examine probe
+
+    Assert.Equal(({ Charset = Latin1; Bom = WithoutBom }, Binary), examined)
+
+[<Fact>]
+let ``a single zero byte is too short to be utf-16`` () =
+    let probe = [| 0x00uy |]
+
+    let examined = TextEncoding.examine probe
+
+    Assert.Equal(({ Charset = Latin1; Bom = WithoutBom }, Binary), examined)
+
+[<Theory>]
+[<InlineData("é")>]
+[<InlineData("€")>]
+[<InlineData("😀")>]
+[<InlineData("aé€😀z")>]
+let ``a sequence of two, three or four bytes is utf-8`` (text: string) =
+    let probe = Encoding.UTF8.GetBytes text
+
+    let encoding = TextEncoding.detect probe
+
+    Assert.Equal({ Charset = Utf8; Bom = WithoutBom }, encoding)
+
+[<Theory>]
+[<InlineData(0xC3, 0x41, 0x41, 0x41)>]
+[<InlineData(0xE2, 0x82, 0x41, 0x41)>]
+[<InlineData(0xF0, 0x9F, 0x98, 0x41)>]
+[<InlineData(0xF0, 0x41, 0x98, 0x80)>]
+let ``a sequence one of whose later bytes continues nothing is not utf-8``
+    (lead: int, second: int, third: int, fourth: int)
+    =
+    let probe = [| byte lead; byte second; byte third; byte fourth; 0x41uy |]
+
+    let encoding = TextEncoding.detect probe
+
+    Assert.Equal({ Charset = Latin1; Bom = WithoutBom }, encoding)

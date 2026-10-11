@@ -57,10 +57,13 @@ not been read yet, and one at the very start of a carried piece is one the
 previous buffer already turned down.
 
 **Binary files are an option because the answer is not obvious.** Whether a file
-is binary is not a second guess made here: `TextEncoding.detect` and
-`TextEncoding.contentOf` come from one private `examine`, so the branch that
-reads a NUL as Latin-1 is the branch that calls the file binary, and the
-search and the viewer cannot disagree about a file. A binary file is passed over
+is binary is not a second guess made here: `TextEncoding.examine` answers the
+encoding and whether the file is text from one look at the probe, and
+`TextEncoding.detect`, which the viewer asks, is the first half of that
+answer, so the branch that reads a NUL as Latin-1 is the branch that calls the
+file binary, and the search and the viewer cannot disagree about a file. The
+search asks once for both: the probe of every file it opens is examined one
+time. A binary file is passed over
 unless the query asks for it (`FileSkipped`, counted), and asked for, it is
 searched as the Latin-1 the viewer shows — which is what finds a string in an
 executable, and also what floods a search with noise, hence off by default.

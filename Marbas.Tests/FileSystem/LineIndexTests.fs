@@ -490,3 +490,51 @@ let ``a walk back says where it reads before each window of bytes`` () =
     let offsets = readingBackAt source before
 
     Assert.Equal<int64 list>([ before - 1L - int64 LineIndex.ChunkLength; 10L; 0L ], offsets)
+
+type private LengthCounted(bytes: byte array) =
+    inherit IO.MemoryStream(bytes)
+
+    let asked = ResizeArray<unit>()
+
+    member _.Asked = asked.Count
+
+    override _.Length =
+        asked.Add()
+        base.Length
+
+let private countedOver lines =
+    let text = String.replicate lines "line\n"
+    let stream = new LengthCounted(Encoding.UTF8.GetBytes text)
+
+    let source =
+        new FileWindow.Source(fp notes, stream, { Charset = Utf8; Bom = WithoutBom })
+
+    stream, LineIndex.Index(source, source.Encoding)
+
+let private askedToIndex lines =
+    let stream, index = countedOver lines
+    index.ScanAll()
+    stream.Asked
+
+let private askedToReadTheLast lines =
+    let stream, index = countedOver lines
+    index.ScanAll()
+    let before = stream.Asked
+    index.Text(lines - 1) |> ignore
+    stream.Asked - before
+
+[<Fact>]
+let ``a window of many lines asks how long the file is as often as a window of few`` () =
+    let few = askedToIndex 10
+
+    let many = askedToIndex 10000
+
+    Assert.Equal(few, many)
+
+[<Fact>]
+let ``reading a late line asks how long the file is as often among many lines as among few`` () =
+    let few = askedToReadTheLast 10
+
+    let many = askedToReadTheLast 10000
+
+    Assert.Equal(few, many)

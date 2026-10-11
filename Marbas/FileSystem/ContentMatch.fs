@@ -81,9 +81,9 @@ let private beyondPreamble (probe: byte array) encoding =
 
 let private answered control (search: TextSearch) (stream: Stream) =
     let probe = probeOf stream
-    let encoding = TextEncoding.detect probe
+    let encoding, content = TextEncoding.examine probe
 
-    match TextEncoding.contentOf probe, search.Binary with
+    match content, search.Binary with
     | Binary, Skipped -> FileSkipped
     | _ -> scan control stream search encoding (beyondPreamble probe encoding)
 

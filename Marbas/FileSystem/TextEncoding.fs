@@ -47,6 +47,10 @@ module TextEncoding =
 
     let private isTrailing (byte: byte) = byte >= 0x80uy && byte <= 0xBFuy
 
+    let rec private trailingBetween (bytes: byte array) from until =
+        from >= until
+        || (isTrailing bytes[from] && trailingBetween bytes (from + 1) until)
+
     let private isUtf8 (probe: byte array) =
         let mutable index = 0
         let mutable valid = true
@@ -56,7 +60,7 @@ module TextEncoding =
             | None -> valid <- false
             | Some length when index + length > probe.Length -> index <- probe.Length
             | Some length ->
-                if Array.forall isTrailing probe[index + 1 .. index + length - 1] then
+                if trailingBetween probe (index + 1) (index + length) then
                     index <- index + length
                 else
                     valid <- false
@@ -66,11 +70,15 @@ module TextEncoding =
     let private wideCharset (probe: byte array) =
         let pairs = probe.Length / 2
 
-        let zeros side =
-            Seq.init pairs (fun pair -> probe[pair * 2 + side])
-            |> Seq.filter ((=) 0uy)
-            |> Seq.length
+        let rec zerosFrom pair side counted =
+            if pair = pairs then
+                counted
+            elif probe[pair * 2 + side] = 0uy then
+                zerosFrom (pair + 1) side (counted + 1)
+            else
+                zerosFrom (pair + 1) side counted
 
+        let zeros side = zerosFrom 0 side 0
         let leading = zeros 0
         let trailing = zeros 1
 
@@ -79,7 +87,7 @@ module TextEncoding =
         elif trailing = 0 && leading * 2 > pairs then Some Utf16Be
         else None
 
-    let private examine (probe: byte array) =
+    let examine (probe: byte array) =
         let plain charset = { Charset = charset; Bom = WithoutBom }
 
         if startsWith utf8Mark probe then
@@ -95,8 +103,6 @@ module TextEncoding =
             | None -> plain (if isUtf8 probe then Utf8 else Latin1), Textual
 
     let detect (probe: byte array) = examine probe |> fst
-
-    let contentOf (probe: byte array) = examine probe |> snd
 
     let charsets =
         [ Utf8
@@ -208,7 +214,7 @@ module TextEncoding =
     let private utf8LengthAt (bytes: byte array) position =
         sequenceLength bytes[position]
         |> Option.filter (fun length -> position + length <= bytes.Length)
-        |> Option.filter (fun length -> Array.forall isTrailing bytes[position + 1 .. position + length - 1])
+        |> Option.filter (fun length -> trailingBetween bytes (position + 1) (position + length))
 
     let private unitAt charset (bytes: byte array) position =
         match charset with

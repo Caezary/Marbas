@@ -733,3 +733,58 @@ programs of the popup — came out the same to the byte.
 The suite gained 133 tests: 68 on `ViewerState`, 37 on `ResultsState` and 28
 on `SettingsForm`, none of which builds a view. No test that was there before
 was changed — 4098 pass and 16 skip on Windows.
+
+**P21.16 looked into the two slow loops, and both turned out cheap to put
+right.** Indexing the million lines of P21.14 takes 68 ms where it took 2.8
+seconds, telling what a probe is encoded in 20 microseconds where it took 290,
+and a search for text examines the probe of each file once. Where the time
+went, part by part, and the rows before and after are in
+[Measurements](MEASUREMENTS.md#where-two-slow-loops-spent-their-time-p2116-2026-10-11).
+
+- **The index was asking the system how long the file is, a million times.**
+  The plan named it as the first thing to rule in or out, and it was 98 of
+  every hundred milliseconds: `start < source.Length` at every line start, on a
+  stream whose length is a call into the system because the file is opened for
+  shared writing. Reading the 69 MB is 17 ms and finding the feeds 31. The scan
+  and the rescan of a block ask once a chunk now. Nothing about the index had
+  to be kept another way, so there is nothing written up and left.
+- **A rescan paid the same price, which nobody had measured.** Reading a line
+  in a block the index no longer holds reads a chunk from the block's
+  checkpoint, and that asked for the length at every feed in the chunk — about
+  two milliseconds a block, on a page up or down that crosses one. It went with
+  the same change.
+- **Detection was a sequence built to count zeros.** The test for UTF-16
+  without a mark took 265 of the 295 microseconds, through `Seq.init`, a filter
+  and a length, twice. It is a recursion over the pairs now, which needs no
+  mutable binding, so the table of [Coding style](../coding-style-conventions.md)
+  that lists the loops allowed one is as it was. The UTF-8 walk, 27
+  microseconds, no longer cuts a slice for every sequence longer than a byte;
+  `TextEncoding.characterLengthAt`, which the character column of the dump asks
+  for every character, cut the same slice and asks the same new function.
+- **`contentOf` is gone and `examine` is public.** `ContentMatch` was its only
+  caller outside the tests. It takes the encoding and whether the file is text
+  from one `TextEncoding.examine`; `detect`, which the viewer asks, stays as
+  the first half of that answer.
+- **What a growing file looks like to the index moved by less than a chunk.**
+  The length used to be read afresh at every line start and again to decide
+  whether the scan was complete; both now use the one answer taken after the
+  chunk was read. [File operations](../Architecture/FILE-OPERATIONS.md) says
+  so.
+- **The probe of P21.14 was still there.** It was found in the scratch
+  directory of the session that wrote it, with its file of a million lines, and
+  its rows were kept; three were added — a line read near the end, two more
+  kinds of probe, and a text searched for in two thousand files.
+
+The tests came first where a test could fail. Two in `LineIndexTests` hand the
+index a stream that counts how often it is asked for its length, and say that a
+chunk of ten thousand lines asks as often as a chunk of ten, for the scan and
+for a line read after it: they failed at 10 005 against 15 and at 18 against
+12. Two in `TextEncodingTests` are on `examine`, which did not build while it
+was private, and the four tests of `contentOf` read the second half of
+`examine` instead. Twelve more pin what the two rewritten walks decide and
+passed before as after: UTF-16 of an odd length, zeros in exactly half the
+pairs, a zero on the wrong side of one pair, a probe of one byte, sequences of
+two, three and four bytes, and four sequences broken at their second, third or
+fourth byte. The suite gained sixteen — 4114 pass and 16 skip on Windows.
+
+Both entries in [Rough edges](../ROUGH-EDGES.md) are gone.

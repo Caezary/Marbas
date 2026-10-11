@@ -446,6 +446,19 @@ sixty-four times as many lines, and a line anywhere costs at most one read of
 sixty-four lines. Both the scan and the rescans read into one buffer the index
 owns (`Source.ReadInto`) instead of allocating a fresh 64 KiB array per chunk.
 
+**The index asks how long the file is once a chunk.** A line feed at the very
+end of a file starts no line, so every start the scan finds is compared with
+the length of the file. `Source.Length` is the stream's own, and for a file
+opened so that others may write to it, which is how the viewer opens one, the
+system is asked each time. Asked at every line start, that question was nearly
+all of what indexing cost;
+[Measurements](../Progress/MEASUREMENTS.md#where-two-slow-loops-spent-their-time-p2116-2026-10-11)
+has the numbers. The scan and the rescan of a block now ask after each chunk
+they read and use that one answer for every start in it, and for whether the
+scan is complete. A file that grows while it is indexed is therefore seen as
+long as it was when its last chunk was read, the same as before to within a
+chunk.
+
 **The encoding decides, the content does not.** The old rule — a zero byte
 anywhere means binary — turned every UTF-16 file into a hex dump, which is what
 Windows PowerShell's `>` writes. So the order is now the other way round:

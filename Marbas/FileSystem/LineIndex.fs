@@ -67,14 +67,14 @@ type Index(source: FileWindow.Source, encoding: TextEncoding) =
         else
             chunk[position] = feed[0] && chunk[position + 1] = feed[1]
 
-    let startsInChunk (offset: int64) length (found: int64 -> unit) =
+    let startsInChunk (offset: int64) length (fileLength: int64) (found: int64 -> unit) =
         let mutable position = 0
 
         while position + feed.Length <= length do
             if feedAt position then
                 let start = offset + int64 (position + feed.Length)
 
-                if start < source.Length then
+                if start < fileLength then
                     found start
 
             position <- position + feed.Length
@@ -94,13 +94,14 @@ type Index(source: FileWindow.Source, encoding: TextEncoding) =
 
     let scanChunk () =
         let length = source.ReadInto(scanned, chunk)
+        let fileLength = source.Length
 
         if length < feed.Length then
             complete <- true
         else
-            startsInChunk scanned length note
+            startsInChunk scanned length fileLength note
             scanned <- scanned + int64 length
-            complete <- scanned >= source.Length
+            complete <- scanned >= fileLength
 
     let scanUntilKnown line =
         while not complete && known <= line do
@@ -121,7 +122,7 @@ type Index(source: FileWindow.Source, encoding: TextEncoding) =
 
         while count.Value < starts.Length && length > 0 do
             length <- source.ReadInto(offset, chunk)
-            startsInChunk offset length found
+            startsInChunk offset length source.Length found
             offset <- offset + int64 length
 
         starts
