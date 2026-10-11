@@ -256,10 +256,58 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] Long work does not run on the UI thread: it is an effect behind
       `Runners.Batch`, with a progress window and `Esc`.
 
-## 10. Before handing work back
+## 10. Performance
+
+A hot path is one a user waits on, or one that runs for every key, every entry
+or every byte. A change there is held to what the path cost before it.
+
+| Hot path | What runs on it | Where it was timed |
+|----------|-----------------|--------------------|
+| a key in a panel | the transition in `Update`, the render of both panels, the status line and the bar | [the performance review](reports/2026-09-19-performance-review.md), P1, P10 and P14 |
+| a directory listed and sorted | `DirectoryListing`, the sort, the rows of a panel | the same review, P6 and P12 |
+| a file viewed, as text or as a dump | `FileWindow`, `TextEncoding`, `LineIndex`, `ViewerState`, the searches of `WindowSearch` and `ByteSearch` | [Measurements](Progress/MEASUREMENTS.md), P21.15 and P21.16 |
+| a copy, a move, a delete, a wipe, a size measured | the walks of `Operations` and `DirectoryMeasure`, and what a batch reports | Measurements, P15.25 and P21.3 |
+| a search by name or by text | `FileSearch`, `ContentMatch`, the results window, the results in a panel | Measurements, P21.14 and P21.16 |
+| any of those inside an archive | `ArchiveReader`, `ArchiveIndex`, packing and unpacking in `Archive` | Measurements, P15.17 and P21.14 |
+| a refresh nobody asked for | the watch over the directories on screen, the hits of a results panel verified again | [Auto-refresh](Architecture/AUTO-REFRESH.md) |
+| the first screen | the settings read, both panels' directories listed, the first watch, the sweep of old sessions | — |
+
+- [ ] A change on a hot path does not make it slower, whatever the change was
+      for. One made for tidiness is timed like one made for speed: a rewrite of
+      a walk's bookkeeping was a tenth slower until it was measured.
+- [ ] Timing is a probe built in Release against the code before and the code
+      after, run alternately on the same data on a real disk, and its rows are
+      an entry in [Measurements](Progress/MEASUREMENTS.md).
+- [ ] A path that is slow is taken apart before it is changed — its parts timed
+      one added to the next — so that the cause is a number and the fix is the
+      smallest one the number points to.
+- [ ] Nothing that calls into the system is asked once per line, per entry or
+      per byte. The length of a stream, whether a path exists, the attributes
+      of an entry are asked once per chunk or per directory and handed on. The
+      length of a file opened for shared writing costs a call each time it is
+      read.
+- [ ] A loop over bytes makes no `Seq`, no slice of an array and no other
+      allocation per byte or per pair. It is a recursion, or the loop §4 allows.
+- [ ] Work is linear in the data. Nothing rebuilds the whole on every tick,
+      appends to a list with `@` inside a loop, or walks a list for what a map
+      or a set answers.
+- [ ] A transition and a render cost what changed, not what a panel lists.
+- [ ] A report of progress overwrites what the last one said; it never queues a
+      call per file.
+- [ ] Nothing that reads a disk for longer than a moment runs on the UI thread
+      (§9), and nothing that starts with the application holds back the first
+      screen.
+- [ ] An archive is opened once for a walk, not once per entry, and an entry is
+      streamed where its format allows; where one is buffered whole,
+      [Archives](Architecture/ARCHIVES.md) says why.
+- [ ] A cache earns its place by a measurement, and falls under §4.
+
+## 11. Before handing work back
 
 - [ ] `dotnet build Marbas.slnx` is clean and `dotnet test Marbas.slnx` is green.
 - [ ] `dotnet fantomas --check Marbas Marbas.Tests` changes nothing.
+- [ ] A change on a hot path (§10) was timed before and after, and the rows are
+      in [Measurements](Progress/MEASUREMENTS.md).
 - [ ] No comment, no primed alias, no boolean parameter, no new `with _ ->` was
       added.
 - [ ] Every new name says what it answers, and every boundary is in the name.

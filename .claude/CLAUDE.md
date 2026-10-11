@@ -46,5 +46,10 @@ CI fails on any file `dotnet fantomas --check Marbas Marbas.Tests` would change.
   `Adapters/` holds the real ones and `Adapters/Dependencies.fs` wires them,
   `Program.fs` only starts the application. Only `Adapters` may touch the
   operating system directly.
+- **Mind the hot paths.** A key in a panel, a directory listed and sorted,
+  the viewer, copying and moving, deleting, searching by name and by text — on
+  disk and inside archives — must not get slower. Time a change there before
+  and after, and never ask the system once per line, entry or byte. The paths
+  and the rules are §10 of `_documentation/coding-style-conventions.md`.
 - Work task by task, in plan order, keeping the application runnable after
   each one.

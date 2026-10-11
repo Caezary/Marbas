@@ -111,6 +111,9 @@ Keep the build outputs apart from the Windows ones with
   explaining goes into `_documentation/*.md`.
 - Dependencies flow downward only: `Adapters` → `Ui` → `State` → `Messages` →
   `FileSystem` → `Domain`.
+- Mind the hot paths — a key in a panel, a listing, the viewer, a copy or a
+  move, a search, on disk and inside archives: a change there is timed before
+  and after ([Coding style](coding-style-conventions.md), §10).
 
 ## Flat decisions
 
