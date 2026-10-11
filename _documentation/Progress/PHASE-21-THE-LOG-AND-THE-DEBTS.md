@@ -653,3 +653,83 @@ fold answers, and four are new — every entry folded, a walk broken by its own
 step answering what it reached and why, a file that is no archive breaking the
 walk where it began, and `fold` raising what broke it. 3965 pass and 16 skip
 on Windows.
+
+**P21.15 put what a view remembers into one value.** The viewer's content view,
+the results window and the settings popup each hold one immutable record in one
+`let mutable` — `ViewerState`, `ResultsState`, `SettingsForm` — and what a key,
+a tick or a button does is a function over that record, in a module of `Ui`
+compiled before the view. The views are left with reading the toolkit, storing
+what the module answers and drawing. `ResultRow.following` is a fold. How the
+pieces fit, and why, is in
+[What a view remembers](../Architecture/UI-AND-INPUT.md#what-a-view-remembers).
+
+Six things went differently from the plan, or further than it.
+
+- **`ResultRow` has no cell at all.** The plan listed it among the views; it is
+  one function that gathered rows into a `ResizeArray` beside a mutable
+  variable, and a fold answers the same list. Its ten tests pass unchanged.
+- **More went into the records than the mutable locals.** `ResultsView` also
+  had three settable properties — the width its lines were written for, the
+  collection the list shows and the landing chosen — and `FileViewer.create`
+  kept the last text and the last bytes searched for in two reference cells
+  outside `ContentView`. With those left out each view would have had its one
+  cell and others beside it. The width, the landing and the two queries are
+  fields now.
+- **The list's collection is in no record and no cell.** It is a
+  `Terminal.Gui` collection the `ListView` already holds, and
+  `ListView.Source.ToList()` hands back that same object, which a script
+  against the 2.4.17 assembly confirmed before the window relied on it. `add`
+  asks the list for it.
+- **The viewer's memo of its rows is gone.** It was a cache and so a second
+  cell, and it could not join the record without every read answering a new
+  state. The draw lays the screenful out once and marks the match on those
+  rows; the header's percentage lays it out once more. What that costs — four
+  microseconds a key in text, a fifth of a millisecond in the dump — is in
+  [Measurements](MEASUREMENTS.md#a-screenful-laid-out-twice-p2115-2026-10-11).
+- **Two variables turned out to be derived.** Where the last hit lives is the
+  head of the hits, kept newest first so that a tick stays linear, and which
+  row fills the settings fields carries its own role. Neither is a field.
+- **The size of the screen is an argument.** `ViewerState` is handed a `Size`
+  the view reads off its viewport at each call; kept in the record it would
+  have been a copy to keep in step with every layout.
+
+Three choices were made along the way.
+
+- **The names of the three modules are not alike.** `ViewerState` and
+  `ResultsState` are named as `PanelState` and `AppState` are;
+  `SettingsForm` is named as `MenuEntryForm` beside it is, and
+  `SettingsState` would have read as the state of the settings themselves.
+- **The views kept the members their tests read.** `ContentView` still answers
+  `Top`, `Left`, `Mode`, `Rows()` and the rest, each one line over its state,
+  and `ResultsWindow` and `SettingsDialog` the functions the adapters call. The
+  members only `create` used — `Run`, `ReadAs`, `Show`, the four places a
+  search starts from — are gone, and `create` calls `ViewerState`.
+- **The rule is in [Coding style](../coding-style-conventions.md), and four
+  views do not meet it yet.** `FavoritesDialog`, `HistoryDialog`,
+  `UserMenuDialog` and the panel's `PanelView` each keep two or three settable
+  properties. They were not on the plan's list and were left as they are.
+
+The tests were written first and failed first only in the sense that nothing
+they named existed; once the modules were written every one passed at the first
+run. So five transitions were broken on purpose to see the suite notice: a tick
+prepended without being turned round, `Esc` not remembered as having asked for
+a stop, the wrap keeping its column, a new code page keeping the marked match,
+and a row filling the fields while the lists are written. Six tests failed,
+each named for the rule that was broken, and passed again once the five lines
+were put back.
+
+The screens are unchanged by probe. Forty scenes were rendered with the
+`render-tui-screen` probe from one `Program.fs`, built against the code before
+the change and again after it: twenty-one of the viewer — text, wrapped, the
+dump, a narrow screen, both ends, a match found forwards, again and backwards,
+bytes found the same three ways, a code page chosen in each mode — eight of the
+results window, walking, finished, stopped by `Esc`, narrowed and opened again,
+and eleven of the settings popup, adding by the button and by `Enter`, removing,
+filling the fields from each list and from the executable under the cursor.
+Every screen as text, every run of colour on every row, and what each scene
+answered at its end — the place, the mode, the answer of the window, the
+programs of the popup — came out the same to the byte.
+
+The suite gained 133 tests: 68 on `ViewerState`, 37 on `ResultsState` and 28
+on `SettingsForm`, none of which builds a view. No test that was there before
+was changed — 4098 pass and 16 skip on Windows.

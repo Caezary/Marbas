@@ -13,17 +13,16 @@ type ResultRow =
     | Hit of FindHit
 
 let following (lastLocation: PanelLocation option) (hits: FindHit seq) =
-    let rows = ResizeArray<ResultRow>()
-    let mutable standing = lastLocation
-
-    for hit in hits do
-        if standing <> Some hit.Location then
-            rows.Add(GroupHeader hit.Location)
-            standing <- Some hit.Location
-
-        rows.Add(Hit hit)
-
-    List.ofSeq rows
+    hits
+    |> Seq.fold
+        (fun (newestFirst, standing) hit ->
+            if standing = Some hit.Location then
+                Hit hit :: newestFirst, standing
+            else
+                Hit hit :: GroupHeader hit.Location :: newestFirst, Some hit.Location)
+        ([], lastLocation)
+    |> fst
+    |> List.rev
 
 let describe (fs: IFileSystem) width row =
     match row with

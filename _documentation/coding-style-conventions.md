@@ -131,7 +131,7 @@ schedules the fix. A rule here beats a habit found in an older file.
       zip entry's date, a stream's position — is a call into that library, not a
       binding of ours, and the rule does not count it.
 - [ ] `Ui` is outside the rule: a view holds what is on screen. What a view
-      keeps is its own subject.
+      keeps is the subject of §9.
 - [ ] A function that grows past one screen has lost a seam — lift the inner
       walk out with explicit inputs and an explicit result.
 - [ ] Partial access (`.Value`, `List.head`, `Seq.pick`) only where the type
@@ -217,6 +217,9 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] One test module per module under test, mirroring the folder layout.
 - [ ] A fake overrides one field of the dependencies record, or subclasses
       `MockFileSystem`; the whole interface is never stubbed by hand.
+- [ ] What a view remembers is tested on its record, with no view built: one
+      test per transition in `Ui/`, beside the tests that press keys on the
+      real view in `Integration/`.
 - [ ] Paths in an arrange block are built with `Root.at`, so one suite runs on
       both platforms.
 - [ ] Assertions name the behaviour, not the implementation: a test that breaks
@@ -238,6 +241,18 @@ schedules the fix. A rule here beats a habit found in an older file.
       and what was measured is a row in `Architecture/CROSS-PLATFORM.md`.
 - [ ] Dialogs wear the classic scheme through `DialogStyle`; no view sets its
       own colours.
+- [ ] A view that remembers anything between two events keeps it in one
+      immutable record behind one `let mutable` — `ViewerState`,
+      `ResultsState`, `SettingsForm` — and every change is a function over
+      that record in a module compiled before the view, which opens no
+      `Terminal.Gui` namespace. A handler reads what the toolkit knows, asks
+      the module for the next value and stores it; it decides nothing itself.
+      The views that still keep two or three settable properties —
+      `FavoritesDialog`, `HistoryDialog`, `UserMenuDialog`, `PanelView` — are
+      held to this when they are next changed.
+- [ ] What a widget already holds — the text of a field, the cursor of a list,
+      the collection a list shows — is read from the widget when it is needed
+      and is not copied into a second place.
 - [ ] Long work does not run on the UI thread: it is an effect behind
       `Runners.Batch`, with a progress window and `Esc`.
 

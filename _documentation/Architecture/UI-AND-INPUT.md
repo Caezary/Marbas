@@ -501,8 +501,10 @@ and a middle dot — both CP437 — so a checked flag reads at a glance and an
 unchecked one still shows where the box is.
 
 **The settings popup keeps its own working copy, so it needs no nested modal.**
-`SettingsDialog.SettingsView` holds a `ProgramSettings` in a field and edits it
-in place: the extension and program fields plus `Add` make one association
+`SettingsDialog.SettingsView` holds a `SettingsForm` — the `ProgramSettings`
+being edited and the little the popup remembers beside them
+([What a view remembers](#what-a-view-remembers)) — and every edit answers the
+next one: the extension and program fields plus `Add` make one association
 (`ProgramSettings.associate`, which replaces an extension already known in that
 role), `Remove` takes the extension in the field back out, and moving the cursor
 in either list fills both fields from the row under it. A second dialog for adding a row
@@ -1000,9 +1002,10 @@ eighty-column terminal.
 fixed order, with the cursor on the one in use. The viewer does not run the
 popup itself; its ports carry a `CodePageOffer -> CodePage option`, and
 `Prompts.showFile` passes one that runs the dialog on the application. A test
-hands it an answer instead. What is chosen lives in
-`ContentView` — `CodePage`, and the `TextEncoding` it reads as — and nowhere
-else, so it dies with the window and the next `F3` settles the encoding afresh.
+hands it an answer instead. What is chosen lives in the `ViewerState` the
+`ContentView` holds — `CodePage`, and the `TextEncoding` it reads as — and
+nowhere else, so it dies with the window and the next `F3` settles the encoding
+afresh.
 The header names the encoding the content reads as, so it says `CP852` once
 CP852 is chosen and what detection found while `Auto` is.
 
@@ -1127,6 +1130,92 @@ rows, but the top of the screen is always the start of a line — a page down
 advances by however many lines the screen held (`ViewerScroll.filling`), not by
 a row count. That keeps the line index the one measure of position, and it is
 what a wrapped page up and a percentage in the header are both counted from.
+
+## What a view remembers
+
+**A view keeps what it remembers in one value.** Three views remember something
+between two events: the viewer its mode, its wrap, its place, the code page, the
+match it marked and the last thing searched for; the results window its hits,
+its rows, the counts, where the walk is and how it ended; the settings popup its
+working copy. Each held that in a handful of mutable locals, written from
+several handlers, so the only way to ask what a key does was to build the view
+and press it. Each now holds one immutable record in one `let mutable` —
+`ViewerState`, `ResultsState`, `SettingsForm` — and the changes are functions
+over that record, in a module of `Ui` compiled before the view that opens no
+`Terminal.Gui` namespace. A handler reads what only the toolkit knows (the
+size of the viewport, the cursor of a list, the text of a field), asks the
+module for the next value and stores it. `ResultRow.following`, the fourth
+place the mutation sat, is a fold and holds nothing.
+
+**The view still answers what a test of the view asks.** `ContentView` keeps
+`Top`, `Left`, `Mode`, `Wrap`, `CodePage`, `Encoding`, `Rows()`,
+`FoundOnScreen()`, `Place` and `Percent`, each one line over its state, and
+the functions of `ResultsWindow` and `SettingsDialog` that the adapters call
+are the ones they were. So the tests that press keys on a real view passed
+unchanged, which is what says the move changed nothing a user can reach.
+
+**The size of the screen is handed in, not kept.** Half of what the viewer
+decides depends on the viewport — a page, the end, how far across a line goes,
+whether a match is on screen. `ViewerState` takes it as an argument, a
+`System.Drawing.Size` the view reads off its viewport at each call, never
+below one by one. Kept in the record it would be a second copy of something
+Terminal.Gui already knows, to be refreshed on every layout and wrong the one
+time it was not. `ResultsState` does keep a width, because there it means
+something else: the width its lines were last written for, which the window
+compares with the list to know when to write them again.
+
+**The line index sits in the record though it is not immutable inside.**
+`LineIndex.Index` scans as far as it is asked and remembers what it scanned.
+That is a cache in the sense of
+[Coding style](../coding-style-conventions.md) — it answers the same with what
+it has kept and without — so a `ViewerState` that holds one still reads the
+same however often it is read, and choosing a code page puts a new index into
+a new record instead of resetting the old.
+
+**The viewer no longer remembers the rows it laid out.** `ContentView` used to
+keep the screenful it had computed, keyed by everything it depends on, so the
+header's percentage and the draw that follows shared one. That was a second
+cell, and what it saved never reached the file. The draw now lays the screenful
+out once and marks the match on those rows, the header lays it out once more,
+and [Measurements](../Progress/MEASUREMENTS.md#a-screenful-laid-out-twice-p2115-2026-10-11)
+has what the second one costs.
+
+**A change that also answers something answers both.** `ResultsState.arrived`
+answers the rows a tick adds beside the next state, because the window appends
+exactly those to the list, and `ResultsState.leaving` answers whether `Esc`
+stops the walk or closes the window. `ResultsView.Step` stores the one and
+hands back the other; `Change` is for a function that answers the state alone.
+A change that may turn out to be none answers an option —
+`SettingsForm.associating` when either field is blank, `forgetting` when no
+extension is typed — so the popup rewrites its lists only when something
+changed, as it did before.
+
+**The hits are kept newest first, behind a private representation.** A tick
+appends, and appending to an immutable list copies it, which over a long walk
+is the quadratic cost [Finding files](FINDING-FILES.md) took out of the window.
+`ResultsState` therefore conses each tick onto the front and reverses when it
+is read — `hits`, `rows`, `rowAt` — which happens on a key or a resize, not on
+a tick. The fields are private so that nothing outside the module can read a
+list the wrong way round. Where the last hit lives, which the window used to
+track in a variable of its own, is the head of that list.
+
+**What a widget holds is read from the widget.** The results window kept a
+reference to the collection its `ListView` shows, and replaced it on a resize.
+`ListView.Source.ToList()` hands that same collection back, so `add` asks the
+list for it and appends; there is no second reference to keep in step. The
+cursor of the list and the text of the settings fields were always read that
+way.
+
+**A guard against a handler re-entering is state like any other.** Writing the
+two lists of the settings popup moves their cursors, and a moved cursor fills
+the fields with the row under it — which, after `Add`, would overwrite what was
+just typed. The popup held a flag while it wrote. The flag is `Lists` in
+`SettingsForm` now, `WritingLists` or `ListsWritten`, and
+`SettingsForm.chosen` answers no association while the lists are being
+written, so the rule is one a test can state. Which of the two program fields
+the executable under the panel cursor fills was a reference to a `TextField`;
+it is `IntoDefaultEditor` or `IntoProgram`, and the view turns that into the
+field.
 
 ## Measuring what a terminal delivers
 

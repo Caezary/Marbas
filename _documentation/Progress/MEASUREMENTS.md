@@ -264,3 +264,38 @@ Detection is more than its one mutable loop — the probe is also examined for a
 wide encoding and for a zero byte — and a search for text runs all of it twice
 per file, once for the encoding and once for whether the file is binary.
 Both are entries in [Rough edges](../ROUGH-EDGES.md) now.
+
+## A screenful laid out twice (P21.15, 2026-10-11)
+
+The viewer's content view kept the rows it had last laid out, keyed by the
+encoding, the mode, the wrap, the top, the left and the size, so that the
+percentage in the header and the draw after it shared one screenful. P21.15
+gathers what a view keeps into one record behind one cell, and that memo was a
+second cell. To know what taking it out costs, a probe built in Release timed
+`ViewerState` over a real file on disk — 120 lines, 7.7 KB, a screen of 100 by
+22, one page down from the start — 20 000 rounds a row, the range of three
+runs. A refresh is what one key costs once the state has moved: the percentage,
+which lays the screenful out, then the screenful again for the draw and the
+marks on it.
+
+| What | Microseconds |
+|---|---|
+| text, one screenful | 4.2–4.5 |
+| text, a refresh | 13.7–15.2 |
+| wrapped text, one screenful | 4.2–4.4 |
+| wrapped text, a refresh | 16.7–16.8 |
+| hex, one screenful | 221–222 |
+| hex, a refresh | 383–388 |
+
+**The memo saved one screenful a key, and that is what a key now costs more.**
+Four microseconds in text and a fifth of a millisecond in the dump: at the
+thirty keys a second a held key repeats, under one percent of the time between
+two of them. The memo was not kept in any form. The draw used to ask for the
+rows a second time to mark the match on them; it now marks the rows it has
+just laid out, so the screenful is laid out twice a key and not three times.
+
+**The dump costs fifty times the text.** A row of the dump is read from the
+file when it is laid out, sixteen bytes and three on either side, where a line
+of text comes out of the lines the index has already decoded. That difference
+was seen, not taken apart: at a fifth of a millisecond a screenful nobody waits
+on it.

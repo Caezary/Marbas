@@ -22,97 +22,21 @@ let SummaryId = "resultsSummary"
 [<Literal>]
 let KeyBarId = "resultsKeyBar"
 
-let private nothing =
-    { Files = 0
-      Directories = 0
-      Skipped = 0 }
-
-let private countsOf (hits: FindHit seq) =
-    let kind wanted =
-        hits |> Seq.filter (fun hit -> hit.Entry.Kind = wanted) |> Seq.length
-
-    { Files = kind DirectoryListing.File
-      Directories = kind DirectoryListing.Directory
-      Skipped = 0 }
-
 type ResultsView(fs: IFileSystem, run: SearchRun) =
     inherit Window(Width = Dim.Fill(), Height = Dim.Fill())
 
-    let found = ResizeArray<FindHit>()
-    let shown = ResizeArray<ResultRow.ResultRow>()
-    let mutable lastLocation: PanelLocation option = None
-    let mutable counts = nothing
-    let mutable directory = ""
-    let mutable ended: FindOutcome option = None
-    let mutable asked = false
+    let mutable state = ResultsState.start run
 
-    let reopened =
-        match run with
-        | Walk _ -> None
-        | Reopen(results, gone) -> Some(results, gone)
+    member _.FileSystem = fs
 
-    let lastLocationAfter (hits: FindHit list) =
-        hits |> List.tryLast |> Option.map _.Location |> Option.orElse lastLocation
+    member _.State = state
 
-    do
-        match run with
-        | Walk _ -> ()
-        | Reopen(results, _) ->
-            found.AddRange results.Hits
-            shown.AddRange(ResultRow.following None results.Hits)
-            lastLocation <- lastLocationAfter results.Hits
-            counts <- countsOf results.Hits
-            ended <- Some results.Outcome
+    member _.Change(change: ResultsState -> ResultsState) = state <- change state
 
-    member val Room = 0 with get, set
-
-    member val Lines = ObservableCollection<string>() with get, set
-
-    member val Landing: FindLanding option = None with get, set
-
-    member _.Hits = List.ofSeq found
-
-    member _.Rows = List.ofSeq shown
-
-    member _.RowAt index =
-        if index >= 0 && index < shown.Count then
-            Some shown[index]
-        else
-            None
-
-    member _.Running = Option.isNone ended
-
-    member _.Asked = asked
-
-    member _.Ask() = asked <- true
-
-    member _.Arrived(reports: FindReport list) =
-        let hits = reports |> List.map _.Hit
-        let rows = ResultRow.following lastLocation hits
-
-        found.AddRange hits
-        shown.AddRange rows
-        lastLocation <- lastLocationAfter hits
-        reports |> List.tryLast |> Option.iter (fun report -> counts <- report.Counts)
-
-        rows
-
-    member _.Progress =
-        match reopened, ended with
-        | Some(results, gone), _ ->
-            FindSummary.Reopened(QueryText.describe results.Query, QueryText.where fs results.Ground, counts, gone)
-        | None, Some outcome -> FindSummary.Done outcome
-        | None, None -> FindSummary.Walking(directory, counts)
-
-    member _.Ran = run
-
-    member _.Outcome = ended |> Option.defaultWith (fun () -> Stopped counts)
-
-    member _.Walking(place: string) = directory <- place
-
-    member _.Ended(outcome: FindOutcome) = ended <- Some outcome
-
-    member _.Describe width row = ResultRow.describe fs width row
+    member _.Step(step: ResultsState -> 'answer * ResultsState) =
+        let answer, next = step state
+        state <- next
+        answer
 
 let list (window: ResultsView) = SubView.byId<ListView> ListId window
 
@@ -120,63 +44,48 @@ let summary (window: ResultsView) = SubView.byId<View> SummaryId window
 
 let keyBar (window: ResultsView) = SubView.byId<View> KeyBarId window
 
+let private shownLines (window: ResultsView) =
+    (list window).Source.ToList() :?> ObservableCollection<string>
+
+let private cursor (window: ResultsView) =
+    (list window).SelectedItem |> Option.ofNullable |> Option.defaultValue 0
+
 let private updateSummary (window: ResultsView) =
-    (summary window).Text <- FindSummary.describe window.Progress
+    (summary window).Text <- ResultsState.progress window.FileSystem window.State |> FindSummary.describe
 
 let private repaint (window: ResultsView) =
     let view = list window
-    let standing = view.SelectedItem |> Option.ofNullable |> Option.defaultValue 0
-    window.Room <- max 1 view.Viewport.Width
-    window.Lines <- ObservableCollection(window.Rows |> List.map (window.Describe window.Room))
-    view.SetSource window.Lines
+    let standing = cursor window
+    window.Change(ResultsState.laidOut (max 1 view.Viewport.Width))
+    let lines = ObservableCollection(ResultsState.lines window.FileSystem window.State)
+    view.SetSource lines
 
-    if window.Lines.Count > 0 then
-        view.SelectedItem <- max 0 (min standing (window.Lines.Count - 1))
+    if lines.Count > 0 then
+        view.SelectedItem <- max 0 (min standing (lines.Count - 1))
 
     updateSummary window
     view.SetNeedsDraw()
 
-let private rowUnderCursor (window: ResultsView) =
-    let standing =
-        (list window).SelectedItem |> Option.ofNullable |> Option.defaultValue 0
-
-    window.RowAt standing
-
 let private viewRow (window: ResultsView) (view: FindHit -> unit) =
-    match rowUnderCursor window with
-    | Some(ResultRow.Hit hit) when hit.Entry.Kind = DirectoryListing.File -> view hit
-    | _ -> ()
+    ResultsState.viewableAt (cursor window) window.State |> Option.iter view
 
-let private standOn (window: ResultsView) (close: Window -> unit) =
-    match rowUnderCursor window with
-    | None -> ()
-    | Some row ->
-        window.Landing <-
-            match row with
-            | ResultRow.Hit hit -> Some(AtHit hit)
-            | ResultRow.GroupHeader location -> Some(At(Into location))
-
-        close window
-
-let private sendToPanel (window: ResultsView) (close: Window -> unit) =
-    window.Landing <- Some InPanel
+let private landOn (window: ResultsView) (close: Window -> unit) landing =
+    window.Change(ResultsState.landed landing)
     close window
 
+let private standOn (window: ResultsView) (close: Window -> unit) =
+    ResultsState.landingAt (cursor window) window.State
+    |> Option.iter (landOn window close)
+
+let private sendToPanel (window: ResultsView) (close: Window -> unit) = landOn window close InPanel
+
 let answer (window: ResultsView) =
-    { Landing = window.Landing
-      Results =
-        { Query = SearchRun.query window.Ran
-          Ground = SearchRun.ground window.Ran
-          Hits = window.Hits
-          Outcome = window.Outcome
-          Cursor = (list window).SelectedItem |> Option.ofNullable |> Option.defaultValue 0 } }
+    ResultsState.answer (cursor window) window.State
 
 let private leave (window: ResultsView) (stop: unit -> unit) (close: Window -> unit) =
-    if window.Running && not window.Asked then
-        window.Ask()
-        stop ()
-    else
-        close window
+    match window.Step ResultsState.leaving with
+    | StopsWalk -> stop ()
+    | ClosesWindow -> close window
 
 let create (fs: IFileSystem) (run: SearchRun) (view: FindHit -> unit) (stop: unit -> unit) (close: Window -> unit) =
     let window = new ResultsView(fs, run)
@@ -218,7 +127,7 @@ let create (fs: IFileSystem) (run: SearchRun) (view: FindHit -> unit) (stop: uni
     FunctionKeyBar.label bar FindKeys.bar
 
     window.SubViewsLaidOut.Add(fun _ ->
-        if (list window).Viewport.Width <> window.Room then
+        if (list window).Viewport.Width <> ResultsState.room window.State then
             repaint window)
 
     hits.SetFocus() |> ignore
@@ -231,16 +140,19 @@ let create (fs: IFileSystem) (run: SearchRun) (view: FindHit -> unit) (stop: uni
     window
 
 let add (window: ResultsView) (reports: FindReport list) =
-    for row in window.Arrived reports do
-        window.Lines.Add(window.Describe window.Room row)
+    let lines = shownLines window
+    let room = ResultsState.room window.State
+
+    for row in window.Step(ResultsState.arrived reports) do
+        lines.Add(ResultRow.describe window.FileSystem room row)
 
     updateSummary window
     (list window).SetNeedsDraw()
 
 let walking (window: ResultsView) (directory: string) =
-    window.Walking directory
+    window.Change(ResultsState.walking directory)
     updateSummary window
 
 let finish (window: ResultsView) (outcome: FindOutcome) =
-    window.Ended outcome
+    window.Change(ResultsState.ended outcome)
     updateSummary window

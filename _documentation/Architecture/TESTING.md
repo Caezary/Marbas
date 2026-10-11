@@ -457,6 +457,16 @@ compares strings, which is how scrolling, wrapping, the hex switch and a
 UTF-16 file are all covered without a terminal. A view that painted straight
 from its own state inside the override would be untestable here.
 
+**What a view remembers is tested without the view.** The viewer, the results
+window and the settings popup each keep their state in one record, and what a
+key or a tick does to it is a function of `ViewerState`, `ResultsState` or
+`SettingsForm`. Those are tested in `Ui/` like any pure module — a
+`MockFileSystem` for the file the viewer reads, a `Size` for its screen, no
+`BeginInit`, no layout — one test per transition. The tests in
+`Integration/` that press a key on the real view stay beside them: they hold
+the wiring, which is all a view is left with, and they are what passed
+unchanged when the state moved out.
+
 **Colours are asserted as schemes, never as pixels.** There is no driver in a
 test, so nothing can read back what was painted. What a test can assert is the
 `Scheme` a view resolves to — `view.GetScheme()` — and the attributes the scheme

@@ -276,6 +276,7 @@ Marbas/
       CodePageDialog.fs     the `F8` popup: Auto and every code page, one to choose
       FoundSpan.fs          a row on screen, and the columns a match covers on it
       ViewerSearch.fs       what `F7` offers, the history it reads, and what it reports
+      ViewerState.fs        where the viewer stands and what it marked; every move answers the next one
       FileViewer.fs         the viewer itself: header, rows, bar
     Dialogs/              the modal popups, each one built where a test can lay it out
       PromptDialog.fs       single-field text prompt (label + default), plain or secret
@@ -284,6 +285,7 @@ Marbas/
       AssociationRow.fs     one extension and its program -> one row of the list
       HandlerRow.fs         one program the system knows -> one row of the list
       PropertiesDialog.fs   what `F4` shows for a directory, and writes back
+      SettingsForm.fs       the popup's working copy of the programs; every edit answers the next one
       SettingsDialog.fs     the default editor and the associations, one list per role
       OpenWithDialog.fs     which program opens this file, and whether to remember it
       PackDialog.fs         what `Shift+F1` asks before an archive is written
@@ -305,6 +307,7 @@ Marbas/
       FindKeys.fs           its keys and its twelve bar labels
       FindSummary.fs        the walk so far, or its outcome -> the summary line
       ResultRow.fs          hits -> header and hit rows, grouped by where they live
+      ResultsState.fs       what the window was told so far; every tick and key answers the next one
       ResultsWindow.fs      the window: list, summary, bar, and the answer it gives
     App/                  the screen as a whole and the composition root
       CursorInfo.fs         cursor entry -> status line text

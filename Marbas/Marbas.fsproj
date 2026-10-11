@@ -192,6 +192,7 @@
         <Compile Include="Ui\Viewer\CodePageDialog.fs" />
         <Compile Include="Ui\Viewer\FoundSpan.fs" />
         <Compile Include="Ui\Viewer\ViewerSearch.fs" />
+        <Compile Include="Ui\Viewer\ViewerState.fs" />
         <Compile Include="Ui\Viewer\FileViewer.fs" />
     </ItemGroup>
 
@@ -204,6 +205,7 @@
         <Compile Include="Ui\Dialogs\HandlerRow.fs" />
         <Compile Include="Ui\Dialogs\OpenWithDialog.fs" />
         <Compile Include="Ui\Dialogs\PropertiesDialog.fs" />
+        <Compile Include="Ui\Dialogs\SettingsForm.fs" />
         <Compile Include="Ui\Dialogs\SettingsDialog.fs" />
         <Compile Include="Ui\Dialogs\PackDialog.fs" />
         <Compile Include="Ui\Dialogs\LinkDialog.fs" />
@@ -229,6 +231,7 @@
         <Compile Include="Ui\Find\FindKeys.fs" />
         <Compile Include="Ui\Find\FindSummary.fs" />
         <Compile Include="Ui\Find\ResultRow.fs" />
+        <Compile Include="Ui\Find\ResultsState.fs" />
         <Compile Include="Ui\Find\ResultsWindow.fs" />
     </ItemGroup>
 

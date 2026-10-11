@@ -190,7 +190,7 @@ bar: `Enter` stands on the row, `F2` sends the list to the panel, `F3` views a
 file, and `Esc` or `F10` leave — the first `Esc` stops a walk still running and
 leaves the list up, the next closes it.
 
-**The list is grouped by where a hit lives.** `ResultRow.following` is pure: a
+**The list is grouped by where a hit lives.** `ResultRow.following` is a fold: a
 header row spelling the directory — `C:\work\backup.zip\docs` for a level inside
 an archive — and its hits indented beneath it with the name, size and date. It
 takes the run already open and opens a new one only where the location changes,
@@ -208,7 +208,10 @@ whole list every tick cost H formats per tick, and a whole-disk search with
 200,000 hits was reformatting all of them twenty times a second by the end. The
 collection is replaced only when the panel changes width, which is the one event
 that invalidates every row, and the cursor's index is put back after it — the
-rows are the same rows in the same order, so the index is the identity.
+rows are the same rows in the same order, so the index is the identity. Which
+rows a tick adds is answered by `ResultsState.arrived`, and the window asks the
+list for its collection rather than keeping a reference of its own
+([What a view remembers](UI-AND-INPUT.md#what-a-view-remembers)).
 
 **The summary line is written on its own.** `walking` sets the directory and
 rewrites the one label; it no longer touches the rows. The counts it shows come
@@ -220,6 +223,8 @@ counts, in one place; the skipped entries, which the walking line used to leave
 at zero until the end, now show as they happen.
 
 **While the walk runs, the hits live in the window and not in the state.**
+The window keeps them in a `ResultsState` of its own, which is no part of
+`AppState`.
 `Runners.Search` is the port and `Adapters/SearchRunner` the only thing that knows a
 thread exists: the walk runs on a `Task` with the batches' `BatchControl`, hits
 are queued, and a timer on the UI thread drains the queue ten times a second —

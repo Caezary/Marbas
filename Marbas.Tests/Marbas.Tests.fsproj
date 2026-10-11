@@ -220,6 +220,7 @@
     <Compile Include="Ui\Viewer\FoundSpanTests.fs" />
     <Compile Include="Ui\Viewer\HexMarkTests.fs" />
     <Compile Include="Ui\Viewer\ViewerSearchTests.fs" />
+    <Compile Include="Ui\Viewer\ViewerStateTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -232,11 +233,13 @@
     <Compile Include="Ui\Dialogs\UserMenuRowTests.fs" />
     <Compile Include="Ui\Dialogs\MenuEntryFormTests.fs" />
     <Compile Include="Ui\Dialogs\MenuRemovalTests.fs" />
+    <Compile Include="Ui\Dialogs\SettingsFormTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="Ui\Find\FindSummaryTests.fs" />
     <Compile Include="Ui\Find\ResultRowTests.fs" />
+    <Compile Include="Ui\Find\ResultsStateTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

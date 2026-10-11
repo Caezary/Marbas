@@ -582,9 +582,13 @@ row at an absolute offset, `PrintableText.describe` turns tabs and control
 characters into something a terminal can draw, `LineWrap` cuts a line into the
 rows it takes or the window shown of it, `ViewerScroll` clamps a move and
 measures how many lines fill a page, and `ViewerHeader.describe` lays the top
-bar out to a width. `FileViewer.ContentView` holds the mutable place — mode,
-wrap, top row, left column — and exposes `Rows()`, the very list it draws, so
-a test asserts on what the screen would show without a driver painting one.
+bar out to a width. Where the viewer stands — mode, wrap, top row, left
+column, and what a search marked — is a `ViewerState`, and every move is a
+function of `ViewerState` that answers the next one;
+`FileViewer.ContentView` holds the current one and exposes `Rows()`, the very
+list it draws, so a test asserts on what the screen would show without a
+driver painting one
+([What a view remembers](UI-AND-INPUT.md#what-a-view-remembers)).
 
 **Closing the viewer is injected, because `RequestStop` needs a running app.**
 `Runnable.RequestStop` does nothing unless the window is being run by an

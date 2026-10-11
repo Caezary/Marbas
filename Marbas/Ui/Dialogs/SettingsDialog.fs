@@ -56,8 +56,7 @@ let private SectionHeight = 4
 type SettingsView(programs: ProgramSettings, candidate: ProgramPath option) as this =
     inherit Dialog()
 
-    let mutable associated = programs
-    let mutable refreshing = false
+    let mutable form = SettingsForm.start programs
 
     let defaultEditor =
         new TextField(
@@ -101,8 +100,6 @@ type SettingsView(programs: ProgramSettings, candidate: ProgramPath option) as t
 
     let fromCursor = DialogStyle.button CandidateLabel
 
-    let mutable target = defaultEditor
-
     let listing section =
         match section with
         | ForEditing -> editing
@@ -119,25 +116,30 @@ type SettingsView(programs: ProgramSettings, candidate: ProgramPath option) as t
         else
             ForOpening
 
+    let targeted () =
+        match form.Target with
+        | IntoDefaultEditor -> defaultEditor
+        | IntoProgram -> program
+
     let showing section =
-        ProgramSettings.inRole section associated
-        |> List.map AssociationRow.describe
+        SettingsForm.rows section form
         |> ObservableCollection
         |> (listing section).SetSource
 
     let show () =
-        refreshing <- true
+        form <- SettingsForm.refreshing form
         showing ForEditing
         showing ForOpening
-        refreshing <- false
+        form <- SettingsForm.settled form
 
-    let fill section index =
-        match ProgramSettings.inRole section associated |> List.tryItem index with
-        | Some association ->
-            extension.Text <- FileExtension.value association.Extension
-            program.Text <- ProgramPath.value association.Program
-            role.Value <- Nullable(position section)
-        | None -> ()
+    let changed next =
+        form <- next
+        show ()
+
+    let fill (association: ProgramAssociation) =
+        extension.Text <- FileExtension.value association.Extension
+        program.Text <- ProgramPath.value association.Program
+        role.Value <- Nullable(position association.Role)
 
     do
         this.Title <- Title
@@ -180,11 +182,8 @@ type SettingsView(programs: ProgramSettings, candidate: ProgramPath option) as t
         let associating (args: CommandEventArgs) =
             args.Handled <- true
 
-            match FileExtension.tryCreate extension.Text, ProgramPath.tryCreate program.Text with
-            | Some named, Some picked ->
-                associated <- ProgramSettings.associate (chosen ()) named picked associated
-                show ()
-            | _ -> ()
+            SettingsForm.associating (chosen ()) extension.Text program.Text form
+            |> Option.iter changed
 
         add.Accepting.Add associating
         extension.Accepting.Add associating
@@ -193,35 +192,31 @@ type SettingsView(programs: ProgramSettings, candidate: ProgramPath option) as t
         remove.Accepting.Add(fun args ->
             args.Handled <- true
 
-            match FileExtension.tryCreate extension.Text with
-            | Some named ->
-                associated <- ProgramSettings.forget (chosen ()) named associated
-                show ()
-            | None -> ())
+            SettingsForm.forgetting (chosen ()) extension.Text form |> Option.iter changed)
 
-        for field in [ defaultEditor; program ] do
+        for target, field in [ IntoDefaultEditor, defaultEditor; IntoProgram, program ] do
             field.HasFocusChanged.Add(fun _ ->
                 if field.HasFocus then
-                    target <- field)
+                    form <- SettingsForm.targeting target form)
 
         fromCursor.Accepting.Add(fun args ->
             args.Handled <- true
-            candidate |> Option.iter (fun picked -> target.Text <- ProgramPath.value picked))
+
+            candidate
+            |> Option.iter (fun picked -> (targeted ()).Text <- ProgramPath.value picked))
 
         for section in [ ForEditing; ForOpening ] do
             (listing section)
                 .ValueChanged.Add(fun args ->
-                    if not refreshing then
-                        fill section (args.NewValue.GetValueOrDefault 0))
+                    SettingsForm.chosen section (args.NewValue.GetValueOrDefault 0) form
+                    |> Option.iter fill)
 
         show ()
 
         this.AddButton(DialogStyle.button "_Cancel")
         this.AddButton(DialogStyle.button "_Ok")
 
-    member _.Programs =
-        { associated with
-            DefaultEditor = ProgramPath.tryCreate defaultEditor.Text }
+    member _.Programs = SettingsForm.answer defaultEditor.Text form
 
 let create (programs: ProgramSettings) (candidate: ProgramPath option) = new SettingsView(programs, candidate)
 
