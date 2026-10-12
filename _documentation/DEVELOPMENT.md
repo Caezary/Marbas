@@ -102,6 +102,15 @@ Keep the build outputs apart from the Windows ones with
 `-p:ArtifactsPath=/tmp/marbas`, and strip the escapes from the log with
 `sed -r 's/\x1b\[[0-9;?]*[a-zA-Z]//g'`.
 
+**What only a person can answer.** `_probes/ManualPass` is no program, only two
+scripts — `fixture.ps1` for Windows and `fixture.sh` for Linux — that build the
+directory the *manual* rows of the checklist are walked in: an entry of every
+kind a panel colours, archives made by other tools, trees dated in 2001 to see
+whether a date survived, programs that wait or print, and on Linux a directory
+without its `x` bit and one only root may write to. Each refuses a directory
+that is already there and removes nothing. The steps are in
+[The manual pass](Architecture/MANUAL-PASS.md).
+
 ## Working rules
 
 - Talk to the user in Polish; write everything in the repository in English.
@@ -242,4 +251,5 @@ the verb they share: `Update.requestIfChangeable`, `openCursorEntry`,
   - [Testing](Architecture/TESTING.md)
   - [Packaging](Architecture/PACKAGING.md)
   - [Cross-platform](Architecture/CROSS-PLATFORM.md)
+  - [The manual pass](Architecture/MANUAL-PASS.md)
 - [User guide](USER-GUIDE.md) — running Marbas and its keyboard shortcuts

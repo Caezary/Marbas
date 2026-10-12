@@ -1,13 +1,14 @@
 # Progress
 
-Status as of 2026-10-11. Phases and task numbers refer to [the plan](PLAN.md).
+Status as of 2026-10-12. Phases and task numbers refer to [the plan](PLAN.md).
 What each phase actually did is in [Progress/](Progress), one file per phase;
 what the application does today is in
 [What works today](Progress/WHAT-WORKS.md).
 
 ## Where we are
 
-**Twenty phases are complete** (161 of 161 tasks). Marbas
+**Twenty-one phases are complete** (179 of 179 tasks; the last of them,
+P21.18, without the rows that need a Linux desktop). Marbas
 runs as a full-screen two-panel file browser: both panels list a real directory,
 the keyboard moves between and inside them, entries can be marked one by one or
 by wildcard for later operations, a status line describes the entry under the
@@ -47,6 +48,16 @@ otherwise — colours, a resized terminal, a real permission bit, the mouse — 
 written up as the checklist in
 [Cross-platform](Architecture/CROSS-PLATFORM.md).
 
+**That checklist was walked by hand on 2026-10-12**, the published binaries of
+phase 21 in cmder on Windows and in gnome-terminal under WSLg on Linux, by the
+steps of [The manual pass](Architecture/MANUAL-PASS.md). Most rows hold as
+written. What does not is in [Rough edges](ROUGH-EDGES.md), and two of the
+findings are more than rough: on Linux the executable bit of a file is never
+read, so a program there is neither coloured nor started as one, and `Del` on
+the bottom row of the user menu ends the session on either system. The rows
+that need a Linux desktop — the GNOME key grabs, a file manager, an archive
+manager — were not walked: there was none to walk them on.
+
 | Phase | Tasks | State | Journal |
 |-------|-------|-------|---------|
 | 1 — Application skeleton | P1.1–P1.4 | done | — |
@@ -70,7 +81,7 @@ written up as the checklist in
 | 18 — The clipboard | P18.1–P18.7 | done | [journal](Progress/PHASE-18-THE-CLIPBOARD.md) |
 | 19 — The viewer finds and decodes | P19.1–P19.6 | done | [journal](Progress/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) |
 | 20 — The user menu | P20.1–P20.5 | done | [journal](Progress/PHASE-20-THE-USER-MENU.md) |
-| 21 — The log and the debts | P21.1–P21.18 | in progress (17 of 18) | [journal](Progress/PHASE-21-THE-LOG-AND-THE-DEBTS.md) |
+| 21 — The log and the debts | P21.1–P21.18 | done | [journal](Progress/PHASE-21-THE-LOG-AND-THE-DEBTS.md) |
 
 ## What works today
 

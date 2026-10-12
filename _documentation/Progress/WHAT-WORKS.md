@@ -67,6 +67,9 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   the system, which covers an executable, a document and a shortcut alike —
   Windows through the shell verb, so a console program gets a console of its
   own, and Linux through `xdg-open` unless the entry carries an execute bit.
+  That bit is not read off a real disk yet: on Linux a program is drawn as an
+  ordinary file, goes to `xdg-open` like one, and is told it is not a program
+  by `Alt+Shift+R`, as [Rough edges](../ROUGH-EDGES.md) records.
   On Windows a window program — the executable itself, or the program chosen
   for the extension — is started from its file with its output thrown away
   instead, so one such as VS Code cannot write its log over the panels; the
@@ -116,8 +119,9 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   keeps the choice as an `Opened with:` row for good. On a directory it opens
   the system's own file manager there, and on `..` the directory the panel is
   standing in.
-  `Shift+Enter` is bound to the same command, but Windows Terminal drops the
-  modifier and sends a bare `Enter`, so `Alt+R` is the one to press.
+  `Shift+Enter` is bound to the same command, but Windows Terminal and
+  gnome-terminal drop the modifier and send a bare `Enter`, so `Alt+R` is the
+  one to press.
 - `Alt+Shift+R` — the open-with key with one more modifier — runs the executable
   under the cursor with administrator rights: on Windows the `runas` verb, so
   the system asks before it starts anything, and a prompt turned down leaves

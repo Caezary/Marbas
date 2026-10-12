@@ -103,6 +103,7 @@ hooks described in [Diagnostics](DIAGNOSTICS.md).
 - [Testing](TESTING.md) — suite layout, conventions, Terminal.Gui pitfalls
 - [Packaging](PACKAGING.md) — publish profiles and the release pipeline
 - [Cross-platform](CROSS-PLATFORM.md) — what has to hold on Windows and Linux, and why
+- [The manual pass](MANUAL-PASS.md) — the rows of that checklist only a person can walk, step by step
 
 ## Code map
 

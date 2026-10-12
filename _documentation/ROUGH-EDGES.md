@@ -1,8 +1,8 @@
 # Rough edges
 
 What is known to be wrong, missing or merely awkward, and why it stands. Each
-entry was checked against the code on 2026-09-27, when phase 15 closed; none is
-scheduled by [the plan](PLAN.md). What is a deliberate design decision belongs
+entry was checked against the code on 2026-09-27, when phase 15 closed, and one
+found since says when and how; none is scheduled by [the plan](PLAN.md). What is a deliberate design decision belongs
 in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 
 ## Keys and the terminal
@@ -17,20 +17,22 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   `KeyMap`, which is a row in the table and a line in the user guide per key.
   Found by reading GNOME's defaults during P14.1, not by pressing them on a
   desktop — no one has run Marbas on one yet.
-- `Shift+Enter` does not reach the panel under Windows Terminal: the modifier is
-  dropped and the bare `Enter` *runs* the entry instead of asking what should
-  open it. `Alt+R` was added beside it and is the binding to use; the dead one
-  is kept because it is the traditional name and costs nothing where a terminal
-  does deliver it.
+- `Shift+Enter` does not reach the panel under Windows Terminal, nor under
+  gnome-terminal: the modifier is dropped and the bare `Enter` *runs* the entry
+  instead of asking what should open it. `Alt+R` was added beside it and is the
+  binding to use; the dead one is kept because it is the traditional name and
+  costs nothing where a terminal does deliver it.
 - `Ctrl+Alt+Enter` reaches the panel as nothing at all under Windows Terminal:
   `Alt+Enter` is its own full-screen toggle, and adding `Ctrl` does not get the
-  combination past it. `Alt+Shift+R` is the binding to use; the dead one is kept
-  for the same reason `Shift+Enter` is.
-- `Alt+W` and `Alt+Shift+R` have not been pressed on Linux yet. Both of
-  Terminal.Gui's key converters were asked by reflection and spell them the way
-  `KeyMap` does — the shift flag survives, so `Alt+Shift+R` cannot quietly
-  become `Alt+R` — but whether a given terminal hands the driver those
-  modifiers at all is still a manual row.
+  combination past it. Nothing arrives under gnome-terminal either.
+  `Alt+Shift+R` is the binding to use; the dead one is kept for the same reason
+  `Shift+Enter` is.
+- `Alt+F11` opens no tab in gnome-terminal under WSLg: the window goes full
+  screen and the key never arrives, so nothing there opens a second tab —
+  `KeyMap.newTabKey` is the one binding the command has. Seen in the manual
+  pass of 2026-10-12; whether the terminal or WSLg keeps the key was not told
+  apart, and `Alt+Shift+F11` could not be tried without a tab to close. The fix
+  is the shape the other keys got: a letter with `Alt` beside each of the two.
 - `Ctrl+H` toggles hidden entries only where the terminal reports it as a key
   rather than as the byte `0x08`, which no terminal outside the kitty keyboard
   protocol does. Under Windows Terminal it arrives as `Backspace` and does
@@ -40,10 +42,10 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   meaning some managers have without a `Ctrl+H` pressed elsewhere reaching it.
 - Whether the terminal delivers `Shift+↑` / `Shift+↓` / `Shift+PgUp` /
   `Shift+PgDn` as keys of their own is the driver's business, and no test
-  reaches it — the suite injects the key. It is a manual row in
-  [Cross-platform](Architecture/CROSS-PLATFORM.md), and `Shift+←` / `Shift+→` are
-  bound to the same two commands partly as a way round a terminal that drops the
-  shifted page keys.
+  reaches it — the suite injects the key. cmder and gnome-terminal do, by the
+  manual rows of [Cross-platform](Architecture/CROSS-PLATFORM.md); `Shift+←` /
+  `Shift+→` are bound to the same two commands partly as a way round a terminal
+  that drops the shifted page keys.
 - The bar gives each of `F1` … `F12` an equal slice of the terminal, so below
   about ninety columns the longer commands are clipped (`Quit` reads `Qui` at
   eighty, `NewFile` reads `New`). Shorter labels would fix the narrow case and
@@ -86,13 +88,20 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   the footer's count says the entry is marked. The classic look is the mark's
   yellow on the cursor's cyan, which is a third case in the `RowRender` handler,
   beside the cursor row it hands back and the marked rows it paints.
-- The entry colours and the rule under the listing are drawn by a driver no test
-  has, so what a test can say is which attribute `RowRender` hands back and
-  where the `Line` sits — not what the screen looks like. Both belong on the
-  manual row of [Cross-platform](Architecture/CROSS-PLATFORM.md), and bright blue
-  on the panel's blue background is the one to look at first. The screen can be
-  rendered into text without a terminal, which is how the entry above was
-  settled.
+- The rule under the listing does not join the panel border. It runs the width
+  of the listing and stops at the border on either side with no joint drawn —
+  `║────║` where the classic look is `╟────╢` — in cmder and in gnome-terminal
+  alike, so it is the drawing and not the terminal. The `Line` of `FilePanel`
+  lies inside the frame and the border is drawn by the frame's own adornment,
+  and Terminal.Gui joins two lines only where they cross on one canvas. Letting
+  the frame draw the rule, or drawing it onto the border's canvas, has not been
+  tried.
+- The entry colours are drawn by a driver no test has, so what a test can say is
+  which attribute `RowRender` hands back, not what the screen looks like. The
+  manual pass of 2026-10-12 looked, in cmder and in gnome-terminal: the kinds
+  are told apart — but for a program on Linux, which is the executable bit's
+  entry below and not the colour's — and bright blue reads on the panel's
+  blue. A terminal with a palette of its own is still for a person to look at.
 
 ## Archives
 
@@ -110,7 +119,24 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   disk never had. `ArchiveListing` reads keys the other way — only `/` starts a
   new level — so such an archive lists a directory that was never there. The fix
   is on the writing side, where the entry name would have to bypass
-  `ZipEntry`'s cleaning.
+  `ZipEntry`'s cleaning. Run on Linux on 2026-10-12: `unzip -l` names `a/b.txt`
+  and the panel shows a directory `a`.
+- A directory does not keep its time through an archive, in either direction.
+  Packing writes each directory entry with the moment of packing, in zip and in
+  tar alike, so every tool that unpacks it dates the directory to then; and
+  unpacking an archive whose directory entries do carry their times — one
+  `tar` wrote — leaves each directory dated at the unpacking. The files keep
+  theirs. Seen on both systems in the manual pass of 2026-10-12.
+- A file's time in a zip is the local time of the old two-second field and
+  nothing else, written and read. Marbas adds no field holding the exact
+  moment, so a tool that turns the local time back with today's offset from UTC
+  is an hour out across a change of daylight-saving time: a file of February
+  packed in October came out an hour early from Explorer's *Extract All* and
+  from `7z x`, on Windows and on Linux, and to the minute from `unzip` and
+  from a tar.gz. And it reads none: 7-Zip wrote that field with the offset of
+  the day it packed, with the exact moment beside it in an NTFS extra field,
+  and Marbas unpacked the file an hour late. Writing and reading the extra
+  field would close both.
 - A password only reaches zip. Tar and its compressed kinds have no notion of
   one, and 7z — which can encrypt its headers as well as its content — is
   created without one, because `ArchiveKind.carriesPassword` answers `true` for
@@ -138,6 +164,32 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 
 ## Running and editing
 
+- On Linux a file with its executable bit set is not a program to Marbas. It is
+  drawn as a plain file, `Enter` hands it to `xdg-open` instead of starting it,
+  and `Alt+Shift+R` says it is not a program. `DirectoryListing` and
+  `LaunchProcess` both read `IFileSystemInfo.UnixFileMode`, and the wrapper of
+  System.IO.Abstractions 22.2.0 does not pass the question on: asked under
+  .NET 10 for a file of mode `rwxrwxr-x` it answered `None`, where
+  `fs.File.GetUnixFileMode` and the runtime's own `FileInfo` answered the mode.
+  `MockFileSystem` holds whatever mode a test sets, so the suite never saw it;
+  the manual pass of 2026-10-12 did, with the published binary. What a listing
+  still draws as a program there is a name with one of the Windows extensions.
+  Reading the mode through `fs.File.GetUnixFileMode` would close it for a
+  launch; in a listing that is one more question per entry, on a hot path, and
+  wants timing first.
+- `Del` on the bottom row of the user menu ends the session. The removal is
+  written first, so the menu is right at the next start; then `fill` in
+  `UserMenuDialog` puts the cursor back on the index it had, which is past the
+  end of the shorter list, and `ListView` throws — on the last entry of all as
+  well, where there is no row left to stand on. The crash is in `marbas.log`.
+  Seen on both systems in the manual pass of 2026-10-12; no test removes the
+  bottom row.
+- On a Linux without `xdg-open` a document, a directory handed to the file
+  manager and a drive handed over from the popup are all reported in the
+  runtime's words — *Could not start '…': An error occurred trying to start
+  process 'xdg-open' with working directory '…'. No such file or directory* —
+  rather than as an opener that is not installed. `ProgramNotFound` is answered
+  only when the request names its program.
 - Nothing on Unix asks for administrator rights: `LaunchProcess` refuses an
   `AsAdministrator` request by platform, because there is no way to raise them
   that does not put a password prompt on the screen the panels own. The refusal
@@ -194,6 +246,12 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 - The properties popup edits one entry, the one under the cursor, and never the
   marked ones. It also offers no way to reach the properties of `..` or of a
   file — `F4` on a file goes to the editor, which is what the key is for.
+- On Linux the properties popup offers hidden, system and archive, and none of
+  them does anything: a tick is accepted without a word and is gone when the
+  popup opens again, because .NET drops the three attributes on Unix instead of
+  refusing them. Read-only is the one that holds — it takes the write bits
+  away, and unticking gives back the owner's alone. Offering only what the
+  platform can keep is the fix.
 - The session is written on quit, on every tab command and on `Shift+F9`, but
   not after ordinary navigation — so a crash still loses whatever changed since
   the last of those. Writing after every step would cost a file write per

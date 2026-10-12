@@ -859,3 +859,84 @@ module and `open` lines, the aliases each file declares, `private` dropped
 where a helper moved into a fixture, and the four findings above. The names of
 the 612 tests in them: the same list. And the suite: 4114 pass and 16 skip on
 Windows, 4130 in all, as before.
+
+**P21.18 walked the manual rows, on Windows and as far as WSLg goes on Linux.**
+A person ran the published binaries of this phase on 2026-10-12: in cmder on
+Windows, and in gnome-terminal 3.52.0 under WSLg (Ubuntu 24.04) on Linux. Every
+row of [Cross-platform](../Architecture/CROSS-PLATFORM.md) that was walked says
+what was seen and carries the date in its evidence; a row still in bold was
+not, and says what it waits for. No code changed.
+
+The task had to be made walkable first.
+[The manual pass](../Architecture/MANUAL-PASS.md) turns the rows into numbered
+steps — thirty-four on Windows, forty-six on Linux — each with what to press,
+what should be seen and the row it answers, so that a pass is reported by step
+number. `_probes/ManualPass` holds the two scripts that build the directory
+the steps stand in: a file of every kind for the colours, 120 files for the
+keys, archives made by `tar` and 7-Zip beside the trees they hold, a tree to
+pack, programs that wait, print and say what rights they have, and on Linux a
+directory without its `x` bit and one only root may write to. Every tree is
+dated `2001-02-03 04:05:06`, so a time that survived is told from one made
+today.
+
+Three things went differently from the plan.
+
+- **There was no Linux desktop.** The plan asked for one; the machine has WSLg,
+  where gnome-terminal is a real Linux terminal with a window, a mouse and a
+  close button, and nothing under it — no window manager, no file manager, no
+  `xdg-open`. The keys, the colours, the mouse, the permission bits, the trash,
+  the archives and the editor were walked there. Not walked: the GNOME key
+  grabs, which stay read from GNOME's configuration; the three rows marked for
+  KDE and Xfce; the window a file manager opens for a directory and for a
+  drive; a file manager's *Restore*, where `gio trash --restore` stood in; and
+  a desktop's archive manager. The *Done when* is therefore met for every row
+  a terminal can answer and not for those.
+- **Two rows cannot be walked on Linux until a defect is closed.** A started
+  program that leaves the panels alone and does not hold the loop up needs a
+  program started, and none is: see the first finding.
+- **The log and the disk were read beside the answers.** The pass ran with
+  `--debug`, and the fixture stayed where it was, so each answer could be held
+  against what `marbas.log` recorded and what the directories held. In three
+  places they said more than the walker had: the hour of the files that came
+  out of a zip, the directories unpacked from `tar`'s archive, and the colour
+  of a program on Linux.
+
+What the pass found, each an entry in [Rough edges](../ROUGH-EDGES.md):
+
+- **On Linux the executable bit is never read.** `Enter` on a script of mode
+  `rwxrwxr-x` asked for `xdg-open`, `Alt+Shift+R` called it not a program, and
+  the panel draws it as a plain file. `IFileSystemInfo.UnixFileMode` through
+  the wrapper of System.IO.Abstractions 22.2.0 answers `None`; the runtime's
+  `FileInfo` and `fs.File.GetUnixFileMode` answer the mode. The suite sets the
+  mode on `MockFileSystem`, which keeps it, so every test of it passes.
+- **`Del` on the bottom row of the user menu ends the session**, on both
+  systems. The removal is saved, then the cursor is put back on an index the
+  shorter list no longer has. P21.1's log held the stack, which is how the
+  line was found.
+- **A directory loses its time through an archive**, packed or unpacked, and
+  **a file's hour through a zip** across a change of daylight-saving time:
+  Marbas writes and reads the local two-second field alone.
+- **The rule under the listing does not join the border**, in either terminal.
+- **`Alt+F11` opens no tab in gnome-terminal under WSLg**, which goes full
+  screen instead, and the command has no second key.
+- **Hidden, system and archive do nothing on Linux** in the properties popup: a
+  tick is taken and gone at the next opening.
+- **A backslash in a Linux file name becomes a level in a zip** — known since
+  P9.7 and now seen: `unzip -l` names `a/b.txt`.
+- **Without `xdg-open` the failure is told in the runtime's words.**
+
+Two more are a terminal keeping a key, not a defect: gnome-terminal hands
+`Shift+Enter` over as `Enter` and `Ctrl+Alt+Enter` not at all, as Windows
+Terminal does. And one entry of Rough edges is gone: `Alt+W` and `Alt+Shift+R`
+had not been pressed on Linux, and both arrive.
+
+Three things earlier tasks left for a person were answered on the way. The
+editor round trip of P21.5 held at a real terminal: `vim` had every key, and
+the panels came back whole, at the new size when the window was resized under
+it. A user menu entry `code.exe %p` run from the real `F2` menu under cmder,
+with VS Code not running, left the panels clean, as the probe of P21.6 had
+said. And a name and two files copied before `F10` were pasted with Marbas no
+longer running, which P21.8 had left to a person. A terminal window closed
+by its button was the one row of P21.7 without a counterpart on Linux; under
+WSLg the session wrote no quit to its log, and its directory was gone after the
+next start.

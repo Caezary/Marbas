@@ -41,7 +41,15 @@ Six kinds of evidence appear below:
   missing went missing, and which keys a terminal takes only in a state no probe
   run had — several tabs open, or text selected.
 - **manual** — needs a person at a real terminal. These are the items where the
-  answer is "does it *look* right", which nothing here can assert.
+  answer is "does it *look* right", which nothing here can assert. What to
+  prepare and what to press for each of them is
+  [The manual pass](MANUAL-PASS.md). A row that was walked carries the date in
+  plain type, and its cells say what was seen; a row still in bold has not
+  been, and says what it waits for. The pass of 2026-10-12 ran the published
+  binaries of phase 21 in cmder on Windows and in gnome-terminal 3.52.0 under
+  WSLg on Linux (Ubuntu 24.04) — a real Linux terminal with no desktop under
+  it, so what needs a window manager, a file manager or `xdg-open` still waits
+  for one.
 
 ## Paths
 
@@ -64,14 +72,14 @@ suite covers both.
 
 | Check | Windows | Linux | Evidence |
 |-------|---------|-------|----------|
-| `Alt+F1` / `Alt+F2` open *Drives* | lists ready drives, `C:\`, `D:\`… | lists the storage mounts, then the home directory | suite; probe on Windows; **manual** on Linux |
-| Each row shows root, label, kind, size and free space in aligned columns | yes | yes, with no label column for mounts | suite; probe on Windows; **manual** on Linux |
+| `Alt+F1` / `Alt+F2` open *Drives* | lists ready drives, `C:\`, `D:\`… | lists the storage mounts, then the home directory | suite; probe on Windows; manual 2026-10-12 on Linux |
+| Each row shows root, label, kind, size and free space in aligned columns | yes | yes, with no label column for mounts | suite; probe on Windows; manual 2026-10-12 on Linux |
 | A drive plugged in while Marbas runs is listed on the next opening | same | same | suite |
 | Choosing a drive the other panel stands on lands in that panel's directory | same | same | suite |
 | Choosing any other drive lands in its root | same | same | suite, WSL |
 | Cancelling changes nothing | same | same | suite, probe on Windows |
 | A drive that cannot be read is reported, panel stays put | same | same | suite |
-| `Alt+R` in the popup opens the drive in the system file manager, panels unmoved | Explorer | `xdg-open` | suite (injected), probe on Windows; **manual** for the window that opens |
+| `Alt+R` in the popup opens the drive in the system file manager, panels unmoved | Explorer | `xdg-open`; the key arrives and the start is asked for, and where no `xdg-open` is installed it is reported as a start that failed | suite (injected), probe on Windows; manual 2026-10-12 on Windows; **manual** on Linux for the window that opens, waiting for a desktop |
 | A drive that is not ready, or whose size cannot be read, is left out | yes | yes | suite |
 | A mount that is not storage (`squashfs`, `tmpfs`, `proc`…) is left out | n/a | yes | suite |
 | `Ctrl+4` / `Ctrl+\` send the panel to the root of its volume | yes | yes | suite, probe |
@@ -186,8 +194,8 @@ drive still reads as hidden there.
 |-------|---------|-------|----------|
 | `F8` / `Del` ask before sending the targets to the trash | same | same | suite |
 | `Shift+F8` / `Shift+Del` ask before deleting for good | same | same | suite |
-| What the trash does with them | recycle bin | `~/.local/share/Trash` | **manual** |
-| A deleted entry can be put back by the desktop's own tool | Explorer's *Restore* | the file manager's *Restore* | **manual** |
+| What the trash does with them | recycle bin, each entry with the directory it came from | `~/.local/share/Trash`: the entry under `files`, a `.trashinfo` naming its path under `info` | manual 2026-10-12 |
+| A deleted entry can be put back by the desktop's own tool | Explorer's *Restore* | `gio trash --restore`; a file manager's *Restore* was not tried | manual 2026-10-12; **manual** for a file manager on Linux, waiting for a desktop |
 | A trash that refuses is reported entry by entry, marks kept | same | same | suite |
 
 `Shell` asks `deps.Processes.SendToTrash`, and `Dependencies.create` decides what that is:
@@ -205,15 +213,15 @@ permanent delete is the same `Operations.delete` as before on either platform.
 |-------|---------|-------|----------|
 | `Shift+F1` packs the targets into an archive in the other panel | same | same | suite |
 | `Shift+F2` empties the archives under the cursor or marked into the other panel | same | same | suite |
-| An archive made by another tool unpacks here with its tree and its times | 7-Zip, Explorer | `zip`, `tar` | **manual** |
+| An archive made by another tool unpacks here with its tree and its times | `tar` and 7-Zip's 7z: the tree, and the files to the second; 7-Zip's zip: the tree, the files an hour late; every directory dated at the unpacking | `tar`: the tree, and the files to the second; every directory dated at the unpacking | manual 2026-10-12; **manual** on Linux for `zip` and 7-Zip, which were not installed when the fixture was made |
 | The name is deduced from the targets, the root from the drive | `diskCcontents.zip` | `rootcontents.zip` | suite (one test per platform) |
 | Entry paths inside the archive are relative and separated by `/` | `docs\a.txt` is stored as `docs/a.txt` | already `/` | suite |
-| A backslash inside a Linux file name stays in the entry name | n/a | it does not: `SharpZipLib`'s `ZipEntry` cleans the name, so `a\b.txt` is written as `a/b.txt` and the archive gains a level the disk never had | **manual** (seen while writing P9.7, never run on Linux) |
+| A backslash inside a Linux file name stays in the entry name | n/a | it does not: `SharpZipLib`'s `ZipEntry` cleans the name, so `a\b.txt` is written as `a/b.txt` and the archive gains a level the disk never had | manual 2026-10-12: `unzip -l` names `a/b.txt`, and the panel shows a directory `a` |
 | A backslash in an entry another tool wrote is read as part of the name | same | same: `ArchiveListing` splits on `/` alone | suite |
-| The zip opens in the system's own tool | Explorer, *Extract All* | `unzip`, the desktop's archive manager | **manual** |
-| The tar.gz opens in the system's own tool | `tar -xzf` | `tar -xzf` | **manual** |
-| A password-protected zip asks for the password there | Explorer cannot open AES zips at all; 7-Zip can | `7z x` | **manual** |
-| Modification times survive the round trip | same | same | **manual** |
+| The zip opens in the system's own tool | Explorer, *Extract All* | `unzip`; a desktop's archive manager was not tried | manual 2026-10-12; **manual** for an archive manager on Linux, waiting for a desktop |
+| The tar.gz opens in the system's own tool | `tar -xzf` | `tar -xzf` | manual 2026-10-12 |
+| A password-protected zip asks for the password there | Explorer cannot open AES zips at all; 7-Zip can | `7z x` | manual 2026-10-12 |
+| Modification times survive the round trip | a file: to the second through `tar`, an hour early through Explorer and 7-Zip; a directory: **no**, it carries the moment of packing | a file: to the second through `tar` and `unzip`, an hour early through 7-Zip; a directory: **no**, the same | manual 2026-10-12 |
 
 Everything up to the bytes is tested on `MockFileSystem`, both writers being
 stream APIs, and one test reads a zip back with `System.IO.Compression` after
@@ -224,6 +232,21 @@ try first is the AES zip: Windows Explorer has never supported AES-encrypted
 entries and will report the archive as empty or damaged rather than asking for a
 password, which is a property of Explorer and not of the archive.
 
+**The round trips were run on 2026-10-12, and the times are where they
+differ.** Every tree of the fixture is dated `2001-02-03 04:05:06`, a winter
+date, and the pass ran in summer time, which is what showed it. A tar keeps a
+moment and both directions were exact for the files. A zip keeps a local time
+in a two-second field unless a tool adds the exact moment in an extra field:
+Marbas adds none and reads none. So the files it packed came out of Explorer
+and of 7-Zip at `03:05:06` — both turn the local time back with today's offset
+— and out of `unzip` at `04:05`; and the zip 7-Zip made, whose local field
+7-Zip itself wrote as `05:05:06` beside an NTFS field holding the moment, was
+unpacked here at `05:05:06`. The directories are a second matter: the entries
+Marbas writes for them carry the moment of packing, and the times of the
+entries another tool wrote are not put on the directories unpacked. Both are in
+[Rough edges](../ROUGH-EDGES.md). On Linux the fixture held `tar`'s archive
+alone, since `zip` and 7-Zip were installed after it was made.
+
 ## Permissions
 
 | Check | Windows | Linux | Evidence |
@@ -231,13 +254,14 @@ password, which is a property of Explorer and not of the archive.
 | Deleting a read-only file reports access denied, file survives | same | same | suite |
 | A file held open by another process is reported, not thrown | same | same | suite |
 | An unreadable directory leaves the panel where it was | same | same | suite |
-| A root-owned file refuses to be deleted and is named in the dialog | n/a | **manual** | manual |
-| A directory without `+x` is reported when entered | n/a | **manual** | manual |
+| A root-owned file refuses to be deleted and is named in the dialog | n/a | yes, by `F8` and by `Shift+F8`: *Operation failed*, `Access denied to '…/file.txt'`, and the file stays | manual 2026-10-12 |
+| A directory without `+x` is reported when entered | n/a | yes: *Cannot open directory*, `Access denied to '…/no-enter'`, and the panel stays | manual 2026-10-12 |
 
 The suite provokes failure on the file itself — `MockFileData.Attributes` set to
 `ReadOnly`, `AllowedFileShare` set to `None` — which covers the mapping. What it
 cannot cover is a real Unix permission bit, so the last two rows are for a
-person with a `sudo`-owned file to hand.
+person with a `sudo`-owned file to hand. The one bit the pass found unread is
+the executable one, which is a row of *Viewing and editing*.
 
 ## Session
 
@@ -251,7 +275,7 @@ person with a `sudo`-owned file to hand.
 | Each tab comes back with both cursors where they stood | same | same | suite |
 | A session written before tabs existed still opens, as one tab | same | same | suite |
 | A session writes who owns its working directory when it starts | `%TEMP%\Marbas\<session>\owner` | `$TMPDIR/Marbas/<session>/owner`, else `/tmp/…` | suite, probe, WSL |
-| The directory of a session closed with the console window's button is gone after the next start | removed | no window to close; a killed session's is removed | probe, WSL |
+| The directory of a session closed with the console window's button is gone after the next start | removed | removed, for a terminal window closed by its button and for a killed session | probe, WSL; manual 2026-10-12 on Linux |
 | The directory of a session still running is kept by one started beside it | kept | kept | probe, WSL |
 | A directory whose owner's id belongs to a process started at another moment is removed | removed | same | suite, probe |
 | A directory nobody claimed is removed a day after its last write, and kept before | same | same | suite, probe, WSL |
@@ -276,9 +300,11 @@ unclaimed one just made and a file beside the directories stayed, and so did
 the second session's directory when a third started beside it. Under WSL three
 sessions ran in tmux: the first was kept by the second while it ran — the row
 that an equality on the start would have failed — and removed by the third
-after `kill -9`. Closing a window by its button has no counterpart there; a
-terminal emulator closed on a Linux desktop sends `SIGHUP`, which ends the
-process the same way and is left to the manual pass.
+after `kill -9`. Closing a window by its button has no counterpart in tmux; a
+terminal emulator closed by its button sends `SIGHUP`, which ends the process
+the same way. The manual pass of 2026-10-12 closed a gnome-terminal window
+under WSLg with Marbas running in it: the session wrote no quit to its log,
+and its directory was gone after the next start.
 
 ## Keyboard and terminal
 
@@ -286,29 +312,29 @@ process the same way and is left to the manual pass.
 |-------|---------|-------|----------|
 | `F1`–`F10`, `Tab`, `Insert`, `Enter`, arrows | same | same | suite, WSL |
 | `Ctrl+Q` quits and saves | yes | yes | suite, WSL |
-| `Ctrl+R`, `Ctrl+F3`–`Ctrl+F6` | yes | **manual** | manual |
+| `Ctrl+R`, `Ctrl+F3`–`Ctrl+F6` | yes | yes | manual 2026-10-12 on Linux |
 | `Alt+H` toggles hidden entries | yes | yes | suite, WSL |
 | `Ctrl+H` toggles hidden entries | only where the terminal reports it as a key | only under the kitty keyboard protocol | known difference |
 | The bar follows a held `Ctrl` / `Alt` | yes | **no, by design** | known difference |
-| `+` / `-` open the pattern prompt | yes | **manual** | manual |
-| `Shift+↑` / `Shift+↓` arrive as keys of their own and mark a run | **manual** | **manual** | suite (injected), manual |
-| `Shift+PgUp` / `Shift+PgDn` and `Shift+←` / `Shift+→` mark a page | **manual** | **manual** | suite (injected), manual |
-| The screen redraws when the terminal is resized | **manual** | **manual** | manual |
-| The sixteen classic colours look right | **manual** | **manual** | manual |
-| Directory / file / archive / program colours are told apart | **manual** | **manual** | manual |
-| Bright blue file names stay readable on the blue panel | **manual** | **manual** | manual |
-| The rule under the listing joins the panel border | **manual** | **manual** | manual |
-| Arrows stop at the ends of a panel; only `Tab` leaves it | **manual** | **manual** | suite (as handled keys), manual |
-| `←` / `→` jump by the page on screen | **manual** | **manual** | suite, manual |
-| Typing opens the search bar and moves the cursor | **manual** | **manual** | suite, manual |
-| The mouse selects an entry and clicks the key bar | **manual** | **manual** | manual |
+| `+` / `-` open the pattern prompt | yes | yes | manual 2026-10-12 on Linux |
+| `Shift+↑` / `Shift+↓` arrive as keys of their own and mark a run | yes | yes | suite (injected), manual 2026-10-12 |
+| `Shift+PgUp` / `Shift+PgDn` and `Shift+←` / `Shift+→` mark a page | yes | yes | suite (injected), manual 2026-10-12 |
+| The screen redraws when the terminal is resized | yes | yes | manual 2026-10-12 |
+| The sixteen classic colours look right | yes | yes | manual 2026-10-12 |
+| Directory / file / archive / program colours are told apart | yes | a directory, a file, an archive and a link: yes; a program: **no**, a file with its executable bit set is drawn as a plain one | manual 2026-10-12 |
+| Bright blue file names stay readable on the blue panel | yes | yes | manual 2026-10-12 |
+| The rule under the listing joins the panel border | **no**: it stops at the border on either side, with no joint drawn | **no**, the same | manual 2026-10-12 |
+| Arrows stop at the ends of a panel; only `Tab` leaves it | yes | yes | suite (as handled keys), manual 2026-10-12 |
+| `←` / `→` jump by the page on screen | yes | yes | suite, manual 2026-10-12 |
+| Typing opens the search bar and moves the cursor | yes | yes | suite, manual 2026-10-12 |
+| The mouse selects an entry and clicks the key bar | yes | yes | manual 2026-10-12 |
 | `F11` lists the tabs | **only under cmder** — Windows Terminal and the console keep it for full screen | the terminal hosting the session decides, not the platform | probe |
 | `Alt+T` lists them where `F11` is eaten | yes | yes | probe |
-| `Alt+F11` opens a tab, `Alt+Shift+F11` closes it | yes | yes | probe |
+| `Alt+F11` opens a tab, `Alt+Shift+F11` closes it | yes | yes under WSL in cmder and in the Windows console; **no** in gnome-terminal under WSLg, where `Alt+F11` puts the window in full screen and no tab opens | probe; manual 2026-10-12 |
 | `Shift+F9` writes the session | yes | yes | probe |
 | `Alt+←` / `Alt+→` walk from tab to tab | yes | yes | probe |
 | `Ctrl+T`, the other candidate for listing tabs | **no under cmder**, which opens its own console tab | yes | probe |
-| The tab counter is legible in the top right corner | **manual** | **manual** | manual |
+| The tab counter is legible in the top right corner | yes, at `[1/1]` and `[2/2]` | yes at `[1/1]`; a second tab could not be opened there | manual 2026-10-12 |
 | `Alt+Del`, the key phase 13 wipes with | yes | yes | probe |
 | `Alt+Shift+Del`, the stand-in it turned out not to need | yes | yes | probe |
 | `Ctrl+\` reaches the application as a backslash | **no**, arrives as `Ctrl+4` | **no**, the same | probe |
@@ -369,6 +395,9 @@ is `Alt+T`: a letter with `Alt` is the shape every terminal in this checklist
 has been seen to deliver, the same reasoning that gave P10.7 `Alt+W` and
 `Alt+Shift+R`. Everything else phase 11 asks for — `Alt+F11`, `Alt+Shift+F11`,
 `Shift+F9`, `Alt+←` and `Alt+→` — arrived in all five runs and needs no spare.
+None of the five was gnome-terminal, and the manual pass of 2026-10-12 found
+the exception there: under WSLg `Alt+F11` puts its window in full screen and
+no tab opens, which leaves that terminal without a way to open one.
 
 `F11` keeps the label on the bar all the same. It is the key the phase was
 asked for, it works where the terminal lets it, and the bar has no way to know
@@ -569,37 +598,37 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | `F4` falls back to the default editor, then `$EDITOR` | same | same | suite |
 | `F4` falls back again when neither is set | `notepad` | `vi` | suite |
 | `F4` on a directory opens its properties | same | same | suite |
-| A flag written to a directory is read back | same | **manual** | suite (mock) |
+| A flag written to a directory is read back | same | read-only: yes, the write bits go; hidden, system and archive: **no**, a tick is taken without a word and gone when the popup opens again | suite (mock); manual 2026-10-12 |
 | `Shift+F4` creates a file and opens it | same | same | suite |
 | `F12` opens the settings popup | same | same | suite |
 | `F4` waits for the editor | **no**, started through the shell | yes, with the terminal handed over | suite |
-| A console editor gets a window of its own | yes, a console of its own | n/a | **manual** |
-| A file saved in the editor shows in the panel | the directory watch | the directory watch | **manual** |
-| A full-screen console editor gets every key and gives the terminal back | n/a, a console of its own | yes, the driver stopped and built again | suite (the switch); probe (tmux); **manual** |
-| The screen is whole again after the editor exits, at the size it has then | n/a, nothing waited | yes | probe (tmux); **manual** |
+| A console editor gets a window of its own | yes, a console of its own | n/a | manual 2026-10-12 |
+| A file saved in the editor shows in the panel | the directory watch | the directory watch | manual 2026-10-12 |
+| A full-screen console editor gets every key and gives the terminal back | n/a, a console of its own | yes, the driver stopped and built again | suite (the switch); probe (tmux); manual 2026-10-12 |
+| The screen is whole again after the editor exits, at the size it has then | n/a, nothing waited | yes | probe (tmux); manual 2026-10-12 |
 | `Enter` walks into a directory and an archive | same | same | suite |
-| `Enter` runs a document, an executable and an associated file | same | same | suite |
-| `Alt+W` walks into the entry under the cursor | same | same | suite |
-| `Ctrl+PgDn` reaches the panel as a key at all | **yes** | **manual** | manual (Windows Terminal) |
-| A started program leaves the panels un-scribbled | a console program: own console, shell verb; a window program: started from its file, streams drained | streams drained | suite (the start described); probe (ConEmu); **manual** |
+| `Enter` runs a document, an executable and an associated file | same | a document and an associated file: same; an executable: **no** on a real disk, its mode is not read and it goes to `xdg-open` | suite; manual 2026-10-12 on Linux |
+| `Alt+W` walks into the entry under the cursor | same | same | suite; manual 2026-10-12 on Linux, where the key arrives |
+| `Ctrl+PgDn` reaches the panel as a key at all | **yes** | yes | manual (Windows Terminal; gnome-terminal on 2026-10-12) |
+| A started program leaves the panels un-scribbled | a console program: own console, shell verb; a window program: started from its file, streams drained | streams drained; not seen, an executable is not started | suite (the start described); probe (ConEmu); manual 2026-10-12 on Windows; **manual** on Linux, waiting for the executable bit to be read |
 | A program named by its start is resolved to its file | as written, `PATH` with `PATHEXT`, App Paths | n/a | suite (mock); probe |
-| A started program does not hold the loop up | same | same | **manual** |
+| A started program does not hold the loop up | yes | not seen, an executable is not started | manual 2026-10-12 on Windows; **manual** on Linux, waiting for the executable bit to be read |
 | `F2` opens the user menu, a letter and `Enter` run an entry | same | same | suite; probe on Windows |
-| A user menu entry is started the way it names | shell verb; `cmd /s /c`, `cmd /s /k` | drained; `/bin/sh -c` for both shell ways | suite (the start described); **manual** (each way run) |
-| A user menu entry runs as administrator | `runas`, `cd /d` first in the shell | refused by platform | suite (described); **manual** |
+| A user menu entry is started the way it names | shell verb; `cmd /s /c`, `cmd /s /k` | drained; `/bin/sh -c` for both shell ways | suite (the start described); manual 2026-10-12 (each way run) |
+| A user menu entry runs as administrator | `runas`, `cd /d` first in the shell | refused by platform, with the reason in the dialog | suite (described); manual 2026-10-12 |
 | The list file of `%f` is written before the start | same | same | suite |
 | `Ins`, `F4`, `Del`, `Ctrl+↑`, `Ctrl+↓` edit the user menu popup | same | same | suite; probe on Windows; keys measured in P17.2 |
-| A program that is not there is named, not thrown | `Win32Exception` 2 | `Win32Exception` 2 | **manual** |
+| A program that is not there is named, not thrown | `Win32Exception` 2 | `Win32Exception` 2 | manual 2026-10-12 |
 | `Alt+R` asks which program opens the entry | same | same | suite |
-| `Shift+Enter` reaches the panel as a key at all | **no**, arrives as `Enter` | **manual** | manual (Windows Terminal) |
-| `Alt+R` on a directory opens the file manager | Explorer | the desktop's own | **manual** |
-| `Alt+Shift+R` runs the entry elevated | same | same | suite |
-| `Ctrl+Alt+Enter` reaches the panel as a key at all | **no** | **manual** | manual (Windows Terminal) |
-| An executable starts with administrator rights | `runas`, the system prompts | refused by platform | **manual** |
-| A prompt the user turns down leaves no trace | `Win32Exception` 1223, silence | n/a | **manual** |
+| `Shift+Enter` reaches the panel as a key at all | **no**, arrives as `Enter` | **no**, arrives as `Enter` | manual (Windows Terminal; gnome-terminal on 2026-10-12) |
+| `Alt+R` on a directory opens the file manager | Explorer | the desktop's own, through `xdg-open`; where none is installed the start is reported as failed | manual 2026-10-12 on Windows; **manual** on Linux, waiting for a desktop |
+| `Alt+Shift+R` runs the entry elevated | same | same | suite; manual 2026-10-12 on Linux, where the key arrives and is not taken for `Alt+R` |
+| `Ctrl+Alt+Enter` reaches the panel as a key at all | **no** | **no**, nothing arrives | manual (Windows Terminal; gnome-terminal on 2026-10-12) |
+| An executable starts with administrator rights | `runas`, the system prompts | refused, but as *not a program*: the executable bit is not read, so the platform's refusal is never reached | manual 2026-10-12 |
+| A prompt the user turns down leaves no trace | `Win32Exception` 1223, silence | n/a | manual 2026-10-12 |
 | A document refuses to be run elevated | same | same | suite |
-| The handlers of a common extension are listed | registry | XDG mime database | Windows: **manual**; Unix: suite |
-| An extension the system knows nothing about lists nothing | same | same | Windows: **manual**; Unix: suite |
+| The handlers of a common extension are listed | registry | XDG mime database | Windows: manual 2026-10-12; Unix: suite |
+| An extension the system knows nothing about lists nothing | same | same | Windows: manual 2026-10-12; Unix: suite |
 
 **The terminal handed over.** On Windows `F4` has not waited for the editor
 since P20.1: it goes through the shell verb, so `notepad` opens its own window
@@ -612,8 +641,10 @@ whole screen. How, and why it reaches past the public API, is in
 WSL (Ubuntu 24.04) with `EDITOR=vim`: a line added and saved, the window
 resized while `vim` held it, the panels back at the new size with the file's
 new length, a second `F4`, and an editor that is not there named in a dialog
-over whole panels. A person at a Linux desktop has not run it yet; the row
-stays *manual* for P21.18.
+over whole panels. A person ran it on 2026-10-12 in gnome-terminal under WSLg,
+with `EDITOR=vim`: `vim` had the whole screen and every key, the panels came
+back whole with the file at its new size, and a window resized while `vim` was
+up came back at the size it had then.
 
 **`Shift+Enter` was tried and does not arrive.** Under Windows Terminal the
 modifier is dropped and the panel is handed a bare carriage return, which the
@@ -623,7 +654,8 @@ and is the binding named everywhere: `openWithKeys` holds both, exactly as
 `hiddenKeys` holds `Alt+H` beside the `Ctrl+H` no terminal delivers either. The
 plan foresaw this — a modified `Enter` is what it calls the least portable thing
 phase 10 asks for — and P10.7 is where the remaining two commands get the same
-treatment.
+treatment. gnome-terminal drops the modifier the same way, as the manual pass
+of 2026-10-12 saw: the entry was run, not asked about.
 
 **`Ctrl+PgDn` arrives, `Ctrl+Alt+Enter` does not.** Both were tried by hand
 under Windows Terminal on 2026-09-04: the walk into a directory or an archive
@@ -632,7 +664,9 @@ answers to `Ctrl+PgDn`, and nothing at all happens on `Ctrl+Alt+Enter` —
 `Ctrl` does not reach the application either. That is why P10.7 gave both
 commands a letter of their own, `Alt+W` and `Alt+Shift+R`, and left the older
 names bound beside them: a letter with `Alt` is the one shape of modified key
-every terminal in the checklist has been seen to deliver.
+every terminal in the checklist has been seen to deliver. gnome-terminal
+answered the same on 2026-10-12: `Ctrl+PgDn` walks in, and `Ctrl+Alt+Enter`
+does nothing at all.
 
 **The shifted letter was checked against the drivers, not only against the
 suite.** `Alt+Shift+R` asks for a letter *and* a shift, and a driver that
@@ -646,7 +680,9 @@ flag set and read it back as the same key, and both round-trip `Alt+W`, `Alt+R`
 and `Alt+H` the same way. What is left manual is one step further out: whether
 the terminal hands the driver those modifiers at all. `Alt+H` and `Alt+R` have
 been doing so under Windows Terminal since P7.3 and P10.5, which is the whole
-reason the letters were chosen.
+reason the letters were chosen. gnome-terminal hands over both of the others
+as well: on 2026-10-12 `Alt+W` walked into a directory there, and `Alt+Shift+R`
+arrived as the elevated run and not as the open-with popup.
 
 **Administrator rights are a Windows-only answer, and Unix says so rather than
 pretending.** On Windows `AsAdministrator` is one field — the `runas` verb on
@@ -698,8 +734,22 @@ and found nothing in the console but what the probe wrote itself. Unix has no su
 started directly with both of its streams redirected and drained, because it
 would otherwise inherit the terminal the panels are drawn on, and anything else
 goes to `xdg-open`, which is the desktop's own idea of what opens a file. The
-first launch on either system is what the three rows above check by hand; the
+first launch on either system is what the rows above check by hand; the
 adapter itself is out of the suite's reach, like every other one.
+
+**On Linux the executable bit does not reach Marbas, and the first launch by
+hand is what found it.** The manual pass of 2026-10-12 pressed `Enter` on a
+shell script of mode `rwxrwxr-x` and was told that `xdg-open` could not be
+started; `Alt+Shift+R` on the same file said it was not a program, and the
+panel drew it as a plain file. The listing and the adapter both ask
+`IFileSystemInfo.UnixFileMode`, and the wrapper of System.IO.Abstractions
+22.2.0 answers `None` for every file — measured under WSL beside the runtime's
+own `FileInfo` and beside `fs.File.GetUnixFileMode`, which both gave the mode.
+`MockFileSystem` keeps the mode a test sets, so every row marked *suite* is
+true of the logic and none of them had met a real disk. Until it is put right
+the two rows on a started program cannot be walked on Linux, and the refusal
+to raise rights is reached only from the user menu. It is a defect, recorded
+in [Rough edges](../ROUGH-EDGES.md).
 
 **Attributes are not the same bits everywhere.** The properties popup offers
 read-only, hidden, system and archive because that is what `FileAttributes`
@@ -708,7 +758,12 @@ permission), and .NET reports hidden for a name starting with a dot rather than
 for a bit that can be set. `EntryProperties.write` folds the four flags onto the
 attributes the entry already has and swallows nothing — a platform that refuses
 one is reported as an operation failure — but *what* a tick does on Linux is a
-manual row, since `MockFileSystem` accepts every flag the tests set.
+manual row, since `MockFileSystem` accepts every flag the tests set. Walked on
+2026-10-12, it is this: read-only takes the write bits away and is ticked at
+the next opening, and unticking it gives back the owner's write bit alone;
+hidden, system and archive are refused by nobody and kept by nobody — .NET
+drops the three on Unix, so the tick is gone when the popup opens again and
+no dialog says why.
 
 ## Decisions
 
@@ -777,7 +832,8 @@ dotnet publish Marbas/Marbas.fsproj -p:PublishProfile=linux-x64
 ```
 
 See [PACKAGING.md](PACKAGING.md) for what those profiles decide and how a tag
-turns them into a release.
+turns them into a release. [The manual pass](MANUAL-PASS.md) has the steps, one
+per row, and `_probes/ManualPass` builds the directory they stand in.
 
 Under WSL, build outputs are best kept away from the Windows ones:
 
