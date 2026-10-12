@@ -302,10 +302,8 @@ In `launch`.
 
 - The settings popup keeps `log` → `edit.exe` under *Edited with:* until it is
   removed there, and the user menu keeps the entries the steps added until
-  `Del` takes them out. Take them out from the top: `Del` on the bottom row
-  ends the session, a defect [Rough edges](../ROUGH-EDGES.md) holds since the
-  first pass. The Linux steps add no row to the settings popup: their editor
-  comes from `EDITOR` in the environment.
+  `Del` takes them out. The Linux steps add no row to the settings popup:
+  their editor comes from `EDITOR` in the environment.
 - The fixture is removed by hand. On Linux `perm/no-enter` wants its `x` bit
   back first (`chmod u+x`), and `perm/root-owned` wants `sudo`.
 - `--debug` is gone with the session; `marbas.log` keeps its last megabyte.

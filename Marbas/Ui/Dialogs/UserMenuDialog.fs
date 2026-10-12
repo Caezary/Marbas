@@ -44,43 +44,11 @@ let private listHeight (menu: UserMenu) =
 type UserMenuView(menu: UserMenu) =
     inherit Dialog(Title = Title, Width = Dim.Percent SizeShare, Height = Dim.Absolute(listHeight menu + FrameHeight))
 
-    member val Menu = menu with get, set
+    let mutable state = UserMenuState.start menu
 
-    member val Chosen: MenuCommand option = None with get, set
+    member _.State = state
 
-let private commandAt index (menu: UserMenu) =
-    match List.tryItem index (UserMenu.items menu) with
-    | Some(CommandItem command) -> Some command
-    | _ -> None
-
-let private commands (menu: UserMenu) =
-    UserMenu.items menu
-    |> List.choose (fun item ->
-        match item with
-        | CommandItem command -> Some command
-        | SeparatorItem -> None)
-
-let private commandPositions (menu: UserMenu) =
-    UserMenu.items menu
-    |> List.indexed
-    |> List.choose (fun (index, item) ->
-        match item with
-        | CommandItem _ -> Some index
-        | SeparatorItem -> None)
-
-let private positionOf hotkey (menu: UserMenu) =
-    UserMenu.items menu
-    |> List.tryFindIndex (fun item ->
-        match item with
-        | CommandItem command -> command.Hotkey = hotkey
-        | SeparatorItem -> false)
-
-let private nearestCommand index (menu: UserMenu) =
-    let positions = commandPositions menu
-
-    positions
-    |> List.tryFind (fun position -> position >= index)
-    |> Option.orElse (List.tryLast positions)
+    member _.Change(change: UserMenuState -> UserMenuState) = state <- change state
 
 let private cursorOf (list: ListView) = list.SelectedItem |> Option.ofNullable
 
@@ -89,39 +57,27 @@ let private standOn (list: ListView) index = list.SelectedItem <- Nullable index
 let private fill (list: ListView) (dialog: UserMenuView) =
     let cursor = cursorOf list
 
-    UserMenu.items dialog.Menu
-    |> List.map (UserMenuRow.describe list.Viewport.Width)
+    UserMenuState.rows list.Viewport.Width dialog.State
     |> ObservableCollection
     |> list.SetSource
 
-    cursor
-    |> Option.orElse (commandPositions dialog.Menu |> List.tryHead)
-    |> Option.iter (standOn list)
+    UserMenuState.cursorWithin cursor dialog.State |> Option.iter (standOn list)
 
 let private choosing (dialog: UserMenuView) command =
-    dialog.Chosen <- Some command
+    dialog.Change(UserMenuState.choosing command)
     dialog.RequestStop()
 
 let private runningOn (dialog: UserMenuView) hotkey =
-    commands dialog.Menu
-    |> List.tryFind (fun command -> command.Hotkey = hotkey)
-    |> Option.iter (choosing dialog)
+    UserMenuState.commandOn hotkey dialog.State |> Option.iter (choosing dialog)
 
 let private runningUnderCursor (list: ListView) (dialog: UserMenuView) =
     cursorOf list
-    |> Option.bind (fun index -> commandAt index dialog.Menu)
+    |> Option.bind (fun index -> UserMenuState.commandAt index dialog.State)
     |> Option.iter (choosing dialog)
 
 let private stepping (list: ListView) (dialog: UserMenuView) direction =
-    let positions = commandPositions dialog.Menu
-    let current = cursorOf list |> Option.defaultValue 0
-
-    let next =
-        match direction with
-        | Downward -> positions |> List.tryFind (fun index -> index > current)
-        | Upward -> positions |> List.rev |> List.tryFind (fun index -> index < current)
-
-    next |> Option.iter (standOn list)
+    UserMenuState.stepped direction (cursorOf list) dialog.State
+    |> Option.iter (standOn list)
 
 type private Editing =
     { Asked: MenuEditing
@@ -133,17 +89,14 @@ let private resized (editing: Editing) (menu: UserMenu) =
     editing.Dialog.Height <- Dim.Absolute(listHeight menu + FrameHeight)
 
 let private changed (editing: Editing) change (following: MenuHotkey option) =
-    let before = cursorOf editing.List |> Option.defaultValue 0
-
     editing.Asked.Change change
     |> Option.iter (fun menu ->
-        editing.Dialog.Menu <- menu
+        editing.Dialog.Change(UserMenuState.holding menu)
         resized editing menu
         fill editing.List editing.Dialog
 
         following
-        |> Option.bind (fun hotkey -> positionOf hotkey menu)
-        |> Option.orElse (nearestCommand before menu)
+        |> Option.bind (fun hotkey -> UserMenuState.positionOf hotkey editing.Dialog.State)
         |> Option.iter (standOn editing.List)
 
         editing.Dialog.SetNeedsDraw())
@@ -151,11 +104,11 @@ let private changed (editing: Editing) change (following: MenuHotkey option) =
 let private underCursor (editing: Editing) =
     cursorOf editing.List
     |> Option.bind (fun index ->
-        commandAt index editing.Dialog.Menu
+        UserMenuState.commandAt index editing.Dialog.State
         |> Option.map (fun command -> index, command))
 
 let private referenceAt index (editing: Editing) =
-    index |> Option.bind (fun at -> UserMenu.refAt at editing.Dialog.Menu)
+    index |> Option.bind (fun at -> UserMenu.refAt at editing.Dialog.State.Menu)
 
 let private standingHotkey (editing: Editing) =
     underCursor editing |> Option.map (fun (_, command) -> command.Hotkey)
@@ -174,7 +127,7 @@ let private added (editing: Editing) answer =
 
 let private adding (editing: Editing) =
     { Editing = Adding
-      Others = commands editing.Dialog.Menu }
+      Others = UserMenuState.commands editing.Dialog.State }
     |> editing.Asked.AskEntry
     |> Option.iter (added editing)
 
@@ -187,7 +140,7 @@ let private rewriting (editing: Editing) =
     underCursor editing
     |> Option.iter (fun (_, command) ->
         { Editing = Changing command
-          Others = commands editing.Dialog.Menu |> List.filter ((<>) command) }
+          Others = UserMenuState.commands editing.Dialog.State |> List.filter ((<>) command) }
         |> editing.Asked.AskEntry
         |> Option.iter (rewritten editing command))
 
@@ -197,14 +150,14 @@ let private removed (editing: Editing) index (command: MenuCommand) choice =
         | RemoveCommand -> None
         | RemoveLine _ -> Some command.Hotkey
 
-    MenuRemoval.changeFor index editing.Dialog.Menu choice
+    MenuRemoval.changeFor index editing.Dialog.State.Menu choice
     |> Option.iter (fun change -> changed editing change following)
 
 let private removing (editing: Editing) =
     underCursor editing
     |> Option.iter (fun (index, command) ->
         { Command = command
-          Offered = MenuRemoval.offered index editing.Dialog.Menu }
+          Offered = MenuRemoval.offered index editing.Dialog.State.Menu }
         |> editing.Asked.AskRemoval
         |> Option.iter (removed editing index command))
 
@@ -274,4 +227,4 @@ let create (asked: MenuEditing) (menu: UserMenu) =
 
 let entries (dialog: UserMenuView) = SubView.byType<ListView> dialog
 
-let chosen (dialog: UserMenuView) = dialog.Chosen
+let chosen (dialog: UserMenuView) = dialog.State.Chosen

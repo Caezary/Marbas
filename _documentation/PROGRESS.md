@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-10-12. Phases and task numbers refer to [the plan](PLAN.md).
+Status as of 2026-10-13. Phases and task numbers refer to [the plan](PLAN.md).
 What each phase actually did is in [Progress/](Progress), one file per phase;
 what the application does today is in
 [What works today](Progress/WHAT-WORKS.md).
@@ -52,11 +52,15 @@ written up as the checklist in
 phase 21 in cmder on Windows and in gnome-terminal under WSLg on Linux, by the
 steps of [The manual pass](Architecture/MANUAL-PASS.md). Most rows hold as
 written. What does not is in [Rough edges](ROUGH-EDGES.md), and two of the
-findings are more than rough: on Linux the executable bit of a file is never
+findings were more than rough: on Linux the executable bit of a file is never
 read, so a program there is neither coloured nor started as one, and `Del` on
-the bottom row of the user menu ends the session on either system. The rows
+the bottom row of the user menu ended the session on either system. The rows
 that need a Linux desktop — the GNOME key grabs, a file manager, an archive
 manager — were not walked: there was none to walk them on.
+
+**Phase 22 is paying for that pass**, one finding a task. P22.1 closed the
+second of the two: the bottom row and the only row of the user menu are
+removed like any other, and the cursor is held inside the list it is given.
 
 | Phase | Tasks | State | Journal |
 |-------|-------|-------|---------|
@@ -82,7 +86,7 @@ manager — were not walked: there was none to walk them on.
 | 19 — The viewer finds and decodes | P19.1–P19.6 | done | [journal](Progress/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) |
 | 20 — The user menu | P20.1–P20.5 | done | [journal](Progress/PHASE-20-THE-USER-MENU.md) |
 | 21 — The log and the debts | P21.1–P21.18 | done | [journal](Progress/PHASE-21-THE-LOG-AND-THE-DEBTS.md) |
-| 22 — What the manual pass found | P22.1–P22.13 | planned | — |
+| 22 — What the manual pass found | P22.1–P22.13 | in progress (1 of 13) | [journal](Progress/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) |
 
 ## What works today
 

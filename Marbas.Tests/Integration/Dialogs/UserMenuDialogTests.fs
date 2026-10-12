@@ -311,6 +311,45 @@ let ``Del removes the entry once the answer says so, the cursor moving to the ne
     Assert.Equal("Z  Pack", (shown dialog)[2])
 
 [<Fact>]
+let ``Del on the bottom row removes it, the cursor moving to the row above`` () =
+    let record, dialog =
+        editedWith None (Some MenuRemoval.RemoveCommand) (menuOf [ CommandItem edit; CommandItem compare ])
+
+    use dialog = dialog
+    standOn 1 dialog
+
+    pressOn dialog KeyMap.userMenuRemoveKey
+
+    Assert.Equal<MenuChange list>([ RemoveItem(CommandAt(key "C")) ], List.ofSeq record.Changes)
+    Assert.Equal<string list>([ "E  Edit" ], shown dialog)
+    Assert.Equal(Some 0, cursor dialog)
+
+[<Fact>]
+let ``Del on the bottom row under a line moves the cursor to the entry above the line`` () =
+    let record, dialog = editedWith None (Some MenuRemoval.RemoveCommand) sample
+    use dialog = dialog
+    standOn 3 dialog
+
+    pressOn dialog KeyMap.userMenuRemoveKey
+
+    Assert.Equal<MenuChange list>([ RemoveItem(CommandAt(key "Z")) ], List.ofSeq record.Changes)
+    Assert.Equal(3, (shown dialog).Length)
+    Assert.Equal(Some 1, cursor dialog)
+
+[<Fact>]
+let ``Del on the only row leaves an empty menu with the cursor on no row`` () =
+    let record, dialog =
+        editedWith None (Some MenuRemoval.RemoveCommand) (menuOf [ CommandItem edit ])
+
+    use dialog = dialog
+
+    pressOn dialog KeyMap.userMenuRemoveKey
+
+    Assert.Equal<MenuChange list>([ RemoveItem(CommandAt(key "E")) ], List.ofSeq record.Changes)
+    Assert.Empty(shown dialog)
+    Assert.Equal(None, cursor dialog)
+
+[<Fact>]
 let ``Del removes the line below the entry when that is the answer`` () =
     let record, dialog =
         editedWith None (Some(MenuRemoval.RemoveLine MenuEntryForm.BelowCursor)) sample

@@ -248,13 +248,13 @@ schedules the fix. A rule here beats a habit found in an older file.
       own colours.
 - [ ] A view that remembers anything between two events keeps it in one
       immutable record behind one `let mutable` — `ViewerState`,
-      `ResultsState`, `SettingsForm` — and every change is a function over
-      that record in a module compiled before the view, which opens no
-      `Terminal.Gui` namespace. A handler reads what the toolkit knows, asks
-      the module for the next value and stores it; it decides nothing itself.
-      The views that still keep two or three settable properties —
-      `FavoritesDialog`, `HistoryDialog`, `UserMenuDialog`, `PanelView` — are
-      held to this when they are next changed.
+      `ResultsState`, `SettingsForm`, `UserMenuState` — and every change is a
+      function over that record in a module compiled before the view, which
+      opens no `Terminal.Gui` namespace. A handler reads what the toolkit
+      knows, asks the module for the next value and stores it; it decides
+      nothing itself. The views that still keep two or three settable
+      properties — `FavoritesDialog`, `HistoryDialog`, `PanelView` — are held
+      to this when they are next changed.
 - [ ] What a widget already holds — the text of a field, the cursor of a list,
       the collection a list shows — is read from the widget when it is needed
       and is not copied into a second place.

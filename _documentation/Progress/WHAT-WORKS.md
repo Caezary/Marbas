@@ -502,7 +502,9 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   Each change is written to `user-menu.conf` at once, read first so another
   copy's entries are kept, and the popup shows the file as it then is, the
   cursor on the entry added, changed or moved, or on the next one after a
-  removal; a change the file refuses is reported and the popup left as it was.
+  removal — the last one when the bottom entry was removed, and on no row once
+  the menu is empty; a change the file refuses is reported and the popup left
+  as it was.
 - `F4` opens the same file — the one under the cursor — in an editor: the one
   its extension is associated with, otherwise the default editor named in the
   settings, otherwise whatever `$EDITOR` names, otherwise `notepad` on Windows

@@ -484,9 +484,10 @@ UTF-16 file are all covered without a terminal. A view that painted straight
 from its own state inside the override would be untestable here.
 
 **What a view remembers is tested without the view.** The viewer, the results
-window and the settings popup each keep their state in one record, and what a
-key or a tick does to it is a function of `ViewerState`, `ResultsState` or
-`SettingsForm`. Those are tested in `Ui/` like any pure module — a
+window, the settings popup and the user menu popup each keep their state in
+one record, and what a key or a tick does to it is a function of
+`ViewerState`, `ResultsState`, `SettingsForm` or `UserMenuState`. Those are
+tested in `Ui/` like any pure module — a
 `MockFileSystem` for the file the viewer reads, a `Size` for its screen, no
 `BeginInit`, no layout — one test per transition. The tests in
 `Integration/` that press a key on the real view stay beside them: they hold

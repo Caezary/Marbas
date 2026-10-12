@@ -280,6 +280,7 @@
     <Compile Include="Ui\Dialogs\UserMenuRowTests.fs" />
     <Compile Include="Ui\Dialogs\MenuEntryFormTests.fs" />
     <Compile Include="Ui\Dialogs\MenuRemovalTests.fs" />
+    <Compile Include="Ui\Dialogs\UserMenuStateTests.fs" />
     <Compile Include="Ui\Dialogs\SettingsFormTests.fs" />
   </ItemGroup>
 

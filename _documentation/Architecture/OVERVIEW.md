@@ -301,6 +301,7 @@ Marbas/
       MenuEntryForm.fs      the fields of the entry popup -> an entry, or why it is refused
       MenuRemoval.fs        what `Del` in the user menu may remove, and the change for each
       MenuEntryDialog.fs    the popup `Ins` and `F4` open in the user menu
+      UserMenuState.fs      the menu the popup holds and the entry chosen; the row a cursor is held on
       UserMenuDialog.fs     the popup `F2` opens, and the entry it answers with
       FindDialog.fs         what `Alt+F7` asks, greyed where the query means nothing
       ViewerSearchDialog.fs what `F7` in the viewer asks: the text and four options, a broken pattern refused

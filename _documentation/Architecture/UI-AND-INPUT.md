@@ -779,6 +779,12 @@ holds. The popup refills from that answer, grows or shrinks to the number of
 rows, and puts the cursor on the entry the change was about — the entry added,
 changed or moved, or the one the cursor stood on when a line was added or
 removed — or, after an entry was removed, on the next entry, else the last.
+That last rule is `UserMenuState.cursorWithin`, and every refill goes through
+it: the row the cursor had is looked for in the menu the list is given, so a
+row past the end of a shorter list becomes the last entry, and a menu with no
+entry left leaves the cursor on no row. Until P22.1 the refill put the index
+back as it was, and `ListView` throws on an index it does not hold — `Del` on
+the bottom row, or on the only one, ended the session.
 Every key is in `KeyMap` (`userMenuAddKey`, `userMenuChangeKey`,
 `userMenuRemoveKey`, `userMenuEarlierKey`, `userMenuLaterKey`), and the second
 line of the hint names them.
@@ -1146,6 +1152,14 @@ over that record, in a module of `Ui` compiled before the view that opens no
 size of the viewport, the cursor of a list, the text of a field), asks the
 module for the next value and stores it. `ResultRow.following`, the fourth
 place the mutation sat, is a fold and holds nothing.
+
+**The user menu popup joined them in P22.1.** It kept the menu and the entry
+chosen in two settable properties and decided in its handlers which row holds
+an entry, which one a step lands on and where the cursor goes after a refill.
+`UserMenuState` holds the two as one record and answers all of that from the
+menu and the cursor the list reports; the cursor itself stays in the
+`ListView`, which is where it already is. The favourites popup, the history
+popup and the panel's view still keep their properties.
 
 **The view still answers what a test of the view asks.** `ContentView` keeps
 `Top`, `Left`, `Mode`, `Wrap`, `CodePage`, `Encoding`, `Rows()`,

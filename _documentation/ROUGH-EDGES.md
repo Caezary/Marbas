@@ -177,13 +177,6 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   Reading the mode through `fs.File.GetUnixFileMode` would close it for a
   launch; in a listing that is one more question per entry, on a hot path, and
   wants timing first.
-- `Del` on the bottom row of the user menu ends the session. The removal is
-  written first, so the menu is right at the next start; then `fill` in
-  `UserMenuDialog` puts the cursor back on the index it had, which is past the
-  end of the shorter list, and `ListView` throws — on the last entry of all as
-  well, where there is no row left to stand on. The crash is in `marbas.log`.
-  Seen on both systems in the manual pass of 2026-10-12; no test removes the
-  bottom row.
 - On a Linux without `xdg-open` a document, a directory handed to the file
   manager and a drive handed over from the popup are all reported in the
   runtime's words — *Could not start '…': An error occurred trying to start
