@@ -2,6 +2,7 @@ module Marbas.Ui.Dialogs.UserMenuDialog
 
 open System
 open System.Collections.ObjectModel
+open System.Drawing
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
@@ -54,6 +55,9 @@ let private cursorOf (list: ListView) = list.SelectedItem |> Option.ofNullable
 
 let private standOn (list: ListView) index = list.SelectedItem <- Nullable index
 
+let private showFrom (list: ListView) top =
+    list.Viewport <- Rectangle(list.Viewport.X, top, list.Viewport.Width, list.Viewport.Height)
+
 let private fill (list: ListView) (dialog: UserMenuView) =
     let cursor = cursorOf list
 
@@ -62,6 +66,9 @@ let private fill (list: ListView) (dialog: UserMenuView) =
     |> list.SetSource
 
     UserMenuState.cursorWithin cursor dialog.State |> Option.iter (standOn list)
+
+    UserMenuState.topRowWithin list.Viewport.Height list.Viewport.Y dialog.State
+    |> showFrom list
 
 let private choosing (dialog: UserMenuView) command =
     dialog.Change(UserMenuState.choosing command)

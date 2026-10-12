@@ -198,3 +198,41 @@ let ``a step up from the first entry goes nowhere`` () =
     let row = UserMenuState.stepped Upward (Some 0) sample
 
     Assert.Equal(None, row)
+
+[<Theory>]
+[<InlineData(4, 1)>]
+[<InlineData(4, 3)>]
+[<InlineData(20, 2)>]
+let ``rows that all fit are shown from the first one`` (height: int, top: int) =
+    let shown = UserMenuState.topRowWithin height top sample
+
+    Assert.Equal(0, shown)
+
+[<Theory>]
+[<InlineData(2, 0)>]
+[<InlineData(2, 1)>]
+[<InlineData(2, 2)>]
+[<InlineData(1, 3)>]
+let ``a list scrolled no further than its last rows keeps its place`` (height: int, top: int) =
+    let shown = UserMenuState.topRowWithin height top sample
+
+    Assert.Equal(top, shown)
+
+[<Theory>]
+[<InlineData(2, 3, 2)>]
+[<InlineData(3, 2, 1)>]
+[<InlineData(1, 7, 3)>]
+let ``a list scrolled past its last rows comes back until the bottom row is the last one``
+    (height: int, top: int, expected: int)
+    =
+    let shown = UserMenuState.topRowWithin height top sample
+
+    Assert.Equal(expected, shown)
+
+[<Fact>]
+let ``an empty menu is shown from the first row`` () =
+    let emptied = UserMenuState.start UserMenu.empty
+
+    let shown = UserMenuState.topRowWithin 1 1 emptied
+
+    Assert.Equal(0, shown)

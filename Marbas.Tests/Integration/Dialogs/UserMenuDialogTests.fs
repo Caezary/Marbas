@@ -412,3 +412,26 @@ let ``a change the file refused leaves the popup as it was`` () =
 
     Assert.Single record.Changes |> ignore
     Assert.Equal(4, (shown dialog).Length)
+
+let private pressThenLaidOut (dialog: UserMenuDialog.UserMenuView) key =
+    pressOn dialog key
+    dialog.Layout(Size(100, 30)) |> ignore
+
+let private topRow (dialog: UserMenuDialog.UserMenuView) =
+    (UserMenuDialog.entries dialog).Viewport.Y
+
+let private rowsInSight (dialog: UserMenuDialog.UserMenuView) =
+    (UserMenuDialog.entries dialog).Viewport.Height
+
+[<Fact>]
+let ``an entry added to a menu of one row leaves both rows in sight`` () =
+    let _, dialog =
+        editedWith (Some(MenuEntryForm.CommandEntered extra)) None (menuOf [ CommandItem edit ])
+
+    use dialog = dialog
+
+    pressThenLaidOut dialog KeyMap.userMenuAddKey
+
+    Assert.Equal(2, rowsInSight dialog)
+    Assert.Equal(0, topRow dialog)
+    Assert.Equal(Some 1, cursor dialog)

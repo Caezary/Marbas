@@ -61,6 +61,7 @@ manager — were not walked: there was none to walk them on.
 **Phase 22 is paying for that pass**, one finding a task. P22.1 closed the
 second of the two: the bottom row and the only row of the user menu are
 removed like any other, and the cursor is held inside the list it is given.
+An entry added to a menu of one no longer hides the entry above it.
 
 | Phase | Tasks | State | Journal |
 |-------|-------|-------|---------|

@@ -785,6 +785,17 @@ row past the end of a shorter list becomes the last entry, and a menu with no
 entry left leaves the cursor on no row. Until P22.1 the refill put the index
 back as it was, and `ListView` throws on an index it does not hold — `Del` on
 the bottom row, or on the only one, ended the session.
+
+**A refill also says which row the list is shown from.** The popup grows with
+its menu, but the list is given its new height by the layout pass that follows
+the key, and the cursor is put on the new entry before that: a list of one row
+told to stand on its second scrolls down to show it, and keeps that scroll once
+it is two rows tall, so an entry added to a menu of one was shown alone, as if
+it had replaced the other. `UserMenuState.topRowWithin` answers the row a list
+of a given height may start at — never so far down that a row is left empty
+under the last one while another is hidden above — and `fill` sets the list's
+viewport to it. `fill` already runs on `FrameChanged`, so the scroll is put
+right in the same pass that gives the list its height.
 Every key is in `KeyMap` (`userMenuAddKey`, `userMenuChangeKey`,
 `userMenuRemoveKey`, `userMenuEarlierKey`, `userMenuLaterKey`), and the second
 line of the hint names them.

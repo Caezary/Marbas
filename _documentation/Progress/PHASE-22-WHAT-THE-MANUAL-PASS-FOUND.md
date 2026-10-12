@@ -43,7 +43,7 @@ Two things went differently from the plan.
   opening no `Terminal.Gui` namespace. `changed` used to work out the nearest
   entry a second time after `fill` had put the cursor back; it now only moves
   the cursor to the entry the change was about, when there is one.
-  `UserMenuStateTests` holds one test per rule, thirty in all, and the
+  `UserMenuStateTests` holds one test per rule, thirty for these, and the
   twenty-five tests that press keys on the real popup pass unchanged.
 
 The screen was read with the `render-tui-screen` probe, through
@@ -53,4 +53,18 @@ one row shorter; `Del` and *Remove entry* again leave an empty list; `↓`,
 `Enter` and `Del` on the empty menu do nothing, and `Esc` closes it with
 nothing chosen.
 
-4147 tests pass and 16 skip on Windows.
+**A second defect of the same refill was closed with it.** It was not in the
+plan: it was seen in the running application once the first was fixed. An
+entry added to a menu of one was shown alone, the first entry out of sight
+until `↑` was pressed, as if the new one had replaced it. The popup grows with
+its menu, but the list gets its new height from the layout pass after the key,
+and the cursor was put on the new row while the list was still one row tall —
+so the list scrolled down to it and kept the scroll when it grew. A test in
+`UserMenuDialogTests` adds an entry to a menu of one, lays the popup out as the
+loop would and failed on a list shown from its second row.
+`UserMenuState.topRowWithin` now answers the row a list of a given height may
+start at, and `fill`, which already runs when the list's frame changes, sets
+the viewport to it. Eleven tests in `UserMenuStateTests` hold the rule, and the
+probe shows both entries after `Ins`, where it showed one before.
+
+4159 tests pass and 16 skip on Windows.

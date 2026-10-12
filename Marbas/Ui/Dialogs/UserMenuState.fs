@@ -63,3 +63,8 @@ module UserMenuState =
         match direction with
         | Downward -> positions |> List.tryFind (fun position -> position > standing)
         | Upward -> positions |> List.tryFindBack (fun position -> position < standing)
+
+    let topRowWithin (height: int) (top: int) (state: UserMenuState) =
+        let rows = UserMenu.items state.Menu |> List.length
+
+        top |> min (rows - height) |> max 0
