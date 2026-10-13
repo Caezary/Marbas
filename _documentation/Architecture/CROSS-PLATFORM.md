@@ -213,7 +213,7 @@ permanent delete is the same `Operations.delete` as before on either platform.
 |-------|---------|-------|----------|
 | `Shift+F1` packs the targets into an archive in the other panel | same | same | suite |
 | `Shift+F2` empties the archives under the cursor or marked into the other panel | same | same | suite |
-| An archive made by another tool unpacks here with its tree and its times | `tar` and 7-Zip's 7z: the tree, and the files to the second; 7-Zip's zip: the tree, the files an hour late; every directory dated at the unpacking | `tar`: the tree, and the files to the second; every directory dated at the unpacking | manual 2026-10-12; **manual** on Linux for `zip` and 7-Zip, which were not installed when the fixture was made |
+| An archive made by another tool unpacks here with its tree and its times | `tar` and 7-Zip's 7z: the tree, and the files to the second; 7-Zip's zip: the tree, the files an hour late; a directory at the time its entry carries since P22.3, where the pass saw it dated at the unpacking | `tar`: the tree, and the files to the second; a directory the same | manual 2026-10-12 for the files; the directories: suite, disk test, **manual** to walk again; **manual** on Linux for `zip` and 7-Zip, which were not installed when the fixture was made |
 | The name is deduced from the targets, the root from the drive | `diskCcontents.zip` | `rootcontents.zip` | suite (one test per platform) |
 | Entry paths inside the archive are relative and separated by `/` | `docs\a.txt` is stored as `docs/a.txt` | already `/` | suite |
 | A backslash inside a Linux file name stays in the entry name | n/a | it does not: `SharpZipLib`'s `ZipEntry` cleans the name, so `a\b.txt` is written as `a/b.txt` and the archive gains a level the disk never had | manual 2026-10-12: `unzip -l` names `a/b.txt`, and the panel shows a directory `a` |
@@ -221,7 +221,7 @@ permanent delete is the same `Operations.delete` as before on either platform.
 | The zip opens in the system's own tool | Explorer, *Extract All* | `unzip`; a desktop's archive manager was not tried | manual 2026-10-12; **manual** for an archive manager on Linux, waiting for a desktop |
 | The tar.gz opens in the system's own tool | `tar -xzf` | `tar -xzf` | manual 2026-10-12 |
 | A password-protected zip asks for the password there | Explorer cannot open AES zips at all; 7-Zip can | `7z x` | manual 2026-10-12 |
-| Modification times survive the round trip | a file: to the second through `tar`, an hour early through Explorer and 7-Zip; a directory: **no**, it carries the moment of packing | a file: to the second through `tar` and `unzip`, an hour early through 7-Zip; a directory: **no**, the same | manual 2026-10-12 |
+| Modification times survive the round trip | a file: to the second through `tar`, an hour early through Explorer and 7-Zip; a directory: its own time since P22.3, where the pass saw the moment of packing | a file: to the second through `tar` and `unzip`, an hour early through 7-Zip; a directory: the same | manual 2026-10-12 for the files; the directories: suite, disk test, **manual** to walk again |
 
 Everything up to the bytes is tested on `MockFileSystem`, both writers being
 stream APIs, and one test reads a zip back with `System.IO.Compression` after
@@ -241,10 +241,12 @@ Marbas adds none and reads none. So the files it packed came out of Explorer
 and of 7-Zip at `03:05:06` — both turn the local time back with today's offset
 — and out of `unzip` at `04:05`; and the zip 7-Zip made, whose local field
 7-Zip itself wrote as `05:05:06` beside an NTFS field holding the moment, was
-unpacked here at `05:05:06`. The directories are a second matter: the entries
-Marbas writes for them carry the moment of packing, and the times of the
-entries another tool wrote are not put on the directories unpacked. Both are in
-[Rough edges](../ROUGH-EDGES.md). On Linux the fixture held `tar`'s archive
+unpacked here at `05:05:06`. That is in [Rough edges](../ROUGH-EDGES.md). The
+directories were a second matter: the entries Marbas wrote for them carried
+the moment of packing, and the times of the entries another tool wrote were
+not put on the directories unpacked. P22.3 closed both — a directory is packed
+with its own time and unpacked with the one its entry carries, as
+[Archives](ARCHIVES.md) describes — and the rows wait to be walked again. On Linux the fixture held `tar`'s archive
 alone, since `zip` and 7-Zip were installed after it was made.
 
 ## Permissions

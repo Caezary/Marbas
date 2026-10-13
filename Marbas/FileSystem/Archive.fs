@@ -66,6 +66,10 @@ let private onDisk (fs: IFileSystem) (entry: Entry) (path: FileSystemPath) =
       Modified = known entry.Modified
       Content = fun () -> reading fs path }
 
+let private zipEntryAt (moment: DateTimeOffset option) (entry: ZipEntry) =
+    moment |> Option.iter (fun at -> entry.DateTime <- at.LocalDateTime)
+    entry
+
 let private intoZip compression (password: ArchivePassword option) (stream: Stream) pack =
     use zip = new ZipOutputStream(stream)
     zip.SetLevel(zipLevel compression)
@@ -75,15 +79,12 @@ let private intoZip compression (password: ArchivePassword option) (stream: Stre
 
     pack
         { AddDirectory =
-            fun name _ ->
-                zip.PutNextEntry(ZipEntry(name + "/"))
+            fun name moment ->
+                zip.PutNextEntry(zipEntryAt moment (ZipEntry(name + "/")))
                 zip.CloseEntry()
           AddFile =
             fun name stored ->
-                let entry = ZipEntry(name, Size = stored.Size)
-
-                stored.Modified
-                |> Option.iter (fun moment -> entry.DateTime <- moment.LocalDateTime)
+                let entry = zipEntryAt stored.Modified (ZipEntry(name, Size = stored.Size))
 
                 if password.IsSome then
                     entry.AESKeySize <- AesKeySize
@@ -156,10 +157,13 @@ let rec private adding (fs: IFileSystem) (control: Operations.BatchControl) sink
         match child.Entry.Kind, child.Entry.LinkTarget with
         | Directory, Some _ ->
             control.Report child.Path
-            attempt child.Path (fun () -> sink.AddDirectory (entryName fs root child.Path) None)
+            attempt child.Path (fun () -> sink.AddDirectory (entryName fs root child.Path) (known child.Entry.Modified))
         | Directory, None ->
             result {
-                do! attempt child.Path (fun () -> sink.AddDirectory (entryName fs root child.Path) None)
+                do!
+                    attempt child.Path (fun () ->
+                        sink.AddDirectory (entryName fs root child.Path) (known child.Entry.Modified))
+
                 let! below = Operations.attempting child.Path (fun () -> children fs child.Path)
                 do! below |> List.traverseResultM (adding fs control sink root) |> Result.ignore
             }
@@ -236,9 +240,7 @@ let private writeContent (fs: IFileSystem) (openContent: unit -> Stream) (path: 
 let private restoreTime (fs: IFileSystem) (info: ArchiveEntryInfo) (path: FileSystemPath) =
     fs.FileInfo.New(FileSystemPath.value path).LastWriteTimeUtc <- info.Modified.UtcDateTime
 
-let private unpackEntry (fs: IFileSystem) (control: Operations.BatchControl) destination target info openContent =
-    let path = landingPlace fs destination (segmentsFromTargetName target info)
-
+let private unpackEntry (fs: IFileSystem) (control: Operations.BatchControl) destination path info openContent =
     if control.IsCancelled() then
         Error(Operations.Cancelled path)
     elif not (FileSystemPath.strictlyUnder (FileSystemPath.platformOf fs) destination path) then
@@ -263,9 +265,15 @@ type private WalkEnd =
     | ReadThrough
     | StoppedByUser
 
+type private DatedDirectory =
+    { Target: int
+      Path: FileSystemPath
+      Moment: DateTimeOffset }
+
 type private UnpackWalk =
     { Progress: Map<int, TargetProgress>
       Unsettled: int
+      Dated: DatedDirectory list
       End: WalkEnd }
 
 let private progressOf (walk: UnpackWalk) index =
@@ -312,7 +320,33 @@ let private settling before after (walk: UnpackWalk) =
     else
         walk.Unsettled
 
-let private unpackingAll fs control destination (targets: ArchivePath array) =
+let private datedWith index path (info: ArchiveEntryInfo) outcome (dated: DatedDirectory list) =
+    match outcome, info.Kind, known info.Modified with
+    | Ok(), StoredDirectory, Some moment ->
+        { Target = index
+          Path = path
+          Moment = moment }
+        :: dated
+    | _ -> dated
+
+let private dateDirectory (fs: IFileSystem) (directory: DatedDirectory) =
+    attempt directory.Path (fun () ->
+        fs.Directory.SetLastWriteTimeUtc(FileSystemPath.value directory.Path, directory.Moment.UtcDateTime))
+
+let private datedLast (fs: IFileSystem) (walk: UnpackWalk) =
+    let progress =
+        walk.Dated
+        |> List.fold
+            (fun progress directory ->
+                match dateDirectory fs directory, Map.tryFind directory.Target progress with
+                | Ok(), _
+                | Error _, Some(Failed _) -> progress
+                | Error error, _ -> Map.add directory.Target (Failed error) progress)
+            walk.Progress
+
+    { walk with Progress = progress }
+
+let private unpackingAll (fs: IFileSystem) control destination (targets: ArchivePath array) =
     let bySegments = targetsBySegments targets
 
     let reached (walk: UnpackWalk) (info: ArchiveEntryInfo) =
@@ -322,14 +356,15 @@ let private unpackingAll fs control destination (targets: ArchivePath array) =
 
     let unpackInto info openContent (walk: UnpackWalk) index =
         let target = targets[index]
+        let path = landingPlace fs destination (segmentsFromTargetName target info)
         let before = progressOf walk index
-
-        let after =
-            advanced target info (unpackEntry fs control destination target info openContent)
+        let outcome = unpackEntry fs control destination path info openContent
+        let after = advanced target info outcome
 
         { walk with
             Progress = Map.add index after walk.Progress
-            Unsettled = settling before after walk }
+            Unsettled = settling before after walk
+            Dated = datedWith index path info outcome walk.Dated }
 
     ArchiveStep<UnpackWalk>(fun walk item ->
         if control.IsCancelled() then
@@ -385,7 +420,9 @@ let private unpackingEach (fs: IFileSystem) control (request: ExtractRequest) ki
             step
             { Progress = Map.empty
               Unsettled = asked.Length
+              Dated = []
               End = ReadThrough }
+        |> datedLast fs
 
     targets
     |> List.indexed
@@ -475,20 +512,21 @@ let private staticSource (stored: Stored) =
     { new IStaticDataSource with
         member _.GetSource() = stored.Content() }
 
+let private directoryEntry (zip: ZipFile) (name: string) =
+    let entry = zip.EntryFactory.MakeDirectoryEntry(name + "/", false)
+    entry.Size <- 0L
+    entry.CompressedSize <- 0L
+    entry
+
 let private intoUpdate (zip: ZipFile) =
     { AddDirectory =
-        fun name _ ->
+        fun name moment ->
             replacing zip (name + "/")
-            zip.AddDirectory(name + "/")
+            zip.Add(zipEntryAt moment (directoryEntry zip name))
       AddFile =
         fun name stored ->
             replacing zip name
-            let entry = ZipEntry(name, Size = stored.Size)
-
-            stored.Modified
-            |> Option.iter (fun moment -> entry.DateTime <- moment.LocalDateTime)
-
-            zip.Add(staticSource stored, entry) }
+            zip.Add(staticSource stored, zipEntryAt stored.Modified (ZipEntry(name, Size = stored.Size))) }
 
 let private updatingZip (fs: IFileSystem) archive (dropped: ArchivePath list) level work =
     use stream =

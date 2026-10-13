@@ -401,6 +401,22 @@ file gets its modification time back — set as UTC, because a
 `DateTimeOffset.MinValue` on an entry that carries no time cannot be converted
 to a local time west of Greenwich without falling off the calendar.
 
+**A directory gets its time back last.** Writing a file into a directory moves
+the directory's own time, so a directory dated as it is made would be dated
+again by the first file unpacked into it. The walk therefore only remembers
+each directory entry it unpacked that carries a time — the target it belongs
+to, where it landed and the moment — and `datedLast` sets those once the
+archive has been read to its end, or to where the user stopped it. They are
+set in the reverse of the order they arrived in; the order among them cannot
+be observed, since dating a directory does not touch the one above it. An
+entry that carries no time, and a directory made only because a file needed
+it, is left as the system made it. A time that cannot be set fails the target
+the directory belongs to, as any other entry of it would, and the first
+failure of a target is the one it answers with. What it costs is one call per
+directory: 44 ms for a thousand on NTFS beside six and a half seconds of
+unpacking, as [Measurements](../Progress/MEASUREMENTS.md) has it. Until P22.3
+no directory was dated at all.
+
 **An entry that would climb out of the target is refused.** Every entry's
 landing place is resolved with `GetFullPath` and checked against the
 destination; `docs/../../evil.txt` therefore fails its target with
@@ -873,8 +889,17 @@ that cannot arise.
 a `Stored` — a size, a modification time that may be unknown, and a function
 that opens the content — so the packing walk hands it a file on disk and the
 rewriter hands it an entry buffered out of the old archive, and neither writer
-knows the difference. `Sink.AddDirectory` takes the time the same way, which is
-how a rewritten archive keeps directory times a fresh one has none of. The keys
+knows the difference. `Sink.AddDirectory` takes the time the same way: the
+packing walk hands it the directory's own, which the enumeration has already
+read, and the rewriter the one the old entry carried. Every writer puts it on
+the entry — the zip writer through `zipEntryAt`, which dates a file's entry
+too, and the zip update through an entry of its own making where
+`ZipFile.AddDirectory` would have stamped the moment of the call; `ZipFile.Add`
+refuses an entry whose sizes are not known to be zero, so `directoryEntry`
+says they are. A directory made with `F7` inside an archive has no time to
+hand over and takes the moment it is made. Until P22.3 the walk handed over
+none and the zip writers dropped what they were given, so every directory
+entry was dated at the packing. The keys
 a sink is given are the archive's own; `Archive.sinkAtLevel` derives the level-scoped view
 that `F5` and `F7` write through, so one writer serves both the survivors,
 copied at their own keys, and the additions, prefixed with the level.

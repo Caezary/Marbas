@@ -125,6 +125,24 @@ type UnwritableDirectory(denied: string) =
         let current = base.Directory.GetCurrentDirectory()
         once making (fun () -> UncreatableDirectory(this, current, denied) :> IDirectory)
 
+type private UndatedDirectory(accessor: IMockFileDataAccessor, current: string, denied: string) =
+    inherit MockDirectory(accessor, current)
+
+    override this.SetLastWriteTimeUtc(path: string, moment: DateTime) =
+        if path = denied then
+            raise (UnauthorizedAccessException $"Access to the path '{path}' is denied.")
+        else
+            base.SetLastWriteTimeUtc(path, moment)
+
+type UndatableDirectory(denied: string) =
+    inherit MockFileSystem()
+
+    let dating = Replaced<IDirectory>()
+
+    override this.Directory =
+        let current = base.Directory.GetCurrentDirectory()
+        once dating (fun () -> UndatedDirectory(this, current, denied) :> IDirectory)
+
 [<Literal>]
 let HeldOpenReason =
     "The process cannot access the file because it is being used by another process."

@@ -85,6 +85,7 @@
     <Compile Include="FileSystem\ArchiveIndexTests.fs" />
     <Compile Include="FileSystem\ForeignArchiveTests.fs" />
     <Compile Include="FileSystem\ArchiveExtractTests.fs" />
+    <Compile Include="FileSystem\ArchiveDirectoryTimeTests.fs" />
     <Compile Include="FileSystem\ArchiveListingTests.fs" />
     <Compile Include="FileSystem\LandingTests.fs" />
     <Compile Include="FileSystem\ArchiveChangeTests.fs" />
@@ -323,6 +324,7 @@
     <Compile Include="Integration\Disk\LinkTargetCopyTests.fs" />
     <Compile Include="Integration\Disk\DriveListTests.fs" />
     <Compile Include="Integration\Disk\ExecutableBitTests.fs" />
+    <Compile Include="Integration\Disk\DirectoryTimeTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

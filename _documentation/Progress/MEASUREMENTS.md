@@ -456,3 +456,32 @@ since the runtime's own `FileInfo` holds the mode from the one the enumeration
 already made. Reading the mode for the rows on screen alone, or reaching the
 runtime's enumeration past the wrapper, would take that back; neither was
 done.
+
+## A directory dated as it is packed and unpacked (P22.3, 2026-10-13)
+
+P22.3 hands every directory's time to the archive writers and sets it again on
+every directory unpacked, once the rest is written. Packing asks nothing new —
+the time is the one the enumeration already read — and unpacking gains one
+call per directory. A probe built in Release packed and unpacked a tree of
+1 020 directories and 3 000 files of a hundred bytes through `Archive.write`
+and `Archive.extract` on a real disk, the binary before and the binary after
+alternately: three times each on NTFS, five on ext4 under WSL 2.
+Milliseconds, the median.
+
+| | zip, pack | unpack | tar.gz, pack | unpack | 7z, pack | unpack |
+|---|---|---|---|---|---|---|
+| NTFS before | 527 | 7 102 | 270 | 6 405 | 864 | 6 309 |
+| NTFS after | 526 | 6 800 | 261 | 6 692 | 914 | 6 365 |
+| ext4 before | 203 | 336 | 69 | 511 | 895 | 233 |
+| ext4 after | 199 | 334 | 67 | 514 | 919 | 238 |
+
+**Nothing moved outside the spread.** On NTFS one unpacking differs from the
+next by up to a tenth, and the three after lie among the three before. The
+one column that reads slower on both systems, packing a 7z, was run ten more
+times each way on ext4: 864 to 966 ms before with a median of 918, 826 to 958
+after with a median of 869.
+
+**The dating itself, timed apart**, is 44 ms for the 1 021 directories on
+NTFS and 2.5 ms on ext4 — less than a hundredth of the unpacking on either.
+The directories unpacked by the binary before were dated at the unpacking,
+and by the binary after at the times the tree was given.

@@ -120,14 +120,9 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   is on the writing side, where the entry name would have to bypass
   `ZipEntry`'s cleaning. Run on Linux on 2026-10-12: `unzip -l` names `a/b.txt`
   and the panel shows a directory `a`.
-- A directory does not keep its time through an archive, in either direction.
-  Packing writes each directory entry with the moment of packing, in zip and in
-  tar alike, so every tool that unpacks it dates the directory to then; and
-  unpacking an archive whose directory entries do carry their times — one
-  `tar` wrote — leaves each directory dated at the unpacking. The files keep
-  theirs. Seen on both systems in the manual pass of 2026-10-12.
-- A file's time in a zip is the local time of the old two-second field and
-  nothing else, written and read. Marbas adds no field holding the exact
+- A file's time in a zip — and a directory's, which is kept since P22.3 — is
+  the local time of the old two-second field and nothing else, written and
+  read. Marbas adds no field holding the exact
   moment, so a tool that turns the local time back with today's offset from UTC
   is an hour out across a change of daylight-saving time: a file of February
   packed in October came out an hour early from Explorer's *Extract All* and

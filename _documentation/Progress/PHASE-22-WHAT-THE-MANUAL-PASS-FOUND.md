@@ -131,3 +131,55 @@ Rough edges.
 
 4174 tests pass and 22 skip on Windows; 4134 pass and 59 skip on Linux under
 WSL.
+
+**P22.3 keeps a directory's time through an archive, both ways.** The packing
+walk hands each directory's own time to the sink, where it handed `None`; the
+zip writer and the zip update put it on the entry, where they dropped it; and
+unpacking remembers every directory entry that carries a time and dates the
+directories once the archive has been read through. How the pieces fit is in
+[Archives](../Architecture/ARCHIVES.md).
+
+`ArchiveDirectoryTimeTests` was written first, twenty-seven tests on
+`MockFileSystem`, and twenty-five failed: a directory packed, one below it,
+one added to an archive and one already in an archive something else joins,
+each in zip, tar.gz and 7z and read back through the index; a directory
+unpacked, one below it and one that is the target itself, in the same three;
+and a directory out of a tar, a tar.bz2 and the tar.xz of the fixture. The two
+that passed say what must not change — an entry with no time, and a directory
+made only because a file needed it, are left as the system made them.
+
+Four things went differently from the plan.
+
+- **The mock says only in part why the directories are dated last.** On a disk
+  a file written into a directory moves the directory's time.
+  `Integration/Disk/DirectoryTimeTests.fs` packs and unpacks a dated tree on a
+  real disk in each of the three kinds. The code was changed once on purpose
+  to date each directory as it is made: all six of those failed, and five of
+  the twenty-seven on the mock.
+- **The directories are not sorted from the deepest up.** The plan asked for
+  that order. Dating a directory does not touch the one above it, so the order
+  among them shows nowhere; they are dated in the reverse of the order they
+  arrived in, which is deepest first for an archive that names a directory
+  before what is in it, and no sort is paid for.
+- **A time that cannot be set fails the target.** The plan did not say what a
+  refusal does. Each remembered directory carries the target it was unpacked
+  for, and a refusal becomes that target's failure unless it already has one;
+  `Fakes.UndatableDirectory` arranges it, and the other targets of the same
+  walk stay unpacked.
+- **The zip update needed an entry of its own.** `ZipFile.AddDirectory` takes
+  a name and nothing else, and `ZipFile.Add` refuses an entry whose sizes are
+  not known to be zero — which is how twelve tests of adding to a zip failed
+  at the first attempt, with *Entry cannot have any data*. `directoryEntry`
+  builds the entry the way the library's own factory does and says its sizes
+  are zero.
+
+No test unpacks a rar: the suite holds none, as before, and a rar is read
+through the same reader and dated by the same code as the rest.
+
+Packing and unpacking a tree of 1 020 directories and 3 000 files takes what it
+took, on NTFS and on ext4, in all three kinds; the dating by itself is 44 ms
+for those directories on NTFS and 2.5 ms on ext4. The rows are in
+[Measurements](MEASUREMENTS.md#a-directory-dated-as-it-is-packed-and-unpacked-p223-2026-10-13).
+
+4207 tests pass and 22 skip on Windows; 4167 pass and 59 skip on Linux under
+WSL.

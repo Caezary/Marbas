@@ -76,6 +76,14 @@ the mock on both: `DirectoryListing.readOn` takes the platform, and
 once on Unix, none on Windows, none by a walk — and can refuse to answer for
 one, which is how a file gone since it was enumerated is arranged.
 
+A directory's time through an archive was the fourth. On a disk the first
+file unpacked into a directory moves its time, which is why the directories
+are dated last, and the mock does not hold that for every case.
+`Integration/Disk/DirectoryTimeTests.fs` packs a dated tree into each kind
+Marbas writes, unpacks it and reads the times off the disk, on both legs.
+With the code changed to date a directory as it is made, all six failed
+there, where five of the twenty-seven tests on the mock did.
+
 Every test there works inside a `Scratch`, a fresh directory under the system
 temp folder that is removed with `Operations.delete` when the test ends — not
 with `Directory.Delete`, which stumbles on a junction inside the tree on
@@ -379,7 +387,9 @@ mock file system the rest of the suite uses, so the arrange block still says
 directory it may not read instead of throwing past its batch, and that an
 archive that cannot be finished is deleted rather than left unreadable. Anything
 `MockFileData` *can* express belongs on the file: these two exist because
-nothing else reaches those code paths.
+nothing else reaches those code paths. `Fakes.UndatableDirectory` is the same
+shape for one more refusal, a directory that will not take a time, and holds
+the rule that such a directory fails the target it was unpacked for.
 
 **What a walk asks the file system is counted, not read off the code.**
 `Fakes.WalkWitness` is a `MockFileSystem` whose `File`, `Directory`, `FileInfo`
