@@ -99,9 +99,8 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 - The entry colours are drawn by a driver no test has, so what a test can say is
   which attribute `RowRender` hands back, not what the screen looks like. The
   manual pass of 2026-10-12 looked, in cmder and in gnome-terminal: the kinds
-  are told apart — but for a program on Linux, which is the executable bit's
-  entry below and not the colour's — and bright blue reads on the panel's
-  blue. A terminal with a palette of its own is still for a person to look at.
+  are told apart — a program on Linux since P22.2, which reads its executable
+  bit — and bright blue reads on the panel's blue. A terminal with a palette of its own is still for a person to look at.
 
 ## Archives
 
@@ -164,19 +163,29 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 
 ## Running and editing
 
-- On Linux a file with its executable bit set is not a program to Marbas. It is
-  drawn as a plain file, `Enter` hands it to `xdg-open` instead of starting it,
-  and `Alt+Shift+R` says it is not a program. `DirectoryListing` and
-  `LaunchProcess` both read `IFileSystemInfo.UnixFileMode`, and the wrapper of
-  System.IO.Abstractions 22.2.0 does not pass the question on: asked under
-  .NET 10 for a file of mode `rwxrwxr-x` it answered `None`, where
-  `fs.File.GetUnixFileMode` and the runtime's own `FileInfo` answered the mode.
-  `MockFileSystem` holds whatever mode a test sets, so the suite never saw it;
-  the manual pass of 2026-10-12 did, with the published binary. What a listing
-  still draws as a program there is a name with one of the Windows extensions.
-  Reading the mode through `fs.File.GetUnixFileMode` would close it for a
-  launch; in a listing that is one more question per entry, on a hot path, and
-  wants timing first.
+- On Linux a program found by a search is drawn as a plain file in the results
+  window and in a panel of results, unless its name carries one of the Windows
+  extensions. A walk reads a directory without asking any file for its mode —
+  that question is one more `stat` per file, and a search is the path it would
+  cost most on — so a hit is a program by its name alone. `Enter` on it in a
+  panel of results still starts it: the launch asks for the mode of the one
+  file it is given.
+- On a mount that marks every file executable — a Windows drive under WSL, a
+  FAT or NTFS volume mounted without `fmask` — every file is a program to
+  Marbas, as it is to `ls`: all of them are drawn as programs, and `Enter` on a
+  document tries to start it and reports *Exec format error*, where until
+  P22.2 it was handed to `xdg-open`. An `Opened with:` row for the extension
+  still wins. Seen with the published binary on `/mnt/c` under WSL on
+  2026-10-13.
+- Listing a directory on Linux asks the system twice per file: the enumeration
+  reads each entry's status, and the mode has to be asked for again, because
+  the `FileInfo` wrapper of System.IO.Abstractions answers `None` for
+  `UnixFileMode` — an auto-property nothing fills, in 22.3.0 as in 22.2.0 —
+  while the runtime's own `FileInfo` holds the mode from the status it already
+  read. It costs 0.14 microseconds a file on ext4 and a seventh of the listing
+  on a Windows drive mounted into WSL, as
+  [Measurements](Progress/MEASUREMENTS.md) has it. A release of the package
+  that passes the question on would take the second one away.
 - On a Linux without `xdg-open` a document, a directory handed to the file
   manager and a drive handed over from the popup are all reported in the
   runtime's words — *Could not start '…': An error occurred trying to start

@@ -62,6 +62,20 @@ recorder that proves they were not reached. The Unix volume check is the one
 refusal the mock cannot hold: `MockFileSystem` names every drive `/:\` on Linux,
 so a second mount cannot be arranged.
 
+The executable bit was the third. `MockFileSystem` hands back whatever mode a
+test sets, through the `FileInfo` it builds as well as through
+`File.GetUnixFileMode`; the real wrapper answers `None` through the first, and
+since phase 10 every test of a program on Unix was true of the mock alone.
+`Integration/Disk/ExecutableBitTests.fs` gives a real file the bit and lists
+it, follows a link to it, lists a link that points at nothing, and has
+`LaunchProcess.describe` say what it would start. They are `[<UnixFact>]`
+with a reason of their own, so they run on the Linux leg and are skipped on
+Windows, where a file has no such bit. What decides by platform is tested on
+the mock on both: `DirectoryListing.readOn` takes the platform, and
+`Fakes.ModeWitness` counts which paths were asked for their mode — every file
+once on Unix, none on Windows, none by a walk — and can refuse to answer for
+one, which is how a file gone since it was enumerated is arranged.
+
 Every test there works inside a `Scratch`, a fresh directory under the system
 temp folder that is removed with `Operations.delete` when the test ends — not
 with `Directory.Delete`, which stumbles on a junction inside the tree on

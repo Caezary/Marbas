@@ -24,7 +24,10 @@ module FileSystemPath =
 
     let linkTargetOfInfo (info: IFileSystemInfo) =
         try
-            info.LinkTarget |> Option.ofObj |> Option.map FileSystemPath
+            if info.Attributes.HasFlag IO.FileAttributes.ReparsePoint then
+                info.LinkTarget |> Option.ofObj |> Option.map FileSystemPath
+            else
+                None
         with _ ->
             None
 

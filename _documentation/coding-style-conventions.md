@@ -269,7 +269,7 @@ or every byte. A change there is held to what the path cost before it.
 | Hot path | What runs on it | Where it was timed |
 |----------|-----------------|--------------------|
 | a key in a panel | the transition in `Update`, the render of both panels, the status line and the bar | [the performance review](reports/2026-09-19-performance-review.md), P1, P10 and P14 |
-| a directory listed and sorted | `DirectoryListing`, the sort, the rows of a panel | the same review, P6 and P12 |
+| a directory listed and sorted | `DirectoryListing`, the sort, the rows of a panel | the same review, P6 and P12; Measurements, P22.2 |
 | a file viewed, as text or as a dump | `FileWindow`, `TextEncoding`, `LineIndex`, `ViewerState`, the searches of `WindowSearch` and `ByteSearch` | [Measurements](Progress/MEASUREMENTS.md), P21.15 and P21.16 |
 | a copy, a move, a delete, a wipe, a size measured | the walks of `Operations` and `DirectoryMeasure`, and what a batch reports | Measurements, P15.25 and P21.3 |
 | a search by name or by text | `FileSearch`, `ContentMatch`, the results window, the results in a panel | Measurements, P21.14 and P21.16 |

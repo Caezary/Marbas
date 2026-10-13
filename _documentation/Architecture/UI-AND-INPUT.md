@@ -219,9 +219,20 @@ about on both. The mode bits themselves are read in `FileSystem`, by
 `EntryAttributes.executability` over a `UnixFileMode`, because since P15.23 no
 `Domain` type or function takes a `System.IO` enum; an archive entry, which has
 no mode, is classified by `Executability.ofName` alone.
-`IFileSystemInfo.UnixFileMode` answers `None` on Windows rather than throwing,
-and `MockFileSystem` lets a test set it, which is what makes the Unix half
-testable from a Windows machine. Which colour an entry then gets is
+The mode is asked through `fs.File.GetUnixFileMode`, and only by the listing a
+panel shows, on Unix: `DirectoryListing.readOn` takes the platform, `read`
+hands it `FileSystemPath.platformOf` of its file system, and a test hands it
+either one over a `MockFileSystem`, which keeps the mode a test sets — so both
+halves are tested on both systems. `IFileSystemInfo.UnixFileMode` would have
+been the free question, the runtime holding the mode of every entry it
+enumerates, but the wrapper of System.IO.Abstractions never fills it: it
+answered `None` for every file on a real disk until P22.2 stopped asking it.
+A link is asked about what it points at, and a file whose mode cannot be read —
+a link to nothing, a file gone since it was enumerated — is not a program and
+does not fail the listing. `entryFromInfo`, which every walk builds its
+entries with, asks nothing: a `stat` per file is what a copy, a delete or a
+search must not pay, so there a program is one by its name. What it costs a
+panel is in [Measurements](../Progress/MEASUREMENTS.md). Which colour an entry then gets is
 `EntryColor.classify` — directory, archive (by extension), executable, plain,
 or unverified for a search hit nothing could check, which wins over the rest —
 and it is `Ui`'s alone, because an archive is a display grouping and not a fact
@@ -240,7 +251,8 @@ Windows opens it in an editor rather than running it.
 **Asking about a mode bit is a separate question from asking about a name.**
 `EntryAttributes.executability` answers from the `UnixFileMode` alone and
 `Executability.classify` is the name-or-mode pair that takes its answer. The split exists because `LaunchProcess`
-needs the Unix half by itself: a `setup.exe` sitting on a Linux disk without an
+needs the Unix half by itself, and asks `fs.File.GetUnixFileMode` for the one
+file it is about to start: a `setup.exe` sitting on a Linux disk without an
 execute bit is worth colouring as a program and is *not* worth handing to
 `exec`, and one function answering both questions could only be wrong about one
 of them.

@@ -321,7 +321,7 @@ and its directory was gone after the next start.
 | `Shift+PgUp` / `Shift+PgDn` and `Shift+←` / `Shift+→` mark a page | yes | yes | suite (injected), manual 2026-10-12 |
 | The screen redraws when the terminal is resized | yes | yes | manual 2026-10-12 |
 | The sixteen classic colours look right | yes | yes | manual 2026-10-12 |
-| Directory / file / archive / program colours are told apart | yes | a directory, a file, an archive and a link: yes; a program: **no**, a file with its executable bit set is drawn as a plain one | manual 2026-10-12 |
+| Directory / file / archive / program colours are told apart | yes | yes; a program is a file with its executable bit set, read by the listing since P22.2 | manual 2026-10-12; a program on Linux: probe (the published binary in tmux, 2026-10-13) |
 | Bright blue file names stay readable on the blue panel | yes | yes | manual 2026-10-12 |
 | The rule under the listing joins the panel border | **no**: it stops at the border on either side, with no joint drawn | **no**, the same | manual 2026-10-12 |
 | Arrows stop at the ends of a panel; only `Tab` leaves it | yes | yes | suite (as handled keys), manual 2026-10-12 |
@@ -607,12 +607,12 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | A full-screen console editor gets every key and gives the terminal back | n/a, a console of its own | yes, the driver stopped and built again | suite (the switch); probe (tmux); manual 2026-10-12 |
 | The screen is whole again after the editor exits, at the size it has then | n/a, nothing waited | yes | probe (tmux); manual 2026-10-12 |
 | `Enter` walks into a directory and an archive | same | same | suite |
-| `Enter` runs a document, an executable and an associated file | same | a document and an associated file: same; an executable: **no** on a real disk, its mode is not read and it goes to `xdg-open` | suite; manual 2026-10-12 on Linux |
+| `Enter` runs a document, an executable and an associated file | same | a document and an associated file: same; an executable: started from its own file, by its mode | suite; disk test (the mode on a real disk); manual 2026-10-12 on Linux; an executable: probe (the published binary in tmux, 2026-10-13) |
 | `Alt+W` walks into the entry under the cursor | same | same | suite; manual 2026-10-12 on Linux, where the key arrives |
 | `Ctrl+PgDn` reaches the panel as a key at all | **yes** | yes | manual (Windows Terminal; gnome-terminal on 2026-10-12) |
-| A started program leaves the panels un-scribbled | a console program: own console, shell verb; a window program: started from its file, streams drained | streams drained; not seen, an executable is not started | suite (the start described); probe (ConEmu); manual 2026-10-12 on Windows; **manual** on Linux, waiting for the executable bit to be read |
+| A started program leaves the panels un-scribbled | a console program: own console, shell verb; a window program: started from its file, streams drained | streams drained | suite (the start described); probe (ConEmu); manual 2026-10-12 on Windows; **manual** on Linux |
 | A program named by its start is resolved to its file | as written, `PATH` with `PATHEXT`, App Paths | n/a | suite (mock); probe |
-| A started program does not hold the loop up | yes | not seen, an executable is not started | manual 2026-10-12 on Windows; **manual** on Linux, waiting for the executable bit to be read |
+| A started program does not hold the loop up | yes | yes: the session took the next key at once | manual 2026-10-12 on Windows; probe on Linux (the published binary in tmux, 2026-10-13), **manual** there still to come |
 | `F2` opens the user menu, a letter and `Enter` run an entry | same | same | suite; probe on Windows |
 | A user menu entry is started the way it names | shell verb; `cmd /s /c`, `cmd /s /k` | drained; `/bin/sh -c` for both shell ways | suite (the start described); manual 2026-10-12 (each way run) |
 | A user menu entry runs as administrator | `runas`, `cd /d` first in the shell | refused by platform, with the reason in the dialog | suite (described); manual 2026-10-12 |
@@ -624,7 +624,7 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | `Alt+R` on a directory opens the file manager | Explorer | the desktop's own, through `xdg-open`; where none is installed the start is reported as failed | manual 2026-10-12 on Windows; **manual** on Linux, waiting for a desktop |
 | `Alt+Shift+R` runs the entry elevated | same | same | suite; manual 2026-10-12 on Linux, where the key arrives and is not taken for `Alt+R` |
 | `Ctrl+Alt+Enter` reaches the panel as a key at all | **no** | **no**, nothing arrives | manual (Windows Terminal; gnome-terminal on 2026-10-12) |
-| An executable starts with administrator rights | `runas`, the system prompts | refused, but as *not a program*: the executable bit is not read, so the platform's refusal is never reached | manual 2026-10-12 |
+| An executable starts with administrator rights | `runas`, the system prompts | refused by platform, with the reason in the dialog | manual 2026-10-12 on Windows; probe on Linux (the published binary in tmux, 2026-10-13) |
 | A prompt the user turns down leaves no trace | `Win32Exception` 1223, silence | n/a | manual 2026-10-12 |
 | A document refuses to be run elevated | same | same | suite |
 | The handlers of a common extension are listed | registry | XDG mime database | Windows: manual 2026-10-12; Unix: suite |
@@ -737,19 +737,29 @@ goes to `xdg-open`, which is the desktop's own idea of what opens a file. The
 first launch on either system is what the rows above check by hand; the
 adapter itself is out of the suite's reach, like every other one.
 
-**On Linux the executable bit does not reach Marbas, and the first launch by
+**On Linux the executable bit did not reach Marbas, and the first launch by
 hand is what found it.** The manual pass of 2026-10-12 pressed `Enter` on a
 shell script of mode `rwxrwxr-x` and was told that `xdg-open` could not be
 started; `Alt+Shift+R` on the same file said it was not a program, and the
-panel drew it as a plain file. The listing and the adapter both ask
+panel drew it as a plain file. The listing and the adapter both asked
 `IFileSystemInfo.UnixFileMode`, and the wrapper of System.IO.Abstractions
-22.2.0 answers `None` for every file — measured under WSL beside the runtime's
-own `FileInfo` and beside `fs.File.GetUnixFileMode`, which both gave the mode.
-`MockFileSystem` keeps the mode a test sets, so every row marked *suite* is
-true of the logic and none of them had met a real disk. Until it is put right
-the two rows on a started program cannot be walked on Linux, and the refusal
-to raise rights is reached only from the user menu. It is a defect, recorded
-in [Rough edges](../ROUGH-EDGES.md).
+answers `None` for every file — measured under WSL beside the runtime's own
+`FileInfo` and beside `fs.File.GetUnixFileMode`, which both gave the mode, in
+22.2.0 and again in 22.3.0, where the property is still one nothing fills.
+`MockFileSystem` keeps the mode a test sets, so every row marked *suite* was
+true of the logic and none of them had met a real disk.
+
+**Since P22.2 the mode is asked through `fs.File.GetUnixFileMode`.** The
+listing a panel shows asks it of every file, on Unix alone, and the launch of
+the one file it starts; `Integration/Disk/ExecutableBitTests.fs` holds both to
+a real disk, on the Linux leg, and is skipped on Windows. The published binary
+was then driven in tmux under WSL over a directory holding a script of mode
+`rwxr-xr-x` and a text file: the script is drawn in the colour of a program
+and the text file is not, `Enter` on the script starts it — the file it
+touches appears in the panel — and `Alt+Shift+R` on it answers that a terminal
+application cannot ask this system for administrator rights. A mount that
+marks every file executable makes every file a program, which
+[Rough edges](../ROUGH-EDGES.md) records.
 
 **Attributes are not the same bits everywhere.** The properties popup offers
 read-only, hidden, system and archive because that is what `FileAttributes`

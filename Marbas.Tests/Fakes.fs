@@ -329,6 +329,30 @@ type ExistenceWitness() =
 
     override this.File = once reading (fun () -> AskedFile(this, asked.Add) :> IFile)
 
+type private ModeAskedFile(accessor: IMockFileDataAccessor, asked: string -> unit, unanswered: string list) =
+    inherit MockFile(accessor)
+
+    override this.GetUnixFileMode(path: string) =
+        asked path
+
+        if List.contains path unanswered then
+            raise (FileNotFoundException path)
+
+        base.GetUnixFileMode path
+
+type ModeWitness(unanswered: string list) =
+    inherit MockFileSystem()
+
+    let asked = ResizeArray<string>()
+    let reading = Replaced<IFile>()
+
+    new() = ModeWitness []
+
+    member _.AskedForMode = asked |> Seq.sort |> List.ofSeq
+
+    override this.File =
+        once reading (fun () -> ModeAskedFile(this, asked.Add, unanswered) :> IFile)
+
 type private Watching() =
     let asked = ResizeArray<string>()
     let enumerated = ResizeArray<string>()

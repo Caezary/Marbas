@@ -66,10 +66,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   in the `F12` popup is started with that program; anything else is handed to
   the system, which covers an executable, a document and a shortcut alike —
   Windows through the shell verb, so a console program gets a console of its
-  own, and Linux through `xdg-open` unless the entry carries an execute bit.
-  That bit is not read off a real disk yet: on Linux a program is drawn as an
-  ordinary file, goes to `xdg-open` like one, and is told it is not a program
-  by `Alt+Shift+R`, as [Rough edges](../ROUGH-EDGES.md) records.
+  own, and Linux through `xdg-open` unless the entry carries an execute bit,
+  which starts the file itself. A panel on Linux reads that bit for every file
+  it lists, a link's from what it points at, and draws the file as a program;
+  a walk does not, so a program found by a search is one by its name alone.
   On Windows a window program — the executable itself, or the program chosen
   for the extension — is started from its file with its output thrown away
   instead, so one such as VS Code cannot write its log over the panels; the

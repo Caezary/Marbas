@@ -389,3 +389,70 @@ fastest run is what it was. After the change the walk starts half a second into
 the process where it started seventeen seconds in, and with tiered compilation
 switched off both binaries walk the file in 246 to 252 ms, so what differs is
 how far the runtime had warmed up when the row began.
+
+## A listing that asks for the mode and not for the link (P22.2, 2026-10-13)
+
+P22.2 had to read the executable bit of every file a panel lists on Unix, and
+the only way through `IFileSystem` is `fs.File.GetUnixFileMode` — one more
+question to the system per file, on a path where that is forbidden. So the
+listing was timed before the change and after it, and taken apart first. A
+probe built in Release calls `DirectoryListing.listForDisplay` as a panel does,
+`read` beneath it and `children`, which every walk reads a directory through,
+on a directory of 10 000 files of a hundred bytes and 100 directories, every
+tenth file with its executable bit: on ext4 under WSL 2 and on NTFS on the
+same Windows machine, and on 2 000 files and 20 directories of the Windows
+drive as WSL mounts it (9p), where every question costs about half a
+millisecond. The binary before and the binary after ran alternately, five
+times each (three on the mount), forty rounds a run after five to warm up;
+milliseconds, the median of the medians.
+
+The listing taken apart, each part added to the one above:
+
+| What is asked of each entry | ext4, 10 000 | 9p mount, 2 000 | NTFS, 10 000 |
+|---|---|---|---|
+| the enumeration alone | 12.8 | 1 138 | 4.2 |
+| + `Attributes` | 11.9 | 1 124 | 4.2 |
+| + `LastWriteTime` | 13.0 | 1 133 | 5.8 |
+| + `Length` | 12.5 | 1 142 | 7.2 |
+| + `LinkTarget` | 16.4 | 1 989 | 541 |
+| + `LinkTarget`, only where `Attributes` say `ReparsePoint` | 12.6 | 1 144 | 7.3 |
+| `GetUnixFileMode` of every file, by itself | 7.4 | 1 935 | — |
+
+**The link was the cost nobody had timed.** `FileSystemInfo.LinkTarget` asks
+the system every time, for a plain file as for a link: `readlink` on Unix, and
+on Windows a handle opened on the entry, a control code sent to it and the
+handle closed. On NTFS that was 98 % of a listing — 0.05 ms an entry, over half
+a second for ten thousand. The attributes an enumeration has already read say
+whether an entry is a reparse point, which every symbolic link and junction is
+on both systems, so `FileSystemPath.linkTargetOfInfo` now asks for the target
+of those alone.
+
+| | `listForDisplay` before | after | `read` before | after | `children` before | after |
+|---|---|---|---|---|---|---|
+| NTFS, 10 000 | 561 | 26 | 541 | 7.0 | 544 | 7.4 |
+| ext4, 10 000 | 36.9 | 38.3 | 18.9 | 20.6 | 19.8 | 16.3 |
+| 9p mount, 2 000 | 1 936 | 2 211 | 1 936 | 2 213 | 1 942 | 1 116 |
+
+**On Windows a directory of ten thousand is listed in a twentieth of the
+time**, and a walk reads one in a seventieth: copying, deleting, measuring and
+searching all read a directory through `children`. Nothing asks for a mode
+there.
+
+**On Linux the mode is paid for by the link, nearly.** With the mode asked and
+the link still asked of every entry, the listing took 41.9 ms on ext4 and
+3 110 ms on the mount — an eighth and more than half on top. With both changes
+it takes 1.4 ms more than before on ext4, 0.14 microseconds a file, which is
+inside the spread of the five runs for `listForDisplay` and outside it for
+`read`; on the mount it takes 275 ms more, a seventh. A walk asks for no mode
+and is a sixth faster on ext4 and takes little more than half the time on the
+mount.
+
+**The price was taken as in proportion.** A panel on Linux shows which files
+are programs for a millisecond and a half in ten thousand files. The mount is
+the worst case there is — two seconds for two thousand files before anything
+was changed — and a quarter of a second more buys the same answer; what is
+left of it is the second `stat` the wrapper of System.IO.Abstractions forces,
+since the runtime's own `FileInfo` holds the mode from the one the enumeration
+already made. Reading the mode for the rows on screen alone, or reaching the
+runtime's enumeration past the wrapper, would take that back; neither was
+done.

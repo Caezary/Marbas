@@ -1,5 +1,6 @@
 module Marbas.Tests.Adapters.LaunchProcessTests
 
+open System.IO
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
@@ -33,6 +34,51 @@ let ``a directory on Unix is handed to the desktop's opener rather than run`` ()
     let start = Expect.ok described
     Assert.Equal(LaunchProcess.DesktopOpener, start.FileName)
     Assert.Equal<string list>([ at "media/stick" ], List.ofSeq start.ArgumentList)
+
+let private moded (mode: UnixFileMode) =
+    let data = MockFileData "#!/bin/sh"
+    data.UnixMode <- mode
+    data
+
+let private asUser target =
+    { elevating target with
+        Elevation = AsUser }
+
+[<Fact>]
+let ``a file with its executable bit set is started from its own file on Unix`` () =
+    let fs = Fakes.ModeWitness()
+
+    fs.AddFile(at "start/tool", moded (UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute))
+
+    let described =
+        LaunchProcess.describe fs Unix WindowPrograms.none (asUser (at "start/tool"))
+
+    let start = Expect.ok described
+    Assert.Equal(at "start/tool", start.FileName)
+    Assert.Empty start.ArgumentList
+    Assert.Equal<string list>([ at "start/tool" ], fs.AskedForMode)
+
+[<Fact>]
+let ``a file without the bit is handed to the desktop's opener on Unix`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes", moded (UnixFileMode.UserRead ||| UnixFileMode.UserWrite))
+
+    let described =
+        LaunchProcess.describe fs Unix WindowPrograms.none (asUser (at "start/notes"))
+
+    let start = Expect.ok described
+    Assert.Equal(LaunchProcess.DesktopOpener, start.FileName)
+    Assert.Equal<string list>([ at "start/notes" ], List.ofSeq start.ArgumentList)
+
+[<Fact>]
+let ``a file whose mode cannot be read on Unix is reported, not started`` () =
+    let fs = Fakes.ModeWitness [ at "start/gone" ]
+    fs.AddFile(at "start/gone", MockFileData "")
+
+    let outcome =
+        LaunchProcess.start fs Unix WindowPrograms.none (asUser (at "start/gone"))
+
+    Assert.Equal(Error(LaunchRefused(fp (at "start/gone"), at "start/gone")), outcome)
 
 [<Fact>]
 let ``a Unix system has no administrator rights to ask for, and says so`` () =

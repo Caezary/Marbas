@@ -61,7 +61,13 @@ manager — were not walked: there was none to walk them on.
 **Phase 22 is paying for that pass**, one finding a task. P22.1 closed the
 second of the two: the bottom row and the only row of the user menu are
 removed like any other, and the cursor is held inside the list it is given.
-An entry added to a menu of one no longer hides the entry above it.
+An entry added to a menu of one no longer hides the entry above it. P22.2
+closed the first: a panel on Linux reads the executable bit of the files it
+lists, so a program is coloured, started by `Enter` and refused its rights by
+`Alt+Shift+R` as one. Timing that listing found that asking every entry for
+its link target was most of what a listing cost — on Windows nearly all of it
+— and a directory of ten thousand files is listed there in a twentieth of the
+time.
 
 | Phase | Tasks | State | Journal |
 |-------|-------|-------|---------|
@@ -87,7 +93,7 @@ An entry added to a menu of one no longer hides the entry above it.
 | 19 — The viewer finds and decodes | P19.1–P19.6 | done | [journal](Progress/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) |
 | 20 — The user menu | P20.1–P20.5 | done | [journal](Progress/PHASE-20-THE-USER-MENU.md) |
 | 21 — The log and the debts | P21.1–P21.18 | done | [journal](Progress/PHASE-21-THE-LOG-AND-THE-DEBTS.md) |
-| 22 — What the manual pass found | P22.1–P22.13 | in progress (1 of 13) | [journal](Progress/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) |
+| 22 — What the manual pass found | P22.1–P22.13 | in progress (2 of 13) | [journal](Progress/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) |
 
 ## What works today
 

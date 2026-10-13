@@ -1,6 +1,7 @@
 module Marbas.Tests.FileSystem.DirectoryListingTests
 
 open System
+open System.IO
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
@@ -188,3 +189,124 @@ let ``the entry leading up is a plain directory named two dots, dated as it is t
           Verification = Verified },
         entry
     )
+
+let private ownerRuns =
+    UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute
+
+let private ownerWrites = UnixFileMode.UserRead ||| UnixFileMode.UserWrite
+
+let private moded (mode: UnixFileMode) =
+    let data = MockFileData "#!/bin/sh"
+    data.UnixMode <- mode
+    data
+
+let private withModes () =
+    let fs = Fakes.ModeWitness()
+    fs.AddDirectory(at "data/docs")
+    fs.AddFile(at "data/tool", moded ownerRuns)
+    fs.AddFile(at "data/notes", moded ownerWrites)
+    fs.AddFile(at "data/setup.exe", moded ownerWrites)
+    fs
+
+let private executabilityOf name (entries: Entry list) =
+    (entries |> List.find (fun entry -> entry.Name = EntryName.create name)).Executability
+
+[<Fact>]
+let ``on Unix a file with its executable bit set is listed as a program`` () =
+    let fs = withModes ()
+
+    let entries = readOn Unix fs (fp (at "data")) |> Expect.ok
+
+    Assert.Equal(Executable, executabilityOf "tool" entries)
+
+[<Fact>]
+let ``on Unix a file without the bit is listed as a plain file`` () =
+    let fs = withModes ()
+
+    let entries = readOn Unix fs (fp (at "data")) |> Expect.ok
+
+    Assert.Equal(NotExecutable, executabilityOf "notes" entries)
+
+[<Fact>]
+let ``on Unix a program's extension still makes a program of a file without the bit`` () =
+    let fs = withModes ()
+
+    let entries = readOn Unix fs (fp (at "data")) |> Expect.ok
+
+    Assert.Equal(Executable, executabilityOf "setup.exe" entries)
+
+[<Fact>]
+let ``on Unix a directory is no program, whatever its mode`` () =
+    let fs = withModes ()
+
+    let entries = readOn Unix fs (fp (at "data")) |> Expect.ok
+
+    Assert.Equal(NotExecutable, executabilityOf "docs" entries)
+
+[<Fact>]
+let ``on Windows the bit makes no program of a file`` () =
+    let fs = withModes ()
+
+    let entries = readOn Windows fs (fp (at "data")) |> Expect.ok
+
+    Assert.Equal(NotExecutable, executabilityOf "tool" entries)
+
+[<Fact>]
+let ``on Windows a program is known by its extension`` () =
+    let fs = withModes ()
+
+    let entries = readOn Windows fs (fp (at "data")) |> Expect.ok
+
+    Assert.Equal(Executable, executabilityOf "setup.exe" entries)
+
+[<Fact>]
+let ``on Unix the mode is asked once for each file and for no directory`` () =
+    let fs = withModes ()
+
+    readOn Unix fs (fp (at "data")) |> ignore
+
+    Assert.Equal<string list>([ at "data/notes"; at "data/setup.exe"; at "data/tool" ], fs.AskedForMode)
+
+[<Fact>]
+let ``on Windows no file is asked for its mode`` () =
+    let fs = withModes ()
+
+    readOn Windows fs (fp (at "data")) |> ignore
+
+    Assert.Empty fs.AskedForMode
+
+[<Fact>]
+let ``a walk asks no file for its mode`` () =
+    let fs = withModes ()
+
+    children fs (fp (at "data")) |> ignore
+
+    Assert.Empty fs.AskedForMode
+
+[<Fact>]
+let ``a single entry looked up asks nothing for its mode`` () =
+    let fs = withModes ()
+
+    existingEntry fs (fp (at "data/tool")) |> ignore
+
+    Assert.Empty fs.AskedForMode
+
+[<Fact>]
+let ``a file whose mode cannot be read is listed as a plain file and the listing stands`` () =
+    let fs = Fakes.ModeWitness [ at "data/gone" ]
+    fs.AddFile(at "data/gone", moded ownerRuns)
+    fs.AddFile(at "data/tool", moded ownerRuns)
+
+    let entries = readOn Unix fs (fp (at "data")) |> Expect.ok
+
+    Assert.Equal(NotExecutable, executabilityOf "gone" entries)
+    Assert.Equal(Executable, executabilityOf "tool" entries)
+
+[<Fact>]
+let ``the listing asks as the platform of its file system asks`` () =
+    let fs = withModes ()
+    let asPlatform = readOn (FileSystemPath.platformOf fs) fs (fp (at "data"))
+
+    let entries = read fs (fp (at "data"))
+
+    Assert.Equal(asPlatform, entries)

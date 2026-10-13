@@ -92,7 +92,13 @@ where Windows refuses the user a symbolic link.
 
 **A directory link is a leaf.** A listing entry carries `LinkTarget`, read
 through `FileSystemPath.linkTargetOfInfo` — the one answer to "is this a link" that
-the listing and every walk share. A link is drawn in bright cyan whatever it
+the listing and every walk share. It asks for the target only of an entry
+whose attributes say `ReparsePoint`, which every symbolic link and junction
+carries on both systems and `MockFileSystem` sets on the links it makes:
+`FileSystemInfo.LinkTarget` goes to the system each time it is read, for a
+plain file as for a link, and asked of every entry it was 98 % of a listing
+on Windows until P22.2 timed it
+([Measurements](../Progress/MEASUREMENTS.md)). A link is drawn in bright cyan whatever it
 points at, and the status line says `twin -> C:\data\docs` after its name. Then
 every recursive walk in the application takes the link and not the tree behind
 it:

@@ -322,6 +322,7 @@
     <Compile Include="Integration\Disk\NativeLinkTests.fs" />
     <Compile Include="Integration\Disk\LinkTargetCopyTests.fs" />
     <Compile Include="Integration\Disk\DriveListTests.fs" />
+    <Compile Include="Integration\Disk\ExecutableBitTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

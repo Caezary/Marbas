@@ -43,7 +43,20 @@ let private kindOf (info: IFileSystemInfo) =
     else
         File
 
-let entryFromInfo (info: IFileSystemInfo) =
+let private modeNotAsked (_: IFileSystemInfo) = NotExecutable
+
+let private modeAsked (fs: IFileSystem) (info: IFileSystemInfo) =
+    try
+        fs.File.GetUnixFileMode info.FullName |> EntryAttributes.executability
+    with _ ->
+        NotExecutable
+
+let private modeQuestion (fs: IFileSystem) platform =
+    match platform with
+    | Unix -> modeAsked fs
+    | Windows -> modeNotAsked
+
+let private entryOf (byMode: IFileSystemInfo -> Executability) (info: IFileSystemInfo) =
     let name = EntryName.create info.Name
 
     match kindOf info with
@@ -64,9 +77,11 @@ let entryFromInfo (info: IFileSystemInfo) =
           Measured = None
           Modified = DateTimeOffset info.LastWriteTime
           Visibility = EntryVisibility.classify name (EntryAttributes.visibility info.Attributes)
-          Executability = Executability.classify name (EntryAttributes.executability info.UnixFileMode)
+          Executability = Executability.classify name (byMode info)
           LinkTarget = FileSystemPath.linkTargetOfInfo info
           Verification = Verified }
+
+let entryFromInfo (info: IFileSystemInfo) = entryOf modeNotAsked info
 
 type Child = { Path: FileSystemPath; Entry: Entry }
 
@@ -93,16 +108,20 @@ let existingEntry (fs: IFileSystem) (path: FileSystemPath) =
         else
             None
 
-let read (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingError> =
+let readOn platform (fs: IFileSystem) (path: FileSystemPath) : Result<Entry list, ListingError> =
     try
         let directory = fs.DirectoryInfo.New(FileSystemPath.value path)
 
         if not directory.Exists then
             Error(DirectoryNotFound path)
         else
-            Ok(directory.EnumerateFileSystemInfos() |> Seq.map entryFromInfo |> List.ofSeq)
+            let entry = entryOf (modeQuestion fs platform)
+            Ok(directory.EnumerateFileSystemInfos() |> Seq.map entry |> List.ofSeq)
     with ex ->
         Error(mapException path ex)
+
+let read (fs: IFileSystem) (path: FileSystemPath) =
+    readOn (FileSystemPath.platformOf fs) fs path
 
 let private groupRank entry =
     if entry.Name = ParentName then

@@ -71,7 +71,7 @@ let private ofItsOwn (fs: IFileSystem) (request: LaunchRequest) =
     | Some program -> detached (ProgramPath.value program) [ target ]
     | None when fs.Directory.Exists target -> detached DesktopOpener [ target ]
     | None ->
-        match EntryAttributes.executability (fs.FileInfo.New target).UnixFileMode with
+        match EntryAttributes.executability (fs.File.GetUnixFileMode target) with
         | Executable -> detached target []
         | NotExecutable -> detached DesktopOpener [ target ]
 
