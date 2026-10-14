@@ -17,6 +17,7 @@ type OperationError =
     | ArchiveEntryNotEditable of path: FileSystemPath
     | ArchiveEntryNotRunnable of path: FileSystemPath
     | ArchiveEntryNotCut of path: FileSystemPath
+    | NameNotAddable of path: FileSystemPath
     | NoProgramAssociated of path: FileSystemPath
     | StartDeclined of path: FileSystemPath
     | SymbolicLinkNotPermitted of path: FileSystemPath

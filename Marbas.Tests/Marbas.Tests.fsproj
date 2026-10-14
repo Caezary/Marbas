@@ -90,6 +90,8 @@
     <Compile Include="FileSystem\ArchiveExtractTests.fs" />
     <Compile Include="FileSystem\ArchiveDirectoryTimeTests.fs" />
     <Compile Include="FileSystem\ZipMomentsTests.fs" />
+    <Compile Include="FileSystem\ZipEntriesTests.fs" />
+    <Compile Include="FileSystem\BackslashNameTests.fs" />
     <Compile Include="FileSystem\ArchiveListingTests.fs" />
     <Compile Include="FileSystem\LandingTests.fs" />
     <Compile Include="FileSystem\ArchiveChangeTests.fs" />

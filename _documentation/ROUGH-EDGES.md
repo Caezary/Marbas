@@ -112,14 +112,33 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   unreadable file inside one source leaves the archive standing with everything
   that did go in, which is deliberate — the failures are listed and the marks
   survive — but it does mean a zip can be complete-looking and short of a file.
-- `SharpZipLib` cleans an entry name as it writes it, turning a backslash into
-  a separator. On Linux, where a backslash is a legal character in a file name,
-  packing `a\b.txt` therefore stores `a/b.txt` and the archive gains a level the
-  disk never had. `ArchiveListing` reads keys the other way — only `/` starts a
-  new level — so such an archive lists a directory that was never there. The fix
-  is on the writing side, where the entry name would have to bypass
-  `ZipEntry`'s cleaning. Run on Linux on 2026-10-12: `unzip -l` names `a/b.txt`
-  and the panel shows a directory `a`.
+- A 7z packed on Linux turns a backslash in a name into a level. There a
+  backslash is a legal character in a file name, and a zip and a tar.gz keep
+  it since P22.5, but `SharpCompress`'s `SevenZipWriter` puts every name
+  through a normalising of its own — a private function with no option beside
+  it — so `a\b.txt` is stored as `a/b.txt` and the archive gains a directory
+  the disk never had. A 7z that 7-Zip itself wrote keeps such a name, and
+  Marbas reads it back whole.
+- A zip that exists cannot take a file whose name ends in a backslash, which
+  only Linux allows. `SharpZipLib`'s `ZipFile` reads such a name as a
+  directory's, skips the content and fails as it writes the central directory,
+  by which time the archive is no longer one; so `F5` and `F6` refuse the file
+  with a sentence of their own before the update begins, and the rest of the
+  batch goes in. `Shift+F1` packs it into a new zip, which is written by
+  another class. `SharpCompress` reads an *empty* entry so named as a
+  directory, and so does the panel.
+- A zip packed on Linux says every file is `rw-r--r--` and every directory
+  `rwxr-xr-x`, whatever they are on the disk, so a program comes out of
+  `unzip` without its executable bit. The entries are marked as made on Unix,
+  which is what keeps `unzip` from reading a backslash in a name as a
+  separator, and an entry so marked with no mode beside it is unpacked as a
+  file nobody may read. The mode written is a fixed one because a walk asks no
+  file for its mode, and unpacking sets none either.
+- A backslash in an entry name is a level on Windows as soon as it leaves the
+  archive. The panel lists `a\b.txt` as the one entry it is, and unpacking
+  hands the name to a file system on which a backslash separates, so it lands
+  as `b.txt` in a directory `a`. 7-Zip puts a stand-in character where the
+  backslash was and `unzip` an underscore; `tar` makes the level too.
 - Explorer reads neither of the fields that hold the exact moment of a zip
   entry, and writes neither. Since P22.4 Marbas writes the extended timestamp
   beside the local two-second field and reads it and the NTFS field back, so

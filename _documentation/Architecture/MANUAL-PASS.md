@@ -249,7 +249,7 @@ One panel in `foreign`, the other in `out`; then one in `pack` and in
 | L27 | `Shift+F1` again, tar.gz. `tar -tvzf tree.tar.gz`, then `mkdir from-marbas-tar` and `tar -xzf tree.tar.gz -C from-marbas-tar`. | As W17. | *The tar.gz opens in the system's own tool* |
 | L28 | `Shift+F1`, zip, password `marbas`, named `locked.zip`. `7z x locked.zip -ofrom-marbas-locked`. | 7-Zip asks for the password and extracts with it. `unzip` knows no AES and says so, which is `unzip`'s doing. | *A password-protected zip asks for the password there* |
 | L29 | `7z x tree.zip -ofrom-marbas-7z`, then `ls -lR --time-style=long-iso from-marbas-zip from-marbas-7z from-marbas-tar`. | Every file and directory is dated `2001-02-03 04:05`, whichever tool extracted it. | *Modification times survive the round trip* |
-| L30 | In `backslash`, on `a\b.txt`: `Shift+F1`, zip. `unzip -l` the archive, and `Enter` on it in the panel. | The defect the row describes: the entry is stored as `a/b.txt`, and the panel shows a directory `a` that was never on the disk. Say so if the name came through whole. | *A backslash inside a Linux file name stays in the entry name* |
+| L30 | In `backslash`, on `a\b.txt`: `Shift+F1`, zip. `unzip -l` the archive, `unzip` it into a directory of its own, and `Enter` on it in the panel. | `unzip` lists and extracts one file, `a\b.txt`, with no warning about backslashes, and the panel shows that one file and no directory `a`. The first pass saw `a/b.txt` and the directory. As a 7z the same file is still stored as `a/b.txt`, which is the library's writer. | *A backslash inside a Linux file name stays in the entry name* |
 
 ### Permissions
 

@@ -570,3 +570,32 @@ twelfth more for a tree of the smallest files — the price of the field, which
 is what the task was to write, and which every other tool's zip already
 carries. The reader costs a walk nothing that can be told from the spread,
 and an early stop under a millisecond and a half in a zip of twenty thousand.
+
+## A zip entry named and marked by the platform (P22.5, 2026-10-14)
+
+P22.5 changes what is done for every entry packed into a zip: the stream is
+handed no name transform, `ZipEntries` makes the entry — marked as made on
+Unix there, with a mode — and the walk asks the sink whether it takes a file
+before it adds one. The probe of P22.4, built in Release against the commit
+before and against the tree after, ran `Archive.write` over the tree of
+P22.3 — 1 020 directories and 3 000 files of a hundred bytes — and
+`Archive.addEntries` of the same tree into a zip of one file, which is the
+update. The two binaries ran alternately on a real disk, five launches each,
+on NTFS and on ext4 under WSL 2. Milliseconds, the median of the launches.
+
+| | pack before | after | add before | after |
+|---|---|---|---|---|
+| NTFS | 460 | 434 | 474 | 472 |
+| ext4 | 165 | 163 | 185 | 184 |
+
+**Nothing got slower, and packing on NTFS a little faster.** There the five
+launches after lie between 433 and 441 ms and the five before between 450 and
+468, so the twenty-six milliseconds are outside the spread: six microseconds
+an entry. It is what the transform no longer run would account for — it went
+over every name several times — and it was not taken further apart. On ext4
+one launch differs from the next by more than the two columns do, 101 to 185
+ms before and 157 to 165 after, and the update is the same on both systems.
+
+On Windows the zip itself is the same: the tree packed and a small one added
+to it by each binary gave two files of 652 090 bytes that do not differ in
+one.

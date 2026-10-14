@@ -216,8 +216,10 @@ permanent delete is the same `Operations.delete` as before on either platform.
 | An archive made by another tool unpacks here with its tree and its times | `tar` and 7-Zip's 7z: the tree, and the files to the second; 7-Zip's zip: the same since P22.4, to the fraction of a second its NTFS field holds, where the pass saw the files an hour late; a zip Explorer made: an hour late, since it holds nothing but a local time Explorer moved; a directory at the time its entry carries since P22.3, where the pass saw it dated at the unpacking | `tar`: the tree, and the files to the second; the zips of `zip` and of 7-Zip: to the second and to the fraction since P22.4; a directory the same | manual 2026-10-12 for `tar` and the 7z; the zips: suite, on a zip each of the two tools made, and a probe on a real disk on 2026-10-14; the directories: suite, disk test; **manual** to walk again, on Linux for the first time with the zips of `zip` and 7-Zip |
 | The name is deduced from the targets, the root from the drive | `diskCcontents.zip` | `rootcontents.zip` | suite (one test per platform) |
 | Entry paths inside the archive are relative and separated by `/` | `docs\a.txt` is stored as `docs/a.txt` | already `/` | suite |
-| A backslash inside a Linux file name stays in the entry name | n/a | it does not: `SharpZipLib`'s `ZipEntry` cleans the name, so `a\b.txt` is written as `a/b.txt` and the archive gains a level the disk never had | manual 2026-10-12: `unzip -l` names `a/b.txt`, and the panel shows a directory `a` |
-| A backslash in an entry another tool wrote is read as part of the name | same | same: `ArchiveListing` splits on `/` alone | suite |
+| A backslash inside a Linux file name stays in the entry name | n/a | in a zip and a tar.gz it does since P22.5 — packed, added with `F5` and typed at `F7` — where the pass saw `a\b.txt` written as `a/b.txt`; in a 7z it does not, since the library's writer makes the level itself | manual 2026-10-12 for the defect; since P22.5: suite, on the Linux leg alone, and a probe on a real disk on 2026-10-14 against `unzip` 6.00 and 7-Zip 23.01, which both list and extract one file; **manual** to walk again |
+| A zip says where it was made | nothing of it, as before: the bytes of a zip packed and added to are those P22.4 wrote | made on Unix, every file `rw-r--r--` and every directory `rwxr-xr-x` | suite (`ZipEntriesTests`, either platform on either leg); a probe on a real disk on 2026-10-14, the two zips compared byte for byte on Windows and read by `zipinfo` on Linux |
+| A file whose name ends in a backslash goes into a zip | n/a | into a new one, with its content; a zip that exists refuses it and keeps what it held, where it used to be left unreadable | suite, on the Linux leg alone; a probe on a real disk on 2026-10-14, `unzip -t` after each |
+| A backslash in an entry another tool wrote is read as part of the name | listed as one entry; unpacked as a level, since a backslash separates on the disk it lands on | same: `ArchiveListing` splits on `/` alone, and it is unpacked as one file | suite; a probe on a real disk on 2026-10-14 for the unpacking |
 | The zip opens in the system's own tool | Explorer, *Extract All* | `unzip`; a desktop's archive manager was not tried | manual 2026-10-12; **manual** for an archive manager on Linux, waiting for a desktop |
 | The tar.gz opens in the system's own tool | `tar -xzf` | `tar -xzf` | manual 2026-10-12 |
 | A password-protected zip asks for the password there | Explorer cannot open AES zips at all; 7-Zip can | `7z x` | manual 2026-10-12 |
@@ -265,6 +267,24 @@ here at `04:05:06.500`, the half second the tree was given included, and
 those of `zip` and of `tar` at `04:05:06`. The zip Explorer made was unpacked
 at `05:05:08`: its local time is the only one it holds, written with the
 offset of the day it was packed and rounded up. What is left is in
+[Rough edges](../ROUGH-EDGES.md).
+
+**P22.5 keeps a backslash in a name, in a zip.** The name was never changed
+by the entry: `ZipOutputStream` put it through a transform as it wrote, which
+[Archives](ARCHIVES.md) describes, and Marbas now hands it none. That alone
+does not satisfy `unzip`, which takes a backslash for a separator in any name
+that holds no `/` unless the entry says it was made on Unix, warns, and ends
+with a failure — as it did on a file `F5` had added, whose name the update
+had always kept. So a zip packed on Linux is marked as one made there, with a
+mode beside the mark, as `zip` and 7-Zip mark theirs. On 2026-10-14 the probe
+packed `a\b.txt` and a directory `dir\below` on ext4, added a file and a
+directory so named, and both `unzip` 6.00 and 7-Zip 23.01 listed and
+extracted each as the one entry it is; Marbas unpacked its own zip, `zip`'s,
+7-Zip's and 7-Zip's 7z the same. The build before it gave `a/b.txt` and an
+`unzip` that ended with a warning. On Windows the same zips unpack to a level
+with `tar` and with Marbas, to `a_b.txt` with `unzip` and to a stand-in
+character with 7-Zip: there the name cannot exist. What a 7z, a name ending
+in a backslash and the fixed mode leave open is in
 [Rough edges](../ROUGH-EDGES.md).
 
 ## Permissions

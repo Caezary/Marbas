@@ -139,3 +139,11 @@ let ``an entry that cannot be cut from an archive is named and offered a copy in
     Assert.Contains(at "start/backup.zip/notes.txt", message)
     Assert.Contains("cannot be cut", message)
     Assert.Contains("copy it", message)
+
+[<Fact>]
+let ``a name a zip that exists cannot take is named and offered a new archive instead`` () =
+    let message = OperationErrorMessage.describe (NameNotAddable(fp (at "work/odd")))
+
+    Assert.Contains(at "work/odd", message)
+    Assert.Contains("ending in a backslash", message)
+    Assert.Contains("new archive", message)

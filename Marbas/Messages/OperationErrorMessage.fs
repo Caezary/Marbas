@@ -43,6 +43,8 @@ let describe error =
         $"'{FileSystemPath.value path}' cannot be run inside the archive. Unpack it first."
     | ArchiveEntryNotCut path ->
         $"'{FileSystemPath.value path}' cannot be cut from inside the archive; copy it to the clipboard instead."
+    | NameNotAddable path ->
+        $"'{FileSystemPath.value path}' cannot be added to a zip that already exists: a name ending in a backslash is read there as a directory. Pack it into a new archive instead."
     | SymbolicLinkNotPermitted path -> $"'{FileSystemPath.value path}' was not made.\n{SymbolicLinkRight}"
     | LinkRefused(refusal, path) -> $"'{FileSystemPath.value path}' was not made. {LinkRefusalMessage.describe refusal}"
     | NotInSearchResults refusal -> resultsRefusal refusal

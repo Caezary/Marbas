@@ -7,75 +7,6 @@ what the application does today is in
 
 ## Where we are
 
-**Twenty-one phases are complete** (179 of 179 tasks; the last of them,
-P21.18, without the rows that need a Linux desktop). Marbas
-runs as a full-screen two-panel file browser: both panels list a real directory,
-the keyboard moves between and inside them, entries can be marked one by one or
-by wildcard for later operations, a status line describes the entry under the
-cursor, and failures surface as dialogs instead of crashes. Every function key
-does its job — `F3` views the file under the cursor and `F4` opens
-it in the system editor, `F5` copies and `F6` moves or renames into the other
-panel, `F7` makes a directory, `F8` deletes to the trash and `Shift+F8` for
-good — the operations all acting on the
-same operation targets, with copying and moving running off the UI thread behind
-a progress window that `Esc` stops. Since P7.1 the screen wears the classic
-colours: blue panels with cyan entries, a cyan cursor bar, yellow marks and a
-cyan function-key bar, and since P7.2 each panel sorts by name, extension, date
-or size in either direction, saying so in its title. P7.5 put every key binding
-into one table: the bottom bar is a fixed row of twelve slots read out of it,
-one per function key, and holding `Ctrl` or `Alt` swaps the commands on those
-slots for the ones those modifiers reach without moving a key name. Since P7.3 each panel
-also decides on its own whether the hidden entries — dotfiles and whatever the
-OS marks hidden or system — are listed at all. P7.4 closed the phase: where each
-panel stands, how it sorts and whether it conceals are written to a config file
-when the app quits and read back when it starts, so a session survives a
-restart. P8.1 put a number on the suite and a workflow around it, and P8.2 made
-both hold on Linux as well as on Windows. P8.3 closed the plan: two publish
-profiles turn the project into one self-contained, single-file executable per
-operating system, and a tag builds both on their own runners and hangs them off
-a GitHub release.
-
-**The suite passes on both operating systems** — a handful of tests skip on
-Linux, the ones that assert on drive letters, which exist nowhere else. Unit
-tests cover the logic modules and the pure `Ui` ones; integration tests drive
-real Terminal.Gui views over an in-memory file system. All of them follow the
-arrange/act/assert shape and the folder layout described in
-[Testing](Architecture/TESTING.md). `dotnet test Marbas.slnx` is the whole run,
-and GitHub Actions runs it on both operating systems on every push and pull
-request; coverage stays close to complete for everything but `Program.fs` and
-`Adapters/`, the composition root no test can reach. What no test can reach
-otherwise — colours, a resized terminal, a real permission bit, the mouse — is
-written up as the checklist in
-[Cross-platform](Architecture/CROSS-PLATFORM.md).
-
-**That checklist was walked by hand on 2026-10-12**, the published binaries of
-phase 21 in cmder on Windows and in gnome-terminal under WSLg on Linux, by the
-steps of [The manual pass](Architecture/MANUAL-PASS.md). Most rows hold as
-written. What does not is in [Rough edges](ROUGH-EDGES.md), and two of the
-findings were more than rough: on Linux the executable bit of a file is never
-read, so a program there is neither coloured nor started as one, and `Del` on
-the bottom row of the user menu ended the session on either system. The rows
-that need a Linux desktop — the GNOME key grabs, a file manager, an archive
-manager — were not walked: there was none to walk them on.
-
-**Phase 22 is paying for that pass**, one finding a task. P22.1 closed the
-second of the two: the bottom row and the only row of the user menu are
-removed like any other, and the cursor is held inside the list it is given.
-An entry added to a menu of one no longer hides the entry above it. P22.2
-closed the first: a panel on Linux reads the executable bit of the files it
-lists, so a program is coloured, started by `Enter` and refused its rights by
-`Alt+Shift+R` as one. Timing that listing found that asking every entry for
-its link target was most of what a listing cost — on Windows nearly all of it
-— and a directory of ten thousand files is listed there in a twentieth of the
-time. P22.3 keeps a directory's time through an archive: it is packed with its
-own and unpacked with the one its entry carries, in every kind. P22.4 keeps
-the moment through a zip: beside the local two-second field every entry
-Marbas writes carries the moment itself, which 7-Zip, `unzip` and `tar`
-unpack to the second whatever the season, and an entry another tool wrote is
-unpacked here at the moment it recorded — 7-Zip's in its NTFS field, which no
-library handed over. Explorer reads neither field and is an hour out as
-before.
-
 | Phase | Tasks | State | Journal |
 |-------|-------|-------|---------|
 | 1 — Application skeleton | P1.1–P1.4 | done | — |
@@ -100,7 +31,7 @@ before.
 | 19 — The viewer finds and decodes | P19.1–P19.6 | done | [journal](Progress/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) |
 | 20 — The user menu | P20.1–P20.5 | done | [journal](Progress/PHASE-20-THE-USER-MENU.md) |
 | 21 — The log and the debts | P21.1–P21.18 | done | [journal](Progress/PHASE-21-THE-LOG-AND-THE-DEBTS.md) |
-| 22 — What the manual pass found | P22.1–P22.13 | in progress (4 of 13) | [journal](Progress/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) |
+| 22 — What the manual pass found | P22.1–P22.13 | in progress (5 of 13) | [journal](Progress/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) |
 
 ## What works today
 

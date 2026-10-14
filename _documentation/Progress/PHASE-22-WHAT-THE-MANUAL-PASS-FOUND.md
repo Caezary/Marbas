@@ -267,3 +267,80 @@ whoever wrote the zip.
 
 4238 tests pass and 22 skip on Windows; 4198 pass and 59 skip on Linux under
 WSL.
+
+**P22.5 keeps a backslash in a name, in a zip.** On Linux `a\b.txt` packed
+into a zip is one entry, a directory `dir\below` one level, and so are a file
+and a directory added with `F5` and a directory typed at `F7`; `unzip` and
+7-Zip list and extract each as the one entry it is, and so does the panel.
+How the pieces fit is in [Archives](../Architecture/ARCHIVES.md).
+
+The library was read first, and then the tools — the plan had asked what
+`unzip` makes of a backslash before one is written.
+
+| a zip holding `a\b.txt`, on Linux | `unzip` 6.00 | 7-Zip 23.01 |
+|---|---|---|
+| its entries marked as SharpZipLib marks them, made on FAT | warns of backslashes as separators, extracts `a/b.txt` and ends with a failure | one file |
+| marked as made on Unix, with a mode | one file | one file |
+| marked as made on Unix, with no mode | one file, which nobody may read | one file |
+| made by `zip` 3.0 or by 7-Zip: Unix, with the mode | one file | one file |
+
+`BackslashNameTests` was written first, twenty-six cases that only the Linux
+leg can run but for three, and sixteen failed there: a file and a directory
+so named packed, the directory added, one typed at `F7` and the file unpacked
+again, each in a zip and in a 7z, with the file added to a 7z; the four that
+ask a zip where it was made; and a file whose name ends in a backslash packed
+into a new zip. The tar.gz rows passed, and so did a file added to a zip.
+
+Six things went differently from the plan, or further than it.
+
+- **The entry never cleaned its name.** The plan and the note in Rough edges
+  both named `ZipEntry`. Its constructor keeps what it is given;
+  `ZipOutputStream` puts the name through a `PathTransformer` as it writes,
+  and documents a transform set to null as names used as supplied. That is
+  the whole of the change for a zip packed. The update had kept a file's name
+  all along and only its directories went through a transform, the entry
+  factory's, which `ZipEntries.addedDirectory` no longer asks on Unix.
+- **A name kept is not yet a name `unzip` reads.** It takes a backslash for a
+  separator in any name with no `/` in it unless the entry says Unix made
+  it — which is how the file `F5` had always added under its own name came
+  out of `unzip` as a level, with a warning. So a zip packed on Linux is
+  marked as made there, as `zip`'s and 7-Zip's are, and the mark needs a mode
+  beside it. The mode is `rw-r--r--` and `rwxr-xr-x` for every entry, since a
+  walk asks no file for its mode; that is an entry in
+  [Rough edges](../ROUGH-EDGES.md).
+- **A 7z still makes the level.** The theory over the kinds found it:
+  `SevenZipWriter` normalises every name in a private function, with no
+  option beside it. The six rows came out of the tests and went into Rough
+  edges; a 7z that 7-Zip wrote is read back with the name whole.
+- **A name ending in a backslash lost the zip it was added to.** `ZipFile`
+  takes such a name for a directory's, skips the content, and fails writing
+  the central directory after it has written the entries: the probe left a
+  file `unzip` could find no directory in. The walk now asks the sink whether
+  it takes a file, the update says no to that name, and the source fails
+  with `NameNotAddable` while the rest goes in. A new zip takes it, and holds
+  a file of seven bytes where the build before held a directory entry with
+  seven bytes in it.
+- **Windows is untouched to the byte.** The entry made there says what it
+  said, and a directory typed at `F7` still goes through the library's
+  factory, which reads a backslash as the separator it is on that system.
+  A tree of four thousand entries packed, and a second added to it, by the
+  build before and the build after are the same 652 090 bytes.
+- **The published binary was not walked.** The probe of P22.4 ran
+  `Archive.write`, `Archive.addEntries` and `Archive.extract` on ext4 under
+  WSL, with both builds, and `unzip` and 7-Zip read what it wrote, as
+  [Cross-platform](../Architecture/CROSS-PLATFORM.md) has it; L30 of
+  [The manual pass](../Architecture/MANUAL-PASS.md) says what the walk should
+  now see, and P22.13 walks it.
+
+The platform is a value here as elsewhere in the phase: `ZipEntries` takes it
+as its first argument and `Archive` hands it the one its file system has, so
+`ZipEntriesTests` — eighteen tests — asks for either platform's entry on
+either leg. `UnixTheory` joins `UnixFact` for the theories that only Linux
+can arrange.
+
+Packing and adding take what they took, and packing on NTFS six microseconds
+an entry less; the rows are in
+[Measurements](MEASUREMENTS.md#a-zip-entry-named-and-marked-by-the-platform-p225-2026-10-14).
+
+4260 tests pass and 35 skip on Windows; 4238 pass and 60 skip on Linux under
+WSL.

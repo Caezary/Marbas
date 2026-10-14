@@ -165,6 +165,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   With an archive under both panels, `F5` and `F6` carry entries from one to the
   other through the session's own working directory, `F6` needing both archives
   changeable where `F5` needs only the one being written.
+  On Linux a file or a directory named with a backslash is added under that
+  name, and so is a directory typed with one at `F7`; a file whose name *ends*
+  in a backslash is refused by a zip that exists, with the rest of the batch
+  going in, since the library would lose the archive over it.
   `Shift+F1` and `Shift+F4` still do nothing from inside an archive.
 - Unreadable or vanished directories raise a message box and the panel stays put
   whenever a command found them — `Ctrl+R`, walking in, switching a tab. The
@@ -681,7 +685,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   files' and the directories' own, and in a zip each of them twice: as the
   local time the format has always held and as the moment itself to the
   second, so that a tool which reads it unpacks a file at the hour it had
-  whatever the season — the run shows its progress and
+  whatever the season. A name goes in as the platform means it: on Linux a
+  backslash is a character of the name and stays one in a zip and a tar.gz,
+  the zip marked as made on Unix so that `unzip` reads it so too. The run shows
+  its progress and
   `Esc` stops it — leaving no half-written file and every mark in place — an
   existing archive asks before it is replaced, and an archive that would land
   inside what it packs is refused. When it is done the other panel is re-read

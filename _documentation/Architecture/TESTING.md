@@ -123,6 +123,18 @@ elsewhere; given a reason of its own, it marks the archive-name tests, whose
 subject is the OEM code page a culture answers with — a number Windows keeps and
 other platforms do not. Nothing else in the suite knows which platform it is on.
 
+**A name only one platform allows is tested where it exists, and the rule
+about it everywhere.** `MockFileSystem` follows the system it runs on, so a
+file called `a\b.txt` can be arranged on the Linux leg alone:
+`BackslashNameTests` packs, adds, makes and unpacks such names there, a theory
+over the kinds that keep them, each test a `[<UnixFact>]` or a
+`[<UnixTheory>]` carrying the reason. What differs by platform in the code
+under them is `ZipEntries`, which takes the platform as a value, so
+`ZipEntriesTests` asks it for the entry either platform makes and runs on
+both legs — the Windows leg holds what a zip packed on Linux says of itself,
+and the Linux leg that a directory typed on Windows has its backslash read as
+a separator.
+
 **An archive another tool wrote is checked in, not rebuilt.** `Fixtures/`
 holds what nothing in the dependencies can write the way that tool does — a
 tar.xz, and since P22.4 a zip 7-Zip made and one `zip` made, each a tree of
@@ -266,7 +278,8 @@ dotnet test --filter "FullyQualifiedName~Marbas.Tests.Integration"
 Six modules sit outside the folders because everything uses them: `Root` (the
 platform's root, and paths built on it), `WindowsFact` and `UnixFact` (the `Fact`
 that skips where drive letters do not exist, and the one that skips where they
-do), `Expect` (result unwrapping), `Fakes` (the
+do — with `UnixTheory` beside it in the same file since P22.5, the same skip
+for a theory), `Expect` (result unwrapping), `Fakes` (the
 do-nothing `Ports.Dependencies`) and `AssemblyInfo`. `Integration/Gui.fs` adds the view helpers — `focusedWindow`,
 `leftList`, `rightList`, `press`, `panel`, `panelTitle`, `shownPath`, which
 is the path part of a panel title, so a navigation test says which directory a

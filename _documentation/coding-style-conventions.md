@@ -273,7 +273,7 @@ or every byte. A change there is held to what the path cost before it.
 | a file viewed, as text or as a dump | `FileWindow`, `TextEncoding`, `LineIndex`, `ViewerState`, the searches of `WindowSearch` and `ByteSearch` | [Measurements](Progress/MEASUREMENTS.md), P21.15 and P21.16 |
 | a copy, a move, a delete, a wipe, a size measured | the walks of `Operations` and `DirectoryMeasure`, and what a batch reports | Measurements, P15.25 and P21.3 |
 | a search by name or by text | `FileSearch`, `ContentMatch`, the results window, the results in a panel | Measurements, P21.14 and P21.16 |
-| any of those inside an archive | `ArchiveReader`, `ArchiveIndex`, `ZipMoments`, packing and unpacking in `Archive` | Measurements, P15.17, P21.14, P22.3 and P22.4 |
+| any of those inside an archive | `ArchiveReader`, `ArchiveIndex`, `ZipMoments`, `ZipEntries`, packing and unpacking in `Archive` | Measurements, P15.17, P21.14, P22.3, P22.4 and P22.5 |
 | a refresh nobody asked for | the watch over the directories on screen, the hits of a results panel verified again | [Auto-refresh](Architecture/AUTO-REFRESH.md) |
 | the first screen | the settings read, both panels' directories listed, the first watch, the sweep of old sessions | — |
 

@@ -25,7 +25,8 @@ type private Stored =
 
 type private Sink =
     { AddDirectory: string -> DateTimeOffset option -> unit
-      AddFile: string -> Stored -> unit }
+      AddFile: string -> Stored -> unit
+      TakesFile: string -> bool }
 
 let private attempt path action =
     Operations.attempting path action |> Result.ignore
@@ -66,17 +67,9 @@ let private onDisk (fs: IFileSystem) (entry: Entry) (path: FileSystemPath) =
       Modified = known entry.Modified
       Content = fun () -> reading fs path }
 
-let private zipEntryAt (moment: DateTimeOffset option) (entry: ZipEntry) =
-    moment |> Option.iter (fun at -> entry.DateTime <- at.LocalDateTime)
-
-    moment
-    |> Option.bind ZipMoments.fieldFor
-    |> Option.iter (fun field -> entry.ExtraData <- field)
-
-    entry
-
-let private intoZip compression (password: ArchivePassword option) (stream: Stream) pack =
+let private intoZip platform compression (password: ArchivePassword option) (stream: Stream) pack =
     use zip = new ZipOutputStream(stream)
+    zip.NameTransform <- null
     zip.SetLevel(zipLevel compression)
 
     password
@@ -85,11 +78,11 @@ let private intoZip compression (password: ArchivePassword option) (stream: Stre
     pack
         { AddDirectory =
             fun name moment ->
-                zip.PutNextEntry(zipEntryAt moment (ZipEntry(name + "/")))
+                zip.PutNextEntry(ZipEntries.directory platform moment name)
                 zip.CloseEntry()
           AddFile =
             fun name stored ->
-                let entry = zipEntryAt stored.Modified (ZipEntry(name, Size = stored.Size))
+                let entry = ZipEntries.file platform stored.Modified name stored.Size
 
                 if password.IsSome then
                     entry.AESKeySize <- AesKeySize
@@ -97,7 +90,8 @@ let private intoZip compression (password: ArchivePassword option) (stream: Stre
                 zip.PutNextEntry entry
                 use content = stored.Content()
                 content.CopyTo zip
-                zip.CloseEntry() }
+                zip.CloseEntry()
+          TakesFile = fun _ -> true }
 
 let private intoTarGz compression (stream: Stream) pack =
     use compressed = new GZipStream(stream, gzipLevel compression)
@@ -113,7 +107,8 @@ let private intoTarGz compression (stream: Stream) pack =
           AddFile =
             fun name stored ->
                 use content = stored.Content()
-                dated (PaxTarEntry(TarEntryType.RegularFile, name, DataStream = content)) stored.Modified }
+                dated (PaxTarEntry(TarEntryType.RegularFile, name, DataStream = content)) stored.Modified
+          TakesFile = fun _ -> true }
 
 let private keyAtLevel (level: ArchivePath) (name: string) =
     match ArchivePath.value level with
@@ -122,7 +117,8 @@ let private keyAtLevel (level: ArchivePath) (name: string) =
 
 let private sinkAtLevel (level: ArchivePath) sink =
     { AddDirectory = fun name -> sink.AddDirectory(keyAtLevel level name)
-      AddFile = fun name -> sink.AddFile(keyAtLevel level name) }
+      AddFile = fun name -> sink.AddFile(keyAtLevel level name)
+      TakesFile = fun name -> sink.TakesFile(keyAtLevel level name) }
 
 let private lzmaLevel compression =
     match compression with
@@ -146,11 +142,12 @@ let private intoSevenZip compression (stream: Stream) pack =
           AddFile =
             fun name stored ->
                 use content = stored.Content()
-                writer.Write(name, content, nullableTime stored.Modified) }
+                writer.Write(name, content, nullableTime stored.Modified)
+          TakesFile = fun _ -> true }
 
-let private intoArchive format compression password stream pack =
+let private intoArchive platform format compression password stream pack =
     match ArchiveFormat.kind format with
-    | Zip -> intoZip compression password stream pack
+    | Zip -> intoZip platform compression password stream pack
     | TarGz -> intoTarGz compression stream pack
     | SevenZip -> intoSevenZip compression stream pack
     | uncreatable -> invalidOp $"no writer for {ArchiveKind.extension uncreatable}"
@@ -174,9 +171,12 @@ let rec private adding (fs: IFileSystem) (control: Operations.BatchControl) sink
             }
         | File, _ ->
             control.Report child.Path
+            let name = entryName fs root child.Path
 
-            attempt child.Path (fun () ->
-                sink.AddFile (entryName fs root child.Path) (onDisk fs child.Entry child.Path))
+            if sink.TakesFile name then
+                attempt child.Path (fun () -> sink.AddFile name (onDisk fs child.Entry child.Path))
+            else
+                Error(Operations.NameNotAddable child.Path)
 
 let private add (fs: IFileSystem) control sink root source =
     match existingEntry fs source with
@@ -188,7 +188,13 @@ let private packAll (fs: IFileSystem) control sources sink =
     |> Operations.allWatched control (fun source -> add fs control sink (FileSystemPath.directory fs source) source)
 
 let private packInto fs control (request: ArchiveRequest) sources stream =
-    intoArchive request.Format request.Compression request.Password stream (packAll fs control sources)
+    intoArchive
+        (FileSystemPath.platformOf fs)
+        request.Format
+        request.Compression
+        request.Password
+        stream
+        (packAll fs control sources)
 
 let private failingEvery sources error =
     sources |> List.map (fun source -> Operations.itemResult source (Error error))
@@ -517,21 +523,16 @@ let private staticSource (stored: Stored) =
     { new IStaticDataSource with
         member _.GetSource() = stored.Content() }
 
-let private directoryEntry (zip: ZipFile) (name: string) =
-    let entry = zip.EntryFactory.MakeDirectoryEntry(name + "/", false)
-    entry.Size <- 0L
-    entry.CompressedSize <- 0L
-    entry
-
-let private intoUpdate (zip: ZipFile) =
+let private intoUpdate platform (zip: ZipFile) =
     { AddDirectory =
         fun name moment ->
             replacing zip (name + "/")
-            zip.Add(zipEntryAt moment (directoryEntry zip name))
+            zip.Add(ZipEntries.addedDirectory platform moment name)
       AddFile =
         fun name stored ->
             replacing zip name
-            zip.Add(staticSource stored, zipEntryAt stored.Modified (ZipEntry(name, Size = stored.Size))) }
+            zip.Add(staticSource stored, ZipEntries.file platform stored.Modified name stored.Size)
+      TakesFile = ZipEntries.takesFile }
 
 let private restoreLocalTime (entry: ZipEntry) =
     if entry.DateTime.Kind = DateTimeKind.Utc then
@@ -561,7 +562,7 @@ let private updatingZip (fs: IFileSystem) archive (dropped: ArchivePath list) le
     match
         work
             { Held = held |> List.map snd
-              Sink = sinkAtLevel level (intoUpdate zip) }
+              Sink = sinkAtLevel level (intoUpdate (FileSystemPath.platformOf fs) zip) }
     with
     | Commit value ->
         zip.CommitUpdate()
@@ -622,7 +623,7 @@ let private writingFreshCopy (fs: IFileSystem) archive kind format fresh dropped
         let outcome =
             use stream = fs.File.Create(FileSystemPath.value fresh)
 
-            intoArchive format Normal None stream (fun sink ->
+            intoArchive (FileSystemPath.platformOf fs) format Normal None stream (fun sink ->
                 copyKept fs archive kind dropped control sink
 
                 work

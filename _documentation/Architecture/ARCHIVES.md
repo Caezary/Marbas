@@ -138,11 +138,42 @@ on. Empty directories keep an entry of their own and every file carries its
 modification time. Whether the panel is concealing hidden entries makes no
 difference: what is packed is what is on disk.
 
+**A name goes into a zip as the platform means it.** `entryName` turns the
+file system's own separator into `/` and nothing else, so on Windows a
+backslash never reaches an entry, and on Linux, where it is a character like
+any other, it stays in the name. `ZipOutputStream` used to undo that. It puts
+every name through its `NameTransform` — a `PathTransformer` unless it is
+told otherwise — which turns each backslash into `/`, so `a\b.txt` became a
+directory `a` the disk never had. The entry was never the one cleaning, which
+is what the note on it had said since P9.7; the class documents a transform
+set to null as "use names as supplied", and `intoZip` sets it so on either
+platform, the names it is handed being relative and separated already. A
+tar.gz always kept such a name. A 7z does not, and cannot be made to:
+`SevenZipWriter` normalises on its own, in a private function.
+
+**`ZipEntries` makes the entry, and the platform is its first argument.**
+`file`, `directory` and `addedDirectory` answer the `ZipEntry` for a name,
+dated as the next paragraph says. Made on Windows it says nothing more, and a
+zip packed there holds the bytes it held before P22.5 — compared, on a tree
+of four thousand entries. Made on Unix it is marked as made there, in the
+host half of *version made by*, with a mode in the upper half of the external
+attributes: `rw-r--r--` for a file, `rwxr-xr-x` and the directory bit for a
+directory. The mark is for `unzip`, which reads a backslash as a separator in
+any name that holds no `/` unless the entry comes from Unix, warns that the
+archive "appears to use backslashes as path separators" and ends with a
+failure — which is what it did with a file `F5` had added, whose name the
+update had kept all along. The mode is there because of the mark: an entry
+from Unix that carries none is unpacked as a file nobody may read. It is a
+fixed one, since a walk asks no file for its mode, and that is an entry in
+[Rough edges](../ROUGH-EDGES.md). `Archive` reads the platform off the
+`IFileSystem` it holds and hands it down, so `ZipEntriesTests` asks for
+either platform's entry on either system.
+
 **A zip entry carries its time twice.** The field the format was born with
 holds a local time to two seconds and says nothing of the offset it was read
 with, so a tool that turns it back with today's offset is an hour out across a
 change of daylight-saving time — which Explorer and 7-Zip both are.
-`zipEntryAt` writes that field as it always did and adds the extended
+`ZipEntries` writes that field as it always was and adds the extended
 timestamp (`0x5455`) beside it: the moment in seconds since 1970, in UTC, on
 every file and directory entry, in the local header and in the central
 directory. A spike in P22.4 chose it over the NTFS field (`0x000A`) by trying
@@ -779,6 +810,29 @@ those back to local time before `BeginUpdate` copies the entries. The
 timestamp itself is untouched either way: an update rewrites the headers and
 keeps the extra fields.
 
+**A directory typed inside a zip is named by the platform as well.**
+`ZipFile.Add` keeps the name of an entry it is given, so a file added with
+`F5` always arrived under its own. A directory did not: it was made by the
+library's `ZipEntryFactory`, which puts the name through a transform that
+reads a backslash as a separator and replaces what a Windows name cannot
+hold. `ZipEntries.addedDirectory` still asks the factory on Windows, where
+that reading is the right one for a name typed at `F7`, and on Unix builds
+the entry under the name as it was typed, since there `made\here` is one
+directory on the disk and is now one in the archive. Either way it says its
+sizes are zero, which `ZipFile.Add` insists on.
+
+**A zip that exists refuses a name it would break on.** `ZipFile` tells a
+file from a directory by the name alone: one that ends in `/` or in `\` is a
+directory, its content is never asked for, and the commit throws as it writes
+the central directory with a checksum nobody computed — after the entries,
+so the file is left with no directory at all. On Linux a file can be called
+that. `Sink.TakesFile` is the question the packing walk asks before it adds a
+file: `ZipEntries.takesFile` for the update, always yes for the three stream
+writers, which store such a name with its content. A name refused is
+`NameNotAddable` for that source — an `OperationError`, worded by
+`OperationErrorMessage` — and the rest of the batch goes in. Until P22.5 the
+update was started, and the zip was lost.
+
 **Four operations, one shape.** `Archive.addEntries` puts disk sources at a
 level — reusing the very `Sink` and tree walk `Archive.write` packs with, so a
 directory brings everything below it and the entry names are relative to the
@@ -942,12 +996,12 @@ rewriter hands it an entry buffered out of the old archive, and neither writer
 knows the difference. `Sink.AddDirectory` takes the time the same way: the
 packing walk hands it the directory's own, which the enumeration has already
 read, and the rewriter the one the old entry carried. Every writer puts it on
-the entry — the zip writer through `zipEntryAt`, which dates a file's entry
+the entry — the zip writer through `ZipEntries`, which dates a file's entry
 too and gives both the exact moment beside the local time, and the zip update
 through an entry of its own making where
 `ZipFile.AddDirectory` would have stamped the moment of the call; `ZipFile.Add`
-refuses an entry whose sizes are not known to be zero, so `directoryEntry`
-says they are. A directory made with `F7` inside an archive has no time to
+refuses an entry whose sizes are not known to be zero, so
+`ZipEntries.addedDirectory` says they are. A directory made with `F7` inside an archive has no time to
 hand over and takes the moment it is made. Until P22.3 the walk handed over
 none and the zip writers dropped what they were given, so every directory
 entry was dated at the packing. The keys

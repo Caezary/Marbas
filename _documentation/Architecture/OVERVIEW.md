@@ -177,6 +177,10 @@ Marbas/
     ArchivePath.fs        a place inside an archive: never rooted, never climbing
     ArchiveFormat.fs      which kinds can be created, and what each one carries
     ArchiveName.fs        the name an archive is offered under, and its extension
+    ZipMoments.fs         the exact moment of each entry of a zip: read out of its central
+                          directory, and the field one is written as
+    ZipEntries.fs         the entry a zip is given for a file or a directory, named and
+                          marked as the platform means it
     ArchiveReader.fs      opening an archive: its entries folded over, one entry as a stream
     ArchiveListing.fs     reading one level of an archive as the entries a directory gives
     SearchListing.fs      search hits as the entries a directory gives, named by their path
