@@ -54,11 +54,10 @@ let private zipText (fs: IFileSystem) path name =
     use reader = new StreamReader(content)
     reader.ReadToEnd()
 
-let private zipEntry (fs: IFileSystem) path name =
+let private zipEntryLocalTime (fs: IFileSystem) path name =
     use stream = opened fs path
-    use archive = new ZipFile(stream)
-    let entry = archive.GetEntry(name: string)
-    entry.DateTime
+    use archive = new ZipArchive(stream, ZipArchiveMode.Read)
+    archive.GetEntry(name: string).LastWriteTime.DateTime
 
 let private tarEntries (fs: IFileSystem) path =
     use stream = opened fs path
@@ -163,7 +162,7 @@ let ``the modification time of a file survives the packing`` () =
     Archive.write fs unattended (requested zip target) [ fp (at "work/dated.txt") ]
     |> ignore
 
-    Assert.Equal(modified, zipEntry fs target "dated.txt")
+    Assert.Equal(modified, zipEntryLocalTime fs target "dated.txt")
 
 [<Fact>]
 let ``several sources land side by side in one archive`` () =

@@ -485,3 +485,88 @@ after with a median of 869.
 NTFS and 2.5 ms on ext4 — less than a hundredth of the unpacking on either.
 The directories unpacked by the binary before were dated at the unpacking,
 and by the binary after at the times the tree was given.
+
+## A zip that keeps the moment (P22.4, 2026-10-14)
+
+P22.4 writes the extended timestamp on every entry of a zip, and reads the
+exact moments of a zip out of its central directory before SharpCompress
+opens it. The first is on the path of packing, the second on the path of every
+walk of a zip. A probe built in Release ran `Archive.write` and
+`Archive.extract` over the tree of P22.3 — 1 020 directories and 3 000 files
+of a hundred bytes — and `ArchiveIndex.read` and `ArchiveReader.entryInfo`
+over three zips of 20 000 empty entries made for it: one with the local time
+alone, one with the timestamp on every entry, one with the NTFS field. The
+binary before and the binary after ran alternately on a real disk, three
+launches each on NTFS — six for the unpacking — and five on ext4 under WSL 2.
+Milliseconds, the median of the launches.
+
+| | pack before | after | unpack before | after |
+|---|---|---|---|---|
+| NTFS | 474 | 474 | 7 300 | 7 310 |
+| ext4 | 180 | 184 | 267 | 291 |
+
+**Packing pays a microsecond an entry.** On ext4 the five launches after lie
+between 182 and 187 ms and the five before between 179 and 183: four
+milliseconds for 4 051 entries, spent in SharpZipLib writing a field of nine
+bytes into two headers. On NTFS it does not show.
+
+**A zip that carries the field takes longer to unpack, whoever unpacks it.**
+Each binary unpacked the zip it had packed, so the column says two things at
+once. Taken apart on ext4 — each binary over each zip, three launches of five
+rounds:
+
+| unpacked by | the zip packed before | the zip packed after |
+|---|---|---|
+| the binary before | 268 | 291 |
+| the binary after | 273 | 285 |
+
+The twenty milliseconds belong to the zip: about five microseconds an entry,
+spent inside SharpCompress whichever binary calls it, and not taken further
+apart. A zip of `zip`'s or of `tar`'s carries the same field, and the tree is
+the worst case there is, a hundred bytes a file. What the reader of P22.4
+adds for itself is inside the spread of either row. On NTFS, where unpacking
+this tree takes seven seconds, one unpacking differs from the next by more
+than any of it: 6 950 to 7 710 ms before, 7 140 to 8 710 after.
+
+| a zip of 20 000 entries, ext4 | local time alone | the timestamp | the NTFS field |
+|---|---|---|---|
+| index before | 95.5 | 110.6 | 108.0 |
+| index after | 95.8 | 109.9 | 109.0 |
+| a walk that stops at the fourth entry, before | 0.04 | 0.04 | 0.04 |
+| the same, after | 0.26 | 0.69 | 1.13 |
+
+**A whole walk costs what it cost.** The central directory is read once more
+and walked for the two fields, which by itself takes 0.24, 0.35 and 0.42 ms
+for the three zips on NTFS once the code is warm; and an entry that has an
+exact moment no longer asks for the one the library made. On NTFS the
+launches of either binary lie between 57 and 100 ms and say nothing finer.
+
+**A walk that stops early pays for the whole directory.** `entryInfo` — what
+`F3` on an entry asks — used to read as far as the entry it wanted; it now
+reads the central directory first, 1.3, 1.5 and 2.0 MB for the three zips,
+and the cost follows that size: a quarter of a millisecond to a millisecond on
+ext4, 0.4 to 1.4 ms on NTFS, where it was 0.07. It is paid once for a file
+viewed or one file copied out, and not per entry.
+
+The read was taken apart on the way, on NTFS, by the walk that stops early
+over the zip with the timestamp. As first written it took 4.4 ms.
+
+- Turning every moment into a local time as it was read was a third of that.
+  The moments are kept as ticks, and `ZipMoments.at` makes a `DateTimeOffset`
+  of one when its entry is reached, in place of the conversion the library's
+  own time needed: 3.0 ms.
+- The fields were looked up through pipelines of `ValueOption.bind` and
+  `filter`, a closure a stage and an entry. As matches: 1.5 ms.
+- The central directory was read into a new array each time, a megabyte and
+  more. From the shared pool the scan by itself, in memory and warm, takes
+  0.26 ms where it took 0.49; with that, and the numbers read by plain
+  arithmetic on the bytes and not through a span, the walk took 1.0.
+- Each field was searched for with a pass of its own over the extra fields
+  of a record. With one pass for both: 0.75 ms.
+
+**The price was taken as in proportion.** Packing a zip costs a fiftieth more
+on the faster of the two systems, and unpacking one that carries the moment a
+twelfth more for a tree of the smallest files — the price of the field, which
+is what the task was to write, and which every other tool's zip already
+carries. The reader costs a walk nothing that can be told from the spread,
+and an early stop under a millisecond and a half in a zip of twenty thousand.

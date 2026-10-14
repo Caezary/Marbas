@@ -3,7 +3,6 @@ module Marbas.Tests.FileSystem.ArchiveDirectoryTimeTests
 open System
 open System.IO
 open System.Formats.Tar
-open System.Reflection
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open ICSharpCode.SharpZipLib.BZip2
@@ -200,17 +199,11 @@ let ``a directory of a tar another tool wrote is unpacked at its time`` extensio
 
     Assert.Equal(docsMoment, momentOf fs (at "out/docs"))
 
-let private embedded name =
-    use stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name: string)
-    use buffer = new MemoryStream()
-    stream.CopyTo buffer
-    buffer.ToArray()
-
 [<Fact>]
 let ``a directory of a tar xz is unpacked at the time its entry carries`` () =
     let fs = dated ()
     let archive = archiveNamed "tar.xz"
-    fs.AddFile(FileSystemPath.value archive, MockFileData(embedded "sample.tar.xz"))
+    fs.AddFile(FileSystemPath.value archive, MockFileData(EmbeddedFixture.bytes "sample.tar.xz"))
     let stored = storedMoment fs archive "docs"
 
     unpacking fs archive [ inside "docs" ] |> ignore

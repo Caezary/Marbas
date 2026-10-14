@@ -6,6 +6,8 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Fixtures\sample.tar.xz" LogicalName="sample.tar.xz" />
+    <EmbeddedResource Include="Fixtures\made-by-7zip.zip" LogicalName="made-by-7zip.zip" />
+    <EmbeddedResource Include="Fixtures\made-by-zip.zip" LogicalName="made-by-zip.zip" />
   </ItemGroup>
 
   <ItemGroup>
@@ -15,6 +17,7 @@
     <Compile Include="UnixFact.fs" />
     <Compile Include="SymbolicLinkFact.fs" />
     <Compile Include="Expect.fs" />
+    <Compile Include="EmbeddedFixture.fs" />
     <Compile Include="ShortcutBytes.fs" />
     <Compile Include="ProgramImageBytes.fs" />
     <Compile Include="WindowPrograms.fs" />
@@ -86,6 +89,7 @@
     <Compile Include="FileSystem\ForeignArchiveTests.fs" />
     <Compile Include="FileSystem\ArchiveExtractTests.fs" />
     <Compile Include="FileSystem\ArchiveDirectoryTimeTests.fs" />
+    <Compile Include="FileSystem\ZipMomentsTests.fs" />
     <Compile Include="FileSystem\ArchiveListingTests.fs" />
     <Compile Include="FileSystem\LandingTests.fs" />
     <Compile Include="FileSystem\ArchiveChangeTests.fs" />

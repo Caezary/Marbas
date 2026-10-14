@@ -123,6 +123,21 @@ elsewhere; given a reason of its own, it marks the archive-name tests, whose
 subject is the OEM code page a culture answers with — a number Windows keeps and
 other platforms do not. Nothing else in the suite knows which platform it is on.
 
+**An archive another tool wrote is checked in, not rebuilt.** `Fixtures/`
+holds what nothing in the dependencies can write the way that tool does — a
+tar.xz, and since P22.4 a zip 7-Zip made and one `zip` made, each a tree of
+two files dated `2001-02-03 03:05:06` UTC, 7-Zip's with half a second more in
+an NTFS field that stands in its central directory alone. They are embedded
+resources, and `EmbeddedFixture.bytes` hands one to the mock by name. The rest
+of `ZipMomentsTests` builds its zips with SharpZipLib, whose own types write
+either field and read back the nine bytes Marbas writes by hand, so those
+bytes are checked by a reader that is not Marbas's. Every such zip is arranged
+so that its local time and its exact moment disagree by an hour, which makes
+the test say the same on a machine in any time zone. One test cannot be
+arranged so — the local time of an entry after an update, which the defect
+moved by the machine's own offset — and it passes for nothing on a machine set
+to UTC, as the CI runners are.
+
 Coverage comes from the collector the test project already references:
 
 ```

@@ -146,7 +146,9 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   huge entry opens as quickly as a small one; `F4` refuses with a message,
   because an entry cannot be edited in place.
   `F5` copies the targets out into the other panel — a marked directory with
-  the tree below it, every file and every directory dated as its entry is —
+  the tree below it, every file and every directory dated as its entry is,
+  and out of a zip at the exact moment the entry records where another tool
+  wrote one beside the local time —
   behind the same progress window, with the same overwrite
   question and the same surviving marks as a copy between two directories, and
   the archive is left exactly as it was.
@@ -676,7 +678,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   password is AES-256 (the names inside stay readable, only the content is
   locked); tar.gz and 7z cannot carry one and grey the field out. Directories
   go in whole with their empty subdirectories and modification times — the
-  files' and the directories' own — the run shows its progress and
+  files' and the directories' own, and in a zip each of them twice: as the
+  local time the format has always held and as the moment itself to the
+  second, so that a tool which reads it unpacks a file at the hour it had
+  whatever the season — the run shows its progress and
   `Esc` stops it — leaving no half-written file and every mark in place — an
   existing archive asks before it is replaced, and an archive that would land
   inside what it packs is refused. When it is done the other panel is re-read

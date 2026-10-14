@@ -213,7 +213,7 @@ permanent delete is the same `Operations.delete` as before on either platform.
 |-------|---------|-------|----------|
 | `Shift+F1` packs the targets into an archive in the other panel | same | same | suite |
 | `Shift+F2` empties the archives under the cursor or marked into the other panel | same | same | suite |
-| An archive made by another tool unpacks here with its tree and its times | `tar` and 7-Zip's 7z: the tree, and the files to the second; 7-Zip's zip: the tree, the files an hour late; a directory at the time its entry carries since P22.3, where the pass saw it dated at the unpacking | `tar`: the tree, and the files to the second; a directory the same | manual 2026-10-12 for the files; the directories: suite, disk test, **manual** to walk again; **manual** on Linux for `zip` and 7-Zip, which were not installed when the fixture was made |
+| An archive made by another tool unpacks here with its tree and its times | `tar` and 7-Zip's 7z: the tree, and the files to the second; 7-Zip's zip: the same since P22.4, to the fraction of a second its NTFS field holds, where the pass saw the files an hour late; a zip Explorer made: an hour late, since it holds nothing but a local time Explorer moved; a directory at the time its entry carries since P22.3, where the pass saw it dated at the unpacking | `tar`: the tree, and the files to the second; the zips of `zip` and of 7-Zip: to the second and to the fraction since P22.4; a directory the same | manual 2026-10-12 for `tar` and the 7z; the zips: suite, on a zip each of the two tools made, and a probe on a real disk on 2026-10-14; the directories: suite, disk test; **manual** to walk again, on Linux for the first time with the zips of `zip` and 7-Zip |
 | The name is deduced from the targets, the root from the drive | `diskCcontents.zip` | `rootcontents.zip` | suite (one test per platform) |
 | Entry paths inside the archive are relative and separated by `/` | `docs\a.txt` is stored as `docs/a.txt` | already `/` | suite |
 | A backslash inside a Linux file name stays in the entry name | n/a | it does not: `SharpZipLib`'s `ZipEntry` cleans the name, so `a\b.txt` is written as `a/b.txt` and the archive gains a level the disk never had | manual 2026-10-12: `unzip -l` names `a/b.txt`, and the panel shows a directory `a` |
@@ -221,7 +221,7 @@ permanent delete is the same `Operations.delete` as before on either platform.
 | The zip opens in the system's own tool | Explorer, *Extract All* | `unzip`; a desktop's archive manager was not tried | manual 2026-10-12; **manual** for an archive manager on Linux, waiting for a desktop |
 | The tar.gz opens in the system's own tool | `tar -xzf` | `tar -xzf` | manual 2026-10-12 |
 | A password-protected zip asks for the password there | Explorer cannot open AES zips at all; 7-Zip can | `7z x` | manual 2026-10-12 |
-| Modification times survive the round trip | a file: to the second through `tar`, an hour early through Explorer and 7-Zip; a directory: its own time since P22.3, where the pass saw the moment of packing | a file: to the second through `tar` and `unzip`, an hour early through 7-Zip; a directory: the same | manual 2026-10-12 for the files; the directories: suite, disk test, **manual** to walk again |
+| Modification times survive the round trip | a file: to the second through `tar`, and through 7-Zip and `unzip` since P22.4, which writes the moment beside the local time, where the pass saw 7-Zip an hour early; through Explorer an hour early still, since it reads the local time alone; a directory: its own time since P22.3, where the pass saw the moment of packing | a file: to the second through `tar` and `unzip`, and through 7-Zip since P22.4, where the pass saw it an hour early; a directory: the same | manual 2026-10-12; the zip since P22.4: suite, and a probe on a real disk on 2026-10-14 against 7-Zip 25.01, `unzip` 6.00, `tar` and Explorer on Windows and `unzip` 6.00 and 7-Zip 23.01 on Linux; **manual** to walk again |
 
 Everything up to the bytes is tested on `MockFileSystem`, both writers being
 stream APIs, and one test reads a zip back with `System.IO.Compression` after
@@ -237,7 +237,7 @@ differ.** Every tree of the fixture is dated `2001-02-03 04:05:06`, a winter
 date, and the pass ran in summer time, which is what showed it. A tar keeps a
 moment and both directions were exact for the files. A zip keeps a local time
 in a two-second field unless a tool adds the exact moment in an extra field:
-Marbas adds none and reads none. So the files it packed came out of Explorer
+Marbas added none then and read none. So the files it packed came out of Explorer
 and of 7-Zip at `03:05:06` — both turn the local time back with today's offset
 — and out of `unzip` at `04:05`; and the zip 7-Zip made, whose local field
 7-Zip itself wrote as `05:05:06` beside an NTFS field holding the moment, was
@@ -248,6 +248,24 @@ not put on the directories unpacked. P22.3 closed both — a directory is packed
 with its own time and unpacked with the one its entry carries, as
 [Archives](ARCHIVES.md) describes — and the rows wait to be walked again. On Linux the fixture held `tar`'s archive
 alone, since `zip` and 7-Zip were installed after it was made.
+
+**P22.4 closed the hour as far as a tool lets it be closed.** A spike tried
+both extra fields on each tool first: the extended timestamp is honoured by
+7-Zip, `unzip`, `tar` and SharpCompress, the NTFS field by 7-Zip alone, and
+Explorer honours neither and writes neither. Marbas now writes the timestamp
+beside the local time and reads both fields from the central directory
+itself. On 2026-10-14 a probe ran `Archive.write`, `Archive.addEntries` and
+`Archive.extract` on a real disk, on both systems, over the tree of the
+fixture — not the published binary by hand, which is P22.13's to do. A zip
+packed here came out of 7-Zip, `unzip` and `tar` at `04:05:06`, the
+directories with the files, and so did everything in it after a file was
+added to it. Out of Explorer the files still came at `03:05:06` and the top
+directory dated today. The zips 7-Zip made on either system were unpacked
+here at `04:05:06.500`, the half second the tree was given included, and
+those of `zip` and of `tar` at `04:05:06`. The zip Explorer made was unpacked
+at `05:05:08`: its local time is the only one it holds, written with the
+offset of the day it was packed and rounded up. What is left is in
+[Rough edges](../ROUGH-EDGES.md).
 
 ## Permissions
 

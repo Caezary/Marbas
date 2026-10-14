@@ -138,6 +138,22 @@ on. Empty directories keep an entry of their own and every file carries its
 modification time. Whether the panel is concealing hidden entries makes no
 difference: what is packed is what is on disk.
 
+**A zip entry carries its time twice.** The field the format was born with
+holds a local time to two seconds and says nothing of the offset it was read
+with, so a tool that turns it back with today's offset is an hour out across a
+change of daylight-saving time — which Explorer and 7-Zip both are.
+`zipEntryAt` writes that field as it always did and adds the extended
+timestamp (`0x5455`) beside it: the moment in seconds since 1970, in UTC, on
+every file and directory entry, in the local header and in the central
+directory. A spike in P22.4 chose it over the NTFS field (`0x000A`) by trying
+both on the tools there are: 7-Zip, `unzip`, `tar` and SharpCompress honour
+the timestamp, 7-Zip alone the NTFS field, and Explorer neither, so nothing
+Marbas could write makes Explorer right. `ZipMoments.fieldFor` builds the nine
+bytes, and answers none for a moment before 1970 or after January 2038, which
+a signed and an unsigned reader of those four bytes would place a century
+apart; such an entry is packed with its local time alone. A tar.gz and a 7z
+keep a moment of their own and needed nothing.
+
 **The batch answers per top-level source.** `Archive.write` uses the same
 `Operations.allWatched` that copy and move use, so an unreadable file aborts the
 tree it is in and leaves the other sources to finish, and the marks of what did
@@ -326,6 +342,30 @@ the same name is read again because its stamp no longer matches. Measured on a
 zip of 20,000 entries over a mock file system: reading the index costs 80–100
 ms, and a level change after it costs 4–8 ms, `needsPassword` about 1 ms and
 `indexedPrefixes` about 0.2 ms.
+
+**The exact moments of a zip are read from its central directory, by Marbas
+itself.** SharpCompress hands over the extended timestamp cut to the two
+seconds of the local field and the NTFS field not at all — release 1.0.0 as
+0.50.4 — and keeps the raw extra fields to itself. And 7-Zip writes the NTFS
+field alone, into the central directory only, beside a local time it has
+already moved by the offset of the day it packed. So before SharpCompress
+opens a zip, `ZipMoments.read` finds the end record in the last 64 KiB of the
+stream, follows the zip64 locator where one stands before it, reads the
+central directory in one piece into a pooled buffer and walks its records for
+the two fields: the NTFS time where an entry has one, since it is the finer,
+else the timestamp, read as unsigned the way 7-Zip reads it. What it keeps is
+one count of ticks per record, in the order of the records — a deliberate
+primitive, private to the type — and nothing at all for a zip that carries
+neither field. `readingWholeArchive` pairs them with the library's entries by
+ordinal, both being the central directory read front to back, and an entry
+that has an exact moment takes it in place of the library's. `ZipMoments.at`
+turns the ticks into a local `DateTimeOffset` only when an entry is reached,
+which is the one conversion an entry cost before as well. Whatever does not
+look like a central directory — no end record, an extent that lies outside
+the file, a record without its signature — ends the read with what was found
+up to there, and the entries after it keep the time the library gives them.
+What it costs is in
+[Measurements](../Progress/MEASUREMENTS.md#a-zip-that-keeps-the-moment-p224-2026-10-14).
 
 **A name no readable kind owns is refused before the file is opened.** `read`
 asks `ArchiveKind.recognise` and the capability table first, so `notes.txt` and
@@ -729,6 +769,16 @@ wraps it in one private `updatingZip` helper that opens the file, hands the
 `ZipFile` to the work, and then either commits or aborts; nothing is written
 until the commit, which is what makes cancelling free.
 
+**An update puts the local time back before it begins.** `SharpZipLib`
+replaces the local time of an entry with the UTC of its extended timestamp as
+it reads the central directory, and writes that back when an update is
+committed — so adding one file to a zip would move every entry it already
+held by the machine's offset, in the one field Explorer reads. The library
+hands such a time over marked as UTC, and `restoreLocalTime` turns each of
+those back to local time before `BeginUpdate` copies the entries. The
+timestamp itself is untouched either way: an update rewrites the headers and
+keeps the extra fields.
+
 **Four operations, one shape.** `Archive.addEntries` puts disk sources at a
 level — reusing the very `Sink` and tree walk `Archive.write` packs with, so a
 directory brings everything below it and the entry names are relative to the
@@ -893,7 +943,8 @@ knows the difference. `Sink.AddDirectory` takes the time the same way: the
 packing walk hands it the directory's own, which the enumeration has already
 read, and the rewriter the one the old entry carried. Every writer puts it on
 the entry — the zip writer through `zipEntryAt`, which dates a file's entry
-too, and the zip update through an entry of its own making where
+too and gives both the exact moment beside the local time, and the zip update
+through an entry of its own making where
 `ZipFile.AddDirectory` would have stamped the moment of the call; `ZipFile.Add`
 refuses an entry whose sizes are not known to be zero, so `directoryEntry`
 says they are. A directory made with `F7` inside an archive has no time to

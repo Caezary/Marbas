@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-10-13. Phases and task numbers refer to [the plan](PLAN.md).
+Status as of 2026-10-14. Phases and task numbers refer to [the plan](PLAN.md).
 What each phase actually did is in [Progress/](Progress), one file per phase;
 what the application does today is in
 [What works today](Progress/WHAT-WORKS.md).
@@ -68,7 +68,13 @@ lists, so a program is coloured, started by `Enter` and refused its rights by
 its link target was most of what a listing cost — on Windows nearly all of it
 — and a directory of ten thousand files is listed there in a twentieth of the
 time. P22.3 keeps a directory's time through an archive: it is packed with its
-own and unpacked with the one its entry carries, in every kind.
+own and unpacked with the one its entry carries, in every kind. P22.4 keeps
+the moment through a zip: beside the local two-second field every entry
+Marbas writes carries the moment itself, which 7-Zip, `unzip` and `tar`
+unpack to the second whatever the season, and an entry another tool wrote is
+unpacked here at the moment it recorded — 7-Zip's in its NTFS field, which no
+library handed over. Explorer reads neither field and is an hour out as
+before.
 
 | Phase | Tasks | State | Journal |
 |-------|-------|-------|---------|
@@ -94,7 +100,7 @@ own and unpacked with the one its entry carries, in every kind.
 | 19 — The viewer finds and decodes | P19.1–P19.6 | done | [journal](Progress/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) |
 | 20 — The user menu | P20.1–P20.5 | done | [journal](Progress/PHASE-20-THE-USER-MENU.md) |
 | 21 — The log and the debts | P21.1–P21.18 | done | [journal](Progress/PHASE-21-THE-LOG-AND-THE-DEBTS.md) |
-| 22 — What the manual pass found | P22.1–P22.13 | in progress (3 of 13) | [journal](Progress/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) |
+| 22 — What the manual pass found | P22.1–P22.13 | in progress (4 of 13) | [journal](Progress/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) |
 
 ## What works today
 

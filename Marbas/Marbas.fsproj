@@ -82,6 +82,7 @@
         <Compile Include="FileSystem\ArchiveFormat.fs" />
         <Compile Include="FileSystem\ArchiveName.fs" />
         <Compile Include="FileSystem\ArchiveNames.fs" />
+        <Compile Include="FileSystem\ZipMoments.fs" />
         <Compile Include="FileSystem\ArchiveReader.fs" />
         <Compile Include="FileSystem\ArchiveIndex.fs" />
         <Compile Include="FileSystem\ArchiveListing.fs" />

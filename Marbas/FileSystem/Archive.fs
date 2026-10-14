@@ -68,6 +68,11 @@ let private onDisk (fs: IFileSystem) (entry: Entry) (path: FileSystemPath) =
 
 let private zipEntryAt (moment: DateTimeOffset option) (entry: ZipEntry) =
     moment |> Option.iter (fun at -> entry.DateTime <- at.LocalDateTime)
+
+    moment
+    |> Option.bind ZipMoments.fieldFor
+    |> Option.iter (fun field -> entry.ExtraData <- field)
+
     entry
 
 let private intoZip compression (password: ArchivePassword option) (stream: Stream) pack =
@@ -528,6 +533,10 @@ let private intoUpdate (zip: ZipFile) =
             replacing zip name
             zip.Add(staticSource stored, zipEntryAt stored.Modified (ZipEntry(name, Size = stored.Size))) }
 
+let private restoreLocalTime (entry: ZipEntry) =
+    if entry.DateTime.Kind = DateTimeKind.Utc then
+        entry.DateTime <- entry.DateTime.ToLocalTime()
+
 let private updatingZip (fs: IFileSystem) archive (dropped: ArchivePath list) level work =
     use stream =
         fs.File.Open(FileSystemPath.value archive, FileMode.Open, FileAccess.ReadWrite)
@@ -536,6 +545,7 @@ let private updatingZip (fs: IFileSystem) archive (dropped: ArchivePath list) le
         new ZipFile(stream, true, StringCodec.FromEncoding(ArchiveNames.legacy ()))
 
     zip.IsStreamOwner <- false
+    zip |> Seq.cast<ZipEntry> |> Seq.iter restoreLocalTime
     zip.BeginUpdate(MemoryArchiveStorage())
 
     let held =

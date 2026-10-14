@@ -2,7 +2,6 @@ module Marbas.Tests.FileSystem.EveryKindTests
 
 open System.IO
 open System.Formats.Tar
-open System.Reflection
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open ICSharpCode.SharpZipLib.BZip2
@@ -148,12 +147,6 @@ let private tarred (fs: IFileSystem) (write: Stream -> Stream) path =
     use inner = fs.File.OpenRead(at "work/docs/inner.txt")
     tar.WriteEntry(PaxTarEntry(TarEntryType.RegularFile, "docs/inner.txt", DataStream = inner))
 
-let private embedded name =
-    use stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(name: string)
-    use buffer = new MemoryStream()
-    stream.CopyTo buffer
-    buffer.ToArray()
-
 [<Fact>]
 let ``a tar lists and extracts like every other readable kind`` () =
     let fs = tree ()
@@ -182,7 +175,7 @@ let ``a tar bz2 lists and extracts like every other readable kind`` () =
 let ``a tar xz lists and extracts like every other readable kind`` () =
     let fs = tree ()
     let archive = fp (at "start/data.tar.xz")
-    fs.AddFile(at "start/data.tar.xz", MockFileData(embedded "sample.tar.xz"))
+    fs.AddFile(at "start/data.tar.xz", MockFileData(EmbeddedFixture.bytes "sample.tar.xz"))
 
     let results = emptied fs archive
 

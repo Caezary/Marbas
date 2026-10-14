@@ -121,13 +121,15 @@ One panel in `foreign`, the other in `out`; then one in `pack`.
 | W16 | In `pack`, on `tree`: `Shift+F1`, zip, no password. In Explorer, *Extract All* on `out\tree.zip`. | Explorer opens it and extracts `tree\a.txt` and `tree\sub\b.txt`. | *The zip opens in the system's own tool* |
 | W17 | `Shift+F1` again, tar.gz. In a shell in `out`: `tar -tvzf tree.tar.gz`, then `mkdir from-marbas-tar` and `tar -xzf tree.tar.gz -C from-marbas-tar`. | The listing names `tree/a.txt` and `tree/sub/b.txt`; the extraction ends without a word. | *The tar.gz opens in the system's own tool* |
 | W18 | `Shift+F1`, zip, password `marbas`, named `locked.zip`. Open it in Explorer; then `7z x locked.zip -ofrom-marbas-locked` in a shell. | Explorer cannot open an AES zip and says the archive is empty or damaged — its doing, not the archive's. 7-Zip asks for the password and extracts with it. | *A password-protected zip asks for the password there* |
-| W19 | Compare *Date modified* of the files and directories extracted in W16 and W17 with `2001-02-03 04:05`. | The same to the minute, for the files and for the directories. | *Modification times survive the round trip* |
+| W19 | In a shell in `out`: `7z x tree.zip -ofrom-marbas-zip`. Compare *Date modified* of the files and directories it extracted, and of those of W17, with `2001-02-03 04:05`; then of those Explorer extracted in W16. | The same to the minute from 7-Zip and from `tar`, for the files and for the directories. Explorer's files are an hour early when the pass is walked in summer time, and its directories dated today — its doing, not the archive's. | *Modification times survive the round trip* |
 
 7-Zip's own listing (`7z l`) applies today's offset from UTC to every date, so
 across a change of daylight-saving time it shows the hour one off. The files it
 extracts are what to compare, and the hour is part of the comparison: the
 fixture is dated in winter so that a pass walked in summer shows a tool that
-got the offset wrong.
+got the offset wrong. Explorer is such a tool whatever it is given: it reads
+the local time of a zip entry and neither of the fields that hold the moment,
+which is why W19 compares what 7-Zip extracted.
 
 ### Editing
 
@@ -246,7 +248,7 @@ One panel in `foreign`, the other in `out`; then one in `pack` and in
 | L26 | In `pack`, on `tree`: `Shift+F1`, zip, no password. In a shell in `out`: `unzip -l tree.zip`, then `unzip tree.zip -d from-marbas-zip`. **desktop:** open it in the archive manager as well. | The listing names `tree/a.txt` and `tree/sub/b.txt`, and both tools extract them. | *The zip opens in the system's own tool* |
 | L27 | `Shift+F1` again, tar.gz. `tar -tvzf tree.tar.gz`, then `mkdir from-marbas-tar` and `tar -xzf tree.tar.gz -C from-marbas-tar`. | As W17. | *The tar.gz opens in the system's own tool* |
 | L28 | `Shift+F1`, zip, password `marbas`, named `locked.zip`. `7z x locked.zip -ofrom-marbas-locked`. | 7-Zip asks for the password and extracts with it. `unzip` knows no AES and says so, which is `unzip`'s doing. | *A password-protected zip asks for the password there* |
-| L29 | `ls -lR --time-style=long-iso from-marbas-zip from-marbas-tar`. | Every file and directory is dated `2001-02-03 04:05`. | *Modification times survive the round trip* |
+| L29 | `7z x tree.zip -ofrom-marbas-7z`, then `ls -lR --time-style=long-iso from-marbas-zip from-marbas-7z from-marbas-tar`. | Every file and directory is dated `2001-02-03 04:05`, whichever tool extracted it. | *Modification times survive the round trip* |
 | L30 | In `backslash`, on `a\b.txt`: `Shift+F1`, zip. `unzip -l` the archive, and `Enter` on it in the panel. | The defect the row describes: the entry is stored as `a/b.txt`, and the panel shows a directory `a` that was never on the disk. Say so if the name came through whole. | *A backslash inside a Linux file name stays in the entry name* |
 
 ### Permissions

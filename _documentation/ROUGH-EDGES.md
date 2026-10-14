@@ -120,17 +120,22 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   is on the writing side, where the entry name would have to bypass
   `ZipEntry`'s cleaning. Run on Linux on 2026-10-12: `unzip -l` names `a/b.txt`
   and the panel shows a directory `a`.
-- A file's time in a zip — and a directory's, which is kept since P22.3 — is
-  the local time of the old two-second field and nothing else, written and
-  read. Marbas adds no field holding the exact
-  moment, so a tool that turns the local time back with today's offset from UTC
-  is an hour out across a change of daylight-saving time: a file of February
-  packed in October came out an hour early from Explorer's *Extract All* and
-  from `7z x`, on Windows and on Linux, and to the minute from `unzip` and
-  from a tar.gz. And it reads none: 7-Zip wrote that field with the offset of
-  the day it packed, with the exact moment beside it in an NTFS extra field,
-  and Marbas unpacked the file an hour late. Writing and reading the extra
-  field would close both.
+- Explorer reads neither of the fields that hold the exact moment of a zip
+  entry, and writes neither. Since P22.4 Marbas writes the extended timestamp
+  beside the local two-second field and reads it and the NTFS field back, so
+  7-Zip, `unzip` and `tar` unpack a zip of Marbas's to the second and Marbas
+  theirs. Explorer's *Extract All* still turns the local field back with
+  today's offset from UTC, and across a change of daylight-saving time a file
+  of February unpacked in October comes out an hour early, as it does from
+  any zip; and a zip Explorer made carries only a local time it moved the
+  same way, which Marbas unpacks as it is written, an hour late. Nothing
+  written into a zip changes the first, and nothing in such a zip says what
+  the second was.
+- A zip Marbas packs keeps a moment to the second, and only between 1970 and
+  January 2038. The extended timestamp holds whole seconds, so a fraction of a
+  second is dropped, where the NTFS field 7-Zip writes keeps it and Marbas
+  reads it. A moment outside those years does not fit the field's four bytes
+  in a way every reader agrees on, and is packed with the local time alone.
 - A password only reaches zip. Tar and its compressed kinds have no notion of
   one, and 7z — which can encrypt its headers as well as its content — is
   created without one, because `ArchiveKind.carriesPassword` answers `true` for

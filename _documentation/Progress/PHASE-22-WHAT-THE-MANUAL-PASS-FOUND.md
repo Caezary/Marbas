@@ -183,3 +183,87 @@ for those directories on NTFS and 2.5 ms on ext4. The rows are in
 
 4207 tests pass and 22 skip on Windows; 4167 pass and 59 skip on Linux under
 WSL.
+
+**P22.4 keeps the moment through a zip.** Every entry Marbas writes into a
+zip carries the extended timestamp (`0x5455`) beside the local two-second
+field, and a zip is read at the exact moment its entries record — the
+timestamp, or the NTFS field (`0x000A`) where a tool wrote that. A file of
+February packed in October comes out of 7-Zip, `unzip` and `tar` at the hour
+it had, and the zip 7-Zip made is unpacked here at that hour too. How the
+pieces fit is in [Archives](../Architecture/ARCHIVES.md).
+
+The spike came first and decided the rest. Zips written with either field,
+with both and with neither, their local time an hour off the moment, were
+unpacked by every tool there was; and zips those tools made were read back.
+
+| | the extended timestamp | the NTFS field |
+|---|---|---|
+| SharpZipLib 1.4.2 | writes it; reads it, and puts its UTC where the local time was | writes it; does not read it |
+| SharpCompress 0.50.4 and 1.0.0 | reads it, cut to two seconds | does not read it |
+| 7-Zip 25.01 on Windows, 23.01 on Linux | reads it | reads it, and writes it — into the central directory alone |
+| `unzip` 6.00, and `zip` 3.0 | reads it; `zip` writes it | neither |
+| `tar` on Windows (libarchive) | reads and writes it | neither |
+| Explorer | neither | neither |
+
+So the timestamp is the field to write: whatever honours anything honours it.
+And Explorer honours nothing — it turns the local time back with today's
+offset, and wrote the local time of its own zip with it — so the plan's
+`04:05:06` out of Explorer is not to be had, and the entry in
+[Rough edges](../ROUGH-EDGES.md) is narrowed to that and not gone.
+
+`ZipMomentsTests` was written first, thirty-one tests on `MockFileSystem`.
+Twenty-one came before the code and fourteen of them failed: the field on a
+file and a directory packed, added and locked with a password, a second the
+local time cannot hold kept through a round trip, an entry whose local time
+and NTFS field disagree, each entry of several read at its own, a zip with a
+comment, one of more entries than the short count holds, and the zip 7-Zip
+made, which is checked in beside one `zip` made. Ten more hold what the
+reader does with bytes that are no zip.
+
+Five things went differently from the plan, or further than it.
+
+- **No library hands over what 7-Zip wrote.** SharpCompress does not read
+  the NTFS field in either release and keeps the raw extra fields internal,
+  so `ZipMoments.read` reads the central directory itself: the end record,
+  the zip64 locator, the records, the two fields. It is paired with the
+  library's entries by their order.
+- **The timestamp is read there too.** The library does read it, and hands
+  it over cut to the two seconds of the local field — the test of a second
+  the local time cannot hold failed on `04:05:06` for `04:05:07`. Both fields
+  are therefore Marbas's to read, the finer one first.
+- **Adding to a zip moved the times of what it held.** SharpZipLib puts the
+  UTC of the timestamp where an entry's local time was and writes that back
+  on an update, so after `F5` into a zip every older entry stood off by the
+  machine's offset from UTC in the field Explorer reads. It had always done
+  that to a zip of `zip`'s; with the timestamp on Marbas's own it would have
+  done it to all of them. `restoreLocalTime` turns the entries back before the update begins,
+  and a test holds it — one that says nothing on a machine set to UTC, which
+  [Testing](../Architecture/TESTING.md) records.
+- **The field is nine bytes written by hand, and only between 1970 and
+  2038.** SharpZipLib's own type accepts any date and writes four bytes of
+  whatever it is given, and 7-Zip and SharpCompress read those bytes as
+  unsigned: a file of 1965 came back as one of 2101 from the first and of
+  2093 from the second. A reader that takes them as signed ends in January
+  2038, so a moment outside the years both readings agree on is packed with
+  the local time alone. The tests read the bytes back through SharpZipLib.
+- **The published binary was not walked.** *Done when* asks for the fixture's
+  file out of 7-Zip and `unzip` at `04:05:06`. A probe ran `Archive.write`,
+  `Archive.addEntries` and `Archive.extract` on a real disk on both systems
+  and the tools unpacked what it packed, as
+  [Cross-platform](../Architecture/CROSS-PLATFORM.md) has it; the keys are
+  P22.13's to press.
+
+The step in [The manual pass](../Architecture/MANUAL-PASS.md) that compared
+Explorer's extraction with the fixture now compares 7-Zip's, and says what
+Explorer will show.
+
+What it costs is in
+[Measurements](MEASUREMENTS.md#a-zip-that-keeps-the-moment-p224-2026-10-14):
+packing a microsecond an entry, a walk of a zip nothing that shows, a walk
+that stops early the reading of the central directory — under a millisecond
+and a half in a zip of twenty thousand entries — and unpacking a zip that
+carries the field about five microseconds an entry inside SharpCompress,
+whoever wrote the zip.
+
+4238 tests pass and 22 skip on Windows; 4198 pass and 59 skip on Linux under
+WSL.

@@ -126,24 +126,33 @@ module ArchiveReader =
         |> Option.map DateTimeOffset
         |> Option.defaultValue DateTimeOffset.MinValue
 
+    let private modifiedOf (exact: DateTimeOffset voption) (entry: IEntry) =
+        match exact with
+        | ValueSome moment -> moment
+        | ValueNone -> modifiedAt entry.LastModifiedTime
+
     let private kindOfEntry (entry: IEntry) =
         if entry.IsDirectory then StoredDirectory
         elif entry.IsEncrypted then EncryptedFile
         else StoredFile
 
-    let private infoOf (entry: IEntry) =
+    let private infoOf (exact: DateTimeOffset voption) (entry: IEntry) =
         { Segments = segmentsOf (Option.ofObj entry.Key |> Option.defaultValue "")
           Kind = kindOfEntry entry
           Size = entry.Size
-          Modified = modifiedAt entry.LastModifiedTime }
+          Modified = modifiedOf exact entry }
 
     let private streaming (reader: IReader) =
         seq {
             while reader.MoveToNextEntry() do
-                yield reader.Entry, (fun () -> reader.OpenEntryStream() :> Stream)
+                yield reader.Entry, ValueNone, (fun () -> reader.OpenEntryStream() :> Stream)
         }
 
-    let private stepping (step: ArchiveStep<'walked>) (initial: 'walked) (entries: seq<IEntry * (unit -> Stream)>) =
+    let private stepping
+        (step: ArchiveStep<'walked>)
+        (initial: 'walked)
+        (entries: seq<IEntry * DateTimeOffset voption * (unit -> Stream)>)
+        =
         let mutable walked = initial
         let mutable reading = true
 
@@ -151,10 +160,10 @@ module ArchiveReader =
             use walker = entries.GetEnumerator()
 
             while reading && walker.MoveNext() do
-                let entry, openContent = walker.Current
+                let entry, exact, openContent = walker.Current
 
                 let item =
-                    { Info = infoOf entry
+                    { Info = infoOf exact entry
                       OpenContent = openContent }
 
                 match step.Invoke(walked, item) with
@@ -171,11 +180,23 @@ module ArchiveReader =
         use reader = ReaderFactory.OpenReader(stream, options password)
         stepping step initial (streaming reader)
 
-    let private readingWholeArchive password step initial (stream: Stream) =
+    let private exactMoments kind (stream: Stream) =
+        match kind with
+        | Zip -> ZipMoments.read stream
+        | SevenZip
+        | Rar
+        | Tar
+        | TarGz
+        | TarBz2
+        | TarXz -> ZipMoments.none
+
+    let private readingWholeArchive kind password step initial (stream: Stream) =
+        let moments = exactMoments kind stream
         use archive = ArchiveFactory.OpenArchive(stream, options password)
 
         archive.Entries
-        |> Seq.map (fun entry -> entry :> IEntry, fun () -> entry.OpenEntryStream())
+        |> Seq.mapi (fun ordinal entry ->
+            entry :> IEntry, ZipMoments.at ordinal moments, fun () -> entry.OpenEntryStream())
         |> stepping step initial
 
     let private isSequential kind =
@@ -202,7 +223,7 @@ module ArchiveReader =
             if isSequential kind then
                 readingSequentially password step initial stream
             else
-                readingWholeArchive password step initial stream
+                readingWholeArchive kind password step initial stream
         with failure ->
             WalkBroken(initial, failure)
 

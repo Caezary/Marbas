@@ -117,7 +117,7 @@ schedules the fix. A rule here beats a habit found in an older file.
 |-------|----------------|-------|
 | a hot loop that was timed | a loop over bytes or entries, confined to one function or to the private state of one type; nothing mutable leaves it | `LineIndex` (the scan of a chunk, the two splits, the binary search), `TextEncoding.isUtf8`, `ArchiveReader.stepping` |
 | a contract .NET sets | a `byref` an interop call fills; the position a `Stream` subclass has to keep | `NativeLinks`, `SystemClipboard`, the queue read in `SearchRunner`; `RewindingStream`, `OwningStream` |
-| a cache that only saves work | private to one module or one object, and what it answers is the same with it and without it | `ArchiveIndex`; the checkpoints, blocks and texts of `LineIndex.Index` and how far it has scanned |
+| a cache that only saves work | private to one module or one object, and what it answers is the same with it and without it | `ArchiveIndex`; the checkpoints, blocks and texts of `LineIndex.Index` and how far it has scanned; the buffer `ZipMoments.read` borrows from the shared pool for a central directory |
 | what an adapter keeps for the system | what it has to remember between two callbacks or timer ticks, or share with a thread it started | `BatchRunner`, `SearchRunner`, `WindowSearchRunner`, `DirectoryWatch`, `ModifierWatch` |
 | the runtime's cell | the state, the queue of messages and the two flags of the one loop | `State/Runtime.fs` |
 
@@ -273,7 +273,7 @@ or every byte. A change there is held to what the path cost before it.
 | a file viewed, as text or as a dump | `FileWindow`, `TextEncoding`, `LineIndex`, `ViewerState`, the searches of `WindowSearch` and `ByteSearch` | [Measurements](Progress/MEASUREMENTS.md), P21.15 and P21.16 |
 | a copy, a move, a delete, a wipe, a size measured | the walks of `Operations` and `DirectoryMeasure`, and what a batch reports | Measurements, P15.25 and P21.3 |
 | a search by name or by text | `FileSearch`, `ContentMatch`, the results window, the results in a panel | Measurements, P21.14 and P21.16 |
-| any of those inside an archive | `ArchiveReader`, `ArchiveIndex`, packing and unpacking in `Archive` | Measurements, P15.17 and P21.14 |
+| any of those inside an archive | `ArchiveReader`, `ArchiveIndex`, `ZipMoments`, packing and unpacking in `Archive` | Measurements, P15.17, P21.14, P22.3 and P22.4 |
 | a refresh nobody asked for | the watch over the directories on screen, the hits of a results panel verified again | [Auto-refresh](Architecture/AUTO-REFRESH.md) |
 | the first screen | the settings read, both panels' directories listed, the first watch, the sweep of old sessions | — |
 
