@@ -257,7 +257,8 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   change of directory and a file operation included. Names that have gone from
   the listing by the time the marks come back are left out. `Ctrl+M` is bound
   beside it, but every terminal measured sends it as `Enter`.
-- A rule separates the listing from the bottom row of each panel, and that row
+- A rule separates the listing from the bottom row of each panel, joined to the
+  border at both ends (`╟────╢` on the focused panel, `├────┤` on the other), and that row
   is never blank: it summarises the marks — how many entries and how many bytes
   they add up to — and falls back to what the directory holds (`3 files, 2
   folders   1,234 bytes`; `..` counts as neither, and only the files add to the

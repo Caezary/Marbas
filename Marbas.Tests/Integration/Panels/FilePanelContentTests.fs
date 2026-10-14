@@ -74,6 +74,44 @@ let ``a rule separates the listing from the footer`` () =
     Assert.Equal(Orientation.Horizontal, (rule panelView).Orientation)
     Assert.Equal(panelView.Viewport.Height - 2, (rule panelView).Frame.Y)
 
+let private laidOutAt (width: int) =
+    let window = MainWindow.create (Fakes.dependencies (mockFs ()) (at "start"))
+    window.BeginInit()
+    window.EndInit()
+    window.Layout(Size(width, 24)) |> ignore
+    window
+
+let private columns (view: View) =
+    let onScreen = view.FrameToScreen()
+    onScreen.Left, onScreen.Right
+
+[<Theory>]
+[<InlineData(FilePanel.LeftId, 60)>]
+[<InlineData(FilePanel.LeftId, 81)>]
+[<InlineData(FilePanel.LeftId, 120)>]
+[<InlineData(FilePanel.RightId, 60)>]
+[<InlineData(FilePanel.RightId, 81)>]
+[<InlineData(FilePanel.RightId, 120)>]
+let ``the rule runs from one side of the border to the other`` (id: string) (width: int) =
+    use window = laidOutAt width
+    let panelView = panel id window
+
+    let ruleColumns = columns (rule panelView)
+
+    Assert.Equal(columns panelView, ruleColumns)
+
+[<Theory>]
+[<InlineData(FilePanel.LeftId)>]
+[<InlineData(FilePanel.RightId)>]
+let ``the rule still meets the border after a resize`` (id: string) =
+    use window = laidOutAt 120
+    let panelView = panel id window
+
+    window.Layout(Size(70, 24)) |> ignore
+    let ruleColumns = columns (rule panelView)
+
+    Assert.Equal(columns panelView, ruleColumns)
+
 [<Fact>]
 let ``the listing gives up the two rows the rule and the footer take`` () =
     use window = MainWindow.create (Fakes.dependencies (mockFs ()) (at "start"))

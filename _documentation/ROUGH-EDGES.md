@@ -88,14 +88,6 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   the footer's count says the entry is marked. The classic look is the mark's
   yellow on the cursor's cyan, which is a third case in the `RowRender` handler,
   beside the cursor row it hands back and the marked rows it paints.
-- The rule under the listing does not join the panel border. It runs the width
-  of the listing and stops at the border on either side with no joint drawn —
-  `║────║` where the classic look is `╟────╢` — in cmder and in gnome-terminal
-  alike, so it is the drawing and not the terminal. The `Line` of `FilePanel`
-  lies inside the frame and the border is drawn by the frame's own adornment,
-  and Terminal.Gui joins two lines only where they cross on one canvas. Letting
-  the frame draw the rule, or drawing it onto the border's canvas, has not been
-  tried.
 - The entry colours are drawn by a driver no test has, so what a test can say is
   which attribute `RowRender` hands back, not what the screen looks like. The
   manual pass of 2026-10-12 looked, in cmder and in gnome-terminal: the kinds

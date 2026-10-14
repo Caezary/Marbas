@@ -363,7 +363,7 @@ and its directory was gone after the next start.
 | The sixteen classic colours look right | yes | yes | manual 2026-10-12 |
 | Directory / file / archive / program colours are told apart | yes | yes; a program is a file with its executable bit set, read by the listing since P22.2 | manual 2026-10-12; a program on Linux: probe (the published binary in tmux, 2026-10-13) |
 | Bright blue file names stay readable on the blue panel | yes | yes | manual 2026-10-12 |
-| The rule under the listing joins the panel border | **no**: it stops at the border on either side, with no joint drawn | **no**, the same | manual 2026-10-12 |
+| The rule under the listing joins the panel border | yes since P22.6: `╟────╢` on the focused panel, `├────┤` on the other, where the pass saw it stop at the border with no joint | yes, the same | manual 2026-10-12 for the defect; since P22.6: suite (the rule's columns), the `render-tui-screen` probe at 60, 72, 81 and 100 columns, resized and after `Tab`, and the published binary in tmux under WSL on 2026-10-15; **manual** to look at in cmder and gnome-terminal |
 | Arrows stop at the ends of a panel; only `Tab` leaves it | yes | yes | suite (as handled keys), manual 2026-10-12 |
 | `←` / `→` jump by the page on screen | yes | yes | suite, manual 2026-10-12 |
 | Typing opens the search bar and moves the cursor | yes | yes | suite, manual 2026-10-12 |

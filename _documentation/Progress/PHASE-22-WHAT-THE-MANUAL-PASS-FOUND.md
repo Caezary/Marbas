@@ -344,3 +344,36 @@ an entry less; the rows are in
 
 4260 tests pass and 35 skip on Windows; 4238 pass and 60 skip on Linux under
 WSL.
+
+**P22.6 joins the rule to the border.** The line between the listing and the
+footer meets the panel's border in a joint at both ends — `╟────╢` on the
+focused panel, `├────┤` on the other — at every width, after a resize and
+after `Tab`. How it works is in [UI and input](../Architecture/UI-AND-INPUT.md).
+
+The screen was rendered first, with the `render-tui-screen` probe over the two
+panels at 60, 81 and 100 columns, and showed `║────║` and `│────│` at each.
+Eight tests in `FilePanelContentTests` were then written and failed: the rule's
+columns on the screen are the panel's, in either panel at 60, 81 and 120
+columns, and again after the window is laid out at 120 and then at 70. They
+pass now.
+
+Two things went differently from the plan.
+
+- **Neither way the plan named was needed.** The plan had the frame draw the
+  rule on its own canvas, or the rule drawn onto the border's. A `Line` already
+  hands its line to the canvas of the view it sits in, which is the one the
+  border draws onto; the rule only ended a column short of the border on either
+  side. It now starts on the border's left column and ends on its right one,
+  and the canvas joins them. The probe tried one column more first: the left
+  end joined and the right one was drawn as a crossing, `╫` and `┼`.
+- **The test holds the geometry, not the glyph.** Terminal.Gui resolves a
+  canvas while it draws and clears it afterwards, and the suite has no driver
+  to draw into, so what a test can say is where the rule lies. The glyphs and
+  their colour — the border's, `BrightCyan` on `Blue` — were read with the
+  probe through `MainWindow.create` on a mock file system at 60, 72, 81 and 100
+  columns and after `Tab`, and with the published `linux-x64` binary in tmux
+  under WSL at 90 and 70 columns and after `Tab`. A person looking at it in
+  cmder and in gnome-terminal is W4 and L4 of P22.13; W4 of
+  [The manual pass](../Architecture/MANUAL-PASS.md) now says what it should see.
+
+4268 tests pass and 35 skip on Windows.

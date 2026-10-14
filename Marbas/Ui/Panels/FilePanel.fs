@@ -44,6 +44,9 @@ let private paintRows (panel: PanelView) (list: ListView) =
         rowAttribute panel list args.Row
         |> Option.iter (fun color -> args.RowAttribute <- color))
 
+[<Literal>]
+let private BorderThickness = 1
+
 let private focusable (panel: PanelView) =
     panel.CanFocus <- true
     panel.TabStop <- TabBehavior.TabStop
@@ -63,7 +66,12 @@ let private focusable (panel: PanelView) =
     paintRows panel list
 
     let rule =
-        new Line(Y = Pos.AnchorEnd 2, Width = Dim.Fill(), Orientation = Orientation.Horizontal)
+        new Line(
+            X = Pos.Absolute -BorderThickness,
+            Y = Pos.AnchorEnd 2,
+            Width = Dim.Fill() + Dim.Absolute BorderThickness,
+            Orientation = Orientation.Horizontal
+        )
 
     let footer =
         new Label(Y = Pos.AnchorEnd 1, Width = Dim.Fill(), Height = 1)

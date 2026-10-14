@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-10-14. Phases and task numbers refer to [the plan](PLAN.md).
+Status as of 2026-10-15. Phases and task numbers refer to [the plan](PLAN.md).
 What each phase actually did is in [Progress/](Progress), one file per phase;
 what the application does today is in
 [What works today](Progress/WHAT-WORKS.md).
@@ -31,7 +31,7 @@ what the application does today is in
 | 19 — The viewer finds and decodes | P19.1–P19.6 | done | [journal](Progress/PHASE-19-THE-VIEWER-FINDS-AND-DECODES.md) |
 | 20 — The user menu | P20.1–P20.5 | done | [journal](Progress/PHASE-20-THE-USER-MENU.md) |
 | 21 — The log and the debts | P21.1–P21.18 | done | [journal](Progress/PHASE-21-THE-LOG-AND-THE-DEBTS.md) |
-| 22 — What the manual pass found | P22.1–P22.13 | in progress (5 of 13) | [journal](Progress/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) |
+| 22 — What the manual pass found | P22.1–P22.13 | in progress (6 of 13) | [journal](Progress/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) |
 
 ## What works today
 

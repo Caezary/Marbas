@@ -398,6 +398,23 @@ listing, which is why it is never blank now and why a `Line` separates it from
 the entries. `SelectionSummary` kept its job — it describes marked entries — and
 `PanelFooter` is the choice above it.
 
+**The rule reaches into the border, so the border joins it.** Terminal.Gui
+joins two lines only where they meet on one `LineCanvas`. A `Line` hands its
+line to the canvas of the view it sits in, and the panel's border draws onto
+that canvas too, so the two already shared one; what kept them apart was the
+length. Placed at `Dim.Fill()` inside the frame, the rule ended a column short
+of the border on either side, touched it nowhere, and was drawn `║────║`. Since
+P22.6 it starts one column to the left of the viewport, on the border's own
+column, and runs one column past the viewport on the right, onto the other:
+the canvas then finds a line ending on a line and draws `╟────╢` on the
+focused panel and `├────┤` on the other, in the border's colour. One column
+further, and the rule crosses the border instead of ending on it — `╫` and `┼`
+on the right. The joint follows `BorderStyle` with no code of its own: the
+canvas picks the glyph from the two styles that meet. A test can hold only the
+geometry — the rule's columns on the screen are the panel's — since nothing
+reads a canvas back without a driver; the glyphs were read with the
+`render-tui-screen` probe and in tmux.
+
 **The directory line counts both kinds, the total counts one.** `3 files, 2
 folders   1,234 bytes` answers "what is in here" for a panel that is mostly
 subdirectories, which a file count alone did not. `..` is a way out of the
