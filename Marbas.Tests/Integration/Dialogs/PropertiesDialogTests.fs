@@ -4,6 +4,7 @@ open System
 open System.Drawing
 open Xunit
 open Terminal.Gui.Views
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
@@ -18,19 +19,55 @@ let private shown =
       Modified = DateTimeOffset(DateTime(2024, 4, 2, 10, 6, 8))
       Accessed = DateTimeOffset(DateTime(2024, 5, 3, 11, 7, 9)) }
 
-let private laidOut properties =
+let private laidOutOn platform properties =
     DialogStyle.apply ()
-    let dialog = PropertiesDialog.create properties
+    let dialog = PropertiesDialog.create platform properties
     dialog.BeginInit()
     dialog.EndInit()
     dialog.Layout(Size(80, 24)) |> ignore
     dialog
+
+let private laidOut properties = laidOutOn Windows properties
 
 [<Fact>]
 let ``the dialog names the entry it stands for`` () =
     use dialog = laidOut shown
 
     Assert.Equal(at "start/docs", (PropertiesDialog.name dialog).Text)
+
+[<Fact>]
+let ``the dialog built for Windows offers all four flags`` () =
+    use dialog = laidOutOn Windows shown
+
+    let offered = PropertiesDialog.offeredFlags dialog
+
+    Assert.Equal<EntryFlag list>([ ReadOnlyFlag; HiddenFlag; SystemFlag; ArchiveFlag ], offered)
+
+[<Fact>]
+let ``the dialog built for Unix offers read-only and nothing else`` () =
+    use dialog = laidOutOn Unix shown
+
+    let offered = PropertiesDialog.offeredFlags dialog
+
+    Assert.Equal<EntryFlag list>([ ReadOnlyFlag ], offered)
+
+[<Fact>]
+let ``a flag the dialog does not offer comes back as the entry carried it`` () =
+    use dialog = laidOutOn Unix shown
+    (PropertiesDialog.checkBox dialog ReadOnlyFlag).Value <- CheckState.Checked
+    dialog.Result <- 1
+
+    let answered = PropertiesDialog.properties Unix shown dialog |> Expect.some
+
+    Assert.Equal<Set<EntryFlag>>(Set.ofList [ ReadOnlyFlag; HiddenFlag ], answered.Flags)
+
+[<Fact>]
+let ``the stamps of the dialog built for Unix sit right under its one flag`` () =
+    use dialog = laidOutOn Unix shown
+
+    let created = (PropertiesDialog.field dialog PropertiesDialog.CreatedId).Frame.Y
+
+    Assert.Equal((PropertiesDialog.checkBox dialog ReadOnlyFlag).Frame.Y + 2, created)
 
 [<Fact>]
 let ``every flag has a box, ticked where the entry carries it`` () =
@@ -65,7 +102,7 @@ let ``every field fits inside the dialog`` () =
 let ``a dismissed dialog yields no properties`` () =
     use dialog = laidOut shown
 
-    Assert.Equal(None, PropertiesDialog.properties shown dialog)
+    Assert.Equal(None, PropertiesDialog.properties Windows shown dialog)
 
 [<Fact>]
 let ``a ticked box comes back as the flag it stands for`` () =
@@ -74,7 +111,7 @@ let ``a ticked box comes back as the flag it stands for`` () =
     (PropertiesDialog.checkBox dialog HiddenFlag).Value <- CheckState.UnChecked
     dialog.Result <- 1
 
-    let answered = PropertiesDialog.properties shown dialog |> Expect.some
+    let answered = PropertiesDialog.properties Windows shown dialog |> Expect.some
 
     Assert.True(EntryProperties.has ReadOnlyFlag answered)
     Assert.False(EntryProperties.has HiddenFlag answered)
@@ -85,7 +122,7 @@ let ``a stamp that was typed comes back`` () =
     (PropertiesDialog.field dialog PropertiesDialog.CreatedId).Text <- "1999-12-31 23:59:58"
     dialog.Result <- 1
 
-    let answered = PropertiesDialog.properties shown dialog |> Expect.some
+    let answered = PropertiesDialog.properties Windows shown dialog |> Expect.some
 
     Assert.Equal(DateTimeOffset(DateTime(1999, 12, 31, 23, 59, 58)), answered.Created)
 
@@ -95,7 +132,7 @@ let ``a stamp that reads as nothing leaves the one the entry carried`` () =
     (PropertiesDialog.field dialog PropertiesDialog.CreatedId).Text <- "whenever"
     dialog.Result <- 1
 
-    let answered = PropertiesDialog.properties shown dialog |> Expect.some
+    let answered = PropertiesDialog.properties Windows shown dialog |> Expect.some
 
     Assert.Equal(shown.Created, answered.Created)
 
@@ -104,6 +141,6 @@ let ``the entry the properties belong to is never changed`` () =
     use dialog = laidOut shown
     dialog.Result <- 1
 
-    let answered = PropertiesDialog.properties shown dialog |> Expect.some
+    let answered = PropertiesDialog.properties Windows shown dialog |> Expect.some
 
     Assert.Equal(shown.Path, answered.Path)

@@ -3,6 +3,7 @@ namespace Marbas.FileSystem
 open System
 open System.IO
 open System.IO.Abstractions
+open Marbas.Domain
 
 type EntryFlag =
     | ReadOnlyFlag
@@ -21,6 +22,11 @@ module EntryProperties =
 
     let flags = [ ReadOnlyFlag; HiddenFlag; SystemFlag; ArchiveFlag ]
 
+    let flagsKeptOn platform =
+        match platform with
+        | Windows -> flags
+        | Unix -> [ ReadOnlyFlag ]
+
     let label flag =
         match flag with
         | ReadOnlyFlag -> "Read-only"
@@ -38,8 +44,8 @@ module EntryProperties =
     let private raisedFlags (attributes: FileAttributes) =
         flags |> List.filter (attribute >> attributes.HasFlag) |> Set.ofList
 
-    let private attributesOf (existing: FileAttributes) (set: Set<EntryFlag>) =
-        flags
+    let private attributesOf platform (existing: FileAttributes) (set: Set<EntryFlag>) =
+        flagsKeptOn platform
         |> List.fold
             (fun attributes flag ->
                 if Set.contains flag set then
@@ -80,7 +86,7 @@ module EntryProperties =
             with ex ->
                 Error(Operations.mapException path ex)
 
-    let write (fs: IFileSystem) (properties: EntryProperties) =
+    let writeOn platform (fs: IFileSystem) (properties: EntryProperties) =
         match info fs properties.Path with
         | None -> Error(Operations.SourceNotFound properties.Path)
         | Some entry ->
@@ -88,7 +94,10 @@ module EntryProperties =
                 entry.CreationTime <- properties.Created.LocalDateTime
                 entry.LastWriteTime <- properties.Modified.LocalDateTime
                 entry.LastAccessTime <- properties.Accessed.LocalDateTime
-                entry.Attributes <- attributesOf entry.Attributes properties.Flags
+                entry.Attributes <- attributesOf platform entry.Attributes properties.Flags
                 Ok()
             with ex ->
                 Error(Operations.mapException properties.Path ex)
+
+    let write (fs: IFileSystem) properties =
+        writeOn (FileSystemPath.platformOf fs) fs properties

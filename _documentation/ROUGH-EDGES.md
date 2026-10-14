@@ -253,12 +253,6 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 - The properties popup edits one entry, the one under the cursor, and never the
   marked ones. It also offers no way to reach the properties of `..` or of a
   file — `F4` on a file goes to the editor, which is what the key is for.
-- On Linux the properties popup offers hidden, system and archive, and none of
-  them does anything: a tick is accepted without a word and is gone when the
-  popup opens again, because .NET drops the three attributes on Unix instead of
-  refusing them. Read-only is the one that holds — it takes the write bits
-  away, and unticking gives back the owner's alone. Offering only what the
-  platform can keep is the fix.
 - The session is written on quit, on every tab command and on `Shift+F9`, but
   not after ordinary navigation — so a crash still loses whatever changed since
   the last of those. Writing after every step would cost a file write per

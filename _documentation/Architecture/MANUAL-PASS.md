@@ -266,7 +266,7 @@ In `attrs`.
 
 | Step | Do | Should | Row |
 |------|----|--------|-----|
-| L33 | `F4` on `flags-dir`, tick read-only, accept; `F4` again. Then tick hidden, system and archive, one at a time. Untick read-only at the end. | Read-only is ticked when the popup opens again, and `ls -ld flags-dir` shows no `w`. Say what each of the other three does: nothing, a refusal in a dialog, or a tick that is gone when the popup opens again. | *A flag written to a directory is read back* |
+| L33 | `F4` on `flags-dir`, tick read-only, accept; `F4` again. Untick read-only at the end. | The popup offers read-only alone, with the three stamps right under it. Read-only is ticked when the popup opens again, and `ls -ld flags-dir` shows no `w`; unticked, the owner's `w` is back. | *A flag written to a directory is read back* |
 
 ### The editor
 

@@ -58,13 +58,15 @@ let ``properties that are applied reach the entry`` () =
     let path = fp (at "start/docs")
 
     let properties =
-        EntryProperties.read fs path |> Expect.ok |> EntryProperties.withFlag HiddenFlag
+        EntryProperties.read fs path
+        |> Expect.ok
+        |> EntryProperties.withFlag ReadOnlyFlag
 
     applyProperties fs properties state |> Expect.ok |> ignore
 
-    Assert.True(EntryProperties.read fs path |> Expect.ok |> EntryProperties.has HiddenFlag)
+    Assert.True(EntryProperties.read fs path |> Expect.ok |> EntryProperties.has ReadOnlyFlag)
 
-[<Fact>]
+[<WindowsFact "Only Windows keeps the hidden attribute an entry is given">]
 let ``a directory that has just been hidden leaves a panel that conceals it`` () =
     let fs = mockFs ()
     let state = loaded fs

@@ -1,6 +1,7 @@
 module Marbas.Ui.Dialogs.PropertiesDialog
 
 open System
+open Marbas.Domain
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.FileSystem
@@ -26,6 +27,12 @@ let AccessedId = "accessed"
 [<Literal>]
 let private CaptionWidth = 11
 
+[<Literal>]
+let private FirstFlagRow = 2
+
+[<Literal>]
+let private HeightWithoutFlags = 10
+
 let flagId flag =
     match flag with
     | ReadOnlyFlag -> "readOnly"
@@ -50,7 +57,7 @@ let private flagBox index flag (properties: EntryProperties) =
     let box =
         new CheckBox(
             X = 1,
-            Y = Pos.Absolute(2 + index),
+            Y = Pos.Absolute(FirstFlagRow + index),
             Height = 1,
             Text = EntryProperties.label flag,
             Id = flagId flag
@@ -64,8 +71,12 @@ let private flagBox index flag (properties: EntryProperties) =
 
     box :> View
 
-let create (properties: EntryProperties) =
-    let dialog = new Dialog(Title = Title, Width = 62, Height = 14) |> DialogStyle.dress
+let create (platform: Platform) (properties: EntryProperties) =
+    let offered = EntryProperties.flagsKeptOn platform
+
+    let dialog =
+        new Dialog(Title = Title, Width = 62, Height = Dim.Absolute(HeightWithoutFlags + offered.Length))
+        |> DialogStyle.dress
 
     let name =
         new Label(
@@ -78,14 +89,14 @@ let create (properties: EntryProperties) =
         )
         |> LiteralText.showing
 
-    let boxes =
-        EntryProperties.flags
-        |> List.mapi (fun index flag -> flagBox index flag properties)
+    let boxes = offered |> List.mapi (fun index flag -> flagBox index flag properties)
+
+    let firstStampRow = FirstFlagRow + offered.Length + 1
 
     let stamps =
-        stampRow 7 CreatedId "Created:" properties.Created
-        @ stampRow 8 ModifiedId "Modified:" properties.Modified
-        @ stampRow 9 AccessedId "Accessed:" properties.Accessed
+        stampRow firstStampRow CreatedId "Created:" properties.Created
+        @ stampRow (firstStampRow + 1) ModifiedId "Modified:" properties.Modified
+        @ stampRow (firstStampRow + 2) AccessedId "Accessed:" properties.Accessed
 
     dialog.Add(Array.ofList ((name :> View) :: boxes @ stamps)) |> ignore
 
@@ -108,14 +119,19 @@ let private marking (dialog: Dialog) properties flag =
     | CheckState.Checked -> EntryProperties.withFlag flag properties
     | _ -> EntryProperties.withoutFlag flag properties
 
-let properties (original: EntryProperties) (dialog: Dialog) =
+let properties (platform: Platform) (original: EntryProperties) (dialog: Dialog) =
     if dialog.Canceled then
         None
     else
-        let marked = EntryProperties.flags |> List.fold (marking dialog) original
+        let marked =
+            EntryProperties.flagsKeptOn platform |> List.fold (marking dialog) original
 
         Some
             { marked with
                 Created = stampOf dialog CreatedId original.Created
                 Modified = stampOf dialog ModifiedId original.Modified
                 Accessed = stampOf dialog AccessedId original.Accessed }
+
+let offeredFlags (dialog: Dialog) =
+    EntryProperties.flags
+    |> List.filter (fun flag -> dialog.SubViews |> Seq.exists (fun view -> view.Id = flagId flag))

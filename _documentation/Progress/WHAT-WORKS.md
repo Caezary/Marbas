@@ -527,11 +527,12 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   were. An editor that cannot be started is reported in a dialog; `..` under
   the cursor starts nothing.
 - `F4` on a *directory* opens its properties instead: a popup naming the path,
-  with a tick box for each of read-only, hidden, system and archive and a field
+  with a tick box for each flag the platform keeps — read-only, hidden, system
+  and archive on Windows, read-only alone on Linux — and a field
   for each of the created, modified and accessed stamps, written
   `2024-03-01 09:05:07` whatever the machine's locale. Accepting it writes the
   stamps first and the flags last — a read-only bit set first would refuse the
-  stamps — and only the four flags Marbas offers are touched, so nothing else
+  stamps — and only the flags the popup offers are touched, so nothing else
   the entry carries is lost. The panel is re-read afterwards, which is why a
   directory just marked hidden disappears from a panel that conceals hidden
   entries. A stamp typed as something that is no date leaves the one the entry

@@ -651,7 +651,7 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | `F4` falls back to the default editor, then `$EDITOR` | same | same | suite |
 | `F4` falls back again when neither is set | `notepad` | `vi` | suite |
 | `F4` on a directory opens its properties | same | same | suite |
-| A flag written to a directory is read back | same | read-only: yes, the write bits go; hidden, system and archive: **no**, a tick is taken without a word and gone when the popup opens again | suite (mock); manual 2026-10-12 |
+| A flag written to a directory is read back | same | read-only: yes, the write bits go; hidden, system and archive are not offered since P22.8, where the pass saw a tick taken without a word and gone when the popup opened again | suite (mock, either platform on either leg); manual 2026-10-12 for the defect; **manual** to walk again |
 | `Shift+F4` creates a file and opens it | same | same | suite |
 | `F12` opens the settings popup | same | same | suite |
 | `F4` waits for the editor | **no**, started through the shell | yes, with the terminal handed over | suite |
@@ -827,6 +827,18 @@ the next opening, and unticking it gives back the owner's write bit alone;
 hidden, system and archive are refused by nobody and kept by nobody — .NET
 drops the three on Unix, so the tick is gone when the popup opens again and
 no dialog says why.
+
+**So the popup offers what the platform keeps.** Since P22.8
+`EntryProperties.flagsKeptOn` answers the flags a platform holds on to — all
+four on Windows, read-only alone on Unix — and both the popup and
+`EntryProperties.write` take the platform: the popup shows a box for those
+flags alone and folds only them back, and the write folds only them onto the
+entry, so a flag it does not keep is left as the entry had it. A dot-name's
+hidden, which .NET reports on Unix, therefore survives a write untouched. The
+platform comes from `FileSystemPath.platformOf` on the file system the write
+holds, and `Dependencies.create` hands the popup the same answer; `writeOn`
+and `create` take it as a value, so either platform's popup and write are
+tested on either leg.
 
 ## Decisions
 

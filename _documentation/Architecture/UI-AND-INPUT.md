@@ -510,7 +510,9 @@ said so, not a property: an empty unfocused field is invisible to every test
 that reads `Frame` and `Text`.
 
 **The properties popup is a value in and a value out.** `PropertiesDialog.create`
-takes an `EntryProperties`, ticks a `CheckBox` per `EntryFlag` and writes each
+takes the platform and an `EntryProperties`, ticks a `CheckBox` per `EntryFlag`
+the platform keeps — growing by a row for each, so the stamps sit right under
+the last box — and writes each
 timestamp through `TimestampText` into a field; `PropertiesDialog.properties`
 takes the original back and folds the boxes and the fields onto it. Reading the
 original in is what makes a timestamp the user mistyped harmless — it is left as

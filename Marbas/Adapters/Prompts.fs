@@ -135,8 +135,11 @@ let showFile (app: IApplication) (request: ViewRequest) =
 
     running app createFileViewer ignore
 
-let editProperties (app: IApplication) properties =
-    running app (fun () -> PropertiesDialog.create properties) (PropertiesDialog.properties properties)
+let editProperties (app: IApplication) platform properties =
+    running
+        app
+        (fun () -> PropertiesDialog.create platform properties)
+        (PropertiesDialog.properties platform properties)
 
 let askArchive (app: IApplication) retarget (request: PackPrompt) =
     let offered = FileSystemPath.value request.Suggestion

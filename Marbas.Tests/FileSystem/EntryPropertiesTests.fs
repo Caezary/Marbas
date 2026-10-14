@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.IO.Abstractions.TestingHelpers
 open Xunit
+open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.Tests
 
@@ -16,6 +17,9 @@ let private mockFs () =
     fs.AddDirectory(at "start/docs")
     fs.AddFile(at "start/notes.txt", MockFileData "hi")
     fs
+
+let private labelled label =
+    EntryProperties.flags |> List.find (EntryProperties.label >> (=) label)
 
 let private read fs path =
     EntryProperties.read fs path |> Expect.ok
@@ -84,7 +88,7 @@ let ``the flags written to a directory are read back from it`` () =
     read fs path
     |> EntryProperties.withFlag HiddenFlag
     |> EntryProperties.withFlag ReadOnlyFlag
-    |> EntryProperties.write fs
+    |> EntryProperties.writeOn Windows fs
     |> Expect.ok
 
     let written = read fs path
@@ -99,12 +103,12 @@ let ``clearing a flag takes it off the entry`` () =
 
     read fs path
     |> EntryProperties.withFlag HiddenFlag
-    |> EntryProperties.write fs
+    |> EntryProperties.writeOn Windows fs
     |> Expect.ok
 
     read fs path
     |> EntryProperties.withoutFlag HiddenFlag
-    |> EntryProperties.write fs
+    |> EntryProperties.writeOn Windows fs
     |> Expect.ok
 
     Assert.False(EntryProperties.has HiddenFlag (read fs path))
@@ -116,7 +120,7 @@ let ``writing the properties keeps the entry a directory`` () =
 
     read fs path
     |> EntryProperties.withFlag ArchiveFlag
-    |> EntryProperties.write fs
+    |> EntryProperties.writeOn Windows fs
     |> Expect.ok
 
     Assert.Equal(DirectoryEntry, FileSystemPath.kind fs path)
@@ -170,3 +174,57 @@ let ``every flag has a name to put on a screen`` () =
     let named = EntryProperties.flags |> List.map EntryProperties.label
 
     Assert.Equal<string list>([ "Read-only"; "Hidden"; "System"; "Archive" ], named)
+
+[<Fact>]
+let ``Windows keeps every flag`` () =
+    let kept = EntryProperties.flagsKeptOn Windows
+
+    Assert.Equal<EntryFlag list>(EntryProperties.flags, kept)
+
+[<Fact>]
+let ``Unix keeps read-only and nothing else`` () =
+    let kept = EntryProperties.flagsKeptOn Unix
+
+    Assert.Equal<EntryFlag list>([ ReadOnlyFlag ], kept)
+
+[<Fact>]
+let ``read-only is written on Unix`` () =
+    let fs = mockFs ()
+    let path = fp (at "start/docs")
+
+    read fs path
+    |> EntryProperties.withFlag ReadOnlyFlag
+    |> EntryProperties.writeOn Unix fs
+    |> Expect.ok
+
+    Assert.True(EntryProperties.has ReadOnlyFlag (read fs path))
+
+[<Theory>]
+[<InlineData("Hidden")>]
+[<InlineData("System")>]
+[<InlineData("Archive")>]
+let ``a flag Unix does not keep is not raised on it`` (label: string) =
+    let fs = mockFs ()
+    let path = fp (at "start/notes.txt")
+    let flag = labelled label
+
+    read fs path
+    |> EntryProperties.withFlag flag
+    |> EntryProperties.writeOn Unix fs
+    |> Expect.ok
+
+    Assert.False(EntryProperties.has flag (read fs path))
+
+[<Fact>]
+let ``a flag Unix does not keep is left on an entry that carries it`` () =
+    let fs = mockFs ()
+    let path = fp (at "start/docs")
+    let info = fs.DirectoryInfo.New(at "start/docs")
+    info.Attributes <- info.Attributes ||| FileAttributes.Hidden
+
+    read fs path
+    |> EntryProperties.withoutFlag HiddenFlag
+    |> EntryProperties.writeOn Unix fs
+    |> Expect.ok
+
+    Assert.True(EntryProperties.has HiddenFlag (read fs path))

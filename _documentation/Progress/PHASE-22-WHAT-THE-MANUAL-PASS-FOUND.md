@@ -416,3 +416,42 @@ the counter following. L5 of [The manual pass](../Architecture/MANUAL-PASS.md)
 now presses the letters as well.
 
 4272 tests pass and 35 skip on Windows.
+
+**P22.8 offers in the properties popup what the platform keeps.** On Windows
+the popup shows read-only, hidden, system and archive as before; on Linux it
+shows read-only alone, and the three stamps move up under it.
+`EntryProperties.flagsKeptOn` answers the flags for a platform, and the popup
+and the write both take the platform and fold only those flags. How it fits is
+in [Cross-platform](../Architecture/CROSS-PLATFORM.md).
+
+The tests came first, eleven of them. In `EntryPropertiesTests`: the flags each
+platform keeps, read-only written on Unix, each of the other three not raised
+by a write on Unix, and hidden left on an entry that carries it when a write on
+Unix leaves it out. In `PropertiesDialogTests`: the popup built for Windows
+offers all four flags and the one built for Unix read-only alone, a flag it
+does not offer comes back as the entry carried it, and the stamps sit right
+under the one box. Seven failed with the platform taken and still ignored;
+all eleven pass, on either system.
+
+Two things went differently from the plan, or further than it.
+
+- **The platform is a value on both sides.** `EntryProperties.writeOn` takes
+  it, as `DirectoryListing.readOn` does, and `write` hands it the one its file
+  system has. `PropertiesDialog.create` and `properties` take it too, and
+  `Dependencies.create` gives `Prompts.editProperties` the answer of
+  `FileSystemPath.platformOf`. So both popups and both writes are tested on
+  both legs.
+- **Four tests now name their platform.** Three tests of the write raised
+  hidden or archive through `write fs`, which on the Linux leg is the Unix
+  write now; they call `writeOn Windows`. Of the two in `State/PropertiesTests`
+  that hid a directory through `applyProperties`, the one that only asks that
+  the change reaches the entry ticks read-only instead, and the one that asks
+  the panel to conceal the hidden directory is a `WindowsFact`.
+
+The popup was rendered with the `render-tui-screen` probe for either platform:
+four boxes and a popup fourteen rows tall on Windows, one box and eleven rows
+on Unix. L33 of [The manual pass](../Architecture/MANUAL-PASS.md) now says what
+the walk should see.
+
+4283 tests pass and 35 skip on Windows; 4260 pass and 61 skip on Linux under
+WSL.

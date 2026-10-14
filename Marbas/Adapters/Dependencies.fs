@@ -81,7 +81,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) (log: Lo
           AskFavoriteSlot = Prompts.askFavoriteSlot app fs
           ChooseFavorite = Prompts.chooseFavorite app fs
           ChooseFromUserMenu = Prompts.chooseFromUserMenu app
-          EditProperties = Prompts.editProperties app
+          EditProperties = Prompts.editProperties app (FileSystemPath.platformOf fs)
           EditPrograms = Prompts.editPrograms app
           ShowFile = Prompts.showFile app }
       Processes =
