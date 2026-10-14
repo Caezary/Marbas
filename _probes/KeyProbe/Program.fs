@@ -112,6 +112,20 @@ let private standInsInListDialog =
     [ prompt "a bare digit" "the 5 of the top row, alone"
       prompt "Enter" "Enter alone" ]
 
+let private tabLettersInPanel =
+    [ prompt "Alt+F11" "left Alt with F11"
+      prompt "Alt+Shift+F11" "left Alt+Shift with F11"
+      prompt "Alt+O" "left Alt with the letter O"
+      prompt "Alt+Shift+O" "left Alt+Shift with the letter O"
+      prompt "Alt+S" "left Alt with the letter S"
+      prompt "Alt+Shift+S" "left Alt+Shift with the letter S"
+      prompt "Alt+Y" "left Alt with the letter Y"
+      prompt "Alt+Shift+Y" "left Alt+Shift with the letter Y"
+      prompt "Alt+Z" "left Alt with the letter Z"
+      prompt "Alt+Shift+Z" "left Alt+Shift with the letter Z"
+      prompt "Alt+Q" "left Alt with the letter Q"
+      prompt "Alt+Shift+Q" "left Alt+Shift with the letter Q" ]
+
 let private panelOf prompts =
     { Title = "The panel — a ListView with the focus, as in Marbas"
       Place = Panel
@@ -135,9 +149,12 @@ let private keyRound =
 let private standInRound =
     [ panelOf standInsInPanel; listDialogOf standInsInListDialog ]
 
+let private tabLetterRound = [ panelOf tabLettersInPanel ]
+
 let private roundNamed (argv: string array) =
     match argv with
     | [| "stand-ins" |] -> "stand-ins", standInRound
+    | [| "tab-letters" |] -> "tab-letters", tabLetterRound
     | _ -> "keys", keyRound
 
 let mutable private roundName = "keys"

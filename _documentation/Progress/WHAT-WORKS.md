@@ -696,7 +696,8 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   with the cursor on the new archive, and anything that failed keeps its mark
   and its line in one dialog.
 
-- `Alt+F11` opens a tab, `Alt+Shift+F11` closes it and the last one stays,
+- `Alt+F11` (or `Alt+Z`) opens a tab, `Alt+Shift+F11` (or `Alt+Shift+Z`)
+  closes it and the last one stays,
   `F11` (or `Alt+T`, where a terminal keeps `F11` for full screen) lists them
   in a popup, and `Alt+←` / `Alt+→` walk between them and wrap round. A tab is
   the whole pair of panels plus the side that is active, so switching one moves

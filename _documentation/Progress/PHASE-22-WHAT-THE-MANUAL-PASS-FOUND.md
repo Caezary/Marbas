@@ -377,3 +377,42 @@ Two things went differently from the plan.
   [The manual pass](../Architecture/MANUAL-PASS.md) now says what it should see.
 
 4268 tests pass and 35 skip on Windows.
+
+**P22.7 opens and closes a tab with a letter.** `Alt+Z` opens a tab and
+`Alt+Shift+Z` closes it, beside `Alt+F11` and `Alt+Shift+F11`, which
+gnome-terminal under WSLg never hands over. How the keys were chosen is in
+[Tabs](../Architecture/TABS.md).
+
+The keys were measured before they were bound. `_probes/KeyProbe` gained a
+round of its own, `tab-letters`: the two function keys and the five letters
+`KeyMap` leaves free with `Alt` and with `Alt+Shift` alike — O, Q, S, Y and Z,
+with D still kept for the drive popups. Under WSL in tmux, where the bytes are
+sent rather than pressed, the driver decoded all twelve. Then the round was run by hand
+in the five terminals of P16.1. Every letter arrived in all five in both
+shapes; in gnome-terminal neither function key reached the probe, and
+everywhere else both did. The rows are in
+[Cross-platform](../Architecture/CROSS-PLATFORM.md).
+
+Three tests were written first and failed with the two keys defined and not
+yet bound: one in `KeyMapTests` for each, which says what it asks for, and one
+in `TabKeyTests` that opens a tab with `Alt+Z` and closes it with
+`Alt+Shift+Z` and reads the counter. A fourth holds the shape, that the key
+closing a tab is the key opening one with `Shift`. All four pass.
+
+Two things went differently from the plan, or further than it.
+
+- **`Alt+Shift+F11` was measured too.** The manual pass could not try it with
+  no second tab to close; the probe asked for it directly, and in
+  gnome-terminal it does not arrive, so both keys of the pair needed a letter
+  and not only the one the pass saw fail.
+- **Q was free and was set aside.** `Alt+Shift+Q` would close a tab one key
+  away from `Ctrl+Q`, which ends the session. Of the others, Z was chosen.
+
+The published `linux-x64` binary was driven in tmux under WSL: `Alt+Z` twice
+took the counter from `[1/1]` to `[3/3]`, and `Alt+Shift+Z` twice back to
+`[1/1]`. The same binary was then run in gnome-terminal under WSLg on
+2026-10-15 and a tab opened and closed by hand there with the two letters,
+the counter following. L5 of [The manual pass](../Architecture/MANUAL-PASS.md)
+now presses the letters as well.
+
+4272 tests pass and 35 skip on Windows.

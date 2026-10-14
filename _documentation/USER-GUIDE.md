@@ -311,9 +311,10 @@ and the right side at once, along with which of them is active.
 - `F11` (or `Alt+T`) lists the open tabs — one row per tab with its number and
   where both its panels stand. `Enter` goes to the one under the cursor, `Esc`
   changes nothing.
-- `Alt+F11` opens a new tab on the directories already on screen. Its cursors
-  come along; the marks do not.
-- `Alt+Shift+F11` closes the tab you are on. The last one cannot be closed.
+- `Alt+F11` (or `Alt+Z`) opens a new tab on the directories already on screen.
+  Its cursors come along; the marks do not.
+- `Alt+Shift+F11` (or `Alt+Shift+Z`) closes the tab you are on. The last one
+  cannot be closed.
 - `Alt+←` / `Alt+→` walk to the previous / next tab without the popup, wrapping
   round at the ends.
 
@@ -327,7 +328,9 @@ tab each write the session, and `Shift+F9` writes it at any time without
 quitting.
 
 Use `Alt+T` if `F11` does nothing: Windows Terminal and the Windows console keep
-that key for their own full-screen toggle and never pass it on.
+that key for their own full-screen toggle and never pass it on. Use `Alt+Z` and
+`Alt+Shift+Z` if `Alt+F11` puts the window in full screen instead, as
+gnome-terminal does under WSLg.
 
 ## The function-key bar
 
@@ -572,6 +575,9 @@ keep moving between the fields. The password of an archive is never kept.
   which keep it for full screen; cmder passes it through. Use `Alt+T` to list
   the tabs. A WSL session inherits whatever terminal it was started from, so the
   same Linux build answers `F11` under one and not under the other.
+- **`Alt+F11`** puts gnome-terminal's window in full screen under WSLg and never
+  reaches Marbas, and `Alt+Shift+F11` does not arrive there either. Use
+  `Alt+Z` to open a tab and `Alt+Shift+Z` to close it.
 - **`Alt+F7`** is taken by GNOME's window manager for moving a window, so on a
   GNOME desktop use `Alt+Shift+F` to find files. `PATH` is split at `;` on
   Windows and `:` on Unix.

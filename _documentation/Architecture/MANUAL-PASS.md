@@ -197,7 +197,7 @@ different pass: the keys, the colours and the mouse are then that terminal's.
 | L2 | Go into `kinds`, with the hidden entries shown (`Alt+H`). | `folder` white, `plain.txt` bright blue, `archive.tar.gz` bright magenta, `program` bright green, `link` bright cyan. | *Directory / file / archive / program colours are told apart* |
 | L3 | Read `plain.txt` and `.dotfile`, with the cursor elsewhere. | As W3. | *Bright blue file names stay readable on the blue panel* |
 | L4 | Look at the line between the listing and the footer. | As W4. | *The rule under the listing joins the panel border* |
-| L5 | Look at the top right corner; `Alt+F11`; `Alt+Shift+F11`. | As W5. | *The tab counter is legible in the top right corner* |
+| L5 | Look at the top right corner; `Alt+F11`; `Alt+Shift+F11`; then `Alt+Z`; `Alt+Shift+Z`. | As W5, twice — in gnome-terminal under WSLg the function keys do nothing in Marbas and the letters do it once. | *The tab counter is legible in the top right corner* |
 | L6 | Resize the terminal window every way. | As W6. | *The screen redraws when the terminal is resized* |
 
 ### The keys and the mouse

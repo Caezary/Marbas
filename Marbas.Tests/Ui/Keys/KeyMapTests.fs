@@ -324,6 +324,20 @@ let ``closing a tab is opening one with one more modifier`` () =
     Assert.Equal(KeyMap.newTabKey.WithShift, KeyMap.closeTabKey)
 
 [<Fact>]
+let ``Alt+Z opens a tab, where a terminal keeps Alt+F11 for itself`` () =
+    Assert.Equal(Key.Z.WithAlt, KeyMap.spareNewTabKey)
+    Assert.Equal(Some TabOpened, KeyMap.messageFor KeyMap.spareNewTabKey)
+
+[<Fact>]
+let ``Alt+Shift+Z closes the tab in front, where a terminal keeps Alt+Shift+F11`` () =
+    Assert.Equal(Key.Z.WithAlt.WithShift, KeyMap.spareCloseTabKey)
+    Assert.Equal(Some TabClosed, KeyMap.messageFor KeyMap.spareCloseTabKey)
+
+[<Fact>]
+let ``the spare that closes a tab is the spare that opens one with one more modifier`` () =
+    Assert.Equal(KeyMap.spareNewTabKey.WithShift, KeyMap.spareCloseTabKey)
+
+[<Fact>]
 let ``Shift+F9 writes the session without being asked to quit`` () =
     Assert.Equal(Key.F9.WithShift, KeyMap.saveSessionKey)
     Assert.Equal(Some SessionSaveRequested, KeyMap.messageFor KeyMap.saveSessionKey)

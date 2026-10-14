@@ -66,12 +66,19 @@ archive — the rule since P9.10, now applied per tab. A restored session
 therefore opens beside the archive rather than inside it, which is a place that
 is certainly still there.
 
-**The keys, and why there are two for one of them.** `Alt+F11` opens a tab,
+**The keys, and why there are two for three of them.** `Alt+F11` opens a tab,
 `Alt+Shift+F11` closes it, `F11` lists them, `Alt+←` and `Alt+→` walk between
-them without a popup, and `Shift+F9` writes the session on its own. `F11` is the
-only one a terminal argues about — Windows Terminal and the Windows console keep
-it for full screen — so `Alt+T` is bound beside it, exactly as `Alt+H` stands
-beside `Ctrl+H` and `Alt+W` beside `Ctrl+PgDn`. `Ctrl+Tab`, the obvious key for
+them without a popup, and `Shift+F9` writes the session on its own. `F11` is
+one a terminal argues about — Windows Terminal and the Windows console keep it
+for full screen — so `Alt+T` is bound beside it, exactly as `Alt+H` stands
+beside `Ctrl+H` and `Alt+W` beside `Ctrl+PgDn`. gnome-terminal under WSLg
+argues about the other two: `Alt+F11` is its full screen and `Alt+Shift+F11`
+does not arrive, so since P22.7 `Alt+Z` opens a tab and `Alt+Shift+Z` closes
+it — a letter with `Alt` and the same letter with `Alt+Shift`, the pair the
+function keys make. `KeyMap` left five letters free in both shapes — O, Q, S, Y
+and Z — and all five arrived in every terminal measured; Q was set aside
+because `Alt+Shift+Q` would close a tab one key away from `Ctrl+Q`, which ends
+the session. `Ctrl+Tab`, the obvious key for
 walking between tabs, is spoken for by the terminals, and `Ctrl+T`, the obvious
 spare for the popup, is what cmder keeps for its own new console. See
 [Cross-platform](CROSS-PLATFORM.md), *Keyboard and terminal*, for what was

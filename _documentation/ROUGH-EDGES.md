@@ -27,12 +27,6 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   combination past it. Nothing arrives under gnome-terminal either.
   `Alt+Shift+R` is the binding to use; the dead one is kept for the same reason
   `Shift+Enter` is.
-- `Alt+F11` opens no tab in gnome-terminal under WSLg: the window goes full
-  screen and the key never arrives, so nothing there opens a second tab —
-  `KeyMap.newTabKey` is the one binding the command has. Seen in the manual
-  pass of 2026-10-12; whether the terminal or WSLg keeps the key was not told
-  apart, and `Alt+Shift+F11` could not be tried without a tab to close. The fix
-  is the shape the other keys got: a letter with `Alt` beside each of the two.
 - `Ctrl+H` toggles hidden entries only where the terminal reports it as a key
   rather than as the byte `0x08`, which no terminal outside the kitty keyboard
   protocol does. Under Windows Terminal it arrives as `Backspace` and does

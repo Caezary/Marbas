@@ -370,7 +370,8 @@ and its directory was gone after the next start.
 | The mouse selects an entry and clicks the key bar | yes | yes | manual 2026-10-12 |
 | `F11` lists the tabs | **only under cmder** — Windows Terminal and the console keep it for full screen | the terminal hosting the session decides, not the platform | probe |
 | `Alt+T` lists them where `F11` is eaten | yes | yes | probe |
-| `Alt+F11` opens a tab, `Alt+Shift+F11` closes it | yes | yes under WSL in cmder and in the Windows console; **no** in gnome-terminal under WSLg, where `Alt+F11` puts the window in full screen and no tab opens | probe; manual 2026-10-12 |
+| `Alt+F11` opens a tab, `Alt+Shift+F11` closes it | yes | yes under WSL in cmder and in the Windows console; **no** in gnome-terminal under WSLg, where `Alt+F11` puts the window in full screen and neither key arrives | probe; manual 2026-10-12; probe 2026-10-15 in gnome-terminal |
+| `Alt+Z` opens a tab, `Alt+Shift+Z` closes it | yes | yes, gnome-terminal under WSLg included | suite; probe 2026-10-15 in the five terminals; the published binary in tmux under WSL and by hand in gnome-terminal under WSLg, 2026-10-15 |
 | `Shift+F9` writes the session | yes | yes | probe |
 | `Alt+←` / `Alt+→` walk from tab to tab | yes | yes | probe |
 | `Ctrl+T`, the other candidate for listing tabs | **no under cmder**, which opens its own console tab | yes | probe |
@@ -438,6 +439,18 @@ has been seen to deliver, the same reasoning that gave P10.7 `Alt+W` and
 None of the five was gnome-terminal, and the manual pass of 2026-10-12 found
 the exception there: under WSLg `Alt+F11` puts its window in full screen and
 no tab opens, which leaves that terminal without a way to open one.
+
+**The tabs got a letter, as the other keys did.** P22.7 ran the `tab-letters`
+round of `_probes/KeyProbe` on 2026-10-15 in the five terminals of P16.1 —
+cmder, Windows Terminal, the Windows console, WSL inside cmder and
+gnome-terminal under WSLg. It asked for `Alt+F11` and `Alt+Shift+F11` and for
+the five letters `KeyMap` leaves free with `Alt` and with `Alt+Shift` alike —
+O, Q, S, Y and Z. In gnome-terminal neither function key reached the probe;
+everywhere else both did, as in 2026-09-05. Every letter arrived in all five,
+in both shapes and to the code — `Alt+Z` is `0x8000005A`, `Alt+Shift+Z`
+`0x9000005A` — and `Alt+Shift+O` among them, although `ESC O` is the prefix
+of a terminal's own sequences. `Alt+Z` and `Alt+Shift+Z` are bound beside the
+function keys.
 
 `F11` keeps the label on the bar all the same. It is the key the phase was
 asked for, it works where the terminal lets it, and the bar has no way to know

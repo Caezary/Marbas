@@ -52,6 +52,20 @@ let ``the spare tabs key asks the same question`` () =
     Assert.Equal<int list>([ 1 ], List.ofSeq asked)
 
 [<Fact>]
+let ``the spare keys open a tab and close it again`` () =
+    let fs = mockFs ()
+    use window = focusedWindow (Fakes.dependencies fs (at "start"))
+    let counter () = (panel TabCounter.Id window).Text
+
+    press (leftList window) KeyMap.spareNewTabKey
+    let opened = counter ()
+    press (leftList window) KeyMap.spareCloseTabKey
+    let closed = counter ()
+
+    Assert.Equal("[2/2]", opened)
+    Assert.Equal("[1/1]", closed)
+
+[<Fact>]
 let ``a tab the popup did not pick leaves the panels alone`` () =
     let fs = mockFs ()
 

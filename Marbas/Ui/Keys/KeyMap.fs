@@ -150,6 +150,10 @@ let newTabKey = Key.F11.WithAlt
 
 let closeTabKey = Key.F11.WithAlt.WithShift
 
+let spareNewTabKey = Key.Z.WithAlt
+
+let spareCloseTabKey = Key.Z.WithAlt.WithShift
+
 let saveSessionKey = Key.F9.WithShift
 
 let keepFavoriteKey = Key.K.WithAlt
@@ -308,6 +312,8 @@ let bindings =
       unlabelled volumeRootKey VolumeRootRequested
       unlabelled classicVolumeRootKey VolumeRootRequested
       unlabelled spareTabsKey TabsRequested
+      unlabelled spareNewTabKey TabOpened
+      unlabelled spareCloseTabKey TabClosed
       unlabelled nextTabKey (TabCycled Forward)
       unlabelled previousTabKey (TabCycled Backward)
       unlabelled walkIntoKey WalkIntoRequested

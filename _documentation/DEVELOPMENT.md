@@ -64,7 +64,9 @@ with punctuation. Each key walks through the place it is meant for — a focused
 `ListView` for the panel, a full-screen `Window` for the viewer, a modal
 `Dialog` holding a list — and the keys come in rounds: no argument runs the keys
 of phases 17 to 20, `stand-ins` only the letters chosen to stand beside the ones
-that failed. A new phase adds its keys as a round of its own.
+that failed, and `tab-letters` the letters free in `KeyMap` that P22.7 weighed
+for opening and closing a tab, with `Alt+F11` and `Alt+Shift+F11` beside them.
+A new phase adds its keys as a round of its own.
 
 A real Linux terminal can be reached from a Windows machine without a Linux
 machine: publish the probe as `linux-x64`, self-contained and single-file, and
