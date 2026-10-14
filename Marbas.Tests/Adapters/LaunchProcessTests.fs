@@ -1,5 +1,6 @@
 module Marbas.Tests.Adapters.LaunchProcessTests
 
+open System.ComponentModel
 open System.IO
 open System.IO.Abstractions.TestingHelpers
 open Xunit
@@ -69,6 +70,58 @@ let ``a file without the bit is handed to the desktop's opener on Unix`` () =
     let start = Expect.ok described
     Assert.Equal(LaunchProcess.DesktopOpener, start.FileName)
     Assert.Equal<string list>([ at "start/notes" ], List.ofSeq start.ArgumentList)
+
+let private notThere = Win32Exception 2
+
+let private describedOnUnix (fs: MockFileSystem) request =
+    LaunchProcess.describe fs Unix WindowPrograms.none request |> Expect.ok
+
+let private desktopOpener =
+    Expect.some (ProgramPath.tryCreate LaunchProcess.DesktopOpener)
+
+[<Fact>]
+let ``a document whose opener is not installed is reported as an opener missing`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes", moded (UnixFileMode.UserRead ||| UnixFileMode.UserWrite))
+    let request = asUser (at "start/notes")
+
+    let failure = LaunchProcess.failure (describedOnUnix fs request) request notThere
+
+    Assert.Equal(OpenerNotInstalled desktopOpener, failure)
+
+[<Fact>]
+let ``a directory whose opener is not installed is reported as an opener missing`` () =
+    let fs = MockFileSystem()
+    fs.AddDirectory(at "media/stick")
+    let request = asUser (at "media/stick")
+
+    let failure = LaunchProcess.failure (describedOnUnix fs request) request notThere
+
+    Assert.Equal(OpenerNotInstalled desktopOpener, failure)
+
+[<Fact>]
+let ``a program started from its own file that is not there is not an opener missing`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/tool", moded (UnixFileMode.UserRead ||| UnixFileMode.UserExecute))
+    let request = asUser (at "start/tool")
+
+    let failure = LaunchProcess.failure (describedOnUnix fs request) request notThere
+
+    Assert.Equal(LaunchRefused(fp (at "start/tool"), notThere.Message), failure)
+
+[<Fact>]
+let ``a chosen program that is not there is still named as the program`` () =
+    let fs = MockFileSystem()
+    fs.AddFile(at "start/notes", MockFileData "")
+    let tool = Expect.some (ProgramPath.tryCreate "tool")
+
+    let request =
+        { asUser (at "start/notes") with
+            Program = Some tool }
+
+    let failure = LaunchProcess.failure (describedOnUnix fs request) request notThere
+
+    Assert.Equal(ProgramNotFound tool, failure)
 
 [<Fact>]
 let ``a file whose mode cannot be read on Unix is reported, not started`` () =

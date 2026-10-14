@@ -191,12 +191,6 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   on a Windows drive mounted into WSL, as
   [Measurements](Progress/MEASUREMENTS.md) has it. A release of the package
   that passes the question on would take the second one away.
-- On a Linux without `xdg-open` a document, a directory handed to the file
-  manager and a drive handed over from the popup are all reported in the
-  runtime's words — *Could not start '…': An error occurred trying to start
-  process 'xdg-open' with working directory '…'. No such file or directory* —
-  rather than as an opener that is not installed. `ProgramNotFound` is answered
-  only when the request names its program.
 - Nothing on Unix asks for administrator rights: `LaunchProcess` refuses an
   `AsAdministrator` request by platform, because there is no way to raise them
   that does not put a password prompt on the screen the panels own. The refusal

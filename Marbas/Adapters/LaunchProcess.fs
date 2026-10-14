@@ -85,29 +85,43 @@ let drained (child: Process) =
     child.StandardOutput.BaseStream.CopyToAsync Stream.Null |> ignore
     child.StandardError.BaseStream.CopyToAsync Stream.Null |> ignore
 
-let private failure (request: LaunchRequest) (ex: exn) =
+let private openerOf (described: ProcessStartInfo) =
+    if described.FileName = DesktopOpener then
+        ProgramPath.tryCreate DesktopOpener
+    else
+        None
+
+let failure (described: ProcessStartInfo) (request: LaunchRequest) (ex: exn) =
     match ex with
     | :? Win32Exception as refusal ->
-        match refusal.NativeErrorCode, request.Program with
-        | NoAssociation, _ -> NothingAssociated request.Target
-        | PromptCancelled, _ -> ElevationDeclined request.Target
-        | FileNotFound, Some program -> ProgramNotFound program
+        match refusal.NativeErrorCode, request.Program, openerOf described with
+        | NoAssociation, _, _ -> NothingAssociated request.Target
+        | PromptCancelled, _, _ -> ElevationDeclined request.Target
+        | FileNotFound, Some program, _ -> ProgramNotFound program
+        | FileNotFound, None, Some opener -> OpenerNotInstalled opener
         | _ -> LaunchRefused(request.Target, refusal.Message)
     | _ -> LaunchRefused(request.Target, ex.Message)
 
-let start (fs: IFileSystem) platform windowProgram (request: LaunchRequest) =
+let private describedOrRefused (fs: IFileSystem) platform windowProgram (request: LaunchRequest) =
     try
-        match describe fs platform windowProgram request with
-        | Error refusal -> Error refusal
-        | Ok describing ->
-            describing.WorkingDirectory <- FileSystemPath.value request.WorkingDirectory
-
-            match Process.Start describing with
-            | null -> ()
-            | child ->
-                if describing.RedirectStandardOutput then
-                    drained child
-
-            Ok()
+        describe fs platform windowProgram request
     with ex ->
-        Error(failure request ex)
+        Error(LaunchRefused(request.Target, ex.Message))
+
+let private run (request: LaunchRequest) (described: ProcessStartInfo) =
+    try
+        described.WorkingDirectory <- FileSystemPath.value request.WorkingDirectory
+
+        match Process.Start described with
+        | null -> ()
+        | child ->
+            if described.RedirectStandardOutput then
+                drained child
+
+        Ok()
+    with ex ->
+        Error(failure described request ex)
+
+let start (fs: IFileSystem) platform windowProgram (request: LaunchRequest) =
+    describedOrRefused fs platform windowProgram request
+    |> Result.bind (run request)

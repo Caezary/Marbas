@@ -455,3 +455,41 @@ the walk should see.
 
 4283 tests pass and 35 skip on Windows; 4260 pass and 61 skip on Linux under
 WSL.
+
+**P22.9 names a missing opener.** On a Linux without `xdg-open` a document,
+a directory handed to the file manager and a drive handed over from the popup
+are refused with *Nothing on this system opens files: 'xdg-open' is not
+installed, and the package xdg-utils provides it.*, where they used to quote
+the runtime's sentence after *Could not start*. `LaunchError` has the case
+for it, `OpenerNotInstalled`, carrying the opener's name. How it is told apart
+is in [Cross-platform](../Architecture/CROSS-PLATFORM.md).
+
+What the system says was measured first: under WSL, where `xdg-open` is not
+installed, a start of a program that is not there fails with a
+`Win32Exception` of code 2, the code `LaunchProcess` already read as a missing
+program when the request named one.
+
+Five tests were written first, and three failed. In `LaunchErrorMessageTests`
+the sentence is held word for word. In `LaunchProcessTests` a document and a
+directory whose start was the opener's become `OpenerNotInstalled` on code 2,
+and two hold what must not change: a program started from its own file keeps
+the runtime's reason, and a program the request named is still
+`ProgramNotFound`.
+
+One thing went differently from the plan. The plan had the description of the
+start say which program it is; it already did, since the
+`ProcessStartInfo` it answers names its file. What was missing was a way to
+hand it to the mapping. `LaunchProcess.start` now describes the start and runs
+it as two steps, and `failure` takes the described start beside the request
+and the exception, so the mapping is tested on a described start and a made
+exception, with no process. A start that cannot be described is refused with
+the reason, as before.
+
+The published `linux-x64` binary was driven in tmux under WSL: `Enter` on a
+document and `Alt+R` in the drive popup each showed the sentence, and `Ok`
+left both panels where they were. L42 of
+[The manual pass](../Architecture/MANUAL-PASS.md) now says what the dialog
+should say.
+
+4288 tests pass and 35 skip on Windows; 4265 pass and 61 skip on Linux under
+WSL.

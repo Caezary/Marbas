@@ -19,6 +19,16 @@ let ``a name nothing is associated with is explained with its path`` () =
     Assert.Contains("Nothing", message)
 
 [<Fact>]
+let ``an opener that is not installed says that nothing opens files and what to install`` () =
+    let message =
+        LaunchErrorMessage.describe (OpenerNotInstalled(Expect.some (ProgramPath.tryCreate "xdg-open")))
+
+    Assert.Equal(
+        "Nothing on this system opens files: 'xdg-open' is not installed, and the package xdg-utils provides it.",
+        message
+    )
+
+[<Fact>]
 let ``a program that is not there is named`` () =
     let message =
         LaunchErrorMessage.describe (ProgramNotFound(Expect.some (ProgramPath.tryCreate "gone.exe")))

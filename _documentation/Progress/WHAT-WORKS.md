@@ -67,7 +67,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   the system, which covers an executable, a document and a shortcut alike —
   Windows through the shell verb, so a console program gets a console of its
   own, and Linux through `xdg-open` unless the entry carries an execute bit,
-  which starts the file itself. A panel on Linux reads that bit for every file
+  which starts the file itself. Where `xdg-open` is not installed, a
+  document, a directory handed to the file manager and a drive handed over
+  from the popup are refused with *Nothing on this system opens files:
+  'xdg-open' is not installed, and the package xdg-utils provides it.* A panel on Linux reads that bit for every file
   it lists, a link's from what it points at, and draws the file as a program;
   a walk does not, so a program found by a search is one by its name alone.
   On Windows a window program — the executable itself, or the program chosen

@@ -289,7 +289,7 @@ In `launch`.
 | L39 | `F2`, and with `Ins` add: `D`, `touch direct-ran`, *Directly*; `S`, `echo %n > shell-ran`, *Shell, window closes*; `K`, `echo %n > keep-ran`, *Shell, window stays*. Run each on `document.txt`. | `direct-ran`, `shell-ran` and `keep-ran` appear in the panel without a key, the last two holding `document.txt`; no window opens and nothing is printed. | *A user menu entry is started the way it names* |
 | L40 | Add `A`, `touch admin-ran`, *Directly*, *As administrator*. Run it. | A dialog says a terminal application cannot ask this system for administrator rights; no `admin-ran` appears. | *A user menu entry runs as administrator* |
 | L41 | Add `X`, `no-such-program-zzqx`, *Directly*. Run it. | *Cannot run command* names the program that could not be found; the panels take keys after it. | *A program that is not there is named, not thrown* |
-| L42 | **desktop.** One level up, `Alt+R` on `launch`. | The desktop's file manager opens on `launch`; neither panel moves. Without `xdg-open`, say what the dialog says. | *`Alt+R` on a directory opens the file manager* |
+| L42 | **desktop.** One level up, `Alt+R` on `launch`. | The desktop's file manager opens on `launch`; neither panel moves. Without `xdg-open`, the dialog says that nothing on this system opens files and that xdg-utils provides it. | *`Alt+R` on a directory opens the file manager* |
 
 ### What a desktop keeps
 

@@ -79,7 +79,7 @@ suite covers both.
 | Choosing any other drive lands in its root | same | same | suite, WSL |
 | Cancelling changes nothing | same | same | suite, probe on Windows |
 | A drive that cannot be read is reported, panel stays put | same | same | suite |
-| `Alt+R` in the popup opens the drive in the system file manager, panels unmoved | Explorer | `xdg-open`; the key arrives and the start is asked for, and where no `xdg-open` is installed it is reported as a start that failed | suite (injected), probe on Windows; manual 2026-10-12 on Windows; **manual** on Linux for the window that opens, waiting for a desktop |
+| `Alt+R` in the popup opens the drive in the system file manager, panels unmoved | Explorer | `xdg-open`; the key arrives and the start is asked for, and where no `xdg-open` is installed it is reported as such since P22.9, with the package to install, where the pass saw the runtime's sentence | suite (injected), probe on Windows; manual 2026-10-12 on Windows; the missing opener: suite, and the published binary in tmux under WSL on 2026-10-15; **manual** on Linux for the window that opens, waiting for a desktop |
 | A drive that is not ready, or whose size cannot be read, is left out | yes | yes | suite |
 | A mount that is not storage (`squashfs`, `tmpfs`, `proc`…) is left out | n/a | yes | suite |
 | `Ctrl+4` / `Ctrl+\` send the panel to the root of its volume | yes | yes | suite, probe |
@@ -674,7 +674,7 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | A program that is not there is named, not thrown | `Win32Exception` 2 | `Win32Exception` 2 | manual 2026-10-12 |
 | `Alt+R` asks which program opens the entry | same | same | suite |
 | `Shift+Enter` reaches the panel as a key at all | **no**, arrives as `Enter` | **no**, arrives as `Enter` | manual (Windows Terminal; gnome-terminal on 2026-10-12) |
-| `Alt+R` on a directory opens the file manager | Explorer | the desktop's own, through `xdg-open`; where none is installed the start is reported as failed | manual 2026-10-12 on Windows; **manual** on Linux, waiting for a desktop |
+| `Alt+R` on a directory opens the file manager | Explorer | the desktop's own, through `xdg-open`; where none is installed the dialog says so and names the package that provides it, since P22.9 | manual 2026-10-12 on Windows; the missing opener: suite; **manual** on Linux, waiting for a desktop |
 | `Alt+Shift+R` runs the entry elevated | same | same | suite; manual 2026-10-12 on Linux, where the key arrives and is not taken for `Alt+R` |
 | `Ctrl+Alt+Enter` reaches the panel as a key at all | **no** | **no**, nothing arrives | manual (Windows Terminal; gnome-terminal on 2026-10-12) |
 | An executable starts with administrator rights | `runas`, the system prompts | refused by platform, with the reason in the dialog | manual 2026-10-12 on Windows; probe on Linux (the published binary in tmux, 2026-10-13) |
@@ -789,6 +789,19 @@ would otherwise inherit the terminal the panels are drawn on, and anything else
 goes to `xdg-open`, which is the desktop's own idea of what opens a file. The
 first launch on either system is what the rows above check by hand; the
 adapter itself is out of the suite's reach, like every other one.
+
+**A missing opener is named, not quoted.** A start that cannot find its file
+fails on Linux with a `Win32Exception` of code 2, *No such file or directory*,
+measured under WSL with `xdg-open` not installed; the same code says the
+program a request named is gone, which is `ProgramNotFound`. Since P22.9
+`LaunchProcess.failure` is told the start it described as well, and a start
+whose file is `xdg-open` that fails with that code is `OpenerNotInstalled`:
+*Nothing on this system opens files: 'xdg-open' is not installed, and the
+package xdg-utils provides it.* A program started from its own file keeps the
+runtime's reason, since there the file is the program and not an opener.
+Describing and starting are two steps, so the mapping is tested on a
+described start and a made exception, with no process; the published binary
+showed the sentence for `Enter` on a document and `Alt+R` on a drive in tmux.
 
 **On Linux the executable bit did not reach Marbas, and the first launch by
 hand is what found it.** The manual pass of 2026-10-12 pressed `Enter` on a
