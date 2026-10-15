@@ -42,58 +42,65 @@ let askOverwrite (app: IApplication) (request: OverwritePrompt) =
 
 let chooseDrive (app: IApplication) (request: DrivePrompt) =
     let screenWidth () = app.Screen.Width
-    let createDriveDialog = DriveDialog.create request.Side screenWidth
+
+    let createDrive () =
+        DriveDialog.create request.Side screenWidth request.Drives
 
     match request.Drives with
     | [] -> None
-    | rows -> running app (fun () -> createDriveDialog rows) DriveDialog.choice
+    | _ -> running app createDrive DriveDialog.choice
 
 let askFavoriteSlot (app: IApplication) (fs: IFileSystem) (place: Place) =
-    let createAskFavourite () =
+    let createKeepFavorite () =
         KeepFavoriteDialog.create fs app.Screen.Width place
 
-    running app createAskFavourite KeepFavoriteDialog.slot
+    running app createKeepFavorite KeepFavoriteDialog.slot
 
 let chooseFavorite (app: IApplication) (fs: IFileSystem) (request: FavoritesPrompt) =
-    let createFavourites () =
+    let createFavorites () =
         FavoritesDialog.create fs request.Change request.Current request.Favorites
 
-    running app createFavourites FavoritesDialog.chosen
+    running app createFavorites FavoritesDialog.chosen
 
 let private texts (remembered: EnteredText list) =
     remembered |> List.map EnteredText.value
 
 let askPattern (app: IApplication) (request: PatternPrompt) =
-    running app (fun () -> PatternDialog.create (texts request.Remembered) request.Title) PromptDialog.text
+    let createPattern () =
+        PatternDialog.create (texts request.Remembered) request.Title
+
+    running app createPattern PromptDialog.text
 
 let askName (app: IApplication) (request: NamePrompt) =
     let offered =
         request.Suggestion |> Option.map EnteredText.value |> Option.defaultValue ""
 
-    let asking () =
+    let createNamePrompt () =
         PromptDialog.offering (texts request.Remembered) request.Title "Name:" offered
         |> PromptDialog.selecting
 
-    running app asking PromptDialog.text
+    running app createNamePrompt PromptDialog.text
 
 let askTarget (app: IApplication) (request: TargetPrompt) =
     let offered = FileSystemPath.value request.Suggestion
 
-    running
-        app
-        (fun () -> PromptDialog.offering (texts request.Remembered) request.Title "To:" offered)
-        PromptDialog.text
+    let createTargetPrompt () =
+        PromptDialog.offering (texts request.Remembered) request.Title "To:" offered
+
+    running app createTargetPrompt PromptDialog.text
 
 let askPassword (app: IApplication) (request: PasswordPrompt) =
     let label = PasswordQuestion.describe request.Archive
 
-    running
-        app
-        (fun () -> PromptDialog.create PasswordQuestion.Title label "" |> PromptDialog.secret)
-        PromptDialog.password
+    let createPasswordPrompt () =
+        PromptDialog.create PasswordQuestion.Title label "" |> PromptDialog.secret
+
+    running app createPasswordPrompt PromptDialog.password
 
 let private chooseCodePage (app: IApplication) (offer: CodePageOffer) =
-    running app (fun () -> CodePageDialog.create offer) CodePageDialog.choice
+    let createCodePage () = CodePageDialog.create offer
+
+    running app createCodePage CodePageDialog.choice
 
 let private reportSearch (app: IApplication) (report: SearchReport) =
     match report with
@@ -113,10 +120,10 @@ let private reportSearch (app: IApplication) (report: SearchReport) =
               Message = ViewerSearch.describe report }
 
 let private askSearch (app: IApplication) (offer: SearchOffer) =
-    let createSearch () =
+    let createViewerSearch () =
         ViewerSearchDialog.create (Refused >> reportSearch app) offer
 
-    running app createSearch ViewerSearchDialog.answer
+    running app createViewerSearch ViewerSearchDialog.answer
 
 let showFile (app: IApplication) (request: ViewRequest) =
     let progress = ViewerSearch.progress request.Source.Length
@@ -136,15 +143,18 @@ let showFile (app: IApplication) (request: ViewRequest) =
     running app createFileViewer ignore
 
 let editProperties (app: IApplication) platform properties =
-    running
-        app
-        (fun () -> PropertiesDialog.create platform properties)
-        (PropertiesDialog.properties platform properties)
+    let createProperties () =
+        PropertiesDialog.create platform properties
+
+    running app createProperties (PropertiesDialog.properties platform properties)
 
 let askArchive (app: IApplication) retarget (request: PackPrompt) =
     let offered = FileSystemPath.value request.Suggestion
 
-    running app (fun () -> PackDialog.create retarget (texts request.Remembered) offered) PackDialog.choice
+    let createPack () =
+        PackDialog.create retarget (texts request.Remembered) offered
+
+    running app createPack PackDialog.choice
 
 let private askedOf (dialog: FindDialog.FindView) =
     let masks, text = FindDialog.typed dialog
@@ -156,46 +166,53 @@ let private askedOf (dialog: FindDialog.FindView) =
           Text = text })
 
 let askFind (app: IApplication) (request: FindPrompt) =
-    let asking () =
+    let createFind () =
         FindDialog.create request.Ground request.Hidden request.Found (texts request.Masks) (texts request.Texts)
 
-    running app asking askedOf
+    running app createFind askedOf
 
 let askLink (app: IApplication) (request: LinkPrompt) =
     let offered = FileSystemPath.value request.Suggestion
 
-    running
-        app
-        (fun () -> LinkDialog.create request.Kinds request.Refusal (texts request.Remembered) offered)
-        LinkDialog.choice
+    let createLink () =
+        LinkDialog.create request.Kinds request.Refusal (texts request.Remembered) offered
+
+    running app createLink LinkDialog.choice
 
 let askHandler (app: IApplication) (request: HandlerPrompt) =
-    running
-        app
-        (fun () -> OpenWithDialog.create request.Name request.Handlers request.Chosen (texts request.Remembered))
-        OpenWithDialog.choice
+    let createOpenWith () =
+        OpenWithDialog.create request.Name request.Handlers request.Chosen (texts request.Remembered)
+
+    running app createOpenWith OpenWithDialog.choice
 
 let editPrograms (app: IApplication) (request: ProgramsPrompt) =
-    running app (fun () -> SettingsDialog.create request.Programs request.Candidate) SettingsDialog.programs
+    let createSettings () =
+        SettingsDialog.create request.Programs request.Candidate
+
+    running app createSettings SettingsDialog.programs
 
 let chooseHistory (app: IApplication) (fs: IFileSystem) (request: HistoryPrompt) =
     let asking title question =
         confirm app { Title = title; Question = question }
 
-    running
-        app
-        (fun () -> HistoryDialog.create fs asking request.Change request.History request.Tab request.Now)
-        HistoryDialog.answer
+    let createHistory () =
+        HistoryDialog.create fs asking request.Change request.History request.Tab request.Now
+
+    running app createHistory HistoryDialog.answer
 
 let chooseTab (app: IApplication) (fs: IFileSystem) (tabs: Zipper<Tab>) =
     let rows =
         tabs |> Zipper.items |> List.mapi (fun index -> TabRow.describe fs (index + 1))
 
-    running app (fun () -> TabDialog.create rows (Zipper.position tabs)) TabDialog.choice
+    let createTab () =
+        TabDialog.create rows (Zipper.position tabs)
+
+    running app createTab TabDialog.choice
 
 let private askMenuEntry (app: IApplication) (prompt: MenuEntryForm.EntryPrompt) =
-    let createDialog () = MenuEntryDialog.create prompt
-    running app createDialog MenuEntryDialog.answer
+    let createMenuEntry () = MenuEntryDialog.create prompt
+
+    running app createMenuEntry MenuEntryDialog.answer
 
 let private askMenuRemoval (app: IApplication) (prompt: MenuRemoval.RemovalPrompt) =
     let labels =
@@ -214,7 +231,7 @@ let chooseFromUserMenu (app: IApplication) (request: UserMenuPrompt) =
           AskRemoval = askMenuRemoval app
           Change = request.Change }
 
-    let createDialog () =
+    let createUserMenu () =
         UserMenuDialog.create editing request.Menu
 
-    running app createDialog UserMenuDialog.chosen
+    running app createUserMenu UserMenuDialog.chosen

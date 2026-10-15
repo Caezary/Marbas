@@ -493,3 +493,26 @@ should say.
 
 4288 tests pass and 35 skip on Windows; 4265 pass and 61 skip on Linux under
 WSL.
+
+**P22.10 has every prompt name what it creates.** The twenty prompts of
+`Adapters/Prompts.fs` take one shape: what the request has to be turned into,
+then a local `create…` function named for the dialog it builds, then
+`running app create… read` on one line. The twelve that passed a lambda at the
+call bind it first, and the eight that already bound one are renamed to match:
+`asking` became `createNamePrompt` and `createFind`, the two `createDialog`
+became `createMenuEntry` and `createUserMenu`, `createSearch` became
+`createViewerSearch`, and `createAskFavourite` and `createFavourites` are
+spelled as the dialogs they build are, `createKeepFavorite` and
+`createFavorites`. The three prompts on `PromptDialog` are told apart by what
+they ask: `createNamePrompt`, `createTargetPrompt`, `createPasswordPrompt`.
+[UI and input](../Architecture/UI-AND-INPUT.md) says how a prompt is written,
+and no longer counts eleven popups.
+
+One thing went differently from the plan. `chooseDrive` built its dialog from
+the rows its match had bound, which a `create` taking only `()` cannot reach.
+It now builds from `request.Drives` and the match only keeps an empty list
+from opening the popup, so its call is the same one line as the others.
+
+No test reaches `Adapters`, so no test was written and none changed; each popup
+is opened once in the walk that closes the phase, P22.13. 4288 tests pass and
+35 skip on Windows, as before.

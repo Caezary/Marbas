@@ -449,10 +449,14 @@ statics in as the application starts and would overwrite an earlier call.
 
 **One helper runs every popup.** `Adapters/Prompts.fs` holds `running app create
 read`, which builds the dialog, hands it to `app.Run` and reads the answer out of
-it inside a `use`, so the eleven popups differ only in the two functions they
-pass. `create` is the `Ui.Dialogs` builder and `read` the answer function beside
-it, and because the answer is typed the reader lives with the dialog rather than
-in the adapter: `PromptDialog.name` answers an `EntryName`,
+it inside a `use`, so the twenty popups differ only in the two functions they
+pass, and each is written one way: what the request has to be turned into
+first, then a local `create…` function named for the dialog it builds —
+`createFind`, `createPack`, `createUserMenu` — and then `running app create…
+read` on one line, never a lambda at the call. `create` wraps the
+`Ui.Dialogs` builder and `read` is the answer function beside it, and because
+the answer is typed the reader lives with the dialog rather than in the
+adapter: `PromptDialog.name` answers an `EntryName`,
 `PromptDialog.password` an `ArchivePassword`, `PatternDialog.pattern` a
 `NamePattern`. The three message boxes — the error report, the confirmation and
 the overwrite question — are not dialogs of ours, so they call `MessageBox`
