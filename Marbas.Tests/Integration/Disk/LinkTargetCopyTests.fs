@@ -37,12 +37,18 @@ let private copying lines =
 
 let private invoke (target: obj) (flags: BindingFlags) (name: string) (arguments: obj array) =
     target.GetType().InvokeMember(name, flags, null, target, arguments)
+    |> Option.ofObj
 
 let private shortcutBySystem (location: string) (target: string) =
-    let shell = Activator.CreateInstance(Type.GetTypeFromProgID "WScript.Shell")
+    let shell =
+        Type.GetTypeFromProgID "WScript.Shell"
+        |> Expect.notNull
+        |> Activator.CreateInstance
+        |> Expect.notNull
 
     let shortcut =
         invoke shell BindingFlags.InvokeMethod "CreateShortcut" [| location |]
+        |> Expect.some
 
     invoke shortcut BindingFlags.SetProperty "TargetPath" [| target |] |> ignore
     invoke shortcut BindingFlags.InvokeMethod "Save" [||] |> ignore

@@ -146,7 +146,7 @@ let ``the marks stay in the listing when the cursor moves`` (moving: KeyCode) =
     press list (Key moving)
 
     Assert.NotEqual(20, list.SelectedItem.GetValueOrDefault 20)
-    Assert.Equal<bool list>([ true; true ], [ list.Source.IsMarked 1; list.Source.IsMarked 2 ])
+    Assert.Equal<bool list>([ true; true ], [ for row in 1..2 -> (Expect.notNull list.Source).IsMarked row ])
 
 [<Theory>]
 [<InlineData(KeyCode.CursorUp)>]
@@ -223,7 +223,7 @@ let ``marking an entry paints the rows again`` () =
     press list KeyMap.selectionKeys.Head
 
     Assert.NotSame(painted, list.Source)
-    Assert.True(list.Source.IsMarked 1)
+    Assert.True((Expect.notNull list.Source).IsMarked 1)
 
 [<Fact>]
 let ``a directory opened paints the rows again`` () =

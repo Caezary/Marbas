@@ -9,6 +9,7 @@ open Marbas.FileSystem
 open Marbas.State
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
+open Marbas.Tests
 
 let private laidOut suggestion =
     DialogStyle.apply ()
@@ -103,7 +104,7 @@ let private offering remembered suggestion =
 
 let private offered (dialog: Dialog) =
     let field = PromptDialog.field dialog :?> DropDownList
-    [ for item in field.Source.ToList() -> string item ]
+    [ for item in (Expect.notNull field.Source).ToList() -> string item ]
 
 [<Fact>]
 let ``a field with a history offers it as its list, newest first`` () =

@@ -97,7 +97,7 @@ let ``Enter on a directory walks into it and starts nothing`` () =
     pressKey window Key.Enter
 
     Assert.Empty started
-    Assert.Equal(1, (leftList window).Source.Count)
+    Assert.Equal(1, (Expect.notNull (leftList window).Source).Count)
 
 [<Fact>]
 let ``the walk-in key walks into a directory the way Enter used to`` () =
@@ -113,7 +113,7 @@ let ``the walk-in key walks into a directory the way Enter used to`` () =
     pressKey window KeyMap.walkIntoKey
 
     Assert.Empty started
-    Assert.Equal(1, (leftList window).Source.Count)
+    Assert.Equal(1, (Expect.notNull (leftList window).Source).Count)
 
 let private askedThrough key =
     let asked = ResizeArray<EntryName>()
@@ -276,7 +276,7 @@ let ``Ctrl+PgDn walks in as well, where a terminal delivers it`` () =
     pressKey window KeyMap.classicWalkIntoKey
 
     Assert.Empty started
-    Assert.Equal(1, (leftList window).Source.Count)
+    Assert.Equal(1, (Expect.notNull (leftList window).Source).Count)
 
 [<Fact>]
 let ``Ctrl+Alt+Enter raises the rights as well, where a terminal delivers it`` () =

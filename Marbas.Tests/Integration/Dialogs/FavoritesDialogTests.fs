@@ -56,8 +56,7 @@ let private laidOut () =
 
 let private shown (dialog: FavoritesDialog.FavoritesView) =
     let list = FavoritesDialog.slots dialog
-    let source = list.Source.ToList()
-    [ for index in 0 .. list.Source.Count - 1 -> source[index].ToString() ]
+    [ for item in (Expect.notNull list.Source).ToList() -> string item ]
 
 let private standOn (digit: int) (dialog: FavoritesDialog.FavoritesView) =
     (FavoritesDialog.slots dialog).SelectedItem <- Nullable digit

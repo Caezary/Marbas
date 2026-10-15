@@ -24,7 +24,7 @@ let private mockFs () =
     fs
 
 let private names (list: ListView) =
-    let source = list.Source.ToList()
+    let source = (Expect.notNull list.Source).ToList()
 
     [ for i in 0 .. source.Count - 1 -> (string source[i]).Split(' ').[0] ]
 

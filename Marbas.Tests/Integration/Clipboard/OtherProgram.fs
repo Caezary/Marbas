@@ -3,6 +3,7 @@ module Marbas.Tests.Integration.Clipboard.OtherProgram
 open System
 open System.Diagnostics
 open System.Text
+open Marbas.Tests
 
 let private prelude =
     "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue'; "
@@ -24,7 +25,7 @@ let private started (script: string) =
             StandardOutputEncoding = Encoding.UTF8
         )
 
-    Process.Start info
+    Process.Start info |> Expect.notNull
 
 let private run (script: string) =
     use program = started script

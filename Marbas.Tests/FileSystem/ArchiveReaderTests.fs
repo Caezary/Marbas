@@ -128,6 +128,7 @@ let private failingOnSecond =
 
 let private itemType =
     typeof<ArchiveEntryInfo>.Assembly.GetType "Marbas.FileSystem.ArchiveItem"
+    |> Expect.notNull
 
 [<Fact>]
 let ``an item handed to the walk may not outlive it`` () =

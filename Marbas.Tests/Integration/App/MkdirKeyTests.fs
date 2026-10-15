@@ -44,7 +44,7 @@ let ``F7 asks for a name and the new directory shows up under the cursor`` () =
 
     Assert.Equal<string list>([ Shell.MkdirPrompt ], List.ofSeq asked)
     let list = leftList window
-    Assert.StartsWith("work", string (list.Source.ToList()[list.SelectedItem.GetValueOrDefault 0]))
+    Assert.StartsWith("work", string ((Expect.notNull list.Source).ToList()[list.SelectedItem.GetValueOrDefault 0]))
 
 [<Fact>]
 let ``cancelling the name prompt creates nothing`` () =
@@ -52,7 +52,7 @@ let ``cancelling the name prompt creates nothing`` () =
 
     pressKey window Key.F7
 
-    Assert.Equal(3, (leftList window).Source.Count)
+    Assert.Equal(3, (Expect.notNull (leftList window).Source).Count)
 
 [<Fact>]
 let ``a duplicate name is reported`` () =

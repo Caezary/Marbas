@@ -26,7 +26,7 @@ let private loaded (fs: IFileSystem) =
 
 let private rows panelView =
     let list = FilePanel.listView panelView
-    let source = list.Source.ToList()
+    let source = (Expect.notNull list.Source).ToList()
     [ for i in 0 .. source.Count - 1 -> string source[i] ]
 
 [<Fact>]

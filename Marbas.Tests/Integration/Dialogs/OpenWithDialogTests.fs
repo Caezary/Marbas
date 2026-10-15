@@ -36,8 +36,7 @@ let private laidOut () = laidOutWith "page.html" known None
 
 let private rows (dialog: Dialog) =
     let list = OpenWithDialog.known dialog
-    let source = list.Source.ToList()
-    [ for index in 0 .. list.Source.Count - 1 -> source[index].ToString() ]
+    [ for item in (Expect.notNull list.Source).ToList() -> string item ]
 
 [<Fact>]
 let ``every handler the system knows is listed`` () =
@@ -147,7 +146,7 @@ let ``the programs typed before are offered as the list of the program field`` (
         laidOutRemembering [ "/opt/editor"; "/usr/bin/vim" ] "page.html" known None
 
     let offered =
-        [ for item in (OpenWithDialog.field dialog :?> DropDownList).Source.ToList() -> string item ]
+        [ for item in (Expect.notNull (OpenWithDialog.field dialog :?> DropDownList).Source).ToList() -> string item ]
 
     Assert.Equal<string list>([ "/opt/editor"; "/usr/bin/vim" ], offered)
 

@@ -74,7 +74,7 @@ let ``F6 moves the entry under the cursor into the other panel`` () =
 
     Assert.Equal("hi", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.False(fs.File.Exists(at "start/notes.txt"))
-    Assert.Equal(3, left.Source.Count)
+    Assert.Equal(3, (Expect.notNull left.Source).Count)
 
 [<Fact>]
 let ``F6 moves every marked entry`` () =
@@ -138,7 +138,9 @@ let ``the renamed entry keeps the cursor`` () =
 
     pressKey window Key.F6
 
-    let row = string (left.Source.ToList()[left.SelectedItem.GetValueOrDefault 0])
+    let row =
+        string ((Expect.notNull left.Source).ToList()[left.SelectedItem.GetValueOrDefault 0])
+
     Assert.StartsWith("aaa.txt", row)
 
 [<Fact>]

@@ -26,7 +26,7 @@ let private recording (reported: ResizeArray<FileSystemPath>) =
 let private entriesIn (fs: IFileSystem) (raw: string) =
     fs.Directory.GetFileSystemEntries raw |> List.ofArray
 
-let private fileName (raw: string) = Path.GetFileName raw
+let private fileName (raw: string) = Path.GetFileName raw |> Expect.notNull
 
 [<Fact>]
 let ``wipe removes a file and leaves nothing beside it`` () =
@@ -67,7 +67,7 @@ let ``the file is renamed to a name of its own length in its own directory`` () 
 
     let source, target = List.exactlyOne fs.Renamed
     Assert.Equal(at "data/secret.txt", source)
-    Assert.Equal(at "data", Path.GetDirectoryName target)
+    Assert.Equal(at "data", Expect.notNull (Path.GetDirectoryName target))
     Assert.Equal("secret.txt".Length, (fileName target).Length)
     Assert.NotEqual<string>("secret.txt", fileName target)
 

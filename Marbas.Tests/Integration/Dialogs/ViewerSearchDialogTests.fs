@@ -34,7 +34,7 @@ let private fresh () =
 
 let private listed (dialog: Dialog) =
     let field = ViewerSearchDialog.field dialog :?> DropDownList
-    [ for item in field.Source.ToList() -> string item ]
+    [ for item in (Expect.notNull field.Source).ToList() -> string item ]
 
 let private AcceptingButton = 1
 

@@ -46,7 +46,7 @@ let private withFiles () =
 
 let private namesIn (directory: string) =
     Directory.GetFileSystemEntries directory
-    |> Array.map Path.GetFileName
+    |> Array.map (Path.GetFileName >> Expect.notNull)
     |> Array.sort
     |> List.ofArray
 

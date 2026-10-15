@@ -22,6 +22,13 @@ the target framework, the product name, the version and
 `TreatWarningsAsErrors`, which is on in every configuration, and
 `--warnon:1182`, which turns an unused value into a warning and so, with the
 first, into a build failure.
+`Marbas.fsproj` alone sets `<Nullable>enable</Nullable>`, F#'s nullness
+checking, under which a value .NET or Terminal.Gui types `| null` and used as
+though it were not fails the build. The tests stay without it: with it on,
+every `Assert.Equal` over two numbers whose type is not written out takes the
+compiler about a tenth of a second to resolve among xUnit's overloads, and the
+test project's type check grows from 24 seconds to nearly five minutes. The
+numbers are in the journal of phase 22, under P22.16.
 `Directory.Packages.props` holds the package versions: a new package needs a
 `PackageVersion` there and a bare `PackageReference Include="..."`, without a
 version, in the project that uses it.

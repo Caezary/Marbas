@@ -118,7 +118,7 @@ let ``a tab header takes what room the width leaves, within bounds`` (available:
 
 let private headerLengths (dialog: HistoryDialog.HistoryView) =
     [ RunHistoryTab; ViewHistoryTab; FolderHistoryTab ]
-    |> List.map (fun tab -> (HistoryDialog.table tab dialog).Border.View :?> BorderView)
+    |> List.map (fun tab -> Expect.notNull (HistoryDialog.table tab dialog).Border.View :?> BorderView)
     |> List.map _.TabLength
 
 [<Fact>]
@@ -146,7 +146,10 @@ let ``the header of the tab in front is drawn like the others`` () =
     Assert.Equal(header.GetAttributeForRole VisualRole.Normal, header.GetAttributeForRole VisualRole.Focus)
 
 let private columnWidth (dialog: HistoryDialog.HistoryView) tab column =
-    let style = (HistoryDialog.table tab dialog).Style.GetColumnStyleIfAny column
+    let style =
+        (HistoryDialog.table tab dialog).Style.GetColumnStyleIfAny column
+        |> Expect.notNull
+
     style.MinWidth, style.MaxWidth
 
 [<Fact>]

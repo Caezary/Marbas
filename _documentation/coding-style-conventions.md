@@ -246,6 +246,10 @@ schedules the fix. A rule here beats a habit found in an older file.
       `OperationsBatchTests` — and what the parts share moves into a fixture
       module compiled before them; a helper with one caller stays `private`
       beside it. [Testing](Architecture/TESTING.md#layout) has the folders.
+- [ ] A value typed `| null` that a test needs — the source of a list, an
+      entry of a zip, a type found by name — is unwrapped with
+      `Expect.notNull`, as an option is with `Expect.some`, so a null fails
+      the test with a sentence and never reaches the assertion.
 - [ ] A fake overrides one field of the dependencies record, or subclasses
       `MockFileSystem`; the whole interface is never stubbed by hand.
 - [ ] What a view remembers is tested on its record, with no view built: one

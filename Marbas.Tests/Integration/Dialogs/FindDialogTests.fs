@@ -73,7 +73,10 @@ let ``a fresh popup asks for every name, no text, from the directory the panel s
 let ``every scope is offered`` () =
     use dialog = fresh ()
 
-    Assert.Equal<string list>(FindDialog.scopes |> List.map FindDialog.scopeLabel, List.ofSeq (scopes dialog).Labels)
+    Assert.Equal<string list>(
+        FindDialog.scopes |> List.map FindDialog.scopeLabel,
+        List.ofSeq (Expect.notNull (scopes dialog).Labels)
+    )
 
 [<Fact>]
 let ``the scope that was chosen is the scope that comes back`` () =
@@ -297,7 +300,7 @@ let ``asking for the last results is what the popup answers`` () =
     Assert.Equal(Some LastResults, FindDialog.choice dialog)
 
 let private listed (field: TextField) =
-    [ for item in (field :?> DropDownList).Source.ToList() -> string item ]
+    [ for item in (Expect.notNull (field :?> DropDownList).Source).ToList() -> string item ]
 
 let private bound (field: TextField) (spelled: string) =
     field.KeyBindings.TryGet(Key.TryParse spelled |> snd) |> fst

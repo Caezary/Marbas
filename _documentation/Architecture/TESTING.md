@@ -354,7 +354,13 @@ assertions, which fuses act and assert. A `Result` that *is* the thing under
 test stays whole and is compared with `Assert.Equal(Error(...), result)`.
 `Expect.some` does the same for the `Option` that a validating constructor
 answers with, so `NamePattern.tryCreate "*.fs" |> Expect.some` builds a value
-in the arrange block instead of branching there. Total constructors need no
+in the arrange block instead of branching there. `Expect.notNull` does it for
+a value .NET or Terminal.Gui types `| null` —
+`(Expect.notNull list.Source).Count`,
+`archive.GetEntry name |> Expect.notNull` — so that a null fails the test with
+a sentence, and the tests are ready for nullness checking, which only `Marbas`
+builds with today ([Development](../DEVELOPMENT.md#build-configuration) says
+why). Total constructors need no
 such help: modules that have one expose it as `create`, and tests alias it at
 the top the way they already alias `fp` — `let private en = EntryName.create`.
 

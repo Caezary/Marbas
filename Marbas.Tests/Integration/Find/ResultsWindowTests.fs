@@ -82,13 +82,12 @@ let private laidOut () = showing ignore ignore
 
 let private lines window =
     let list = ResultsWindow.list window
-    let source = list.Source.ToList()
-    [ for index in 0 .. list.Source.Count - 1 -> source[index].ToString().TrimEnd() ]
+    [ for item in (Expect.notNull list.Source).ToList() -> (string item).TrimEnd() ]
 
 let private formatted window =
     let list = ResultsWindow.list window
-    let source = list.Source.ToList()
-    [ for index in 0 .. list.Source.Count - 1 -> source[index] ]
+    let source = (Expect.notNull list.Source).ToList()
+    [ for index in 0 .. (Expect.notNull list.Source).Count - 1 -> source[index] ]
 
 let private tickingOneByOne window hits =
     hits |> List.iter (fun hit -> ResultsWindow.add window (arriving [ hit ]))
@@ -194,7 +193,7 @@ let ``the ticks after a hit do not format it again`` () =
     tickingOneByOne window nineMore
 
     Assert.Same(painted, formatted window |> List.item 1)
-    Assert.Equal(11, (ResultsWindow.list window).Source.Count)
+    Assert.Equal(11, (Expect.notNull (ResultsWindow.list window).Source).Count)
 
 [<Fact>]
 let ``a tick adds to the rows already shown rather than replacing them`` () =

@@ -739,3 +739,64 @@ met and what it becomes; [Cross-platform](../Architecture/CROSS-PLATFORM.md),
 [File operations](../Architecture/FILE-OPERATIONS.md) say how an unset
 variable is carried. 4295 tests pass and 35 skip on Windows, the three new ones
 among them.
+
+**P22.16 answers what nullness checking reports in `Marbas.Tests`, and leaves
+it off there.** With `<Nullable>enable</Nullable>` moved from `Marbas.fsproj`
+to `Directory.Build.props` the test project reported 166 places, against the
+plan's 172 — 134 in `Integration`, 23 in `Fakes.fs`, six in `FileSystem` and
+one apiece in `EmbeddedFixture`, `Adapters` and `State` — and all of them are
+answered. The setting then went back to `Marbas.fsproj`, for the reason below.
+
+Most were a property of Terminal.Gui read as though it could not be null — the
+`Source` of a `ListView` and of a `DropDownList` above all, then the `Table` of
+the history, the `Labels` of a selector, the border of a tab and the style of a
+column — and after them an entry of a zip, a resource stream, a type found by
+name, a process started, a file name split off a path. A test unwraps each with
+`Expect.notNull`, new beside `Expect.some`, which fails with a sentence on a
+null: `(Expect.notNull list.Source).Count` where it read `list.Source.Count`.
+The seven helpers that listed the rows of a dialog by index and called
+`ToString` on each now take `string` of each item, as the others like them
+already did, and the four that read the source more than once bind it once.
+
+`Fakes.fs` held the rest. Its `Replaced<'port>` cached each replaced port of a
+`MockFileSystem` in a field that started as null, which made every port type
+it held one that must admit null; it holds an `option` now, and the twenty-one
+reports went with it. `LinkFollowingDirectory` matches the parent and the name
+of a path together and stops at a root as before.
+
+No test changed what it asserts, and none was added: 4295 pass and 35 skip on
+Windows, as before.
+
+**With the setting on, the tests took five minutes to compile.** The build of
+the test project went from well under a minute to five, and under WSL it was
+stopped after 53 minutes, 2.4 hours of processor and nearly 2 GB of memory
+spent in `fsc` alone. The compiler's `--times`, file by file, put it all in the
+type check: 24 seconds without the setting, 286 with it; `ViewerStateTests.fs`
+went from half a second to 23, while `Marbas` went from 6.3 to 7.5. A probe
+outside the repository, five files of a hundred calls each, found the one
+construct that pays for it:
+
+| a hundred calls | without | with |
+|---|---|---|
+| `Assert.Equal(1, value)` over `int` | 0.76 s | 10.2 s |
+| `Assert.Equal<int>(1, value)` | 0.59 s | 0.76 s |
+| `Assert.Equal("a", text)` | 0.63 s | 0.78 s |
+| `Assert.Equal({ X = 1; Y = 2 }, record)` | 0.38 s | 0.84 s |
+| `Assert.True flag` | 0.13 s | 0.14 s |
+
+An `Assert.Equal` over two numbers whose type is not written out costs the
+compiler a tenth of a second under nullness checking — spent, as far as the
+probe shows, choosing among the overloads of xUnit's `Assert.Equal`, since the
+same call with its type written out costs what it did — and of the suite's
+2 698 untyped `Assert.Equal` calls, 342 open with a number literal alone.
+Writing the type out on each would have been a rule nothing checks, so the
+setting stays in
+`Marbas.fsproj`, where no xUnit is called and the check costs a second, and
+the answers in the tests stay: they read no worse, and the tests are ready for
+the setting when the compiler resolves those overloads faster. No issue on
+the tracker of dotnet/fsharp was found to describe it.
+
+[Development](../DEVELOPMENT.md) says why the tests build without the
+setting, §8 of [Coding style](../coding-style-conventions.md) and
+[Testing](../Architecture/TESTING.md) name `Expect.notNull`, and the plan
+keeps the setting for the tests among what is left for a later phase.

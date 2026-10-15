@@ -51,7 +51,7 @@ let ``Alt+F6 makes a link in the other panel and shows it there as a link under 
 
     Assert.Equal(at "start/notes.txt", fs.FileInfo.New(at "backup/twin.txt").LinkTarget)
     Assert.Equal(System.Nullable 1, (rightList window).SelectedItem)
-    Assert.Equal(2, (rightList window).Source.Count)
+    Assert.Equal(2, (Expect.notNull (rightList window).Source).Count)
 
 [<Fact>]
 let ``Alt+F6 offers the other panel's directory and the name of the entry under the cursor`` () =

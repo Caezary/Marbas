@@ -6,6 +6,7 @@ open Terminal.Gui.Views
 open Marbas.State
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
+open Marbas.Tests
 
 let private laidOut remembered title =
     DialogStyle.apply ()
@@ -38,7 +39,10 @@ let ``the patterns typed before are offered as the field's list`` () =
 
     let field = PatternDialog.field dialog :?> DropDownList
 
-    Assert.Equal<string list>([ "*.fs"; "*.txt" ], [ for item in field.Source.ToList() -> string item ])
+    Assert.Equal<string list>(
+        [ "*.fs"; "*.txt" ],
+        [ for item in (Expect.notNull field.Source).ToList() -> string item ]
+    )
 
 [<Fact>]
 let ``a dismissed dialog yields no pattern`` () =

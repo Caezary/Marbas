@@ -88,7 +88,7 @@ let ``a command key closes the search and still does its job`` () =
 
     press list KeyMap.selectionKeys.Head
 
-    Assert.True(list.Source.IsMarked 4)
+    Assert.True((Expect.notNull list.Source).IsMarked 4)
     Assert.Contains("1 selected", footerOf window FilePanel.LeftId)
 
 [<Fact>]
@@ -100,4 +100,4 @@ let ``a space typed into an open search is part of the text, not a mark`` () =
     press list KeyMap.spaceKey
 
     Assert.Equal("Search: s ", footerOf window FilePanel.LeftId)
-    Assert.False(list.Source.IsMarked 1)
+    Assert.False((Expect.notNull list.Source).IsMarked 1)

@@ -82,7 +82,7 @@ let private localField (fs: IFileSystem) (name: string) =
 
     use held = new IO.Compression.ZipArchive(stream, IO.Compression.ZipArchiveMode.Read)
 
-    held.GetEntry(name).LastWriteTime.DateTime
+    (Expect.notNull (held.GetEntry name)).LastWriteTime.DateTime
 
 let private momentOf (fs: IFileSystem) (path: string) =
     DateTimeOffset(fs.File.GetLastWriteTimeUtc path, TimeSpan.Zero)

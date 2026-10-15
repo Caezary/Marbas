@@ -21,7 +21,7 @@ let private mockFs () =
     fs :> IFileSystem
 
 let private items panelView =
-    let source = (FilePanel.listView panelView).Source.ToList()
+    let source = (Expect.notNull (FilePanel.listView panelView).Source).ToList()
     [ for i in 0 .. source.Count - 1 -> string source[i] ]
 
 [<Fact>]

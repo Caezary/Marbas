@@ -33,7 +33,7 @@ let ``the view key on a directory puts its size in the panel`` () =
 
     press list Key.F3
 
-    let row = string (list.Source.ToList()[Docs])
+    let row = string ((Expect.notNull list.Source).ToList()[Docs])
 
     Assert.DoesNotContain(EntrySize.DirectoryMark, row)
     Assert.Contains("5", row)
@@ -53,6 +53,6 @@ let ``a directory nobody measured still wears the marker`` () =
     use window = startedWindow ()
     let list = leftList window
 
-    let row = string (list.Source.ToList()[Docs])
+    let row = string ((Expect.notNull list.Source).ToList()[Docs])
 
     Assert.Contains(EntrySize.DirectoryMark, row)

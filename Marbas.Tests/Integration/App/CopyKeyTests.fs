@@ -44,7 +44,7 @@ let ``F5 copies the entry under the cursor into the other panel`` () =
     pressKey window Key.F5
 
     Assert.Equal("hi", fs.File.ReadAllText(at "backup/notes.txt"))
-    Assert.Equal(2, (rightList window).Source.Count)
+    Assert.Equal(2, (Expect.notNull (rightList window).Source).Count)
 
 [<Fact>]
 let ``F5 copies every marked entry`` () =

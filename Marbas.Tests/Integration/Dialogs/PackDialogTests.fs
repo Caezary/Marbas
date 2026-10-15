@@ -52,8 +52,8 @@ let ``a fresh dialog offers every format and level, on zip and normal`` () =
     let formats = PackDialog.selector dialog PackDialog.FormatId
     let levels = PackDialog.selector dialog PackDialog.CompressionId
 
-    Assert.Equal<string list>([ "_Zip"; "_Tar.gz"; "_7z" ], List.ofSeq formats.Labels)
-    Assert.Equal<string list>([ "_Store"; "_Normal"; "Ma_ximum" ], List.ofSeq levels.Labels)
+    Assert.Equal<string list>([ "_Zip"; "_Tar.gz"; "_7z" ], List.ofSeq (Expect.notNull formats.Labels))
+    Assert.Equal<string list>([ "_Store"; "_Normal"; "Ma_ximum" ], List.ofSeq (Expect.notNull levels.Labels))
     Assert.Equal(Some 0, formats.Value |> Option.ofNullable)
     Assert.Equal(Some 1, levels.Value |> Option.ofNullable)
 
@@ -145,7 +145,7 @@ let ``the archives packed into before are offered as the list of the target fiel
     use dialog = laidOutWith [ @"D:\one.zip"; @"D:\two.7z" ]
 
     let offered =
-        [ for item in (target dialog :?> DropDownList).Source.ToList() -> string item ]
+        [ for item in (Expect.notNull (target dialog :?> DropDownList).Source).ToList() -> string item ]
 
     Assert.Equal<string list>([ @"D:\one.zip"; @"D:\two.7z" ], offered)
 

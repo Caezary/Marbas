@@ -56,8 +56,7 @@ let private laidOut menu =
 
 let private shown (dialog: UserMenuDialog.UserMenuView) =
     let list = UserMenuDialog.entries dialog
-    let source = list.Source.ToList()
-    [ for index in 0 .. list.Source.Count - 1 -> source[index].ToString() ]
+    [ for item in (Expect.notNull list.Source).ToList() -> string item ]
 
 let private standOn index (dialog: UserMenuDialog.UserMenuView) =
     (UserMenuDialog.entries dialog).SelectedItem <- Nullable index

@@ -376,6 +376,12 @@ is narrowed.
   without equality or comparison, FS3180 65 mutable locals in closures, nearly
   all in tests, and FS0052, FS3366 and FS3560 four each. None is turned on
   until it can be without drowning the rest.
+- **Nullness checking in the tests** — P22.16 answered every report in
+  `Marbas.Tests`, but the setting stays in `Marbas.fsproj`: with it on, an
+  `Assert.Equal` over two numbers of no written type costs the compiler a
+  tenth of a second, and the test project's type check grows from 24 seconds
+  to nearly five minutes. It moves to `Directory.Build.props` when a compiler
+  resolves those overloads at the old price.
 - **The analyzer rules left off** — the interpolated hole without a format
   (416), the union that could be a struct (100), the type annotation on
   `string` (35), the empty string tested by equality (23) and the pipelines

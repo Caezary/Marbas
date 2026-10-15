@@ -5,6 +5,7 @@ open System.Reflection
 open Microsoft.FSharp.Reflection
 open Xunit
 open Marbas.State
+open Marbas.Tests
 
 let rec private arguments (shape: Type) =
     if FSharpType.IsFunction shape then
@@ -25,7 +26,7 @@ let private portRecords =
     |> List.filter FSharpType.IsRecord
 
 let private named (field: PropertyInfo) =
-    $"{field.DeclaringType.Name}.{field.Name}"
+    $"{(Expect.notNull field.DeclaringType).Name}.{field.Name}"
 
 let private takingFunctions (records: Type list) =
     records |> List.collect fieldsOf |> List.filter takesFunction |> List.map named

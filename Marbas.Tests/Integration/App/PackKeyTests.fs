@@ -46,7 +46,7 @@ let ``Shift+F1 packs the entry under the cursor into the other panel`` () =
     pressKey window KeyMap.packKey
 
     Assert.True(fs.File.Exists(at "backup/notes.zip"))
-    Assert.Equal(2, (rightList window).Source.Count)
+    Assert.Equal(2, (Expect.notNull (rightList window).Source).Count)
 
 [<Fact>]
 let ``Shift+F1 offers an archive named after the entry under the cursor`` () =

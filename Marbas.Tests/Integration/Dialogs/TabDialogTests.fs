@@ -6,6 +6,7 @@ open Xunit
 open Terminal.Gui.Views
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
+open Marbas.Tests
 
 let private lines = [ "1. left one"; "2. left two"; "3. left three" ]
 
@@ -19,8 +20,7 @@ let private laidOutOn current =
 
 let private rows (dialog: Dialog) =
     let list = TabDialog.tabs dialog
-    let source = list.Source.ToList()
-    [ for index in 0 .. list.Source.Count - 1 -> source[index].ToString() ]
+    [ for item in (Expect.notNull list.Source).ToList() -> string item ]
 
 [<Fact>]
 let ``every tab is listed in the order it was given`` () =

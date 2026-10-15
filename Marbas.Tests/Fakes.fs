@@ -12,16 +12,21 @@ open Marbas.Tests
 let private at = Root.at
 
 [<AllowNullLiteral>]
-type private Replaced<'port when 'port: null>() =
-    member val Made: 'port = null with get, set
+type private Replaced<'port>() =
+    member val Made: 'port option = None with get, set
+
+let private remembered (replaced: Replaced<'port>) (make: unit -> 'port) =
+    match replaced.Made with
+    | Some made -> made
+    | None ->
+        let made = make ()
+        replaced.Made <- Some made
+        made
 
 let private once (replaced: Replaced<'port>) (make: unit -> 'port) =
     match replaced with
     | null -> make ()
-    | _ when isNull replaced.Made ->
-        replaced.Made <- make ()
-        replaced.Made
-    | _ -> replaced.Made
+    | replaced -> remembered replaced make
 
 [<Literal>]
 let DiskFullReason = "There is not enough space on the disk."
@@ -76,15 +81,14 @@ type private LinkFollowingDirectory(fileSystem: IFileSystem, accessor: IMockFile
     inherit MockDirectory(accessor, current)
 
     let rec resolve (path: string) =
-        match Path.GetDirectoryName path with
-        | null
-        | "" -> path
-        | parent ->
-            let candidate = Path.Combine(resolve parent, Path.GetFileName path)
+        match Path.GetDirectoryName path, Path.GetFileName path with
+        | NonNull parent, NonNull name when parent <> "" ->
+            let candidate = Path.Combine(resolve parent, name)
 
             match fileSystem.FileInfo.New(candidate).LinkTarget with
             | null -> candidate
             | target -> resolve target
+        | _ -> path
 
     let depth (path: string) =
         path.Split([| Path.DirectorySeparatorChar |], StringSplitOptions.RemoveEmptyEntries).Length
@@ -96,7 +100,7 @@ type private LinkFollowingDirectory(fileSystem: IFileSystem, accessor: IMockFile
             raise (InvalidOperationException $"The walk went round a link: '{path}'.")
         else
             base.EnumerateFileSystemEntries(resolve path)
-            |> Seq.map (fun entry -> Path.Combine(path, Path.GetFileName entry))
+            |> Seq.map (fun entry -> Path.Combine(path, Expect.notNull (Path.GetFileName entry)))
 
 type LinkFollowing() =
     inherit MockFileSystem()

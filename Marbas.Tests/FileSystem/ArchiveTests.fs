@@ -57,7 +57,7 @@ let private zipText (fs: IFileSystem) path name =
 let private zipEntryLocalTime (fs: IFileSystem) path name =
     use stream = opened fs path
     use archive = new ZipArchive(stream, ZipArchiveMode.Read)
-    archive.GetEntry(name: string).LastWriteTime.DateTime
+    (Expect.notNull (archive.GetEntry(name: string))).LastWriteTime.DateTime
 
 let private tarEntries (fs: IFileSystem) path =
     use stream = opened fs path
@@ -246,7 +246,7 @@ let ``the zip is one that any reader can open`` () =
 
     use stream = opened fs target
     use archive = new ZipArchive(stream, ZipArchiveMode.Read)
-    use content = (archive.GetEntry "docs/inner.txt").Open()
+    use content = (Expect.notNull (archive.GetEntry "docs/inner.txt")).Open()
     use reader = new StreamReader(content)
 
     Assert.Equal<string list>(

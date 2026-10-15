@@ -26,7 +26,7 @@ let ``selection keys mark the cursor entry and move the cursor down`` () =
 
         press list key
 
-        Assert.True(list.Source.IsMarked 1, $"%A{key} should mark the cursor entry")
+        Assert.True((Expect.notNull list.Source).IsMarked 1, $"%A{key} should mark the cursor entry")
         Assert.Equal(2, list.SelectedItem.GetValueOrDefault 0)
 
 [<Fact>]
@@ -40,7 +40,7 @@ let ``a selection key pressed twice leaves the entry unmarked`` () =
         list.SelectedItem <- 1
         press list key
 
-        Assert.False(list.Source.IsMarked 1, $"%A{key} should unmark the cursor entry")
+        Assert.False((Expect.notNull list.Source).IsMarked 1, $"%A{key} should unmark the cursor entry")
 
 [<Fact>]
 let ``the parent entry cannot be marked from the keyboard`` () =
@@ -49,7 +49,7 @@ let ``the parent entry cannot be marked from the keyboard`` () =
 
     press list KeyMap.selectionKeys.Head
 
-    Assert.False(list.Source.IsMarked 0)
+    Assert.False((Expect.notNull list.Source).IsMarked 0)
     Assert.Equal(1, list.SelectedItem.GetValueOrDefault 0)
 
 [<Fact>]
@@ -61,8 +61,8 @@ let ``holding shift marks a run of entries on the way up`` () =
     press list KeyMap.selectionUpKey
     press list KeyMap.selectionUpKey
 
-    Assert.True(list.Source.IsMarked 3)
-    Assert.True(list.Source.IsMarked 2)
+    Assert.True((Expect.notNull list.Source).IsMarked 3)
+    Assert.True((Expect.notNull list.Source).IsMarked 2)
     Assert.Equal(1, list.SelectedItem.GetValueOrDefault 0)
 
 [<Fact>]
@@ -77,8 +77,8 @@ let ``holding shift back over a marked run unmarks it`` () =
     press list KeyMap.selectionUpKey
     press list KeyMap.selectionUpKey
 
-    Assert.False(list.Source.IsMarked 1)
-    Assert.False(list.Source.IsMarked 2)
+    Assert.False((Expect.notNull list.Source).IsMarked 1)
+    Assert.False((Expect.notNull list.Source).IsMarked 2)
     Assert.Equal(0, list.SelectedItem.GetValueOrDefault 0)
 
 let private laidOutWindow () =
@@ -94,7 +94,7 @@ let ``a shift page key marks up to the entry the cursor lands on, not including 
 
     press list KeyMap.selectionPageDownKeys.Head
 
-    Assert.Equal<bool list>([ true; true; false ], [ for i in 1..3 -> list.Source.IsMarked i ])
+    Assert.Equal<bool list>([ true; true; false ], [ for i in 1..3 -> (Expect.notNull list.Source).IsMarked i ])
     Assert.Equal(3, list.SelectedItem.GetValueOrDefault -1)
 
 [<Fact>]
@@ -107,7 +107,7 @@ let ``a shift page key over a half marked page goes by the entry under the curso
 
     press list KeyMap.selectionPageDownKeys.Head
 
-    Assert.Equal<bool list>([ true; true ], [ for i in 1..2 -> list.Source.IsMarked i ])
+    Assert.Equal<bool list>([ true; true ], [ for i in 1..2 -> (Expect.notNull list.Source).IsMarked i ])
 
 [<Fact>]
 let ``pressing a shift page key on and on marks the whole listing`` () =
@@ -123,7 +123,7 @@ let ``pressing a shift page key on and on marks the whole listing`` () =
     for _ in 1..12 do
         press list KeyMap.selectionPageDownKeys.Head
 
-    Assert.Equal<bool list>(List.replicate 40 true, [ for i in 1..40 -> list.Source.IsMarked i ])
+    Assert.Equal<bool list>(List.replicate 40 true, [ for i in 1..40 -> (Expect.notNull list.Source).IsMarked i ])
 
 [<Fact>]
 let ``a shift arrow and a pattern add up to one selection`` () =
@@ -138,9 +138,9 @@ let ``a shift arrow and a pattern add up to one selection`` () =
     press list KeyMap.selectionDownKey
     press list KeyMap.selectPatternKey
 
-    Assert.True(list.Source.IsMarked 1, "the shift arrow mark should survive the pattern")
-    Assert.True(list.Source.IsMarked 2)
-    Assert.True(list.Source.IsMarked 3)
+    Assert.True((Expect.notNull list.Source).IsMarked 1, "the shift arrow mark should survive the pattern")
+    Assert.True((Expect.notNull list.Source).IsMarked 2)
+    Assert.True((Expect.notNull list.Source).IsMarked 3)
 
 [<Fact>]
 let ``a shift arrow unmarks a single entry a pattern selected`` () =
@@ -155,8 +155,8 @@ let ``a shift arrow unmarks a single entry a pattern selected`` () =
     list.SelectedItem <- 2
     press list KeyMap.selectionDownKey
 
-    Assert.False(list.Source.IsMarked 2)
-    Assert.True(list.Source.IsMarked 3)
+    Assert.False((Expect.notNull list.Source).IsMarked 2)
+    Assert.True((Expect.notNull list.Source).IsMarked 3)
 
 [<Fact>]
 let ``marks follow the panel they were made in`` () =
@@ -167,5 +167,5 @@ let ``marks follow the panel they were made in`` () =
 
     press left KeyMap.selectionKeys.Head
 
-    Assert.True(left.Source.IsMarked 1)
-    Assert.False(right.Source.IsMarked 1)
+    Assert.True((Expect.notNull left.Source).IsMarked 1)
+    Assert.False((Expect.notNull right.Source).IsMarked 1)

@@ -22,9 +22,11 @@ let private window () =
     focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
 
 let private markedRows (list: ListView) =
-    [ for i in 0 .. list.Source.Count - 1 do
-          if list.Source.IsMarked i then
-              (string (list.Source.ToList()[i])).Split(' ').[0] ]
+    let source = Expect.notNull list.Source
+
+    [ for i in 0 .. source.Count - 1 do
+          if source.IsMarked i then
+              (string (source.ToList()[i])).Split(' ').[0] ]
 
 let private footerOf window =
     (FilePanel.footer (panel FilePanel.LeftId window)).Text

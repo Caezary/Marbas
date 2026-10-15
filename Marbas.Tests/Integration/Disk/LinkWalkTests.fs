@@ -28,7 +28,7 @@ let ``enumerating a directory link walks into what it points at`` () =
 
     let children =
         Directory.EnumerateFileSystemEntries(scratch.At "data/docs/loop")
-        |> Seq.map Path.GetFileName
+        |> Seq.map (Path.GetFileName >> Expect.notNull)
         |> List.ofSeq
 
     Assert.Equal<string list>([ "docs" ], children)

@@ -54,7 +54,7 @@ let laidOut history tab =
     openedOver agreeing (HistoryFile history) tab
 
 let rows (dialog: HistoryDialog.HistoryView) tab =
-    let table = (HistoryDialog.table tab dialog).Table
+    let table = Expect.notNull (HistoryDialog.table tab dialog).Table
     [ for row in 0 .. table.Rows - 1 -> $"{table[row, 0]} {table[row, 1]}" ]
 
 let started target =
@@ -69,7 +69,7 @@ let launches =
     |> History.apply Windows (minute 4) (Remember(Launched(started "work/newer.md")))
 
 let cells (dialog: HistoryDialog.HistoryView) tab =
-    let table = (HistoryDialog.table tab dialog).Table
+    let table = Expect.notNull (HistoryDialog.table tab dialog).Table
     [ for row in 0 .. table.Rows - 1 -> [ for column in 0 .. table.Columns - 1 -> string table[row, column] ] ]
 
 let visits =

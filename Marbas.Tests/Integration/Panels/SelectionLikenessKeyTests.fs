@@ -22,14 +22,18 @@ let private window () =
     focusedWindow (Fakes.dependencies (mockFs ()) (at "start"))
 
 let private markedRows (list: ListView) =
-    [ for i in 0 .. list.Source.Count - 1 do
-          if list.Source.IsMarked i then
-              (string (list.Source.ToList()[i])).Split(' ').[0] ]
+    let source = Expect.notNull list.Source
+
+    [ for i in 0 .. source.Count - 1 do
+          if source.IsMarked i then
+              (string (source.ToList()[i])).Split(' ').[0] ]
 
 let private standingOn (list: ListView) (name: string) =
+    let source = Expect.notNull list.Source
+
     list.SelectedItem <-
-        [ 0 .. list.Source.Count - 1 ]
-        |> List.findIndex (fun i -> (string (list.Source.ToList()[i])).StartsWith(name, StringComparison.Ordinal))
+        [ 0 .. source.Count - 1 ]
+        |> List.findIndex (fun i -> (string (source.ToList()[i])).StartsWith(name, StringComparison.Ordinal))
 
 [<Fact>]
 let ``Alt+E marks the entries with the extension under the cursor`` () =

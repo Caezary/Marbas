@@ -115,7 +115,7 @@ let ``a tab is read again when it is stood on`` () =
 
     press (leftList window) KeyMap.tabsKey
 
-    let source = (leftList window).Source.ToList()
+    let source = (Expect.notNull (leftList window).Source).ToList()
     let rows = [ for index in 0 .. source.Count - 1 -> string source[index] ]
 
     Assert.Contains(rows, fun (row: string) -> row.StartsWith("added.txt", StringComparison.Ordinal))

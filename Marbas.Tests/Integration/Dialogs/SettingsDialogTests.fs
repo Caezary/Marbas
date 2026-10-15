@@ -42,8 +42,7 @@ let private press (dialog: SettingsDialog.SettingsView) id =
 
 let private rowsOf (dialog: SettingsDialog.SettingsView) role =
     let list = SettingsDialog.known dialog role
-    let source = list.Source.ToList()
-    [ for index in 0 .. list.Source.Count - 1 -> source[index].ToString() ]
+    [ for item in (Expect.notNull list.Source).ToList() -> string item ]
 
 let private rows (dialog: SettingsDialog.SettingsView) = rowsOf dialog ForEditing
 

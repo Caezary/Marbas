@@ -25,9 +25,11 @@ let private windowWith askPattern =
             Prompts.AskPattern = askPattern }
 
 let private marked (list: ListView) =
-    [ for i in 0 .. list.Source.Count - 1 do
-          if list.Source.IsMarked i then
-              string (list.Source.ToList()[i]) ]
+    let source = Expect.notNull list.Source
+
+    [ for i in 0 .. source.Count - 1 do
+          if source.IsMarked i then
+              string (source.ToList()[i]) ]
 
 [<Fact>]
 let ``the select key asks for a pattern and marks the matches`` () =

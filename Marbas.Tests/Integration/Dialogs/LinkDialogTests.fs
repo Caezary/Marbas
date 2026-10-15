@@ -63,7 +63,11 @@ let ``the suggested link is offered ready to be edited, as a symbolic link`` () 
 let ``every kind is offered`` () =
     use dialog = laidOut nothingRefused
 
-    Assert.Equal<string list>([ "_Symbolic link"; "_Hard link"; "_Junction" ], List.ofSeq (kinds dialog).Labels)
+    Assert.Equal<string list>(
+        [ "_Symbolic link"; "_Hard link"; "_Junction" ],
+        List.ofSeq (Expect.notNull (kinds dialog).Labels)
+    )
+
     Assert.Equal<bool list>([ true; true; true ], enabled dialog)
     Assert.Equal("", reason dialog)
 
@@ -86,7 +90,7 @@ let ``only the kinds this system can make are offered`` () =
 
     let choice = LinkDialog.choice dialog |> Expect.some
 
-    Assert.Equal<string list>([ "_Symbolic link"; "_Hard link" ], List.ofSeq (kinds dialog).Labels)
+    Assert.Equal<string list>([ "_Symbolic link"; "_Hard link" ], List.ofSeq (Expect.notNull (kinds dialog).Labels))
     Assert.Equal(Hard, choice.Kind)
 
 [<Fact>]
@@ -141,7 +145,7 @@ let ``the places linked at before are offered as the list of the target field`` 
     use dialog = laidOutWith [ @"D:\links\one"; @"D:\links\two" ] nothingRefused
 
     let offered =
-        [ for item in (target dialog :?> DropDownList).Source.ToList() -> string item ]
+        [ for item in (Expect.notNull (target dialog :?> DropDownList).Source).ToList() -> string item ]
 
     Assert.Equal<string list>([ @"D:\links\one"; @"D:\links\two" ], offered)
 

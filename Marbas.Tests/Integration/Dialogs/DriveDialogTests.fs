@@ -9,6 +9,7 @@ open Marbas.FileSystem
 open Marbas.Ui.Keys
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
+open Marbas.Tests
 
 let private fp = FileSystemPath.create
 
@@ -43,8 +44,7 @@ let private laidOut () = laidOutOn Left 120
 
 let private shown (dialog: Dialog) =
     let list = DriveDialog.drives dialog
-    let source = list.Source.ToList()
-    [ for index in 0 .. list.Source.Count - 1 -> source[index].ToString() ]
+    [ for item in (Expect.notNull list.Source).ToList() -> string item ]
 
 [<Fact>]
 let ``every drive is listed as its line, in the order it was given`` () =

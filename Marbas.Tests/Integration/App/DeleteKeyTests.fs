@@ -62,7 +62,7 @@ let ``F8 asks for confirmation and sends the entry under the cursor to the trash
     Assert.Equal(DeleteConfirmation.Title, title)
     Assert.Contains("notes.txt", message)
     Assert.Equal<string list>([ at "start/notes.txt" ], bin.Taken)
-    Assert.Equal(4, (leftList window).Source.Count)
+    Assert.Equal(4, (Expect.notNull (leftList window).Source).Count)
 
 [<Fact>]
 let ``Del does what F8 does`` () =
@@ -91,7 +91,7 @@ let ``Shift and Del delete for good, leaving the trash out of it`` () =
     Assert.Equal(DeleteConfirmation.PermanentTitle, title)
     Assert.Empty bin.Taken
     Assert.False(fs.File.Exists(at "start/notes.txt"))
-    Assert.Equal(4, (leftList window).Source.Count)
+    Assert.Equal(4, (Expect.notNull (leftList window).Source).Count)
 
 [<Fact>]
 let ``Shift and F8 delete for good as well`` () =
@@ -134,7 +134,7 @@ let ``Alt and Del wipe the entry behind the progress window after a question of 
     Assert.Equal<string list>([ Shell.WipeTitle ], List.ofSeq batches)
     Assert.Empty bin.Taken
     Assert.False(fs.File.Exists(at "start/notes.txt"))
-    Assert.Equal(4, (leftList window).Source.Count)
+    Assert.Equal(4, (Expect.notNull (leftList window).Source).Count)
 
 [<Fact>]
 let ``F8 sends the entry to the trash behind the progress window, naming it on the way`` () =
@@ -244,7 +244,7 @@ let ``a wipe stopped with Esc leaves the entries it never reached and says where
 
     Assert.Equal("hi", fs.File.ReadAllText(at "start/notes.txt"))
     Assert.Contains("notes.txt", Assert.Single reported)
-    Assert.Equal(5, (leftList window).Source.Count)
+    Assert.Equal(5, (Expect.notNull (leftList window).Source).Count)
 
 [<Fact>]
 let ``a refused confirmation deletes nothing`` () =
@@ -256,7 +256,7 @@ let ``a refused confirmation deletes nothing`` () =
 
     Assert.Empty bin.Taken
     Assert.True(fs.File.Exists(at "start/notes.txt"))
-    Assert.Equal(5, (leftList window).Source.Count)
+    Assert.Equal(5, (Expect.notNull (leftList window).Source).Count)
 
 [<Fact>]
 let ``F8 on the parent entry asks nothing`` () =

@@ -52,7 +52,7 @@ let ``Shift+F2 empties the archive under the cursor into the other panel`` () =
 
     Assert.Equal("notes", fs.File.ReadAllText(at "backup/notes.txt"))
     Assert.Equal("inner", fs.File.ReadAllText(at "backup/docs/inner.txt"))
-    Assert.Equal(3, (rightList window).Source.Count)
+    Assert.Equal(3, (Expect.notNull (rightList window).Source).Count)
 
 [<Fact>]
 let ``Shift+F2 on a protected archive asks for the password first`` () =

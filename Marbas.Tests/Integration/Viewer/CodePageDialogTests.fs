@@ -7,6 +7,7 @@ open Terminal.Gui.Views
 open Marbas.FileSystem
 open Marbas.Ui.Theme
 open Marbas.Ui.Viewer
+open Marbas.Tests
 
 let private utf8 = { Charset = Utf8; Bom = WithoutBom }
 
@@ -20,8 +21,7 @@ let private laidOutOn current =
 
 let private rows (dialog: Dialog) =
     let list = CodePageDialog.pages dialog
-    let source = list.Source.ToList()
-    [ for index in 0 .. list.Source.Count - 1 -> source[index].ToString() ]
+    [ for item in (Expect.notNull list.Source).ToList() -> string item ]
 
 let private cursor (dialog: Dialog) =
     (CodePageDialog.pages dialog).SelectedItem.GetValueOrDefault -1

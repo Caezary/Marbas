@@ -182,7 +182,7 @@ let ``F4 does not re-read the panel once the editor is started`` () =
 
     pressKey window Key.F4
 
-    Assert.Equal(3, (leftList window).Source.Count)
+    Assert.Equal(3, (Expect.notNull (leftList window).Source).Count)
 
 [<Fact>]
 let ``an editor that could not be started is reported`` () =
@@ -230,7 +230,7 @@ let ``a cancelled Shift+F4 creates nothing`` () =
 
     pressKey window KeyMap.newFileKey
 
-    Assert.Equal(3, (leftList window).Source.Count)
+    Assert.Equal(3, (Expect.notNull (leftList window).Source).Count)
 
 [<Fact>]
 let ``F12 hands the programs in force to the settings popup and takes back what it returns`` () =
