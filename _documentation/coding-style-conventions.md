@@ -23,6 +23,12 @@ schedules the fix. A rule here beats a habit found in an older file.
       wrong layer.
 - [ ] Only `Adapters` touches the operating system directly. Everything else
       reaches it through `IFileSystem` or a port on `Ports.Dependencies`.
+      `Layers/SystemCallTests` holds the rule: it reads the compiled assembly
+      and fails on a call outside `Adapters` and `Program.fs` into the files,
+      directories and drives of `System.IO`, processes, the environment, the
+      console, the registry, the network, the platform, threads and timers,
+      the clock, `Guid.NewGuid`, `Random`, `Stopwatch` or a P/Invoke —
+      [Testing](Architecture/TESTING.md#the-layers-a-test-holds) has the list.
 - [ ] A type belongs to the lowest layer that speaks it, not the one that needed
       it first.
 - [ ] One folder is one namespace, and a folder may only depend on folders above

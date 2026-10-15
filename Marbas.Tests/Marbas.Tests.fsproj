@@ -320,6 +320,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Layers\SystemCalls.fs" />
+    <Compile Include="Layers\SystemCallTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Integration\Gui.fs" />
   </ItemGroup>
 
@@ -444,6 +449,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Mono.Cecil" />
     <PackageReference Include="SharpCompress" />
     <PackageReference Include="SharpZipLib" />
     <PackageReference Include="TestableIO.System.IO.Abstractions.TestingHelpers" />

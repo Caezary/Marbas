@@ -371,6 +371,8 @@ Marbas.Tests/
     Shell/                the tests of the interpreter, one file per feature
   Ui/                     unit tests of the pure Ui modules, in the same eight
                           folders as the source
+  Layers/                 the compiled assembly scanned for calls to the system
+                          outside Adapters
   Integration/            every test that constructs a Terminal.Gui view, in
                           those same folders
     Gui.fs                 focusedWindow, leftList, rightList, press, panel,

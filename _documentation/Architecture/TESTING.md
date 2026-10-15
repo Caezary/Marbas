@@ -292,6 +292,49 @@ user's keystroke would go. F# does not open an enclosing
 namespace for you, so a file under `State/` that uses `Expect.ok` needs an
 explicit `open Marbas.Tests`.
 
+## The layers a test holds
+
+The order of compilation stops a layer from calling one above it, but not from
+calling the system: nothing in the compiler keeps `File.Exists` out of
+`State`. Since P22.13 a test does. `Layers/` holds the tests about the
+assembly as a whole rather than one module: `SystemCalls.fs` reads the
+compiled `Marbas.dll` with Mono.Cecil, and `SystemCallTests.fs` asserts on
+what it finds.
+
+The scan walks every instruction of every method of every type, closures and
+nested types among them, and takes each call, `newobj`, `ldftn` and the like
+whose target is one of these:
+
+| What the outside world answers | Watched |
+|--------------------------------|---------|
+| the files, directories and drives | `File`, `Directory`, `FileInfo`, `DirectoryInfo`, `FileSystemInfo`, `DriveInfo`, `FileSystemWatcher`, `FileStream`, `RandomAccess`; of `Path` only `GetFullPath`, `GetTempPath`, `GetTempFileName` and `Exists`; the real `System.IO.Abstractions.FileSystem` |
+| processes and the session | `Process`, `Environment`, `Console` |
+| the platform | `OperatingSystem`, `RuntimeInformation`, `Microsoft.Win32`, `System.Net` |
+| threads and timers | `Thread`, `ThreadPool`, `System.Threading.Timer`, `System.Timers.Timer`, `Task.Run` |
+| the clock and chance | `DateTime.Now`, `UtcNow`, `Today`; `DateTimeOffset.Now`, `UtcNow`; `Stopwatch`; `Guid.NewGuid`; `Random` |
+| native code | every method declared as a P/Invoke |
+
+What is left out is left out on purpose: streams, `MemoryStream`,
+compression in memory, the exception types of `System.IO`, the string work of
+`Path`, and every member of `IFileSystem`, which is how the layers below reach
+the disk.
+
+A method belongs to the folder of the source file its first sequence point
+names, which the symbols beside the assembly carry; a method with none — a
+P/Invoke, a member the compiler made — belongs to the namespace of its
+outermost type. The file matters more than the namespace for the static
+initialiser of a file that opens with `namespace`, which F# compiles into
+`<StartupCode$Marbas>.$<file name>` and so names no layer at all.
+
+`nothing outside Adapters and Program reaches the system directly` fails with
+one line per call, naming the method and what it called:
+``Marbas.State.Runtime/Runtime`3::paint calls System.IO.File::Exists``.
+`the scan sees the calls Adapters makes to the system` runs the same scan over
+`Adapters` and expects to find some, so that a scan gone blind — symbols
+missing, a folder renamed — cannot pass the first. A way of reaching the
+system the table does not hold joins it when `Adapters` first takes it up,
+and the first test then says whether a layer below was already using it.
+
 ## Arrange, act, assert
 
 Every test is three blocks separated by a blank line — set the world up, do the

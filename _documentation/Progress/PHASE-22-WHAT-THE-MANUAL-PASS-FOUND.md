@@ -577,3 +577,43 @@ written, and §4 of [Coding style](../coding-style-conventions.md) names
 
 No test was added, removed or changed: 4288 pass and 35 skip on Windows, as
 before. An effect is interpreted once for a command, so nothing was timed.
+
+**P22.13 makes the rule that only `Adapters` reaches the system a test.**
+`Layers/SystemCalls.fs` in `Marbas.Tests` reads the compiled `Marbas.dll`
+with Mono.Cecil 0.11.6, now a `PackageVersion` of the test group, and walks
+every instruction of every method for a call into what the outside world
+answers: the files, directories and drives of `System.IO` and the real
+`FileSystem` of System.IO.Abstractions, `Process`, `Environment`, `Console`,
+`OperatingSystem`, `RuntimeInformation`, `Microsoft.Win32`, `System.Net`,
+threads, timers and `Task.Run`, the clock, `Guid.NewGuid`, `Random`,
+`Stopwatch`, and every P/Invoke. `Layers/SystemCallTests.fs` asserts that
+nothing outside `Adapters` and `Program.fs` makes one, and that the same scan
+finds some in `Adapters` — sixty-one, method by method — so that a scan gone
+blind cannot pass. The first test passed from the start, as the
+reconnaissance said it would.
+
+It was shown to fail twice before it was kept. `File.Exists` planted in
+`Runtime.paint` failed it with
+``Marbas.State.Runtime/Runtime`3::paint calls System.IO.File::Exists``, and
+`Environment.MachineName` bound at the top of a module in `Domain/Platform.fs`
+with ``<StartupCode$Marbas>.$Platform::.cctor calls
+System.Environment::get_MachineName``. Both were taken out.
+
+Two things went beyond the plan.
+
+- **A method belongs to the file it was written in.** The plan spoke of the
+  types outside `Marbas.Adapters`, but F# compiles the values at the top of a
+  file that opens with `namespace` into `<StartupCode$Marbas>.$<file name>`,
+  which names no layer — `$HostEnvironment` is the one from `Adapters`. So a
+  method is placed by the source file its first sequence point names, and only
+  a method with none — a P/Invoke, a member the compiler made — by the
+  namespace of its outermost type. The symbols are beside the assembly in
+  Debug and Release alike, and the test passes in both.
+- **`OperatingSystem` is watched beside `RuntimeInformation`.** It asks the
+  same question, and nothing outside `Adapters` asks it.
+
+The scan reads the assembly once per run and lies on no hot path, so nothing
+was timed. §1 of [Coding style](../coding-style-conventions.md) says that the
+rule is a test, [Testing](../Architecture/TESTING.md) has what it watches and
+what it leaves out, and [Overview](../Architecture/OVERVIEW.md) names the
+folder. 4290 tests pass and 35 skip on Windows, the two new ones among them.
