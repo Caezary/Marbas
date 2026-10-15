@@ -599,3 +599,30 @@ ms before and 157 to 165 after, and the update is the same on both systems.
 On Windows the zip itself is the same: the tree packed and a small one added
 to it by each binary gave two files of 652 090 bytes that do not differ in
 one.
+
+## A cursor moved through a transition read as a table (P22.11, 2026-10-15)
+
+P22.11 took thirty-four arms of `Update.transition` out into private functions
+and turned the short ones into pipelines. A pipe is inlined and a named
+function is a direct call, so nothing should have changed, and §10 asks for
+the number all the same: a key in a panel runs the transition. A probe built
+in Release against the commit before and against the tree after loaded a
+directory of 10 000 files and 100 directories on NTFS through `loadPanel` on
+the real file system, then sent `Update.update` a hundred thousand
+`CursorMoved` in a row, the cursor walking down the listing — so the
+watching, the remembering and the marks that run after every transition are
+in the number too. The two binaries ran alternately, five launches each,
+forty rounds a launch after five to warm up. Microseconds a move, the median
+of the rounds.
+
+| launch | before | after |
+|---|---|---|
+| 1 | 0.503 | 0.500 |
+| 2 | 0.497 | 0.497 |
+| 3 | 0.497 | 0.495 |
+| 4 | 0.501 | 0.502 |
+| 5 | 0.496 | 0.515 |
+
+**A move costs half a microsecond, before and after.** The median of the five
+launches is 0.497 before and 0.500 after; one launch after is the slowest of
+the ten, and the other four lie inside the spread of the five before.

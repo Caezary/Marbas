@@ -516,3 +516,29 @@ from opening the popup, so its call is the same one line as the others.
 No test reaches `Adapters`, so no test was written and none changed; each popup
 is opened once in the walk that closes the phase, P22.13. 4288 tests pass and
 35 skip on Windows, as before.
+
+**P22.11 has `Update.transition` read as a table.** Every arm of the match is
+one line after its pattern. The thirty-four that ran to several are private
+functions above it, named for what they decide and taking `fs`, the state and
+what the message carries — `inspectingDelete`, `renamingOrMoving`,
+`landingFromSearch`, `packing`, `viewing`, `pasting` among them — and the short
+arms that nested parentheses are pipelines:
+`setCursor cursor.Side cursor.Index state |> stay`,
+`PromptForPattern mode |> request state`,
+`Ran run |> Remember |> ChangeHistory |> request state`. The three copies to
+the clipboard, the path read from it and the files put on it are pipelines
+Fantomas would break, so they take a name as well. `Update.fs` stands at 982
+lines, so nothing left it, and [Overview](../Architecture/OVERVIEW.md) has no
+module to name. §4 of [Coding style](../coding-style-conventions.md) now says
+that a match which only hands out work has one-line arms.
+
+The messages told apart by what they carry kept an arm for each pattern:
+`MeasureFinished`, `EditorStarted` and `CommandFinished` were one line each
+already, and `ClipboardRefused` keeps its two, the unavailable clipboard
+reported once by `reportingClipboardOnce`, as `HistoryUnwritten` is by
+`reportingHistoryOnce`. `FilesOnClipboardRequested` looks the source up in
+`puttingFilesOnClipboard` and hands it to `filesOnClipboard` as before.
+
+No test was added, removed or changed: 4288 pass and 35 skip on Windows, as
+before. `Update.update` over a cursor moved costs half a microsecond before and
+after; the run is in [Measurements](MEASUREMENTS.md).

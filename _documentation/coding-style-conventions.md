@@ -103,6 +103,12 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] One statement per line. Where a pipeline or an argument list breaks is
       Fantomas's decision, not the author's (§6).
 - [ ] Pipelines read left to right; nested parentheses three deep do not.
+- [ ] A match that only hands out work — `Update.transition` over the
+      messages — has one-line arms, so that it reads as an index of what each
+      case does. An arm that needs more is a private function above the match,
+      named for what it decides and taking what the arm had: `fs`, the state
+      and what the case carries. A pipeline Fantomas would break over several
+      lines takes a name too.
 - [ ] Computation-expression cut-off: three binds, or one nested match.
       FsToolkit.ErrorHandling is already referenced — `result`, `option`,
       `Result.requireTrue` and friends are in scope.
@@ -268,7 +274,7 @@ or every byte. A change there is held to what the path cost before it.
 
 | Hot path | What runs on it | Where it was timed |
 |----------|-----------------|--------------------|
-| a key in a panel | the transition in `Update`, the render of both panels, the status line and the bar | [the performance review](reports/2026-09-19-performance-review.md), P1, P10 and P14 |
+| a key in a panel | the transition in `Update`, the render of both panels, the status line and the bar | [the performance review](reports/2026-09-19-performance-review.md), P1, P10 and P14; Measurements, P22.11 |
 | a directory listed and sorted | `DirectoryListing`, the sort, the rows of a panel | the same review, P6 and P12; Measurements, P22.2 |
 | a file viewed, as text or as a dump | `FileWindow`, `TextEncoding`, `LineIndex`, `ViewerState`, the searches of `WindowSearch` and `ByteSearch` | [Measurements](Progress/MEASUREMENTS.md), P21.15 and P21.16 |
 | a copy, a move, a delete, a wipe, a size measured | the walks of `Operations` and `DirectoryMeasure`, and what a batch reports | Measurements, P15.25 and P21.3 |

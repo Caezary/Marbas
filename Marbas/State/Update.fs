@@ -486,264 +486,372 @@ let private forGood mode =
     | Permanently
     | ByWiping -> mode
 
+let private askingForDirectoryName (fs: IFileSystem) state =
+    match (activePanel state).Path with
+    | OnDisk _ -> request state PromptForName
+    | InArchive(archive, _) -> requestIfChangeable fs state [ archive ] PromptForName
+    | SearchResults _ -> stay state
+
+let private makingDirectory (fs: IFileSystem) state name =
+    match (activePanel state).Path with
+    | OnDisk directory -> makeDirectory fs state.Active directory name state |> applyMade name state
+    | InArchive(archive, level) ->
+        makeEntryDirectory fs state.Active archive level name state
+        |> applyMade name state
+    | SearchResults _ -> stay state
+
+let private inspectingDelete (fs: IFileSystem) state mode =
+    let target = activePanel state
+
+    let inspected asked =
+        InspectDelete(deleteQuestion fs target, asked)
+
+    match target.Path, transferSource fs target with
+    | _, None -> stay state
+    | InArchive(archive, _), _
+    | SearchResults _, Some(FromArchive(archive, _)) -> requestIfChangeable fs state [ archive ] (inspected Permanently)
+    | _, Some(FromPlaces _) -> request state (inspected (forGood mode))
+    | _ -> request state (inspected mode)
+
+let private confirmingDelete state scope mode =
+    { Targets = PanelState.operationTargets (activePanel state) |> List.map _.Name
+      Scope = scope
+      Mode = mode }
+    |> ConfirmDelete
+    |> request state
+
+let private deleting (fs: IFileSystem) state mode =
+    match transferSource fs (activePanel state) with
+    | None -> stay state
+    | Some source -> request state (DeletePlaces(places source, mode))
+
+let private copying (fs: IFileSystem) state =
+    match transferSource fs (activePanel state), transferTarget state with
+    | None, _
+    | _, None -> stay state
+    | Some source, Some target ->
+        let groups = places source
+
+        requestIfOutsideSource fs state groups target (targetArchives target) (CopyPlaces(groups, target))
+
+let private moving (fs: IFileSystem) state =
+    match transferSource fs (activePanel state), transferTarget state with
+    | None, _
+    | _, None -> stay state
+    | Some(FromArchive _ as group), Some(ToDirectory target) ->
+        requestIfChangeable fs state (sourceArchives [ group ]) (MovePlaces([ group ], ToDirectory target))
+    | Some _, Some(ToDirectory target) -> request state (PromptForTarget target)
+    | Some source, Some target ->
+        let groups = places source
+
+        let archives = targetArchives target @ sourceArchives groups
+
+        requestIfOutsideSource fs state groups target archives (MovePlaces(groups, target))
+
+let private renamingOrMoving (fs: IFileSystem) state (text: string) =
+    let panel = activePanel state
+
+    let standing =
+        match panel.Path with
+        | SearchResults _ -> Some(PanelLocation.holding fs panel.Path)
+        | location -> PanelLocation.directory location
+
+    let trimmed = text.Trim()
+    let renamesInPlace = FileSystemPath.isBareName fs trimmed
+
+    match trimmed, transferSource fs panel, standing with
+    | "", _, _
+    | _, None, _
+    | _, _, None -> stay state
+    | _ when renamesInPlace && PanelState.showsResults panel -> reportResultsRefusal state Renaming
+    | _, Some(FromDisk [ single ]), _ when renamesInPlace ->
+        request state (RenameTarget(single, EntryName.create trimmed))
+    | _, Some(FromArchive _), _ -> stay state
+    | _, Some source, Some place ->
+        let groups = places source
+        let target = ToDirectory(FileSystemPath.combine fs place trimmed)
+
+        requestIfOutsideSource fs state groups target [] (MovePlaces(groups, target))
+
+let private askingToFind state =
+    let panel = activePanel state
+
+    let found = state.LastSearch |> Option.map (_.Hits >> List.length)
+
+    request state (PromptForFind(PanelState.markedGround panel, panel.Hidden, found))
+
+let private searching (fs: IFileSystem) state query =
+    let panel = activePanel state
+
+    request state (RunSearch(query, PanelLocation.origin panel.Path, markedDirectories fs panel))
+
+let private showingLastResults (fs: IFileSystem) state =
+    match state.LastSearch with
+    | None -> stay state
+    | Some results ->
+        let surviving, gone = FindResults.surviving fs results
+
+        request (withLastSearch surviving state) (ShowLastResults(surviving, gone))
+
+let private landingFromSearch (fs: IFileSystem) state (answer: FindAnswer) =
+    let remembered = withLastSearch answer.Results state
+
+    match answer.Landing with
+    | None -> stay remembered
+    | Some(AtHit hit) -> standOnHit fs state.Active hit remembered |> applyListing remembered
+    | Some(At landing) -> landingOn fs remembered landing
+    | Some InPanel ->
+        showResults fs state.Active answer.Results remembered
+        |> applyListingWithRefusals remembered
+
+let private askingForLink (fs: IFileSystem) state =
+    let panel = activePanel state
+
+    match operationPaths fs panel, activeDirectory state with
+    | [], _
+    | _, None -> stay state
+    | sources, Some directory ->
+        let place = targetDirectory state |> Option.defaultValue directory
+
+        let suggestion =
+            match sources with
+            | [ single ] -> FileSystemPath.combine fs place (EntryName.value (FileSystemPath.name fs single))
+            | _ -> place
+
+        request state (PromptForLink(sources, directory, suggestion))
+
+let private linking (fs: IFileSystem) state (choice: LinkChoice) =
+    match activeDirectory state with
+    | None -> stay state
+    | Some directory ->
+        match Links.requests fs choice.Kind (operationPaths fs (activePanel state)) directory choice.Target with
+        | [] -> stay state
+        | requests -> request state (MakeLinks requests)
+
+let private askingForArchive (fs: IFileSystem) state =
+    match PanelState.operationTargets (activePanel state), archiveSuggestion fs ArchiveFormat.initial state with
+    | [], _
+    | _, None -> stay state
+    | _, Some suggestion -> request state (PromptForArchive suggestion)
+
+let private packing (fs: IFileSystem) state (choice: ArchiveChoice) =
+    match choice.Target.Trim(), operationPaths fs (activePanel state), activeDirectory state with
+    | "", _, _
+    | _, [], _
+    | _, _, None -> stay state
+    | trimmed, paths, Some source ->
+        let target = FileSystemPath.combine fs source trimmed
+
+        if Archive.wouldPackItself fs target paths then
+            Operations.TargetWithinSource target |> reporting state
+        else
+            request
+                state
+                (ArchiveTargets(
+                    paths,
+                    { Path = target
+                      Format = choice.Format
+                      Compression = choice.Compression
+                      Password = choice.Password }
+                ))
+
+let private unpacking (fs: IFileSystem) state =
+    match operationPaths fs (activePanel state), targetDirectory state with
+    | [], _
+    | _, None -> stay state
+    | paths, Some target -> request state (ExtractTargets(paths, target))
+
+let private renamed (fs: IFileSystem) state newName outcome =
+    match outcome with
+    | Error error -> reporting state error
+    | Ok() -> finishRename fs newName state |> applyOperation state
+
+let private viewing (fs: IFileSystem) state =
+    let target = activePanel state
+
+    match cursorFilePath fs target, PanelState.cursorFileInArchive target with
+    | Some path, _ ->
+        visiting
+            fs
+            state
+            { Where = Place.OnDisk path
+              How = Viewed }
+    | _, Some(archive, entry) ->
+        visiting
+            fs
+            state
+            { Where = Place.InArchive(archive, entry)
+              How = Viewed }
+    | None, None ->
+        match measureTargets fs target with
+        | [] -> stay state
+        | targets -> request state (MeasureTargets targets)
+
+let private askingForFileName state =
+    match activeDirectory state with
+    | None -> stay state
+    | Some _ -> request state PromptForFileName
+
+let private makingFile (fs: IFileSystem) state name =
+    match activeDirectory state with
+    | None -> stay state
+    | Some directory ->
+        match makeFile fs state.Active directory name state with
+        | Error error -> reporting state error
+        | Ok(updated, path) ->
+            visiting
+                fs
+                updated
+                { Where = Place.OnDisk path
+                  How = Edited }
+
+let private showingSettings (fs: IFileSystem) state =
+    let candidate =
+        cursorExecutablePath fs (activePanel state)
+        |> Option.bind (FileSystemPath.value >> ProgramPath.tryCreate)
+
+    request state (ShowSettings(state.Programs, candidate))
+
+let private launched (fs: IFileSystem) state (started: LaunchRequest) outcome =
+    match outcome with
+    | Error(ElevationDeclined _) -> stay state
+    | Error error -> request state (Report(Problem.Launch error))
+    | Ok() when FileSystemPath.kind fs started.Target = FileEntry ->
+        request state (ChangeHistory(Remember(Launched started)))
+    | Ok() -> stay state
+
+let private reportingHistoryOnce state error =
+    match state.HistoryReport with
+    | Unreported -> request { state with HistoryReport = Reported } (Report(Problem.History error))
+    | Reported -> stay state
+
+let private askingForFavoriteSlot state =
+    match Place.ofLocation (activePanel state).Path with
+    | Some place -> request state (PromptForFavoriteSlot place)
+    | None -> stay state
+
+let private copyingNames state =
+    PanelState.operationNames (activePanel state)
+    |> List.map EntryName.value
+    |> copyingText state
+
+let private copyingPaths (fs: IFileSystem) state =
+    activePanel state
+    |> fullPathsToCopy fs
+    |> List.map FileSystemPath.value
+    |> copyingText state
+
+let private copyingLinkTargets (fs: IFileSystem) state =
+    activePanel state
+    |> placesLedTo fs
+    |> List.map FileSystemPath.value
+    |> copyingText state
+
+let private readingClipboardPath (fs: IFileSystem) state =
+    PanelLocation.holding fs (activePanel state).Path
+    |> ReadClipboardPath
+    |> request state
+
+let private reportingClipboardOnce state =
+    match state.ClipboardReport with
+    | Unreported ->
+        request
+            { state with
+                ClipboardReport = Reported }
+            (Report(Problem.Clipboard ClipboardUnavailable))
+    | Reported -> stay state
+
+let private puttingFilesOnClipboard (fs: IFileSystem) state intent =
+    match transferSource fs (activePanel state) with
+    | Some source -> filesOnClipboard fs state intent (places source)
+    | None -> stay state
+
+let private readingClipboardFiles (fs: IFileSystem) state =
+    match (activePanel state).Path with
+    | OnDisk directory -> request state (ReadClipboardFiles(ToDirectory directory))
+    | InArchive(archive, level) ->
+        requestIfChangeable fs state [ archive ] (ReadClipboardFiles(ToArchive(archive, level)))
+    | SearchResults _ -> stay state
+
+let private pasting (fs: IFileSystem) state files target =
+    let groups = [ FromDisk(ClipboardFiles.paths files) ]
+
+    match ClipboardFiles.intent files with
+    | ForCopying -> requestIfOutsideSource fs state groups target [] (CopyPlaces(groups, target))
+    | ForMoving -> requestIfOutsideSource fs state groups target [] (MovePastedFiles(files, target))
+
+let private quitting (fs: IFileSystem) state =
+    { State = state
+      Effects = [ SaveSettings(settings fs state); Quit ] }
+
 let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
     match msg with
-    | CursorMoved cursor -> stay (setCursor cursor.Side cursor.Index state)
-    | PanelFocused side -> stay (activate side state)
+    | CursorMoved cursor -> setCursor cursor.Side cursor.Index state |> stay
+    | PanelFocused side -> activate side state |> stay
     | EntryOpened -> openCursorEntry fs state
     | WalkIntoRequested -> enter fs state |> applyListing state
     | UpOneLevelRequested -> upOneLevel fs state |> applyListing state
     | RefreshRequested -> refreshWithRefusals fs state |> applyListingWithRefusals state
     | ExternalChangeDetected -> state |> readTabQuietly fs |> stay
-    | SelectionToggled direction -> stay (toggleSelectionMoving direction state.Active state)
-    | SelectionToggledTo cursor -> stay (toggleSelectionShortOf cursor.Side cursor.Index state)
-    | SortRequested key -> stay (sortBy key state.Active state)
+    | SelectionToggled direction -> toggleSelectionMoving direction state.Active state |> stay
+    | SelectionToggledTo cursor -> toggleSelectionShortOf cursor.Side cursor.Index state |> stay
+    | SortRequested key -> sortBy key state.Active state |> stay
     | HiddenToggled -> toggleHidden fs state.Active state |> applyListing state
-    | SearchTyped character -> stay (typeIntoSearch state.Active character state)
-    | SearchBackspaced -> stay (backspaceSearch state.Active state)
-    | SearchCancelled -> stay (closeSearch state.Active state)
-    | PatternRequested mode -> request state (PromptForPattern mode)
-    | PatternEntered(mode, pattern) -> stay (applyPattern mode state.Active pattern state)
-    | LikenessRequested(mode, likeness) -> stay (applyLikeness mode state.Active likeness state)
-    | AllFilesRequested mode -> stay (applyAllFiles mode state.Active state)
-    | InversionRequested -> stay (invertSelection state.Active state)
-    | MarksRecalled -> stay (recallMarks state.Active state)
-    | MakeDirectoryRequested ->
-        match (activePanel state).Path with
-        | OnDisk _ -> request state PromptForName
-        | InArchive(archive, _) -> requestIfChangeable fs state [ archive ] PromptForName
-        | SearchResults _ -> stay state
-    | NameEntered name ->
-        match (activePanel state).Path with
-        | OnDisk directory -> makeDirectory fs state.Active directory name state |> applyMade name state
-        | InArchive(archive, level) ->
-            makeEntryDirectory fs state.Active archive level name state
-            |> applyMade name state
-        | SearchResults _ -> stay state
-    | DeleteRequested mode ->
-        let target = activePanel state
-
-        let inspected asked =
-            InspectDelete(deleteQuestion fs target, asked)
-
-        match target.Path, transferSource fs target with
-        | _, None -> stay state
-        | InArchive(archive, _), _
-        | SearchResults _, Some(FromArchive(archive, _)) ->
-            requestIfChangeable fs state [ archive ] (inspected Permanently)
-        | _, Some(FromPlaces _) -> request state (inspected (forGood mode))
-        | _ -> request state (inspected mode)
-    | DeleteScopeLoaded(scope, mode) ->
-        request
-            state
-            (ConfirmDelete
-                { Targets = PanelState.operationTargets (activePanel state) |> List.map _.Name
-                  Scope = scope
-                  Mode = mode })
-    | DeleteConfirmed mode ->
-        match transferSource fs (activePanel state) with
-        | None -> stay state
-        | Some source -> request state (DeletePlaces(places source, mode))
+    | SearchTyped character -> typeIntoSearch state.Active character state |> stay
+    | SearchBackspaced -> backspaceSearch state.Active state |> stay
+    | SearchCancelled -> closeSearch state.Active state |> stay
+    | PatternRequested mode -> PromptForPattern mode |> request state
+    | PatternEntered(mode, pattern) -> applyPattern mode state.Active pattern state |> stay
+    | LikenessRequested(mode, likeness) -> applyLikeness mode state.Active likeness state |> stay
+    | AllFilesRequested mode -> applyAllFiles mode state.Active state |> stay
+    | InversionRequested -> invertSelection state.Active state |> stay
+    | MarksRecalled -> recallMarks state.Active state |> stay
+    | MakeDirectoryRequested -> askingForDirectoryName fs state
+    | NameEntered name -> makingDirectory fs state name
+    | DeleteRequested mode -> inspectingDelete fs state mode
+    | DeleteScopeLoaded(scope, mode) -> confirmingDelete state scope mode
+    | DeleteConfirmed mode -> deleting fs state mode
     | DeleteFinished results -> finishDelete fs results state |> applyBatch state
-    | CopyRequested ->
-        match transferSource fs (activePanel state), transferTarget state with
-        | None, _
-        | _, None -> stay state
-        | Some source, Some target ->
-            let groups = places source
-
-            requestIfOutsideSource fs state groups target (targetArchives target) (CopyPlaces(groups, target))
+    | CopyRequested -> copying fs state
     | CopyFinished results -> finishTransfer fs results state |> applyBatch state
-    | MoveRequested ->
-        match transferSource fs (activePanel state), transferTarget state with
-        | None, _
-        | _, None -> stay state
-        | Some(FromArchive _ as group), Some(ToDirectory target) ->
-            requestIfChangeable fs state (sourceArchives [ group ]) (MovePlaces([ group ], ToDirectory target))
-        | Some _, Some(ToDirectory target) -> request state (PromptForTarget target)
-        | Some source, Some target ->
-            let groups = places source
-
-            let archives = targetArchives target @ sourceArchives groups
-
-            requestIfOutsideSource fs state groups target archives (MovePlaces(groups, target))
-    | TargetEntered text ->
-        let panel = activePanel state
-
-        let standing =
-            match panel.Path with
-            | SearchResults _ -> Some(PanelLocation.holding fs panel.Path)
-            | location -> PanelLocation.directory location
-
-        let trimmed = text.Trim()
-        let renamesInPlace = FileSystemPath.isBareName fs trimmed
-
-        match trimmed, transferSource fs panel, standing with
-        | "", _, _
-        | _, None, _
-        | _, _, None -> stay state
-        | _ when renamesInPlace && PanelState.showsResults panel -> reportResultsRefusal state Renaming
-        | _, Some(FromDisk [ single ]), _ when renamesInPlace ->
-            request state (RenameTarget(single, EntryName.create trimmed))
-        | _, Some(FromArchive _), _ -> stay state
-        | _, Some source, Some place ->
-            let groups = places source
-            let target = ToDirectory(FileSystemPath.combine fs place trimmed)
-
-            requestIfOutsideSource fs state groups target [] (MovePlaces(groups, target))
+    | MoveRequested -> moving fs state
+    | TargetEntered text -> renamingOrMoving fs state text
     | MoveFinished results -> finishTransfer fs results state |> applyBatch state
-    | FindRequested ->
-        let panel = activePanel state
-
-        let found = state.LastSearch |> Option.map (_.Hits >> List.length)
-
-        request state (PromptForFind(PanelState.markedGround panel, panel.Hidden, found))
-    | FindEntered query ->
-        let panel = activePanel state
-
-        request state (RunSearch(query, PanelLocation.origin panel.Path, markedDirectories fs panel))
-    | LastResultsRequested ->
-        match state.LastSearch with
-        | None -> stay state
-        | Some results ->
-            let surviving, gone = FindResults.surviving fs results
-
-            request (withLastSearch surviving state) (ShowLastResults(surviving, gone))
-    | SearchAnswered answer ->
-        let remembered = withLastSearch answer.Results state
-
-        match answer.Landing with
-        | None -> stay remembered
-        | Some(AtHit hit) -> standOnHit fs state.Active hit remembered |> applyListing remembered
-        | Some(At landing) -> landingOn fs remembered landing
-        | Some InPanel ->
-            showResults fs state.Active answer.Results remembered
-            |> applyListingWithRefusals remembered
-    | LinkRequested ->
-        let panel = activePanel state
-
-        match operationPaths fs panel, activeDirectory state with
-        | [], _
-        | _, None -> stay state
-        | sources, Some directory ->
-            let place = targetDirectory state |> Option.defaultValue directory
-
-            let suggestion =
-                match sources with
-                | [ single ] -> FileSystemPath.combine fs place (EntryName.value (FileSystemPath.name fs single))
-                | _ -> place
-
-            request state (PromptForLink(sources, directory, suggestion))
-    | LinkEntered choice ->
-        match activeDirectory state with
-        | None -> stay state
-        | Some directory ->
-            match Links.requests fs choice.Kind (operationPaths fs (activePanel state)) directory choice.Target with
-            | [] -> stay state
-            | requests -> request state (MakeLinks requests)
+    | FindRequested -> askingToFind state
+    | FindEntered query -> searching fs state query
+    | LastResultsRequested -> showingLastResults fs state
+    | SearchAnswered answer -> landingFromSearch fs state answer
+    | LinkRequested -> askingForLink fs state
+    | LinkEntered choice -> linking fs state choice
     | LinksMade(made, results) -> finishLinks fs made results state |> applyBatch state
-    | PackRequested ->
-        match PanelState.operationTargets (activePanel state), archiveSuggestion fs ArchiveFormat.initial state with
-        | [], _
-        | _, None -> stay state
-        | _, Some suggestion -> request state (PromptForArchive suggestion)
-    | ArchiveEntered choice ->
-        match choice.Target.Trim(), operationPaths fs (activePanel state), activeDirectory state with
-        | "", _, _
-        | _, [], _
-        | _, _, None -> stay state
-        | trimmed, paths, Some source ->
-            let target = FileSystemPath.combine fs source trimmed
-
-            if Archive.wouldPackItself fs target paths then
-                Operations.TargetWithinSource target |> reporting state
-            else
-                request
-                    state
-                    (ArchiveTargets(
-                        paths,
-                        { Path = target
-                          Format = choice.Format
-                          Compression = choice.Compression
-                          Password = choice.Password }
-                    ))
+    | PackRequested -> askingForArchive fs state
+    | ArchiveEntered choice -> packing fs state choice
     | PackFinished(archive, results) -> finishPack fs archive results state |> applyBatch state
-    | UnpackRequested ->
-        match operationPaths fs (activePanel state), targetDirectory state with
-        | [], _
-        | _, None -> stay state
-        | paths, Some target -> request state (ExtractTargets(paths, target))
+    | UnpackRequested -> unpacking fs state
     | UnpackFinished results -> finishTransfer fs results state |> applyBatch state
-    | RenameFinished(newName, outcome) ->
-        match outcome with
-        | Error error -> reporting state error
-        | Ok() -> finishRename fs newName state |> applyOperation state
-    | ViewRequested ->
-        let target = activePanel state
-
-        match cursorFilePath fs target, PanelState.cursorFileInArchive target with
-        | Some path, _ ->
-            visiting
-                fs
-                state
-                { Where = Place.OnDisk path
-                  How = Viewed }
-        | _, Some(archive, entry) ->
-            visiting
-                fs
-                state
-                { Where = Place.InArchive(archive, entry)
-                  How = Viewed }
-        | None, None ->
-            match measureTargets fs target with
-            | [] -> stay state
-            | targets -> request state (MeasureTargets targets)
-    | MeasureFinished(Ok measured) -> stay (applyMeasurements state.Active measured state)
+    | RenameFinished(newName, outcome) -> renamed fs state newName outcome
+    | ViewRequested -> viewing fs state
+    | MeasureFinished(Ok measured) -> applyMeasurements state.Active measured state |> stay
     | MeasureFinished(Error error) -> reporting state error
     | EditRequested -> editing fs state
-    | NewFileRequested ->
-        match activeDirectory state with
-        | None -> stay state
-        | Some _ -> request state PromptForFileName
-    | FileNameEntered name ->
-        match activeDirectory state with
-        | None -> stay state
-        | Some directory ->
-            match makeFile fs state.Active directory name state with
-            | Error error -> reporting state error
-            | Ok(updated, path) ->
-                visiting
-                    fs
-                    updated
-                    { Where = Place.OnDisk path
-                      How = Edited }
+    | NewFileRequested -> askingForFileName state
+    | FileNameEntered name -> makingFile fs state name
     | PropertiesEntered properties -> applyProperties fs properties state |> applyOperation state
-    | SettingsRequested ->
-        let candidate =
-            cursorExecutablePath fs (activePanel state)
-            |> Option.bind (FileSystemPath.value >> ProgramPath.tryCreate)
-
-        request state (ShowSettings(state.Programs, candidate))
-    | ProgramsEntered programs -> stay (withPrograms programs state)
+    | SettingsRequested -> showingSettings fs state
+    | ProgramsEntered programs -> withPrograms programs state |> stay
     | EditorStarted(Error(Operations.StartDeclined _))
     | EditorStarted(Ok()) -> stay state
     | EditorStarted(Error error) -> reporting state error
-    | LaunchFinished(started, outcome) ->
-        match outcome with
-        | Error(ElevationDeclined _) -> stay state
-        | Error error -> request state (Report(Problem.Launch error))
-        | Ok() when FileSystemPath.kind fs started.Target = FileEntry ->
-            request state (ChangeHistory(Remember(Launched started)))
-        | Ok() -> stay state
+    | LaunchFinished(started, outcome) -> launched fs state started outcome
     | UserMenuRequested -> request state ShowUserMenu
     | MenuCommandChosen(command, listFile) -> runningFromMenu fs state command listFile
     | CommandFinished(_, Error(ElevationDeclined _)) -> stay state
-    | CommandFinished(_, Error error) -> request state (Report(Problem.Command error))
-    | CommandFinished(run, Ok()) -> request state (ChangeHistory(Remember(Ran run)))
+    | CommandFinished(_, Error error) -> Problem.Command error |> Report |> request state
+    | CommandFinished(run, Ok()) -> Ran run |> Remember |> ChangeHistory |> request state
     | OpenWithRequested -> openWithHandler fs state
     | HandlerChosen(path, choice) -> chosen fs state path choice
     | ElevatedRunRequested -> runElevated fs state
-    | RootRequested side -> request state (PromptForRoot side)
+    | RootRequested side -> PromptForRoot side |> request state
     | VolumeRootRequested -> sentToRoot fs state
     | PathOpened(side, path) -> loadPanel fs side path state |> applyListing state
     | DriveChosen(side, row) -> loadPanel fs side (driveLanding fs side row state) state |> applyListing state
@@ -755,67 +863,25 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | TabCycled step -> cycleTab step state |> rereadAndSave fs
     | SessionSaveRequested -> state |> saving fs
     | HistoryChanged history -> stay { state with History = history }
-    | HistoryUnwritten error ->
-        match state.HistoryReport with
-        | Unreported -> request { state with HistoryReport = Reported } (Report(Problem.History error))
-        | Reported -> stay state
-    | HistoryRequested -> request state (ShowHistory state.HistoryTab)
+    | HistoryUnwritten error -> reportingHistoryOnce state error
+    | HistoryRequested -> ShowHistory state.HistoryTab |> request state
     | HistoryAnswered answer -> chosenFromHistory fs { state with HistoryTab = answer.Tab } answer.Choice
-    | FavoriteKeepRequested ->
-        match Place.ofLocation (activePanel state).Path with
-        | Some place -> request state (PromptForFavoriteSlot place)
-        | None -> stay state
-    | FavoriteRequested slot -> request state (LookUpFavorite slot)
+    | FavoriteKeepRequested -> askingForFavoriteSlot state
+    | FavoriteRequested slot -> LookUpFavorite slot |> request state
     | FavoriteFound place -> Landing.inside place |> landingOn fs state
-    | FavoritesRequested -> request state (ShowFavorites(Place.ofLocation (activePanel state).Path))
-    | NamesCopyRequested ->
-        PanelState.operationNames (activePanel state)
-        |> List.map EntryName.value
-        |> copyingText state
-    | PathsCopyRequested ->
-        activePanel state
-        |> fullPathsToCopy fs
-        |> List.map FileSystemPath.value
-        |> copyingText state
-    | LinkTargetsCopyRequested ->
-        activePanel state
-        |> placesLedTo fs
-        |> List.map FileSystemPath.value
-        |> copyingText state
-    | ClipboardPathRequested ->
-        PanelLocation.holding fs (activePanel state).Path
-        |> ReadClipboardPath
-        |> request state
+    | FavoritesRequested -> (activePanel state).Path |> Place.ofLocation |> ShowFavorites |> request state
+    | NamesCopyRequested -> copyingNames state
+    | PathsCopyRequested -> copyingPaths fs state
+    | LinkTargetsCopyRequested -> copyingLinkTargets fs state
+    | ClipboardPathRequested -> readingClipboardPath fs state
     | ClipboardPathRead path -> Landing.ofPath fs path |> landingIfAnywhere fs state
-    | ClipboardRefused ClipboardUnavailable ->
-        match state.ClipboardReport with
-        | Unreported ->
-            request
-                { state with
-                    ClipboardReport = Reported }
-                (Report(Problem.Clipboard ClipboardUnavailable))
-        | Reported -> stay state
-    | ClipboardRefused error -> request state (Report(Problem.Clipboard error))
-    | FilesOnClipboardRequested intent ->
-        match transferSource fs (activePanel state) with
-        | Some source -> filesOnClipboard fs state intent (places source)
-        | None -> stay state
+    | ClipboardRefused ClipboardUnavailable -> reportingClipboardOnce state
+    | ClipboardRefused error -> Problem.Clipboard error |> Report |> request state
+    | FilesOnClipboardRequested intent -> puttingFilesOnClipboard fs state intent
     | ClipboardExtractFinished(groups, scratch, results) -> extractedForClipboard fs state groups scratch results
-    | FilesPasteRequested ->
-        match (activePanel state).Path with
-        | OnDisk directory -> request state (ReadClipboardFiles(ToDirectory directory))
-        | InArchive(archive, level) ->
-            requestIfChangeable fs state [ archive ] (ReadClipboardFiles(ToArchive(archive, level)))
-        | SearchResults _ -> stay state
-    | ClipboardFilesRead(files, target) ->
-        let groups = [ FromDisk(ClipboardFiles.paths files) ]
-
-        match ClipboardFiles.intent files with
-        | ForCopying -> requestIfOutsideSource fs state groups target [] (CopyPlaces(groups, target))
-        | ForMoving -> requestIfOutsideSource fs state groups target [] (MovePastedFiles(files, target))
-    | QuitRequested ->
-        { State = state
-          Effects = [ SaveSettings(settings fs state); Quit ] }
+    | FilesPasteRequested -> readingClipboardFiles fs state
+    | ClipboardFilesRead(files, target) -> pasting fs state files target
+    | QuitRequested -> quitting fs state
 
 let private watching before result =
     match watchedLocations result.State with
