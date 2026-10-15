@@ -4,7 +4,10 @@ Goal: every defect the manual pass of 2026-10-12 wrote into
 [Rough edges](../ROUGH-EDGES.md) is closed or narrowed to what a library will
 not let through, and three places that had grown uneven are written one way:
 the prompts of `Adapters`, the transitions of `Update` and the effects of
-`Shell`. The phase adds no feature. It pays for P21.18, which walked the published binaries by
+`Shell`. Three rules the code has so far been held to by eye — that only
+`Adapters` reaches the system, that a string is compared by ordinal, that a
+null from .NET is met where it comes in — are checked by the build, and what
+the packages release is watched. The phase adds no feature. It pays for P21.18, which walked the published binaries by
 hand and found that a program on Linux is neither coloured nor started as one,
 that a key in the user menu ends the session, that a directory loses its time
 through an archive and a file its hour through a zip, that a backslash becomes
@@ -13,11 +16,13 @@ terminal cannot open a tab, that three flags of the properties popup do
 nothing on Linux, and that a missing opener is reported in the runtime's
 words.
 
-Three rules decide the order. What ends a session or hides a whole kind of
+Four rules decide the order. What ends a session or hides a whole kind of
 entry comes first. The archive findings come together, because they change the
 same two functions and are timed with the same probe. The structural tasks come
-after the fixes, so that they move code that has stopped changing, and the walk
-closes the phase, against the binaries it ends with.
+after the fixes, so that they move code that has stopped changing. The checks
+come after the structure, the one that guards the layers first, so that the
+code the others change is already held to it; and the walk closes the phase,
+against the binaries it ends with.
 
 Three decisions run through the fixes.
 
@@ -40,6 +45,7 @@ unpacking are four of the paths §10 of
 [Coding style](../coding-style-conventions.md) names. P22.2, P22.3 and P22.4
 change the last three and P22.11 the function every key goes through, and each
 is timed before and after in [Measurements](../Progress/MEASUREMENTS.md).
+P22.15 is timed the same way if what it changes lies on one of the paths.
 
 ## Stage 1 — What ends a session, what hides a program
 
@@ -226,16 +232,119 @@ is timed before and after in [Measurements](../Progress/MEASUREMENTS.md).
   after its pattern, and the suite passes with no test added, removed or
   changed.
 
-## Stage 5 — Walked again
+## Stage 5 — What the tools check
 
-- **P22.13 The steps that failed, by hand** — the published binaries of this
+A reconnaissance of 2026-10-15 built a copy of the repository with each check
+turned on and counted what it reported, layer by layer; the numbers below are
+its own.
+
+- **P22.13 Only `Adapters` reaches the system** — the rule of §1 of
+  [Coding style](../coding-style-conventions.md) and of `CLAUDE.md` is kept by
+  review alone: the order of compilation stops a layer from calling one above
+  it, but nothing stops a function in `State` from calling `File.Exists`. A
+  test in `Marbas.Tests` reads the compiled `Marbas` assembly with Mono.Cecil,
+  walks the body of every method of every type outside `Marbas.Adapters` and
+  `Program`, and fails on a call into what the outside world answers: the
+  files, directories and drives of `System.IO` — not its streams, not
+  compression in memory, not its exception types —, `Process`, `Environment`,
+  `Console`, `Microsoft.Win32`, `System.Net`, `RuntimeInformation`, threads,
+  timers and `Task.Run`, the clock (`Now`, `UtcNow`, `Today`), `Guid.NewGuid`,
+  `Random`, `Stopwatch`, and every P/Invoke. A second test runs the same scan
+  over `Adapters` and expects it to find calls there, so that a scan gone blind
+  cannot pass. The reconnaissance found none outside `Adapters` and some
+  seventy inside, so the first test passes from the start; it is shown to fail
+  once, by a call planted in `State` and taken out again, before it is kept.
+  The scan reads one assembly once and stays out of every hot path. *Done
+  when:* both tests pass, the planted call failed the first one with the type
+  and the call named in the message, Mono.Cecil is a `PackageVersion` of the
+  test group in `Directory.Packages.props`, and §1 of Coding style and
+  [Testing](../Architecture/TESTING.md) say that the rule is now a test and
+  what it watches.
+- **P22.14 A string is compared by ordinal** — `String.StartsWith`, `IndexOf`
+  and `LastIndexOf` with a string and no `StringComparison` compare by the
+  current culture: by the rules of whatever locale the system reports, through
+  the ICU it carries, skipping a soft hyphen and the other characters ICU
+  holds ignorable, and slower than by ordinal. Six calls in `Marbas` do it —
+  `MimeDatabase.fs:32` over a glob of the MIME database, three in
+  `Settings.fs`, `History.fs:384` and `UserMenu.fs:189` over the keys of the
+  settings file against a fixed prefix — and fourteen in the tests. Both files
+  are read from the disk and may be edited by hand, so a key is matched by
+  rules nobody sees. `fsharp-analyzers` finds them, with the G-Research and
+  Ionide packages. Where a key can be shown read wrongly — a soft hyphen
+  before the prefix, then cut at the prefix's length — a test on
+  `MockFileSystem` first shows it and fails; where what follows the prefix
+  drops such a key anyway, the finding of the analyzer is the failing check.
+  Then each call names `StringComparison.Ordinal`, as case-sensitive as it is
+  today. The tool
+  joins `.config/dotnet-tools.json` pinned to 0.39.2: 0.40.0, released on
+  2026-10-13, skips both packages, which are built on the SDK of 0.39. Only the
+  string analyzers (`GRA-STRING-*`) and the one on unwrapping an option
+  unchecked (`IONIDE-006`, twelve calls, all in tests) run, as errors; the
+  other rules the two packages ship reported 600-odd findings that are style
+  or noise, with four false alarms on `Assert.Single … |> ignore`, and stay
+  off. A run takes nearly two minutes against half a minute for the build, so
+  it is a job of its own in `ci.yml`, beside the format check. *Done when:*
+  every test on a misread key passes on both legs, the analyzers report nothing
+  over both projects, the job fails CI on a finding, the command is in
+  [Development](../DEVELOPMENT.md) and in §11 of Coding style with the rules
+  it runs and why the rest are off, and Coding style says that a string is
+  compared with a named `StringComparison`.
+- **P22.15 A null is met where it comes in, in `Marbas`** — `Marbas.fsproj`
+  turns on F#'s nullness checking (`<Nullable>enable</Nullable>`), which
+  reported seventy-four places: twenty-four in `Adapters`, twenty-five in
+  `FileSystem`, twenty-two in `Ui` and the rest one apiece. Most are a value
+  of Terminal.Gui or of .NET typed `| null` and used as though it were not —
+  `ListView.Source`, an `Encoding`, a path of `Path.GetFileName`. One is a gap
+  in the model: `HostEnvironment` keeps the variables `DataHome`,
+  `DataDirectories`, `ConfigHome`, `ConfigDirectories` and `SearchPath` as
+  `string`, and a variable that is not set leaves a null in the record that
+  `Trash.location` and `XdgDirectories.resolve` are handed. Those fields
+  become `string option`; the tests of the two modules first hand them `None`
+  where they handed a null or an empty string, and fail to compile until the
+  signatures follow. Elsewhere a null is turned into an option at the line it
+  arrives on, with `Option.ofObj` or a `| null ->` arm, and nothing typed
+  `| null` is passed further in. *Done when:* `Marbas` builds with no
+  nullness warning under `TreatWarningsAsErrors`, no field of `HostEnvironment`
+  holds a null, the suite passes, any hot path touched is timed before and
+  after, and Coding style says where a null from .NET is met and what it
+  becomes.
+- **P22.16 A null is met where it comes in, in `Marbas.Tests`** — the setting
+  moves from `Marbas.fsproj` to `Directory.Build.props`, and the hundred and
+  seventy-two places in the tests are answered: a hundred and thirty-six in
+  `Integration`, mostly properties of Terminal.Gui views read as non-null;
+  twenty-three in `Fakes.fs`, whose overrides of System.IO.Abstractions
+  members do not yet carry the nullness of the members they override; and the
+  rest in `FileSystem` and one apiece. No test changes what it asserts. *Done
+  when:* both projects build with no nullness warning, the number of tests
+  passing and skipping on each system is the one before, and
+  [Development](../DEVELOPMENT.md) lists the setting with the others of
+  `Directory.Build.props`.
+- **P22.17 What the packages release is watched** — no package is vulnerable,
+  transitively or not, and nine are behind, Terminal.Gui at 2.4.17 against
+  2.5.0 among them. `.github/dependabot.yml` asks weekly over `nuget` — which
+  reads `Directory.Packages.props` and the tool manifest — and over
+  `github-actions`. `fsharp-analyzers` is held at 0.39 until both analyzer
+  packages are built on a later SDK, and `fantomas` comes up only as a pull
+  request of its own, since a new version can reformat the tree. No pull
+  request it opens is merged in this phase, so that the walk below sees the
+  libraries the fixes were made against. *Done when:* the file is in the
+  repository, the first run on GitHub has parsed it and opened its pull
+  requests, and [Development](../DEVELOPMENT.md) says how one is taken in —
+  the suite, Fantomas, and for Terminal.Gui a rendered screen.
+
+## Stage 6 — Walked again
+
+- **P22.18 The steps that failed, by hand** — the published binaries of this
   phase are walked through the steps of
   [The manual pass](../Architecture/MANUAL-PASS.md) that the first pass
   answered differently — W4, W15, W19, L2, L4, L5, L19, L29, L30, L33, L37 and
   L38 — and through L25 with the archives of `zip` and 7-Zip, which the first
   fixture did not hold. Two steps join the pass for good: a row removed from
   the bottom of the user menu, and one popup of every kind opened and closed.
-  What still needs a Linux desktop stays as it is. *Done when:* each of those
+  What P22.15 changed in `Adapters` is seen in the same walk: on Linux with
+  the XDG variables set and unset, a file is deleted to the trash and the
+  settings are found where they were. What still needs a Linux desktop stays
+  as it is. *Done when:* each of those
   rows of [Cross-platform](../Architecture/CROSS-PLATFORM.md) carries the new
   date and what was seen, the two rows on a started program are walked on
   Linux, *The passes so far* has its second row, and whatever failed again is
@@ -259,3 +368,18 @@ is narrowed.
 - **A program the system picks on Windows** — a start through a file's
   association can still write over the panels under ConEmu. The pass did not
   meet it and P21.6 left it narrowed to that.
+- **The compiler's optional warnings** — the reconnaissance of Stage 5 turned
+  on the warnings F# leaves off. The implicit conversions (FS3388, FS3389,
+  FS3395) gave 675, nearly all an `int` made a `Pos`, a `Dim` or a
+  `Nullable<int>` for Terminal.Gui, and among them one `DateTime` made a
+  `DateTimeOffset` in `DirectoryListingTests.fs:61`; FS1178 gave 80 types
+  without equality or comparison, FS3180 65 mutable locals in closures, nearly
+  all in tests, and FS0052, FS3366 and FS3560 four each. None is turned on
+  until it can be without drowning the rest.
+- **The analyzer rules left off** — the interpolated hole without a format
+  (416), the union that could be a struct (100), the type annotation on
+  `string` (35), the empty string tested by equality (23) and the pipelines
+  that could be one `choose` (23) wait for a phase that wants them.
+- **The packages that are behind** — the pull requests P22.17 opens, with
+  Terminal.Gui 2.5.0 among them, are taken in after the walk, each with what
+  [Development](../DEVELOPMENT.md) asks of it.

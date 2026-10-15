@@ -251,7 +251,7 @@ Five things went differently from the plan, or further than it.
   `Archive.addEntries` and `Archive.extract` on a real disk on both systems
   and the tools unpacked what it packed, as
   [Cross-platform](../Architecture/CROSS-PLATFORM.md) has it; the keys are
-  P22.13's to press.
+  P22.18's to press.
 
 The step in [The manual pass](../Architecture/MANUAL-PASS.md) that compared
 Explorer's extraction with the fixture now compares 7-Zip's, and says what
@@ -330,7 +330,7 @@ Six things went differently from the plan, or further than it.
   WSL, with both builds, and `unzip` and 7-Zip read what it wrote, as
   [Cross-platform](../Architecture/CROSS-PLATFORM.md) has it; L30 of
   [The manual pass](../Architecture/MANUAL-PASS.md) says what the walk should
-  now see, and P22.13 walks it.
+  now see, and P22.18 walks it.
 
 The platform is a value here as elsewhere in the phase: `ZipEntries` takes it
 as its first argument and `Archive` hands it the one its file system has, so
@@ -373,7 +373,7 @@ Two things went differently from the plan.
   probe through `MainWindow.create` on a mock file system at 60, 72, 81 and 100
   columns and after `Tab`, and with the published `linux-x64` binary in tmux
   under WSL at 90 and 70 columns and after `Tab`. A person looking at it in
-  cmder and in gnome-terminal is W4 and L4 of P22.13; W4 of
+  cmder and in gnome-terminal is W4 and L4 of P22.18; W4 of
   [The manual pass](../Architecture/MANUAL-PASS.md) now says what it should see.
 
 4268 tests pass and 35 skip on Windows.
@@ -514,7 +514,7 @@ It now builds from `request.Drives` and the match only keeps an empty list
 from opening the popup, so its call is the same one line as the others.
 
 No test reaches `Adapters`, so no test was written and none changed; each popup
-is opened once in the walk that closes the phase, P22.13. 4288 tests pass and
+is opened once in the walk that closes the phase, P22.18. 4288 tests pass and
 35 skip on Windows, as before.
 
 **P22.11 has `Update.transition` read as a table.** Every arm of the match is

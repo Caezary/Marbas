@@ -258,7 +258,7 @@ Explorer honours neither and writes neither. Marbas now writes the timestamp
 beside the local time and reads both fields from the central directory
 itself. On 2026-10-14 a probe ran `Archive.write`, `Archive.addEntries` and
 `Archive.extract` on a real disk, on both systems, over the tree of the
-fixture — not the published binary by hand, which is P22.13's to do. A zip
+fixture — not the published binary by hand, which is P22.18's to do. A zip
 packed here came out of 7-Zip, `unzip` and `tar` at `04:05:06`, the
 directories with the files, and so did everything in it after a file was
 added to it. Out of Explorer the files still came at `03:05:06` and the top
