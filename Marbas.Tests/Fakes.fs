@@ -599,7 +599,7 @@ type private LinkRefusingDirectory(accessor: IMockFileDataAccessor, current: str
     inherit MockDirectory(accessor, current)
 
     override this.CreateSymbolicLink(path: string, target: string) =
-        if path.StartsWith refusedUnder then
+        if path.StartsWith(refusedUnder, StringComparison.Ordinal) then
             raise (privilegeRefusal path)
         else
             base.CreateSymbolicLink(path, target)
@@ -608,7 +608,7 @@ type private LinkRefusingFile(accessor: IMockFileDataAccessor, refusedUnder: str
     inherit MockFile(accessor)
 
     override this.CreateSymbolicLink(path: string, target: string) =
-        if path.StartsWith refusedUnder then
+        if path.StartsWith(refusedUnder, StringComparison.Ordinal) then
             raise (privilegeRefusal path)
         else
             base.CreateSymbolicLink(path, target)

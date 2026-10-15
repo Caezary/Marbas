@@ -1,5 +1,6 @@
 module Marbas.Tests.Integration.Panels.FilePanelContentTests
 
+open System
 open System.Drawing
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
@@ -54,7 +55,7 @@ let ``after layout rows are formatted into aligned columns`` () =
 
     Assert.NotEmpty rows
     Assert.All(rows, fun row -> Assert.Equal(list.Viewport.Width, row.Length))
-    Assert.Contains(rows, fun (row: string) -> row.StartsWith "docs" && row.Contains "<DIR>")
+    Assert.Contains(rows, fun (row: string) -> row.StartsWith("docs", StringComparison.Ordinal) && row.Contains "<DIR>")
 
 let private rule (panelView: View) =
     panelView.SubViews

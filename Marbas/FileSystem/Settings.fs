@@ -247,7 +247,7 @@ module Settings =
         read
         |> Map.toList
         |> List.map fst
-        |> List.filter _.StartsWith(TabPrefix)
+        |> List.filter _.StartsWith(TabPrefix, StringComparison.Ordinal)
         |> List.choose tabNumberInKey
         |> List.distinct
         |> List.sort
@@ -288,11 +288,11 @@ module Settings =
         | _ -> None
 
     let private associationFrom (key: string) (value: string) =
-        if key.StartsWith ProgramPrefix then
+        if key.StartsWith(ProgramPrefix, StringComparison.Ordinal) then
             match key.Substring(ProgramPrefix.Length).Split('.', 2) with
             | [| role; extension |] -> roleOf role |> Option.bind (fun role -> validAssociation role extension value)
             | _ -> None
-        elif key.StartsWith RolelessPrefix then
+        elif key.StartsWith(RolelessPrefix, StringComparison.Ordinal) then
             validAssociation ForEditing (key.Substring RolelessPrefix.Length) value
         else
             None

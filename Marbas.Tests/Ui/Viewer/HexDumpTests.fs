@@ -1,5 +1,6 @@
 module Marbas.Tests.Ui.Viewer.HexDumpTests
 
+open System
 open System.Text
 open System.IO.Abstractions.TestingHelpers
 open Xunit
@@ -91,7 +92,9 @@ let ``a short last row is padded so the text column keeps its place`` () =
     let bytes = Array.zeroCreate 20
 
     let lines = HexDump.rows latin1 0L bytes
-    let textStart (line: string) = line.LastIndexOf "  "
+
+    let textStart (line: string) =
+        line.LastIndexOf("  ", StringComparison.Ordinal)
 
     Assert.Equal(textStart lines.Head, textStart (List.last lines))
 

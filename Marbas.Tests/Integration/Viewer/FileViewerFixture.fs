@@ -75,9 +75,10 @@ let sixteenByteLines count =
 
 let latinBytes = MockFileData [| 0x41uy; 0xA5uy |]
 
-let typed raw = EnteredText.tryCreate raw |> Option.get
+let typed raw =
+    EnteredText.tryCreate raw |> Expect.some
 
-let wanted raw = FindText.tryCreate raw |> Option.get
+let wanted raw = FindText.tryCreate raw |> Expect.some
 
 let plainAnswer raw : SearchAnswer =
     { Typed = raw

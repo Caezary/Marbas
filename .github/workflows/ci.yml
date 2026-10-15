@@ -39,6 +39,25 @@ jobs:
       - name: Check formatting
         run: dotnet fantomas --check Marbas Marbas.Tests
 
+  analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore tools
+        run: dotnet tool restore
+
+      - name: Restore
+        run: dotnet restore Marbas.slnx
+
+      - name: Run the analyzers
+        run: dotnet msbuild Marbas.slnx -t:AnalyzeFSharpProject
+
   test:
     strategy:
       fail-fast: false

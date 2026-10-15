@@ -26,6 +26,29 @@ first, into a build failure.
 `PackageVersion` there and a bare `PackageReference Include="..."`, without a
 version, in the project that uses it.
 
+## Analyzers
+
+`Directory.Build.targets` hands both projects the analyzer packages —
+`G-Research.FSharp.Analyzers` and `Ionide.Analyzers`, with
+`FSharp.Analyzers.Build`, which adds the target that runs them — and the flags
+of the run. They take no part in a build: they run when asked, with
+
+```
+dotnet tool restore
+dotnet msbuild Marbas.slnx -t:AnalyzeFSharpProject
+```
+
+which takes nearly a minute on a warm machine against half a minute for the
+build, and so is a job of its own in `ci.yml`, `analyze`, beside the format
+check. A finding is an error and fails the job. The rules it runs, and why the
+others are off, are in §11 of [Coding style](coding-style-conventions.md).
+
+The tool, `fsharp-analyzers`, is pinned in `.config/dotnet-tools.json` to
+0.39.2. An analyzer package is built against one version of the SDK the tool
+carries, and the tool skips a package built on another: 0.40.0, released on
+2026-10-13, skips both, which are built on 0.39. The tool moves when both
+packages have moved with it.
+
 ## Publishing a binary
 
 ```

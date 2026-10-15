@@ -11,9 +11,10 @@ open Marbas.Ui.Dialogs
 open Marbas.Ui.Viewer
 open Marbas.Tests
 
-let private typed raw = EnteredText.tryCreate raw |> Option.get
+let private typed raw =
+    EnteredText.tryCreate raw |> Expect.some
 
-let private wanted raw = FindText.tryCreate raw |> Option.get
+let private wanted raw = FindText.tryCreate raw |> Expect.some
 
 let private openedRefusingInto (refusals: ResizeArray<SearchRefusal>) (offer: SearchOffer) =
     DialogStyle.apply ()

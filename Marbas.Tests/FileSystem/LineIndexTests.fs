@@ -289,7 +289,7 @@ let ``a wide last line ends before a feed at the very end`` () =
 
 let private everyLine (index: LineIndex.Index) =
     index.ScanAll()
-    [ for line in 0 .. index.Known - 1 -> index.Start line |> Option.get, index.Text line |> Option.get ]
+    [ for line in 0 .. index.Known - 1 -> index.Start line |> Expect.some, index.Text line |> Expect.some ]
 
 let private walked (source: FileWindow.Source) from =
     LineIndex.walkFrom source source.Encoding from
@@ -408,7 +408,7 @@ let private readingBackAt (source: FileWindow.Source) before =
 
 let private lastStart (index: LineIndex.Index) =
     index.ScanAll()
-    index.Start(index.Known - 1) |> Option.get
+    index.Start(index.Known - 1) |> Expect.some
 
 let private allButLastBackwards lines = lines |> List.rev |> List.tail
 

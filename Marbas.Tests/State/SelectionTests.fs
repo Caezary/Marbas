@@ -230,7 +230,7 @@ let ``marking undoes one entry of a pattern selection at a time`` () =
 
     let updated =
         state
-        |> applyPattern Select Left (NamePattern.tryCreate "*.txt" |> Option.get)
+        |> applyPattern Select Left (NamePattern.tryCreate "*.txt" |> Expect.some)
         |> setCursor Left 2
         |> toggleSelectionMoving Downward Left
 

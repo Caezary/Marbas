@@ -150,6 +150,16 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] Partial access (`.Value`, `List.head`, `Seq.pick`) only where the type
       cannot express the guarantee, and then next to the code that established
       it.
+- [ ] A string is compared with a named `StringComparison`:
+      `key.StartsWith(prefix, StringComparison.Ordinal)`, never
+      `key.StartsWith prefix`. Without one, `StartsWith`, `EndsWith`,
+      `IndexOf` and `LastIndexOf` with a string compare by the culture of the
+      machine, through its ICU: a key that opens with a soft hyphen then
+      starts with the prefix, and is cut at the prefix's length one character
+      short. What is read from a file — the settings, the history, the user
+      menu, the MIME database — or typed is compared by ordinal, as
+      case-sensitive as it needs to be; `OrdinalIgnoreCase` says so where it
+      is not. The analyzers of §11 hold the rule.
 
 ## 5. Errors
 
@@ -331,4 +341,6 @@ or every byte. A change there is held to what the path cost before it.
 - [ ] Every new name says what it answers, and every boundary is in the name.
 - [ ] Every new failure is a value, mapped at its family's one point.
 - [ ] The document that describes the changed behaviour was changed with it.
+- [ ] `dotnet msbuild Marbas.slnx -t:AnalyzeFSharpProject` reports nothing
+      ([Development](DEVELOPMENT.md#analyzers) has the setup).
 - [ ] The user commits. The agent never runs `git commit`.

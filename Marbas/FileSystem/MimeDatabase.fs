@@ -1,5 +1,6 @@
 module Marbas.FileSystem.MimeDatabase
 
+open System
 open Marbas.Domain
 
 [<Literal>]
@@ -29,7 +30,7 @@ let private globEntry (line: string) =
     | _ -> None
 
 let private globExtension (glob: string) =
-    if glob.StartsWith "*." then
+    if glob.StartsWith("*.", StringComparison.Ordinal) then
         FileExtension.tryCreate (glob.Substring 2)
     else
         None

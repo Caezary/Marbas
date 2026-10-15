@@ -23,9 +23,11 @@ dotnet build Marbas.slnx
 dotnet test Marbas.slnx
 dotnet tool restore
 dotnet fantomas Marbas Marbas.Tests
+dotnet msbuild Marbas.slnx -t:AnalyzeFSharpProject
 ```
 
-CI fails on any file `dotnet fantomas --check Marbas Marbas.Tests` would change.
+CI fails on any file `dotnet fantomas --check Marbas Marbas.Tests` would change,
+and on any finding of the analyzers.
 
 ## Working rules
 

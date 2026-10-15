@@ -53,6 +53,12 @@ let ``a glob that is not a plain extension is passed over`` () =
     Assert.Empty types
 
 [<Fact>]
+let ``a glob with a soft hyphen before its star is passed over`` () =
+    let types = MimeDatabase.typesFor (ext "txt") [ "text/plain:­*.txt" ]
+
+    Assert.Empty types
+
+[<Fact>]
 let ``the default applications come before the added ones`` () =
     let listed = MimeDatabase.applicationsFor "text/html" applications
 

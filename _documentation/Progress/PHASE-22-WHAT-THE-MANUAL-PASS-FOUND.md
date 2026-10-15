@@ -617,3 +617,61 @@ was timed. §1 of [Coding style](../coding-style-conventions.md) says that the
 rule is a test, [Testing](../Architecture/TESTING.md) has what it watches and
 what it leaves out, and [Overview](../Architecture/OVERVIEW.md) names the
 folder. 4290 tests pass and 35 skip on Windows, the two new ones among them.
+
+**P22.14 compares a string by ordinal.** Six calls in `Marbas` asked
+`StartsWith` with a string and nothing else, and so compared by the culture of
+the machine through its ICU, which holds a soft hyphen ignorable:
+`MimeDatabase.globExtension` over a glob, `Settings.tabNumbers` and the two
+prefixes of `Settings.associationFrom` over the keys of the settings file,
+`History.numbersUnder` and `UserMenu.entryNumbers` over theirs. Each now
+names `StringComparison.Ordinal`, as case-sensitive as before.
+
+Two of them could be shown reading a key wrongly, and a test showed each
+first and failed. A key that opens with a soft hyphen starts with the prefix
+by culture and is then cut at the prefix's length, one character short, so
+what follows begins with the prefix's last character, a dot. Where that dot is
+thrown away the key is misread: `FileExtension.tryCreate` trims it, so
+`­editor.extension.txt` was read as an association for `txt`, and the
+glob `­*.txt` as one of `txt`. `SettingsTests` and `MimeDatabaseTests`
+now hand each to `Settings.parse` and `MimeDatabase.typesFor` and expect it
+passed over. The tests are on the lines those functions take, as every other
+test of the two modules is, rather than on a file in `MockFileSystem`. In the
+other four the dot leads the number that is parsed next, and the key is
+dropped either way; there the analyzer's finding was the failing check.
+
+The analyzers are `fsharp-analyzers` 0.39.2 in `.config/dotnet-tools.json`,
+and `G-Research.FSharp.Analyzers` 0.25.0 and `Ionide.Analyzers` 0.19.0, the
+latest of each, both built on the SDK of 0.39. `Directory.Build.targets` gives
+both projects the two packages and `FSharp.Analyzers.Build` 0.5.0, whose
+target `AnalyzeFSharpProject` finds each package where NuGet put it, so no
+path holds a version, and runs only the four string analyzers
+(`GRA-STRING-001` to `004`) and `HandleOptionGracefullyAnalyzer`
+(`IONIDE-006`), as errors. `dotnet msbuild Marbas.slnx -t:AnalyzeFSharpProject`
+takes 53 seconds here; it is the `analyze` job of `ci.yml`, beside the format
+check. A `StartsWith` put back into `MimeDatabase` and an `Option.get` into
+`ViewerSearchTests` failed it with exit code 1, each named with its file,
+line and code, and were taken out.
+
+Over both projects it first reported the six calls above, twenty-one more in
+the tests and twelve options unwrapped with `Option.get`, all in tests. The
+twenty-one name `StringComparison.Ordinal`, and the twelve are `Expect.some`,
+which [Testing](../Architecture/TESTING.md) already prescribes. No test changed
+what it asserts.
+
+Two things went differently from the plan.
+
+- **The run takes under a minute, not two.** The plan's figure came from the
+  reconnaissance; this machine, warm, runs both projects in 53 seconds against
+  the build's 22. It stays a job of its own.
+- **The analyzers are wired through MSBuild, not called by path.** The tool
+  needs the folder each package was restored to, which carries its version;
+  `FSharp.Analyzers.Build` reads it off the restore, so the command is the
+  same on both systems and survives an update of either package.
+
+The changed functions read a file once at start or when a program is looked
+up, and lie on no hot path, so nothing was timed. §4 of
+[Coding style](../coding-style-conventions.md) says that a string is compared
+with a named `StringComparison`, §11 has the command, the rules it runs and
+why the rest are off, [Development](../DEVELOPMENT.md) the setup, and
+[Overview](../Architecture/OVERVIEW.md) the new file. 4292 tests pass and 35
+skip on Windows, the two new ones among them.

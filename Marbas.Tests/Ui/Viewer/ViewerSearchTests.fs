@@ -6,7 +6,7 @@ open Marbas.FileSystem
 open Marbas.Ui.Viewer
 open Marbas.Tests
 
-let private wanted raw = FindText.tryCreate raw |> Option.get
+let private wanted raw = FindText.tryCreate raw |> Expect.some
 
 let private pattern raw =
     SearchPattern.tryCreate raw |> Expect.ok

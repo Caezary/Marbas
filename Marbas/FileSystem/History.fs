@@ -381,7 +381,7 @@ module History =
 
         read
         |> Map.keys
-        |> Seq.filter _.StartsWith(lead)
+        |> Seq.filter _.StartsWith(lead, StringComparison.Ordinal)
         |> Seq.choose (fun key -> key.Substring(lead.Length).Split('.')[0] |> parsedNumber)
         |> Seq.distinct
         |> Seq.sort

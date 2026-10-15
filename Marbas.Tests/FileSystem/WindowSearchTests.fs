@@ -21,7 +21,7 @@ let private sourceOf (data: MockFileData) =
     fs.AddFile(notes, data)
     FileWindow.openFile fs (fp notes) |> Expect.ok
 
-let private wanted raw = FindText.tryCreate raw |> Option.get
+let private wanted raw = FindText.tryCreate raw |> Expect.some
 
 let private going: Control =
     { Reached = ignore

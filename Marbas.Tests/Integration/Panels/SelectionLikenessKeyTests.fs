@@ -1,5 +1,6 @@
 module Marbas.Tests.Integration.Panels.SelectionLikenessKeyTests
 
+open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Views
@@ -28,7 +29,7 @@ let private markedRows (list: ListView) =
 let private standingOn (list: ListView) (name: string) =
     list.SelectedItem <-
         [ 0 .. list.Source.Count - 1 ]
-        |> List.findIndex (fun i -> (string (list.Source.ToList()[i])).StartsWith name)
+        |> List.findIndex (fun i -> (string (list.Source.ToList()[i])).StartsWith(name, StringComparison.Ordinal))
 
 [<Fact>]
 let ``Alt+E marks the entries with the extension under the cursor`` () =

@@ -1,5 +1,6 @@
 module Marbas.Tests.Ui.Dialogs.AssociationRowTests
 
+open System
 open Xunit
 open Marbas.Domain
 open Marbas.Ui.Dialogs
@@ -22,7 +23,10 @@ let ``the programs line up whatever the extension`` () =
     let short = AssociationRow.describe (association "fs" "rider.exe")
     let long = AssociationRow.describe (association "txt" "notepad.exe")
 
-    Assert.Equal(short.IndexOf "rider.exe", long.IndexOf "notepad.exe")
+    Assert.Equal(
+        short.IndexOf("rider.exe", StringComparison.Ordinal),
+        long.IndexOf("notepad.exe", StringComparison.Ordinal)
+    )
 
 [<Fact>]
 let ``an extension too long for the column is still followed by its program`` () =

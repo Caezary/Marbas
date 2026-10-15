@@ -1,5 +1,6 @@
 module Marbas.Tests.Integration.App.TabKeyTests
 
+open System
 open System.IO.Abstractions.TestingHelpers
 open Terminal.Gui.Input
 open Xunit
@@ -117,7 +118,7 @@ let ``a tab is read again when it is stood on`` () =
     let source = (leftList window).Source.ToList()
     let rows = [ for index in 0 .. source.Count - 1 -> string source[index] ]
 
-    Assert.Contains(rows, fun (row: string) -> row.StartsWith "added.txt")
+    Assert.Contains(rows, fun (row: string) -> row.StartsWith("added.txt", StringComparison.Ordinal))
 
 [<Fact>]
 let ``the corner says which tab is in front and how many there are`` () =

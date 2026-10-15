@@ -1,5 +1,6 @@
 module Marbas.Tests.Ui.Dialogs.TabRowTests
 
+open System
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
@@ -46,7 +47,10 @@ let ``the left path is padded so the right ones line up`` () =
     let short = TabRow.describe fs 1 (tabOn fs (at "start") (at "backup"))
     let longer = TabRow.describe fs 1 (tabOn fs (at "start/docs") (at "backup"))
 
-    Assert.Equal(short.IndexOf(at "backup"), longer.IndexOf(at "backup"))
+    Assert.Equal(
+        short.IndexOf(at "backup", StringComparison.Ordinal),
+        longer.IndexOf(at "backup", StringComparison.Ordinal)
+    )
 
 [<Fact>]
 let ``a panel inside an archive says so in its row`` () =

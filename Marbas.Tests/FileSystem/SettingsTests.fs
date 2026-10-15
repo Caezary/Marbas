@@ -1,5 +1,6 @@
 module Marbas.Tests.FileSystem.SettingsTests
 
+open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Collections
@@ -196,6 +197,12 @@ let ``an association with nothing on either side is passed over`` () =
     Assert.Equal(ProgramSettings.none, parsed.Programs)
 
 [<Fact>]
+let ``an association with a soft hyphen before its key is passed over`` () =
+    let parsed = Settings.parse defaults [ "­editor.extension.txt=notepad.exe" ]
+
+    Assert.Equal(ProgramSettings.none, parsed.Programs)
+
+[<Fact>]
 let ``a setting the file does not carry keeps its default`` () =
     let parsed = Settings.parse defaults [ "left.path=" + at "backup" ]
 
@@ -279,7 +286,13 @@ let ``a file written before tabs existed is written back in the new spelling`` (
 
     Assert.Contains("tab.1.left.path=" + at "backup", lines)
     Assert.Contains("tab.1.right.path=" + at "notes", lines)
-    Assert.DoesNotContain(lines, fun (line: string) -> line.StartsWith "left." || line.StartsWith "right.")
+
+    Assert.DoesNotContain(
+        lines,
+        fun (line: string) ->
+            line.StartsWith("left.", StringComparison.Ordinal)
+            || line.StartsWith("right.", StringComparison.Ordinal)
+    )
 
 [<Fact>]
 let ``tab numbers need not start at one nor run without gaps`` () =
@@ -445,7 +458,7 @@ let ``saving where nothing can be written answers the failure`` () =
 let ``the name of a directory created is not written to the settings`` () =
     let lines = Settings.format stored
 
-    Assert.DoesNotContain(lines, fun (line: string) -> line.StartsWith "mkdir.")
+    Assert.DoesNotContain(lines, fun (line: string) -> line.StartsWith("mkdir.", StringComparison.Ordinal))
 
 [<Fact>]
 let ``a name a directory was given in an older file is passed over`` () =
@@ -469,7 +482,7 @@ let ``the entry each cursor stood on is written under its own key`` () =
     let lines = Settings.format withCursors
 
     Assert.Contains("tab.1.left.cursor=notes.txt", lines)
-    Assert.DoesNotContain(lines, fun (line: string) -> line.StartsWith "tab.1.right.cursor")
+    Assert.DoesNotContain(lines, fun (line: string) -> line.StartsWith("tab.1.right.cursor", StringComparison.Ordinal))
 
 [<Fact>]
 let ``a remembered cursor survives being written and read back`` () =

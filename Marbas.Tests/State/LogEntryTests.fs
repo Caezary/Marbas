@@ -48,7 +48,11 @@ let ``a crash carries its stack trace, every line of it stamped`` () =
 
     let lines = LogEntry.lines moment entry
 
-    Assert.Contains(lines, fun line -> line.StartsWith $"{stamp}    at Marbas.Tests.State.LogEntryTests.thrown")
+    Assert.Contains(
+        lines,
+        fun line -> line.StartsWith($"{stamp}    at Marbas.Tests.State.LogEntryTests.thrown", StringComparison.Ordinal)
+    )
+
     Assert.All(lines, fun line -> Assert.StartsWith(stamp, line))
 
 let private password = "open-sesame"

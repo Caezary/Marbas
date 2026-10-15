@@ -319,7 +319,8 @@ let ``a command run is written with its label, its words, its list file and the 
 [<InlineData("run.3.elevation=")>]
 let ``a command run missing a part it is always written with is passed over`` (missing: string) =
     let lines =
-        History.format sample |> List.filter (fun line -> not (line.StartsWith missing))
+        History.format sample
+        |> List.filter (fun line -> not (line.StartsWith(missing, StringComparison.Ordinal)))
 
     let parsed = History.parse lines
 
@@ -450,7 +451,7 @@ let ``an entry with a part that cannot be read costs that entry alone`` (broken:
 let ``an entry missing a part it is always written with is passed over`` (missing: string) =
     let lines =
         History.format sample
-        |> List.filter (fun line -> not (line.StartsWith(missing + "=")))
+        |> List.filter (fun line -> not (line.StartsWith(missing + "=", StringComparison.Ordinal)))
 
     let parsed = History.parse lines
 

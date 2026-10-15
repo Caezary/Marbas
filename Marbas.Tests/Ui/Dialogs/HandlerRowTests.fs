@@ -1,5 +1,6 @@
 module Marbas.Tests.Ui.Dialogs.HandlerRowTests
 
+open System
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
@@ -22,7 +23,10 @@ let ``the paths line up whatever the name`` () =
     let short = HandlerRow.describe (handler "Firefox" "/usr/bin/firefox")
     let long = HandlerRow.describe (handler "Visual Studio Code" "/usr/bin/code")
 
-    Assert.Equal(short.IndexOf "/usr/bin/firefox", long.IndexOf "/usr/bin/code")
+    Assert.Equal(
+        short.IndexOf("/usr/bin/firefox", StringComparison.Ordinal),
+        long.IndexOf("/usr/bin/code", StringComparison.Ordinal)
+    )
 
 [<Fact>]
 let ``a name too long for the column is still followed by its path`` () =

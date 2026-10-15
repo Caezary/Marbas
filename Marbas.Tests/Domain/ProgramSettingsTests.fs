@@ -2,13 +2,15 @@ module Marbas.Tests.Domain.ProgramSettingsTests
 
 open Xunit
 open Marbas.Domain
+open Marbas.Tests
 
 let private en = EntryName.create
 
 let private ext raw =
-    FileExtension.tryCreate raw |> Option.get
+    FileExtension.tryCreate raw |> Expect.some
 
-let private program raw = ProgramPath.tryCreate raw |> Option.get
+let private program raw =
+    ProgramPath.tryCreate raw |> Expect.some
 
 let private associated role pairs =
     pairs

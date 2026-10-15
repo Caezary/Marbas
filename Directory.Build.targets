@@ -1,0 +1,19 @@
+<Project>
+
+  <ItemGroup Label="Analyzers">
+    <PackageReference Include="FSharp.Analyzers.Build" PrivateAssets="all" />
+    <PackageReference Include="G-Research.FSharp.Analyzers" PrivateAssets="all" GeneratePathProperty="true" />
+    <PackageReference Include="Ionide.Analyzers" PrivateAssets="all" GeneratePathProperty="true" />
+  </ItemGroup>
+
+  <PropertyGroup Label="Analyzers">
+    <FSharpAnalyzersContinueOnError>false</FSharpAnalyzersContinueOnError>
+    <FSharpAnalyzersOtherFlags>--analyzers-path &quot;$(PkgG-Research_FSharp_Analyzers)/analyzers/dotnet/fs&quot;</FSharpAnalyzersOtherFlags>
+    <FSharpAnalyzersOtherFlags>$(FSharpAnalyzersOtherFlags) --analyzers-path &quot;$(PkgIonide_Analyzers)/analyzers/dotnet/fs&quot;</FSharpAnalyzersOtherFlags>
+    <FSharpAnalyzersOtherFlags>$(FSharpAnalyzersOtherFlags) --include-analyzers &quot;String.StartsWith Analyzer&quot; &quot;String.EndsWith Analyzer&quot;</FSharpAnalyzersOtherFlags>
+    <FSharpAnalyzersOtherFlags>$(FSharpAnalyzersOtherFlags) &quot;String.IndexOf Analyzer&quot; &quot;String.LastIndexOf Analyzer&quot;</FSharpAnalyzersOtherFlags>
+    <FSharpAnalyzersOtherFlags>$(FSharpAnalyzersOtherFlags) HandleOptionGracefullyAnalyzer</FSharpAnalyzersOtherFlags>
+    <FSharpAnalyzersOtherFlags>$(FSharpAnalyzersOtherFlags) --treat-as-error &quot;GRA-STRING-*&quot; IONIDE-006</FSharpAnalyzersOtherFlags>
+  </PropertyGroup>
+
+</Project>
