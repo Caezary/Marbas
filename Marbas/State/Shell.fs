@@ -318,10 +318,15 @@ let private runPlaces (deps: Dependencies) title (pieces: Piece option list) fin
               Work = fun control -> untilStopped control ready
               Finish = finished }
 
+let private clipboardAnswer dispatch answer =
+    match answer with
+    | Ok value -> Some value
+    | Error error ->
+        dispatch (ClipboardRefused error)
+        None
+
 let private emptyClipboard (deps: Dependencies) dispatch =
-    match deps.Clipboard.Empty() with
-    | Ok() -> ()
-    | Error error -> dispatch (ClipboardRefused error)
+    deps.Clipboard.Empty() |> clipboardAnswer dispatch |> ignore
 
 let private forgetMoved (deps: Dependencies) dispatch files (results: Operations.ItemResult list) =
     let moved = results |> List.exists (_.Outcome >> Result.isOk)
@@ -389,258 +394,308 @@ let private sweepLeftovers (deps: Dependencies) () =
     Workspace.sweep deps.FileSystem deps.Processes.IsRunning (deps.Clock()) deps.WorkspacePath
     |> List.iter (logKept deps)
 
+let private rememberAndDispatch (deps: Dependencies) dispatch kind typed message answer =
+    answer
+    |> Option.iter (fun chosen ->
+        rememberTyped deps dispatch kind (typed chosen)
+        message chosen |> Option.iter dispatch)
+
+let private withFavorites (deps: Dependencies) useFavorites =
+    match Favorites.load deps.FileSystem deps.FavoritesPath with
+    | Ok favorites -> useFavorites favorites
+    | Error error -> report deps (Problem.Favorites error)
+
+let private confirmDelete (deps: Dependencies) dispatch request =
+    if
+        deps.Prompts.Confirm
+            { Title = DeleteConfirmation.title request
+              Question = DeleteConfirmation.describe request }
+    then
+        dispatch (DeleteConfirmed request.Mode)
+
+let private askArchive (deps: Dependencies) dispatch suggestion =
+    deps.Prompts.AskArchive
+        { Suggestion = suggestion
+          Remembered = typedBefore deps ArchiveTarget }
+    |> rememberAndDispatch deps dispatch ArchiveTarget _.Target (ArchiveEntered >> Some)
+
+let private askFind (deps: Dependencies) dispatch ground hidden found =
+    let asked =
+        deps.Prompts.AskFind
+            { Ground = ground
+              Hidden = hidden
+              Found = found
+              Masks = typedBefore deps FindMasks
+              Texts = typedBefore deps SearchedText }
+
+    match asked with
+    | Some({ Choice = Search query } as typed) ->
+        rememberTyped deps dispatch FindMasks typed.Masks
+        rememberTyped deps dispatch SearchedText typed.Text
+        dispatch (FindEntered query)
+    | Some { Choice = LastResults } -> dispatch LastResultsRequested
+    | None -> ()
+
+let private search (deps: Dependencies) dispatch run =
+    deps.Runners.Search
+        { Run = run
+          View = showHit deps dispatch
+          Finish = SearchAnswered >> dispatch }
+
+let private runSearch (deps: Dependencies) dispatch (query: FindQuery) location marked =
+    let ground =
+        FindGround.resolve deps.FileSystem location marked deps.Processes.PathDirectories query.Scope
+
+    Walk(query, ground) |> search deps dispatch
+
+let private askLink (deps: Dependencies) dispatch sources directory suggestion =
+    let refusalOf text kind =
+        Links.requests deps.FileSystem kind sources directory text
+        |> Links.sharedRefusal deps.Processes.RefuseLink
+
+    deps.Prompts.AskLink
+        { Kinds = deps.Processes.LinkKinds
+          Suggestion = suggestion
+          Refusal = refusalOf
+          Remembered = typedBefore deps LinkDestination }
+    |> rememberAndDispatch deps dispatch LinkDestination _.Target (LinkEntered >> Some)
+
+let private makeLinks (deps: Dependencies) dispatch requests =
+    let outcomes = requests |> List.map (fun link -> link, deps.Processes.MakeLink link)
+
+    let made =
+        outcomes
+        |> List.choose (fun (link, outcome) -> if Result.isOk outcome then Some link.Location else None)
+
+    let results =
+        outcomes
+        |> List.map (fun (link, outcome) -> Operations.itemResult link.Target outcome)
+
+    dispatch (LinksMade(made, results))
+
+let private pack (deps: Dependencies) dispatch sources (archive: ArchiveRequest) =
+    let target = archive.Path
+
+    let allowed =
+        FileSystemPath.kind deps.FileSystem target = NoEntry
+        || deps.Prompts.Confirm
+            { Title = OverwriteQuestion.Title
+              Question = OverwriteQuestion.describe target }
+
+    if allowed then
+        deps.Runners.Batch
+            { Title = PackTitle
+              Work = fun control -> Archive.write deps.FileSystem control archive sources
+              Finish = fun results -> dispatch (PackFinished(FileSystemPath.name deps.FileSystem target, results)) }
+
+let private copyPlaces (deps: Dependencies) dispatch groups target =
+    runPlaces deps CopyTitle (groups |> List.map (copyPiece deps target)) (CopyFinished >> dispatch)
+
+let private movePlaces (deps: Dependencies) dispatch groups target =
+    runPlaces deps MoveTitle (groups |> List.map (movePiece deps target)) (MoveFinished >> dispatch)
+
+let private deletePlaces (deps: Dependencies) dispatch groups mode =
+    runPlaces deps (deleteTitle mode) (groups |> List.map (deletePiece deps mode)) (DeleteFinished >> dispatch)
+
+let private extractTargets (deps: Dependencies) dispatch archives targetDirectory =
+    match archives |> List.choose (unpackPlan deps targetDirectory) with
+    | [] -> ()
+    | plans ->
+        deps.Runners.Batch
+            { Title = UnpackTitle
+              Work = fun control -> Archive.extractAll deps.FileSystem control plans
+              Finish = UnpackFinished >> dispatch }
+
+let private renameTarget (deps: Dependencies) dispatch source newName =
+    let finished outcome =
+        dispatch (RenameFinished(newName, outcome))
+
+    match Operations.startRename deps.FileSystem source newName with
+    | Error error -> finished (Error error)
+    | Ok Operations.RenameDone -> finished (Ok())
+    | Ok(Operations.CopyNeeded target) ->
+        deps.Runners.Batch
+            { Title = RenameTitle
+              Work =
+                fun control ->
+                    [ Operations.moveByCopying deps.FileSystem control source target
+                      |> Operations.itemResult source ]
+              Finish = Operations.wholeOutcome >> finished }
+
+let private measure (deps: Dependencies) dispatch targets =
+    deps.Runners.Measure
+        { Title = MeasureTitle
+          Measure = fun control -> DirectoryMeasure.measureAll deps.FileSystem control targets
+          Finish = MeasureFinished >> dispatch }
+
+let private viewArchiveEntry (deps: Dependencies) dispatch archive entry =
+    withPassword deps archive (fun password -> showEntry deps dispatch archive password entry)
+
+let private askHandler (deps: Dependencies) dispatch path chosen =
+    let name = FileSystemPath.name deps.FileSystem path
+    let program (choice: OpenWithChoice) = ProgramPath.value choice.Program
+
+    deps.Prompts.AskHandler
+        { Name = name
+          Handlers = deps.Processes.HandlersFor name
+          Chosen = chosen
+          Remembered = typedBefore deps OpenWithProgram }
+    |> rememberAndDispatch deps dispatch OpenWithProgram program (fun choice -> Some(HandlerChosen(path, choice)))
+
+let private editProperties (deps: Dependencies) dispatch properties =
+    deps.Prompts.EditProperties properties
+    |> Option.iter (PropertiesEntered >> dispatch)
+
+let private editPrograms (deps: Dependencies) dispatch programs candidate =
+    deps.Prompts.EditPrograms
+        { Programs = programs
+          Candidate = candidate }
+    |> Option.iter (ProgramsEntered >> dispatch)
+
+let private askTarget (deps: Dependencies) dispatch suggestion =
+    deps.Prompts.AskTarget
+        { Title = MovePrompt
+          Suggestion = suggestion
+          Remembered = typedBefore deps CopyOrMoveTarget }
+    |> rememberAndDispatch deps dispatch CopyOrMoveTarget id (TargetEntered >> Some)
+
+let private askDirectoryName (deps: Dependencies) dispatch =
+    let remembered = typedBefore deps NewDirectory
+
+    deps.Prompts.AskName
+        { Title = MkdirPrompt
+          Suggestion = List.tryHead remembered
+          Remembered = remembered }
+    |> Option.bind EntryName.tryCreate
+    |> Option.iter (NameEntered >> dispatch)
+
+let private askFileName (deps: Dependencies) dispatch =
+    deps.Prompts.AskName
+        { Title = NewFilePrompt
+          Suggestion = None
+          Remembered = typedBefore deps NewFile }
+    |> rememberAndDispatch deps dispatch NewFile id (EntryName.tryCreate >> Option.map FileNameEntered)
+
+let private askPattern (deps: Dependencies) dispatch mode =
+    let entered pattern = PatternEntered(mode, pattern)
+
+    deps.Prompts.AskPattern
+        { Title = patternTitle mode
+          Remembered = typedBefore deps SelectionPattern }
+    |> rememberAndDispatch deps dispatch SelectionPattern id (NamePattern.tryCreate >> Option.map entered)
+
+let private chooseDrive (deps: Dependencies) dispatch side =
+    match
+        deps.Prompts.ChooseDrive
+            { Side = side
+              Drives = deps.Processes.ListDrives() }
+    with
+    | Some(StandOn row) -> dispatch (DriveChosen(side, row))
+    | Some(HandOver row) -> dispatch (DriveHandedOver row)
+    | None -> ()
+
+let private watchLocations (deps: Dependencies) dispatch paths =
+    deps.Watches.Locations
+        { Paths = paths
+          Notify = fun () -> dispatch ExternalChangeDetected }
+
+let private showHistory (deps: Dependencies) dispatch tab =
+    match History.load deps.FileSystem deps.HistoryPath with
+    | Ok history ->
+        dispatch (HistoryChanged history)
+
+        deps.Prompts.ChooseHistory
+            { History = history
+              Tab = tab
+              Now = deps.Clock()
+              Change = changeHistory deps dispatch }
+        |> HistoryAnswered
+        |> dispatch
+    | Error error -> report deps (Problem.History error)
+
+let private keepFavorite (deps: Dependencies) place =
+    deps.Prompts.AskFavoriteSlot place
+    |> Option.iter (fun slot -> changeFavorites deps (Keep(slot, place)) |> ignore)
+
+let private chooseFavorite (deps: Dependencies) dispatch current favorites =
+    deps.Prompts.ChooseFavorite
+        { Favorites = favorites
+          Current = current
+          Change = changeFavorites deps }
+    |> Option.iter (FavoriteFound >> dispatch)
+
+let private lookUpFavorite dispatch slot favorites =
+    Favorites.placeIn slot favorites |> Option.iter (FavoriteFound >> dispatch)
+
+let private readClipboardPath (deps: Dependencies) dispatch directory =
+    deps.Clipboard.GetText()
+    |> clipboardAnswer dispatch
+    |> Option.flatten
+    |> Option.bind (PastedPath.read deps.FileSystem deps.Processes.EnvironmentVariable directory)
+    |> Option.iter (ClipboardPathRead >> dispatch)
+
+let private readClipboardFiles (deps: Dependencies) dispatch target =
+    deps.Clipboard.GetFiles()
+    |> clipboardAnswer dispatch
+    |> Option.flatten
+    |> Option.iter (fun held -> dispatch (ClipboardFilesRead(held, target)))
+
+let private saveSettings (deps: Dependencies) settings =
+    match Settings.save deps.FileSystem deps.SettingsPath settings with
+    | Ok() -> ()
+    | Error error -> report deps (Problem.Settings error)
+
+let private quit (deps: Dependencies) =
+    Workspace.release deps.FileSystem deps.WorkspacePath
+    deps.OnQuit()
+
 let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) =
     deps.Log(EffectInterpreted effect)
 
     match effect with
     | Report problem -> report deps problem
-    | InspectDelete(question, mode) -> dispatch (DeleteScopeLoaded(deleteScope deps.FileSystem question, mode))
-    | ConfirmDelete request ->
-        if
-            deps.Prompts.Confirm
-                { Title = DeleteConfirmation.title request
-                  Question = DeleteConfirmation.describe request }
-        then
-            dispatch (DeleteConfirmed request.Mode)
-    | PromptForArchive suggestion ->
-        deps.Prompts.AskArchive
-            { Suggestion = suggestion
-              Remembered = typedBefore deps ArchiveTarget }
-        |> Option.iter (fun choice ->
-            rememberTyped deps dispatch ArchiveTarget choice.Target
-            dispatch (ArchiveEntered choice))
-    | PromptForFind(ground, hidden, found) ->
-        let asked =
-            deps.Prompts.AskFind
-                { Ground = ground
-                  Hidden = hidden
-                  Found = found
-                  Masks = typedBefore deps FindMasks
-                  Texts = typedBefore deps SearchedText }
-
-        match asked with
-        | Some({ Choice = Search query } as typed) ->
-            rememberTyped deps dispatch FindMasks typed.Masks
-            rememberTyped deps dispatch SearchedText typed.Text
-            dispatch (FindEntered query)
-        | Some { Choice = LastResults } -> dispatch LastResultsRequested
-        | None -> ()
-    | RunSearch(query, location, marked) ->
-        let ground =
-            FindGround.resolve deps.FileSystem location marked deps.Processes.PathDirectories query.Scope
-
-        deps.Runners.Search
-            { Run = Walk(query, ground)
-              View = showHit deps dispatch
-              Finish = SearchAnswered >> dispatch }
-    | ShowLastResults(results, gone) ->
-        deps.Runners.Search
-            { Run = Reopen(results, gone)
-              View = showHit deps dispatch
-              Finish = SearchAnswered >> dispatch }
-    | PromptForLink(sources, directory, suggestion) ->
-        let refusalOf text kind =
-            Links.requests deps.FileSystem kind sources directory text
-            |> Links.sharedRefusal deps.Processes.RefuseLink
-
-        deps.Prompts.AskLink
-            { Kinds = deps.Processes.LinkKinds
-              Suggestion = suggestion
-              Refusal = refusalOf
-              Remembered = typedBefore deps LinkDestination }
-        |> Option.iter (fun choice ->
-            rememberTyped deps dispatch LinkDestination choice.Target
-            dispatch (LinkEntered choice))
-    | MakeLinks requests ->
-        let outcomes = requests |> List.map (fun link -> link, deps.Processes.MakeLink link)
-
-        let made =
-            outcomes
-            |> List.choose (fun (link, outcome) -> if Result.isOk outcome then Some link.Location else None)
-
-        let results =
-            outcomes
-            |> List.map (fun (link, outcome) -> Operations.itemResult link.Target outcome)
-
-        dispatch (LinksMade(made, results))
-    | ArchiveTargets(sources, archive) ->
-        let target = archive.Path
-
-        let allowed =
-            FileSystemPath.kind deps.FileSystem target = NoEntry
-            || deps.Prompts.Confirm
-                { Title = OverwriteQuestion.Title
-                  Question = OverwriteQuestion.describe target }
-
-        if allowed then
-            deps.Runners.Batch
-                { Title = PackTitle
-                  Work = fun control -> Archive.write deps.FileSystem control archive sources
-                  Finish = fun results -> dispatch (PackFinished(FileSystemPath.name deps.FileSystem target, results)) }
-    | CopyPlaces(groups, target) ->
-        runPlaces deps CopyTitle (groups |> List.map (copyPiece deps target)) (CopyFinished >> dispatch)
-    | MovePlaces(groups, target) ->
-        runPlaces deps MoveTitle (groups |> List.map (movePiece deps target)) (MoveFinished >> dispatch)
-    | DeletePlaces(groups, mode) ->
-        runPlaces deps (deleteTitle mode) (groups |> List.map (deletePiece deps mode)) (DeleteFinished >> dispatch)
-    | ExtractTargets(archives, targetDirectory) ->
-        match archives |> List.choose (unpackPlan deps targetDirectory) with
-        | [] -> ()
-        | plans ->
-            deps.Runners.Batch
-                { Title = UnpackTitle
-                  Work = fun control -> Archive.extractAll deps.FileSystem control plans
-                  Finish = UnpackFinished >> dispatch }
-    | RenameTarget(source, newName) ->
-        let finished outcome =
-            dispatch (RenameFinished(newName, outcome))
-
-        match Operations.startRename deps.FileSystem source newName with
-        | Error error -> finished (Error error)
-        | Ok Operations.RenameDone -> finished (Ok())
-        | Ok(Operations.CopyNeeded target) ->
-            deps.Runners.Batch
-                { Title = RenameTitle
-                  Work =
-                    fun control ->
-                        [ Operations.moveByCopying deps.FileSystem control source target
-                          |> Operations.itemResult source ]
-                  Finish = Operations.wholeOutcome >> finished }
-    | MeasureTargets targets ->
-        deps.Runners.Measure
-            { Title = MeasureTitle
-              Measure = fun control -> DirectoryMeasure.measureAll deps.FileSystem control targets
-              Finish = MeasureFinished >> dispatch }
+    | InspectDelete(question, mode) -> DeleteScopeLoaded(deleteScope deps.FileSystem question, mode) |> dispatch
+    | ConfirmDelete request -> confirmDelete deps dispatch request
+    | PromptForArchive suggestion -> askArchive deps dispatch suggestion
+    | PromptForFind(ground, hidden, found) -> askFind deps dispatch ground hidden found
+    | RunSearch(query, location, marked) -> runSearch deps dispatch query location marked
+    | ShowLastResults(results, gone) -> Reopen(results, gone) |> search deps dispatch
+    | PromptForLink(sources, directory, suggestion) -> askLink deps dispatch sources directory suggestion
+    | MakeLinks requests -> makeLinks deps dispatch requests
+    | ArchiveTargets(sources, archive) -> pack deps dispatch sources archive
+    | CopyPlaces(groups, target) -> copyPlaces deps dispatch groups target
+    | MovePlaces(groups, target) -> movePlaces deps dispatch groups target
+    | DeletePlaces(groups, mode) -> deletePlaces deps dispatch groups mode
+    | ExtractTargets(archives, targetDirectory) -> extractTargets deps dispatch archives targetDirectory
+    | RenameTarget(source, newName) -> renameTarget deps dispatch source newName
+    | MeasureTargets targets -> measure deps dispatch targets
     | ViewFile path -> showPath deps dispatch path
-    | ViewArchiveEntry(archive, entry) ->
-        withPassword deps archive (fun password -> showEntry deps dispatch archive password entry)
+    | ViewArchiveEntry(archive, entry) -> viewArchiveEntry deps dispatch archive entry
     | EditFile(path, editor) -> deps.Processes.StartEditor editor path |> EditorStarted |> dispatch
-    | RunProgram request -> dispatch (LaunchFinished(request, deps.Processes.Launch request))
-    | RunCommand run -> dispatch (CommandFinished(run, deps.Processes.RunCommand run))
+    | RunProgram request -> LaunchFinished(request, deps.Processes.Launch request) |> dispatch
+    | RunCommand run -> CommandFinished(run, deps.Processes.RunCommand run) |> dispatch
     | ShowUserMenu -> showUserMenu deps dispatch
-    | ShowHandlers(path, chosen) ->
-        let name = FileSystemPath.name deps.FileSystem path
-
-        deps.Prompts.AskHandler
-            { Name = name
-              Handlers = deps.Processes.HandlersFor name
-              Chosen = chosen
-              Remembered = typedBefore deps OpenWithProgram }
-        |> Option.iter (fun choice ->
-            rememberTyped deps dispatch OpenWithProgram (ProgramPath.value choice.Program)
-            dispatch (HandlerChosen(path, choice)))
+    | ShowHandlers(path, chosen) -> askHandler deps dispatch path chosen
     | ShowTabs tabs -> deps.Prompts.ChooseTab tabs |> Option.iter (TabSwitched >> dispatch)
-    | ShowProperties properties ->
-        deps.Prompts.EditProperties properties
-        |> Option.iter (PropertiesEntered >> dispatch)
-    | ShowSettings(programs, candidate) ->
-        deps.Prompts.EditPrograms
-            { Programs = programs
-              Candidate = candidate }
-        |> Option.iter (ProgramsEntered >> dispatch)
-    | PromptForTarget suggestion ->
-        deps.Prompts.AskTarget
-            { Title = MovePrompt
-              Suggestion = suggestion
-              Remembered = typedBefore deps CopyOrMoveTarget }
-        |> Option.iter (fun text ->
-            rememberTyped deps dispatch CopyOrMoveTarget text
-            dispatch (TargetEntered text))
-    | PromptForName ->
-        let remembered = typedBefore deps NewDirectory
-
-        deps.Prompts.AskName
-            { Title = MkdirPrompt
-              Suggestion = List.tryHead remembered
-              Remembered = remembered }
-        |> Option.bind EntryName.tryCreate
-        |> Option.iter (NameEntered >> dispatch)
-    | PromptForFileName ->
-        deps.Prompts.AskName
-            { Title = NewFilePrompt
-              Suggestion = None
-              Remembered = typedBefore deps NewFile }
-        |> Option.iter (fun text ->
-            rememberTyped deps dispatch NewFile text
-            EntryName.tryCreate text |> Option.iter (FileNameEntered >> dispatch))
-    | PromptForPattern mode ->
-        deps.Prompts.AskPattern
-            { Title = patternTitle mode
-              Remembered = typedBefore deps SelectionPattern }
-        |> Option.iter (fun text ->
-            rememberTyped deps dispatch SelectionPattern text
-
-            NamePattern.tryCreate text
-            |> Option.iter (fun pattern -> dispatch (PatternEntered(mode, pattern))))
-    | PromptForRoot side ->
-        match
-            deps.Prompts.ChooseDrive
-                { Side = side
-                  Drives = deps.Processes.ListDrives() }
-        with
-        | Some(StandOn row) -> dispatch (DriveChosen(side, row))
-        | Some(HandOver row) -> dispatch (DriveHandedOver row)
-        | None -> ()
-    | WatchLocations paths ->
-        deps.Watches.Locations
-            { Paths = paths
-              Notify = fun () -> dispatch ExternalChangeDetected }
+    | ShowProperties properties -> editProperties deps dispatch properties
+    | ShowSettings(programs, candidate) -> editPrograms deps dispatch programs candidate
+    | PromptForTarget suggestion -> askTarget deps dispatch suggestion
+    | PromptForName -> askDirectoryName deps dispatch
+    | PromptForFileName -> askFileName deps dispatch
+    | PromptForPattern mode -> askPattern deps dispatch mode
+    | PromptForRoot side -> chooseDrive deps dispatch side
+    | WatchLocations paths -> watchLocations deps dispatch paths
     | ChangeHistory change -> changeHistory deps dispatch change |> ignore
-    | ShowHistory tab ->
-        match History.load deps.FileSystem deps.HistoryPath with
-        | Ok history ->
-            dispatch (HistoryChanged history)
-
-            deps.Prompts.ChooseHistory
-                { History = history
-                  Tab = tab
-                  Now = deps.Clock()
-                  Change = changeHistory deps dispatch }
-            |> HistoryAnswered
-            |> dispatch
-        | Error error -> report deps (Problem.History error)
-    | PromptForFavoriteSlot place ->
-        deps.Prompts.AskFavoriteSlot place
-        |> Option.iter (fun slot -> changeFavorites deps (Keep(slot, place)) |> ignore)
-    | ShowFavorites current ->
-        match Favorites.load deps.FileSystem deps.FavoritesPath with
-        | Ok favorites ->
-            deps.Prompts.ChooseFavorite
-                { Favorites = favorites
-                  Current = current
-                  Change = changeFavorites deps }
-            |> Option.iter (FavoriteFound >> dispatch)
-        | Error error -> report deps (Problem.Favorites error)
-    | LookUpFavorite slot ->
-        match Favorites.load deps.FileSystem deps.FavoritesPath with
-        | Ok favorites -> Favorites.placeIn slot favorites |> Option.iter (FavoriteFound >> dispatch)
-        | Error error -> report deps (Problem.Favorites error)
-    | ReadClipboardPath directory ->
-        match deps.Clipboard.GetText() with
-        | Error error -> dispatch (ClipboardRefused error)
-        | Ok text ->
-            text
-            |> Option.bind (PastedPath.read deps.FileSystem deps.Processes.EnvironmentVariable directory)
-            |> Option.iter (ClipboardPathRead >> dispatch)
-    | PutOnClipboard text ->
-        match deps.Clipboard.SetText text with
-        | Ok() -> ()
-        | Error error -> dispatch (ClipboardRefused error)
-    | PutFilesOnClipboard files ->
-        match deps.Clipboard.SetFiles files with
-        | Ok() -> ()
-        | Error error -> dispatch (ClipboardRefused error)
+    | ShowHistory tab -> showHistory deps dispatch tab
+    | PromptForFavoriteSlot place -> keepFavorite deps place
+    | ShowFavorites current -> (chooseFavorite deps dispatch current) |> withFavorites deps
+    | LookUpFavorite slot -> (lookUpFavorite dispatch slot) |> withFavorites deps
+    | ReadClipboardPath directory -> readClipboardPath deps dispatch directory
+    | PutOnClipboard text -> deps.Clipboard.SetText text |> clipboardAnswer dispatch |> ignore
+    | PutFilesOnClipboard files -> deps.Clipboard.SetFiles files |> clipboardAnswer dispatch |> ignore
     | ExtractForClipboard groups -> extractForClipboard deps dispatch groups
-    | ReadClipboardFiles target ->
-        match deps.Clipboard.GetFiles() with
-        | Error error -> dispatch (ClipboardRefused error)
-        | Ok files -> files |> Option.iter (fun held -> dispatch (ClipboardFilesRead(held, target)))
+    | ReadClipboardFiles target -> readClipboardFiles deps dispatch target
     | MovePastedFiles(files, target) -> movePasted deps dispatch files target
     | SweepLeftovers -> deps.Runners.Background { Work = sweepLeftovers deps }
-    | SaveSettings settings ->
-        match Settings.save deps.FileSystem deps.SettingsPath settings with
-        | Ok() -> ()
-        | Error error -> report deps (Problem.Settings error)
-    | Quit ->
-        Workspace.release deps.FileSystem deps.WorkspacePath
-        deps.OnQuit()
+    | SaveSettings settings -> saveSettings deps settings
+    | Quit -> quit deps

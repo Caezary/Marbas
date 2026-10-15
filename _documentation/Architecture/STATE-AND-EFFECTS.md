@@ -72,7 +72,15 @@ groups them by what they do to the world: `Prompts` asks the person something
 `Processes` reaches the operating system (trash, editor, launch, links,
 handlers), `Clipboard` hands things to other programs, `Watches` subscribes to
 the system and `Runners` puts work on a background task. `Shell.interpret` is
-the only place that turns an `Effect` into a call on one of them. **Every prompt has a type of its own:** each takes a request record
+the only place that turns an `Effect` into a call on one of them. Its match
+has one line per effect: an effect that takes more is a private function above
+it, taking `deps`, `dispatch` and what the effect carries, and three helpers
+hold what the effects share — `rememberAndDispatch` for the six prompts that
+remember what was typed before they dispatch it, `clipboardAnswer` for a
+refusal of the clipboard handed on as `ClipboardRefused`, and `withFavorites`
+for the favourites loaded or their failure reported.
+
+**Every prompt has a type of its own:** each takes a request record
 (`ErrorReport`, `Confirmation`, `NamePrompt`, `TargetPrompt`, …) and answers a
 domain value, so wiring the target prompt where the name prompt was meant no
 longer compiles, and the two that used to share `string -> string -> string

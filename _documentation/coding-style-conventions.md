@@ -104,11 +104,12 @@ schedules the fix. A rule here beats a habit found in an older file.
       Fantomas's decision, not the author's (§6).
 - [ ] Pipelines read left to right; nested parentheses three deep do not.
 - [ ] A match that only hands out work — `Update.transition` over the
-      messages — has one-line arms, so that it reads as an index of what each
-      case does. An arm that needs more is a private function above the match,
-      named for what it decides and taking what the arm had: `fs`, the state
-      and what the case carries. A pipeline Fantomas would break over several
-      lines takes a name too.
+      messages, `Shell.interpret` over the effects — has one-line arms, so
+      that it reads as an index of what each case does. An arm that needs more
+      is a private function above the match, named for what it decides or
+      does and taking what the arm had: `fs` and the state, or `deps` and
+      `dispatch`, and what the case carries. A pipeline Fantomas would break
+      over several lines takes a name too.
 - [ ] Computation-expression cut-off: three binds, or one nested match.
       FsToolkit.ErrorHandling is already referenced — `result`, `option`,
       `Result.requireTrue` and friends are in scope.

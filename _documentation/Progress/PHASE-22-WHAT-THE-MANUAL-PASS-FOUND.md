@@ -542,3 +542,38 @@ reported once by `reportingClipboardOnce`, as `HistoryUnwritten` is by
 No test was added, removed or changed: 4288 pass and 35 skip on Windows, as
 before. `Update.update` over a cursor moved costs half a microsecond before and
 after; the run is in [Measurements](MEASUREMENTS.md).
+
+**P22.12 has `Shell.interpret` read the same way.** Every arm of the match is
+one line after its pattern. The effects that ran to several are private
+functions above it, named for what they do and taking `deps`, `dispatch` and
+what the effect carries — `confirmDelete`, `askFind`, `pack`, `renameTarget`,
+`chooseDrive`, `showHistory` and the rest — and an arm that reads as a
+pipeline is one: `Reopen(results, gone) |> search deps dispatch`, the way
+`EditFile` already was. `RunProgram` and `RunCommand` dispatch a message of
+two fields and keep their parentheses.
+
+The three groups the plan named each became one function.
+
+- **`rememberAndDispatch`** takes what a prompt answered, remembers what was
+  typed under its kind and dispatches the message the answer makes, if it
+  makes one. The six prompts hand it how to read the text and how to make the
+  message: `_.Target` and `ArchiveEntered >> Some` for the archive,
+  `id` and `EntryName.tryCreate >> Option.map FileNameEntered` for a new
+  file, and so on. `PromptForName` does not remember what it was given —
+  the transition does once the directory is made — and keeps its own shape.
+- **`clipboardAnswer`** turns a clipboard's `Result` into an option and
+  dispatches `ClipboardRefused` on the way. The four arms use it, and so does
+  `emptyClipboard`, which had the same match.
+- **`withFavorites`** loads the favourites and hands them on, or reports the
+  failure. `ShowFavorites` and `LookUpFavorite` hand it what they do with
+  them.
+
+One thing went differently from the plan. A function took the name
+`measureTargets` first, which would have hidden `AppState.measureTargets`
+within the rest of the file; it is `measure`. `Shell.fs` stands at 701 lines.
+[State and effects](../Architecture/STATE-AND-EFFECTS.md) says how the match is
+written, and §4 of [Coding style](../coding-style-conventions.md) names
+`interpret` beside `transition`.
+
+No test was added, removed or changed: 4288 pass and 35 skip on Windows, as
+before. An effect is interpreted once for a command, so nothing was timed.
