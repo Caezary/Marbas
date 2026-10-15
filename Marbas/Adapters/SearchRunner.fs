@@ -52,6 +52,7 @@ let private walk
                 gather ()
                 true)
         )
+        |> Option.ofObj
 
     Task.Run(fun () ->
         let outcome = FileSearch.run fs control pending.Enqueue query ground
@@ -74,7 +75,7 @@ let run (app: IApplication) (fs: IFileSystem) (request: Ports.SearchRequest) =
 
     let timer =
         match request.Run with
-        | Walk(query, ground) -> walk app fs window cancellation (fun () -> showing) query ground |> Some
+        | Walk(query, ground) -> walk app fs window cancellation (fun () -> showing) query ground
         | Reopen _ -> None
 
     app.Run window |> ignore

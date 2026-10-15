@@ -152,7 +152,7 @@ whole story is in [Links](LINKS.md).
 
 **The `PATH` separator is the one platform difference the search reads, and it
 is read where the platform is known.** `HostEnvironment` carries `PATH` as the
-raw string and `Dependencies.create` picks the separator; `FindGround`
+raw string, or `None` when it is not set, and `Dependencies.create` picks the separator; `FindGround`
 `.pathDirectories` takes both as arguments, so the Windows and the Unix split are
 tested on either system. Whether one path lies under another is the second
 difference, and since P15.2 it is one rule: `FileSystemPath.strictlyUnder`,

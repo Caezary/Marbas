@@ -20,6 +20,11 @@ let private pathSeparator platform =
     | Windows -> ';'
     | Unix -> ':'
 
+let private searchPath (fs: IFileSystem) (env: HostEnvironment) =
+    env.SearchPath
+    |> Option.map (FindGround.pathDirectories fs (pathSeparator env.Platform))
+    |> Option.defaultValue []
+
 let private home (env: HostEnvironment) =
     match env.Platform with
     | Windows -> None
@@ -39,7 +44,7 @@ let private handlersFor (fs: IFileSystem) (env: HostEnvironment) =
 
 let private windowProgram (fs: IFileSystem) (env: HostEnvironment) =
     let search: ProgramResolution.ProgramSearch =
-        { Directories = FindGround.pathDirectories fs (pathSeparator env.Platform) env.SearchPath
+        { Directories = searchPath fs env
           Extensions = env.ProgramExtensions
           AppPath = ProgramResolution.registeredAppPath }
 
@@ -94,7 +99,7 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) (log: Lo
           RefuseLink = Links.refusal env.Platform fs
           MakeLink = Links.create links env.Platform fs
           HandlersFor = handlersFor fs env
-          PathDirectories = FindGround.pathDirectories fs (pathSeparator env.Platform) env.SearchPath
+          PathDirectories = searchPath fs env
           EnvironmentVariable = HostEnvironment.variable
           Owner = SessionProcess.current ()
           IsRunning = SessionProcess.isRunning }

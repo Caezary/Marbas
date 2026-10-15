@@ -240,8 +240,9 @@ let private landingPlace (fs: IFileSystem) (destination: FileSystemPath) segment
     |> FileSystemPath.create
 
 let private makeRoom (fs: IFileSystem) (path: FileSystemPath) =
-    fs.Directory.CreateDirectory(fs.Path.GetDirectoryName(FileSystemPath.value path))
-    |> ignore
+    match fs.Path.GetDirectoryName(FileSystemPath.value path) with
+    | null -> ()
+    | directory -> fs.Directory.CreateDirectory directory |> ignore
 
 let private writeContent (fs: IFileSystem) (openContent: unit -> Stream) (path: FileSystemPath) =
     use stream = fs.File.Create(FileSystemPath.value path)

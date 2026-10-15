@@ -129,7 +129,8 @@ one — but for the same reason they are no boundary either, and a search of `/`
 walks into `/proc` and `/sys` like any directory; see
 [Cross-platform](CROSS-PLATFORM.md), *Finding files*. `PATH` is
 read where it can be tested rather than where it is fetched: `HostEnvironment`
-carries the raw string, and `FindGround.pathDirectories` splits it at the
+carries the raw string, or `None` when the variable is not set and there is
+nothing to walk, and `FindGround.pathDirectories` splits it at the
 separator it is handed — `;` on Windows, `:` on Unix — trims the quotes Windows
 allows round an entry, drops what is blank, names a directory once however often
 and in whatever spelling `PATH` repeats it, and leaves out an entry that is not

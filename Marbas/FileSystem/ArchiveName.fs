@@ -23,7 +23,12 @@ let private stem (name: EntryName) =
         | dot -> raw.Substring(0, dot)
 
 let private diskStem (fs: IFileSystem) (directory: FileSystemPath) =
-    match fs.Path.GetPathRoot(FileSystemPath.value directory) |> Seq.tryFind Char.IsLetter with
+    let letter =
+        fs.Path.GetPathRoot(FileSystemPath.value directory)
+        |> Option.ofObj
+        |> Option.bind (Seq.tryFind Char.IsLetter)
+
+    match letter with
     | Some letter -> $"disk{letter}contents"
     | None -> RootStem
 
@@ -47,10 +52,12 @@ let suggest (fs: IFileSystem) (format: ArchiveFormat) (directory: FileSystemPath
 
 let retarget (fs: IFileSystem) (format: ArchiveFormat) (text: string) =
     match fs.Path.GetFileName text with
+    | null
     | "" -> text
     | fileName ->
         let renamed = EntryName.create fileName |> inFormat format |> EntryName.value
 
         match fs.Path.GetDirectoryName text with
-        | directory when String.IsNullOrEmpty directory -> renamed
+        | null
+        | "" -> renamed
         | directory -> fs.Path.Combine(directory, renamed)

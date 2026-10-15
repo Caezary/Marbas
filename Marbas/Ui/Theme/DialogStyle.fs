@@ -34,10 +34,15 @@ let dress (dialog: Dialog) =
     dialog.SetScheme ClassicScheme.dialog |> ignore
     dialog
 
+let private addScheme schemes scheme =
+    match SchemeManager.SchemesToSchemeName schemes with
+    | null -> ()
+    | name -> SchemeManager.AddScheme(name, scheme)
+
 let apply () =
-    SchemeManager.AddScheme(SchemeManager.SchemesToSchemeName Schemes.Dialog, ClassicScheme.dialog)
-    SchemeManager.AddScheme(SchemeManager.SchemesToSchemeName Schemes.Error, ClassicScheme.errorDialog)
-    SchemeManager.AddScheme(SchemeManager.SchemesToSchemeName Schemes.Menu, ClassicScheme.input)
+    addScheme Schemes.Dialog ClassicScheme.dialog
+    addScheme Schemes.Error ClassicScheme.errorDialog
+    addScheme Schemes.Menu ClassicScheme.input
 
     Dialog.DefaultBorderStyle <- Frame
     Dialog.DefaultButtonAlignment <- ButtonAlignment

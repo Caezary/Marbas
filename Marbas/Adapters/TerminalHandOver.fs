@@ -51,8 +51,7 @@ let private sharing (app: IApplication) (work: unit -> 'result) =
     app.ClearScreenNextIteration <- true
     result
 
-let private handingOver (app: IApplication) restart (work: unit -> 'result) =
-    let driverName = app.Driver.GetName()
+let private handingOver (app: IApplication) restart driverName (work: unit -> 'result) =
     stop app restart
 
     try
@@ -61,6 +60,6 @@ let private handingOver (app: IApplication) restart (work: unit -> 'result) =
         start app restart driverName
 
 let lend (app: IApplication) (work: unit -> 'result) =
-    match restartOf (app.GetType()) with
-    | Some restart -> handingOver app restart work
-    | None -> sharing app work
+    match restartOf (app.GetType()), Option.ofObj app.Driver with
+    | Some restart, Some driver -> handingOver app restart (driver.GetName()) work
+    | _ -> sharing app work

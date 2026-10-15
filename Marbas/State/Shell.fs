@@ -123,7 +123,7 @@ let private viewerSearches (deps: Dependencies) dispatch kind : SearchHistory =
     { Texts = fun () -> typedBefore deps kind
       Remember = fun text -> changeHistory deps dispatch (Remember(Typed(kind, text))) |> ignore }
 
-let private showOpened (deps: Dependencies) dispatch problem opened =
+let private showOpened (deps: Dependencies) dispatch problem (opened: Result<FileWindow.Source, _>) =
     match opened with
     | Ok source ->
         use source = source

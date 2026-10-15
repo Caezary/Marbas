@@ -54,6 +54,7 @@ let private drive
                 showLatest latest (FileSystemPath.value >> ProgressDialog.report dialog)
                 true
         )
+        |> Option.ofObj
 
     log (BatchStarted title)
 
@@ -70,7 +71,7 @@ let private drive
     |> ignore
 
     app.Run dialog |> ignore
-    app.RemoveTimeout showing |> ignore
+    showing |> Option.iter (app.RemoveTimeout >> ignore)
     cancellation.Cancel()
 
 let run app log (request: Ports.BatchRequest) =

@@ -37,6 +37,9 @@ let private FriendlyName = "FriendlyAppName"
 [<Literal>]
 let private IndirectString = '@'
 
+[<Literal>]
+let private DefaultValue = ""
+
 let private subKey (root: RegistryKey) (path: string) =
     try
         root.OpenSubKey path |> Option.ofObj
@@ -57,6 +60,8 @@ let private reading root path pick =
 let valueIn root path name =
     reading root path (fun key -> textOf key name) |> Option.flatten
 
+let defaultValueIn root path = valueIn root path DefaultValue
+
 let private namesIn root path =
     reading root path (fun key -> key.GetValueNames() |> List.ofArray)
     |> Option.defaultValue []
@@ -70,7 +75,7 @@ let private valuesIn root path =
     |> Option.defaultValue []
 
 let private commandUnder root path =
-    valueIn root path null
+    defaultValueIn root path
     |> Option.map Environment.ExpandEnvironmentVariables
     |> Option.bind ProgramCommand.programOf
 
@@ -101,7 +106,7 @@ let private progIds (extension: string) =
 
     (valueIn Registry.CurrentUser $@"{user}\{UserChoice}" ProgIdValue
      |> Option.toList)
-    @ (valueIn Registry.ClassesRoot classes null |> Option.toList)
+    @ (defaultValueIn Registry.ClassesRoot classes |> Option.toList)
     @ namesIn Registry.ClassesRoot $@"{classes}\{OpenWithProgids}"
     @ namesIn Registry.CurrentUser $@"{user}\{OpenWithProgids}"
     |> List.filter (fun progId -> progId.Trim() <> "")

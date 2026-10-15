@@ -68,7 +68,7 @@ module private User32 =
 module private Shell32 =
 
     [<DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "DragQueryFileW")>]
-    extern uint32 DragQueryFile(nativeint drop, uint32 index, StringBuilder file, uint32 length)
+    extern uint32 DragQueryFile(nativeint drop, uint32 index, StringBuilder | null file, uint32 length)
 
 module private Kernel32 =
 
@@ -257,9 +257,9 @@ let private textHeld (memory: nativeint) =
     match Kernel32.GlobalLock memory with
     | 0n -> lastFailure ()
     | locked ->
-        let text = Marshal.PtrToStringUni locked
+        let text = Marshal.PtrToStringUni locked |> Option.ofObj
         Kernel32.GlobalUnlock memory |> ignore
-        Ok(Some text)
+        Ok text
 
 let private heldText () =
     if User32.IsClipboardFormatAvailable UnicodeText then

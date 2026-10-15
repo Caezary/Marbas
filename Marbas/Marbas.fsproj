@@ -3,6 +3,7 @@
     <PropertyGroup>
         <OutputType>Exe</OutputType>
         <Description>An orthodox two-panel console file manager.</Description>
+        <Nullable>enable</Nullable>
     </PropertyGroup>
 
     <ItemGroup>

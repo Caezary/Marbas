@@ -88,7 +88,10 @@ let watching (app: IApplication) (fs: IFileSystem) =
     let broken = ref false
     let collapse = ref ignore
 
-    let panelsInFront () = Seq.length app.SessionStack <= 1
+    let panelsInFront () =
+        app.SessionStack
+        |> Option.ofObj
+        |> Option.forall (fun stack -> Seq.length stack <= 1)
 
     let scheduling settled =
         app.AddTimeout(quiet, fun () -> settled ()) |> ignore

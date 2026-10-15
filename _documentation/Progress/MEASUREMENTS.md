@@ -626,3 +626,42 @@ of the rounds.
 **A move costs half a microsecond, before and after.** The median of the five
 launches is 0.497 before and 0.500 after; one launch after is the slowest of
 the ten, and the other four lie inside the spread of the five before.
+
+## A null met where it comes in (P22.15, 2026-10-16)
+
+P22.15 put a check for null in front of what Terminal.Gui and .NET hand back
+typed `| null`, and five of those places lie on hot paths: `FilePanel.fill`
+sets a mark on every row, `rowAttribute` colours every row drawn,
+`PanelWiring` counts the rows on a key, `RewindingStream` sits under the
+viewer of an archived file, and `Archive` makes the directory of every file it
+unpacks. Each swapped one check for null for another, or read the list's
+source once instead of once a row, so nothing should have moved. A probe built
+in Release against the commit before and against the tree after timed three
+of them:
+
+- **panel** — `FilePanel.render` of a listing of 10 000 files and 100
+  directories on `MockFileSystem`, the painting forgotten each round so that
+  every row is filled and marked again; 200 rounds, the median of the last
+  150.
+- **viewer** — a `RewindingStream` over 64 MB in memory, read through in
+  blocks of 64 KB, then 200 blocks read at random places, each one behind the
+  last reopening the stream; 40 rounds, the median of the last 30.
+- **unpack** — `Archive.extract` of a zip of 3 000 files of a hundred bytes in
+  1 020 directories, on `MockFileSystem` so the disk does not drown the
+  difference; 20 rounds, the median of the last 15.
+
+The panel and the viewer ran ten launches of each binary, the one before first
+on odd launches and the one after first on even; the unpacking five, the one
+before first. Milliseconds, the median of the launches and their range.
+
+| | before | after |
+|---|---|---|
+| panel | 8.07 (7.75–8.20) | 8.05 (7.85–8.75) |
+| viewer | 104.8 (98.3–108.2) | 104.8 (101.9–110.8) |
+| unpack | 171 (165–175) | 165 (156–179) |
+
+**Nothing moved.** Each median after lies inside the range before. A first
+run of five launches, the one before always first, put the panel 0.2 ms
+slower after; with the order alternated it is not. The colour of a drawn row
+and the count of rows need a running application and were not timed apart;
+each is still the one check for null it was.

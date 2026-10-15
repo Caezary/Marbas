@@ -31,12 +31,11 @@ let private ShareDirectory = "share"
 [<Literal>]
 let private DeletionDateFormat = "yyyy-MM-ddTHH:mm:ss"
 
-let location (fs: IFileSystem) (dataHome: string) (userProfile: string) =
+let location (fs: IFileSystem) (dataHome: string option) (userProfile: string) =
     let home =
-        if String.IsNullOrWhiteSpace dataHome then
-            fs.Path.Combine(userProfile, LocalDirectory, ShareDirectory)
-        else
-            dataHome
+        match dataHome |> Option.filter (String.IsNullOrWhiteSpace >> not) with
+        | Some home -> home
+        | None -> fs.Path.Combine(userProfile, LocalDirectory, ShareDirectory)
 
     fs.Path.Combine(home, TrashDirectory) |> FileSystemPath.create
 

@@ -142,11 +142,11 @@ let private saysHow tab =
 
 let private source tab rows =
     let columns = Dictionary<string, Func<Row, obj>>()
-    columns.Add(WhenColumn, Func<Row, obj>(fun row -> box row.When))
-    columns.Add(WhatColumn, Func<Row, obj>(fun row -> box row.What))
+    columns.Add(WhenColumn, Func<Row, obj>(fun row -> row.When :> obj))
+    columns.Add(WhatColumn, Func<Row, obj>(fun row -> row.What :> obj))
 
     if saysHow tab then
-        columns.Add(HowColumn, Func<Row, obj>(fun row -> box row.How))
+        columns.Add(HowColumn, Func<Row, obj>(fun row -> row.How :> obj))
 
     EnumerableTableSource<Row>(rows, columns)
 
@@ -216,15 +216,25 @@ let headerLength available =
     |> min (longestTitle + 2 * HeaderPadding + HeaderEdges)
     |> max (longestTitle + HeaderEdges)
 
-let private borderOf (shown: TableView) = shown.Border.View :?> BorderView
+let private borderOf (shown: TableView) =
+    match shown.Border.View with
+    | :? BorderView as border -> Some border
+    | _ -> None
 
-let header tab (dialog: HistoryView) = (borderOf (table tab dialog)).TitleView
+let header tab (dialog: HistoryView) =
+    borderOf (table tab dialog)
+    |> Option.bind (fun border -> Option.ofObj border.TitleView)
+
+let private dressTitle (title: View) =
+    title.TextAlignment <- Alignment.Center
+    title.SetScheme ClassicScheme.tabHeader |> ignore
 
 let private dressHeader length (shown: TableView) =
-    let border = borderOf shown
-    border.TabLength <- Nullable length
-    border.TitleView.TextAlignment <- Alignment.Center
-    border.TitleView.SetScheme ClassicScheme.tabHeader |> ignore
+    match borderOf shown with
+    | Some border ->
+        border.TabLength <- Nullable length
+        border.TitleView |> Option.ofObj |> Option.iter dressTitle
+    | None -> ()
 
 let private dressHeaders (container: Tabs) tables =
     let length = headerLength container.Viewport.Width

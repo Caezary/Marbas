@@ -28,7 +28,7 @@ let private isFileUri (text: string) =
 
 let private uriPath (text: string) =
     match Uri.TryCreate(text, UriKind.Absolute) with
-    | true, uri when uri.IsFile && uri.LocalPath.Trim('\\', '/') <> "" -> Some uri.LocalPath
+    | true, NonNull uri when uri.IsFile && uri.LocalPath.Trim('\\', '/') <> "" -> Some uri.LocalPath
     | _ -> None
 
 let private homeVariable platform =

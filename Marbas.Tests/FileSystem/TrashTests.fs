@@ -35,7 +35,7 @@ let private inTrash directory name =
 let ``the data home holds the trash when it is set`` () =
     let fs = mockFs ()
 
-    let location = Trash.location fs (at "data") (at "home")
+    let location = Trash.location fs (Some(at "data")) (at "home")
 
     Assert.Equal(fp (at "data/Trash"), location)
 
@@ -43,7 +43,15 @@ let ``the data home holds the trash when it is set`` () =
 let ``without a data home the trash sits under the user profile`` () =
     let fs = mockFs ()
 
-    let location = Trash.location fs "" (at "home")
+    let location = Trash.location fs None (at "home")
+
+    Assert.Equal(fp (at "home/.local/share/Trash"), location)
+
+[<Fact>]
+let ``a blank data home is taken as none`` () =
+    let fs = mockFs ()
+
+    let location = Trash.location fs (Some " ") (at "home")
 
     Assert.Equal(fp (at "home/.local/share/Trash"), location)
 

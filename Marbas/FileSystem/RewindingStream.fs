@@ -11,22 +11,22 @@ module private Rewinding =
 type RewindingStream(length: int64, openSource: unit -> Stream) =
     inherit Stream()
 
-    let mutable current: Stream = null
+    let mutable current: Stream option = None
     let mutable position = 0L
     let scratch = lazy Array.zeroCreate<byte> Rewinding.SkipLength
 
     let currentStream () =
-        if isNull current then
-            current <- openSource ()
+        match current with
+        | Some stream -> stream
+        | None ->
+            let stream = openSource ()
+            current <- Some stream
             position <- 0L
-
-        current
+            stream
 
     let closed () =
-        if not (isNull current) then
-            current.Dispose()
-            current <- null
-
+        current |> Option.iter _.Dispose()
+        current <- None
         position <- 0L
 
     let rec skipping (stream: Stream) (remaining: int64) =

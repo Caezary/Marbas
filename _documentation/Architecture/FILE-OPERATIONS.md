@@ -208,8 +208,9 @@ failed delete leaves no phantom entry behind. Because every step goes through
 `IFileSystem` — the move is `Operations.moveToPath`, which copies and deletes a
 directory rather than renaming it across volumes — the whole thing is tested on
 `MockFileSystem`, on both platforms, without a real trash anywhere.
-`Trash.location` picks `$XDG_DATA_HOME/Trash` or falls back to
-`$HOME/.local/share/Trash`, mirroring `Settings.location`.
+`Trash.location` picks `$XDG_DATA_HOME/Trash` or, when the variable is not
+set or blank, falls back to `$HOME/.local/share/Trash`, mirroring
+`Settings.location`; `HostEnvironment` hands it over as an `option`.
 
 **A session gets a directory to work in, and takes it with it when it goes.**
 Some operations need somewhere to put a file that belongs to neither panel — an

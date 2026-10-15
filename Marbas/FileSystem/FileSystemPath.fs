@@ -39,7 +39,9 @@ module FileSystemPath =
         FileSystemPath(fs.Path.Combine(path, name))
 
     let name (fs: IFileSystem) (FileSystemPath path) =
-        fs.Path.GetFileName path |> EntryName.create
+        match fs.Path.GetFileName path with
+        | null -> EntryName.create ""
+        | fileName -> EntryName.create fileName
 
     let platformOf (fs: IFileSystem) =
         if fs.Path.DirectorySeparatorChar = '\\' then
@@ -96,7 +98,9 @@ module FileSystemPath =
         && String.IsNullOrEmpty(fs.Path.GetDirectoryName name)
 
     let directory (fs: IFileSystem) (FileSystemPath path) =
-        FileSystemPath(fs.Path.GetDirectoryName path)
+        match fs.Path.GetDirectoryName path with
+        | null -> FileSystemPath path
+        | containing -> FileSystemPath containing
 
     let resolvedFrom (fs: IFileSystem) (FileSystemPath directory) (path: string) =
         FileSystemPath(fs.Path.GetFullPath(fs.Path.Combine(directory, path)))

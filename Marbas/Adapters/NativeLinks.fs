@@ -73,7 +73,10 @@ let private PermissionDenied = 13
 
 let private windowsFailure () =
     let code = Marshal.GetLastPInvokeError()
-    raise (Marshal.GetExceptionForHR(int (0x80070000u ||| uint32 code)))
+
+    match Marshal.GetExceptionForHR(int (0x80070000u ||| uint32 code)) with
+    | null -> raise (IOException(Marshal.GetPInvokeErrorMessage code))
+    | failure -> raise failure
 
 let private unixFailure () =
     let code = Marshal.GetLastPInvokeError()

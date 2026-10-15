@@ -86,6 +86,9 @@ schedules the fix. A rule here beats a habit found in an older file.
       in different directories may share one.
 - [ ] Impossible states are unbuildable — `FindQuery` cannot carry options
       without text, `Zipper` cannot be empty, `ArchivePath` cannot climb.
+- [ ] **Never let a null propagate into the system**. Always convert them with
+      `| null ->` arm, `Option.ofObj`, or `NonNull` to an `option` or a plain
+      value, exactly where the null would originate.
 - [ ] A view id, a label string or a `%O` rendering is never the identity of
       anything.
 - [ ] Where a domain type looks impractical, ask before falling back to a

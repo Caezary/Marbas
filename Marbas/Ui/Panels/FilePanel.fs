@@ -31,7 +31,11 @@ let footer (panel: View) = SubView.byType<Label> panel
 let private rowColor (panel: PanelView) row = panel.RowColors |> Array.tryItem row
 
 let private rowAttribute (panel: PanelView) (list: ListView) row =
-    let marked = list.Source <> null && list.Source.IsMarked row
+    let marked =
+        match list.Source with
+        | null -> false
+        | source -> source.IsMarked row
+
     let underCursor = list.HasFocus && list.SelectedItem.GetValueOrDefault -1 = row
 
     match underCursor, marked with
@@ -105,8 +109,11 @@ let private fill (panel: PanelView) (list: ListView) (painting: PanelRows.Painti
 
     list.SetSource(ObservableCollection rows)
 
-    painting.Entries
-    |> Array.iteri (fun index entry -> list.Source.SetMark(index, painting.Selected.Contains entry.Name))
+    match list.Source with
+    | null -> ()
+    | source ->
+        painting.Entries
+        |> Array.iteri (fun index entry -> source.SetMark(index, painting.Selected.Contains entry.Name))
 
 let render (fs: IFileSystem) (taken: int) (state: PanelState) (panel: PanelView) =
     panel.Title <- PanelTitle.describe fs (roomForTitle panel taken) state.Path state.Sort state.Hidden

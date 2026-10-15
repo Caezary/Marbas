@@ -22,13 +22,13 @@ type HostEnvironment =
     { Platform: Platform
       UserProfile: string
       ApplicationData: string
-      DataHome: string
-      DataDirectories: string
-      ConfigHome: string
-      ConfigDirectories: string
+      DataHome: string option
+      DataDirectories: string option
+      ConfigHome: string option
+      ConfigDirectories: string option
       TemporaryRoot: string
       Session: string
-      SearchPath: string
+      SearchPath: string option
       ProgramExtensions: string list
       Editor: string option
       Logging: Logging }
@@ -58,9 +58,9 @@ module HostEnvironment =
 
     let private defaultProgramExtensions = [ ".COM"; ".EXE"; ".BAT"; ".CMD" ]
 
-    let programExtensions (raw: string) =
+    let programExtensions (raw: string option) =
         let listed =
-            (Option.ofObj raw |> Option.defaultValue "").Split ';'
+            (raw |> Option.defaultValue "").Split ';'
             |> Array.toList
             |> List.map _.Trim()
             |> List.filter ((<>) "")
@@ -69,23 +69,23 @@ module HostEnvironment =
         | [] -> defaultProgramExtensions
         | extensions -> extensions
 
-    let current (arguments: string array) =
-        { Platform = if OperatingSystem.IsWindows() then Windows else Unix
-          UserProfile = Environment.GetFolderPath Environment.SpecialFolder.UserProfile
-          ApplicationData = Environment.GetFolderPath Environment.SpecialFolder.ApplicationData
-          DataHome = Environment.GetEnvironmentVariable DataHomeVariable
-          DataDirectories = Environment.GetEnvironmentVariable DataDirectoriesVariable
-          ConfigHome = Environment.GetEnvironmentVariable ConfigHomeVariable
-          ConfigDirectories = Environment.GetEnvironmentVariable ConfigDirectoriesVariable
-          TemporaryRoot = IO.Path.GetTempPath()
-          Session = Guid.NewGuid().ToString "N"
-          SearchPath = Environment.GetEnvironmentVariable SearchPathVariable
-          ProgramExtensions = programExtensions (Environment.GetEnvironmentVariable ProgramExtensionsVariable)
-          Editor = Environment.GetEnvironmentVariable EditorVariable |> Option.ofObj
-          Logging = Logging.ofArguments arguments }
-
     let variable (name: string) =
         match Environment.GetEnvironmentVariable name with
         | null
         | "" -> None
         | value -> Some value
+
+    let current (arguments: string array) =
+        { Platform = if OperatingSystem.IsWindows() then Windows else Unix
+          UserProfile = Environment.GetFolderPath Environment.SpecialFolder.UserProfile
+          ApplicationData = Environment.GetFolderPath Environment.SpecialFolder.ApplicationData
+          DataHome = variable DataHomeVariable
+          DataDirectories = variable DataDirectoriesVariable
+          ConfigHome = variable ConfigHomeVariable
+          ConfigDirectories = variable ConfigDirectoriesVariable
+          TemporaryRoot = IO.Path.GetTempPath()
+          Session = Guid.NewGuid().ToString "N"
+          SearchPath = variable SearchPathVariable
+          ProgramExtensions = programExtensions (variable ProgramExtensionsVariable)
+          Editor = variable EditorVariable
+          Logging = Logging.ofArguments arguments }

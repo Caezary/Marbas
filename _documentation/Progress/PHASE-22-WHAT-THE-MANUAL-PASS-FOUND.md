@@ -675,3 +675,67 @@ with a named `StringComparison`, §11 has the command, the rules it runs and
 why the rest are off, [Development](../DEVELOPMENT.md) the setup, and
 [Overview](../Architecture/OVERVIEW.md) the new file. 4292 tests pass and 35
 skip on Windows, the two new ones among them.
+
+**P22.15 meets a null where it comes in, in `Marbas`.** `Marbas.fsproj` sets
+`<Nullable>enable</Nullable>`, and the seventy-four reports it raised under
+`TreatWarningsAsErrors`, at fifty-eight places — twenty-six in `Adapters`,
+twenty-four in `FileSystem`, twenty-three in `Ui` and one in `State` — are
+answered. The build is clean with it on.
+
+The one gap in the model came first. `HostEnvironment` kept `DataHome`,
+`DataDirectories`, `ConfigHome`, `ConfigDirectories` and `SearchPath` as
+`string`, and a variable that is not set left a null in the record. They are
+`string option` now, read through `HostEnvironment.variable`, which already
+answered `None` for a variable unset or empty. `TrashTests` and
+`XdgDirectoriesTests` first handed `Trash.location` and
+`XdgDirectories.resolve` `None` where they had handed a null or an empty
+string, and failed to compile until the signatures followed; each gained a
+test that a blank variable is taken as unset, as `String.IsNullOrWhiteSpace`
+took it before. `FindGround.pathDirectories` still takes the raw string:
+`Dependencies.create` answers no directories for a `PATH` that is not set.
+
+Everywhere else the null is met on the line it arrives on, with a `| null ->`
+arm, `Option.ofObj`, or `NonNull` inside a larger pattern: the token of
+`AddTimeout`, the stack of sessions, the driver, the popovers, the source of
+a `ListView`, the title of a tab, the name of a scheme, a code page, the root
+of a path, a `Uri` parsed, an exception made of an `HRESULT`, the text on the
+clipboard. Where the null is not one at all, it is said so: the registry's
+default value is read by the name `""` — `GetValue ""` and `GetValue null`
+answered the same `txtfilelegacy` for `HKCR\.txt` — the `DragQueryFile`
+import declares its buffer `StringBuilder | null`, as Win32 does, a column of
+the history table upcasts a string where it boxed one, and `Shell.showOpened`
+names the type its `use` binds.
+
+Four things went beyond the plan.
+
+- **A root is its own directory.** `FileSystemPath.directory` wrapped what
+  `Path.GetDirectoryName` answered, and for a root that is a null, so the
+  directory of `C:\` was a `FileSystemPath` holding nothing. A test in
+  `FileSystemPathTests` asked for it first and failed on exactly that; the
+  root now answers itself.
+- **`PATHEXT` and `EDITOR` are read through `variable` too.**
+  `programExtensions` takes a `string option`, and its tests hand it `None`
+  where they handed a null. An `EDITOR` set to nothing is `None` now, not
+  `Some ""`; `EditorCommand.choose` took both to the fallback before and does
+  still.
+- **`HistoryDialog.header` answers an option**, since the title view of a
+  border is typed `| null`; the two tests that read it unwrap it with
+  `Expect.some`. Nothing they assert changed.
+- **`RewindingStream` keeps its open stream as an option** rather than a null
+  it set itself.
+
+Five of the changes lie on hot paths: the marks a panel sets on every row it
+fills, the colour of each row it draws, the count of rows a key reads, the
+stream under the viewer of an archived file, and the directory made for each
+file unpacked. Each swapped one check for null for another, or took the
+property read out of the loop; the panel, the viewer and the unpacking were
+timed before and after and are in
+[Measurements](MEASUREMENTS.md#a-null-met-where-it-comes-in-p2215-2026-10-16),
+inside the spread of each. The draw of a row and the count need a running
+application and were not timed apart. §3 of
+[Coding style](../coding-style-conventions.md) says where a null from .NET is
+met and what it becomes; [Cross-platform](../Architecture/CROSS-PLATFORM.md),
+[Finding files](../Architecture/FINDING-FILES.md) and
+[File operations](../Architecture/FILE-OPERATIONS.md) say how an unset
+variable is carried. 4295 tests pass and 35 skip on Windows, the three new ones
+among them.

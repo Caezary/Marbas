@@ -14,7 +14,9 @@ type Host =
       IsSearching: PanelSide -> bool }
 
 let private count (list: ListView) =
-    if list.Source = null then 0 else list.Source.Count
+    match list.Source with
+    | null -> 0
+    | source -> source.Count
 
 let private cursor (list: ListView) = list.SelectedItem.GetValueOrDefault 0
 

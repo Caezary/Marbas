@@ -178,7 +178,10 @@ module TextEncoding =
         | Cp437 -> [| 0x0Auy |]
 
     let private codePage (number: int) =
-        lazy (CodePagesEncodingProvider.Instance.GetEncoding number)
+        lazy
+            (match CodePagesEncodingProvider.Instance.GetEncoding number with
+             | null -> Encoding.Latin1
+             | encoding -> encoding)
 
     let private windows1250 = codePage 1250
 

@@ -63,6 +63,15 @@ let ``directory returns the containing path`` () =
     Assert.Equal(at "data", FileSystemPath.value containing)
 
 [<Fact>]
+let ``a root is its own directory`` () =
+    let fs = MockFileSystem()
+    let rootPath = FileSystemPath.create (at "")
+
+    let containing = FileSystemPath.directory fs rootPath
+
+    Assert.Equal(rootPath, containing)
+
+[<Fact>]
 let ``parent returns the enclosing directory`` () =
     let fs = MockFileSystem()
     fs.AddDirectory(at "data/docs")

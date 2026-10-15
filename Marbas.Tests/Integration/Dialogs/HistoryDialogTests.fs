@@ -133,7 +133,7 @@ let ``every tab header is as wide as the others`` () =
 let ``a tab header centres its title`` () =
     use dialog = laidOut folders FolderHistoryTab
 
-    let header = HistoryDialog.header ViewHistoryTab dialog
+    let header = HistoryDialog.header ViewHistoryTab dialog |> Expect.some
 
     Assert.Equal(Alignment.Center, header.TextAlignment)
 
@@ -141,7 +141,7 @@ let ``a tab header centres its title`` () =
 let ``the header of the tab in front is drawn like the others`` () =
     use dialog = laidOut folders FolderHistoryTab
 
-    let header = HistoryDialog.header FolderHistoryTab dialog
+    let header = HistoryDialog.header FolderHistoryTab dialog |> Expect.some
 
     Assert.Equal(header.GetAttributeForRole VisualRole.Normal, header.GetAttributeForRole VisualRole.Focus)
 

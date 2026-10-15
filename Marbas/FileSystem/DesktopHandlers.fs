@@ -28,8 +28,10 @@ module XdgDirectories =
         |> List.map _.Trim()
         |> List.filter (fun part -> part <> "")
 
-    let private orElse fallback (raw: string) =
-        if String.IsNullOrWhiteSpace raw then fallback else raw
+    let private orElse fallback (raw: string option) =
+        raw
+        |> Option.filter (String.IsNullOrWhiteSpace >> not)
+        |> Option.defaultValue fallback
 
     let resolve (fs: IFileSystem) home dataHome dataDirectories configHome configDirectories =
         { Data =

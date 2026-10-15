@@ -71,4 +71,4 @@ let windowProgram (fs: IFileSystem) (search: ProgramSearch) (workingDirectory: F
 
 let registeredAppPath (key: string) =
     [ Registry.CurrentUser; Registry.LocalMachine ]
-    |> List.tryPick (fun root -> RegistryHandlers.valueIn root $@"{AppPaths}\{key}" null)
+    |> List.tryPick (fun root -> RegistryHandlers.defaultValueIn root $@"{AppPaths}\{key}")

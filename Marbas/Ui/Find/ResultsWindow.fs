@@ -45,7 +45,9 @@ let summary (window: ResultsView) = SubView.byId<View> SummaryId window
 let keyBar (window: ResultsView) = SubView.byId<View> KeyBarId window
 
 let private shownLines (window: ResultsView) =
-    (list window).Source.ToList() :?> ObservableCollection<string>
+    match (list window).Source with
+    | null -> None
+    | source -> Some(source.ToList() :?> ObservableCollection<string>)
 
 let private cursor (window: ResultsView) =
     (list window).SelectedItem |> Option.ofNullable |> Option.defaultValue 0
@@ -86,6 +88,11 @@ let private leave (window: ResultsView) (stop: unit -> unit) (close: Window -> u
     match window.Step ResultsState.leaving with
     | StopsWalk -> stop ()
     | ClosesWindow -> close window
+
+let private standAt (hits: ListView) cursor =
+    match hits.Source with
+    | null -> ()
+    | source -> hits.SelectedItem <- max 0 (min cursor (source.Count - 1))
 
 let create (fs: IFileSystem) (run: SearchRun) (view: FindHit -> unit) (stop: unit -> unit) (close: Window -> unit) =
     let window = new ResultsView(fs, run)
@@ -135,16 +142,18 @@ let create (fs: IFileSystem) (run: SearchRun) (view: FindHit -> unit) (stop: uni
 
     match run with
     | Walk _ -> ()
-    | Reopen(results, _) -> hits.SelectedItem <- max 0 (min results.Cursor (hits.Source.Count - 1))
+    | Reopen(results, _) -> standAt hits results.Cursor
 
     window
 
 let add (window: ResultsView) (reports: FindReport list) =
-    let lines = shownLines window
     let room = ResultsState.room window.State
+    let added = window.Step(ResultsState.arrived reports)
 
-    for row in window.Step(ResultsState.arrived reports) do
-        lines.Add(ResultRow.describe window.FileSystem room row)
+    shownLines window
+    |> Option.iter (fun lines ->
+        for row in added do
+            lines.Add(ResultRow.describe window.FileSystem room row))
 
     updateSummary window
     (list window).SetNeedsDraw()

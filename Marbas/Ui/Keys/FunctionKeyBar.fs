@@ -41,8 +41,8 @@ let build id (names: string list) =
     names
     |> List.iteri (fun index name ->
         let slot = new SlotView(name)
-        slot.X <- Pos.Func((fun (view: View) -> (KeyBarLayout.cell count index view.Viewport.Width).X), bar)
-        slot.Width <- Dim.Func((fun (view: View) -> (KeyBarLayout.cell count index view.Viewport.Width).Width), bar)
+        slot.X <- Pos.Func((fun _ -> (KeyBarLayout.cell count index bar.Viewport.Width).X), bar)
+        slot.Width <- Dim.Func((fun _ -> (KeyBarLayout.cell count index bar.Viewport.Width).Width), bar)
         bar.Add slot |> ignore)
 
     bar
