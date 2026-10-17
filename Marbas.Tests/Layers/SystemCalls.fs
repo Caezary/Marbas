@@ -44,16 +44,18 @@ let private watchedTypes =
 
 let private watchedNamespaces = [ "Microsoft.Win32"; "System.Net" ]
 
+let private instrumentationNamespaces = [ "Coverlet" ]
+
 let rec private outermost (declaring: TypeReference) =
     match declaring.DeclaringType with
     | null -> declaring
     | outer -> outermost outer
 
-let private inWatchedNamespace (declaring: TypeReference) =
+let private inAnyOf namespaces (declaring: TypeReference) =
     let space = (outermost declaring).Namespace
 
-    watchedNamespaces
-    |> List.exists (fun watched -> space = watched || space.StartsWith(watched + ".", StringComparison.Ordinal))
+    namespaces
+    |> List.exists (fun name -> space = name || space.StartsWith(name + ".", StringComparison.Ordinal))
 
 let private isWatched (callee: MethodReference) =
     let declaring = callee.DeclaringType.GetElementType()
@@ -61,7 +63,7 @@ let private isWatched (callee: MethodReference) =
     match Map.tryFind declaring.FullName watchedTypes with
     | Some EveryMember -> true
     | Some(Members names) -> List.contains callee.Name names
-    | None -> inWatchedNamespace declaring
+    | None -> inAnyOf watchedNamespaces declaring
 
 let private placeOfSource (url: string) =
     let source = url.Replace('\\', '/')
@@ -115,6 +117,7 @@ let private calls =
              AssemblyDefinition.ReadAssembly(location, ReaderParameters(ReadSymbols = true))
 
          assembly.MainModule.GetTypes()
+         |> Seq.filter (inAnyOf instrumentationNamespaces >> not)
          |> Seq.collect _.Methods
          |> Seq.collect callsOf
          |> Seq.distinct

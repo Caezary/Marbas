@@ -326,6 +326,13 @@ outermost type. The file matters more than the namespace for the static
 initialiser of a file that opens with `namespace`, which F# compiles into
 `<StartupCode$Marbas>.$<file name>` and so names no layer at all.
 
+CI collects coverage, and the coverlet collector instruments `Marbas.dll` in
+place before the tests read it: every method gains a call to a tracker type it
+adds under `Coverlet.Core.Instrumentation.Tracker`, and that tracker writes its
+hits to disk. The scan skips the types of the `Coverlet` namespace, so a run
+with `--settings coverlet.runsettings` sees the same assembly a run without it
+does.
+
 `nothing outside Adapters and Program reaches the system directly` fails with
 one line per call, naming the method and what it called:
 ``Marbas.State.Runtime/Runtime`3::paint calls System.IO.File::Exists``.
