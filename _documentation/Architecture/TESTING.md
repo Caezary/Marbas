@@ -1,7 +1,8 @@
 # Testing notes
 
-Tests live in `Marbas.Tests` (xUnit). Logic modules (`Domain`, `FileSystem`,
-`State`) are covered directly; UI behaviour is covered by driving real
+Tests live in `Marbas.Tests` (xUnit). Logic modules (`Collections`, `Domain`,
+`FileSystem`, `Programs`, `Profile`, `Locations`, `Viewing`, `Find`,
+`Messages`, `State`) are covered directly; UI behaviour is covered by driving real
 Terminal.Gui views with an in-memory file system (`MockFileSystem`). The disk is
 reached by one folder only, `Integration/Disk/` — and by the Windows clipboard
 tests in `Integration/Clipboard/`, which paste into a scratch directory — and
@@ -209,8 +210,9 @@ listed with one.
 
 ## Layout
 
-`Domain/`, `FileSystem/`, `Messages/`, `State/` and `Ui/` mirror the source
-folders they cover, one test module per module under test, and namespaces
+`Collections/`, `Domain/`, `FileSystem/`, `Programs/`, `Profile/`,
+`Locations/`, `Viewing/`, `Find/`, `Messages/`, `State/`, `Ui/` and `Adapters/`
+mirror the source folders they cover, one test module per module under test, and namespaces
 follow: `Marbas.Tests.State.PanelStateTests` covers `Marbas.State.PanelState`.
 `Ui/` and `FileSystem/` mirror the source down to the subfolder, so
 `Ui/Panels/PanelTitleTests.fs` covers `Ui/Panels/PanelTitle.fs` as

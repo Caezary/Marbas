@@ -325,3 +325,56 @@ new order and `Archives/` beneath it, and
 [Testing](../Architecture/TESTING.md) says that `FileSystem/` mirrors the
 source down to the subfolder and that a folder inside a layer stays in it.
 The modules the code map still misses wait for P23.8.
+
+**P23.8 Where a new module goes.** The rule is written where it is read first.
+[Overview](../Architecture/OVERVIEW.md) opens with the whole chain, `Program`
+down to `Collections`, says that a layer uses only what its row allows and
+that `LayerReferenceTests` holds it, and has a paragraph on the five layers
+above `FileSystem`: what each holds, why its subject and not its reaching the
+disk put it there, which of them read which, and that `IFileSystem` is taken
+by every layer below `Adapters`. Its paragraph on `Messages` says which layers
+it words, and the one on `Ui` no longer prints the old chain.
+[State and effects](../Architecture/STATE-AND-EFFECTS.md) opens with the same
+chain and where `State` stands in it. §1 of
+[Coding style](../coding-style-conventions.md) says where a new module goes —
+into the layer whose subject it extends; into `FileSystem` only when it is
+about entries, paths, operations or archives and more than one layer needs it;
+into a new layer, with its row in the table and in `LayerReferences.fs`, when
+it fits none — and its row of `FileSystem` no longer calls `IFileSystem` its
+own. The rows of `State`, `Ui` and `Adapters` all say "every layer above it in
+this table", which is what the test's `mayUse` lists for them; row by row the
+two tables now name the same layers. `.claude/CLAUDE.md` and
+[Development](../DEVELOPMENT.md) name the chain in their rule on dependencies,
+the first with where a new module goes.
+
+The code map was compared, line by line, with the `Compile` items of
+`Marbas.fsproj` and now lists all 221 modules in the order they are compiled.
+Twenty-one were missing — `Likeness`, `FavoriteSlot`, `ClipboardText`,
+`ClipboardError` and `ClipboardIntent` of `Domain`; `PastedPath`,
+`ClipboardFiles`, `ArchiveError`, `Shortcut`, `EntryProperties`,
+`ArchiveNames` and `ArchiveIndex` of `FileSystem`; `SubView`, `PanelRows`,
+`HistoryField`, `KeepFavoriteDialog`, `FavoriteRow` and `FavoritesDialog` of
+`Ui`; and `SystemClipboard` of `Adapters` — and four stood out of their
+place: `ArchiveErrorMessage`, `OpenWithDialog`, `DirectoryWatch` and
+`NativeLinks`. The map of the tests names the folder of every layer's tests.
+
+A search of the documents for every module that left `FileSystem`, by its path
+and by its namespace, found three paths — `UserMenu` in
+[Domain types](../Architecture/DOMAIN-TYPES.md), `CommandRun` in
+[State and effects](../Architecture/STATE-AND-EFFECTS.md), `ExpansionRefusal`
+in Overview — and seven sentences that put a moved module in `FileSystem`:
+`DirectoryMeasure`, `ProgramImage` and the parsing of handlers in
+[File operations](../Architecture/FILE-OPERATIONS.md), `Elevation` in Domain
+types, and the settings file as the reason for `PanelSide` and `Zipper` in
+Domain types, [Settings persistence](../Architecture/SETTINGS-PERSISTENCE.md)
+and [Tabs](../Architecture/TABS.md). Each now names the layer it is in.
+[Archives](../Architecture/ARCHIVES.md) and
+[Finding files](../Architecture/FINDING-FILES.md) named none.
+[Testing](../Architecture/TESTING.md) lists every layer its unit tests cover
+and every folder that mirrors the source. The plans, the journals and the
+reports of earlier phases are left as they were written: they say where a
+module was then. [The plan](../PLAN.md) points from its first suggested
+layout to Overview and Coding style for the layers as they stand.
+
+No code changed, so the suite was not run again; the counts are those of
+P23.7. With this task phase 23 is done.

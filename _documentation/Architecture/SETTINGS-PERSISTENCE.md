@@ -129,7 +129,8 @@ blocks are taken in ascending order, which is what makes a hand-edited file
 survive having a block cut out of it.
 
 **`PanelSide` had to move down for this.** The file names the active panel, and
-`FileSystem` cannot reach `State`, so `PanelSide` left `AppState` for
+the layer that reads it — `FileSystem` then, `Profile` since P23.5 — cannot
+reach `State`, so `PanelSide` left `AppState` for
 `Marbas.Domain` — a namespace for the words the whole application speaks. The
 rest of them followed in one pass rather than one type at a time; see
 [DOMAIN-TYPES.md](DOMAIN-TYPES.md), *The vocabulary sits below every layer that

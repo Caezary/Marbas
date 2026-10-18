@@ -18,8 +18,8 @@ can point past the end, and *the last tab cannot be closed* needs no check:
 to remove into. The alternative, a list and an index, would have put a guard in
 `closeTab`, a clamp in `switchTab` and an empty-list case in `Settings.parse`,
 three places where the type now says it for us. `Zipper` lives in
-`Marbas.Collections`, below `FileSystem`, because the settings file needs it as
-much as the state does.
+`Marbas.Collections`, below every other layer, because `Settings` in `Profile`
+needs it as much as the state does.
 
 **The panels are read through the tab in front, and the outside sees no
 difference.** `AppState.Left`, `.Right` and `.Active` are members that answer

@@ -204,8 +204,10 @@ that is already there and removes nothing. The steps are in
   `MockFileSystem` and never touch the disk.
 - No code comments — names and tests carry the intent; anything that needs
   explaining goes into `_documentation/*.md`.
-- Dependencies flow downward only: `Adapters` → `Ui` → `State` → `Messages` →
-  `FileSystem` → `Domain`.
+- Dependencies flow downward only: `Program` → `Adapters` → `Ui` → `State` →
+  `Messages` → `Find` → `Viewing` → `Locations` → `Profile` → `Programs` →
+  `FileSystem` → `Domain` → `Collections`, and only to the layers a row of
+  [Coding style](coding-style-conventions.md), §1, allows.
 - Mind the hot paths — a key in a panel, a listing, the viewer, a copy or a
   move, a search, on disk and inside archives: a change there is timed before
   and after ([Coding style](coding-style-conventions.md), §10).

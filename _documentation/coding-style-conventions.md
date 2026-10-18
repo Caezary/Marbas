@@ -11,16 +11,16 @@ schedules the fix. A rule here beats a habit found in an older file.
 |-------|-------|---------|
 | `Collections/` | `Zipper` and the like — no domain knowledge | nothing |
 | `Domain/` | the vocabulary: `EntryName`, `NamePattern`, `SortOrder`, `HiddenEntries`, `FindQuery` | `Collections` |
-| `FileSystem/` | reading and writing disks and archives, every call through `IFileSystem`; `FileSystemPath` is declared here, not in `Domain`; the archives sit in `FileSystem/Archives/` as `Marbas.FileSystem.Archives`, compiled after the rest | `Domain` |
+| `FileSystem/` | what the application knows about entries: the paths, the listing, the operations, the session's own directories; `FileSystemPath` is declared here, not in `Domain`; the archives sit in `FileSystem/Archives/` as `Marbas.FileSystem.Archives`, compiled after the rest | `Domain` |
 | `Programs/` | what runs a file, and how it is started: the request, the handlers the system offers, the editor, a command line | `FileSystem`, `Domain` |
 | `Profile/` | what the user keeps between sessions: the settings, the history, the favourites, the user menu, each read and written through `IFileSystem` | `Programs`, `FileSystem`, `Domain`, `Collections` |
 | `Locations/` | where a panel stands, where it lands, what it lists | `FileSystem`, `Domain` |
 | `Viewing/` | a file's content as a window of bytes and lines: its encoding, the window, the lines, the viewer's searches | `FileSystem`, `Domain` |
 | `Find/` | searching by name and by text, on disk and inside archives | `Locations`, `Viewing`, `FileSystem`, `Domain` |
 | `Messages/` | the words the application says: an error or a question -> text, and `Problem`, everything that is reported to the user | `Profile`, `Programs`, `FileSystem`, `Domain` |
-| `State/` | `AppState`, messages, transitions, `Effect`; `Runtime` holds the one mutable cell; then `Ports.Dependencies` as ports, `Shell.interpret` and `Startup` | `Messages` and below |
-| `Ui/` | views, key maps, and the wiring of both to the runtime | `State` and below |
-| `Adapters/` | the real ports: dialogs, processes, registry, watches, runners | everything above it |
+| `State/` | `AppState`, messages, transitions, `Effect`; `Runtime` holds the one mutable cell; then `Ports.Dependencies` as ports, `Shell.interpret` and `Startup` | every layer above it in this table |
+| `Ui/` | views, key maps, and the wiring of both to the runtime | every layer above it in this table |
+| `Adapters/` | the real ports: dialogs, processes, registry, watches, runners | every layer above it in this table |
 | `Program.fs` | starts the application, nothing else | `Adapters` |
 
 - [ ] Dependencies point downward only, and only to the layers a row allows.
@@ -41,6 +41,16 @@ schedules the fix. A rule here beats a habit found in an older file.
       [Testing](Architecture/TESTING.md#the-layers-a-test-holds) has the list.
 - [ ] A type belongs to the lowest layer that speaks it, not the one that needed
       it first.
+- [ ] A new module goes into the layer whose subject it extends: a new way of
+      reading a file's content into `Viewing`, a new place a panel can stand
+      into `Locations`, a new file the user keeps into `Profile`. It goes into
+      `FileSystem` only when it is about entries, paths, operations or
+      archives and more than one layer above needs it — reaching the disk is
+      no reason, since every layer below `Adapters` takes `IFileSystem`. A
+      module that fits no layer starts a new one, with its row in this table
+      and in `Layers/LayerReferences.fs`, its folder and its namespace; it is
+      never put in the nearest folder because that is where similar code
+      already sits.
 - [ ] One folder is one namespace, and a folder may only depend on folders above
       it in the compile order. No folder is compiled in the middle of another.
 - [ ] `Messages` words values and holds none of its own but `Problem`. A value

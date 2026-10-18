@@ -7,7 +7,8 @@ than the machinery: `PanelSide`, `PanelCursor` and `TabStep`, `EntryName`,
 `SelectionMode`, `CursorDirection`, `DeleteScope`, `DeleteMode` and
 `ProgramSettings` with the `FileExtension`, `ProgramPath` and `AssociationRole`
 that key it. `PanelSide` went first because the settings file names the active
-panel and `FileSystem` cannot reach `State`; the rest followed for the same
+panel and the layer that reads it — `FileSystem` then, `Profile` since P23.5 —
+cannot reach `State`; the rest followed for the same
 reason read the other way round. A type that describes *how a panel shows a
 directory* is not a fact about the directory, and a type that names *what a
 command means* is not state — so neither belongs to the layer that happened to
@@ -179,8 +180,8 @@ names the three ways of starting it — `Directly`, `InShellClosing`,
 `InShellKeptOpen` — instead of a pair of booleans, and running as administrator
 reuses the `Elevation` a `LaunchRequest` carries. `MenuCommand`, the record of
 the five, and `MenuItem`, which is `CommandItem` of one or `SeparatorItem`, live
-in `FileSystem/UserMenu.fs` beside the file they are written to, because
-`Elevation` is a `FileSystem` type. `UserMenu` keeps its list private: the only
+in `Profile/UserMenu.fs` beside the file they are written to, and read
+`Elevation` from `Programs`, below them. `UserMenu` keeps its list private: the only
 ways to build one are `apply` and `parse`, and both refuse a second command
 holding a hotkey already taken.
 

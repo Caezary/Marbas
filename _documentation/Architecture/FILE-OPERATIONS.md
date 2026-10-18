@@ -379,7 +379,7 @@ holding the archive.
 subdirectory that refuses to be read, a walk stopped part way, and an archive
 that cannot be opened at all. `DirectorySize.add` keeps `Exact` only while both
 sides are. The type is in `Domain`, because a listing entry carries it long
-before anything is measured; the walk is `DirectoryMeasure` in `FileSystem`.
+before anything is measured; the walk is `DirectoryMeasure` in `Locations`.
 
 **One walk for a disk and for an archive.** `DirectoryMeasure` takes a
 `PanelLocation`, so it measures a directory on disk or a level inside an
@@ -730,7 +730,7 @@ would — the name as written, against the panel's directory, then each
 directory of `PATH`, then the App Paths of the registry (current user, then the
 machine); a name without an extension is tried with each extension of
 `PATHEXT` in order and never bare, and only a bare name is looked up on `PATH`
-and in App Paths. `ProgramImage.subsystem` in `FileSystem` reads the PE header
+and in App Paths. `ProgramImage.subsystem` in `Programs` reads the PE header
 over `IFileSystem` and answers `WindowSubsystem`, `ConsoleSubsystem`,
 `OtherSubsystem`, `NotAnImage` or `UnreadableImage`.
 `ProgramResolution.drainedProgram` answers what of that is started drained, a
@@ -772,7 +772,7 @@ no registry here at all" are the same answer to the caller: an empty list. What
 sits behind it is deliberately split. The *reading* is platform code and lives in
 `Adapters`: `RegistryHandlers` opens registry keys, and the Unix side hands
 `DesktopHandlers.read` an `IFileSystem` and the resolved XDG directories. The
-*parsing* is pure and lives in `FileSystem`, where the suite can reach it —
+*parsing* is pure and lives in `Programs`, where the suite can reach it —
 `ProgramCommand.programOf` for a command line, `DesktopEntry.parse` for one
 `.desktop` file, `MimeDatabase` for `globs` and `mimeapps.list`. That is why the
 Unix half is covered end to end over a `MockFileSystem` while the Windows half

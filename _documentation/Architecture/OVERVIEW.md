@@ -1,9 +1,13 @@
 # Architecture overview
 
-Dependencies flow downward only: `Adapters` → `Ui` → `State` → `Messages` →
-`FileSystem` → `Domain`. `AppState` transitions are deterministic functions of
-the state and
-the `IFileSystem` they are given, and `IFileSystem` is the only port they may
+Dependencies flow downward only: `Program` → `Adapters` → `Ui` → `State` →
+`Messages` → `Find` → `Viewing` → `Locations` → `Profile` → `Programs` →
+`FileSystem` → `Domain` → `Collections`, the order they are compiled in read
+from the top, and a layer uses only the ones below it that its row in §1 of
+[Coding style](../coding-style-conventions.md#1-layers) allows — `Viewing`
+never `Locations`, though it is compiled after it — which
+`Layers/LayerReferenceTests` holds. `AppState` transitions are deterministic
+functions of the state and the `IFileSystem` they are given, and `IFileSystem` is the only port they may
 reach: every other way out to the world — a dialog, the trash, a process, the
 clock of a watcher — is an `Effect` the interpreter carries out. Work that can
 take longer than a keystroke is an effect as well, so it runs off the UI thread
@@ -34,21 +38,58 @@ layer, which runs in two steps:
 wording or take a port's request record, and `MainWindow` hands `Shell.interpret`
 to the runtime, but no view decides what an effect does.
 
-**The wording is a layer of its own, between `FileSystem` and `State`.**
+**The wording is a layer of its own, between the layers it words and `State`.**
 `Messages/` holds the words the application says — what an error means in a
 sentence, what a question asks — as functions from a value to text, with no
 view in them. Its readers are `Update`, which names what an effect reports,
 `Shell`, which says the words, two adapters and two views, so it has to sit
 below all of them; it cannot sit above `State`, because `Shell` writes the
 worded text to the log. And it reads nothing of
-`State`: every value it words is one `FileSystem` or `Domain` speaks. Two of
+`State`: every value it words is one `Domain`, `FileSystem`, `Programs` or
+`Profile` speaks. Two of
 them were declared higher only because that is where they were first needed —
 what a delete asks to have confirmed and why a command line was not expanded —
-and moved down to `Domain/DeleteRequest.fs` and
-`FileSystem/ExpansionRefusal.fs` when the layer was made. `Problem` is the
+and moved down when the layer was made, the first to `Domain/DeleteRequest.fs`
+and the second to `FileSystem`, which it left in P23.6 for
+`Programs/ExpansionRefusal.fs`. `Problem` is the
 layer's one type: everything that is reported to the user, each case carrying
 the error it reports, with its title and its description answered by one
 module. [State and effects](STATE-AND-EFFECTS.md) says why it is a union.
+
+**Five layers above `FileSystem` use the disk without being about it.**
+`FileSystem` holds what the application knows about entries — the paths, the
+listing, the operations, the session's own directories, and the archives in
+`FileSystem/Archives/` — and nothing else. Whether a module reaches the disk
+does not decide where it goes; its subject does. Phase 23 took five subjects
+out of it, each into a layer of its own:
+
+- `Programs` — what runs a file and how it is started: the launch request, the
+  subsystem a program's header names, a user menu command as run, the handlers
+  the system offers and the `.desktop` files and mime database they are read
+  from, the editor `F4` starts.
+- `Profile` — what the user keeps between sessions: the settings, the history,
+  the favourites and the user menu, each with its own file and the error of
+  reading or writing it. It reads `Programs`, since the history remembers what
+  was started and a user menu entry the rights it runs with.
+- `Locations` — where a panel stands, a directory, an archive level or search
+  results; where it lands for a path; what search results list as entries; and
+  the measure of a directory or an archive level, whose target is a location.
+- `Viewing` — a file's content as the viewer reads it: its encoding, a window of
+  bytes over a stream that can be rewound, the index of its lines, and the
+  viewer's searches by text and by bytes.
+- `Find` — searching by name and by text, on disk and inside archives. It reads
+  `Locations` for the ground a search covers and `Viewing` for the encoding of
+  the text it matches.
+
+`Locations` and `Viewing` sit side by side and use neither each other nor
+`Programs` or `Profile`; the table in §1 of
+[Coding style](../coding-style-conventions.md#1-layers) says which layer may
+use which, and the layer test fails on any other use. None of the five is
+lower for reaching the disk: `IFileSystem` is not a privilege of
+`FileSystem`. Every layer below `Adapters` takes it where it needs it — the
+profile reads and writes its own files through it, the viewer opens the file
+it shows — and the tests of every one of them run on `MockFileSystem`. What
+reaches the system in any other way is still for `Adapters` alone.
 
 **Terminal.Gui 2.4 over Spectre.Console and Consolonia.** Only Terminal.Gui is
 a full TUI framework (windows, focus, event loop) with a large, active
@@ -69,9 +110,9 @@ application's own composition root — and each folder is a namespace:
 `Marbas.Ui.Panels.FilePanel`.
 The folder order in the code map below is also the compile order, and every
 dependency inside `Ui` points at a folder listed above it, which is what keeps
-the layer acyclic without any tooling. `Ui` is still one layer of `Adapters` →
-`Ui` → `State` → `Messages` → `FileSystem` → `Domain`; the folders divide it by
-subject, not by rank.
+the layer acyclic without any tooling. `Ui` is still one layer of the chain
+above, with one row in the table; the folders divide it by subject, not by
+rank.
 
 **`Adapters` is where the operating system is allowed in.** `State/Ports.fs`
 declares the ports; every real implementation of one lives in `Adapters/`, and
@@ -124,6 +165,7 @@ Marbas/
     SearchText.fs         the text a panel is being searched for, and what it matches
     NamePattern.fs        wildcard matching for `+` / `-`
     SelectionMode.fs      marking or unmarking, instead of a boolean
+    Likeness.fs           what makes two names alike: the same extension, or the same stem
     CursorDirection.fs    up or down, for a mark that moves the cursor with it
     DeleteScope.fs        whether a delete reaches into a directory's contents
     DeleteMode.fs         to the trash, or past it
@@ -137,6 +179,10 @@ Marbas/
     WantedBytes.fs        the bytes the hex field asks for, read from pairs of hex digits, or why not
     ResultsRefusal.fs     which command a panel of search results cannot carry out
     EnteredText.fs        what was typed into a field, kept exactly, never blank, never two lines
+    FavoriteSlot.fs       one of the ten favourite slots, `0` to `9`
+    ClipboardText.fs      the lines put on the clipboard, never none
+    ClipboardError.fs     why the clipboard could not be read or written
+    ClipboardIntent.fs    whether files on the clipboard are to be copied or moved
     MenuHotkey.fs         the one letter or digit that runs a user menu entry, kept in capitals
     MenuLabel.fs          the name a user menu entry is shown under
     CommandLine.fs        what a user menu entry runs, not yet expanded, and how it is started
@@ -145,13 +191,19 @@ Marbas/
     FileSystemPath.fs     single-case path type wrapping a raw string
     ArchivePath.fs        a place inside an archive: never rooted, never climbing
     Place.fs              a directory or file on disk, or a place inside an archive
+    PastedPath.fs         a pasted line -> a path: unquoted, a file URI, `~` and
+                          variables expanded, resolved against the panel
+    ClipboardFiles.fs     the paths on the clipboard and whether they are copied or moved
     EntryAttributes.fs    what FileAttributes and UnixFileMode say, in the Domain's words
+    ArchiveError.fs       what can go wrong opening or changing an archive, as values
     ContentError.fs       what can go wrong reading a file, as values
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             where a panel can be sent: the usable drives, and home on Unix
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     Links.fs              what a link request means, what refuses it, and making one
+    Shortcut.fs           a Windows `.lnk` file -> the path it points at
     Trash.fs              the freedesktop trash: where it is, and how an entry goes in
+    EntryProperties.fs    the flags and the three moments an entry has, read and written back
     SessionOwner.fs       the process a working directory belongs to: its id and the
                           moment it started, and the two lines they are written as
     Workspace.fs          the session's working directory: claimed, scratch directories
@@ -162,11 +214,15 @@ Marbas/
       ArchiveKind.fs        the archive kinds, their extensions and what can be done to each
       ArchiveFormat.fs      which kinds can be created, and what each one carries
       ArchiveName.fs        the name an archive is offered under, and its extension
+      ArchiveNames.fs       the bytes of an entry's name -> text: UTF-8, or the legacy
+                            code page of the culture
       ZipMoments.fs         the exact moment of each entry of a zip: read out of its central
                             directory, and the field one is written as
       ZipEntries.fs         the entry a zip is given for a file or a directory, named and
                             marked as the platform means it
       ArchiveReader.fs      opening an archive: its entries folded over, one entry as a stream
+      ArchiveIndex.fs       the entries of an archive, kept for the last four read while
+                            the file is unchanged
       ArchiveListing.fs     reading one level of an archive as the entries a directory gives
       Archive.fs            writing one and taking one apart: the walk, cancelling, the password
   Programs/               what runs a file, and how it is started
@@ -213,9 +269,9 @@ Marbas/
     FindAnswer.fs         what the results window answers, and the last results kept
   Messages/               the words the application says, from values the layers
                           its row in Coding style allows speak
+    ArchiveErrorMessage.fs    ArchiveError -> user-facing text
     ListingErrorMessage.fs    ListingError -> user-facing text
     ContentErrorMessage.fs    ContentError -> user-facing text
-    ArchiveErrorMessage.fs    ArchiveError -> user-facing text
     LinkRefusalMessage.fs     LinkRefusal -> the one sentence saying why
     OperationErrorMessage.fs  OperationError (and failed items) -> user-facing text
     LaunchErrorMessage.fs     LaunchError -> user-facing text
@@ -248,6 +304,7 @@ Marbas/
                           first paths opened, the first watch and the sweep
   Ui/                     eight folders, compiled in this order; every
                           dependency points at a folder listed above it
+    SubView.fs            a view's subview found by its id or its type, for every folder
     Theme/                the look, applied before any view is built
       ClassicScheme.fs      the five schemes the screen is painted with
       DialogStyle.fs        frame, buttons, glyphs and schemes every popup wears
@@ -275,6 +332,7 @@ Marbas/
       PanelFooter.fs        panel state -> the one line under the rule
       PanelTitle.fs         path and sort order -> the panel frame's title,
                             shortened to the width it may use
+      PanelRows.fs          whether a panel's rows still stand or are built again
       FilePanel.fs          panel views, render state -> view
       PanelWiring.fs        one panel's list bound to keys, cursor and search
     Viewer/               the full-screen viewer behind `F3`
@@ -295,15 +353,16 @@ Marbas/
       ViewerState.fs        where the viewer stands and what it marked; every move answers the next one
       FileViewer.fs         the viewer itself: header, rows, bar
     Dialogs/              the modal popups, each one built where a test can lay it out
+      HistoryField.fs       a field that drops down what it remembers, and keeps what is typed
       PromptDialog.fs       single-field text prompt (label + default), plain or secret
       PatternDialog.fs      the `+` / `-` pattern prompt, over PromptDialog
       ProgressDialog.fs     the window shown while a batch runs
       AssociationRow.fs     one extension and its program -> one row of the list
       HandlerRow.fs         one program the system knows -> one row of the list
+      OpenWithDialog.fs     which program opens this file, and whether to remember it
       PropertiesDialog.fs   what `F4` shows for a directory, and writes back
       SettingsForm.fs       the popup's working copy of the programs; every edit answers the next one
       SettingsDialog.fs     the default editor and the associations, one list per role
-      OpenWithDialog.fs     which program opens this file, and whether to remember it
       PackDialog.fs         what `Shift+F1` asks before an archive is written
       LinkDialog.fs         what `Alt+F6` asks, with the refused kinds greyed out
       TabRow.fs             one tab -> its number and where both its panels stand
@@ -312,6 +371,9 @@ Marbas/
       HistoryDialog.fs      the popup `Alt+F12` opens: three tabs, and the tab and row it answers with
       DriveLine.fs          drive rows -> lines whose root, label, kind and sizes line up
       DriveDialog.fs        the list `Alt+F1` / `Alt+F2` open, and the row it answers with
+      KeepFavoriteDialog.fs what `Alt+K` asks: the digit of the slot that keeps the place
+      FavoriteRow.fs        a slot and the place it keeps -> one row of the list
+      FavoritesDialog.fs    the ten slots `Alt+F8` opens: `Ins` keeps, `Del` empties, `Enter` goes
       UserMenuRow.fs        a user menu entry -> its hotkey and label, a separator -> a line
       MenuEntryForm.fs      the fields of the entry popup -> an entry, or why it is refused
       MenuRemoval.fs        what `Del` in the user menu may remove, and the change for each
@@ -347,16 +409,18 @@ Marbas/
     EditorProcess.fs      the editor started detached on Windows; on Unix handed the
                           terminal and waited on
     CommandProcess.fs     a user menu command started directly or through the shell, never waited on
-    NativeLinks.fs        hard links and junctions through kernel32 and libc
     RegistryHandlers.fs   the Windows registry -> the handlers a name has
     ProgramResolution.fs  a program's name -> its file: as written, `PATH` with `PATHEXT`, App Paths
     BatchRunner.fs        a batch on a background task under the progress dialog;
                           its start and its end, with the items it reported, logged;
                           and work on a background task with no window at all
     SearchRunner.fs       the walk on a background task, hits gathered ten times a second
-    ModifierWatch.fs      held Ctrl / Alt / Shift, polled on Windows, absent elsewhere
     DirectoryWatch.fs     the directories on screen watched, bursts collapsed,
                           what the watcher cannot say polled for
+    ModifierWatch.fs      held Ctrl / Alt / Shift, polled on Windows, absent elsewhere
+    NativeLinks.fs        hard links and junctions through kernel32 and libc
+    SystemClipboard.fs    text and files on the Windows clipboard through user32, from
+                          a window of its own thread; absent elsewhere
     SessionProcess.fs     the process of this session as an owner, and whether an
                           owner's process still runs
     Crashes.fs            a session that throws, an unhandled thread and an
@@ -376,16 +440,25 @@ Marbas.Tests/
   WindowsFact.fs          a Fact that skips where drive letters do not exist
   Expect.fs               Result unwrapping, so act and assert stay apart
   Fakes.fs                the do-nothing Ports.Dependencies every test starts from
+  Collections/            unit tests of the zipper
+  Domain/                 unit tests, one module per Domain module
   FileSystem/             unit tests, one module per FileSystem module
     Archives/             the tests of the archives, beside their modules
+  Programs/               unit tests of the five layers above FileSystem, each
+  Profile/                in the folder of its layer, one module per module
+  Locations/
+  Viewing/
+  Find/
   Messages/               unit tests of the wording, one module per module
   State/                  unit tests, one module per State module
     Update/               the tests of Update, one file per feature
     Shell/                the tests of the interpreter, one file per feature
   Ui/                     unit tests of the pure Ui modules, in the same eight
                           folders as the source
+  Adapters/               unit tests of the adapters, one module per module
   Layers/                 the compiled assembly scanned for calls to the system
-                          outside Adapters
+                          outside Adapters, and for a layer using one its row
+                          does not allow
   Integration/            every test that constructs a Terminal.Gui view, in
                           those same folders
     Gui.fs                 focusedWindow, leftList, rightList, press, panel,

@@ -6,12 +6,12 @@ An orthodox (two-panel) console file manager in F# on Terminal.Gui 2.
 
 Read these before starting work — they carry the context this file omits:
 
-- `_documentation/PROGRESS.md` — current status and what is next; the journal
-  of each phase is in `_documentation/Progress/`
-- `_documentation/PLAN.md` — the index of the phases; one file per phase in
-  `_documentation/Plan/` (P1.1 … PX.Y)
 - `_documentation/coding-style-conventions.md` — the style and conventions code
   and tests are held to; a rule there beats a habit found in an older file
+- `_documentation/PLAN.md` — the index of the phases; one file per phase in
+  `_documentation/Plan/` (P1.1 … PX.Y)
+- `_documentation/PROGRESS.md` — current status and what is next; the journal
+  of each phase is in `_documentation/Progress/`
 - `_documentation/Architecture/` — design decisions, one topic per file
   (start at `OVERVIEW.md`); `TESTING.md` there covers Terminal.Gui testing
   pitfalls
@@ -37,14 +37,21 @@ and on any finding of the analyzers.
 - **No code comments.** Names and tests carry the intent; anything that needs
   explaining goes into `_documentation/*.md`.
 - **The user commits manually.** Never run `git commit`.
-- **Dependencies flow downward only:** `Adapters` → `Ui` → `State` →
-  `Messages` → `FileSystem` → `Domain`. `AppState` transitions may read and
+- **Dependencies flow downward only:** `Program` → `Adapters` → `Ui` →
+  `State` → `Messages` → `Find` → `Viewing` → `Locations` → `Profile` →
+  `Programs` → `FileSystem` → `Domain` → `Collections`, and a layer uses only
+  the ones its row in §1 of `_documentation/coding-style-conventions.md`
+  allows — `Layers/LayerReferenceTests` fails on any other use. A new module
+  goes into the layer whose subject it extends; into `FileSystem` only when it
+  is about entries, paths, operations or archives and more than one layer
+  needs it; and into a new layer, with its row in that table and in the test,
+  when it fits none. `AppState` transitions may read and
   write through the
   `IFileSystem` they are given and reach no other port, and what outlasts a
   keystroke is an effect instead; the generic
   `State/Runtime.fs` host holds the only mutable cell and drives the
   update/render/effect loop. The outside world (file system, dialogs, quit) is
-  injected through `Shell.Dependencies` and run by `Shell.interpret`;
+  injected through `Ports.Dependencies` and run by `Shell.interpret`;
   `Adapters/` holds the real ones and `Adapters/Dependencies.fs` wires them,
   `Program.fs` only starts the application. Only `Adapters` may touch the
   operating system directly.

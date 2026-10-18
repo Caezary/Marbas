@@ -1,5 +1,13 @@
 # State and effects
 
+`State` is the fourth layer from the top of `Program` → `Adapters` → `Ui` →
+`State` → `Messages` → `Find` → `Viewing` → `Locations` → `Profile` →
+`Programs` → `FileSystem` → `Domain` → `Collections`: it may use every layer
+below it and none above, so a transition can read a location, a file's
+content, the profile or a search, but never a view or a real port —
+[Overview](OVERVIEW.md) and §1 of
+[Coding style](../coding-style-conventions.md#1-layers) have the table.
+
 **Immutable state, one mutable cell.** `AppState` transitions answer a new state
 from the old one; `Update.update` folds a `Message` into that state plus a list
 of `Effect` values, and the generic `Runtime` holds the only mutable reference,
@@ -482,7 +490,7 @@ an expansion becomes `RunCommand` of a `CommandRun` — the label, the
 `ExpandedCommand`, the way of running and the rights from the entry, and the
 working directory `PanelLocation.holding` answers for the active panel, the
 directory holding the archive when the panel is inside one. The types of a run
-live in `FileSystem/CommandRun.fs`, below the state, because the history file
+live in `Programs/CommandRun.fs`, below the state, because the history file
 stores them. `Shell` hands the run to `Processes.RunCommand` and dispatches
 `CommandFinished(run, outcome)`; `Ok` is remembered with
 `ChangeHistory(Remember(Ran run))`, `ElevationDeclined` is silence as it is for
