@@ -358,6 +358,11 @@ is narrowed.
 
 ## Left for a later phase
 
+- **`Alt+K` on Linux** — the walk of P22.18 found the popup closing as it
+  opens: the Unix driver of Terminal.Gui 2.4.17 hands an `Alt` with a letter
+  to the popup run from its handler a second time. The entry in
+  [Rough edges](../ROUGH-EDGES.md) says what a fix would be; whether 2.5.0
+  still does it is read when that version is taken in.
 - **A second key for the drive popups and the link** — GNOME keeps `Alt+F1`,
   `Alt+F2` and `Alt+F6`, read from its configuration in P14.1. The pass had no
   desktop to press them on, so the entry stands as it was; `Alt+D` is still

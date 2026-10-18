@@ -99,7 +99,10 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   and asks for the digit; the first
   key closes it, and a digit (with `Alt` still held or not) fills that slot,
   overwriting what it held, while any other key keeps nothing. A panel of
-  search results keeps nothing. `Alt+0` … `Alt+9` send the active panel to the
+  search results keeps nothing. On Linux the popup is handed the `Alt+K` that
+  opened it a second time and closes before the digit, so a place is kept
+  there through `Ins` in *Favourites*; see [Rough edges](../ROUGH-EDGES.md).
+  `Alt+0` … `Alt+9` send the active panel to the
   place under the digit; an empty slot does nothing, a place that has gone is
   reported with the panel left where it was, and the landing is remembered in
   the folder history. The ten slots are shared by every tab and both panels and

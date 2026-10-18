@@ -831,7 +831,14 @@ wrappers of their own version, so the two are taken at the same version.
 The same run opened five pull requests and stopped — Dependabot's default
 limit of open pull requests for version updates — leaving `Terminal.Gui`,
 `Microsoft.NET.Test.Sdk`, `SharpCompress` and `xunit.runner.visualstudio`
-unopened. The limit is fifteen now.
+unopened. The limit is fifteen now. The second run opened those four, the
+analyzers' pull request was closed by Dependabot itself once its group was
+gone, and eight stand open. Seven pass every job, `fantomas` 8.0.10 among
+them with the tree unchanged. `Terminal.Gui` 2.5.0 does not build:
+`DialogStyle.apply` sets `Dialog.DefaultBorderStyle`,
+`DefaultButtonAlignment` and `DefaultShadow`, the same two of `MessageBox`,
+`Button.DefaultShadow` and four glyphs of `Glyphs`, and 2.5.0 leaves none of
+them settable. Taking it in starts there.
 
 No pull request it opens is merged in this phase, so that P22.18 walks the
 libraries the fixes were made against. [Development](../DEVELOPMENT.md) has a
@@ -839,3 +846,67 @@ section on package updates: what Dependabot reads, and what each pull request
 asks before it is taken in — the suite, Fantomas with its reformat in
 `.git-blame-ignore-revs`, the analyzers' SDK, and for Terminal.Gui the
 screens rendered before and after.
+
+**P22.18 walked again the steps that had failed.** A person ran the published
+binaries of the phase, at P22.17, on 2026-10-18: in cmder 1.3.17 on Windows,
+and in gnome-terminal 3.52.0 under WSLg (Ubuntu 24.04.4) on Linux. The
+fixture was made anew on both systems, beside the first one, so that
+`foreign` on Linux held the archives of `zip` 3.0 and 7-Zip 23.01 as well as
+`tar`'s. No code changed.
+
+[The manual pass](../Architecture/MANUAL-PASS.md) gained its steps first.
+W35 and L47 open every popup once and close it — a table of twenty-one, with
+the key and the place for each, since no test reaches the prompts P22.10
+rewrote; W36 and L48 remove the entries the pass added from the bottom of the
+user menu, the row that ended the session in the first pass; L49 and L50
+start Marbas with the XDG variables set to nothing and set to a place, and
+look for the trash and the settings, which P22.15 now carries as options.
+W15 and L25 say that the directories are dated too.
+[Cross-platform](../Architecture/CROSS-PLATFORM.md) has a row for the
+popups.
+
+What was walked came out as the steps say, with one exception.
+
+- **The look.** The rule joins the border, `╟────╢` and `├────┤`, in both
+  terminals; on Linux a program is green and a second tab, opened with
+  `Alt+Z`, shows `[2/2]`.
+- **The archives.** Every file and directory unpacked here from `tar`, `zip`
+  and 7-Zip, and every one 7-Zip, `unzip` and `tar` unpacked from Marbas's,
+  is dated `04:05:06` on both systems. Explorer's files are an hour early and
+  its directories dated that day, which the step says it will do. A zip of
+  `a\b.txt` packed on Linux is one file to `unzip` and to the panel.
+- **What is started.** `noisy` and `sleeper` start from their executable bit,
+  leave the panels clean and do not hold the loop up; `Alt+Shift+R` on
+  `sleeper` is refused with the platform's reason. The properties popup on
+  Linux offers read-only alone, and the owner's `w` goes and comes back.
+- **The user menu and the XDG variables.** The added entries went from the
+  bottom row one by one, the session carrying on, and the menu file kept
+  nothing of them — on Windows only the entry of its own it held. With the variables set to nothing the
+  trash is under `~/.local/share`; with `XDG_DATA_HOME` set it is under that
+  place, with its `.trashinfo`; the settings were found and written where they
+  were.
+- **`Alt+K` closes as it opens on Linux.** The popup came up and went at
+  once. Driven in tmux, the published binary did the same, and a digit
+  pressed after it reached the panel's search. A probe of a
+  window and a dialog on Terminal.Gui 2.4.17 alone, driven in tmux, showed
+  why: the Unix driver hands every key that arrives as `Esc` and a character
+  — `Alt` with a letter or a digit — to a popup run from that key's own
+  handler a second time, some twenty milliseconds later, while `Alt+F8`, `F2`
+  and a plain letter come once. Every other popup ignores the key that opened
+  it; *Keep favourite* closes on any key. It is an entry in
+  [Rough edges](../ROUGH-EDGES.md), and the note under `Alt+K` in
+  [What works today](WHAT-WORKS.md) says that `Ins` in *Favourites* keeps a
+  place meanwhile.
+
+The walker also looked at the Windows fixture from Linux, on `/mnt/c`: every
+file but the archive was green, which is the mount marking every file
+executable and stands in Rough edges already, and the junction was drawn in
+the link's cyan, as a link to Linux.
+
+The log and the disk were read beside the answers, as in the first pass: the
+only error of the Windows session was W27's, both started programs went from
+`RunProgram` to `LaunchFinished` without one, and the dates, the trash and
+the files the user menu made were read off the disk.
+
+Not walked, still for want of a desktop: the windows of L22 and L42, a file
+manager's *Restore* in L24, the archive manager of L26, and L43–L45.

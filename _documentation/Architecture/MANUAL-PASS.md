@@ -117,7 +117,7 @@ One panel in `foreign`, the other in `out`; then one in `pack`.
 
 | Step | Do | Should | Row |
 |------|----|--------|-----|
-| W15 | Mark the three archives of `foreign`; `Shift+F2`. | `out` holds `from-tar`, `from-7zip-zip` and `from-7zip-7z`, each with `a.txt` and `sub\b.txt`, every one dated `2001-02-03 04:05`. | *An archive made by another tool unpacks here with its tree and its times* |
+| W15 | Mark the three archives of `foreign`; `Shift+F2`. | `out` holds `from-tar`, `from-7zip-zip` and `from-7zip-7z`, each with `a.txt` and `sub\b.txt`, every file and directory under `out` dated `2001-02-03 04:05`. | *An archive made by another tool unpacks here with its tree and its times* |
 | W16 | In `pack`, on `tree`: `Shift+F1`, zip, no password. In Explorer, *Extract All* on `out\tree.zip`. | Explorer opens it and extracts `tree\a.txt` and `tree\sub\b.txt`. | *The zip opens in the system's own tool* |
 | W17 | `Shift+F1` again, tar.gz. In a shell in `out`: `tar -tvzf tree.tar.gz`, then `mkdir from-marbas-tar` and `tar -xzf tree.tar.gz -C from-marbas-tar`. | The listing names `tree/a.txt` and `tree/sub/b.txt`; the extraction ends without a word. | *The tar.gz opens in the system's own tool* |
 | W18 | `Shift+F1`, zip, password `marbas`, named `locked.zip`. Open it in Explorer; then `7z x locked.zip -ofrom-marbas-locked` in a shell. | Explorer cannot open an AES zip and says the archive is empty or damaged — its doing, not the archive's. 7-Zip asks for the password and extracts with it. | *A password-protected zip asks for the password there* |
@@ -166,6 +166,43 @@ Not a row of the checklist: P21.8 left it to a person.
 | Step | Do | Should |
 |------|----|--------|
 | W34 | `Alt+C` on a file, `F10`, paste into Notepad. Start again, mark two files, `Alt+Shift+C`, `F10`, paste into an Explorer window. | The name is pasted as text, and the two files are copied, with Marbas no longer running. |
+
+### Every popup
+
+No test reaches the prompts of `Adapters`, so each popup is opened once a
+pass, after the steps above have left an archive with a password in `out` and
+entries of their own in the user menu.
+
+| Popup | Where | Key |
+|-------|-------|-----|
+| *Drives* | anywhere | `Alt+F1` |
+| *Keep favourite* | anywhere | `Alt+K` |
+| *Favourites* | anywhere | `Alt+F8`, or `Alt+B` |
+| the pattern prompt | `many` | `+` |
+| the name of a new file | `many` | `Shift+F4` |
+| the target of a move | `many`, on `zebra.txt` | `F6` |
+| the confirmation | `many`, on `zebra.txt` | `F8` |
+| the overwrite | `many` beside `out` | `F5` on `zebra.txt`, then `F5` on it again |
+| the password | inside `out\locked.zip` | `F3` on `tree\a.txt` |
+| the viewer | `many`, on `zebra.txt` | `F3` |
+| the code page | in the viewer | `F8` |
+| the viewer's search, and its report | in the viewer | `F7`, `zzqx`, `Enter` |
+| *Properties* | `attrs`, on `flags-dir` | `F4` |
+| the pack | `pack`, on `tree` | `Shift+F1` |
+| *Find files* | anywhere | `Alt+F7`, or `Alt+Shift+F` |
+| the link | `kinds`, on `plain.txt` | `Alt+F6` |
+| the open-with | `launch`, on `document.txt` | `Alt+R` |
+| *Settings* | anywhere | `F12` |
+| *History* | anywhere | `Alt+F12`, or `Alt+Shift+H` |
+| the tabs | anywhere | `F11`, or `Alt+T` |
+| *User menu*, its entry and its removal | anywhere | `F2`; then `Ins`, and `Del` |
+
+The error dialog is W27's.
+
+| Step | Do | Should | Row |
+|------|----|--------|-----|
+| W35 | Open each popup of the table and close it with `Esc`. | Each opens over the panels with its title and what it asks, `Esc` closes it — the one opened from another popup or from the viewer back to that — and the panels are as they were, the cursor where it stood. | *Every popup opens and closes* |
+| W36 | `F2`. Put the cursor on the bottom row, `Del`, *Remove entry*; again, until the entries W25–W27 added are gone — moved down with `Ctrl+↓` first, if an entry of one's own stands below them. | Each goes from the menu, the cursor lands on the row above, and the popup stays open; `Esc` closes it and the panels take keys. | *`Ins`, `F4`, `Del`, `Ctrl+↑`, `Ctrl+↓` edit the user menu popup* |
 
 ## On Linux
 
@@ -244,7 +281,7 @@ One panel in `foreign`, the other in `out`; then one in `pack` and in
 
 | Step | Do | Should | Row |
 |------|----|--------|-----|
-| L25 | Mark the archives of `foreign`; `Shift+F2`. | `out` holds a tree per archive, each with `a.txt` and `sub/b.txt`, every one dated `2001-02-03 04:05`. | *An archive made by another tool unpacks here with its tree and its times* |
+| L25 | Mark the archives of `foreign`; `Shift+F2`. | `out` holds a tree per archive, each with `a.txt` and `sub/b.txt`, every file and directory under `out` dated `2001-02-03 04:05` — `ls -lR --time-style=long-iso out` says so. | *An archive made by another tool unpacks here with its tree and its times* |
 | L26 | In `pack`, on `tree`: `Shift+F1`, zip, no password. In a shell in `out`: `unzip -l tree.zip`, then `unzip tree.zip -d from-marbas-zip`. **desktop:** open it in the archive manager as well. | The listing names `tree/a.txt` and `tree/sub/b.txt`, and both tools extract them. | *The zip opens in the system's own tool* |
 | L27 | `Shift+F1` again, tar.gz. `tar -tvzf tree.tar.gz`, then `mkdir from-marbas-tar` and `tar -xzf tree.tar.gz -C from-marbas-tar`. | As W17. | *The tar.gz opens in the system's own tool* |
 | L28 | `Shift+F1`, zip, password `marbas`, named `locked.zip`. `7z x locked.zip -ofrom-marbas-locked`. | 7-Zip asks for the password and extracts with it. `unzip` knows no AES and says so, which is `unzip`'s doing. | *A password-protected zip asks for the password there* |
@@ -300,12 +337,37 @@ In `launch`.
 | L45 | **desktop**, KDE or Xfce. `Alt+F7`; then `Alt+F12`, `Alt+Shift+H`, `Ctrl+PgUp`, `Ctrl+PgDn`; in the history popup `Alt+G`, `Del`, `Shift+Del`; in a field `Alt+↓` and `F4`; then `Alt+F8`, `F2`, `Alt+K`, `Alt+0`. | Each does in Marbas what the [user guide](../USER-GUIDE.md) says. Name every one the desktop kept, and what it did with it. | the three rows marked *manual for KDE and Xfce* |
 | L46 | With Marbas running, close the terminal window by its button. Start Marbas again and, a few seconds later, `ls ${TMPDIR:-/tmp}/Marbas`. | One directory, the new session's: the one the closed session left is gone. | *The directory of a session closed with the console window's button is gone after the next start* |
 
+### Every popup
+
+As on Windows: the table of W35, with `/` for `\`, after L28 has left
+`locked.zip` in `out` and L39–L41 their entries in the user menu. Where
+gnome-terminal keeps a key the table gives a second one for, the second is
+pressed. The error dialog is L41's.
+
+| Step | Do | Should | Row |
+|------|----|--------|-----|
+| L47 | Open each popup of the table of W35 and close it with `Esc`. | As W35. | *Every popup opens and closes* |
+| L48 | `F2`. Put the cursor on the bottom row, `Del`, *Remove entry*; again, until the entries L39–L41 added are gone. | As W36. | *`Ins`, `F4`, `Del`, `Ctrl+↑`, `Ctrl+↓` edit the user menu popup* |
+
+### Where the trash and the settings are
+
+The home trash and the settings follow the XDG base directories: a variable
+that is set names the place, one that is not — or is set to nothing — leaves
+it at `~/.local/share` and `~/.config`.
+
+| Step | Do | Should | Row |
+|------|----|--------|-----|
+| L49 | `F10`. Start again as `XDG_DATA_HOME= XDG_CONFIG_HOME= EDITOR=vim ./Marbas --debug`. In `many`, `F8` on `entry-001.txt`; `ls ~/.local/share/Trash/files`. | Both panels stand where `F10` left them, and `entry-001.txt` is in the trash under `~/.local/share`. | *What the trash does with them*; *Quitting writes the session* |
+| L50 | Go to `edit`, `F10`. Start again as `XDG_DATA_HOME=~/marbas-manual/xdg-data XDG_CONFIG_HOME=~/.config EDITOR=vim ./Marbas --debug`. In `many`, `F8` on `entry-002.txt`; `ls ~/marbas-manual/xdg-data/Trash/files ~/marbas-manual/xdg-data/Trash/info`. `F10`, then `ls -l --time-style=full-iso ~/.config/Marbas/settings.conf`. | The panel stands in `edit`; `entry-002.txt` is under `files` and its `.trashinfo` under `info`; `settings.conf` was written at the last `F10`. | *What the trash does with them*; *Quitting writes the session* |
+
 ## Clearing up
 
 - The settings popup keeps `log` → `edit.exe` under *Edited with:* until it is
-  removed there, and the user menu keeps the entries the steps added until
-  `Del` takes them out. The Linux steps add no row to the settings popup:
-  their editor comes from `EDITOR` in the environment.
+  removed there. The Linux steps add no row to the settings popup: their
+  editor comes from `EDITOR` in the environment. W36 and L48 take out the
+  entries the steps added to the user menu.
+- The trash keeps what the steps sent to it, under `~/.local/share/Trash` on
+  Linux and under `xdg-data` inside the fixture for L50.
 - The fixture is removed by hand. On Linux `perm/no-enter` wants its `x` bit
   back first (`chmod u+x`), and `perm/root-owned` wants `sudo`.
 - `--debug` is gone with the session; `marbas.log` keeps its last megabyte.
@@ -315,6 +377,7 @@ In `launch`.
 | Date | Binaries | Windows | Linux | Not walked |
 |------|----------|---------|-------|------------|
 | 2026-10-12 | phase 21, at P21.17 | cmder, W1–W34 | gnome-terminal 3.52.0 under WSLg, Ubuntu 24.04 | L43–L45, for want of a desktop; the window of L22 and L42, the file manager of L24 and the archive manager of L26, the same; the `zip` and 7-Zip archives of L25, not installed when the fixture was made; L37 and L38 as written, since no executable is started there |
+| 2026-10-18 | phase 22, at P22.17 | cmder 1.3.17, W4, W15–W19, W25, W27, W35 and W36 | gnome-terminal 3.52.0 under WSLg, Ubuntu 24.04.4: L2, L4, L5, L19, L25–L30, L33, L37–L41 and L47–L50 | the steps the first pass answered as it should, and L22, L24's file manager, L26's archive manager, L42 and L43–L45, still for want of a desktop |
 
 What the first pass found other than the steps said is of two kinds. Two are a
 terminal keeping a key, `Shift+Enter` and `Ctrl+Alt+Enter` under
@@ -329,3 +392,13 @@ session on both systems while the steps were being cleared up. What the log and
 the disk held was read beside the answers, and in three places it said more
 than the walker had: the hour of the files, the directories unpacked from
 another tool's archive, and the colour of a program on Linux.
+
+The second pass walked what the first had answered differently, and the steps
+added since. Every one of them came out as it should but one: on Linux the
+popup of `Alt+K` closes as it opens, because Terminal.Gui's Unix driver hands
+the key that opened it to it a second time — an entry in Rough edges. The
+fixture made for Windows, looked at on `/mnt/c` from Linux, drew every file as
+a program, which is that mount's doing and an entry already. The log and the
+disk were read beside the answers again: every file and directory unpacked
+dated `04:05:06`, the started programs started, the entries of the user menu
+gone, and the trash and the settings where the variables put them.

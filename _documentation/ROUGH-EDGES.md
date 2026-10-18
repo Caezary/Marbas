@@ -17,6 +17,19 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   `KeyMap`, which is a row in the table and a line in the user guide per key.
   Found by reading GNOME's defaults during P14.1, not by pressing them on a
   desktop — no one has run Marbas on one yet.
+- On Linux `Alt+K` opens *Keep favourite* and closes it again before a digit
+  can be pressed, so a place is kept there only through `Ins` in the
+  *Favourites* popup. Terminal.Gui 2.4.17's Unix driver hands a key that
+  arrives as `Esc` and a character — every `Alt` with a letter or a digit —
+  to the popup run from its own handler a second time, some twenty
+  milliseconds later; `Alt+F8`, `F2` and a plain letter, which arrive
+  otherwise, are handed over once. Every other popup ignores the key it was
+  opened with, and *Keep favourite* is the one that closes on any key. A
+  probe of a window and a dialog on Terminal.Gui alone shows it in tmux, and
+  the manual pass of 2026-10-18 met it in gnome-terminal under WSLg; the
+  Windows driver hands the key over once. The fix is the popup passing over
+  the key that opened it, or the effect run after the key has been handled,
+  and whether Terminal.Gui 2.5.0 still does it is the first thing to look at.
 - `Shift+Enter` does not reach the panel under Windows Terminal, nor under
   gnome-terminal: the modifier is dropped and the bare `Enter` *runs* the entry
   instead of asking what should open it. `Alt+R` was added beside it and is the
@@ -86,7 +99,8 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   which attribute `RowRender` hands back, not what the screen looks like. The
   manual pass of 2026-10-12 looked, in cmder and in gnome-terminal: the kinds
   are told apart — a program on Linux since P22.2, which reads its executable
-  bit — and bright blue reads on the panel's blue. A terminal with a palette of its own is still for a person to look at.
+  bit, as the pass of 2026-10-18 saw — and bright blue reads on the panel's
+  blue. A terminal with a palette of its own is still for a person to look at.
 
 ## Archives
 
@@ -181,7 +195,9 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   document tries to start it and reports *Exec format error*, where until
   P22.2 it was handed to `xdg-open`. An `Opened with:` row for the extension
   still wins. Seen with the published binary on `/mnt/c` under WSL on
-  2026-10-13.
+  2026-10-13, and in the manual pass of 2026-10-18 on the fixture made for
+  Windows: everything but the directory and the archive green, and the
+  junction a link.
 - Listing a directory on Linux asks the system twice per file: the enumeration
   reads each entry's status, and the mode has to be asked for again, because
   the `FileInfo` wrapper of System.IO.Abstractions answers `None` for

@@ -194,7 +194,7 @@ drive still reads as hidden there.
 |-------|---------|-------|----------|
 | `F8` / `Del` ask before sending the targets to the trash | same | same | suite |
 | `Shift+F8` / `Shift+Del` ask before deleting for good | same | same | suite |
-| What the trash does with them | recycle bin, each entry with the directory it came from | `~/.local/share/Trash`: the entry under `files`, a `.trashinfo` naming its path under `info` | manual 2026-10-12 |
+| What the trash does with them | recycle bin, each entry with the directory it came from | `~/.local/share/Trash`: the entry under `files`, a `.trashinfo` naming its path under `info`; under `$XDG_DATA_HOME/Trash` when the variable is set, and under `~/.local/share` when it is set to nothing | manual 2026-10-12; the variable set, unset and empty: manual 2026-10-18 |
 | A deleted entry can be put back by the desktop's own tool | Explorer's *Restore* | `gio trash --restore`; a file manager's *Restore* was not tried | manual 2026-10-12; **manual** for a file manager on Linux, waiting for a desktop |
 | A trash that refuses is reported entry by entry, marks kept | same | same | suite |
 
@@ -213,17 +213,17 @@ permanent delete is the same `Operations.delete` as before on either platform.
 |-------|---------|-------|----------|
 | `Shift+F1` packs the targets into an archive in the other panel | same | same | suite |
 | `Shift+F2` empties the archives under the cursor or marked into the other panel | same | same | suite |
-| An archive made by another tool unpacks here with its tree and its times | `tar` and 7-Zip's 7z: the tree, and the files to the second; 7-Zip's zip: the same since P22.4, to the fraction of a second its NTFS field holds, where the pass saw the files an hour late; a zip Explorer made: an hour late, since it holds nothing but a local time Explorer moved; a directory at the time its entry carries since P22.3, where the pass saw it dated at the unpacking | `tar`: the tree, and the files to the second; the zips of `zip` and of 7-Zip: to the second and to the fraction since P22.4; a directory the same | manual 2026-10-12 for `tar` and the 7z; the zips: suite, on a zip each of the two tools made, and a probe on a real disk on 2026-10-14; the directories: suite, disk test; **manual** to walk again, on Linux for the first time with the zips of `zip` and 7-Zip |
+| An archive made by another tool unpacks here with its tree and its times | `tar` and 7-Zip's 7z: the tree, and the files to the second; 7-Zip's zip: the same since P22.4, to the fraction of a second its NTFS field holds, where the pass saw the files an hour late; a zip Explorer made: an hour late, since it holds nothing but a local time Explorer moved; a directory at the time its entry carries since P22.3, where the pass saw it dated at the unpacking | `tar`: the tree, and the files to the second; the zips of `zip` and of 7-Zip: to the second and to the fraction since P22.4; a directory the same | manual 2026-10-12 for `tar` and the 7z; the zips: suite, on a zip each of the two tools made, and a probe on a real disk on 2026-10-14; the directories: suite, disk test; manual 2026-10-18 for all of them, every file and directory at `04:05:06`, on Linux with the zip of `zip` 3.0 and the 7z of 7-Zip 23.01 beside `tar`'s |
 | The name is deduced from the targets, the root from the drive | `diskCcontents.zip` | `rootcontents.zip` | suite (one test per platform) |
 | Entry paths inside the archive are relative and separated by `/` | `docs\a.txt` is stored as `docs/a.txt` | already `/` | suite |
-| A backslash inside a Linux file name stays in the entry name | n/a | in a zip and a tar.gz it does since P22.5 — packed, added with `F5` and typed at `F7` — where the pass saw `a\b.txt` written as `a/b.txt`; in a 7z it does not, since the library's writer makes the level itself | manual 2026-10-12 for the defect; since P22.5: suite, on the Linux leg alone, and a probe on a real disk on 2026-10-14 against `unzip` 6.00 and 7-Zip 23.01, which both list and extract one file; **manual** to walk again |
+| A backslash inside a Linux file name stays in the entry name | n/a | in a zip and a tar.gz it does since P22.5 — packed, added with `F5` and typed at `F7` — where the pass saw `a\b.txt` written as `a/b.txt`; in a 7z it does not, since the library's writer makes the level itself | manual 2026-10-12 for the defect; since P22.5: suite, on the Linux leg alone, and a probe on a real disk on 2026-10-14 against `unzip` 6.00 and 7-Zip 23.01, which both list and extract one file; manual 2026-10-18 for the zip: `unzip` extracted one file, `a\b.txt`, and the panel showed it alone |
 | A zip says where it was made | nothing of it, as before: the bytes of a zip packed and added to are those P22.4 wrote | made on Unix, every file `rw-r--r--` and every directory `rwxr-xr-x` | suite (`ZipEntriesTests`, either platform on either leg); a probe on a real disk on 2026-10-14, the two zips compared byte for byte on Windows and read by `zipinfo` on Linux |
 | A file whose name ends in a backslash goes into a zip | n/a | into a new one, with its content; a zip that exists refuses it and keeps what it held, where it used to be left unreadable | suite, on the Linux leg alone; a probe on a real disk on 2026-10-14, `unzip -t` after each |
 | A backslash in an entry another tool wrote is read as part of the name | listed as one entry; unpacked as a level, since a backslash separates on the disk it lands on | same: `ArchiveListing` splits on `/` alone, and it is unpacked as one file | suite; a probe on a real disk on 2026-10-14 for the unpacking |
 | The zip opens in the system's own tool | Explorer, *Extract All* | `unzip`; a desktop's archive manager was not tried | manual 2026-10-12; **manual** for an archive manager on Linux, waiting for a desktop |
 | The tar.gz opens in the system's own tool | `tar -xzf` | `tar -xzf` | manual 2026-10-12 |
 | A password-protected zip asks for the password there | Explorer cannot open AES zips at all; 7-Zip can | `7z x` | manual 2026-10-12 |
-| Modification times survive the round trip | a file: to the second through `tar`, and through 7-Zip and `unzip` since P22.4, which writes the moment beside the local time, where the pass saw 7-Zip an hour early; through Explorer an hour early still, since it reads the local time alone; a directory: its own time since P22.3, where the pass saw the moment of packing | a file: to the second through `tar` and `unzip`, and through 7-Zip since P22.4, where the pass saw it an hour early; a directory: the same | manual 2026-10-12; the zip since P22.4: suite, and a probe on a real disk on 2026-10-14 against 7-Zip 25.01, `unzip` 6.00, `tar` and Explorer on Windows and `unzip` 6.00 and 7-Zip 23.01 on Linux; **manual** to walk again |
+| Modification times survive the round trip | a file: to the second through `tar`, and through 7-Zip and `unzip` since P22.4, which writes the moment beside the local time, where the pass saw 7-Zip an hour early; through Explorer an hour early still, since it reads the local time alone; a directory: its own time since P22.3, where the pass saw the moment of packing | a file: to the second through `tar` and `unzip`, and through 7-Zip since P22.4, where the pass saw it an hour early; a directory: the same | manual 2026-10-12; the zip since P22.4: suite, and a probe on a real disk on 2026-10-14 against 7-Zip 25.01, `unzip` 6.00, `tar` and Explorer on Windows and `unzip` 6.00 and 7-Zip 23.01 on Linux; manual 2026-10-18: 7-Zip, `tar` and `unzip` to the second, files and directories, and Explorer's files an hour early and its directories dated that day |
 
 Everything up to the bytes is tested on `MockFileSystem`, both writers being
 stream APIs, and one test reads a zip back with `System.IO.Compression` after
@@ -307,7 +307,7 @@ the executable one, which is a row of *Viewing and editing*.
 
 | Check | Windows | Linux | Evidence |
 |-------|---------|-------|----------|
-| Quitting writes the session | `%APPDATA%\Marbas\settings.conf` | `~/.config/Marbas/settings.conf` | suite, WSL |
+| Quitting writes the session | `%APPDATA%\Marbas\settings.conf` | `~/.config/Marbas/settings.conf`, or under `$XDG_CONFIG_HOME` when it is set | suite, WSL; the variable set to `~/.config` and to nothing: manual 2026-10-18 |
 | Starting restores both panel paths, sorts and toggles | same | same | suite, WSL |
 | Starting from a different working directory still restores | same | same | WSL |
 | A stored path that no longer exists falls back to the working directory | same | same | suite |
@@ -361,9 +361,9 @@ and its directory was gone after the next start.
 | `Shift+PgUp` / `Shift+PgDn` and `Shift+←` / `Shift+→` mark a page | yes | yes | suite (injected), manual 2026-10-12 |
 | The screen redraws when the terminal is resized | yes | yes | manual 2026-10-12 |
 | The sixteen classic colours look right | yes | yes | manual 2026-10-12 |
-| Directory / file / archive / program colours are told apart | yes | yes; a program is a file with its executable bit set, read by the listing since P22.2 | manual 2026-10-12; a program on Linux: probe (the published binary in tmux, 2026-10-13) |
+| Directory / file / archive / program colours are told apart | yes | yes; a program is a file with its executable bit set, read by the listing since P22.2 | manual 2026-10-12; a program on Linux: probe (the published binary in tmux, 2026-10-13), manual 2026-10-18 |
 | Bright blue file names stay readable on the blue panel | yes | yes | manual 2026-10-12 |
-| The rule under the listing joins the panel border | yes since P22.6: `╟────╢` on the focused panel, `├────┤` on the other, where the pass saw it stop at the border with no joint | yes, the same | manual 2026-10-12 for the defect; since P22.6: suite (the rule's columns), the `render-tui-screen` probe at 60, 72, 81 and 100 columns, resized and after `Tab`, and the published binary in tmux under WSL on 2026-10-15; **manual** to look at in cmder and gnome-terminal |
+| The rule under the listing joins the panel border | yes since P22.6: `╟────╢` on the focused panel, `├────┤` on the other, where the pass saw it stop at the border with no joint | yes, the same | manual 2026-10-12 for the defect; since P22.6: suite (the rule's columns), the `render-tui-screen` probe at 60, 72, 81 and 100 columns, resized and after `Tab`, and the published binary in tmux under WSL on 2026-10-15; manual 2026-10-18 in cmder and gnome-terminal |
 | Arrows stop at the ends of a panel; only `Tab` leaves it | yes | yes | suite (as handled keys), manual 2026-10-12 |
 | `←` / `→` jump by the page on screen | yes | yes | suite, manual 2026-10-12 |
 | Typing opens the search bar and moves the cursor | yes | yes | suite, manual 2026-10-12 |
@@ -375,7 +375,7 @@ and its directory was gone after the next start.
 | `Shift+F9` writes the session | yes | yes | probe |
 | `Alt+←` / `Alt+→` walk from tab to tab | yes | yes | probe |
 | `Ctrl+T`, the other candidate for listing tabs | **no under cmder**, which opens its own console tab | yes | probe |
-| The tab counter is legible in the top right corner | yes, at `[1/1]` and `[2/2]` | yes at `[1/1]`; a second tab could not be opened there | manual 2026-10-12 |
+| The tab counter is legible in the top right corner | yes, at `[1/1]` and `[2/2]` | yes, at `[1/1]` and `[2/2]`, the second tab opened with `Alt+Z` under WSLg, where `Alt+F11` is gnome-terminal's | manual 2026-10-12; `[2/2]` on Linux: manual 2026-10-18 |
 | `Alt+Del`, the key phase 13 wipes with | yes | yes | probe |
 | `Alt+Shift+Del`, the stand-in it turned out not to need | yes | yes | probe |
 | `Ctrl+\` reaches the application as a backslash | **no**, arrives as `Ctrl+4` | **no**, the same | probe |
@@ -414,7 +414,7 @@ and its directory was gone after the next start.
 | `Ctrl+Shift+V` | **no**: `Ctrl+V` under cmder, a paste in Windows Terminal and the console | **no**: `Ctrl+V` under cmder, a paste in gnome-terminal | probe, terminal defaults |
 | `F7`, `Shift+F7` and `F8` reach a full-screen window that is up | yes | yes | probe |
 | A bare letter, a digit, `Enter`, `Ins`, `Del`, `F4`, `Ctrl+↑` and `Ctrl+↓` reach a list inside a modal dialog | yes | yes | probe |
-| The stand-ins of phases 17 and 18: `Alt` and `Alt+Shift` with `E`, `N`, `A` and `C`; `Alt+Shift` with `X` and `V`; `Alt` with `I`, `M`, `U`, `B`, `K`, `P`, `L` and `J`; a digit after `Alt+K` | yes | yes | probe |
+| The stand-ins of phases 17 and 18: `Alt` and `Alt+Shift` with `E`, `N`, `A` and `C`; `Alt+Shift` with `X` and `V`; `Alt` with `I`, `M`, `U`, `B`, `K`, `P`, `L` and `J`; a digit after `Alt+K` | yes | yes, each key; but the popup of `Alt+K` is handed the `Alt+K` that opened it a second time and closes before the digit — see [Rough edges](../ROUGH-EDGES.md) | probe; the popup: manual 2026-10-18 in gnome-terminal and in tmux |
 | The keys of phases 17 to 20 are claimed by a desktop | n/a | `Alt+F8` alone under GNOME; none of the stand-ins | desktop defaults, read 2026-10-03; **manual** for KDE and Xfce |
 
 `Ctrl+Q` deserves a note: it is `0x11`, which is also `XON`, so a terminal doing
@@ -651,9 +651,10 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | `F4` falls back to the default editor, then `$EDITOR` | same | same | suite |
 | `F4` falls back again when neither is set | `notepad` | `vi` | suite |
 | `F4` on a directory opens its properties | same | same | suite |
-| A flag written to a directory is read back | same | read-only: yes, the write bits go; hidden, system and archive are not offered since P22.8, where the pass saw a tick taken without a word and gone when the popup opened again | suite (mock, either platform on either leg); manual 2026-10-12 for the defect; **manual** to walk again |
+| A flag written to a directory is read back | same | read-only: yes, the write bits go; hidden, system and archive are not offered since P22.8, where the pass saw a tick taken without a word and gone when the popup opened again | suite (mock, either platform on either leg); manual 2026-10-12 for the defect; manual 2026-10-18: read-only alone, kept, and the owner's `w` gone and back |
 | `Shift+F4` creates a file and opens it | same | same | suite |
 | `F12` opens the settings popup | same | same | suite |
+| Every popup opens and closes | each of the table of W35 in [The manual pass](MANUAL-PASS.md) | each but *Keep favourite*, which closes as it opens when `Alt+K` opened it — see [Rough edges](../ROUGH-EDGES.md) | manual 2026-10-18; no test reaches the prompts of `Adapters` |
 | `F4` waits for the editor | **no**, started through the shell | yes, with the terminal handed over | suite |
 | A console editor gets a window of its own | yes, a console of its own | n/a | manual 2026-10-12 |
 | A file saved in the editor shows in the panel | the directory watch | the directory watch | manual 2026-10-12 |
@@ -663,21 +664,21 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | `Enter` runs a document, an executable and an associated file | same | a document and an associated file: same; an executable: started from its own file, by its mode | suite; disk test (the mode on a real disk); manual 2026-10-12 on Linux; an executable: probe (the published binary in tmux, 2026-10-13) |
 | `Alt+W` walks into the entry under the cursor | same | same | suite; manual 2026-10-12 on Linux, where the key arrives |
 | `Ctrl+PgDn` reaches the panel as a key at all | **yes** | yes | manual (Windows Terminal; gnome-terminal on 2026-10-12) |
-| A started program leaves the panels un-scribbled | a console program: own console, shell verb; a window program: started from its file, streams drained | streams drained | suite (the start described); probe (ConEmu); manual 2026-10-12 on Windows; **manual** on Linux |
+| A started program leaves the panels un-scribbled | a console program: own console, shell verb; a window program: started from its file, streams drained | streams drained | suite (the start described); probe (ConEmu); manual 2026-10-12 on Windows; manual 2026-10-18 on Linux, `noisy` started from its executable bit |
 | A program named by its start is resolved to its file | as written, `PATH` with `PATHEXT`, App Paths | n/a | suite (mock); probe |
-| A started program does not hold the loop up | yes | yes: the session took the next key at once | manual 2026-10-12 on Windows; probe on Linux (the published binary in tmux, 2026-10-13), **manual** there still to come |
+| A started program does not hold the loop up | yes | yes: the session took the next key at once | manual 2026-10-12 on Windows; probe on Linux (the published binary in tmux, 2026-10-13), manual 2026-10-18 there |
 | `F2` opens the user menu, a letter and `Enter` run an entry | same | same | suite; probe on Windows |
 | A user menu entry is started the way it names | shell verb; `cmd /s /c`, `cmd /s /k` | drained; `/bin/sh -c` for both shell ways | suite (the start described); manual 2026-10-12 (each way run) |
 | A user menu entry runs as administrator | `runas`, `cd /d` first in the shell | refused by platform, with the reason in the dialog | suite (described); manual 2026-10-12 |
 | The list file of `%f` is written before the start | same | same | suite |
-| `Ins`, `F4`, `Del`, `Ctrl+↑`, `Ctrl+↓` edit the user menu popup | same | same | suite; probe on Windows; keys measured in P17.2 |
+| `Ins`, `F4`, `Del`, `Ctrl+↑`, `Ctrl+↓` edit the user menu popup | same | same | suite; probe on Windows; keys measured in P17.2; `Del` on the bottom row: manual 2026-10-18 |
 | A program that is not there is named, not thrown | `Win32Exception` 2 | `Win32Exception` 2 | manual 2026-10-12 |
 | `Alt+R` asks which program opens the entry | same | same | suite |
 | `Shift+Enter` reaches the panel as a key at all | **no**, arrives as `Enter` | **no**, arrives as `Enter` | manual (Windows Terminal; gnome-terminal on 2026-10-12) |
 | `Alt+R` on a directory opens the file manager | Explorer | the desktop's own, through `xdg-open`; where none is installed the dialog says so and names the package that provides it, since P22.9 | manual 2026-10-12 on Windows; the missing opener: suite; **manual** on Linux, waiting for a desktop |
-| `Alt+Shift+R` runs the entry elevated | same | same | suite; manual 2026-10-12 on Linux, where the key arrives and is not taken for `Alt+R` |
+| `Alt+Shift+R` runs the entry elevated | same | same | suite; manual 2026-10-12 on Linux, where the key arrives and is not taken for `Alt+R`; on 2026-10-18 on `sleeper`, refused with the reason |
 | `Ctrl+Alt+Enter` reaches the panel as a key at all | **no** | **no**, nothing arrives | manual (Windows Terminal; gnome-terminal on 2026-10-12) |
-| An executable starts with administrator rights | `runas`, the system prompts | refused by platform, with the reason in the dialog | manual 2026-10-12 on Windows; probe on Linux (the published binary in tmux, 2026-10-13) |
+| An executable starts with administrator rights | `runas`, the system prompts | refused by platform, with the reason in the dialog | manual 2026-10-12 on Windows; probe on Linux (the published binary in tmux, 2026-10-13), manual 2026-10-18 there |
 | A prompt the user turns down leaves no trace | `Win32Exception` 1223, silence | n/a | manual 2026-10-12 |
 | A document refuses to be run elevated | same | same | suite |
 | The handlers of a common extension are listed | registry | XDG mime database | Windows: manual 2026-10-12; Unix: suite |
