@@ -800,3 +800,33 @@ the tracker of dotnet/fsharp was found to describe it.
 setting, §8 of [Coding style](../coding-style-conventions.md) and
 [Testing](../Architecture/TESTING.md) name `Expect.notNull`, and the plan
 keeps the setting for the tests among what is left for a later phase.
+
+**P22.17 watches what the packages release.** `.github/dependabot.yml` asks
+GitHub weekly over `nuget`, which reads `Directory.Packages.props` and the
+tool manifest, and over `github-actions`. On 2026-10-18 no package was
+vulnerable, transitively or not, and eleven were behind where the plan
+counted nine: `coverlet.collector` 10.1.0, `FSharp.Core` 10.1.402,
+`Ionide.Analyzers` 0.20.0, `Microsoft.NET.Test.Sdk` 18.11.0, `SharpCompress`
+0.50.5, `System.IO.Abstractions` and its testing helpers 22.3.0,
+`Terminal.Gui` 2.5.0, `xunit.runner.visualstudio` 4.0.1, and among the tools
+`fantomas` 8.0.10 and `fsharp-analyzers` 0.41.0.
+
+The plan held only the tool, but `Ionide.Analyzers` 0.20.0 has already moved
+to the SDK of 0.41 while `G-Research.FSharp.Analyzers` 0.25.0 stays on 0.39.
+Taking the package alone would have the pinned tool skip it, and the
+`analyze` job would stay green without running `IONIDE-006`. So
+`fsharp-analyzers` is ignored, the two packages come as one pull request,
+group `analyzers`, and [Development](../DEVELOPMENT.md) says that it is taken
+only when both name the same SDK, with the tool moved by hand in the same
+change. `System.IO.Abstractions` and
+`TestableIO.System.IO.Abstractions.TestingHelpers` are a group too: they are
+released in step, from one repository, and the helpers build on the
+wrappers of their own version, so the two are taken at the same version.
+`fantomas` stays ungrouped, so it comes as a pull request of its own.
+
+No pull request it opens is merged in this phase, so that P22.18 walks the
+libraries the fixes were made against. [Development](../DEVELOPMENT.md) has a
+section on package updates: what Dependabot reads, and what each pull request
+asks before it is taken in — the suite, Fantomas with its reformat in
+`.git-blame-ignore-revs`, the analyzers' SDK, and for Terminal.Gui the
+screens rendered before and after.

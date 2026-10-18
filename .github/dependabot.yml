@@ -1,0 +1,22 @@
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+    ignore:
+      - dependency-name: fsharp-analyzers
+    groups:
+      analyzers:
+        patterns:
+          - G-Research.FSharp.Analyzers
+          - Ionide.Analyzers
+      io-abstractions:
+        patterns:
+          - System.IO.Abstractions
+          - TestableIO.System.IO.Abstractions.TestingHelpers
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

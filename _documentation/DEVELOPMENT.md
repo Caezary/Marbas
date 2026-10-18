@@ -53,8 +53,55 @@ others are off, are in §11 of [Coding style](coding-style-conventions.md).
 The tool, `fsharp-analyzers`, is pinned in `.config/dotnet-tools.json` to
 0.39.2. An analyzer package is built against one version of the SDK the tool
 carries, and the tool skips a package built on another: 0.40.0, released on
-2026-10-13, skips both, which are built on 0.39. The tool moves when both
-packages have moved with it.
+2026-10-13, skips both, which are built on 0.39. On 2026-10-18
+`Ionide.Analyzers` 0.20.0 is built on 0.41 and `G-Research.FSharp.Analyzers`
+0.25.0 still on 0.39, so neither the tool nor either package moves alone. The
+tool moves when both packages have moved with it, and in the same change.
+
+## Package updates
+
+`.github/dependabot.yml` asks GitHub once a week whether anything is behind,
+over two ecosystems, and opens a pull request for what is:
+
+- `nuget` reads `Directory.Packages.props` and the tool manifest,
+  `.config/dotnet-tools.json`. Each package comes as a pull request of its
+  own, except two pairs that only move together: the two analyzer packages
+  (group `analyzers`) and `System.IO.Abstractions` with its testing helpers
+  (group `io-abstractions`), which are released in step and taken at the
+  same version. `fsharp-analyzers` is ignored, for the reason under
+  [Analyzers](#analyzers); it is moved by hand.
+- `github-actions` reads the `uses:` lines of `ci.yml` and `release.yml`.
+
+No package is vulnerable, transitively or not, as of 2026-10-18; that is
+asked with
+
+```
+dotnet list Marbas.slnx package --vulnerable --include-transitive
+dotnet list Marbas.slnx package --outdated
+```
+
+A pull request of Dependabot runs `ci.yml` like any other, so the build, the
+suite on both systems, the format check and the analyzers have answered
+before it is looked at. Taking one in asks more than a green build:
+
+- **Every package** — `dotnet test Marbas.slnx` passes locally with the
+  number of tests passing and skipping the one before, and the release notes
+  between the two versions are read for anything the suite does not cover.
+- **`fantomas`** — a new version may format the tree differently, so the
+  `format` job fails on files nobody touched. The pull request is taken
+  alone: on its branch, `dotnet tool restore` and
+  `dotnet fantomas Marbas Marbas.Tests`, the reformat committed on its own,
+  and its hash added to `.git-blame-ignore-revs`.
+- **The analyzer packages** — taken only when both are built on the same
+  version of the SDK, which their release notes name, and with
+  `fsharp-analyzers` moved by hand to that version in the same change. A
+  package on another SDK than the tool's is skipped without a word, so the
+  `analyze` job stays green while running nothing of it: a green job says
+  nothing here, the release notes do.
+- **Terminal.Gui** — the suite does not see a frame, a shadow or a colour
+  that moved, so the screens are rendered before and after with the
+  `render-tui-screen` skill — the panels, a dialog, a popup, the viewer —
+  and compared, and the application is started on Windows and under WSL.
 
 ## Publishing a binary
 
