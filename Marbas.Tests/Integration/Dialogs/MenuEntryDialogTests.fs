@@ -7,6 +7,7 @@ open Terminal.Gui.Input
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Ui.Dialogs.MenuEntryForm

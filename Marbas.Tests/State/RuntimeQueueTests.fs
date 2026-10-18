@@ -5,6 +5,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.State.AppState
 open Marbas.State.Runtime
 open Marbas.State.Update

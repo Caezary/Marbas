@@ -165,3 +165,38 @@ onto that drive; and *Find* with *Search archives* and `F2` put the other
 panel on `Find: *.txt in /.../fixture`, listing `box.zip/docs/notes.txt`.
 `Alt+F1` with `/mnt/c` answered *Access denied to '/mnt/c'*; the build of
 P23.3 answers the same, so it is the mount and not the move.
+
+**P23.5 `Profile` leaves.** The table took the row of `Profile` — allowed
+`FileSystem`, `Domain` and `Collections`, given to `Messages` and allowed to
+`State`, `Ui` and `Adapters` — and the row of `FileSystem` lost `Collections`.
+The test failed twice, as it should: `Profile holds no type`, and
+``Marbas.FileSystem.Settings (FileSystem) uses Marbas.Collections.Zipper`1
+(Collections)`` with the same line for `SettingsModule`. Then `SettingsError`,
+`Settings`, `HistoryError`, `History`, `FavoritesError`, `Favorites`,
+`UserMenuError` and `UserMenu` moved to `Marbas/Profile/` as `Marbas.Profile`,
+in a group compiled between the last module of `FileSystem` and `Locations`,
+and their four test files to `Marbas.Tests/Profile/`.
+`State/SettingsTests.fs` keeps its name in `Marbas.Tests.State`.
+
+`FileSystem` compiled without them before anything else was touched, and the
+eight modules read and write their files through `IFileSystem` as they did.
+Each opens `Marbas.FileSystem`; the three errors that opened nothing take it
+under `open System`. `Messages` reads `Profile` in five modules — the four
+`*ErrorMessage` of the profile and `Problem` — as its new row allows, and no
+layer between `Profile` and `Messages` reads it. Twenty-one modules of
+`Marbas` read `Profile`, the `open` going right after
+`open Marbas.FileSystem` as in P23.4; in five of them — `Startup`,
+`MenuRemoval`, `UserMenuDialog`, `UserMenuRow` and `UserMenuState` — it
+replaced that `open`. Forty-seven test files took it besides the four moved,
+and all of them still need `Marbas.FileSystem`.
+
+The suite passed 4,299 of 4,334 on Windows and 4,276 of 4,337 under WSL, the
+counts of P23.1. Under WSL, in tmux, the build of P23.4 wrote a configuration
+of its own: a directory entered, which the folder history kept; that directory
+kept in slot `0` of *Favourites* with `Ins`; a second tab opened and sent back
+to the start; an entry `E  Echo` running `echo hi` added to the user menu; and
+`F10`. The new build, started over those four files, opened on tab `[2/2]`,
+listed both tabs under `F11` with the places they had, showed both folders in
+the history of `Alt+F12`, the directory in slot `0` of `Alt+B`
+and `E  Echo` under `F2`; after `F10` the four files were byte for byte the
+ones it had started over.

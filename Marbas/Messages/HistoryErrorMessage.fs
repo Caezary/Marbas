@@ -1,6 +1,7 @@
 module Marbas.Messages.HistoryErrorMessage
 
 open Marbas.FileSystem
+open Marbas.Profile
 
 [<Literal>]
 let Title = "History not saved"

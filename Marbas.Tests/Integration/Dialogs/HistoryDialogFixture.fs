@@ -5,6 +5,7 @@ open System.Drawing
 open System.IO.Abstractions.TestingHelpers
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Tests

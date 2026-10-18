@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.SettingsTests
+module Marbas.Tests.Profile.SettingsTests
 
 open System
 open System.IO.Abstractions.TestingHelpers
@@ -6,6 +6,7 @@ open Xunit
 open Marbas.Collections
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Tests
 
 let private at = Root.at

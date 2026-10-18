@@ -1,9 +1,10 @@
-namespace Marbas.FileSystem
+namespace Marbas.Profile
 
 open System
 open System.IO.Abstractions
 open FsToolkit.ErrorHandling
 open Marbas.Domain
+open Marbas.FileSystem
 
 type FavoriteChange =
     | Keep of FavoriteSlot * Place

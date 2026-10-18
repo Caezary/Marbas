@@ -1,7 +1,7 @@
 namespace Marbas.Ui.Dialogs
 
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Profile
 
 type UserMenuState =
     { Menu: UserMenu

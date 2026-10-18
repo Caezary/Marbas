@@ -3,6 +3,7 @@ module Marbas.Tests.Ui.Dialogs.MenuEntryFormTests
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Ui.Dialogs
 open Marbas.Ui.Dialogs.MenuEntryForm
 open Marbas.Tests

@@ -1,7 +1,8 @@
-namespace Marbas.FileSystem
+namespace Marbas.Profile
 
 open System
 open Marbas.Domain
+open Marbas.FileSystem
 
 type MenuRefusal =
     | HotkeyTaken of hotkey: MenuHotkey

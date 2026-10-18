@@ -8,6 +8,7 @@ type private Layer =
     | Collections
     | Domain
     | FileSystem
+    | Profile
     | Locations
     | Viewing
     | Find
@@ -20,13 +21,23 @@ type private Layer =
 let private mayUse =
     [ Collections, []
       Domain, [ Collections ]
-      FileSystem, [ Domain; Collections ]
+      FileSystem, [ Domain ]
+      Profile, [ FileSystem; Domain; Collections ]
       Locations, [ FileSystem; Domain ]
       Viewing, [ FileSystem; Domain ]
       Find, [ Locations; Viewing; FileSystem; Domain ]
-      Messages, [ FileSystem; Domain ]
-      State, [ Messages; Find; Viewing; Locations; FileSystem; Domain; Collections ]
-      Ui, [ State; Messages; Find; Viewing; Locations; FileSystem; Domain; Collections ]
+      Messages, [ Profile; FileSystem; Domain ]
+      State, [ Messages; Find; Viewing; Locations; Profile; FileSystem; Domain; Collections ]
+      Ui,
+      [ State
+        Messages
+        Find
+        Viewing
+        Locations
+        Profile
+        FileSystem
+        Domain
+        Collections ]
       Adapters,
       [ Ui
         State
@@ -34,6 +45,7 @@ let private mayUse =
         Find
         Viewing
         Locations
+        Profile
         FileSystem
         Domain
         Collections ]

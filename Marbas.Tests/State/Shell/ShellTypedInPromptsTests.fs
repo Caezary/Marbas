@@ -3,6 +3,7 @@ module Marbas.Tests.State.Shell.ShellTypedInPromptsTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Domain
 open Marbas.State
 open Marbas.State.Update

@@ -11,11 +11,12 @@ schedules the fix. A rule here beats a habit found in an older file.
 |-------|-------|---------|
 | `Collections/` | `Zipper` and the like — no domain knowledge | nothing |
 | `Domain/` | the vocabulary: `EntryName`, `NamePattern`, `SortOrder`, `HiddenEntries`, `FindQuery` | `Collections` |
-| `FileSystem/` | reading and writing disks and archives, every call through `IFileSystem`; `FileSystemPath` is declared here, not in `Domain` | `Domain`, and `Collections` for `Settings` |
+| `FileSystem/` | reading and writing disks and archives, every call through `IFileSystem`; `FileSystemPath` is declared here, not in `Domain` | `Domain` |
+| `Profile/` | what the user keeps between sessions: the settings, the history, the favourites, the user menu, each read and written through `IFileSystem` | `FileSystem`, `Domain`, `Collections` |
 | `Locations/` | where a panel stands, where it lands, what it lists | `FileSystem`, `Domain` |
 | `Viewing/` | a file's content as a window of bytes and lines: its encoding, the window, the lines, the viewer's searches | `FileSystem`, `Domain` |
 | `Find/` | searching by name and by text, on disk and inside archives | `Locations`, `Viewing`, `FileSystem`, `Domain` |
-| `Messages/` | the words the application says: an error or a question -> text, and `Problem`, everything that is reported to the user | `FileSystem`, `Domain` |
+| `Messages/` | the words the application says: an error or a question -> text, and `Problem`, everything that is reported to the user | `Profile`, `FileSystem`, `Domain` |
 | `State/` | `AppState`, messages, transitions, `Effect`; `Runtime` holds the one mutable cell; then `Ports.Dependencies` as ports, `Shell.interpret` and `Startup` | `Messages` and below |
 | `Ui/` | views, key maps, and the wiring of both to the runtime | `State` and below |
 | `Adapters/` | the real ports: dialogs, processes, registry, watches, runners | everything above it |
@@ -42,7 +43,7 @@ schedules the fix. A rule here beats a habit found in an older file.
 - [ ] One folder is one namespace, and a folder may only depend on folders above
       it in the compile order. No folder is compiled in the middle of another.
 - [ ] `Messages` words values and holds none of its own but `Problem`. A value
-      it has to word is declared in `Domain` or `FileSystem`; a transition names
+      it has to word is declared in a layer its row allows; a transition names
       a `Problem` and never a title or a sentence.
 - [ ] A port takes one value. Where it has to be handed something to call, the
       function is a named field of a request record — `BatchRequest.Finish`,

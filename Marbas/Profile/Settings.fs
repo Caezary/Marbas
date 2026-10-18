@@ -1,9 +1,10 @@
-namespace Marbas.FileSystem
+namespace Marbas.Profile
 
 open System
 open System.IO.Abstractions
 open Marbas.Collections
 open Marbas.Domain
+open Marbas.FileSystem
 
 type PanelSettings =
     { Path: FileSystemPath

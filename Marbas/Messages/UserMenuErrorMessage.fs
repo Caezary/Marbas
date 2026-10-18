@@ -2,6 +2,7 @@ module Marbas.Messages.UserMenuErrorMessage
 
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Profile
 
 [<Literal>]
 let Title = "User menu"

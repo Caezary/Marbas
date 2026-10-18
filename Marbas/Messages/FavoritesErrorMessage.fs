@@ -1,6 +1,7 @@
 module Marbas.Messages.FavoritesErrorMessage
 
 open Marbas.FileSystem
+open Marbas.Profile
 
 [<Literal>]
 let Title = "Favourites not saved"

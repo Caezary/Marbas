@@ -1,7 +1,7 @@
 module Marbas.Ui.Dialogs.MenuRemoval
 
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Ui.Dialogs.MenuEntryForm
 
 [<Literal>]

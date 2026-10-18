@@ -2,7 +2,7 @@ module Marbas.Ui.Dialogs.UserMenuRow
 
 open System
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Profile
 
 [<Literal>]
 let private HotkeyGap = "  "

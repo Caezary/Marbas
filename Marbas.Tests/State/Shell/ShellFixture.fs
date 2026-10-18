@@ -3,6 +3,7 @@ module Marbas.Tests.State.Shell.ShellFixture
 open System
 open System.IO.Abstractions.TestingHelpers
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.FileSystem.Operations
 open Marbas.Domain
 open Marbas.State.Update

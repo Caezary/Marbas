@@ -4,6 +4,7 @@ open System
 open Xunit
 open Terminal.Gui.Input
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.State.AppState
 open Marbas.Ui.Dialogs
 open Marbas.Tests

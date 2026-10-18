@@ -6,6 +6,7 @@ open Terminal.Gui.Drawing
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.State.AppState
 open Marbas.Ui.Dialogs
 open Marbas.Tests

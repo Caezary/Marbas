@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.HistoryTests
+module Marbas.Tests.Profile.HistoryTests
 
 open System
 open System.Collections.Generic
@@ -6,6 +6,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Tests
 
 let private at = Root.at

@@ -63,19 +63,11 @@
         <Compile Include="FileSystem\DesktopEntry.fs" />
         <Compile Include="FileSystem\MimeDatabase.fs" />
         <Compile Include="FileSystem\DesktopHandlers.fs" />
-        <Compile Include="FileSystem\SettingsError.fs" />
-        <Compile Include="FileSystem\Settings.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="FileSystem\Drives.fs" />
         <Compile Include="FileSystem\ArchiveKind.fs" />
         <Compile Include="FileSystem\ArchivePath.fs" />
         <Compile Include="FileSystem\Place.fs" />
-        <Compile Include="FileSystem\HistoryError.fs" />
-        <Compile Include="FileSystem\History.fs" />
-        <Compile Include="FileSystem\FavoritesError.fs" />
-        <Compile Include="FileSystem\Favorites.fs" />
-        <Compile Include="FileSystem\UserMenuError.fs" />
-        <Compile Include="FileSystem\UserMenu.fs" />
         <Compile Include="FileSystem\LogFileError.fs" />
         <Compile Include="FileSystem\LogFile.fs" />
         <Compile Include="FileSystem\ArchiveFormat.fs" />
@@ -95,6 +87,17 @@
         <Compile Include="FileSystem\Archive.fs" />
         <Compile Include="FileSystem\EntryProperties.fs" />
         <Compile Include="FileSystem\Trash.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Profile\SettingsError.fs" />
+        <Compile Include="Profile\Settings.fs" />
+        <Compile Include="Profile\HistoryError.fs" />
+        <Compile Include="Profile\History.fs" />
+        <Compile Include="Profile\FavoritesError.fs" />
+        <Compile Include="Profile\Favorites.fs" />
+        <Compile Include="Profile\UserMenuError.fs" />
+        <Compile Include="Profile\UserMenu.fs" />
     </ItemGroup>
 
     <ItemGroup>

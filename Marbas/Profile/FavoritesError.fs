@@ -1,6 +1,7 @@
-namespace Marbas.FileSystem
+namespace Marbas.Profile
 
 open System
+open Marbas.FileSystem
 
 type FavoritesError =
     | FavoritesAccessDenied of path: FileSystemPath

@@ -8,6 +8,7 @@ open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.State
 open Marbas.Ui
 open Marbas.Ui.Format

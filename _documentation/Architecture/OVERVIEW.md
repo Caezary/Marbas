@@ -154,14 +154,9 @@ Marbas/
     DesktopEntry.fs       one .desktop file -> the handler it describes
     MimeDatabase.fs       globs -> mime types, mimeapps.list -> desktop entries
     DesktopHandlers.fs    the XDG directories -> the handlers a name has
-    Settings.fs           the session every tab carries, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             where a panel can be sent: the usable drives, and home on Unix
     Place.fs              a directory or file on disk, or a place inside an archive
-    HistoryError.fs       why the history could not be read or written
-    History.fs            the remembered lists, the changes made to them, and history.conf
-    UserMenuError.fs      why the user menu could not be read, written or changed
-    UserMenu.fs           the user menu entries, the changes made to them, and user-menu.conf
     LogFileError.fs       why the log could not be cut or written
     LogFile.fs            marbas.log beside the settings: appended to, cut to its last megabyte
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
@@ -183,6 +178,15 @@ Marbas/
     Archive.fs            writing one and taking one apart: the walk, cancelling, the password
     Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     ContentError.fs       what can go wrong reading a file, as values
+  Profile/                what the user keeps between sessions, each in a file of its own
+    SettingsError.fs      why the settings could not be read or written
+    Settings.fs           the session every tab carries, and its config file
+    HistoryError.fs       why the history could not be read or written
+    History.fs            the remembered lists, the changes made to them, and history.conf
+    FavoritesError.fs     why the favourites could not be read or written
+    Favorites.fs          the ten slots, the changes made to them, and favorites.conf
+    UserMenuError.fs      why the user menu could not be read, written or changed
+    UserMenu.fs           the user menu entries, the changes made to them, and user-menu.conf
   Locations/              where a panel stands, where it lands, what it lists
     PanelLocation.fs      where a panel stands: a directory, an archive level, search results;
                           a hit and the ground a search covers; a place as a location and back
@@ -205,8 +209,8 @@ Marbas/
     FindGround.fs         a scope -> the places to walk and the roots not to cross
     FileSearch.fs         the walk: hits reported as found, links followed once
     FindAnswer.fs         what the results window answers, and the last results kept
-  Messages/               the words the application says, from values the two
-                          layers below it speak
+  Messages/               the words the application says, from values the layers
+                          its row in Coding style allows speak
     ListingErrorMessage.fs    ListingError -> user-facing text
     ContentErrorMessage.fs    ContentError -> user-facing text
     ArchiveErrorMessage.fs    ArchiveError -> user-facing text

@@ -5,6 +5,7 @@ open System.Globalization
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Profile
 
 [<Literal>]
 let TimePattern = "HH:mm"

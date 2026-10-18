@@ -3,6 +3,7 @@ module Marbas.Tests.State.SettingsTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Locations
 open Marbas.Collections
 open Marbas.Domain

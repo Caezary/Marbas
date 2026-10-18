@@ -5,6 +5,7 @@ open System.IO.Abstractions
 open Terminal.Gui.App
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Find
 open Marbas.State
 

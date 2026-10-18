@@ -3,6 +3,7 @@ module Marbas.Tests.State.Update.UpdateTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Locations
 open Marbas.FileSystem.Operations
 open Marbas.Domain

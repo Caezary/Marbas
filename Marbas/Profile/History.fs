@@ -1,10 +1,11 @@
-namespace Marbas.FileSystem
+namespace Marbas.Profile
 
 open System
 open System.Globalization
 open System.IO.Abstractions
 open FsToolkit.ErrorHandling
 open Marbas.Domain
+open Marbas.FileSystem
 
 type FileUse =
     | Viewed

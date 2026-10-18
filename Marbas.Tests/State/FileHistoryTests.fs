@@ -4,6 +4,7 @@ open System.IO.Abstractions
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Locations
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Messages

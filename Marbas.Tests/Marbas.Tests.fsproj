@@ -60,13 +60,9 @@
     <Compile Include="FileSystem\MimeDatabaseTests.fs" />
     <Compile Include="FileSystem\XdgDirectoriesTests.fs" />
     <Compile Include="FileSystem\DesktopHandlersTests.fs" />
-    <Compile Include="FileSystem\SettingsTests.fs" />
     <Compile Include="FileSystem\EntryPropertiesTests.fs" />
     <Compile Include="FileSystem\ArchiveKindTests.fs" />
     <Compile Include="FileSystem\ArchivePathTests.fs" />
-    <Compile Include="FileSystem\HistoryTests.fs" />
-    <Compile Include="FileSystem\FavoritesTests.fs" />
-    <Compile Include="FileSystem\UserMenuTests.fs" />
     <Compile Include="FileSystem\LogFileTests.fs" />
     <Compile Include="FileSystem\ArchiveNameTests.fs" />
     <Compile Include="FileSystem\ArchiveTests.fs" />
@@ -98,6 +94,13 @@
     <Compile Include="FileSystem\SessionOwnerTests.fs" />
     <Compile Include="FileSystem\WorkspaceTests.fs" />
     <Compile Include="FileSystem\ProgramImageTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Profile\SettingsTests.fs" />
+    <Compile Include="Profile\HistoryTests.fs" />
+    <Compile Include="Profile\FavoritesTests.fs" />
+    <Compile Include="Profile\UserMenuTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 module Marbas.State.Startup
 
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Profile
 open Marbas.Locations
 open Marbas.State.AppState
 open Marbas.State.Update
