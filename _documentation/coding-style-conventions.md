@@ -10,17 +10,22 @@ schedules the fix. A rule here beats a habit found in an older file.
 | Layer | Holds | May use |
 |-------|-------|---------|
 | `Collections/` | `Zipper` and the like — no domain knowledge | nothing |
-| `Domain/` | the vocabulary: `EntryName`, `FileSystemPath`, `NamePattern`, `SortOrder`, `HiddenEntries`, `FindQuery` | `Collections` |
-| `FileSystem/` | reading and writing disks and archives, every call through `IFileSystem` | `Domain` |
+| `Domain/` | the vocabulary: `EntryName`, `NamePattern`, `SortOrder`, `HiddenEntries`, `FindQuery` | `Collections` |
+| `FileSystem/` | reading and writing disks and archives, every call through `IFileSystem`; `FileSystemPath` is declared here, not in `Domain` | `Domain`, and `Collections` for `Settings` |
 | `Messages/` | the words the application says: an error or a question -> text, and `Problem`, everything that is reported to the user | `FileSystem`, `Domain` |
 | `State/` | `AppState`, messages, transitions, `Effect`; `Runtime` holds the one mutable cell; then `Ports.Dependencies` as ports, `Shell.interpret` and `Startup` | `Messages` and below |
 | `Ui/` | views, key maps, and the wiring of both to the runtime | `State` and below |
 | `Adapters/` | the real ports: dialogs, processes, registry, watches, runners | everything above it |
 | `Program.fs` | starts the application, nothing else | `Adapters` |
 
-- [ ] Dependencies point downward only. The compile order in `Marbas.fsproj` is
-      the enforcement; if a reference needs to point up, the type is in the
-      wrong layer.
+- [ ] Dependencies point downward only, and only to the layers a row allows.
+      The table is a test: `Layers/LayerReferenceTests` reads the compiled
+      assembly and fails on a type whose namespace names no layer of it, on a
+      reference its row does not allow — a layer beside, which the compile
+      order in `Marbas.fsproj` lets through, as much as one above — and on a
+      layer of it that holds no type; the test and this table change
+      together. If a reference needs to point up or sideways, the type is in
+      the wrong layer.
 - [ ] Only `Adapters` touches the operating system directly. Everything else
       reaches it through `IFileSystem` or a port on `Ports.Dependencies`.
       `Layers/SystemCallTests` holds the rule: it reads the compiled assembly

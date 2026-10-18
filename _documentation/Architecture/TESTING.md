@@ -299,7 +299,8 @@ calling the system: nothing in the compiler keeps `File.Exists` out of
 `State`. Since P22.13 a test does. `Layers/` holds the tests about the
 assembly as a whole rather than one module: `SystemCalls.fs` reads the
 compiled `Marbas.dll` with Mono.Cecil, and `SystemCallTests.fs` asserts on
-what it finds.
+what it finds. `LayerReferences.fs` and `LayerReferenceTests.fs`, below, do
+the same for which layer uses which.
 
 The scan walks every instruction of every method of every type, closures and
 nested types among them, and takes each call, `newobj`, `ldftn` and the like
@@ -341,6 +342,42 @@ one line per call, naming the method and what it called:
 missing, a folder renamed — cannot pass the first. A way of reaching the
 system the table does not hold joins it when `Adapters` first takes it up,
 and the first test then says whether a layer below was already using it.
+
+The order of compilation keeps only half of the table of §1 of
+[Coding style](../coding-style-conventions.md#1-layers) besides: it stops a
+layer from naming one above it, never one beside it. Since P23.1
+`LayerReferences.fs` holds that table as `mayUse`, and
+`LayerReferenceTests.fs` asserts on it. The scan reads `Marbas.dll` once, with
+its symbols, and places every type in the layer the second segment of the
+full name of its outermost declaring type names: `Marbas.State.Shell` is
+`State`, `Marbas.Ui.Panels.FilePanel` is `Ui`, `Marbas.Program` is `Program`.
+What the compiler generates — `<Module>`, `<PrivateImplementationDetails$Marbas>`
+and every other type whose name opens with `<` — and the `Coverlet` tracker
+are left out, with one
+exception: the static initialiser of a file, `<StartupCode$Marbas>.$…`, holds
+the module-level values of the file and so the references they make, and is
+placed as `SystemCalls.fs` places a method, by the folder of the source file
+its first sequence point names; one with no method has nothing to place.
+
+Of each type the scan collects what it names: its base type and interfaces,
+the types of its fields, the parameters and results of its methods, the
+variables of their bodies, and every type, method and field an instruction
+names, with the declaring type, the parameters and the result of a method
+named and the type of a field named. Each of these is taken apart into its
+generic arguments and element types, and only what is declared in `Marbas`
+and not generated is kept, placed by its outermost type as well.
+
+| Test | Fails with |
+|------|------------|
+| `every type of Marbas is in a layer of the table` | ``Marbas.Stray.Planted is in Stray, which is no layer of the table`` |
+| `every layer uses only itself and the layers its row allows` | ``Marbas.Messages.ArchiveErrorMessage (Messages) uses Marbas.Collections.Zipper`1 (Collections)`` |
+| `every layer of the table holds a type` | ``Find holds no type`` |
+| `the scan sees the layers use the ones below them` | an empty list: the scan has gone blind |
+
+The two first messages are the ones the planted failures of P23.1 gave. A
+layer is added to the table, as a case of `Layer` and a row of `mayUse`, before
+its first module moves into it, so that the third test fails until it does;
+and a row is changed in the same change as §1 of Coding style.
 
 ## Arrange, act, assert
 

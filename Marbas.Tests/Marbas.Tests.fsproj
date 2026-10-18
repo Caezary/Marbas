@@ -322,6 +322,8 @@
   <ItemGroup>
     <Compile Include="Layers\SystemCalls.fs" />
     <Compile Include="Layers\SystemCallTests.fs" />
+    <Compile Include="Layers\LayerReferences.fs" />
+    <Compile Include="Layers\LayerReferenceTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
