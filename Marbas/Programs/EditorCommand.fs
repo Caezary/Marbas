@@ -1,4 +1,4 @@
-module Marbas.FileSystem.EditorCommand
+module Marbas.Programs.EditorCommand
 
 open Marbas.Domain
 

@@ -1,9 +1,10 @@
-module Marbas.Tests.FileSystem.ProgramImageTests
+module Marbas.Tests.Programs.ProgramImageTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Programs
 open Marbas.Tests
 open Marbas.Tests.ProgramImageBytes
 

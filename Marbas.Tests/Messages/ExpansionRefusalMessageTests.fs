@@ -3,6 +3,7 @@ module Marbas.Tests.Messages.ExpansionRefusalMessageTests
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Programs
 open Marbas.Messages
 open Marbas.Tests
 

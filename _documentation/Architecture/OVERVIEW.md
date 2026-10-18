@@ -144,16 +144,6 @@ Marbas/
   FileSystem/
     FileSystemPath.fs     single-case path type wrapping a raw string
     EntryAttributes.fs    what FileAttributes and UnixFileMode say, in the Domain's words
-    LaunchRequest.fs      what to start, with what, where, and with which rights
-    ProgramImage.fs       the subsystem a program's PE header names: window, console, other, none
-    CommandRun.fs         a user menu command as expanded, and how and where it ran
-    ExpansionRefusal.fs   why a user menu command line was not expanded
-    Handler.fs            a program the system offers for a name, and its display name
-    ProgramCommand.fs     a command line -> the program it starts
-    EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
-    DesktopEntry.fs       one .desktop file -> the handler it describes
-    MimeDatabase.fs       globs -> mime types, mimeapps.list -> desktop entries
-    DesktopHandlers.fs    the XDG directories -> the handlers a name has
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             where a panel can be sent: the usable drives, and home on Unix
     Place.fs              a directory or file on disk, or a place inside an archive
@@ -178,6 +168,17 @@ Marbas/
     Archive.fs            writing one and taking one apart: the walk, cancelling, the password
     Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     ContentError.fs       what can go wrong reading a file, as values
+  Programs/               what runs a file, and how it is started
+    LaunchRequest.fs      what to start, with what, where, and with which rights
+    ProgramImage.fs       the subsystem a program's PE header names: window, console, other, none
+    CommandRun.fs         a user menu command as expanded, and how and where it ran
+    ExpansionRefusal.fs   why a user menu command line was not expanded
+    Handler.fs            a program the system offers for a name, and its display name
+    ProgramCommand.fs     a command line -> the program it starts
+    EditorCommand.fs      which editor `F4` starts, per platform and `$EDITOR`
+    DesktopEntry.fs       one .desktop file -> the handler it describes
+    MimeDatabase.fs       globs -> mime types, mimeapps.list -> desktop entries
+    DesktopHandlers.fs    the XDG directories -> the handlers a name has
   Profile/                what the user keeps between sessions, each in a file of its own
     SettingsError.fs      why the settings could not be read or written
     Settings.fs           the session every tab carries, and its config file

@@ -1,8 +1,8 @@
-module Marbas.Tests.FileSystem.MimeDatabaseTests
+module Marbas.Tests.Programs.MimeDatabaseTests
 
 open Xunit
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Programs
 open Marbas.Tests
 
 let private ext raw =

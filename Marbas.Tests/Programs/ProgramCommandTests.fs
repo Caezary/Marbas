@@ -1,8 +1,8 @@
-module Marbas.Tests.FileSystem.ProgramCommandTests
+module Marbas.Tests.Programs.ProgramCommandTests
 
 open Xunit
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Programs
 
 let private programOf command =
     ProgramCommand.programOf command |> Option.map ProgramPath.value

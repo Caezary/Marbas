@@ -1,8 +1,8 @@
-module Marbas.Tests.FileSystem.DesktopEntryTests
+module Marbas.Tests.Programs.DesktopEntryTests
 
 open Xunit
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Programs
 open Marbas.Tests
 
 let private firefox =

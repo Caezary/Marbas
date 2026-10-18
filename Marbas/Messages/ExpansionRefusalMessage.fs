@@ -2,6 +2,7 @@ module Marbas.Messages.ExpansionRefusalMessage
 
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Programs
 
 [<Literal>]
 let Title = "Cannot run command"

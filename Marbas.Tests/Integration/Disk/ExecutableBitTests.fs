@@ -5,6 +5,7 @@ open System.IO.Abstractions
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Programs
 open Marbas.Adapters
 open Marbas.Tests
 

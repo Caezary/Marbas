@@ -239,6 +239,16 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   that program the same way would close it;
   `ELECTRON_NO_ATTACH_CONSOLE=1` in the user's environment is Electron's own
   switch against attaching and has not been tried here.
+- A start that names its program is drained only when the name resolves to a
+  window program's own image. A user menu entry `code %p` finds
+  `…\Microsoft VS Code\bin\code.cmd` on the `PATH`, a batch file and no window
+  image, so `CommandProcess` hands it to the shell verb like any other
+  command; the VS Code it starts attaches to Marbas's console and wrote its
+  log — `[main …] Extension host with pid … exited`, a deprecation warning of
+  `url.parse()` — over the panels, seen on Windows on 2026-10-18 during P23.6.
+  Naming `Code.exe` itself in the entry avoids it. Starting a `.cmd` or `.bat`
+  through `cmd /c` with its streams redirected and drained, as a window
+  program is started, would close it.
 - The open-with popup lists the programs but never says which one the system
   would pick by default, and it cannot remove a program from the list — the
   registry and the mime database are read, never written. Removing a handler is

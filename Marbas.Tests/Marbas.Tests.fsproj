@@ -53,13 +53,6 @@
     <Compile Include="FileSystem\DrivesTests.fs" />
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
-    <Compile Include="FileSystem\HandlerTests.fs" />
-    <Compile Include="FileSystem\ProgramCommandTests.fs" />
-    <Compile Include="FileSystem\EditorCommandTests.fs" />
-    <Compile Include="FileSystem\DesktopEntryTests.fs" />
-    <Compile Include="FileSystem\MimeDatabaseTests.fs" />
-    <Compile Include="FileSystem\XdgDirectoriesTests.fs" />
-    <Compile Include="FileSystem\DesktopHandlersTests.fs" />
     <Compile Include="FileSystem\EntryPropertiesTests.fs" />
     <Compile Include="FileSystem\ArchiveKindTests.fs" />
     <Compile Include="FileSystem\ArchivePathTests.fs" />
@@ -93,7 +86,17 @@
     <Compile Include="FileSystem\TrashTests.fs" />
     <Compile Include="FileSystem\SessionOwnerTests.fs" />
     <Compile Include="FileSystem\WorkspaceTests.fs" />
-    <Compile Include="FileSystem\ProgramImageTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Programs\HandlerTests.fs" />
+    <Compile Include="Programs\ProgramCommandTests.fs" />
+    <Compile Include="Programs\EditorCommandTests.fs" />
+    <Compile Include="Programs\DesktopEntryTests.fs" />
+    <Compile Include="Programs\MimeDatabaseTests.fs" />
+    <Compile Include="Programs\XdgDirectoriesTests.fs" />
+    <Compile Include="Programs\DesktopHandlersTests.fs" />
+    <Compile Include="Programs\ProgramImageTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

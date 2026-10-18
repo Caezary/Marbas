@@ -53,16 +53,6 @@
         <Compile Include="FileSystem\EntryAttributes.fs" />
         <Compile Include="FileSystem\ContentError.fs" />
         <Compile Include="FileSystem\ArchiveError.fs" />
-        <Compile Include="FileSystem\LaunchRequest.fs" />
-        <Compile Include="FileSystem\ProgramImage.fs" />
-        <Compile Include="FileSystem\CommandRun.fs" />
-        <Compile Include="FileSystem\ExpansionRefusal.fs" />
-        <Compile Include="FileSystem\Handler.fs" />
-        <Compile Include="FileSystem\ProgramCommand.fs" />
-        <Compile Include="FileSystem\EditorCommand.fs" />
-        <Compile Include="FileSystem\DesktopEntry.fs" />
-        <Compile Include="FileSystem\MimeDatabase.fs" />
-        <Compile Include="FileSystem\DesktopHandlers.fs" />
         <Compile Include="FileSystem\DirectoryListing.fs" />
         <Compile Include="FileSystem\Drives.fs" />
         <Compile Include="FileSystem\ArchiveKind.fs" />
@@ -87,6 +77,19 @@
         <Compile Include="FileSystem\Archive.fs" />
         <Compile Include="FileSystem\EntryProperties.fs" />
         <Compile Include="FileSystem\Trash.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Programs\LaunchRequest.fs" />
+        <Compile Include="Programs\ProgramImage.fs" />
+        <Compile Include="Programs\CommandRun.fs" />
+        <Compile Include="Programs\ExpansionRefusal.fs" />
+        <Compile Include="Programs\Handler.fs" />
+        <Compile Include="Programs\ProgramCommand.fs" />
+        <Compile Include="Programs\EditorCommand.fs" />
+        <Compile Include="Programs\DesktopEntry.fs" />
+        <Compile Include="Programs\MimeDatabase.fs" />
+        <Compile Include="Programs\DesktopHandlers.fs" />
     </ItemGroup>
 
     <ItemGroup>

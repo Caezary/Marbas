@@ -200,3 +200,48 @@ listed both tabs under `F11` with the places they had, showed both folders in
 the history of `Alt+F12`, the directory in slot `0` of `Alt+B`
 and `E  Echo` under `F2`; after `F10` the four files were byte for byte the
 ones it had started over.
+
+**P23.6 `Programs` leaves.** The table took the row of `Programs` — allowed
+`FileSystem` and `Domain`, given to `Profile` and `Messages` and allowed to
+`State`, `Ui` and `Adapters` — and the test failed with
+`Programs holds no type`. Then `LaunchRequest`, `ProgramImage`, `CommandRun`,
+`ExpansionRefusal`, `Handler`, `ProgramCommand`, `EditorCommand`,
+`DesktopEntry`, `MimeDatabase` and `DesktopHandlers` moved to
+`Marbas/Programs/` as `Marbas.Programs`, in a group compiled right after the
+last module of `FileSystem` and before `Profile`, and their eight test files
+to `Marbas.Tests/Programs/`. `ProgramImageBytes.fs` stays at the root of the
+tests.
+
+`FileSystem` compiled without them before anything else was touched. Four of
+the ten open `Marbas.FileSystem` — `LaunchRequest`, `ProgramImage`,
+`CommandRun` and `ExpansionRefusal` — and the other six need nothing of it.
+`Profile` reads `Programs` in `History` and `UserMenu`, `Messages` in
+`ExpansionRefusalMessage`, `LaunchErrorMessage` and `Problem`, as their rows
+now allow. Twenty-one modules of `Marbas` read `Programs`, the `open` going
+right after `open Marbas.FileSystem`; in five — `RegistryHandlers`,
+`HandlerRow`, `MenuEntryDialog`, `MenuEntryForm` and `OpenWithDialog` — it
+replaced that `open`. Thirty-three test files took it besides the eight moved,
+and in fifteen test files in all, seven of the moved among them,
+`open Marbas.FileSystem` was needed for these modules alone and is gone.
+
+The suite passed 4,299 of 4,334 on Windows and 4,276 of 4,337 under WSL, the
+counts of P23.1. Under WSL, in tmux, with scripts that write a line to a log
+standing in for the programs — `xdg-open` first on the `PATH`, `$EDITOR`, an
+executable `run.sh`, a handler and a user menu entry `M` running the handler
+with `%n` — `Enter` on `doc.txt` ran `xdg-open` on it, `Enter` on `run.sh`
+ran it, `F4` on `doc.txt` ran the editor on it, `Alt+R` on `doc.txt` with the
+handler typed under *Program* ran the handler on it, and `F2` then `M` ran
+`handler menu doc.txt`. A `.desktop` entry `Marker` for `text/plain` under
+`XDG_DATA_HOME`, named in `mimeapps.list`, was listed under *Known programs*
+and `Enter` on it ran its program on the file — without the `desktop`
+argument its `Exec` line carries, which the build of P23.5 drops the same
+way.
+
+The user walked the Windows leg by hand: a program, a document, a program of
+*Open with*, the editor and a user menu entry all started. The entry,
+`code %p` run directly, started VS Code, which wrote its own log over the
+panels. `code` is `bin\code.cmd` on the `PATH`, a batch file rather than a
+window program's image, so the drained start of P21.6 does not take it and
+the shell verb does. `CommandProcess.onWindows`, which decides it, changed
+only its `open` lines in the move, so it is not the move. [Rough edges](../ROUGH-EDGES.md) records it under *Running and
+editing*.

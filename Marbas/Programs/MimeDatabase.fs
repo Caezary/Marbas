@@ -1,4 +1,4 @@
-module Marbas.FileSystem.MimeDatabase
+module Marbas.Programs.MimeDatabase
 
 open System
 open Marbas.Domain

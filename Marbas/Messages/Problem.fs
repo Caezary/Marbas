@@ -3,6 +3,7 @@ namespace Marbas.Messages
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Programs
 open Marbas.Profile
 
 [<RequireQualifiedAccess>]

@@ -6,6 +6,7 @@ open System.IO.Abstractions
 open FsToolkit.ErrorHandling
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Programs
 
 type FileUse =
     | Viewed

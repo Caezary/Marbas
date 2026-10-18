@@ -6,6 +6,7 @@ open System.IO
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Programs
 
 [<Literal>]
 let DesktopOpener = "xdg-open"

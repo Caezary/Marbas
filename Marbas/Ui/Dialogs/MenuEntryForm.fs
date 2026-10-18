@@ -2,7 +2,7 @@ module Marbas.Ui.Dialogs.MenuEntryForm
 
 open FsToolkit.ErrorHandling
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Programs
 open Marbas.Profile
 
 type LineSide =

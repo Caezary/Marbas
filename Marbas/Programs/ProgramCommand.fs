@@ -1,4 +1,4 @@
-module Marbas.FileSystem.ProgramCommand
+module Marbas.Programs.ProgramCommand
 
 open System
 open Marbas.Domain

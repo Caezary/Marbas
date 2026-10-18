@@ -5,6 +5,7 @@ open System.IO
 open System.IO.Abstractions
 open Microsoft.Win32
 open Marbas.FileSystem
+open Marbas.Programs
 
 [<Literal>]
 let private AppPaths = @"Software\Microsoft\Windows\CurrentVersion\App Paths"

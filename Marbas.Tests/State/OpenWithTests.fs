@@ -3,6 +3,7 @@ module Marbas.Tests.State.OpenWithTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.Programs
 open Marbas.Profile
 open Marbas.Domain
 open Marbas.Messages

@@ -2,6 +2,7 @@ module Marbas.Tests.State.Shell.ShellLaunchTests
 
 open Xunit
 open Marbas.FileSystem
+open Marbas.Programs
 open Marbas.Domain
 open Marbas.Messages
 open Marbas.State

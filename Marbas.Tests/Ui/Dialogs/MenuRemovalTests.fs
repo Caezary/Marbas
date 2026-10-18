@@ -2,7 +2,7 @@ module Marbas.Tests.Ui.Dialogs.MenuRemovalTests
 
 open Xunit
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Programs
 open Marbas.Profile
 open Marbas.Ui.Dialogs
 open Marbas.Ui.Dialogs.MenuEntryForm

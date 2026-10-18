@@ -1,4 +1,4 @@
-module Marbas.FileSystem.DesktopEntry
+module Marbas.Programs.DesktopEntry
 
 [<Literal>]
 let Group = "[Desktop Entry]"

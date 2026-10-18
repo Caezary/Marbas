@@ -1,8 +1,8 @@
-module Marbas.Tests.FileSystem.HandlerTests
+module Marbas.Tests.Programs.HandlerTests
 
 open Xunit
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Programs
 open Marbas.Tests
 
 let private program raw = ProgramPath.tryCreate raw

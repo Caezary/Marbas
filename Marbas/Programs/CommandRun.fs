@@ -1,6 +1,7 @@
-namespace Marbas.FileSystem
+namespace Marbas.Programs
 
 open Marbas.Domain
+open Marbas.FileSystem
 
 type WordQuoting =
     | Bare

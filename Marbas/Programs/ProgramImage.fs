@@ -1,9 +1,10 @@
-namespace Marbas.FileSystem
+namespace Marbas.Programs
 
 open System
 open System.IO
 open System.IO.Abstractions
 open FsToolkit.ErrorHandling
+open Marbas.FileSystem
 
 type ImageSubsystem =
     | WindowSubsystem

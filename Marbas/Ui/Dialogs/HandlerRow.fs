@@ -1,7 +1,7 @@
 module Marbas.Ui.Dialogs.HandlerRow
 
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Programs
 
 [<Literal>]
 let NameWidth = 24

@@ -1,8 +1,8 @@
-module Marbas.Tests.FileSystem.XdgDirectoriesTests
+module Marbas.Tests.Programs.XdgDirectoriesTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
-open Marbas.FileSystem
+open Marbas.Programs
 
 let private resolve dataHome dataDirectories configHome configDirectories =
     XdgDirectories.resolve (MockFileSystem()) "/home/user" dataHome dataDirectories configHome configDirectories

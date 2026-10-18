@@ -1,8 +1,8 @@
-module Marbas.Tests.FileSystem.EditorCommandTests
+module Marbas.Tests.Programs.EditorCommandTests
 
 open Xunit
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Programs
 
 [<Fact>]
 let ``the configured editor is taken as it stands`` () =
