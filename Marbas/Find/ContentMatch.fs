@@ -6,6 +6,7 @@ open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
+open Marbas.Viewing
 
 [<Literal>]
 let private BufferLength = 65536

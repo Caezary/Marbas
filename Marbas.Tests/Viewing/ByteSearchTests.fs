@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.ByteSearchTests
+module Marbas.Tests.Viewing.ByteSearchTests
 
 open System
 open System.IO
@@ -6,7 +6,8 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
-open Marbas.FileSystem.ByteSearch
+open Marbas.Viewing
+open Marbas.Viewing.ByteSearch
 open Marbas.Tests
 
 let private at = Root.at

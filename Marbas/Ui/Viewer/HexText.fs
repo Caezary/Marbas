@@ -3,7 +3,7 @@ module Marbas.Ui.Viewer.HexText
 open System
 open System.Text
 open Terminal.Gui.Text
-open Marbas.FileSystem
+open Marbas.Viewing
 
 [<Literal>]
 let Placeholder = '.'

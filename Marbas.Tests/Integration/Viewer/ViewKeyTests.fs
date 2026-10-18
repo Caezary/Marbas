@@ -4,6 +4,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
 open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.State
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui

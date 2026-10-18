@@ -1,4 +1,4 @@
-module Marbas.FileSystem.LineIndex
+module Marbas.Viewing.LineIndex
 
 open System
 open System.Collections.Generic

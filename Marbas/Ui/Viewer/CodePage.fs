@@ -1,6 +1,6 @@
 namespace Marbas.Ui.Viewer
 
-open Marbas.FileSystem
+open Marbas.Viewing
 
 type CodePage =
     | Automatic

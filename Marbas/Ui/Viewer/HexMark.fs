@@ -1,6 +1,6 @@
 module Marbas.Ui.Viewer.HexMark
 
-open Marbas.FileSystem
+open Marbas.Viewing
 
 let private half = HexDump.BytesPerLine / 2
 

@@ -1,9 +1,10 @@
-module Marbas.FileSystem.FileWindow
+module Marbas.Viewing.FileWindow
 
 open System
 open System.IO
 open System.IO.Abstractions
 open Marbas.Domain
+open Marbas.FileSystem
 
 type Source(path: FileSystemPath, stream: Stream, encoding: TextEncoding) =
 

@@ -5,6 +5,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Tests
 
 let private at = Root.at

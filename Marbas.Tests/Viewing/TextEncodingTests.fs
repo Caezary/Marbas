@@ -1,8 +1,8 @@
-module Marbas.Tests.FileSystem.TextEncodingTests
+module Marbas.Tests.Viewing.TextEncodingTests
 
 open System.Text
 open Xunit
-open Marbas.FileSystem
+open Marbas.Viewing
 
 let private bytes (text: string) = Encoding.ASCII.GetBytes text
 

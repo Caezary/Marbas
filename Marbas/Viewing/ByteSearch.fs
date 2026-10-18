@@ -1,8 +1,9 @@
-module Marbas.FileSystem.ByteSearch
+module Marbas.Viewing.ByteSearch
 
 open System
 open Marbas.Domain
-open Marbas.FileSystem.WindowSearch
+open Marbas.FileSystem
+open Marbas.Viewing.WindowSearch
 
 type Query =
     { Bytes: WantedBytes

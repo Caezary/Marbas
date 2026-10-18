@@ -1,6 +1,6 @@
 module Marbas.Ui.Viewer.HexDump
 
-open Marbas.FileSystem
+open Marbas.Viewing
 
 [<Literal>]
 let BytesPerLine = 16

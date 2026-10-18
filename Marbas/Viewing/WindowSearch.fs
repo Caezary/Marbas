@@ -1,8 +1,9 @@
-module Marbas.FileSystem.WindowSearch
+module Marbas.Viewing.WindowSearch
 
 open System.Collections.Generic
 open System.Text.RegularExpressions
 open Marbas.Domain
+open Marbas.FileSystem
 
 type Control =
     { Reached: int64 -> unit

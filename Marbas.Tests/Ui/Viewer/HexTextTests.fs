@@ -2,7 +2,7 @@ module Marbas.Tests.Ui.Viewer.HexTextTests
 
 open System.Text
 open Xunit
-open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Ui.Viewer
 
 let private reading charset = { Charset = charset; Bom = WithoutBom }

@@ -2,6 +2,7 @@ module Marbas.State.Shell
 
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Find
 open Marbas.Messages
 open Marbas.State

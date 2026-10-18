@@ -1,9 +1,9 @@
-module Marbas.Tests.FileSystem.RewindingStreamTests
+module Marbas.Tests.Viewing.RewindingStreamTests
 
 open System.IO
 open System.Text
 open Xunit
-open Marbas.FileSystem
+open Marbas.Viewing
 
 let private content = Encoding.ASCII.GetBytes "abcdefghij"
 

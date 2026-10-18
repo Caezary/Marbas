@@ -2,6 +2,7 @@ namespace Marbas.Ui.Viewer
 
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Messages
 
 type LastSearch =

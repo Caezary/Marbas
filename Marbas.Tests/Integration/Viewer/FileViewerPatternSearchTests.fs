@@ -3,7 +3,7 @@ module Marbas.Tests.Integration.Viewer.FileViewerPatternSearchTests
 open Xunit
 open Terminal.Gui.Input
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Ui.Viewer
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui

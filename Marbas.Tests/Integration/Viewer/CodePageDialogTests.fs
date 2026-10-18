@@ -4,7 +4,7 @@ open System
 open System.Drawing
 open Xunit
 open Terminal.Gui.Views
-open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Ui.Theme
 open Marbas.Ui.Viewer
 open Marbas.Tests

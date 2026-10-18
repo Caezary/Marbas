@@ -5,6 +5,7 @@ open System.Text
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Ui.Viewer
 open Marbas.Tests
 

@@ -12,7 +12,8 @@ schedules the fix. A rule here beats a habit found in an older file.
 | `Collections/` | `Zipper` and the like — no domain knowledge | nothing |
 | `Domain/` | the vocabulary: `EntryName`, `NamePattern`, `SortOrder`, `HiddenEntries`, `FindQuery` | `Collections` |
 | `FileSystem/` | reading and writing disks and archives, every call through `IFileSystem`; `FileSystemPath` is declared here, not in `Domain` | `Domain`, and `Collections` for `Settings` |
-| `Find/` | searching by name and by text, on disk and inside archives | `FileSystem`, `Domain` |
+| `Viewing/` | a file's content as a window of bytes and lines: its encoding, the window, the lines, the viewer's searches | `FileSystem`, `Domain` |
+| `Find/` | searching by name and by text, on disk and inside archives | `Viewing`, `FileSystem`, `Domain` |
 | `Messages/` | the words the application says: an error or a question -> text, and `Problem`, everything that is reported to the user | `FileSystem`, `Domain` |
 | `State/` | `AppState`, messages, transitions, `Effect`; `Runtime` holds the one mutable cell; then `Ports.Dependencies` as ports, `Shell.interpret` and `Startup` | `Messages` and below |
 | `Ui/` | views, key maps, and the wiring of both to the runtime | `State` and below |

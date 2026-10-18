@@ -50,12 +50,6 @@
     <Compile Include="FileSystem\ClipboardFilesTests.fs" />
     <Compile Include="FileSystem\EntryAttributesTests.fs" />
     <Compile Include="FileSystem\ContentErrorTests.fs" />
-    <Compile Include="FileSystem\TextEncodingTests.fs" />
-    <Compile Include="FileSystem\RewindingStreamTests.fs" />
-    <Compile Include="FileSystem\FileWindowTests.fs" />
-    <Compile Include="FileSystem\LineIndexTests.fs" />
-    <Compile Include="FileSystem\WindowSearchTests.fs" />
-    <Compile Include="FileSystem\ByteSearchTests.fs" />
     <Compile Include="FileSystem\DrivesTests.fs" />
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
@@ -108,6 +102,15 @@
     <Compile Include="FileSystem\SessionOwnerTests.fs" />
     <Compile Include="FileSystem\WorkspaceTests.fs" />
     <Compile Include="FileSystem\ProgramImageTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Viewing\TextEncodingTests.fs" />
+    <Compile Include="Viewing\RewindingStreamTests.fs" />
+    <Compile Include="Viewing\FileWindowTests.fs" />
+    <Compile Include="Viewing\LineIndexTests.fs" />
+    <Compile Include="Viewing\WindowSearchTests.fs" />
+    <Compile Include="Viewing\ByteSearchTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

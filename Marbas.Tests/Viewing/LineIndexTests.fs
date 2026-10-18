@@ -1,10 +1,11 @@
-module Marbas.Tests.FileSystem.LineIndexTests
+module Marbas.Tests.Viewing.LineIndexTests
 
 open System
 open System.Text
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Tests
 
 let private at = Root.at

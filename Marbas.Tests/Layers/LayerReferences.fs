@@ -8,6 +8,7 @@ type private Layer =
     | Collections
     | Domain
     | FileSystem
+    | Viewing
     | Find
     | Messages
     | State
@@ -19,11 +20,12 @@ let private mayUse =
     [ Collections, []
       Domain, [ Collections ]
       FileSystem, [ Domain; Collections ]
-      Find, [ FileSystem; Domain ]
+      Viewing, [ FileSystem; Domain ]
+      Find, [ Viewing; FileSystem; Domain ]
       Messages, [ FileSystem; Domain ]
-      State, [ Messages; Find; FileSystem; Domain; Collections ]
-      Ui, [ State; Messages; Find; FileSystem; Domain; Collections ]
-      Adapters, [ Ui; State; Messages; Find; FileSystem; Domain; Collections ]
+      State, [ Messages; Find; Viewing; FileSystem; Domain; Collections ]
+      Ui, [ State; Messages; Find; Viewing; FileSystem; Domain; Collections ]
+      Adapters, [ Ui; State; Messages; Find; Viewing; FileSystem; Domain; Collections ]
       Program, [ Adapters ] ]
     |> Map.ofList
 

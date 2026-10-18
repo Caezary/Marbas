@@ -187,6 +187,7 @@ Marbas/
     Archive.fs            writing one and taking one apart: the walk, cancelling, the password
     Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     ContentError.fs       what can go wrong reading a file, as values
+  Viewing/                a file's content as a window of bytes and lines
     TextEncoding.fs       which encoding a file carries, from its mark or its bytes,
                           and the code pages it can be read in
     RewindingStream.fs    a forward-only stream seen as one that seeks, by opening it again

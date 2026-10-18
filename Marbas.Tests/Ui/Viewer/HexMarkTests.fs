@@ -1,7 +1,7 @@
 module Marbas.Tests.Ui.Viewer.HexMarkTests
 
 open Xunit
-open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Ui.Viewer
 
 let private hit offset length : ByteSearch.Match = { Offset = offset; Length = length }

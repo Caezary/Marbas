@@ -6,6 +6,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Ui.Viewer
 open Marbas.Ui.Viewer.ViewerKeys
 open Marbas.Tests

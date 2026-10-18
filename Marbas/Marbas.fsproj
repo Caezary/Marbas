@@ -53,7 +53,6 @@
         <Compile Include="FileSystem\EntryAttributes.fs" />
         <Compile Include="FileSystem\ContentError.fs" />
         <Compile Include="FileSystem\ArchiveError.fs" />
-        <Compile Include="FileSystem\TextEncoding.fs" />
         <Compile Include="FileSystem\LaunchRequest.fs" />
         <Compile Include="FileSystem\ProgramImage.fs" />
         <Compile Include="FileSystem\CommandRun.fs" />
@@ -100,11 +99,15 @@
         <Compile Include="FileSystem\Archive.fs" />
         <Compile Include="FileSystem\EntryProperties.fs" />
         <Compile Include="FileSystem\Trash.fs" />
-        <Compile Include="FileSystem\RewindingStream.fs" />
-        <Compile Include="FileSystem\FileWindow.fs" />
-        <Compile Include="FileSystem\LineIndex.fs" />
-        <Compile Include="FileSystem\WindowSearch.fs" />
-        <Compile Include="FileSystem\ByteSearch.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Viewing\TextEncoding.fs" />
+        <Compile Include="Viewing\RewindingStream.fs" />
+        <Compile Include="Viewing\FileWindow.fs" />
+        <Compile Include="Viewing\LineIndex.fs" />
+        <Compile Include="Viewing\WindowSearch.fs" />
+        <Compile Include="Viewing\ByteSearch.fs" />
     </ItemGroup>
 
     <ItemGroup>

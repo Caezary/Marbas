@@ -6,6 +6,7 @@ open Xunit
 open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 open Marbas.Domain
+open Marbas.Viewing
 open Marbas.Messages
 open Marbas.State
 open Marbas.State.Update

@@ -1,4 +1,4 @@
-namespace Marbas.FileSystem
+namespace Marbas.Viewing
 
 open System
 open System.IO

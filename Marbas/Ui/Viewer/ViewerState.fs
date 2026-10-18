@@ -2,7 +2,7 @@ namespace Marbas.Ui.Viewer
 
 open System.Drawing
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Viewing
 
 type ViewerState =
     { Source: FileWindow.Source

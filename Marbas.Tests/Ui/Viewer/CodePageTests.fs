@@ -1,7 +1,7 @@
 module Marbas.Tests.Ui.Viewer.CodePageTests
 
 open Xunit
-open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Ui.Viewer
 
 let private utf8 = { Charset = Utf8; Bom = WithoutBom }

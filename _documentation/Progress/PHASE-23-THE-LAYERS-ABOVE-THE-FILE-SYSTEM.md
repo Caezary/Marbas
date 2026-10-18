@@ -84,3 +84,40 @@ The type `FindGround` stays in `PanelLocation.fs` under `Marbas.FileSystem`,
 and the module `FindGround` is now `Marbas.Find.FindGround`; it keeps its
 `ModuleSuffix`, which no longer separates it from a type of its own namespace
 but changes no name a reader writes.
+
+**P23.3 `Viewing` leaves.** The row came first again — `Viewing`, allowed
+`FileSystem` and `Domain`, given to `Find` and allowed to `State`, `Ui` and
+`Adapters` — and the test failed with `Viewing holds no type`. Then
+`TextEncoding`, `RewindingStream`, `FileWindow`, `LineIndex`, `WindowSearch`
+and `ByteSearch` moved to `Marbas/Viewing/` as `Marbas.Viewing`, in a group
+compiled between the last module of `FileSystem` and `Find`, and their six
+test files to `Marbas.Tests/Viewing/`, in a group between the tests of
+`FileSystem` and those of `Find`. `TextEncoding` was the sixth module of
+`FileSystem` and nothing compiled after it there read it.
+
+`FileWindow`, `WindowSearch` and `ByteSearch` open `Marbas.FileSystem` — a
+path, an archive, a `ContentError` —, and the other three need nothing of it.
+The readers are the ones the plan names: `ContentMatch` in `Find`, `Ports`
+and `Shell`, seven views of `Ui/Viewer` — `CodePage`, `HexDump`, `HexMark`,
+`HexText`, `ViewerSearch`, `ViewerState` and `FileViewer` —,
+`ViewerSearchDialog`, and `Prompts` and `WindowSearchRunner`. Seven of them
+had opened `Marbas.FileSystem` for these modules alone — `CodePage`,
+`HexDump`, `HexMark`, `HexText`, `ViewerState`, `ViewerSearchDialog` and
+`WindowSearchRunner` — and now open `Marbas.Viewing` instead; the others open
+both. Every such `open` was found by taking it out and building, not by
+reading; the same check on the readers of `Find` found every
+`open Marbas.FileSystem` of P23.2 still needed.
+
+Two tests that stay in `FileSystem`, `ArchiveChangeTests` and
+`EveryKindTests`, read an entry of an archive back through
+`FileWindow.openEntry`, and open `Marbas.Viewing` for it; the rule of the
+layers is a rule of `Marbas.dll`, and a test may read through any layer. In
+all, twenty-four test files took the new `open`, the six moved among them,
+and eleven of them in place of `open Marbas.FileSystem`.
+
+The suite passed 4,299 of 4,334 on Windows and 4,276 of 4,337 under WSL, the
+counts of P23.1. Under WSL, in tmux, a 60-line `sample.txt` whose line 41
+holds `needle` and `zażółć` in Windows-1250 was opened with `F3`: the viewer
+settled on Latin-1, `F7` with `needle` brought line 41 to the top showing
+`za¿ó³æ`, `F8` with *Windows-1250* read it again as `zażółć` on the same line,
+and `F4` then `F7` with `BF F3 B3` found the run on row `0000000140`.

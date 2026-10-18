@@ -5,7 +5,7 @@ open System.Text
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
-open Marbas.FileSystem
+open Marbas.Viewing
 open Marbas.Ui.Keys
 open Marbas.Ui.Viewer
 open Marbas.Tests.Integration.Gui
