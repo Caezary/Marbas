@@ -13,6 +13,8 @@ let private AppPaths = @"Software\Microsoft\Windows\CurrentVersion\App Paths"
 [<Literal>]
 let private ExecutableExtension = ".exe"
 
+let private batchExtensions = [ ".cmd"; ".bat" ]
+
 type ProgramSearch =
     { Directories: FileSystemPath list
       Extensions: string list
@@ -66,9 +68,25 @@ let resolve (fs: IFileSystem) (search: ProgramSearch) (workingDirectory: FileSys
     | :? IOException
     | :? UnauthorizedAccessException -> None
 
-let windowProgram (fs: IFileSystem) (search: ProgramSearch) (workingDirectory: FileSystemPath) (name: string) =
-    resolve fs search workingDirectory name
-    |> Option.filter (fun program -> ProgramImage.subsystem fs program = WindowSubsystem)
+let private isBatchScript (fs: IFileSystem) (program: FileSystemPath) =
+    let extension = fs.Path.GetExtension(FileSystemPath.value program)
+
+    batchExtensions
+    |> List.exists (fun batch -> String.Equals(extension, batch, StringComparison.OrdinalIgnoreCase))
+
+let private isWindowImage (fs: IFileSystem) (program: FileSystemPath) =
+    ProgramImage.subsystem fs program = WindowSubsystem
+
+let private drainedAs (fs: IFileSystem) (program: FileSystemPath) =
+    if isBatchScript fs program then
+        Some(LaunchProcess.BatchScript program)
+    elif isWindowImage fs program then
+        Some(LaunchProcess.WindowImage program)
+    else
+        None
+
+let drainedProgram (fs: IFileSystem) (search: ProgramSearch) (workingDirectory: FileSystemPath) (name: string) =
+    resolve fs search workingDirectory name |> Option.bind (drainedAs fs)
 
 let registeredAppPath (key: string) =
     [ Registry.CurrentUser; Registry.LocalMachine ]

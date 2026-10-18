@@ -1,5 +1,6 @@
 module Marbas.Adapters.LaunchProcess
 
+open System
 open System.ComponentModel
 open System.Diagnostics
 open System.IO
@@ -15,6 +16,9 @@ let DesktopOpener = "xdg-open"
 let ElevatedVerb = "runas"
 
 [<Literal>]
+let WindowsShell = "cmd.exe"
+
+[<Literal>]
 let ElevationUnavailable =
     "a terminal application cannot ask this system for administrator rights"
 
@@ -27,17 +31,47 @@ let private NoAssociation = 1155
 [<Literal>]
 let private PromptCancelled = 1223
 
+type DrainedProgram =
+    | WindowImage of image: FileSystemPath
+    | BatchScript of script: FileSystemPath
+
 let private argued (command: string) arguments =
     let start = ProcessStartInfo command
     arguments |> List.iter start.ArgumentList.Add
     start
 
-let detached command arguments =
-    let start = argued command arguments
+let private drainedStreams (start: ProcessStartInfo) =
     start.UseShellExecute <- false
     start.RedirectStandardOutput <- true
     start.RedirectStandardError <- true
     start
+
+let detached command arguments =
+    argued command arguments |> drainedStreams
+
+let private trailingBackslashes (word: string) = word.Length - word.TrimEnd('\\').Length
+
+let private quotedForCmd (word: string) =
+    "\"" + word + String('\\', trailingBackslashes word) + "\""
+
+let private scriptLine (script: FileSystemPath) arguments =
+    FileSystemPath.value script :: arguments
+    |> List.map quotedForCmd
+    |> String.concat " "
+
+let private throughCmdWithoutWindow (script: FileSystemPath) arguments =
+    let start =
+        ProcessStartInfo(WindowsShell, $"/d /s /c \"{scriptLine script arguments}\"")
+        |> drainedStreams
+
+    start.RedirectStandardInput <- true
+    start.CreateNoWindow <- true
+    start
+
+let detachedFrom (program: DrainedProgram) arguments =
+    match program with
+    | WindowImage image -> detached (FileSystemPath.value image) arguments
+    | BatchScript script -> throughCmdWithoutWindow script arguments
 
 let private programAndArguments (request: LaunchRequest) =
     let target = FileSystemPath.value request.Target
@@ -57,11 +91,20 @@ let private throughShell (request: LaunchRequest) =
 
     start
 
-let private onWindows windowProgram (request: LaunchRequest) =
+let private drainedUnlessOpenedItself (request: LaunchRequest) (resolved: DrainedProgram) =
+    match resolved, request.Program with
+    | BatchScript _, None -> None
+    | _ -> Some resolved
+
+let private onWindows drainedProgram (request: LaunchRequest) =
     let program, arguments = programAndArguments request
 
-    match request.Elevation, windowProgram request.WorkingDirectory program with
-    | AsUser, Some resolved -> detached (FileSystemPath.value resolved) arguments
+    let drained =
+        drainedProgram request.WorkingDirectory program
+        |> Option.bind (drainedUnlessOpenedItself request)
+
+    match request.Elevation, drained with
+    | AsUser, Some resolved -> detachedFrom resolved arguments
     | AsUser, None
     | AsAdministrator, _ -> throughShell request
 
@@ -76,13 +119,16 @@ let private ofItsOwn (fs: IFileSystem) (request: LaunchRequest) =
         | Executable -> detached target []
         | NotExecutable -> detached DesktopOpener [ target ]
 
-let describe (fs: IFileSystem) platform windowProgram (request: LaunchRequest) =
+let describe (fs: IFileSystem) platform drainedProgram (request: LaunchRequest) =
     match platform, request.Elevation with
     | Unix, AsAdministrator -> Error(LaunchRefused(request.Target, ElevationUnavailable))
-    | Windows, _ -> Ok(onWindows windowProgram request)
+    | Windows, _ -> Ok(onWindows drainedProgram request)
     | Unix, AsUser -> Ok(ofItsOwn fs request)
 
 let drained (child: Process) =
+    if child.StartInfo.RedirectStandardInput then
+        child.StandardInput.Close()
+
     child.StandardOutput.BaseStream.CopyToAsync Stream.Null |> ignore
     child.StandardError.BaseStream.CopyToAsync Stream.Null |> ignore
 
@@ -103,9 +149,9 @@ let failure (described: ProcessStartInfo) (request: LaunchRequest) (ex: exn) =
         | _ -> LaunchRefused(request.Target, refusal.Message)
     | _ -> LaunchRefused(request.Target, ex.Message)
 
-let private describedOrRefused (fs: IFileSystem) platform windowProgram (request: LaunchRequest) =
+let private describedOrRefused (fs: IFileSystem) platform drainedProgram (request: LaunchRequest) =
     try
-        describe fs platform windowProgram request
+        describe fs platform drainedProgram request
     with ex ->
         Error(LaunchRefused(request.Target, ex.Message))
 
@@ -123,6 +169,6 @@ let private run (request: LaunchRequest) (described: ProcessStartInfo) =
     with ex ->
         Error(failure described request ex)
 
-let start (fs: IFileSystem) platform windowProgram (request: LaunchRequest) =
-    describedOrRefused fs platform windowProgram request
+let start (fs: IFileSystem) platform drainedProgram (request: LaunchRequest) =
+    describedOrRefused fs platform drainedProgram request
     |> Result.bind (run request)

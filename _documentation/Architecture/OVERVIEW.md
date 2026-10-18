@@ -341,7 +341,8 @@ Marbas/
     TerminalHandOver.fs   the Terminal.Gui driver stopped while a program holds the
                           terminal and built again after it, inside one application
     LaunchProcess.fs      a program handed to the system, or on Windows a window program
-                          started from its file with its streams drained; never waited on
+                          started from its file, or a batch script through cmd without
+                          a window, with its streams drained; never waited on
     EditorProcess.fs      the editor started detached on Windows; on Unix handed the
                           terminal and waited on
     CommandProcess.fs     a user menu command started directly or through the shell, never waited on

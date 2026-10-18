@@ -29,7 +29,7 @@ let ``a directory on Unix is handed to the desktop's opener rather than run`` ()
         LaunchProcess.describe
             fs
             Unix
-            WindowPrograms.none
+            DrainedPrograms.none
             { elevating (at "media/stick") with
                 Elevation = AsUser }
 
@@ -53,7 +53,7 @@ let ``a file with its executable bit set is started from its own file on Unix`` 
     fs.AddFile(at "start/tool", moded (UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute))
 
     let described =
-        LaunchProcess.describe fs Unix WindowPrograms.none (asUser (at "start/tool"))
+        LaunchProcess.describe fs Unix DrainedPrograms.none (asUser (at "start/tool"))
 
     let start = Expect.ok described
     Assert.Equal(at "start/tool", start.FileName)
@@ -66,7 +66,7 @@ let ``a file without the bit is handed to the desktop's opener on Unix`` () =
     fs.AddFile(at "start/notes", moded (UnixFileMode.UserRead ||| UnixFileMode.UserWrite))
 
     let described =
-        LaunchProcess.describe fs Unix WindowPrograms.none (asUser (at "start/notes"))
+        LaunchProcess.describe fs Unix DrainedPrograms.none (asUser (at "start/notes"))
 
     let start = Expect.ok described
     Assert.Equal(LaunchProcess.DesktopOpener, start.FileName)
@@ -75,7 +75,7 @@ let ``a file without the bit is handed to the desktop's opener on Unix`` () =
 let private notThere = Win32Exception 2
 
 let private describedOnUnix (fs: MockFileSystem) request =
-    LaunchProcess.describe fs Unix WindowPrograms.none request |> Expect.ok
+    LaunchProcess.describe fs Unix DrainedPrograms.none request |> Expect.ok
 
 let private desktopOpener =
     Expect.some (ProgramPath.tryCreate LaunchProcess.DesktopOpener)
@@ -130,14 +130,14 @@ let ``a file whose mode cannot be read on Unix is reported, not started`` () =
     fs.AddFile(at "start/gone", MockFileData "")
 
     let outcome =
-        LaunchProcess.start fs Unix WindowPrograms.none (asUser (at "start/gone"))
+        LaunchProcess.start fs Unix DrainedPrograms.none (asUser (at "start/gone"))
 
     Assert.Equal(Error(LaunchRefused(fp (at "start/gone"), at "start/gone")), outcome)
 
 [<Fact>]
 let ``a Unix system has no administrator rights to ask for, and says so`` () =
     let outcome =
-        LaunchProcess.start (MockFileSystem()) Unix WindowPrograms.none (elevating (at "start/tool"))
+        LaunchProcess.start (MockFileSystem()) Unix DrainedPrograms.none (elevating (at "start/tool"))
 
     Assert.Equal(Error(LaunchRefused(fp (at "start/tool"), LaunchProcess.ElevationUnavailable)), outcome)
 
@@ -147,7 +147,7 @@ let private opening target program =
       WorkingDirectory = fp (at "start")
       Elevation = AsUser }
 
-let private codeKnown = WindowPrograms.knowing "code.exe" (at "apps/Code.exe")
+let private codeKnown = DrainedPrograms.windowImage "code.exe" (at "apps/Code.exe")
 
 [<Fact>]
 let ``a window program chosen for a file on Windows is started from its file with its streams drained`` () =
@@ -167,7 +167,7 @@ let ``a window program chosen for a file on Windows is started from its file wit
 [<Fact>]
 let ``an executable that is a window program is started from its file on Windows`` () =
     let windowPrograms =
-        WindowPrograms.knowing (at "start/viewer.exe") (at "start/viewer.exe")
+        DrainedPrograms.windowImage (at "start/viewer.exe") (at "start/viewer.exe")
 
     let described =
         LaunchProcess.describe (MockFileSystem()) Windows windowPrograms (opening (at "start/viewer.exe") None)
@@ -179,12 +179,60 @@ let ``an executable that is a window program is started from its file on Windows
     Assert.True start.RedirectStandardOutput
 
 [<Fact>]
+let ``a batch script chosen for a file on Windows runs through cmd without a console window, its streams drained`` () =
+    let script = at "apps/code.cmd"
+    let notes = at "start/notes.txt"
+    let codeScript = DrainedPrograms.batchScript "code" script
+
+    let described =
+        LaunchProcess.describe (MockFileSystem()) Windows codeScript (opening notes (ProgramPath.tryCreate "code"))
+
+    let start = Expect.ok described
+    Assert.Equal(LaunchProcess.WindowsShell, start.FileName)
+    Assert.Equal($"/d /s /c \"\"{script}\" \"{notes}\"\"", start.Arguments)
+    Assert.False start.UseShellExecute
+    Assert.True start.RedirectStandardOutput
+    Assert.True start.RedirectStandardError
+    Assert.True start.CreateNoWindow
+
+[<Fact>]
+let ``a batch script opened itself keeps the shell verb on Windows, for a console of its own`` () =
+    let script = at "start/build.cmd"
+    let buildScript = DrainedPrograms.batchScript script script
+
+    let described =
+        LaunchProcess.describe (MockFileSystem()) Windows buildScript (opening script None)
+
+    let start = Expect.ok described
+    Assert.Equal(script, start.FileName)
+    Assert.True start.UseShellExecute
+
+[<Fact>]
+let ``a batch script started hidden has its input closed, so that nothing it asks for waits unseen`` () =
+    let script = LaunchProcess.BatchScript(fp @"C:\tools\ask.cmd")
+
+    let start = LaunchProcess.detachedFrom script []
+
+    Assert.True start.RedirectStandardInput
+
+[<Fact>]
+let ``every word handed to a batch script is quoted for cmd, a trailing backslash doubled`` () =
+    let script = LaunchProcess.BatchScript(fp @"C:\Program Files\VS Code\bin\code.cmd")
+
+    let start = LaunchProcess.detachedFrom script [ @"C:\R&D\notes.txt"; @"C:\" ]
+
+    Assert.Equal(
+        "/d /s /c \"\"C:\\Program Files\\VS Code\\bin\\code.cmd\" \"C:\\R&D\\notes.txt\" \"C:\\\\\"\"",
+        start.Arguments
+    )
+
+[<Fact>]
 let ``a program that is not a window program keeps the shell verb on Windows, for a console of its own`` () =
     let described =
         LaunchProcess.describe
             (MockFileSystem())
             Windows
-            WindowPrograms.none
+            DrainedPrograms.none
             (opening (at "start/notes.txt") (ProgramPath.tryCreate "tool.exe"))
 
     let start = Expect.ok described
@@ -194,7 +242,7 @@ let ``a program that is not a window program keeps the shell verb on Windows, fo
 [<Fact>]
 let ``a file opened through its association keeps the shell verb on Windows`` () =
     let described =
-        LaunchProcess.describe (MockFileSystem()) Windows WindowPrograms.none (opening (at "start/notes.txt") None)
+        LaunchProcess.describe (MockFileSystem()) Windows DrainedPrograms.none (opening (at "start/notes.txt") None)
 
     let start = Expect.ok described
     Assert.Equal(at "start/notes.txt", start.FileName)

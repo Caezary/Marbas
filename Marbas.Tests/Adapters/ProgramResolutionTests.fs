@@ -120,27 +120,32 @@ let ``a name found nowhere resolves nothing`` () =
     Assert.Equal(None, found)
 
 [<Fact>]
-let ``a resolved window program is started as one`` () =
+let ``a resolved window program is drained as its own image`` () =
     let fs = holding [ "one/viewer.exe" ]
 
-    let found = windowProgram fs nothingRegistered work "viewer.exe"
+    let found = drainedProgram fs nothingRegistered work "viewer.exe"
 
-    Assert.Equal(Some(fp (at "one/viewer.exe")), found)
+    Assert.Equal(Some(LaunchProcess.WindowImage(fp (at "one/viewer.exe"))), found)
 
 [<Fact>]
-let ``a resolved console program is not taken for a window program`` () =
+let ``a resolved console program is not drained, for a console of its own`` () =
     let fs = holding []
     fs.AddFile(at "one/tool.exe", MockFileData consoleImage)
 
-    let found = windowProgram fs nothingRegistered work "tool.exe"
+    let found = drainedProgram fs nothingRegistered work "tool.exe"
 
     Assert.Equal(None, found)
 
-[<Fact>]
-let ``a script is not taken for a window program`` () =
+[<Theory>]
+[<InlineData("one/code.cmd", "code")>]
+[<InlineData("one/build.bat", "build")>]
+[<InlineData("one/SETUP.CMD", "SETUP.CMD")>]
+let ``a resolved batch script is drained as a script, whatever the case of its extension``
+    (file: string, name: string)
+    =
     let fs = holding []
-    fs.AddFile(at "one/code.cmd", MockFileData "@echo off")
+    fs.AddFile(at file, MockFileData "@echo off")
 
-    let found = windowProgram fs nothingRegistered work "code"
+    let found = drainedProgram fs nothingRegistered work name
 
-    Assert.Equal(None, found)
+    Assert.Equal(Some(LaunchProcess.BatchScript(fp (at file))), found)

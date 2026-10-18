@@ -243,5 +243,33 @@ The user walked the Windows leg by hand: a program, a document, a program of
 panels. `code` is `bin\code.cmd` on the `PATH`, a batch file rather than a
 window program's image, so the drained start of P21.6 does not take it and
 the shell verb does. `CommandProcess.onWindows`, which decides it, changed
-only its `open` lines in the move, so it is not the move. [Rough edges](../ROUGH-EDGES.md) records it under *Running and
-editing*.
+only its `open` lines in the move, so it is not the move.
+
+**A batch script named as a program is drained, at the user's word, before
+P23.7.** `ProgramResolution.windowProgram` became `drainedProgram`, which
+answers a `DrainedProgram` of `LaunchProcess` — a `WindowImage` for a window
+program's own image, as before, and a `BatchScript` for a resolved `.cmd` or
+`.bat`. `LaunchProcess.detachedFrom` starts the first from its file and the
+second as `cmd.exe /d /s /c ""<script>" "<word>" …"` with no window, its
+output and error drained and its input closed; `CommandProcess`,
+`EditorProcess` and `LaunchProcess` take it in place of the window program
+alone, and `Dependencies` binds it once as before. Every word handed to
+`cmd` is quoted and a trailing backslash doubled, since .NET would quote only
+a word with a space and `C:\R&D\notes.txt` would end the line at its `&`.
+`Enter` on a `.cmd` or a `.bat` itself keeps the verb: a script opened for
+itself is meant to be seen, and only a script named as the program of
+something else — a user menu entry run directly, a program chosen for the
+extension, `F4` — runs hidden. The test fake `WindowPrograms` became
+`DrainedPrograms`, with `windowImage` and `batchScript`.
+
+Nine tests were written first and failed: three cases of
+`a resolved batch script is drained as a script`, in place of the test that
+held a script not to be a window program; a batch script chosen for a file,
+run directly from the user menu and started as the editor, each through
+`cmd` without a window; a script opened itself keeping the verb; a hidden
+script's input redirected; and the quoting of `C:\R&D\notes.txt` and `C:\`.
+The suite passed 4,307 of 4,342 on Windows and 4,284 of 4,345 under WSL.
+Whether VS Code now stays off the panels in the user's terminal is for the
+user to see on Windows; [Rough edges](../ROUGH-EDGES.md) records the `%`
+that `cmd` still expands, and the arguments of an `Exec` line that a
+`.desktop` handler loses.

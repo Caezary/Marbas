@@ -491,11 +491,12 @@ by `LaunchErrorMessage` under *Cannot run command* rather than *Cannot run
 file*. Nothing is re-read when the run ends, and nothing waits for it to.
 
 **The launch adapter is the only place that knows how a run is started.**
-`CommandProcess.describe platform windowProgram run` answers the
+`CommandProcess.describe platform drainedProgram run` answers the
 `ProcessStartInfo`, and `start` writes the list file and starts it. On Windows
 a run goes through the shell verb, so a console program gets a console window
-of its own; only a direct run of a window program is started from its file
-with its streams drained instead (see [File operations](FILE-OPERATIONS.md)). A
+of its own; only a direct run of a window program, or of a batch script
+through `cmd` without a window, is started with its streams drained instead
+(see [File operations](FILE-OPERATIONS.md)). A
 direct run is the program with each word an argument of its own, a shell run
 is `cmd.exe /s /c "line"` or `/s /k "line"`, the line spelled with every quoted
 word in double quotes. As administrator the verb is `runas`, the one

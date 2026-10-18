@@ -239,16 +239,6 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
   that program the same way would close it;
   `ELECTRON_NO_ATTACH_CONSOLE=1` in the user's environment is Electron's own
   switch against attaching and has not been tried here.
-- A start that names its program is drained only when the name resolves to a
-  window program's own image. A user menu entry `code %p` finds
-  `…\Microsoft VS Code\bin\code.cmd` on the `PATH`, a batch file and no window
-  image, so `CommandProcess` hands it to the shell verb like any other
-  command; the VS Code it starts attaches to Marbas's console and wrote its
-  log — `[main …] Extension host with pid … exited`, a deprecation warning of
-  `url.parse()` — over the panels, seen on Windows on 2026-10-18 during P23.6.
-  Naming `Code.exe` itself in the entry avoids it. Starting a `.cmd` or `.bat`
-  through `cmd /c` with its streams redirected and drained, as a window
-  program is started, would close it.
 - The open-with popup lists the programs but never says which one the system
   would pick by default, and it cannot remove a program from the list — the
   registry and the mime database are read, never written. Removing a handler is
@@ -260,6 +250,20 @@ in [Architecture/](Architecture/OVERVIEW.md) rather than here.
 - Neither adapter follows the `.desktop` legacy dash convention
   (`foo-bar.desktop` under `foo/bar.desktop`), so a handler filed that way is
   passed over.
+- A `.desktop` handler is started with its program and the file alone: the
+  rest of its `Exec` line is dropped. `DesktopEntry.parse` keeps the first
+  word of `Exec`, through `ProgramCommand.programOf`, and `Handler` holds a
+  program, not a command line, so `Exec=handler.sh desktop %f` started
+  `handler.sh <file>` under WSL during P23.6 — by the build before the move as
+  well. A handler that needs its arguments, `flatpak run …` or a program
+  given a switch, therefore starts wrongly or not at all. Keeping the
+  arguments and putting the file in place of `%f`, `%F`, `%u` or `%U` would
+  close it.
+- On Windows a `%` in a word handed to a batch script named as a program —
+  `code` is `bin\code.cmd` — is expanded by `cmd`, which reads the line the
+  script is started with; a file named `100%done%.txt` reaches the script with
+  the variable `done` in it if one is set. The verb did the same before
+  P23.6, and every other character is quoted.
 - Nothing warns that naming a program for an archive extension takes `Enter`
   away from the archive browser. `Alt+W` is the way back in, and the only
   place that says so is this file.

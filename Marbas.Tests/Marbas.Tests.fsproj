@@ -20,7 +20,7 @@
     <Compile Include="EmbeddedFixture.fs" />
     <Compile Include="ShortcutBytes.fs" />
     <Compile Include="ProgramImageBytes.fs" />
-    <Compile Include="WindowPrograms.fs" />
+    <Compile Include="DrainedPrograms.fs" />
     <Compile Include="Collections\ZipperTests.fs" />
     <Compile Include="Fakes.fs" />
   </ItemGroup>

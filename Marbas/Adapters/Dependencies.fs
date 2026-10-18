@@ -45,20 +45,20 @@ let private handlersFor (fs: IFileSystem) (env: HostEnvironment) =
         XdgDirectories.resolve fs env.UserProfile env.DataHome env.DataDirectories env.ConfigHome env.ConfigDirectories
         |> DesktopHandlers.read fs
 
-let private windowProgram (fs: IFileSystem) (env: HostEnvironment) =
+let private drainedProgram (fs: IFileSystem) (env: HostEnvironment) =
     let search: ProgramResolution.ProgramSearch =
         { Directories = searchPath fs env
           Extensions = env.ProgramExtensions
           AppPath = ProgramResolution.registeredAppPath }
 
-    ProgramResolution.windowProgram fs search
+    ProgramResolution.drainedProgram fs search
 
-let private runEditor (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) windowPrograms =
-    EditorProcess.run fs (TerminalHandOver.lend app) env.Editor env.Platform windowPrograms
+let private runEditor (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) drainedPrograms =
+    EditorProcess.run fs (TerminalHandOver.lend app) env.Editor env.Platform drainedPrograms
 
 let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) (log: LogEntry -> unit) : Ports.Dependencies =
     let links = NativeLinks.forPlatform env.Platform
-    let windowPrograms = windowProgram fs env
+    let drainedPrograms = drainedProgram fs env
     let settingsPath = Settings.location fs env.ApplicationData env.UserProfile
 
     { FileSystem = fs
@@ -95,9 +95,9 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) (log: Lo
       Processes =
         { ListDrives = fun () -> Drives.list fs (home env)
           SendToTrash = sendToTrash fs env
-          StartEditor = runEditor app fs env windowPrograms
-          Launch = LaunchProcess.start fs env.Platform windowPrograms
-          RunCommand = CommandProcess.start fs env.Platform windowPrograms
+          StartEditor = runEditor app fs env drainedPrograms
+          Launch = LaunchProcess.start fs env.Platform drainedPrograms
+          RunCommand = CommandProcess.start fs env.Platform drainedPrograms
           LinkKinds = Links.available links
           RefuseLink = Links.refusal env.Platform fs
           MakeLink = Links.create links env.Platform fs

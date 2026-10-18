@@ -73,7 +73,7 @@ let ``a file given the executable bit is started from its own file`` () =
     use scratch = withProgram ()
 
     let described =
-        LaunchProcess.describe disk Unix WindowPrograms.none (opening scratch "tool")
+        LaunchProcess.describe disk Unix DrainedPrograms.none (opening scratch "tool")
 
     let start = Expect.ok described
     Assert.Equal(scratch.At "tool", start.FileName)
@@ -84,7 +84,7 @@ let ``a file left without the bit is handed to the desktop's opener`` () =
     use scratch = withProgram ()
 
     let described =
-        LaunchProcess.describe disk Unix WindowPrograms.none (opening scratch "notes")
+        LaunchProcess.describe disk Unix DrainedPrograms.none (opening scratch "notes")
 
     let start = Expect.ok described
     Assert.Equal(LaunchProcess.DesktopOpener, start.FileName)

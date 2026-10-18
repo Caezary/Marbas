@@ -29,19 +29,19 @@ let private throughShell editor path =
     start.UseShellExecute <- true
     start
 
-let private onWindows windowProgram directory editor path =
-    match windowProgram directory editor with
-    | Some program -> LaunchProcess.detached (FileSystemPath.value program) [ FileSystemPath.value path ]
+let private onWindows drainedProgram directory editor path =
+    match drainedProgram directory editor with
+    | Some program -> LaunchProcess.detachedFrom program [ FileSystemPath.value path ]
     | None -> throughShell editor path
 
-let describe (fs: IFileSystem) (configured: string option) platform windowProgram (chosen: ProgramPath option) path =
+let describe (fs: IFileSystem) (configured: string option) platform drainedProgram (chosen: ProgramPath option) path =
     let named = chosen |> Option.map ProgramPath.value |> Option.orElse configured
     let editor = EditorCommand.choose named platform
     let directory = FileSystemPath.directory fs path
 
     let start =
         match platform with
-        | Windows -> onWindows windowProgram directory editor path
+        | Windows -> onWindows drainedProgram directory editor path
         | Unix -> starting editor path
 
     start.WorkingDirectory <- FileSystemPath.value directory
@@ -70,11 +70,11 @@ let run
     (handOver: (unit -> unit) -> unit)
     (configured: string option)
     platform
-    windowProgram
+    drainedProgram
     (chosen: ProgramPath option)
     path
     =
-    let editor = describe fs configured platform windowProgram chosen path
+    let editor = describe fs configured platform drainedProgram chosen path
 
     try
         match editor.Wait with

@@ -664,7 +664,7 @@ the one row above marked a known limit, and `Ctrl+R` is still the answer there.
 | `Enter` runs a document, an executable and an associated file | same | a document and an associated file: same; an executable: started from its own file, by its mode | suite; disk test (the mode on a real disk); manual 2026-10-12 on Linux; an executable: probe (the published binary in tmux, 2026-10-13) |
 | `Alt+W` walks into the entry under the cursor | same | same | suite; manual 2026-10-12 on Linux, where the key arrives |
 | `Ctrl+PgDn` reaches the panel as a key at all | **yes** | yes | manual (Windows Terminal; gnome-terminal on 2026-10-12) |
-| A started program leaves the panels un-scribbled | a console program: own console, shell verb; a window program: started from its file, streams drained | streams drained | suite (the start described); probe (ConEmu); manual 2026-10-12 on Windows; manual 2026-10-18 on Linux, `noisy` started from its executable bit |
+| A started program leaves the panels un-scribbled | a console program: own console, shell verb; a window program: started from its file, streams drained; a batch script named as the program of something else: `cmd` without a window, streams drained, input closed | streams drained | suite (the start described); probe (ConEmu); manual 2026-10-12 on Windows; manual 2026-10-18 on Linux, `noisy` started from its executable bit |
 | A program named by its start is resolved to its file | as written, `PATH` with `PATHEXT`, App Paths | n/a | suite (mock); probe |
 | A started program does not hold the loop up | yes | yes: the session took the next key at once | manual 2026-10-12 on Windows; probe on Linux (the published binary in tmux, 2026-10-13), manual 2026-10-18 there |
 | `F2` opens the user menu, a letter and `Enter` run an entry | same | same | suite; probe on Windows |
@@ -784,7 +784,12 @@ a window program named by a start is resolved to its file and started without
 the verb, its streams drained, as
 [File operations](FILE-OPERATIONS.md) describes; a probe under ConEmu ran a
 user menu entry `code.exe <file>` through the real adapter with a fresh VS Code
-and found nothing in the console but what the probe wrote itself. Unix has no such verb. An executable entry is
+and found nothing in the console but what the probe wrote itself. The same
+entry written `code %p` resolves to `bin\code.cmd`, a batch file, which the
+verb still took, and the VS Code it started wrote over the panels on Windows
+on 2026-10-18; since then a batch script named as the program of something
+else runs through `cmd` with no window and its streams drained. Unix has no
+such verb. An executable entry is
 started directly with both of its streams redirected and drained, because it
 would otherwise inherit the terminal the panels are drawn on, and anything else
 goes to `xdg-open`, which is the desktop's own idea of what opens a file. The

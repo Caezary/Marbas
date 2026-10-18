@@ -76,7 +76,11 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   On Windows a window program — the executable itself, or the program chosen
   for the extension — is started from its file with its output thrown away
   instead, so one such as VS Code cannot write its log over the panels; the
-  same holds for `F4` and for a user menu entry run directly.
+  same holds for `F4` and for a user menu entry run directly. A `.cmd` or
+  `.bat` named as that program — `code`, which is `bin\code.cmd` — runs
+  through `cmd` without a window of its own and with its output thrown away
+  too; `Enter` on a `.cmd` or `.bat` itself still opens a console window for
+  it.
   Marbas does not wait for what it started, and the program begins in the
   directory the panel is standing in. Whatever is marked is ignored: the entry
   under the cursor is the one that runs.

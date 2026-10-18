@@ -732,16 +732,38 @@ machine); a name without an extension is tried with each extension of
 `PATHEXT` in order and never bare, and only a bare name is looked up on `PATH`
 and in App Paths. `ProgramImage.subsystem` in `FileSystem` reads the PE header
 over `IFileSystem` and answers `WindowSubsystem`, `ConsoleSubsystem`,
-`OtherSubsystem`, `NotAnImage` or `UnreadableImage`. Only a resolved
-`WindowSubsystem` is started directly, by its full path; a console program, a
-script (`code` resolves to `code.cmd`), anything else and anything not found go
-through the shell as before, and so does every run as administrator, since
-`runas` exists only as a verb. A shell run of the user menu is `cmd` whatever
+`OtherSubsystem`, `NotAnImage` or `UnreadableImage`.
+`ProgramResolution.drainedProgram` answers what of that is started drained, a
+`DrainedProgram` of `LaunchProcess`: a resolved `WindowSubsystem` is a
+`WindowImage`, started directly by its full path, and a resolved `.cmd` or
+`.bat` is a `BatchScript`. A console program, anything else and anything not
+found go through the shell as before, and so does every run as administrator,
+since `runas` exists only as a verb.
+
+**A batch script that starts a window program is drained too, since P23.6.**
+`code` resolves to `bin\code.cmd`, a batch file that starts `Code.exe`, and
+through the verb the VS Code it started wrote its log over the panels from a
+user menu entry `code %p`. A `BatchScript` is started as
+`cmd.exe /d /s /c ""<script>" "<word>" …"` with `CreateNoWindow`: its console
+is a hidden one of its own, so nothing it starts can attach to the console the
+panels are drawn on, and its output, error and input are redirected — the
+first two drained, the input closed at once, so a `pause` in it ends rather
+than waits unseen. Every word is quoted for `cmd` and a trailing backslash
+doubled, because .NET quotes only a word holding a space and a path like
+`C:\R&D\notes.txt` would otherwise end the command at its `&`; a `%` in a word
+is still expanded by `cmd`, as it was through the verb. Only a script named as
+the program of something else is drained this way — a user menu entry run
+directly, a program chosen for the extension, `F4`. `Enter` on a `.cmd` or a
+`.bat` itself keeps the verb and a console window of its own, which is how a
+script that prints or asks is meant to be seen.
+
+A shell run of the user menu is `cmd` whatever
 its line starts with, and a file opened through its association, where the
 system picks the program, cannot be redirected and keeps the verb. The three
 describers take the lookup as an argument — `Dependencies` binds it once, with
 `PATH` and `PATHEXT` read at start — so their tests describe each start with a
-fake that knows one window program, and no test starts anything.
+fake that knows one window program or one batch script, and no test starts
+anything.
 
 **What the system already knows is a port too, and the parsing is not.**
 `Processes.HandlersFor` takes an `EntryName` and answers a `Handler list` —
