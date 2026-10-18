@@ -45,6 +45,7 @@ numbered `P<phase>.<task>` so they can be referenced in commits (e.g.
 | [20 — The user menu](Plan/PHASE-20-THE-USER-MENU.md) | P20.1–P20.5 | done |
 | [21 — The log and the debts](Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md) | P21.1–P21.18 | done |
 | [22 — What the manual pass found](Plan/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) | P22.1–P22.18 | planned |
+| [23 — The layers above the file system](Plan/PHASE-23-THE-LAYERS-ABOVE-THE-FILE-SYSTEM.md) | P23.1–P23.8 | planned |
 
 ## Suggested module layout
 
