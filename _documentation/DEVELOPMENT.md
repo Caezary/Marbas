@@ -65,11 +65,16 @@ over two ecosystems, and opens a pull request for what is:
 
 - `nuget` reads `Directory.Packages.props` and the tool manifest,
   `.config/dotnet-tools.json`. Each package comes as a pull request of its
-  own, except two pairs that only move together: the two analyzer packages
-  (group `analyzers`) and `System.IO.Abstractions` with its testing helpers
-  (group `io-abstractions`), which are released in step and taken at the
-  same version. `fsharp-analyzers` is ignored, for the reason under
-  [Analyzers](#analyzers); it is moved by hand.
+  own, except `System.IO.Abstractions` with its testing helpers (group
+  `io-abstractions`), which are released in step and taken at the same
+  version. Up to fifteen pull requests stand open at once; Dependabot's
+  default of five left most of the first run unopened. `fsharp-analyzers` and
+  `Ionide.Analyzers` are ignored, for the reason under
+  [Analyzers](#analyzers): the package that lags behind,
+  `G-Research.FSharp.Analyzers`, is the one watched, and a pull request of
+  it is the sign that the three may move. A group of the two packages would
+  not wait for both — Dependabot opens a group's pull request as soon as one
+  of its members is behind.
 - `github-actions` reads the `uses:` lines of `ci.yml` and `release.yml`.
 
 No package is vulnerable, transitively or not, as of 2026-10-18; that is
@@ -92,9 +97,11 @@ before it is looked at. Taking one in asks more than a green build:
   alone: on its branch, `dotnet tool restore` and
   `dotnet fantomas Marbas Marbas.Tests`, the reformat committed on its own,
   and its hash added to `.git-blame-ignore-revs`.
-- **The analyzer packages** — taken only when both are built on the same
-  version of the SDK, which their release notes name, and with
-  `fsharp-analyzers` moved by hand to that version in the same change. A
+- **The analyzer packages** — a pull request of
+  `G-Research.FSharp.Analyzers` is not merged as it stands. Its branch
+  takes `Ionide.Analyzers` to the version built on the same SDK and
+  `fsharp-analyzers` to that SDK's version, both by hand, which the release
+  notes of each name; if no version of the two matches, it waits. A
   package on another SDK than the tool's is skipped without a word, so the
   `analyze` job stays green while running nothing of it: a green job says
   nothing here, the release notes do.

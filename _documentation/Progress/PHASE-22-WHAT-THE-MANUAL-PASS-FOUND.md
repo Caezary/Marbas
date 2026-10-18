@@ -814,15 +814,24 @@ counted nine: `coverlet.collector` 10.1.0, `FSharp.Core` 10.1.402,
 The plan held only the tool, but `Ionide.Analyzers` 0.20.0 has already moved
 to the SDK of 0.41 while `G-Research.FSharp.Analyzers` 0.25.0 stays on 0.39.
 Taking the package alone would have the pinned tool skip it, and the
-`analyze` job would stay green without running `IONIDE-006`. So
-`fsharp-analyzers` is ignored, the two packages come as one pull request,
-group `analyzers`, and [Development](../DEVELOPMENT.md) says that it is taken
-only when both name the same SDK, with the tool moved by hand in the same
-change. `System.IO.Abstractions` and
-`TestableIO.System.IO.Abstractions.TestingHelpers` are a group too: they are
+`analyze` job would stay green without running `IONIDE-006`. The first
+version of the file put the two packages in one group, meant to bring them
+as one pull request once both had moved. The first run on GitHub showed
+that a group does not wait: it opened *Bump the analyzers group with 1
+update*, `Ionide.Analyzers` alone. So both `fsharp-analyzers` and
+`Ionide.Analyzers` are ignored and only `G-Research.FSharp.Analyzers`, the
+package that lags, is watched; [Development](../DEVELOPMENT.md) says that its
+pull request is the sign to move the other two by hand on the same branch,
+to the version of the same SDK. `System.IO.Abstractions` and
+`TestableIO.System.IO.Abstractions.TestingHelpers` stay a group: they are
 released in step, from one repository, and the helpers build on the
 wrappers of their own version, so the two are taken at the same version.
 `fantomas` stays ungrouped, so it comes as a pull request of its own.
+
+The same run opened five pull requests and stopped — Dependabot's default
+limit of open pull requests for version updates — leaving `Terminal.Gui`,
+`Microsoft.NET.Test.Sdk`, `SharpCompress` and `xunit.runner.visualstudio`
+unopened. The limit is fifteen now.
 
 No pull request it opens is merged in this phase, so that P22.18 walks the
 libraries the fixes were made against. [Development](../DEVELOPMENT.md) has a
