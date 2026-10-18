@@ -157,8 +157,6 @@ Marbas/
     Settings.fs           the session every tab carries, and its config file
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             where a panel can be sent: the usable drives, and home on Unix
-    PanelLocation.fs      where a panel stands: a directory, an archive level, search results;
-                          a hit and the ground a search covers
     Place.fs              a directory or file on disk, or a place inside an archive
     HistoryError.fs       why the history could not be read or written
     History.fs            the remembered lists, the changes made to them, and history.conf
@@ -168,7 +166,6 @@ Marbas/
     LogFile.fs            marbas.log beside the settings: appended to, cut to its last megabyte
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     Links.fs              what a link request means, what refuses it, and making one
-    DirectoryMeasure.fs   the size of a directory or an archive level, stopping at links
     ArchiveKind.fs        the archive kinds, their extensions and what can be done to each
     ArchivePath.fs        a place inside an archive: never rooted, never climbing
     ArchiveFormat.fs      which kinds can be created, and what each one carries
@@ -179,7 +176,6 @@ Marbas/
                           marked as the platform means it
     ArchiveReader.fs      opening an archive: its entries folded over, one entry as a stream
     ArchiveListing.fs     reading one level of an archive as the entries a directory gives
-    SearchListing.fs      search hits as the entries a directory gives, named by their path
     SessionOwner.fs       the process a working directory belongs to: its id and the
                           moment it started, and the two lines they are written as
     Workspace.fs          the session's working directory: claimed, scratch directories
@@ -187,6 +183,13 @@ Marbas/
     Archive.fs            writing one and taking one apart: the walk, cancelling, the password
     Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     ContentError.fs       what can go wrong reading a file, as values
+  Locations/              where a panel stands, where it lands, what it lists
+    PanelLocation.fs      where a panel stands: a directory, an archive level, search results;
+                          a hit and the ground a search covers; a place as a location and back
+    Landing.fs            where a panel lands for a path or a place: inside a location,
+                          or beside the entry it names, the nearest one standing
+    SearchListing.fs      search hits as the entries a directory gives, named by their path
+    DirectoryMeasure.fs   the size of a directory or an archive level, stopping at links
   Viewing/                a file's content as a window of bytes and lines
     TextEncoding.fs       which encoding a file carries, from its mark or its bytes,
                           and the code pages it can be read in

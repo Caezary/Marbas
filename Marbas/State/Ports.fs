@@ -5,6 +5,7 @@ open System.IO.Abstractions
 open Marbas.Collections
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.Viewing
 open Marbas.Find
 open Marbas.State

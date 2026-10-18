@@ -2,7 +2,7 @@ module Marbas.Ui.Format.QueryText
 
 open System.IO.Abstractions
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Locations
 
 let private sense search =
     match search.Sense with

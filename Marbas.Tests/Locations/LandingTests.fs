@@ -1,9 +1,10 @@
-module Marbas.Tests.FileSystem.LandingTests
+module Marbas.Tests.Locations.LandingTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.Tests
 
 let private at = Root.at

@@ -5,6 +5,7 @@ open FsToolkit.ErrorHandling
 open Marbas.Collections
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.Find
 open Marbas.FileSystem.DirectoryListing
 open Marbas.State

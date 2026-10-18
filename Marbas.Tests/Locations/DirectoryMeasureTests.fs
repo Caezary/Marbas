@@ -1,10 +1,11 @@
-module Marbas.Tests.FileSystem.DirectoryMeasureTests
+module Marbas.Tests.Locations.DirectoryMeasureTests
 
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.Tests
 
 let private at = Root.at

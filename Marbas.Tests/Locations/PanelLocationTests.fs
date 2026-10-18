@@ -1,10 +1,11 @@
-module Marbas.Tests.FileSystem.PanelLocationTests
+module Marbas.Tests.Locations.PanelLocationTests
 
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Tests
 

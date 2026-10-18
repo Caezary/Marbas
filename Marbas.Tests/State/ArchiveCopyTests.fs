@@ -2,6 +2,7 @@ module Marbas.Tests.State.ArchiveCopyTests
 
 open Xunit
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.Domain
 open Marbas.State.AppState
 open Marbas.State.Update

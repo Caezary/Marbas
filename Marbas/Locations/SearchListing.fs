@@ -1,9 +1,10 @@
-module Marbas.FileSystem.SearchListing
+module Marbas.Locations.SearchListing
 
 open System
 open System.IO.Abstractions
 open FsToolkit.ErrorHandling
 open Marbas.Domain
+open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 
 type ResultsListing =

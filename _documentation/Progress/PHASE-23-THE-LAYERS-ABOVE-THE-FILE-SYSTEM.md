@@ -121,3 +121,47 @@ holds `needle` and `zażółć` in Windows-1250 was opened with `F3`: the viewer
 settled on Latin-1, `F7` with `needle` brought line 41 to the top showing
 `za¿ó³æ`, `F8` with *Windows-1250* read it again as `zażółć` on the same line,
 and `F4` then `F7` with `BF F3 B3` found the run on row `0000000140`.
+
+**P23.4 `Locations` leaves.** The row came first — `Locations`, allowed
+`FileSystem` and `Domain`, given to `Find` and allowed to `State`, `Ui` and
+`Adapters` — and the test failed with `Locations holds no type`. Then
+`PanelLocation`, `Landing`, `SearchListing` and `DirectoryMeasure` moved to
+`Marbas/Locations/` as `Marbas.Locations`, in a group compiled between the
+last module of `FileSystem` and `Viewing`, and their four test files to
+`Marbas.Tests/Locations/`, in a group before the tests of `Viewing`.
+
+This time `FileSystem` did not compile without them, which the plan foresaw:
+an edge made by union cases written without their type does not show in a
+graph read from the text. `Place.ofLocation` and `Place.toLocation` in
+`FileSystem/Place.fs` turn a `Place` into a `PanelLocation` and back through
+`OnDisk`, `InArchive` and `SearchResults`. The type `Place` cannot follow
+them out, since `History` and `Favorites` keep a `Place` and go to `Profile`,
+below `Locations`. The user chose to move the two functions, unchanged, to a
+`module Place` at the end of `Locations/PanelLocation.fs`: F# lets a module
+extend another of the same name, so `Place.ofLocation` in `Update` and
+`Place.toLocation` in `Landing` read as before and nothing is renamed. The
+graph of the plan says so, and its list of what is left names the pair.
+
+The readers took `open Marbas.Locations` right after `open Marbas.FileSystem`
+and not after the last `open Marbas.FileSystem.*`. Opened after
+`DirectoryListing`, the record `Measurement` of `DirectoryMeasure`, whose
+`Name` is a label of `Entry` too, took over the records `PanelState`,
+`AppState` and `CommandExpansion` build, which the compiler inferred as
+`Entry` while the four modules were part of `Marbas.FileSystem`. Opened where
+that namespace was, they shadow what they shadowed before.
+
+Eighteen modules of `Marbas` read `Locations` — three of `Find`, seven of
+`State`, six of `Ui`, `BatchRunner` and `SearchRunner` — and in six of them,
+`FindAnswer`, `TabRow`, `ResultRow`, `ResultsWindow`, `QueryText` and
+`PanelTitle`, it replaced `open Marbas.FileSystem`, which they had needed for
+these modules alone. Forty-six test files took the `open` besides the four
+moved, and every one of them still needs `Marbas.FileSystem`.
+
+The suite passed 4,299 of 4,334 on Windows and 4,276 of 4,337 under WSL, the
+counts of P23.1. Under WSL, in tmux: `F3` on a directory holding 5,000 bytes
+wrote `4.9 KB` in place of `<DIR>`; `Enter` on `box.zip` sent the panel into
+it, titled `…/fixture/box.zip`; `Alt+F1` with `/mnt/wslg/distro` sent it
+onto that drive; and *Find* with *Search archives* and `F2` put the other
+panel on `Find: *.txt in /.../fixture`, listing `box.zip/docs/notes.txt`.
+`Alt+F1` with `/mnt/c` answered *Access denied to '/mnt/c'*; the build of
+P23.3 answers the same, so it is the mount and not the move.

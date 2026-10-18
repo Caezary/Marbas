@@ -3,6 +3,7 @@ module Marbas.Tests.State.ClipboardLandingTests
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.State
 open Marbas.State.AppState
 open Marbas.State.Update

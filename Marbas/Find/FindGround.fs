@@ -5,6 +5,7 @@ open System
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 
 let private allRoots (fs: IFileSystem) =
     Drives.list fs None |> List.map DriveRow.root

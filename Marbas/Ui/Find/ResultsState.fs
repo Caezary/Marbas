@@ -3,6 +3,7 @@ namespace Marbas.Ui.Find
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.Find
 open Marbas.Find.FileSearch
 open Marbas.Ui.Format

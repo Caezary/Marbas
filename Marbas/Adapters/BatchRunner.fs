@@ -5,6 +5,7 @@ open System.Threading
 open System.Threading.Tasks
 open Terminal.Gui.App
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.State
 open Marbas.Ui.Dialogs
 

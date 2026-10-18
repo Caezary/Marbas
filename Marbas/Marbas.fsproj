@@ -69,7 +69,6 @@
         <Compile Include="FileSystem\Drives.fs" />
         <Compile Include="FileSystem\ArchiveKind.fs" />
         <Compile Include="FileSystem\ArchivePath.fs" />
-        <Compile Include="FileSystem\PanelLocation.fs" />
         <Compile Include="FileSystem\Place.fs" />
         <Compile Include="FileSystem\HistoryError.fs" />
         <Compile Include="FileSystem\History.fs" />
@@ -87,18 +86,22 @@
         <Compile Include="FileSystem\ArchiveReader.fs" />
         <Compile Include="FileSystem\ArchiveIndex.fs" />
         <Compile Include="FileSystem\ArchiveListing.fs" />
-        <Compile Include="FileSystem\Landing.fs" />
-        <Compile Include="FileSystem\SearchListing.fs" />
         <Compile Include="FileSystem\Operations.fs" />
         <Compile Include="FileSystem\Links.fs" />
         <Compile Include="FileSystem\Shortcut.fs" />
         <Compile Include="FileSystem\PastedPath.fs" />
-        <Compile Include="FileSystem\DirectoryMeasure.fs" />
         <Compile Include="FileSystem\SessionOwner.fs" />
         <Compile Include="FileSystem\Workspace.fs" />
         <Compile Include="FileSystem\Archive.fs" />
         <Compile Include="FileSystem\EntryProperties.fs" />
         <Compile Include="FileSystem\Trash.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Locations\PanelLocation.fs" />
+        <Compile Include="Locations\Landing.fs" />
+        <Compile Include="Locations\SearchListing.fs" />
+        <Compile Include="Locations\DirectoryMeasure.fs" />
     </ItemGroup>
 
     <ItemGroup>

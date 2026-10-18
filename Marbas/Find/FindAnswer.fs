@@ -2,7 +2,7 @@ namespace Marbas.Find
 
 open System.IO.Abstractions
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.Find.FileSearch
 
 type FindLanding =

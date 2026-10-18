@@ -4,6 +4,7 @@ open System
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.State
 open Marbas.Adapters
 open Marbas.Tests

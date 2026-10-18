@@ -6,7 +6,7 @@ open Terminal.Gui.Drawing
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
-open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.Find
 open Marbas.Find.FileSearch
 open Marbas.Ui

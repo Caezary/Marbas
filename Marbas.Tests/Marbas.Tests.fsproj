@@ -53,8 +53,6 @@
     <Compile Include="FileSystem\DrivesTests.fs" />
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
-    <Compile Include="FileSystem\DirectoryMeasureTests.fs" />
-    <Compile Include="FileSystem\SearchListingTests.fs" />
     <Compile Include="FileSystem\HandlerTests.fs" />
     <Compile Include="FileSystem\ProgramCommandTests.fs" />
     <Compile Include="FileSystem\EditorCommandTests.fs" />
@@ -66,7 +64,6 @@
     <Compile Include="FileSystem\EntryPropertiesTests.fs" />
     <Compile Include="FileSystem\ArchiveKindTests.fs" />
     <Compile Include="FileSystem\ArchivePathTests.fs" />
-    <Compile Include="FileSystem\PanelLocationTests.fs" />
     <Compile Include="FileSystem\HistoryTests.fs" />
     <Compile Include="FileSystem\FavoritesTests.fs" />
     <Compile Include="FileSystem\UserMenuTests.fs" />
@@ -83,7 +80,6 @@
     <Compile Include="FileSystem\ZipEntriesTests.fs" />
     <Compile Include="FileSystem\BackslashNameTests.fs" />
     <Compile Include="FileSystem\ArchiveListingTests.fs" />
-    <Compile Include="FileSystem\LandingTests.fs" />
     <Compile Include="FileSystem\ArchiveChangeTests.fs" />
     <Compile Include="FileSystem\ArchiveAcrossTests.fs" />
     <Compile Include="FileSystem\EveryKindTests.fs" />
@@ -102,6 +98,13 @@
     <Compile Include="FileSystem\SessionOwnerTests.fs" />
     <Compile Include="FileSystem\WorkspaceTests.fs" />
     <Compile Include="FileSystem\ProgramImageTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Locations\PanelLocationTests.fs" />
+    <Compile Include="Locations\LandingTests.fs" />
+    <Compile Include="Locations\SearchListingTests.fs" />
+    <Compile Include="Locations\DirectoryMeasureTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -35,6 +35,15 @@ written without its type, or by a record the compiler infers, would not show,
 so the compiler is the last word: a move that does not build because of an edge
 missing here stops, and this graph is corrected before it goes on.
 
+One such edge was found by P23.4. `Place.ofLocation` and `Place.toLocation`,
+in `FileSystem/Place.fs`, turn a `Place` into a `PanelLocation` and back by
+its cases alone — `OnDisk`, `InArchive`, `SearchResults` — so `Place` read
+`PanelLocation` without naming it. The type `Place` stays in `FileSystem`,
+which `History` and `Favorites` need below `Profile`; the two functions, the
+only part of it that speaks of a panel, moved unchanged to a `module Place`
+at the end of `Locations/PanelLocation.fs`, so that `Place.ofLocation` and
+`Place.toLocation` still read as they did where they are called.
+
 Nothing that stays in `FileSystem` uses anything that leaves it, which is what
 lets each of the five go. `Session` cannot: `Archive` packs and changes an
 archive in a scratch directory of `Workspace`.
@@ -299,4 +308,9 @@ and its row in §1 of Coding style.
 - **Two names of one word** — the type `FindGround` of `Locations` and the
   module `FindGround` of `Find`, and the record `Place` of `WindowSearch` beside
   the union `Place` of `FileSystem`. Each pair compiles and reads apart by its
-  namespace; a rename is a choice of words for a phase that touches them.
+  namespace; a rename is a choice of words for a phase that touches them. Since
+  P23.4 a third pair is meant to read as one: the module `Place` of
+  `Locations` adds `ofLocation` and `toLocation` to the module `Place` of
+  `FileSystem`, as F# lets a module extend another of its name. Naming them
+  `PanelLocation.ofPlace` and `PanelLocation.toPlace` instead is a rename for
+  the same later phase.

@@ -5,6 +5,7 @@ open System.IO.Abstractions
 open FsToolkit.ErrorHandling
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.FileSystem.DirectoryListing
 open Marbas.State.AppState
 

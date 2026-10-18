@@ -1,7 +1,8 @@
-namespace Marbas.FileSystem
+namespace Marbas.Locations
 
 open System.IO.Abstractions
 open Marbas.Domain
+open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 
 type PanelLocation =
@@ -117,3 +118,16 @@ module FoundEntries =
         hits
         |> List.map (fun hit -> FindHit.displayName fs ground hit, hit)
         |> Map.ofList
+
+module Place =
+
+    let ofLocation location =
+        match location with
+        | OnDisk path -> Some(Place.OnDisk path)
+        | InArchive(archive, level) -> Some(Place.InArchive(archive, level))
+        | SearchResults _ -> None
+
+    let toLocation place =
+        match place with
+        | Place.OnDisk path -> OnDisk path
+        | Place.InArchive(archive, inside) -> InArchive(archive, inside)

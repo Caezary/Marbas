@@ -6,6 +6,7 @@ open System.IO
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.FileSystem.DirectoryListing
 open Marbas.FileSystem.Operations
 

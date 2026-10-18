@@ -1,7 +1,7 @@
 module Marbas.Ui.Find.ResultRow
 
 open System.IO.Abstractions
-open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.Find.FileSearch
 open Marbas.Ui.Format
 

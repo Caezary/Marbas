@@ -2,6 +2,7 @@ namespace Marbas.State
 
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.FileSystem.DirectoryListing
 
 type PanelState =

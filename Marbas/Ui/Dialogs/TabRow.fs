@@ -1,7 +1,7 @@
 module Marbas.Ui.Dialogs.TabRow
 
 open System.IO.Abstractions
-open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.State
 open Marbas.State.AppState
 

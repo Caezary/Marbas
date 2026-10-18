@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.SearchListingTests
+module Marbas.Tests.Locations.SearchListingTests
 
 open System
 open System.IO.Abstractions
@@ -6,6 +6,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Tests
 

@@ -6,6 +6,7 @@ open Xunit
 open Marbas.Collections
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Locations
 open Marbas.State.AppState
 open Marbas.Tests
 
