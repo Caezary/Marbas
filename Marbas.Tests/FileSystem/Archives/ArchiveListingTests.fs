@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.ArchiveListingTests
+module Marbas.Tests.FileSystem.Archives.ArchiveListingTests
 
 open System
 open System.IO.Abstractions
@@ -7,6 +7,7 @@ open ICSharpCode.SharpZipLib.Zip
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Tests
 

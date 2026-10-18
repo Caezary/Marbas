@@ -1,9 +1,10 @@
-module Marbas.Tests.FileSystem.ArchiveNameTests
+module Marbas.Tests.FileSystem.Archives.ArchiveNameTests
 
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Tests
 
 let private fs = MockFileSystem()

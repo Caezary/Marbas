@@ -141,33 +141,34 @@ Marbas/
     MenuLabel.fs          the name a user menu entry is shown under
     CommandLine.fs        what a user menu entry runs, not yet expanded, and how it is started
     Modifier.fs           Ctrl, Alt or Shift, as the ports and the key table both name them
-  FileSystem/
+  FileSystem/             the paths, the entries, the operations and the session, in that order
     FileSystemPath.fs     single-case path type wrapping a raw string
+    ArchivePath.fs        a place inside an archive: never rooted, never climbing
+    Place.fs              a directory or file on disk, or a place inside an archive
     EntryAttributes.fs    what FileAttributes and UnixFileMode say, in the Domain's words
+    ContentError.fs       what can go wrong reading a file, as values
     DirectoryListing.fs   entries, ordering, ".." handling, errors as values
     Drives.fs             where a panel can be sent: the usable drives, and home on Unix
-    Place.fs              a directory or file on disk, or a place inside an archive
-    LogFileError.fs       why the log could not be cut or written
-    LogFile.fs            marbas.log beside the settings: appended to, cut to its last megabyte
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     Links.fs              what a link request means, what refuses it, and making one
-    ArchiveKind.fs        the archive kinds, their extensions and what can be done to each
-    ArchivePath.fs        a place inside an archive: never rooted, never climbing
-    ArchiveFormat.fs      which kinds can be created, and what each one carries
-    ArchiveName.fs        the name an archive is offered under, and its extension
-    ZipMoments.fs         the exact moment of each entry of a zip: read out of its central
-                          directory, and the field one is written as
-    ZipEntries.fs         the entry a zip is given for a file or a directory, named and
-                          marked as the platform means it
-    ArchiveReader.fs      opening an archive: its entries folded over, one entry as a stream
-    ArchiveListing.fs     reading one level of an archive as the entries a directory gives
+    Trash.fs              the freedesktop trash: where it is, and how an entry goes in
     SessionOwner.fs       the process a working directory belongs to: its id and the
                           moment it started, and the two lines they are written as
     Workspace.fs          the session's working directory: claimed, scratch directories
                           in it, released; what earlier sessions left behind swept
-    Archive.fs            writing one and taking one apart: the walk, cancelling, the password
-    Trash.fs              the freedesktop trash: where it is, and how an entry goes in
-    ContentError.fs       what can go wrong reading a file, as values
+    LogFileError.fs       why the log could not be cut or written
+    LogFile.fs            marbas.log beside the settings: appended to, cut to its last megabyte
+    Archives/             the archives, compiled after the root, which uses none of them
+      ArchiveKind.fs        the archive kinds, their extensions and what can be done to each
+      ArchiveFormat.fs      which kinds can be created, and what each one carries
+      ArchiveName.fs        the name an archive is offered under, and its extension
+      ZipMoments.fs         the exact moment of each entry of a zip: read out of its central
+                            directory, and the field one is written as
+      ZipEntries.fs         the entry a zip is given for a file or a directory, named and
+                            marked as the platform means it
+      ArchiveReader.fs      opening an archive: its entries folded over, one entry as a stream
+      ArchiveListing.fs     reading one level of an archive as the entries a directory gives
+      Archive.fs            writing one and taking one apart: the walk, cancelling, the password
   Programs/               what runs a file, and how it is started
     LaunchRequest.fs      what to start, with what, where, and with which rights
     ProgramImage.fs       the subsystem a program's PE header names: window, console, other, none
@@ -376,6 +377,7 @@ Marbas.Tests/
   Expect.fs               Result unwrapping, so act and assert stay apart
   Fakes.fs                the do-nothing Ports.Dependencies every test starts from
   FileSystem/             unit tests, one module per FileSystem module
+    Archives/             the tests of the archives, beside their modules
   Messages/               unit tests of the wording, one module per module
   State/                  unit tests, one module per State module
     Update/               the tests of Update, one file per feature

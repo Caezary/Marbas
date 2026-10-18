@@ -3,6 +3,7 @@ module Marbas.Tests.State.Shell.ShellArchiveChangeTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.FileSystem.Operations
 open Marbas.Domain
 open Marbas.State

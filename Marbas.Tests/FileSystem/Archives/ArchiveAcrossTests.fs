@@ -1,10 +1,11 @@
-module Marbas.Tests.FileSystem.ArchiveAcrossTests
+module Marbas.Tests.FileSystem.Archives.ArchiveAcrossTests
 
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Tests
 
 let private at = Root.at

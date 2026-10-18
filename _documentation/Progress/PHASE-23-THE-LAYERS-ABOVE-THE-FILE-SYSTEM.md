@@ -273,3 +273,55 @@ Whether VS Code now stays off the panels in the user's terminal is for the
 user to see on Windows; [Rough edges](../ROUGH-EDGES.md) records the `%`
 that `cmd` still expands, and the arguments of an `Exec` line that a
 `.desktop` handler loses.
+
+**P23.7 The archives get a folder.** `ArchiveKind`, `ArchiveFormat`,
+`ArchiveName`, `ArchiveNames`, `ZipMoments`, `ZipEntries`, `ArchiveReader`,
+`ArchiveIndex`, `ArchiveListing` and `Archive` moved to
+`Marbas/FileSystem/Archives/` as `Marbas.FileSystem.Archives`, in a group of
+their own compiled after the root of `FileSystem`, and their sixteen test files
+to `Marbas.Tests/FileSystem/Archives/` as `Marbas.Tests.FileSystem.Archives`.
+The layer test was not changed and was not given a failing case first: it
+takes the layer from the second segment of a name and, for a file's static
+initialiser, from the folder under `Marbas/`, so a type of the new folder is
+`FileSystem` before and after, and its first three facts would have failed on
+a stray namespace, a forbidden use or an empty layer.
+
+Before the move, every type and module the ten declare was looked for in the
+nineteen modules that stay: none names one, and the `Archive` of
+`EntryProperties` is the attribute. The root is now compiled in the order of
+the four subjects of the plan — `FileSystemPath`, `ArchivePath`, `Place`,
+`PastedPath`, `ClipboardFiles`; `EntryAttributes`, `ArchiveError`,
+`ContentError`, `DirectoryListing`, `Drives`; `Operations`, `Links`,
+`Shortcut`, `Trash`, `EntryProperties`; `SessionOwner`, `Workspace`,
+`LogFileError`, `LogFile` — and built in that order at the first try; the
+archives keep the order they had among themselves. The root tests follow the
+same four subjects.
+
+`namespace Marbas.FileSystem.Archives` does not open `Marbas.FileSystem`, so
+six of the ten open it: `ArchiveFormat`, `ArchiveName`, `ArchiveReader`,
+`ArchiveIndex`, `ArchiveListing` and `Archive`. Twelve modules of `Marbas`
+read the archives, the `open` going right after `open Marbas.FileSystem`; in
+`PackDialog` and `PromptDialog` it replaced that `open`. Fifty-two test files
+took it, the sixteen moved among them; in five — `ArchiveKindTests`,
+`ArchiveNamesTests`, `ZipEntriesTests`, `PackDialogTests` and
+`PromptDialogTests` — it replaced `open Marbas.FileSystem`. Which `open` a file
+still needs was asked of the compiler, by taking it out of every file and
+putting it back where the build failed. One test named a type by its full
+name as text — `ArchiveReaderTests` asks the assembly for
+`Marbas.FileSystem.ArchiveItem`, to see that it is a byref-like struct — and
+failed twenty-five tests at once in its static initialiser until the string
+followed the namespace.
+
+The suite passed 4,307 of 4,342 on Windows and 4,284 of 4,345 under WSL, the
+counts after the batch script fix. Under WSL, in tmux, a directory `docs`
+holding `notes.txt` was packed with `Shift+F1` as `docs.zip`, `docs.tar.gz`
+and `docs.7z` — the three kinds Marbas writes; each was entered in the other
+panel and changed by `F5` of `extra.txt` into it, growing from 299, 232 and
+180 bytes to 419, 282 and 209; and each was unpacked with `Shift+F2` into an
+empty `out`, which held `docs/notes.txt` reading `needle` and `extra.txt`
+reading `extra` every time. The code map of
+[Overview](../Architecture/OVERVIEW.md) lists the root of `FileSystem` in its
+new order and `Archives/` beneath it, and
+[Testing](../Architecture/TESTING.md) says that `FileSystem/` mirrors the
+source down to the subfolder and that a folder inside a layer stays in it.
+The modules the code map still misses wait for P23.8.

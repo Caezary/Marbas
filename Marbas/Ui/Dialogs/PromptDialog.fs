@@ -2,7 +2,7 @@ module Marbas.Ui.Dialogs.PromptDialog
 
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
-open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Ui
 open Marbas.Ui.Theme
 

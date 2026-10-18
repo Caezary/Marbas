@@ -49,34 +49,37 @@
 
     <ItemGroup>
         <Compile Include="FileSystem\FileSystemPath.fs" />
-        <Compile Include="FileSystem\ClipboardFiles.fs" />
-        <Compile Include="FileSystem\EntryAttributes.fs" />
-        <Compile Include="FileSystem\ContentError.fs" />
-        <Compile Include="FileSystem\ArchiveError.fs" />
-        <Compile Include="FileSystem\DirectoryListing.fs" />
-        <Compile Include="FileSystem\Drives.fs" />
-        <Compile Include="FileSystem\ArchiveKind.fs" />
         <Compile Include="FileSystem\ArchivePath.fs" />
         <Compile Include="FileSystem\Place.fs" />
-        <Compile Include="FileSystem\LogFileError.fs" />
-        <Compile Include="FileSystem\LogFile.fs" />
-        <Compile Include="FileSystem\ArchiveFormat.fs" />
-        <Compile Include="FileSystem\ArchiveName.fs" />
-        <Compile Include="FileSystem\ArchiveNames.fs" />
-        <Compile Include="FileSystem\ZipMoments.fs" />
-        <Compile Include="FileSystem\ZipEntries.fs" />
-        <Compile Include="FileSystem\ArchiveReader.fs" />
-        <Compile Include="FileSystem\ArchiveIndex.fs" />
-        <Compile Include="FileSystem\ArchiveListing.fs" />
+        <Compile Include="FileSystem\PastedPath.fs" />
+        <Compile Include="FileSystem\ClipboardFiles.fs" />
+        <Compile Include="FileSystem\EntryAttributes.fs" />
+        <Compile Include="FileSystem\ArchiveError.fs" />
+        <Compile Include="FileSystem\ContentError.fs" />
+        <Compile Include="FileSystem\DirectoryListing.fs" />
+        <Compile Include="FileSystem\Drives.fs" />
         <Compile Include="FileSystem\Operations.fs" />
         <Compile Include="FileSystem\Links.fs" />
         <Compile Include="FileSystem\Shortcut.fs" />
-        <Compile Include="FileSystem\PastedPath.fs" />
+        <Compile Include="FileSystem\Trash.fs" />
+        <Compile Include="FileSystem\EntryProperties.fs" />
         <Compile Include="FileSystem\SessionOwner.fs" />
         <Compile Include="FileSystem\Workspace.fs" />
-        <Compile Include="FileSystem\Archive.fs" />
-        <Compile Include="FileSystem\EntryProperties.fs" />
-        <Compile Include="FileSystem\Trash.fs" />
+        <Compile Include="FileSystem\LogFileError.fs" />
+        <Compile Include="FileSystem\LogFile.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="FileSystem\Archives\ArchiveKind.fs" />
+        <Compile Include="FileSystem\Archives\ArchiveFormat.fs" />
+        <Compile Include="FileSystem\Archives\ArchiveName.fs" />
+        <Compile Include="FileSystem\Archives\ArchiveNames.fs" />
+        <Compile Include="FileSystem\Archives\ZipMoments.fs" />
+        <Compile Include="FileSystem\Archives\ZipEntries.fs" />
+        <Compile Include="FileSystem\Archives\ArchiveReader.fs" />
+        <Compile Include="FileSystem\Archives\ArchiveIndex.fs" />
+        <Compile Include="FileSystem\Archives\ArchiveListing.fs" />
+        <Compile Include="FileSystem\Archives\Archive.fs" />
     </ItemGroup>
 
     <ItemGroup>

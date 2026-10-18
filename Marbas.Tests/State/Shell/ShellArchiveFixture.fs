@@ -2,6 +2,7 @@ module Marbas.Tests.State.Shell.ShellArchiveFixture
 
 open System.IO.Abstractions.TestingHelpers
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.FileSystem.Operations
 open Marbas.Tests
 

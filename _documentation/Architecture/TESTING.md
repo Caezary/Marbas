@@ -212,9 +212,12 @@ listed with one.
 `Domain/`, `FileSystem/`, `Messages/`, `State/` and `Ui/` mirror the source
 folders they cover, one test module per module under test, and namespaces
 follow: `Marbas.Tests.State.PanelStateTests` covers `Marbas.State.PanelState`.
-`Ui/` mirrors the source down to the subfolder, so
+`Ui/` and `FileSystem/` mirror the source down to the subfolder, so
 `Ui/Panels/PanelTitleTests.fs` covers `Ui/Panels/PanelTitle.fs` as
-`Marbas.Tests.Ui.Panels.PanelTitleTests`. `Messages/ProblemTests.fs` holds
+`Marbas.Tests.Ui.Panels.PanelTitleTests`, and
+`FileSystem/Archives/ArchiveReaderTests.fs` covers
+`FileSystem/Archives/ArchiveReader.fs` as
+`Marbas.Tests.FileSystem.Archives.ArchiveReaderTests`. `Messages/ProblemTests.fs` holds
 every case of `Problem` to the title and the description of the module that
 words it, so a case wired to another module's words fails by name. The
 interpreter's tests are the `Shell*Tests` files of `State/Shell/`: they run
@@ -351,6 +354,8 @@ layer from naming one above it, never one beside it. Since P23.1
 its symbols, and places every type in the layer the second segment of the
 full name of its outermost declaring type names: `Marbas.State.Shell` is
 `State`, `Marbas.Ui.Panels.FilePanel` is `Ui`, `Marbas.Program` is `Program`.
+A folder inside a layer stays in it: `Marbas.FileSystem.Archives.Archive`, in
+`FileSystem/Archives/` since P23.7, is `FileSystem`.
 What the compiler generates — `<Module>`, `<PrivateImplementationDetails$Marbas>`
 and every other type whose name opens with `<` — and the `Coverlet` tracker
 are left out, with one

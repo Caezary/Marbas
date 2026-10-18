@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.BackslashNameTests
+module Marbas.Tests.FileSystem.Archives.BackslashNameTests
 
 open System.IO
 open System.IO.Abstractions
@@ -7,6 +7,7 @@ open ICSharpCode.SharpZipLib.Zip
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.FileSystem.Operations
 open Marbas.Tests
 

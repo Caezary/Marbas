@@ -1,10 +1,10 @@
-module Marbas.Tests.FileSystem.ArchiveNamesTests
+module Marbas.Tests.FileSystem.Archives.ArchiveNamesTests
 
 open System.Globalization
 open System.Text
 open Xunit
 open SharpCompress.Common
-open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Tests
 
 let private polish = "zażółć.txt"

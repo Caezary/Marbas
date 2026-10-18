@@ -1,4 +1,4 @@
-module Marbas.FileSystem.ZipEntries
+module Marbas.FileSystem.Archives.ZipEntries
 
 open System
 open ICSharpCode.SharpZipLib.Zip

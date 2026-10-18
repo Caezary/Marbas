@@ -6,7 +6,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Terminal.Gui.Input
 open Terminal.Gui.Views
-open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs
 open Marbas.Tests

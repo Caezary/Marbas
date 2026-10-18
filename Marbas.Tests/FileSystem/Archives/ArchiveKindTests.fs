@@ -1,8 +1,8 @@
-module Marbas.Tests.FileSystem.ArchiveKindTests
+module Marbas.Tests.FileSystem.Archives.ArchiveKindTests
 
 open Xunit
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Tests
 
 let private recognised raw =

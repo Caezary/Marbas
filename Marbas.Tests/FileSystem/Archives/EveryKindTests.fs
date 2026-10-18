@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.EveryKindTests
+module Marbas.Tests.FileSystem.Archives.EveryKindTests
 
 open System.IO
 open System.Formats.Tar
@@ -8,6 +8,7 @@ open ICSharpCode.SharpZipLib.BZip2
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Viewing
 open Marbas.Tests
 

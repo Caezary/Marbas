@@ -47,31 +47,14 @@
 
   <ItemGroup>
     <Compile Include="FileSystem\FileSystemPathTests.fs" />
+    <Compile Include="FileSystem\ArchivePathTests.fs" />
+    <Compile Include="FileSystem\PastedPathTests.fs" />
     <Compile Include="FileSystem\ClipboardFilesTests.fs" />
     <Compile Include="FileSystem\EntryAttributesTests.fs" />
     <Compile Include="FileSystem\ContentErrorTests.fs" />
-    <Compile Include="FileSystem\DrivesTests.fs" />
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
-    <Compile Include="FileSystem\EntryPropertiesTests.fs" />
-    <Compile Include="FileSystem\ArchiveKindTests.fs" />
-    <Compile Include="FileSystem\ArchivePathTests.fs" />
-    <Compile Include="FileSystem\LogFileTests.fs" />
-    <Compile Include="FileSystem\ArchiveNameTests.fs" />
-    <Compile Include="FileSystem\ArchiveTests.fs" />
-    <Compile Include="FileSystem\ArchiveNamesTests.fs" />
-    <Compile Include="FileSystem\ArchiveReaderTests.fs" />
-    <Compile Include="FileSystem\ArchiveIndexTests.fs" />
-    <Compile Include="FileSystem\ForeignArchiveTests.fs" />
-    <Compile Include="FileSystem\ArchiveExtractTests.fs" />
-    <Compile Include="FileSystem\ArchiveDirectoryTimeTests.fs" />
-    <Compile Include="FileSystem\ZipMomentsTests.fs" />
-    <Compile Include="FileSystem\ZipEntriesTests.fs" />
-    <Compile Include="FileSystem\BackslashNameTests.fs" />
-    <Compile Include="FileSystem\ArchiveListingTests.fs" />
-    <Compile Include="FileSystem\ArchiveChangeTests.fs" />
-    <Compile Include="FileSystem\ArchiveAcrossTests.fs" />
-    <Compile Include="FileSystem\EveryKindTests.fs" />
+    <Compile Include="FileSystem\DrivesTests.fs" />
     <Compile Include="FileSystem\OperationsFixture.fs" />
     <Compile Include="FileSystem\OperationsTests.fs" />
     <Compile Include="FileSystem\OperationsBatchTests.fs" />
@@ -82,10 +65,30 @@
     <Compile Include="FileSystem\WipeTests.fs" />
     <Compile Include="FileSystem\LinksTests.fs" />
     <Compile Include="FileSystem\ShortcutTests.fs" />
-    <Compile Include="FileSystem\PastedPathTests.fs" />
     <Compile Include="FileSystem\TrashTests.fs" />
+    <Compile Include="FileSystem\EntryPropertiesTests.fs" />
     <Compile Include="FileSystem\SessionOwnerTests.fs" />
     <Compile Include="FileSystem\WorkspaceTests.fs" />
+    <Compile Include="FileSystem\LogFileTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="FileSystem\Archives\ArchiveKindTests.fs" />
+    <Compile Include="FileSystem\Archives\ArchiveNameTests.fs" />
+    <Compile Include="FileSystem\Archives\ArchiveTests.fs" />
+    <Compile Include="FileSystem\Archives\ArchiveNamesTests.fs" />
+    <Compile Include="FileSystem\Archives\ArchiveReaderTests.fs" />
+    <Compile Include="FileSystem\Archives\ArchiveIndexTests.fs" />
+    <Compile Include="FileSystem\Archives\ForeignArchiveTests.fs" />
+    <Compile Include="FileSystem\Archives\ArchiveExtractTests.fs" />
+    <Compile Include="FileSystem\Archives\ArchiveDirectoryTimeTests.fs" />
+    <Compile Include="FileSystem\Archives\ZipMomentsTests.fs" />
+    <Compile Include="FileSystem\Archives\ZipEntriesTests.fs" />
+    <Compile Include="FileSystem\Archives\BackslashNameTests.fs" />
+    <Compile Include="FileSystem\Archives\ArchiveListingTests.fs" />
+    <Compile Include="FileSystem\Archives\ArchiveChangeTests.fs" />
+    <Compile Include="FileSystem\Archives\ArchiveAcrossTests.fs" />
+    <Compile Include="FileSystem\Archives\EveryKindTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

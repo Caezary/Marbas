@@ -3,7 +3,7 @@ module Marbas.Ui.Dialogs.PackDialog
 open System
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
-open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Ui
 open Marbas.Ui.Theme
 

@@ -1,8 +1,9 @@
-module Marbas.FileSystem.ArchiveName
+module Marbas.FileSystem.Archives.ArchiveName
 
 open System
 open System.IO.Abstractions
 open Marbas.Domain
+open Marbas.FileSystem
 
 [<Literal>]
 let private RootStem = "rootcontents"

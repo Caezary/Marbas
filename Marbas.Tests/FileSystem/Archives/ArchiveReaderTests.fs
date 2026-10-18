@@ -1,10 +1,11 @@
-module Marbas.Tests.FileSystem.ArchiveReaderTests
+module Marbas.Tests.FileSystem.Archives.ArchiveReaderTests
 
 open System
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Tests
 
 let private at = Root.at
@@ -127,7 +128,7 @@ let private failingOnSecond =
         | _ -> failwith Refusal)
 
 let private itemType =
-    typeof<ArchiveEntryInfo>.Assembly.GetType "Marbas.FileSystem.ArchiveItem"
+    typeof<ArchiveEntryInfo>.Assembly.GetType "Marbas.FileSystem.Archives.ArchiveItem"
     |> Expect.notNull
 
 [<Fact>]

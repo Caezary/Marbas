@@ -2,6 +2,7 @@ module Marbas.Tests.State.Update.UpdatePackTests
 
 open Xunit
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.FileSystem.Operations
 open Marbas.Domain
 open Marbas.Messages

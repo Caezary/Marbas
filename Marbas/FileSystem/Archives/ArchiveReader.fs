@@ -1,4 +1,4 @@
-namespace Marbas.FileSystem
+namespace Marbas.FileSystem.Archives
 
 open System
 open System.IO
@@ -8,6 +8,7 @@ open SharpCompress.Archives
 open SharpCompress.Common
 open SharpCompress.Readers
 open Marbas.Domain
+open Marbas.FileSystem
 
 type ArchiveEntryKind =
     | StoredDirectory

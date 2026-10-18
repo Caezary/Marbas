@@ -1,4 +1,4 @@
-module Marbas.FileSystem.ArchiveNames
+module Marbas.FileSystem.Archives.ArchiveNames
 
 open System
 open System.Globalization

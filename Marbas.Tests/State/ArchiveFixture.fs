@@ -4,6 +4,7 @@ open System.Formats.Tar
 open System.IO.Abstractions
 open System.IO.Abstractions.TestingHelpers
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Domain
 open Marbas.State.AppState
 open Marbas.Tests

@@ -1,4 +1,6 @@
-namespace Marbas.FileSystem
+namespace Marbas.FileSystem.Archives
+
+open Marbas.FileSystem
 
 type ArchiveFormat = private ArchiveFormat of ArchiveKind
 

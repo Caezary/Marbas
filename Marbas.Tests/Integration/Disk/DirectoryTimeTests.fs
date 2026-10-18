@@ -6,6 +6,7 @@ open System.IO.Abstractions
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Tests
 
 let private disk = FileSystem() :> IFileSystem

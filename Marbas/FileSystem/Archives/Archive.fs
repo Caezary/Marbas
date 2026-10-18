@@ -1,4 +1,4 @@
-module Marbas.FileSystem.Archive
+module Marbas.FileSystem.Archives.Archive
 
 open System
 open System.IO
@@ -10,6 +10,7 @@ open SharpCompress.Common
 open SharpCompress.Writers.SevenZip
 open FsToolkit.ErrorHandling
 open Marbas.Domain
+open Marbas.FileSystem
 open Marbas.FileSystem.DirectoryListing
 
 [<Literal>]

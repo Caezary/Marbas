@@ -3,6 +3,7 @@ module Marbas.Tests.Integration.App.UnpackKeyTests
 open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Ui.Keys
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui

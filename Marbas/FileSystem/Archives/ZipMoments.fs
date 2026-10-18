@@ -1,4 +1,4 @@
-namespace Marbas.FileSystem
+namespace Marbas.FileSystem.Archives
 
 open System
 open System.Buffers

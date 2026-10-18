@@ -5,7 +5,7 @@ open Xunit
 open Terminal.Gui.Input
 open Terminal.Gui.Views
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.State
 open Marbas.Ui.Theme
 open Marbas.Ui.Dialogs

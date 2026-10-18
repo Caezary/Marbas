@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.ZipMomentsTests
+module Marbas.Tests.FileSystem.Archives.ZipMomentsTests
 
 open System
 open System.Globalization
@@ -8,6 +8,7 @@ open ICSharpCode.SharpZipLib.Zip
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.FileSystem.Operations
 open Marbas.Tests
 

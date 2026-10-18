@@ -3,6 +3,7 @@ namespace Marbas.Locations
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.FileSystem.DirectoryListing
 
 type Landing =

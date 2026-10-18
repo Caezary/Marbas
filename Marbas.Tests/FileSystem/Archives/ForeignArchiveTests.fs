@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.ForeignArchiveTests
+module Marbas.Tests.FileSystem.Archives.ForeignArchiveTests
 
 open System.Globalization
 open System.IO
@@ -9,6 +9,7 @@ open ICSharpCode.SharpZipLib.Tar
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.Tests
 
 let private at = Root.at

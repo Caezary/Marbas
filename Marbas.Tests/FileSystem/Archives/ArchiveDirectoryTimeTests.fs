@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.ArchiveDirectoryTimeTests
+module Marbas.Tests.FileSystem.Archives.ArchiveDirectoryTimeTests
 
 open System
 open System.IO
@@ -9,6 +9,7 @@ open ICSharpCode.SharpZipLib.BZip2
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.FileSystem.Operations
 open Marbas.Tests
 

@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.ArchiveExtractTests
+module Marbas.Tests.FileSystem.Archives.ArchiveExtractTests
 
 open System
 open System.IO.Abstractions
@@ -6,6 +6,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.FileSystem.Operations
 open Marbas.Tests
 

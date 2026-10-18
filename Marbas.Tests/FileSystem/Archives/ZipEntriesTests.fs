@@ -1,9 +1,9 @@
-module Marbas.Tests.FileSystem.ZipEntriesTests
+module Marbas.Tests.FileSystem.Archives.ZipEntriesTests
 
 open ICSharpCode.SharpZipLib.Zip
 open Xunit
 open Marbas.Domain
-open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 
 [<Literal>]
 let private UnixHost = 3

@@ -1,9 +1,10 @@
-module Marbas.FileSystem.ArchiveIndex
+module Marbas.FileSystem.Archives.ArchiveIndex
 
 open System
 open System.IO.Abstractions
 open System.Runtime.CompilerServices
 open Marbas.Domain
+open Marbas.FileSystem
 
 [<Literal>]
 let private Remembered = 4

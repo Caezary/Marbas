@@ -5,6 +5,7 @@ open System.IO
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 
 type Source(path: FileSystemPath, stream: Stream, encoding: TextEncoding) =
 

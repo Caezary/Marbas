@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.ArchiveTests
+module Marbas.Tests.FileSystem.Archives.ArchiveTests
 
 open System
 open System.IO
@@ -10,6 +10,7 @@ open ICSharpCode.SharpZipLib.Zip
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.FileSystem.Operations
 open Marbas.Tests
 

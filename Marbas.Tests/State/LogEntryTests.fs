@@ -4,6 +4,7 @@ open System
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.FileSystem.Archives
 open Marbas.State
 open Marbas.State.Update
 open Marbas.Tests
