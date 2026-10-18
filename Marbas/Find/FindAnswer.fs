@@ -1,8 +1,9 @@
-namespace Marbas.FileSystem
+namespace Marbas.Find
 
 open System.IO.Abstractions
 open Marbas.Domain
-open Marbas.FileSystem.FileSearch
+open Marbas.FileSystem
+open Marbas.Find.FileSearch
 
 type FindLanding =
     | AtHit of hit: FindHit

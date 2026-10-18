@@ -7,8 +7,9 @@ open Xunit
 open Terminal.Gui.Input
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Find
 open Marbas.FileSystem.DirectoryListing
-open Marbas.FileSystem.FileSearch
+open Marbas.Find.FileSearch
 open Marbas.Ui.Find
 open Marbas.Tests
 open Marbas.Tests.Integration.Gui

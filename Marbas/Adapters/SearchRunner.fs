@@ -7,7 +7,8 @@ open System.Threading
 open System.Threading.Tasks
 open Terminal.Gui.App
 open Marbas.FileSystem
-open Marbas.FileSystem.FileSearch
+open Marbas.Find
+open Marbas.Find.FileSearch
 open Marbas.State
 open Marbas.Ui.Find
 

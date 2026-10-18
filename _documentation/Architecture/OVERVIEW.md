@@ -169,10 +169,6 @@ Marbas/
     Operations.fs         copy / move / rename / delete / mkdir, errors as values
     Links.fs              what a link request means, what refuses it, and making one
     DirectoryMeasure.fs   the size of a directory or an archive level, stopping at links
-    ContentMatch.fs       whether a file holds a text, read a buffer at a time
-    FindGround.fs         a scope -> the places to walk and the roots not to cross
-    FileSearch.fs         the walk: hits reported as found, links followed once
-    FindAnswer.fs         what the results window answers, and the last results kept
     ArchiveKind.fs        the archive kinds, their extensions and what can be done to each
     ArchivePath.fs        a place inside an archive: never rooted, never climbing
     ArchiveFormat.fs      which kinds can be created, and what each one carries
@@ -200,6 +196,11 @@ Marbas/
     WindowSearch.fs       the viewer's search: a text or a pattern, its case and a direction,
                           from a place in a line, stoppable
     ByteSearch.fs         the dump's search: a run of bytes from an offset, either way, stoppable
+  Find/                   searching by name and by text, on disk and inside archives
+    ContentMatch.fs       whether a file holds a text, read a buffer at a time
+    FindGround.fs         a scope -> the places to walk and the roots not to cross
+    FileSearch.fs         the walk: hits reported as found, links followed once
+    FindAnswer.fs         what the results window answers, and the last results kept
   Messages/               the words the application says, from values the two
                           layers below it speak
     ListingErrorMessage.fs    ListingError -> user-facing text

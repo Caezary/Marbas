@@ -3,7 +3,8 @@ namespace Marbas.Ui.Find
 open System.IO.Abstractions
 open Marbas.Domain
 open Marbas.FileSystem
-open Marbas.FileSystem.FileSearch
+open Marbas.Find
+open Marbas.Find.FileSearch
 open Marbas.Ui.Format
 
 type StopRequest =

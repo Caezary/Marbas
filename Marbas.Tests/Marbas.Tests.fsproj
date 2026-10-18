@@ -60,10 +60,6 @@
     <Compile Include="FileSystem\DirectoryListingTests.fs" />
     <Compile Include="FileSystem\DirectoryOrderingTests.fs" />
     <Compile Include="FileSystem\DirectoryMeasureTests.fs" />
-    <Compile Include="FileSystem\ContentMatchTests.fs" />
-    <Compile Include="FileSystem\FindGroundTests.fs" />
-    <Compile Include="FileSystem\FileSearchTests.fs" />
-    <Compile Include="FileSystem\FileSearchArchiveTests.fs" />
     <Compile Include="FileSystem\SearchListingTests.fs" />
     <Compile Include="FileSystem\HandlerTests.fs" />
     <Compile Include="FileSystem\ProgramCommandTests.fs" />
@@ -112,6 +108,13 @@
     <Compile Include="FileSystem\SessionOwnerTests.fs" />
     <Compile Include="FileSystem\WorkspaceTests.fs" />
     <Compile Include="FileSystem\ProgramImageTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Find\ContentMatchTests.fs" />
+    <Compile Include="Find\FindGroundTests.fs" />
+    <Compile Include="Find\FileSearchTests.fs" />
+    <Compile Include="Find\FileSearchArchiveTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

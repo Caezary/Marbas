@@ -95,10 +95,6 @@
         <Compile Include="FileSystem\Shortcut.fs" />
         <Compile Include="FileSystem\PastedPath.fs" />
         <Compile Include="FileSystem\DirectoryMeasure.fs" />
-        <Compile Include="FileSystem\ContentMatch.fs" />
-        <Compile Include="FileSystem\FindGround.fs" />
-        <Compile Include="FileSystem\FileSearch.fs" />
-        <Compile Include="FileSystem\FindAnswer.fs" />
         <Compile Include="FileSystem\SessionOwner.fs" />
         <Compile Include="FileSystem\Workspace.fs" />
         <Compile Include="FileSystem\Archive.fs" />
@@ -109,6 +105,13 @@
         <Compile Include="FileSystem\LineIndex.fs" />
         <Compile Include="FileSystem\WindowSearch.fs" />
         <Compile Include="FileSystem\ByteSearch.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <Compile Include="Find\ContentMatch.fs" />
+        <Compile Include="Find\FindGround.fs" />
+        <Compile Include="Find\FileSearch.fs" />
+        <Compile Include="Find\FindAnswer.fs" />
     </ItemGroup>
 
     <ItemGroup>

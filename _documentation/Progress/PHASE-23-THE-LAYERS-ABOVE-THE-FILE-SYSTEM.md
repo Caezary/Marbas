@@ -51,3 +51,36 @@ Four things went differently from the plan.
   the layers it may use. A namespace whose second segment is no case is the
   stray the first assertion names. A layer joins the table as a case and a
   row; the case alone, with no type moved into it, fails the third assertion.
+
+**P23.2 `Find` leaves.** The table of the layer test was given its row first —
+`Find`, allowed `FileSystem` and `Domain`, and allowed to `State`, `Ui` and
+`Adapters` — and the test failed with `Find holds no type`. Then
+`ContentMatch`, `FindGround`, `FileSearch` and `FindAnswer` moved to
+`Marbas/Find/` as `Marbas.Find`, in a group of their own compiled after
+`ByteSearch`, the last module of `FileSystem`, and their four test files to
+`Marbas.Tests/Find/` as `Marbas.Tests.Find`, in a group after the tests of
+`FileSystem`. The modules of `FileSystem` compiled without them before
+anything else was touched, which is what the graph of the plan promised.
+
+Each moved module opens `Marbas.FileSystem`, which its old namespace gave it
+for nothing, and `FindAnswer` opens `Marbas.Find.FileSearch` for the old
+`Marbas.FileSystem.FileSearch`. No body changed. The readers are the ones the
+plan names — `AppState`, `Update`, `Ports`, `Shell`, the four views of
+`Ui/Find`, `SearchRunner` and `Dependencies` — and in the tests the four of
+`Ui/Find` and `Integration/Find`, seven of `State`, `ClipboardFixture` among them,
+`ShellSearchTests` and `PanelPaintingTests`. A reader that names a module of
+`Find` by its name, as `FileSearch.run` or `FindGround.resolve`, or a type of
+`FindAnswer`, takes `open Marbas.Find`; one that only opened
+`Marbas.FileSystem.FileSearch` now opens `Marbas.Find.FileSearch` instead.
+
+The suite passed 4,299 of 4,334 on Windows, 35 skipped, and 4,276 of 4,337
+under WSL, 61 skipped — the counts of P23.1 on both. Under WSL, in tmux,
+over a zip holding `docs/notes.txt` and `docs/other.md`, *Find* with
+*Search archives* found `notes.txt` under `box.zip/docs` by the mask `*.txt`,
+and again by the text `needle` under the mask `*`, the second time with one
+entry skipped: the zip itself, a binary file the text search passes over.
+
+The type `FindGround` stays in `PanelLocation.fs` under `Marbas.FileSystem`,
+and the module `FindGround` is now `Marbas.Find.FindGround`; it keeps its
+`ModuleSuffix`, which no longer separates it from a type of its own namespace
+but changes no name a reader writes.

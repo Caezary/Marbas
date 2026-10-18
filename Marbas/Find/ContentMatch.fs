@@ -1,9 +1,10 @@
-module Marbas.FileSystem.ContentMatch
+module Marbas.Find.ContentMatch
 
 open System
 open System.IO
 open System.IO.Abstractions
 open Marbas.Domain
+open Marbas.FileSystem
 open Marbas.FileSystem.Operations
 
 [<Literal>]

@@ -7,7 +7,8 @@ open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.FileSystem
-open Marbas.FileSystem.FileSearch
+open Marbas.Find
+open Marbas.Find.FileSearch
 open Marbas.Ui
 open Marbas.Ui.Theme
 open Marbas.Ui.Format

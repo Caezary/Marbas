@@ -1,6 +1,6 @@
 module Marbas.Ui.Find.FindSummary
 
-open Marbas.FileSystem.FileSearch
+open Marbas.Find.FileSearch
 
 type SearchProgress =
     | Walking of directory: string * found: FindCounts

@@ -1,9 +1,10 @@
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module Marbas.FileSystem.FindGround
+module Marbas.Find.FindGround
 
 open System
 open System.IO.Abstractions
 open Marbas.Domain
+open Marbas.FileSystem
 
 let private allRoots (fs: IFileSystem) =
     Drives.list fs None |> List.map DriveRow.root

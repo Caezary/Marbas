@@ -1,4 +1,4 @@
-module Marbas.Tests.FileSystem.ContentMatchTests
+module Marbas.Tests.Find.ContentMatchTests
 
 open System
 open System.Text
@@ -6,6 +6,7 @@ open System.IO.Abstractions.TestingHelpers
 open Xunit
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Find
 open Marbas.Tests
 
 let private at = Root.at

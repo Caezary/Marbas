@@ -1,7 +1,7 @@
 module Marbas.Tests.Ui.Find.FindSummaryTests
 
 open Xunit
-open Marbas.FileSystem.FileSearch
+open Marbas.Find.FileSearch
 open Marbas.Ui.Find
 
 let private counts files directories skipped =

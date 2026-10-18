@@ -5,6 +5,7 @@ open System.IO.Abstractions
 open Terminal.Gui.App
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Find
 open Marbas.State
 
 let private sendToTrash (fs: IFileSystem) (env: HostEnvironment) =
