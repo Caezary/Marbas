@@ -3,9 +3,11 @@
 The plan is split into phases, one file per phase under [Plan/](Plan). Each
 phase produces a runnable, observable improvement, and each task inside a phase
 is small enough to be implemented and verified in one sitting. Tasks are
-numbered `P<phase>.<task>` so they can be referenced in commits (e.g.
-`P2.3: sort directories first`). What has been built of them is in
-[Progress](PROGRESS.md).
+numbered `P<phase>.<task>`, and from phase 24 on a task's title is the subject
+of the commit that does it: an imperative sentence saying what changes —
+`P24.2 Add the Git layer and its parsers`, `P24.6 List the changes in the right
+panel` — not the name of the subject it is about. What has been built of them
+is in [Progress](PROGRESS.md).
 
 ## Guiding principles
 
@@ -46,6 +48,11 @@ numbered `P<phase>.<task>` so they can be referenced in commits (e.g.
 | [21 — The log and the debts](Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md) | P21.1–P21.18 | done |
 | [22 — What the manual pass found](Plan/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) | P22.1–P22.18 | done |
 | [23 — The layers above the file system](Plan/PHASE-23-THE-LAYERS-ABOVE-THE-FILE-SYSTEM.md) | P23.1–P23.8 | done |
+| [24 — The repository tab](Plan/PHASE-24-THE-REPOSITORY-TAB.md) | P24.1–P24.8 | planned |
+| [25 — Local changes](Plan/PHASE-25-LOCAL-CHANGES.md) | P25.1–P25.9 | draft |
+| [26 — History](Plan/PHASE-26-HISTORY.md) | P26.1–P26.8 | draft |
+| [27 — Branches and remotes](Plan/PHASE-27-BRANCHES-AND-REMOTES.md) | P27.1–P27.9 | draft |
+| [28 — Merging](Plan/PHASE-28-MERGING.md) | P28.1–P28.5 | draft |
 
 ## Suggested module layout
 

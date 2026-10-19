@@ -62,3 +62,6 @@ and on any finding of the analyzers.
   and the rules are §10 of `_documentation/coding-style-conventions.md`.
 - Work task by task, in plan order, keeping the application runnable after
   each one.
+- When working with documentation, be very concise but accurate and factual.
+  Use understandable english. **Do not** create "a [Concept Name] is [General Statement]"
+  statements, instead specify exact solutions and technical reasoning behind them.
