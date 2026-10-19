@@ -48,6 +48,7 @@ is in [Progress](PROGRESS.md).
 | [21 — The log and the debts](Plan/PHASE-21-THE-LOG-AND-THE-DEBTS.md) | P21.1–P21.18 | done |
 | [22 — What the manual pass found](Plan/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) | P22.1–P22.18 | done |
 | [23 — The layers above the file system](Plan/PHASE-23-THE-LAYERS-ABOVE-THE-FILE-SYSTEM.md) | P23.1–P23.8 | done |
+| [Interlude 1 — The first release](Plan/INTERLUDE-01-THE-FIRST-RELEASE.md) | I1.1–I1.5 | planned |
 | [24 — The repository tab](Plan/PHASE-24-THE-REPOSITORY-TAB.md) | P24.1–P24.8 | planned |
 | [25 — Local changes](Plan/PHASE-25-LOCAL-CHANGES.md) | P25.1–P25.9 | draft |
 | [26 — History](Plan/PHASE-26-HISTORY.md) | P26.1–P26.8 | draft |
