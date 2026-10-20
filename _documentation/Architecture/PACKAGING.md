@@ -80,21 +80,38 @@ warning, but only `release.yml` fetches the whole history; the binaries of
 
 ## Releasing
 
-`.github/workflows/release.yml` runs on a tag matching `v*`. It publishes both
-profiles, each on its own runner — `windows-latest` for `win-x64`,
-`ubuntu-latest` for `linux-x64`, so a cross-published binary is never what ships
-— archives each one (`.zip` on Windows, `.tar.gz` on Linux, which is what keeps
-the executable bit) and creates the GitHub release with both archives attached
-and generated notes.
+`.github/workflows/release.yml` runs on a tag matching `v*`, in four jobs:
+
+| Job | Needs | What it does |
+|-----|-------|--------------|
+| `check` | — | on a tag, `.github/scripts/check-release.sh` refuses a tag that is not `v<major>.<minor>.<patch>[-<pre-release>]`, one whose commit is not reachable from `origin/main`, and one whose version has no section `## <version>` in `CHANGELOG.md`; it answers whether the tag has a pre-release part |
+| `build` | `check` | `ci.yml`, called as a reusable workflow (`workflow_call`): the format check, the analyzers, the build and the suite on both systems |
+| `publish` | `check`, `build` | both profiles, archived |
+| `release` | `check`, `publish` | on a tag only, the GitHub release with both archives; `--prerelease` when the tag has a pre-release part (`v0.2.0-rc.1`) |
+
+A tag on a commit whose suite fails therefore releases nothing, and a refused
+tag runs nothing past `check`. `.github/scripts/release-notes.sh <version>`
+prints the section of that version without its heading and without blank lines
+around it, and fails when there is none; `check` runs it for the refusal. Both
+scripts are bash with POSIX awk, run as `bash <script>` so neither needs the
+executable bit, and `.gitattributes` keeps `*.sh` at LF on a Windows checkout.
+Run locally, `bash .github/scripts/check-release.sh v0.1.0` asks the same
+questions of a local tag.
+
+`publish` builds both profiles, each on its own runner — `windows-latest` for
+`win-x64`, `ubuntu-latest` for `linux-x64`, so a cross-published binary is never
+what ships — and archives each one (`.zip` on Windows, `.tar.gz` on Linux, which
+is what keeps the executable bit).
 
 ```
 git tag v0.1.0
 git push origin v0.1.0
 ```
 
-`workflow_dispatch` runs the same publish steps under the version MinVer gives
-the commit and stops after uploading the workflow artifacts, so the packaging
-can be exercised without releasing anything.
+`workflow_dispatch` runs `check` without the tag step, `build` and `publish`
+under the version MinVer gives the commit, and stops after uploading the
+workflow artifacts, so the packaging can be exercised without releasing
+anything.
 
 ## Checking a published binary
 

@@ -16,6 +16,7 @@ on:
       - '.gitignore'
       - '.idea/**'
       - '.claude/**'
+  workflow_call:
   workflow_dispatch:
 
 concurrency:

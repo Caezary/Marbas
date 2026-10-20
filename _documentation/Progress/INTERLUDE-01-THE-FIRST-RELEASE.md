@@ -46,3 +46,30 @@ One thing went differently from the plan:
 The SDK appended the commit to the informational version (`0.1.0+d1c143e…`,
 as I1.1 recorded), which `--version` would have printed; a release's commit is
 its tag, so the version alone is enough.
+
+**I1.3 the release waits for CI and checks its tag.** `ci.yml` also answers
+`workflow_call`. `release.yml` runs `check`, then `build` (`ci.yml`), then
+`publish`, then `release`; `release` passes `--prerelease` when `check` says
+the tag has a pre-release part. `.github/scripts/check-release.sh` holds the
+three refusals, and `.github/scripts/release-notes.sh`, which prints the
+section of one version of `CHANGELOG.md`, answers the third; I1.4 makes it the
+release's description. `.gitattributes` keeps `*.sh` at LF.
+
+Run in a throwaway clone on 2026-10-20:
+
+| Tag | Answer |
+|-----|--------|
+| `0.1.0`, `v0.1`, `v01.0.0`, `v0.1.0+meta`, `v0.1.0-` | not `v<major>.<minor>.<patch>[-<pre-release>]` |
+| `v0.1.0`, no `CHANGELOG.md` | `CHANGELOG.md not found.` |
+| `v0.1.0`, only a section `0.2.0` | `CHANGELOG.md has no section '## 0.1.0'.` |
+| `v0.1.1` on a commit made with `git commit-tree` beside `main` | not on main |
+| `v0.1.0` with its section | passes, `prerelease=false` |
+| `v0.2.0-rc.1` with its section | passes, `prerelease=true` |
+
+`release-notes.sh` printed a section that had two blank lines after its heading
+and before the next one without either, under gawk on Windows and under WSL;
+no `mawk` was at hand, and the program uses only POSIX awk.
+
+Two things went differently from the plan. `build` needs `check`, so a refused
+tag runs nothing else. The `workflow_dispatch` run that proves the workflow on
+GitHub waits for these files to reach `main`; it is the first step of I1.5.

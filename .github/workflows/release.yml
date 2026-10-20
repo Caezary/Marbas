@@ -9,7 +9,28 @@ permissions:
   contents: write
 
 jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    outputs:
+      prerelease: ${{ steps.tag.outputs.prerelease }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Check the tag
+        id: tag
+        if: github.ref_type == 'tag'
+        run: bash .github/scripts/check-release.sh "$GITHUB_REF_NAME"
+
+  build:
+    needs: check
+    uses: ./.github/workflows/ci.yml
+
   publish:
+    needs: [check, build]
     strategy:
       fail-fast: false
       matrix:
@@ -65,7 +86,7 @@ jobs:
           path: marbas-*.*
 
   release:
-    needs: publish
+    needs: [check, publish]
     if: github.ref_type == 'tag'
     runs-on: ubuntu-latest
 
@@ -84,4 +105,5 @@ jobs:
           --repo "$GITHUB_REPOSITORY"
           --title "$GITHUB_REF_NAME"
           --generate-notes
+          ${{ needs.check.outputs.prerelease == 'true' && '--prerelease' || '' }}
           artifacts/*

@@ -470,13 +470,20 @@ Marbas.Tests/
 
 coverlet.runsettings      what coverage measures and what it leaves out
 .editorconfig             the Fantomas settings: its defaults, cramped brackets, lf
+.gitattributes            `*.sh` kept at lf on a Windows checkout
 .config/
   dotnet-tools.json       Fantomas and fsharp-analyzers, each pinned to one version
 Directory.Build.targets   the analyzer packages and the rules they run
 .github/workflows/
   ci.yml                  restore, build and test on Windows and Linux;
-                          the format check and the analyzers on Linux
-  release.yml             publish both profiles on a tag, attach them to a release
+                          the format check and the analyzers on Linux;
+                          also called by release.yml
+  release.yml             check the tag, run ci.yml, publish both profiles,
+                          attach them to a release
+.github/scripts/
+  check-release.sh        refuse a tag that is no semver, is off main or has no
+                          section in CHANGELOG.md; say whether it is a pre-release
+  release-notes.sh        print the section of one version of CHANGELOG.md
 ```
 
 ## Explicit dependencies
