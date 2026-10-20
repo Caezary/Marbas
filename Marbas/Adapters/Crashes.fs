@@ -12,26 +12,26 @@ type SessionEnd =
 
 type RecordLogEntry = LogEntry -> Result<unit, LogFileError>
 
-let guarded (record: RecordLogEntry) (session: unit -> unit) =
+let guarded version (record: RecordLogEntry) (session: unit -> unit) =
     try
         session ()
         Closed
     with failure ->
-        match record (Crashed(UiThread, failure)) with
+        match record (Crashed(UiThread, version, failure)) with
         | Ok() -> CrashWritten
         | Error error -> CrashUnwritten(error, failure)
 
-let onUnhandled (record: RecordLogEntry) (args: UnhandledExceptionEventArgs) =
-    record (Crashed(OtherThread, args.ExceptionObject :?> exn)) |> ignore
+let onUnhandled version (record: RecordLogEntry) (args: UnhandledExceptionEventArgs) =
+    record (Crashed(OtherThread, version, args.ExceptionObject :?> exn)) |> ignore
 
-let onUnobserved (record: RecordLogEntry) (args: UnobservedTaskExceptionEventArgs) =
-    record (Crashed(UnobservedTask, args.Exception)) |> ignore
+let onUnobserved version (record: RecordLogEntry) (args: UnobservedTaskExceptionEventArgs) =
+    record (Crashed(UnobservedTask, version, args.Exception)) |> ignore
 
-let watch (record: RecordLogEntry) =
-    let unhandled = UnhandledExceptionEventHandler(fun _ -> onUnhandled record)
+let watch version (record: RecordLogEntry) =
+    let unhandled = UnhandledExceptionEventHandler(fun _ -> onUnhandled version record)
 
     let unobserved =
-        EventHandler<UnobservedTaskExceptionEventArgs>(fun _ -> onUnobserved record)
+        EventHandler<UnobservedTaskExceptionEventArgs>(fun _ -> onUnobserved version record)
 
     AppDomain.CurrentDomain.UnhandledException.AddHandler unhandled
     TaskScheduler.UnobservedTaskException.AddHandler unobserved

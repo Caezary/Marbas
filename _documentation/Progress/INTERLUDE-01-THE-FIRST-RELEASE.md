@@ -23,3 +23,26 @@ Checked on 2026-10-20, the tags made only in throwaway clones:
 
 One thing went differently from the plan: only `release.yml` fetches the whole
 history. `ci.yml` builds nothing that ships, and its checkouts stay shallow.
+
+**I1.2 the binary names its version.** `ProductVersion` in `Domain` wraps the
+version; `VersionMessage.product` words it as `Marbas 0.1.0`.
+`HostEnvironment.productVersion` reads it from the
+`AssemblyInformationalVersionAttribute` of the Marbas assembly, and
+`Launch.ofArguments` answers `PrintVersion` for `--version`, which
+`Session.run` prints and exits on with code 0 before the log is cut or a hook
+subscribed. `Crashed` carries the version, so the crash line in the log reads
+`crash on the UI thread in Marbas 0.1.0: …`; `Crashes.guarded`, `onUnhandled`,
+`onUnobserved` and `watch` take it first, and both lines of `CrashMessage`
+start `Marbas 0.1.0 stopped …`. Nine tests are new — the version worded, the
+switch present and absent, the version read from the assembly — and the
+crash tests of `LogEntry`, `Crashes` and `CrashMessage` expect the version.
+
+From a throwaway clone tagged `v0.1.0`, the published `win-x64` binary and the
+`linux-x64` one run under WSL both print `Marbas 0.1.0` and exit with 0; a
+build of `main` prints `Marbas 0.1.0-alpha.0.298`.
+
+One thing went differently from the plan:
+`IncludeSourceRevisionInInformationalVersion` is now false in `Marbas.fsproj`.
+The SDK appended the commit to the informational version (`0.1.0+d1c143e…`,
+as I1.1 recorded), which `--version` would have printed; a release's commit is
+its tag, so the version alone is enough.

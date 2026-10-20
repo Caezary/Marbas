@@ -5,6 +5,7 @@ open System.IO.Abstractions
 open Microsoft.FSharp.Reflection
 open Marbas.Domain
 open Marbas.FileSystem
+open Marbas.Messages
 open Marbas.State.Update
 
 type CrashSite =
@@ -21,7 +22,7 @@ type LogEntry =
     | ErrorReported of title: string * message: string
     | WorkspaceUnclaimed of directory: FileSystemPath * reason: string
     | LeftoverKept of directory: FileSystemPath * reason: string
-    | Crashed of site: CrashSite * failure: exn
+    | Crashed of site: CrashSite * version: ProductVersion * failure: exn
 
 module LogEntry =
 
@@ -67,7 +68,7 @@ module LogEntry =
         | WorkspaceUnclaimed(directory, reason) ->
             $"working directory not claimed: {FileSystemPath.value directory}: {reason}"
         | LeftoverKept(directory, reason) -> $"leftover kept: {FileSystemPath.value directory}: {reason}"
-        | Crashed(site, failure) -> $"crash {siteText site}: {failure}"
+        | Crashed(site, version, failure) -> $"crash {siteText site} in {VersionMessage.product version}: {failure}"
 
     let isFailure entry =
         match entry with

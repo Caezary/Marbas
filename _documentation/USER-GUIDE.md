@@ -9,7 +9,7 @@ Download the binary for your platform from the
 [latest release](https://github.com/Caezary/Marbas/releases) and run it —
 each one is self-contained and carries its own .NET runtime, so nothing else
 needs to be installed. On Linux and macOS, mark the file executable first
-(`chmod +x Marbas`).
+(`chmod +x Marbas`). `Marbas --version` prints which version it is and exits.
 
 If Marbas stops on an error, it writes what happened to `marbas.log`, in the
 same directory as its settings — `%APPDATA%\Marbas` on Windows,

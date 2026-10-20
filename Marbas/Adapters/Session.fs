@@ -18,6 +18,9 @@ let private ClosedExitCode = 0
 [<Literal>]
 let private CrashExitCode = 1
 
+[<Literal>]
+let private PrintedExitCode = 0
+
 let private show (fs: IFileSystem) (env: HostEnvironment) (record: RecordLogEntry) () =
     MainWindow.configureQuitKey ()
     use app = Application.Create().Init()
@@ -31,7 +34,7 @@ let private show (fs: IFileSystem) (env: HostEnvironment) (record: RecordLogEntr
 
     app.Run window |> ignore
 
-let run (fs: IFileSystem) (env: HostEnvironment) =
+let private openPanels (fs: IFileSystem) (env: HostEnvironment) =
     let logPath =
         LogFile.beside fs (Settings.location fs env.ApplicationData env.UserProfile)
 
@@ -42,16 +45,25 @@ let run (fs: IFileSystem) (env: HostEnvironment) =
     let record entry =
         lock oneWriter (fun () -> LogEntry.write fs logPath DateTimeOffset.Now entry)
 
-    use _crashes = watch record
+    use _crashes = watch env.Version record
 
     let runApplication = show fs env record
 
-    match guarded record runApplication with
+    match guarded env.Version record runApplication with
     | Closed -> ClosedExitCode
     | CrashWritten ->
-        eprintfn "%s" (CrashMessage.written logPath)
+        eprintfn "%s" (CrashMessage.written env.Version logPath)
         CrashExitCode
     | CrashUnwritten(error, failure) ->
-        eprintfn "%s" (CrashMessage.unwritten error)
+        eprintfn "%s" (CrashMessage.unwritten env.Version error)
         eprintfn "%O" failure
         CrashExitCode
+
+let private printVersion (env: HostEnvironment) =
+    printfn "%s" (VersionMessage.product env.Version)
+    PrintedExitCode
+
+let run (fs: IFileSystem) (env: HostEnvironment) =
+    match env.Launch with
+    | OpenPanels -> openPanels fs env
+    | PrintVersion -> printVersion env

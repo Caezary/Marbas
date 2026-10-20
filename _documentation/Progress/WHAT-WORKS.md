@@ -722,12 +722,14 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   marks. Every one of those commands writes the session, and `Shift+F9` writes
   it whenever asked without quitting.
 - A crash leaves a log. An exception that ends the application is written with
-  its stack trace to `marbas.log` beside the settings file, and once the
-  terminal is back the console says in one line where that file is; the
-  process exits with code 1. An exception on a thread of its own and one in a
+  its stack trace and the version of Marbas to `marbas.log` beside the
+  settings file, and once the terminal is back the console says in one line,
+  naming the version, where that file is; the process exits with code 1. An exception on a thread of its own and one in a
   task nobody awaited are written the same way. Every line of the log is
   stamped with the moment it was written, and each start cuts the file to its
   last megabyte.
+- `--version` on the command line prints `Marbas <version>` and exits without
+  opening the panels.
 - `--debug` on the command line turns on the transition log for that session:
   every message handled, with the panel it concerns, every effect carried out,
   every batch started, finished or cancelled with the items it reported, and

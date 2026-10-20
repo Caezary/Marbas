@@ -13,6 +13,8 @@ let private moment = DateTimeOffset(2026, 10, 8, 14, 30, 0, TimeSpan.FromHours 2
 
 let private stamp = "2026-10-08T14:30:00.0000000+02:00"
 
+let private version = ProductVersion "0.1.0"
+
 let private thrown () =
     try
         raise (InvalidOperationException "the loop broke")
@@ -20,32 +22,37 @@ let private thrown () =
         ex
 
 [<Fact>]
-let ``a crash on the UI thread is stamped and names the exception`` () =
-    let entry = Crashed(UiThread, InvalidOperationException "the loop broke")
+let ``a crash on the UI thread is stamped and names the version and the exception`` () =
+    let entry = Crashed(UiThread, version, InvalidOperationException "the loop broke")
 
     let lines = LogEntry.lines moment entry
 
-    Assert.Equal<string>([ $"{stamp} crash on the UI thread: System.InvalidOperationException: the loop broke" ], lines)
+    Assert.Equal<string>(
+        [ $"{stamp} crash on the UI thread in Marbas 0.1.0: System.InvalidOperationException: the loop broke" ],
+        lines
+    )
 
 [<Fact>]
 let ``a crash on another thread says where it happened`` () =
-    let entry = Crashed(OtherThread, InvalidOperationException "the watch broke")
+    let entry =
+        Crashed(OtherThread, version, InvalidOperationException "the watch broke")
 
     let lines = LogEntry.lines moment entry
 
-    Assert.StartsWith($"{stamp} crash on another thread: ", List.head lines)
+    Assert.StartsWith($"{stamp} crash on another thread in Marbas 0.1.0: ", List.head lines)
 
 [<Fact>]
 let ``a crash in a task nobody awaited says where it happened`` () =
-    let entry = Crashed(UnobservedTask, InvalidOperationException "the search broke")
+    let entry =
+        Crashed(UnobservedTask, version, InvalidOperationException "the search broke")
 
     let lines = LogEntry.lines moment entry
 
-    Assert.StartsWith($"{stamp} crash in a task nobody awaited: ", List.head lines)
+    Assert.StartsWith($"{stamp} crash in a task nobody awaited in Marbas 0.1.0: ", List.head lines)
 
 [<Fact>]
 let ``a crash carries its stack trace, every line of it stamped`` () =
-    let entry = Crashed(UiThread, thrown ())
+    let entry = Crashed(UiThread, version, thrown ())
 
     let lines = LogEntry.lines moment entry
 
@@ -137,7 +144,7 @@ let ``a working directory that was not claimed is written with the reason`` () =
 [<Fact>]
 let ``a crash is a failure`` () =
     let failed =
-        LogEntry.isFailure (Crashed(UiThread, InvalidOperationException "the loop broke"))
+        LogEntry.isFailure (Crashed(UiThread, version, InvalidOperationException "the loop broke"))
 
     Assert.True failed
 

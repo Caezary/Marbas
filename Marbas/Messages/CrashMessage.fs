@@ -2,12 +2,12 @@ module Marbas.Messages.CrashMessage
 
 open Marbas.FileSystem
 
-let written path =
-    $"Marbas stopped on an unexpected error. The details are in '{FileSystemPath.value path}'."
+let written version path =
+    $"{VersionMessage.product version} stopped on an unexpected error. The details are in '{FileSystemPath.value path}'."
 
-let unwritten error =
+let unwritten version error =
     match error with
     | LogAccessDenied path ->
-        $"Marbas stopped on an unexpected error and could not write it to '{FileSystemPath.value path}': access denied."
+        $"{VersionMessage.product version} stopped on an unexpected error and could not write it to '{FileSystemPath.value path}': access denied."
     | LogWriteFailed(path, reason) ->
-        $"Marbas stopped on an unexpected error and could not write it to '{FileSystemPath.value path}': {reason}"
+        $"{VersionMessage.product version} stopped on an unexpected error and could not write it to '{FileSystemPath.value path}': {reason}"

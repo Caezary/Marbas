@@ -187,6 +187,7 @@ Marbas/
     MenuLabel.fs          the name a user menu entry is shown under
     CommandLine.fs        what a user menu entry runs, not yet expanded, and how it is started
     Modifier.fs           Ctrl, Alt or Shift, as the ports and the key table both name them
+    ProductVersion.fs     the version the binary carries, as MinVer stamped it
   FileSystem/             the paths, the entries, the operations and the session, in that order
     FileSystemPath.fs     single-case path type wrapping a raw string
     ArchivePath.fs        a place inside an archive: never rooted, never climbing
@@ -277,7 +278,8 @@ Marbas/
     LaunchErrorMessage.fs     LaunchError -> user-facing text
     ExpansionRefusalMessage.fs  why a user menu command was refused -> user-facing text
     UserMenuErrorMessage.fs     UserMenuError -> user-facing text
-    CrashMessage.fs           a crash -> the line printed once the terminal is back
+    VersionMessage.fs         a version -> `Marbas 0.1.0`
+    CrashMessage.fs           a crash -> the line printed once the terminal is back, naming the version
     SettingsErrorMessage.fs   SettingsError -> user-facing text
     HistoryErrorMessage.fs    HistoryError -> user-facing text
     FavoritesErrorMessage.fs  FavoritesError -> user-facing text
@@ -397,7 +399,8 @@ Marbas/
       MainWindow.fs         composition: views, runtime, event wiring
   Adapters/               the real implementations of Ports.Dependencies;
                           the only folder allowed to touch the OS
-    HostEnvironment.fs    platform, home directories, `$EDITOR` and `--debug`, read once
+    HostEnvironment.fs    platform, home directories, `$EDITOR`, `--debug`, `--version` and
+                          the version of the binary, read once
     WindowSearchRunner.fs the viewer's search on a background task under the progress dialog
     Prompts.fs            the message boxes and popups the application runs
     RecycleBin.fs         the Windows recycle bin, through the VB runtime
@@ -427,7 +430,8 @@ Marbas/
                           unawaited task -> a crash written to the log
     DebugLog.fs           the log port: every entry with `--debug`, the failures without
     Dependencies.fs       every port bound to one implementation, platform picked here
-    Session.fs            quit key, application, theme, dependencies, window, run
+    Session.fs            `--version` printed alone, or: quit key, application, theme,
+                          dependencies, window, run
                           under the crash hooks; the pointer to the log after a crash
   Program.fs              hands its arguments, the real file system and the
                           environment to Session.run

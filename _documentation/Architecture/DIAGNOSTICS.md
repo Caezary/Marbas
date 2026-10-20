@@ -58,7 +58,7 @@ place that decides what of it reaches the file:
 | `BatchCancelled(title, items)` | the same, when `Esc` closed the window first | `batch cancelled: Copying, 3 items` |
 | `WorkspaceUnclaimed(directory, reason)` | `Shell`, when the session's working directory could not be made or its owner written | `working directory not claimed: …\Marbas\0f3c…: Access denied to '…'.` |
 | `LeftoverKept(directory, reason)` | `Shell`, for each directory the sweep at start could not remove | `leftover kept: …\Marbas\69bd…: Could not complete '…': …` |
-| `Crashed(site, exn)` | the three hooks below | `crash on the UI thread: System.…` and the stack trace |
+| `Crashed(site, version, exn)` | the three hooks below | `crash on the UI thread in Marbas 0.1.0: System.…` and the stack trace |
 
 `LogEntry.write` appends the lines through `LogFile.append`, both on
 `IFileSystem`. The union sits in `State`, after `Update`, because two of its
@@ -107,7 +107,7 @@ every entry above but the failures, which are written whatever the switch says.
 reads the environment, and `Logging.ofArguments` answers `EveryTransition` when
 `--debug` is among them and `FailuresOnly` otherwise. Nothing is saved, so a
 switch forgotten in a shortcut is the only way to keep it on. Any other argument
-is ignored, as all of them were before.
+is ignored, as all of them were before, except `--version` (below).
 
 **The switch is decided once, at the port.** `Ports.Dependencies` carries
 `Log: LogEntry -> unit`, and `DebugLog.writer` fills it in `Session.run`: the
@@ -120,6 +120,25 @@ fake in `Fakes.dependencies` is `ignore`.
 and calls it with each message it drains and the state that message arrives at,
 before the update. It is the one place that sees every transition, including
 the ones a transition's own effects dispatch.
+
+## The version
+
+I1.2. A crash report is only useful with the binary it came from, so every
+crash names it: the `Crashed` entry carries the `ProductVersion` and its line
+reads `crash on the UI thread in Marbas 0.1.0: …`, and both lines
+`CrashMessage` prints after a crash start `Marbas 0.1.0 stopped …`.
+`HostEnvironment.productVersion` reads it once from the
+`AssemblyInformationalVersionAttribute` of the Marbas assembly — not the entry
+assembly, which under the tests is the test host — and `Session.run` hands it
+to `Crashes.watch` and `Crashes.guarded`. The attribute holds the version MinVer
+computed with no commit appended
+(`IncludeSourceRevisionInInformationalVersion` is false), since a release's
+commit is its tag; see [Packaging](PACKAGING.md#the-version).
+
+`Marbas --version` prints `Marbas 0.1.0` and exits with code 0 before anything
+else happens: no log is cut, no crash hook subscribed, no terminal taken.
+`Launch.ofArguments` answers `PrintVersion` when the switch is among the
+arguments, whatever else is, and `OpenPanels` otherwise.
 
 ## The three hooks
 

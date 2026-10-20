@@ -10,6 +10,7 @@
         <MinVerTagPrefix>v</MinVerTagPrefix>
         <MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
         <MinVerAutoIncrement>minor</MinVerAutoIncrement>
+        <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     </PropertyGroup>
 
     <ItemGroup>
@@ -51,6 +52,7 @@
         <Compile Include="Domain\MenuLabel.fs" />
         <Compile Include="Domain\CommandLine.fs" />
         <Compile Include="Domain\Modifier.fs" />
+        <Compile Include="Domain\ProductVersion.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -144,6 +146,7 @@
         <Compile Include="Messages\LaunchErrorMessage.fs" />
         <Compile Include="Messages\ExpansionRefusalMessage.fs" />
         <Compile Include="Messages\UserMenuErrorMessage.fs" />
+        <Compile Include="Messages\VersionMessage.fs" />
         <Compile Include="Messages\CrashMessage.fs" />
         <Compile Include="Messages\SettingsErrorMessage.fs" />
         <Compile Include="Messages\HistoryErrorMessage.fs" />

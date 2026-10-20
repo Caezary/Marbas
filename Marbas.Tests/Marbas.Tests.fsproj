@@ -141,6 +141,7 @@
     <Compile Include="Messages\LaunchErrorMessageTests.fs" />
     <Compile Include="Messages\ExpansionRefusalMessageTests.fs" />
     <Compile Include="Messages\UserMenuErrorMessageTests.fs" />
+    <Compile Include="Messages\VersionMessageTests.fs" />
     <Compile Include="Messages\CrashMessageTests.fs" />
     <Compile Include="Messages\ClipboardErrorMessageTests.fs" />
     <Compile Include="Messages\ProblemTests.fs" />

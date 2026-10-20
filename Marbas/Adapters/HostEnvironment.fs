@@ -1,6 +1,7 @@
 namespace Marbas.Adapters
 
 open System
+open System.Reflection
 open Marbas.Domain
 
 type Logging =
@@ -18,8 +19,25 @@ module Logging =
         else
             FailuresOnly
 
+type Launch =
+    | OpenPanels
+    | PrintVersion
+
+module Launch =
+
+    [<Literal>]
+    let VersionSwitch = "--version"
+
+    let ofArguments (arguments: string array) =
+        if Array.contains VersionSwitch arguments then
+            PrintVersion
+        else
+            OpenPanels
+
 type HostEnvironment =
-    { Platform: Platform
+    { Launch: Launch
+      Version: ProductVersion
+      Platform: Platform
       UserProfile: string
       ApplicationData: string
       DataHome: string option
@@ -56,6 +74,9 @@ module HostEnvironment =
     [<Literal>]
     let ProgramExtensionsVariable = "PATHEXT"
 
+    [<Literal>]
+    let private UnknownVersion = "unknown"
+
     let private defaultProgramExtensions = [ ".COM"; ".EXE"; ".BAT"; ".CMD" ]
 
     let programExtensions (raw: string option) =
@@ -75,8 +96,15 @@ module HostEnvironment =
         | "" -> None
         | value -> Some value
 
+    let productVersion () =
+        match typeof<HostEnvironment>.Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>() with
+        | null -> ProductVersion UnknownVersion
+        | stamped -> ProductVersion stamped.InformationalVersion
+
     let current (arguments: string array) =
-        { Platform = if OperatingSystem.IsWindows() then Windows else Unix
+        { Launch = Launch.ofArguments arguments
+          Version = productVersion ()
+          Platform = if OperatingSystem.IsWindows() then Windows else Unix
           UserProfile = Environment.GetFolderPath Environment.SpecialFolder.UserProfile
           ApplicationData = Environment.GetFolderPath Environment.SpecialFolder.ApplicationData
           DataHome = variable DataHomeVariable

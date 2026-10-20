@@ -69,8 +69,10 @@ are the same by construction:
 
 `MinVerAutoIncrement` is `minor`, not MinVer's default `patch`, because the
 release after a tag is the next phase. `MinVerMinimumMajorMinor` `0.1` sets the
-floor before the first tag. The SDK appends the commit to the informational
-version (`0.1.0+d1c143e…`); the file version is `0.1.0.0`. `-t:MinVer
+floor before the first tag. `IncludeSourceRevisionInInformationalVersion` is
+false, so the SDK does not append the commit (`0.1.0+d1c143e…`) and the
+informational version is the version alone, which is what `Marbas --version`
+prints; the file version is `0.1.0.0`. `-t:MinVer
 -getProperty:MinVerVersion` prints the version without building, which is what
 `release.yml` names the archives by. A shallow checkout builds without a
 warning, but only `release.yml` fetches the whole history; the binaries of
