@@ -123,7 +123,8 @@ Each profile writes one self-contained, single-file executable to
 `Marbas/bin/publish/<runtime>/` — the .NET runtime travels inside it, so the
 machine it is copied onto needs nothing installed. Either can be built from
 either operating system. Tagging `v*` builds both on GitHub Actions and
-attaches them to a release; see [Packaging](Architecture/PACKAGING.md).
+attaches them to a release; how versions are numbered and the steps of a
+release are in [Packaging](Architecture/PACKAGING.md#making-a-release).
 
 ## Probes
 

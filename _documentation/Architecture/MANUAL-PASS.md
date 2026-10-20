@@ -17,7 +17,9 @@ dotnet publish Marbas/Marbas.fsproj -p:PublishProfile=linux-x64
 ```
 
 The binaries land in `Marbas/bin/publish/<runtime>/`. The Linux one is copied
-to the machine it is walked on and given its executable bit.
+to the machine it is walked on and given its executable bit. Before a release
+the pass is walked on the archives a `workflow_dispatch` run of `release.yml`
+published instead; [Packaging](PACKAGING.md#making-a-release) has the steps.
 
 `_probes/ManualPass` builds the directory the steps stand in, once per
 platform. Each script takes the directory to make as its one argument,

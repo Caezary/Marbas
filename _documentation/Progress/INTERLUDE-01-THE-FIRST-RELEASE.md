@@ -94,3 +94,21 @@ compared with `v0.1.0`.
 
 The date in the heading is the day the section was written; it is set to the
 day of the tag when I1.5 tags it.
+
+**I1.5 releasing 0.1.0.** [Packaging](../Architecture/PACKAGING.md) gained
+*Numbering* — the semver policy of the plan — and *Making a release*, the five
+steps from the section in `CHANGELOG.md` to the release page, with the way back
+from a refused tag; *The notes* moved out of the middle of *Releasing*.
+[Development](../DEVELOPMENT.md) and [The manual pass](../Architecture/MANUAL-PASS.md)
+point at the steps.
+
+On 2026-10-20 `gh workflow run release.yml --ref main` ran
+[39352647819](https://github.com/Caezary/Marbas/actions/runs/39352647819) at
+`58b6218`: `check`, the four jobs of `build`, both `publish` jobs green and
+`release` skipped, which is the proof I1.3 waited for. Its archives,
+`marbas-0.1.0-alpha.0.302-win-x64.zip` and
+`marbas-0.1.0-alpha.0.302-linux-x64.tar.gz`, each hold one file; the tar keeps
+`rwxr-xr-x`. Both binaries answer `Marbas 0.1.0-alpha.0.302`. The Linux one,
+run in tmux under WSL with `HOME` and `XDG_CONFIG_HOME` in a scratch
+directory, drew both panels over that directory, quit on `F10` with 0 and wrote
+`settings.conf`.

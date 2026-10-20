@@ -97,6 +97,16 @@ tag runs nothing past `check`. Both scripts are bash with POSIX awk, run as
 local tag, and `bash .github/scripts/release-notes.sh v0.1.0` prints the
 description the release would get.
 
+`publish` builds both profiles, each on its own runner — `windows-latest` for
+`win-x64`, `ubuntu-latest` for `linux-x64`, so a cross-published binary is never
+what ships — and archives each one (`.zip` on Windows, `.tar.gz` on Linux, which
+is what keeps the executable bit).
+
+`workflow_dispatch` runs `check` without the tag step, `build` and `publish`
+under the version MinVer gives the commit, and stops after uploading the
+workflow artifacts, so the packaging can be exercised without releasing
+anything.
+
 ## The notes
 
 I1.4. The description of a release is written by hand in `CHANGELOG.md`, in the
@@ -114,20 +124,57 @@ with. A link in a section is absolute (`https://github.com/Caezary/Marbas/blob/m
 GitHub resolves a relative one against the releases page, where it leads
 nowhere.
 
-`publish` builds both profiles, each on its own runner — `windows-latest` for
-`win-x64`, `ubuntu-latest` for `linux-x64`, so a cross-published binary is never
-what ships — and archives each one (`.zip` on Windows, `.tar.gz` on Linux, which
-is what keeps the executable bit).
+## Numbering
 
-```
-git tag v0.1.0
-git push origin v0.1.0
-```
+I1.5. Semver, read from the side of the user, since Marbas is an application
+and no one compiles against it:
 
-`workflow_dispatch` runs `check` without the tag step, `build` and `publish`
-under the version MinVer gives the commit, and stops after uploading the
-workflow artifacts, so the packaging can be exercised without releasing
-anything.
+| Part | Raised when |
+|------|-------------|
+| major | a settings, history, favourites or user menu file an older version wrote no longer reads, or a key binding is taken away |
+| minor | a phase is finished |
+| patch | a release holds fixes only |
+
+The first release is `0.1.0`. The major part stays `0` while phases 24 to 28
+may still change the formats; `1.0.0` is the promise that they no longer will.
+A pre-release (`v0.2.0-rc.1`) is for a build someone should try before the
+release; it is optional.
+
+## Making a release
+
+One release closes each phase, after the manual pass; a fix worth shipping
+between two phases is a patch release made the same way. A release is never
+made on every push: the manual pass is a person at a terminal, which no
+workflow runs, and tools that tag on their own — semantic-release,
+release-please — read Conventional Commits, which the commit subjects here are
+not. Releases are made from `main` only, which `check` holds.
+
+1. The last commit of the phase adds the section `## <version> — <date>` to
+   `CHANGELOG.md`, the date being the day it will be tagged, and is pushed.
+2. `release.yml` is run on `main` by hand, and its archives are downloaded:
+
+   ```
+   gh workflow run release.yml --ref main
+   gh run download <run id> --dir <scratch directory>
+   ```
+
+3. The [manual pass](MANUAL-PASS.md) is walked on those binaries — the steps
+   touched since the last pass, at the least. They carry
+   `<version>-alpha.0.<n>` and are otherwise the binaries the tag will build:
+   the same commit and the same workflow.
+4. The tag goes on that commit:
+
+   ```
+   git tag v0.1.0
+   git push origin v0.1.0
+   ```
+
+5. The release page holds both archives and the section as its description,
+   and each binary answers `--version` with the version of the tag.
+
+A tag refused by `check` or failed by `build` is deleted
+(`git push origin :refs/tags/v0.1.0`, `git tag -d v0.1.0`), the commit fixed,
+and the tag made again.
 
 ## Checking a published binary
 

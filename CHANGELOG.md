@@ -3,7 +3,7 @@
 Each release of Marbas, newest first. A release's section is its description
 on the [releases page](https://github.com/Caezary/Marbas/releases); how
 versions are numbered is in
-[Packaging](_documentation/Architecture/PACKAGING.md).
+[Packaging](_documentation/Architecture/PACKAGING.md#numbering).
 
 ## 0.1.0 — 2026-10-20
 
