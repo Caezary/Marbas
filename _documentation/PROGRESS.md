@@ -33,7 +33,7 @@ what the application does today is in
 | 21 — The log and the debts | P21.1–P21.18 | done | [journal](Progress/PHASE-21-THE-LOG-AND-THE-DEBTS.md) |
 | 22 — What the manual pass found | P22.1–P22.18 | done | [journal](Progress/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) |
 | 23 — The layers above the file system | P23.1–P23.8 | done | [journal](Progress/PHASE-23-THE-LAYERS-ABOVE-THE-FILE-SYSTEM.md) |
-| Interlude 1 — The first release | I1.1–I1.5 | in progress | [journal](Progress/INTERLUDE-01-THE-FIRST-RELEASE.md) |
+| Interlude 1 — The first release | I1.1–I1.5 | done | [journal](Progress/INTERLUDE-01-THE-FIRST-RELEASE.md) |
 
 ## What works today
 

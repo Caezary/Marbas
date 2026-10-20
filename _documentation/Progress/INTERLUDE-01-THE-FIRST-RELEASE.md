@@ -112,3 +112,14 @@ On 2026-10-20 `gh workflow run release.yml --ref main` ran
 run in tmux under WSL with `HOME` and `XDG_CONFIG_HOME` in a scratch
 directory, drew both panels over that directory, quit on `F10` with 0 and wrote
 `settings.conf`.
+
+`v0.1.0` was tagged on `60acf85`, which differs from `58b6218` by the
+paragraph above alone. Run
+[39354320920](https://github.com/Caezary/Marbas/actions/runs/39354320920) passed
+every job, `release` included, and
+[v0.1.0](https://github.com/Caezary/Marbas/releases/tag/v0.1.0) was published
+on 2026-10-20, not a pre-release, with `marbas-0.1.0-win-x64.zip` and
+`marbas-0.1.0-linux-x64.tar.gz`. Its description is the section of `0.1.0` in
+`CHANGELOG.md` at the tag, line for line, with no comparison link, since no
+release came before it. Both binaries downloaded from the release answer
+`Marbas 0.1.0`.
