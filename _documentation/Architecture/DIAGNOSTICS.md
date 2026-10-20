@@ -185,7 +185,10 @@ one test and inside a line in the other. `Crashes.guarded` is handed a session
 that throws and a record that refuses. The unobserved task is real: a test
 subscribes `Crashes.watch`, lets a task fail in a function that keeps no
 reference to it, and forces a collection and the finalizers, after which the
-record holds its exception. The hook around `app.Run` was proved with a probe
+record holds its exception. The task comes from `Task.FromException`, not
+`Task.Run`: a pool thread still holds a task it ran for a moment after waiters
+see it complete, so a collection in that window leaves it alive and the event
+unraised, which failed the test on a CI runner. The hook around `app.Run` was proved with a probe
 whose loop throws from a timeout, run in a console of its own: the log held the
 stamped stack trace down to `ApplicationImpl.Run`, standard error held the
 pointer, and the exit code was 1.

@@ -28,8 +28,7 @@ let private recorder () =
 
 [<MethodImpl(MethodImplOptions.NoInlining)>]
 let private abandonFailedTask (message: string) =
-    let task = Task.Run(Action(fun () -> raise (InvalidOperationException message)))
-    (task :> IAsyncResult).AsyncWaitHandle.WaitOne() |> ignore
+    Task.FromException(InvalidOperationException message) |> ignore
 
 let private collectAbandonedTasks () =
     GC.Collect()
