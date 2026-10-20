@@ -135,7 +135,7 @@ and no one compiles against it:
 | minor | a phase is finished |
 | patch | a release holds fixes only |
 
-The first release is `0.1.0`. The major part stays `0` while phases 24 to 28
+The first release is `0.1.0`. The major part stays `0` while phases 25 to 29
 may still change the formats; `1.0.0` is the promise that they no longer will.
 A pre-release (`v0.2.0-rc.1`) is for a build someone should try before the
 release; it is optional.

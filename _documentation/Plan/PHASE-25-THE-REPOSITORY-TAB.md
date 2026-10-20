@@ -1,4 +1,4 @@
-# Phase 24 — The repository tab
+# Phase 25 — The repository tab
 
 Goal: `F9` in a panel standing anywhere inside a git work tree opens a tab of a
 second kind — the repository tab — or brings forward the one already open for
@@ -6,8 +6,8 @@ that repository. Its left panel lists the work tree and cannot leave it, each
 entry coloured by what git says of it; its right panel lists the changes as
 `git status` does. `F3` shows a change as a diff in the viewer, `F4` edits as
 it does in a files tab. The phase reads and changes nothing in the repository;
-staging, committing, history, branches, remotes and merging are phases 25 to
-28, listed at the end.
+staging, committing, history, branches, remotes and merging are phases 26 to
+29, listed at the end.
 
 Seven decisions run through the whole phase.
 
@@ -18,7 +18,7 @@ runs no hooks, asks no credential helper, signs nothing and reads no
 fsmonitor, so a commit made from Marbas would differ from one made in a
 terminal; in its official builds SSH has historically been absent. A
 program also leaves the single-file build without a native library per
-runtime. The cost is a process per call, which P24.1 measures, and a `git`
+runtime. The cost is a process per call, which P25.1 measures, and a `git`
 that has to be installed: at least 2.23, the first with `restore` and
 `switch`, checked once per session.
 
@@ -69,18 +69,18 @@ again in the work tree has two rows. Each row carries git's letter for it (`M`,
 alone says nothing on a terminal without colours; a rename reads
 `old → new`.
 
-- **P24.1 Measure git calls and the keys of the repository tab** — a probe
+- **P25.1 Measure git calls and the keys of the repository tab** — a probe
   times `git status --porcelain=v2` and the start of `git` itself on a small
   repository and a large one, on Windows and under WSL, and `_probes/KeyProbe`
-  asks every key phases 24 to 28 bind — `F9`, `Shift+F3` … `Shift+F12`,
+  asks every key phases 25 to 29 bind — `F9`, `Shift+F3` … `Shift+F12`,
   `Alt+F2`, `Alt+F3`, `Alt+F5` … `Alt+F9`, `Alt+O` — in Windows Terminal,
   the Windows console, cmder and gnome-terminal under WSL. A key that does not
   arrive gets a spare, chosen the way P22.7 chose them. It also tries
-  `TerminalHandOver.lend` on Windows, which P27 needs. *Done when:* the times
+  `TerminalHandOver.lend` on Windows, which P28 needs. *Done when:* the times
   are in [Measurements](../Progress/MEASUREMENTS.md), what arrives where is in
   [Cross-platform](../Architecture/CROSS-PLATFORM.md), and the key table of the
   repository tab, spares included, is written down.
-- **P24.2 Add the Git layer and its parsers** — `Git/` with the status
+- **P25.2 Add the Git layer and its parsers** — `Git/` with the status
   entry, the section, the repository root, the version and `GitError` (not
   installed, too old, not a repository, a bare repository, failed with its code
   and its standard error), and the parsers of `status --porcelain=v2 -z`, of
@@ -91,7 +91,7 @@ alone says nothing on a terminal without colours; a rename reads
   are proved on an ordinary change, a rename, a copy, each kind of conflict, a
   submodule, an untracked and an ignored directory, and names holding spaces, a
   newline and characters outside ASCII.
-- **P24.3 Add the git program setting and the git port** — `git.program` in
+- **P25.3 Add the git program setting and the git port** — `git.program` in
   the settings and its field in `Setup`, filled by `Alt+U`; `Alt+O` bound
   beside `F12`; `Ports.Git` and `GitProcess`, which resolves the program, sets
   the environment above, checks the version on its first call, and writes long
@@ -101,18 +101,18 @@ alone says nothing on a terminal without colours; a rename reads
   `Application`, and the adapter is proved in `Integration/Disk` against a
   repository a test makes with `git init`, including a missing program and a
   directory outside any repository.
-- **P24.4 Add the repository tab and open it with F9** — `Tab` as a union,
+- **P25.4 Add the repository tab and open it with F9** — `Tab` as a union,
   the session file keeping both kinds and reading a file without the kind as
   files tabs, the `F11` row of a repository tab, `Alt+F11`, `Alt+Shift+F11` and
   `Alt+←` / `Alt+→` over both kinds, the bar of the repository tab built
   from its own key table. `F9` finds the root, switches to the tab holding it
   or opens one after the current tab, and refuses an archive, search results, a
   bare repository and a directory outside any repository — the last with a
-  message, until P25 adds `init` and P27 `clone`. *Done when:* opening,
+  message, until P26 adds `init` and P28 `clone`. *Done when:* opening,
   switching to the tab already open, refusing and a session with both kinds
   surviving a restart are proved in `Update` and the settings tests, and the
   tab is rendered.
-- **P24.5 List the work tree with its status in the left panel** — the left
+- **P25.5 List the work tree with its status in the left panel** — the left
   panel lists the work tree with no `..` at the root, sends `Ctrl+4` to the
   root of the repository rather than of the drive, colours entries and
   directories from the status map, lists ghosts and hides ignored entries
@@ -120,20 +120,20 @@ alone says nothing on a terminal without colours; a rename reads
   inside an untracked one and the toggle are proved on a status the test
   writes, the panel is rendered, and listing a large directory is timed before
   and after.
-- **P24.6 List the changes in the right panel** — the right panel lists the
+- **P25.6 List the changes in the right panel** — the right panel lists the
   rows by section and then by path, with the letter and the colour of the
   section; the cursor stays on its path and section across a refresh, or on the
   nearest row when that one is gone. *Done when:* the order, a path in two
   sections, a rename and the cursor surviving a refresh are proved, and the
   panel is rendered.
-- **P24.7 Refresh the repository tab when the repository changes** — the
+- **P25.7 Refresh the repository tab when the repository changes** — the
   tab watches its work tree and the `index`, `HEAD` and `refs` under the git
   directory, collapses a burst as the directory watch does, and asks for one
   status per burst in the background. An answer older than the last question is
   dropped. *Done when:* a change made outside Marbas, a commit made in a
   terminal and a stale answer arriving after a fresh one are proved, and a
   checkout of many files is timed.
-- **P24.8 Show a change as a diff on F3 and edit on F4** — `F3` on an
+- **P25.8 Show a change as a diff on F3 and edit on F4** — `F3` on an
   unstaged row diffs the work tree against the index, on a staged row the index
   against `HEAD`, on an untracked row shows the whole file as added, and in the
   left panel diffs the entry, or everything under a directory, against `HEAD`;
@@ -155,13 +155,13 @@ adds to them.
 ## Left open
 
 - **Which keys of a files tab keep working in a repository tab.** Navigation,
-  `Ctrl+R`, the hidden toggle, `Ctrl+Q`, `Alt+O` and the tab keys work in P24,
-  and the marks in P25.1; the rest — search by typing, `F2`, `Alt+F7`,
+  `Ctrl+R`, the hidden toggle, `Ctrl+Q`, `Alt+O` and the tab keys work in P25,
+  and the marks in P26.1; the rest — search by typing, `F2`, `Alt+F7`,
   `Alt+F12` — wait for a decision.
 
 ## The phases after this one
 
-- [Phase 25 — Local changes](PHASE-25-LOCAL-CHANGES.md)
-- [Phase 26 — History](PHASE-26-HISTORY.md)
-- [Phase 27 — Branches and remotes](PHASE-27-BRANCHES-AND-REMOTES.md)
-- [Phase 28 — Merging](PHASE-28-MERGING.md)
+- [Phase 26 — Local changes](PHASE-26-LOCAL-CHANGES.md)
+- [Phase 27 — History](PHASE-27-HISTORY.md)
+- [Phase 28 — Branches and remotes](PHASE-28-BRANCHES-AND-REMOTES.md)
+- [Phase 29 — Merging](PHASE-29-MERGING.md)

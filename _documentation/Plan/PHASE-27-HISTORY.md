@@ -1,6 +1,6 @@
-# Phase 26 — History
+# Phase 27 — History
 
-Draft: written before phase 24 was built, and expected to change with what it
+Draft: written before phase 25 was built, and expected to change with what it
 teaches.
 
 Goal: the repository tab shows what happened — the commit graph on `F12`, the
@@ -32,43 +32,43 @@ ask for a revision — a hash, a tag, `HEAD~2` — in a field that remembers wha
 was typed, and `rev-parse --verify <rev>^{commit}` refuses one that names no
 commit before anything runs.
 
-- **P26.1 Read the log as it arrives** — the parser of the log records and of
+- **P27.1 Read the log as it arrives** — the parser of the log records and of
   `--graph` lines, and a port call that hands records back in batches while
   `git log` runs and can be stopped. *Done when:* the parser is proved on
   merges, octopus merges, a root commit, decorations and subjects holding the
   separators, and a stopped reading leaves no process behind on a repository
   in `Integration/Disk`.
-- **P26.2 Show the commit graph on F12** — each row the graph, the short hash,
+- **P27.2 Show the commit graph on F12** — each row the graph, the short hash,
   the branches and tags pointing at it, the subject, the author and the date;
   the current branch's history first, all branches with a toggle. Opening it on
   a large repository is timed. *Done when:* the rows, the toggle and the
   window are rendered and driven through a real `Application`, and the first
   screen of a large repository appears before the log is read whole.
-- **P26.3 Show what a commit changed** — `Enter` on a commit lists the files it
+- **P27.3 Show what a commit changed** — `Enter` on a commit lists the files it
   changed with their letters; `F3` there shows that file's diff, `F3` on the
   commit itself the whole of it through `git show`. The key that copies a path
   in a panel copies the full hash. *Done when:* the list, both diffs and the
   copy are proved.
-- **P26.4 Show the history of a file on Shift+F12** — the same window, limited
+- **P27.4 Show the history of a file on Shift+F12** — the same window, limited
   to the entry under the cursor: a file followed across renames (`--follow`),
   a directory as everything under it. `F3` on a commit shows that path's diff
   in it. *Done when:* a renamed file's history and a directory's are proved
   on a repository.
-- **P26.5 Show blame on Shift+F3** — `git blame --porcelain` read in the
+- **P27.5 Show blame on Shift+F3** — `git blame --porcelain` read in the
   background under the progress window, each line shown with the short hash,
   the author and the date of the commit that last changed it. `Enter` on a line
-  opens that commit as P26.3 does. *Done when:* the parser is proved on a
+  opens that commit as P27.3 does. *Done when:* the parser is proved on a
   porcelain output with repeated commits and boundary lines, the window is
   rendered, and blaming a large file is timed.
-- **P26.6 Choose a commit by its revision** — the revision field, its history,
+- **P27.6 Choose a commit by its revision** — the revision field, its history,
   and the check that refuses what names no commit. *Done when:* a hash, a tag,
   a relative revision and a refusal are proved.
-- **P26.7 Cherry-pick and revert with Shift+F10 and Alt+F3** — on a commit in
+- **P27.7 Cherry-pick and revert with Shift+F10 and Alt+F3** — on a commit in
   a window or typed in. A conflict stops the command with its rows in the
-  changes panel; `F7` and `F8` finish it, and aborting it waits for P28. *Done
+  changes panel; `F7` and `F8` finish it, and aborting it waits for P29. *Done
   when:* the arguments and a stop on a conflict are proved, and both are tried
   on a repository.
-- **P26.8 Reset the branch with Alt+F9** — a dialog choosing soft, mixed or
+- **P27.8 Reset the branch with Alt+F9** — a dialog choosing soft, mixed or
   hard; hard asks once more, naming the changed files it will lose. *Done
   when:* each mode's arguments and the second question are proved.
 

@@ -24,7 +24,7 @@ commit subjects here are not.
 **Semver, read from the user's side.** Major: a settings, history, favourites
 or user menu file an older version wrote no longer reads, or a key binding is
 taken away. Minor: a phase. Patch: fixes only. The numbering starts at `0.1.0`
-and stays below `1.0.0` while phases 24 to 28 may still change the formats.
+and stays below `1.0.0` while phases 25 to 29 may still change the formats.
 
 **The version comes from the tag.** MinVer computes it at build time from the
 nearest tag `v*`: `0.1.0` on the tag itself, `0.2.0-alpha.0.<commits since>`

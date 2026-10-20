@@ -5,7 +5,7 @@ phase produces a runnable, observable improvement, and each task inside a phase
 is small enough to be implemented and verified in one sitting. Tasks are
 numbered `P<phase>.<task>`, and from phase 24 on a task's title is the subject
 of the commit that does it: an imperative sentence saying what changes —
-`P24.2 Add the Git layer and its parsers`, `P24.6 List the changes in the right
+`P25.2 Add the Git layer and its parsers`, `P25.6 List the changes in the right
 panel` — not the name of the subject it is about. What has been built of them
 is in [Progress](PROGRESS.md).
 
@@ -49,11 +49,12 @@ is in [Progress](PROGRESS.md).
 | [22 — What the manual pass found](Plan/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) | P22.1–P22.18 | done |
 | [23 — The layers above the file system](Plan/PHASE-23-THE-LAYERS-ABOVE-THE-FILE-SYSTEM.md) | P23.1–P23.8 | done |
 | [Interlude 1 — The first release](Plan/INTERLUDE-01-THE-FIRST-RELEASE.md) | I1.1–I1.5 | done |
-| [24 — The repository tab](Plan/PHASE-24-THE-REPOSITORY-TAB.md) | P24.1–P24.8 | planned |
-| [25 — Local changes](Plan/PHASE-25-LOCAL-CHANGES.md) | P25.1–P25.9 | draft |
-| [26 — History](Plan/PHASE-26-HISTORY.md) | P26.1–P26.8 | draft |
-| [27 — Branches and remotes](Plan/PHASE-27-BRANCHES-AND-REMOTES.md) | P27.1–P27.9 | draft |
-| [28 — Merging](Plan/PHASE-28-MERGING.md) | P28.1–P28.5 | draft |
+| [24 — The guide and the help](Plan/PHASE-24-THE-GUIDE-AND-THE-HELP.md) | P24.1–P24.8 | draft |
+| [25 — The repository tab](Plan/PHASE-25-THE-REPOSITORY-TAB.md) | P25.1–P25.8 | planned |
+| [26 — Local changes](Plan/PHASE-26-LOCAL-CHANGES.md) | P26.1–P26.9 | draft |
+| [27 — History](Plan/PHASE-27-HISTORY.md) | P27.1–P27.8 | draft |
+| [28 — Branches and remotes](Plan/PHASE-28-BRANCHES-AND-REMOTES.md) | P28.1–P28.9 | draft |
+| [29 — Merging](Plan/PHASE-29-MERGING.md) | P29.1–P29.5 | draft |
 
 ## Suggested module layout
 
