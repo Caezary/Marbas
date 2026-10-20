@@ -25,6 +25,7 @@ type private Place =
     | Panel
     | Viewer
     | ListDialog
+    | FieldDialog
 
 type private Stage =
     { Title: string
@@ -126,6 +127,19 @@ let private tabLettersInPanel =
       prompt "Alt+Q" "left Alt with the letter Q"
       prompt "Alt+Shift+Q" "left Alt+Shift with the letter Q" ]
 
+let private helpOpeners =
+    [ prompt "F1" "F1 alone"
+      prompt "Ctrl+F1" "Ctrl with F1"
+      prompt "Alt+S" "left Alt with the letter S"
+      prompt "Alt+Y" "left Alt with the letter Y" ]
+
+let private inHelp =
+    helpOpeners
+    @ [ prompt "Tab" "Tab alone"
+        prompt "Shift+Tab" "Shift with Tab"
+        prompt "Backspace" "Backspace alone"
+        prompt "Alt+Left" "left Alt with the left arrow" ]
+
 let private panelOf prompts =
     { Title = "The panel — a ListView with the focus, as in Marbas"
       Place = Panel
@@ -138,39 +152,69 @@ let private listDialogOf prompts =
       Receiver = "the list"
       Prompts = prompts }
 
+let private viewerOf prompts =
+    { Title = "The viewer — a full-screen window with no buttons"
+      Place = Viewer
+      Receiver = "the viewer"
+      Prompts = prompts }
+
+let private fieldDialogOf prompts =
+    { Title = "A popup holding a text field — a modal Dialog, the field focused"
+      Place = FieldDialog
+      Receiver = "the field"
+      Prompts = prompts }
+
 let private keyRound =
-    [ panelOf inPanel
-      { Title = "The viewer — a full-screen window with no buttons"
-        Place = Viewer
-        Receiver = "the viewer"
-        Prompts = inViewer }
-      listDialogOf inListDialog ]
+    [ panelOf inPanel; viewerOf inViewer; listDialogOf inListDialog ]
 
 let private standInRound =
     [ panelOf standInsInPanel; listDialogOf standInsInListDialog ]
 
 let private tabLetterRound = [ panelOf tabLettersInPanel ]
 
+let private helpRound =
+    [ panelOf helpOpeners
+      viewerOf inHelp
+      listDialogOf helpOpeners
+      fieldDialogOf helpOpeners ]
+
+type private Controls =
+    { Next: Key
+      Back: Key
+      NextName: string
+      BackName: string }
+
+let private tabControls =
+    { Next = Key.Tab
+      Back = Key.Tab.WithShift
+      NextName = "Tab"
+      BackName = "Shift+Tab" }
+
+let private enterControls =
+    { Next = Key.Enter
+      Back = Key.P.WithCtrl
+      NextName = "Enter"
+      BackName = "Ctrl+P" }
+
 let private roundNamed (argv: string array) =
     match argv with
-    | [| "stand-ins" |] -> "stand-ins", standInRound
-    | [| "tab-letters" |] -> "tab-letters", tabLetterRound
-    | _ -> "keys", keyRound
+    | [| "stand-ins" |] -> "stand-ins", standInRound, tabControls
+    | [| "tab-letters" |] -> "tab-letters", tabLetterRound, tabControls
+    | [| "help" |] -> "help", helpRound, enterControls
+    | _ -> "keys", keyRound, tabControls
 
 let mutable private roundName = "keys"
 
 let mutable private stages = keyRound
 
-let private nextKey = Key.Tab
-
-let private backKey = Key.Tab.WithShift
+let mutable private controls = tabControls
 
 let private stopKey = Key.Q.WithCtrl
 
-let private arrivals = Dictionary<string, Arrivals>()
+let private arrivals = Dictionary<int * string, Arrivals>()
 
-let private arrivalsOf name =
-    match arrivals.TryGetValue name with
+let private arrivalsOf stage name =
+    match arrivals.TryGetValue((stage, name)) with
     | true, found -> found
     | false, _ ->
         let fresh =
@@ -178,7 +222,7 @@ let private arrivalsOf name =
               View = ResizeArray()
               Driver = ResizeArray() }
 
-        arrivals[name] <- fresh
+        arrivals[(stage, name)] <- fresh
         fresh
 
 let mutable private stageIndex = 0
@@ -200,18 +244,18 @@ let private literal (view: #View) =
     view
 
 let private modifiersOf (key: Key) =
-    [ if key.IsCtrl then "ctrl"
-      if key.IsAlt then "alt"
-      if key.IsShift then "shift" ]
+    [ if key.IsCtrl then
+          "ctrl"
+      if key.IsAlt then
+          "alt"
+      if key.IsShift then
+          "shift" ]
     |> function
         | [] -> "none"
         | held -> String.concat "+" held
 
 let private visible (text: string) =
-    text
-        .Replace("\u001b", "\\e")
-        .Replace("\r", "\\r")
-        .Replace("\n", "\\n")
+    text.Replace("\u001b", "\\e").Replace("\r", "\\r").Replace("\n", "\\n")
 
 let private describe (key: Key) =
     let extras =
@@ -224,12 +268,10 @@ let private describe (key: Key) =
           if key.EventType <> KeyEventType.Press then
               $"event=%O{key.EventType}" ]
 
-    $"%O{key}  code=0x%X{uint32 key.KeyCode}  held=%s{modifiersOf key}"
-    :: extras
+    $"%O{key}  code=0x%X{uint32 key.KeyCode}  held=%s{modifiersOf key}" :: extras
     |> String.concat "  "
 
-let private add (into: ResizeArray<string>) text =
-    lock arrivals (fun () -> into.Add text)
+let private add (into: ResizeArray<string>) text = lock arrivals (fun () -> into.Add text)
 
 let private summary (found: ResizeArray<string>) =
     lock arrivals (fun () ->
@@ -243,18 +285,18 @@ let private firstOf (found: ResizeArray<string>) =
 let private currentBoard () =
     let stage = currentStage ()
     let now = currentPrompt ()
-    let found = arrivalsOf now.Name
+    let found = arrivalsOf stageIndex now.Name
 
     let earlier =
         stage.Prompts
         |> List.take promptIndex
         |> List.rev
         |> List.truncate EarlierShown
-        |> List.map (fun p -> $"  %-26s{p.Name} %s{firstOf (arrivalsOf p.Name).View}")
+        |> List.map (fun p -> $"  %-26s{p.Name} %s{firstOf (arrivalsOf stageIndex p.Name).View}")
 
     [ $"Stage %d{stageIndex + 1} of %d{stages.Length}: %s{stage.Title}"
-      "Press the key named below, as often as you like, then Tab for the next one."
-      "Shift+Tab goes back, Ctrl+Q stops and writes the report. Use the left Alt;"
+      $"Press the key named below, as often as you like, then %s{controls.NextName} for the next one."
+      $"%s{controls.BackName} goes back, Ctrl+Q stops and writes the report. Use the left Alt;"
       "digits come from the top row, never the keypad, and Num Lock stays on."
       ""
       $">> %d{promptIndex + 1}/%d{stage.Prompts.Length}  %s{now.Name}"
@@ -283,10 +325,10 @@ let private retreat () =
         refresh ()
 
 let private atApplication (key: Key) =
-    if key = nextKey then
+    if key = controls.Next then
         key.Handled <- true
         advance ()
-    elif key = backKey then
+    elif key = controls.Back then
         key.Handled <- true
         retreat ()
     elif key = stopKey then
@@ -294,11 +336,11 @@ let private atApplication (key: Key) =
         stopped <- true
         finishStage ()
     else
-        add (arrivalsOf (currentPrompt ()).Name).Application (describe key)
+        add (arrivalsOf stageIndex (currentPrompt ()).Name).Application (describe key)
         refresh ()
 
 let private atReceiver (key: Key) =
-    add (arrivalsOf (currentPrompt ()).Name).View (describe key)
+    add (arrivalsOf stageIndex (currentPrompt ()).Name).View (describe key)
     key.Handled <- true
     refresh ()
 
@@ -309,7 +351,7 @@ let private fromDriver (app: IApplication) label (text: string) =
         else
             text
 
-    add (arrivalsOf (currentPrompt ()).Name).Driver $"%s{label}: %s{visible shown}"
+    add (arrivalsOf stageIndex (currentPrompt ()).Name).Driver $"%s{label}: %s{visible shown}"
     app.Invoke(fun () -> refresh ())
 
 let private board () =
@@ -361,6 +403,25 @@ let private listDialogStage () =
     dialog.Initialized.Add(fun _ -> list.SetFocus() |> ignore)
     dialog :> Runnable, shown
 
+let private fieldDialogStage () =
+    let dialog =
+        new Dialog(
+            Title = "Marbas key probe — a popup holding a text field",
+            Width = Dim.Percent 90,
+            Height = Dim.Percent 90
+        )
+
+    let shown = board ()
+
+    let field =
+        new TextField(X = 1, Y = Pos.AnchorEnd 6, Width = Dim.Fill 1, Text = "notes.txt")
+
+    field.KeyDown.Add atReceiver
+    dialog.Add(shown, field) |> ignore
+    dialog.AddButton(new Button(Title = "Close") |> literal)
+    dialog.Initialized.Add(fun _ -> field.SetFocus() |> ignore)
+    dialog :> Runnable, shown
+
 let private runStage (app: IApplication) index =
     stageIndex <- index
     promptIndex <- 0
@@ -370,6 +431,7 @@ let private runStage (app: IApplication) index =
         | Panel -> panelStage ()
         | Viewer -> viewerStage ()
         | ListDialog -> listDialogStage ()
+        | FieldDialog -> fieldDialogStage ()
 
     refresh <- fun () -> shown.Text <- currentBoard ()
     finishStage <- fun () -> app.RequestStop runnable
@@ -387,17 +449,17 @@ let private kittyOf (driver: IDriver) =
     | null -> "not reported"
     | capabilities -> $"%A{capabilities}"
 
-let private reportPrompt stage p =
-    let found = arrivalsOf p.Name
+let private reportPrompt index stage p =
+    let found = arrivalsOf index p.Name
 
     [ $"-- %s{p.Name}  (%s{p.Hint})" ]
     @ (summary found.Application |> List.map (sprintf "     application: %s"))
     @ (summary found.View |> List.map (sprintf "     %s: %s" stage.Receiver))
     @ (summary found.Driver |> List.map (sprintf "     driver: %s"))
 
-let private reportStage stage =
+let private reportStage index stage =
     [ $"== %s{stage.Title}" ]
-    @ (stage.Prompts |> List.collect (reportPrompt stage))
+    @ (stage.Prompts |> List.collect (reportPrompt index stage))
     @ [ "" ]
 
 let private report (driver: IDriver) =
@@ -408,13 +470,14 @@ let private report (driver: IDriver) =
       $"""WT_SESSION=%s{environmentOf "WT_SESSION"}  ConEmuANSI=%s{environmentOf "ConEmuANSI"}"""
       $"Stopped early: %b{stopped}"
       "" ]
-    @ (stages |> List.collect reportStage)
+    @ (stages |> List.mapi reportStage |> List.concat)
 
 [<EntryPoint>]
 let main argv =
-    let named, chosen = roundNamed argv
+    let named, chosen, controlling = roundNamed argv
     roundName <- named
     stages <- chosen
+    controls <- controlling
     Application.SetDefaultKeyBinding(Command.Quit, Bind.All stopKey)
     let app = Application.Create().Init()
     let processor = app.Driver.GetInputProcessor()

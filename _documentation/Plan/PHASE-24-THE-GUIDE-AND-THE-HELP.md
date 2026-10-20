@@ -70,7 +70,9 @@ the next or previous link on screen, `Enter` follows it, and `Backspace` or
 searches a file, and `Esc` / `F10` close. A side panel listing the chapters was rejected: at 80 columns it leaves
 about 55 for the text, and the three-column tables break. The help is a view of
 its own in `Ui/Help/`, not a mode of `FileViewer`, which works on the bytes of
-a file. Parsing the subset and laying it out to a width are pure functions:
+a file. Terminal.Gui's own `Markdown` view was rejected after a spike in
+P24.1: its tables lose rows, its alerts lose their kind, and nothing in it can
+show a match of `F7`. Parsing the subset and laying it out to a width are pure functions:
 paragraphs reflow on resize, and a table too wide for the screen wraps inside
 its cells.
 

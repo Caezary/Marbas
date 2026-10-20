@@ -49,7 +49,7 @@ is in [Progress](PROGRESS.md).
 | [22 — What the manual pass found](Plan/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) | P22.1–P22.18 | done |
 | [23 — The layers above the file system](Plan/PHASE-23-THE-LAYERS-ABOVE-THE-FILE-SYSTEM.md) | P23.1–P23.8 | done |
 | [Interlude 1 — The first release](Plan/INTERLUDE-01-THE-FIRST-RELEASE.md) | I1.1–I1.5 | done |
-| [24 — The guide and the help](Plan/PHASE-24-THE-GUIDE-AND-THE-HELP.md) | P24.1–P24.8 | draft |
+| [24 — The guide and the help](Plan/PHASE-24-THE-GUIDE-AND-THE-HELP.md) | P24.1–P24.8 | in progress |
 | [25 — The repository tab](Plan/PHASE-25-THE-REPOSITORY-TAB.md) | P25.1–P25.8 | planned |
 | [26 — Local changes](Plan/PHASE-26-LOCAL-CHANGES.md) | P26.1–P26.9 | draft |
 | [27 — History](Plan/PHASE-27-HISTORY.md) | P27.1–P27.8 | draft |

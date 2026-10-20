@@ -153,7 +153,12 @@ with punctuation. Each key walks through the place it is meant for — a focused
 of phases 17 to 20, `stand-ins` only the letters chosen to stand beside the ones
 that failed, and `tab-letters` the letters free in `KeyMap` that P22.7 weighed
 for opening and closing a tab, with `Alt+F11` and `Alt+Shift+F11` beside them.
-A new phase adds its keys as a round of its own.
+`help` asks for `F1` and its candidate spares in a panel, the viewer, a popup
+holding a list and a popup holding a text field, and for `Tab`, `Shift+Tab`,
+`Backspace` and `Alt+←` in the viewer; `Tab` being one of its keys, that round
+moves on with `Enter` and back with `Ctrl+P`. What arrives is kept per place,
+so a key asked for in several places is answered for each of them. A new phase
+adds its keys as a round of its own.
 
 A real Linux terminal can be reached from a Windows machine without a Linux
 machine: publish the probe as `linux-x64`, self-contained and single-file, and

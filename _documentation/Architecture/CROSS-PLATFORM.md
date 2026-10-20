@@ -22,8 +22,9 @@ Six kinds of evidence appear below:
   rendered on 2026-09-14 with the `render-tui-screen` probe, which runs the real
   application with `Launch` replaced by a recorder. The rows of phases 17 to 20
   were measured on 2026-10-02 and 2026-10-03 in the five terminals of P13.1 with
-  the guided walk the key probe has had since P17.2. See
-  [Development](../DEVELOPMENT.md), *Probes*.
+  the guided walk the key probe has had since P17.2. The rows of the help were
+  measured on 2026-10-21 in the five terminals of P16.1 with its `help` round.
+  See [Development](../DEVELOPMENT.md), *Probes*.
 - **disk** — an integration test in `Marbas.Tests/Integration/Disk` does it
   against the real file system of whichever machine runs the suite, so it runs on
   both legs of CI; it is reached for only where no mock can say what the system
@@ -413,6 +414,10 @@ and its directory was gone after the next start.
 | `Ctrl+Shift+C` and `Ctrl+Shift+X` | **no**, they arrive as `Ctrl+C` and `Ctrl+X` | **no**: `Ctrl+C` and `Ctrl+X` under cmder; gnome-terminal keeps `Ctrl+Shift+C` for its copy and hands over `Ctrl+X` | probe, terminal defaults |
 | `Ctrl+Shift+V` | **no**: `Ctrl+V` under cmder, a paste in Windows Terminal and the console | **no**: `Ctrl+V` under cmder, a paste in gnome-terminal | probe, terminal defaults |
 | `F7`, `Shift+F7` and `F8` reach a full-screen window that is up | yes | yes | probe |
+| `F1` reaches a panel, a full-screen window, a popup holding a list and a popup holding a text field | yes | yes, gnome-terminal under WSLg included: 3.52.0 binds no key to its own help | probe 2026-10-21, terminal defaults |
+| `Ctrl+F1`, `Alt+S` and `Alt+Y`, the spares weighed for `F1`, reach the same four places | yes | yes | probe 2026-10-21 |
+| `Tab`, `Shift+Tab`, `Backspace` and `Alt+←` reach a full-screen window that is up | yes | yes | probe 2026-10-21 |
+| `F1` reaches the application on a desktop | n/a | yes under GNOME, which binds only `<Alt>F1`; **manual** for KDE and Xfce | desktop defaults, read 2026-10-21 |
 | A bare letter, a digit, `Enter`, `Ins`, `Del`, `F4`, `Ctrl+↑` and `Ctrl+↓` reach a list inside a modal dialog | yes | yes | probe |
 | The stand-ins of phases 17 and 18: `Alt` and `Alt+Shift` with `E`, `N`, `A` and `C`; `Alt+Shift` with `X` and `V`; `Alt` with `I`, `M`, `U`, `B`, `K`, `P`, `L` and `J`; a digit after `Alt+K` | yes | yes, each key; but the popup of `Alt+K` is handed the `Alt+K` that opened it a second time and closes before the digit — see [Rough edges](../ROUGH-EDGES.md) | probe; the popup: manual 2026-10-18 in gnome-terminal and in tmux |
 | The keys of phases 17 to 20 are claimed by a desktop | n/a | `Alt+F8` alone under GNOME; none of the stand-ins | desktop defaults, read 2026-10-03; **manual** for KDE and Xfce |
@@ -462,6 +467,22 @@ The five keys were then pressed in Marbas itself, under Windows Terminal, on
 follows, `Alt+←` / `Alt+→` walk between them, `Alt+Shift+F11` closes one, and
 `Shift+F9` writes `%APPDATA%\Marbas\settings.conf` without quitting. The probe
 says a key arrives; that pass says the application answers it.
+
+**`F1` needs no spare.** P24.1 ran the `help` round of `_probes/KeyProbe` on
+2026-10-21 in cmder, Windows Terminal, the Windows console, WSL and
+gnome-terminal 3.52.0 under WSLg. `F1`, `Ctrl+F1`, `Alt+S` and `Alt+Y` arrived
+in all five, to the code (`F1` is `0x11006F`), and so did `Tab`, `Shift+Tab`,
+`Backspace` and `Alt+←` in the full-screen window. The plan expected
+gnome-terminal to keep `F1` for its own help; 3.52.0 has no such entry in
+`org.gnome.Terminal.Legacy.Keybindings`, and GNOME's window manager binds only
+`<Alt>F1`. Which view receives a key is decided inside Terminal.Gui, not by the
+terminal, so the four places were proved in tmux under WSL: the list of a
+modal `Dialog` and a focused `TextField` both receive `F1`, `Ctrl+F1`, `Alt+S`
+and `Alt+Y`. The first reports of that day keyed what arrived by the name of
+the key alone, so a key asked for in two places showed the first place's answer
+in both; the probe keeps them per place since. Under cmder one press of `F1`
+came after a mouse report split in two: Terminal.Gui swallowed `ESC [<` and
+handed `3`, `5`, `;`, `1`, `0`, `6` and `m` over as keys.
 
 **`Ctrl+\` never arrives as a backslash, and the five runs of P13.1 agree on
 why.** The terminal does not send a key there at all: it sends the control byte

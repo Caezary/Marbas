@@ -140,6 +140,7 @@ hooks described in [Diagnostics](DIAGNOSTICS.md).
 - [Diagnostics](DIAGNOSTICS.md) — the log, what writes to it, and what a crash leaves behind
 - [Tabs](TABS.md) — a tab as a pair of panels, the zipper, switching, the counter
 - [History](HISTORY.md) — what is remembered, where it is kept, the popup and the drop-down fields
+- [Help](HELP.md) — the guide under `F1`, the keys of the help, why the view is Marbas's own
 - [Auto-refresh](AUTO-REFRESH.md) — watching the directories on screen, the burst, what the watcher cannot say
 - [Testing](TESTING.md) — suite layout, conventions, Terminal.Gui pitfalls
 - [Packaging](PACKAGING.md) — publish profiles and the release pipeline
