@@ -40,7 +40,7 @@ without one. The commit subjects are not good enough to stand as notes.
   `Directory.Packages.props` and `Marbas.fsproj` as a build-only reference,
   `MinVerTagPrefix` `v`, `MinVerMinimumMajorMinor` `0.1`,
   `MinVerAutoIncrement` `minor`; `Version` leaves `Directory.Build.props`; the
-  checkouts of both workflows fetch the whole history. *Done when:* a build of
+  checkout of `release.yml` fetches the whole history. *Done when:* a build of
   `main` reports `0.1.0-alpha.0.<height>`, a build of a local tag `v0.1.0`
   reports `0.1.0`, and a shallow checkout builds without a warning.
 - **I1.2 Answer --version and name the version on a crash** —

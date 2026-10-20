@@ -18,7 +18,7 @@ dotnet test Marbas.slnx --settings coverlet.runsettings
 ## Build configuration
 
 `Directory.Build.props` in the repository root holds what both projects share —
-the target framework, the product name, the version and
+the target framework, the product name and
 `TreatWarningsAsErrors`, which is on in every configuration, and
 `--warnon:1182`, which turns an unused value into a warning and so, with the
 first, into a build failure.
@@ -29,6 +29,8 @@ every `Assert.Equal` over two numbers whose type is not written out takes the
 compiler about a tenth of a second to resolve among xUnit's overloads, and the
 test project's type check grows from 24 seconds to nearly five minutes. The
 numbers are in the journal of phase 22, under P22.16.
+The version of the application is computed from the git tags by MinVer; see
+[Packaging](Architecture/PACKAGING.md#the-version).
 `Directory.Packages.props` holds the package versions: a new package needs a
 `PackageVersion` there and a bare `PackageReference Include="..."`, without a
 version, in the project that uses it.

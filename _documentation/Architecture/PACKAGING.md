@@ -55,10 +55,26 @@ in — a saving of a few megabytes for a change in behaviour.
 
 ## The version
 
-`Directory.Build.props` carries `Version`, which is what an unqualified `dotnet
-publish` stamps on the binary. A release overrides it from the tag
-(`-p:Version=1.2.3`), so the version in the file and the version in the tag are
-the same by construction rather than by remembering to edit the project file.
+I1.1. No file holds a version. MinVer, a build-only package referenced by
+`Marbas.fsproj`, computes it on every build from the nearest tag `v*` reachable
+from the commit, so the version a binary carries and the tag it was built from
+are the same by construction:
+
+| Commit | Version |
+|--------|---------|
+| tagged `v0.1.0` | `0.1.0` |
+| 3 commits after `v0.1.0` | `0.2.0-alpha.0.3` |
+| 297 commits, no tag yet | `0.1.0-alpha.0.297` |
+| shallow checkout, no tag in it | `0.1.0-alpha.0` |
+
+`MinVerAutoIncrement` is `minor`, not MinVer's default `patch`, because the
+release after a tag is the next phase. `MinVerMinimumMajorMinor` `0.1` sets the
+floor before the first tag. The SDK appends the commit to the informational
+version (`0.1.0+d1c143e…`); the file version is `0.1.0.0`. `-t:MinVer
+-getProperty:MinVerVersion` prints the version without building, which is what
+`release.yml` names the archives by. A shallow checkout builds without a
+warning, but only `release.yml` fetches the whole history; the binaries of
+`ci.yml` are never shipped.
 
 ## Releasing
 
@@ -74,9 +90,9 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-`workflow_dispatch` runs the same publish steps under the version `0.0.0-dev`
-and stops after uploading the workflow artifacts, so the packaging can be
-exercised without releasing anything.
+`workflow_dispatch` runs the same publish steps under the version MinVer gives
+the commit and stops after uploading the workflow artifacts, so the packaging
+can be exercised without releasing anything.
 
 ## Checking a published binary
 

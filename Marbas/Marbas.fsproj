@@ -6,6 +6,12 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <PropertyGroup Label="Version">
+        <MinVerTagPrefix>v</MinVerTagPrefix>
+        <MinVerMinimumMajorMinor>0.1</MinVerMinimumMajorMinor>
+        <MinVerAutoIncrement>minor</MinVerAutoIncrement>
+    </PropertyGroup>
+
     <ItemGroup>
         <Compile Include="Collections\Zipper.fs" />
     </ItemGroup>
@@ -296,6 +302,7 @@
     <ItemGroup>
       <PackageReference Include="FSharp.Core" />
       <PackageReference Include="FsToolkit.ErrorHandling" />
+      <PackageReference Include="MinVer" PrivateAssets="all" />
       <PackageReference Include="SharpCompress" />
       <PackageReference Include="SharpZipLib" />
       <PackageReference Include="System.IO.Abstractions" />
