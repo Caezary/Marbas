@@ -87,16 +87,32 @@ warning, but only `release.yml` fetches the whole history; the binaries of
 | `check` | — | on a tag, `.github/scripts/check-release.sh` refuses a tag that is not `v<major>.<minor>.<patch>[-<pre-release>]`, one whose commit is not reachable from `origin/main`, and one whose version has no section `## <version>` in `CHANGELOG.md`; it answers whether the tag has a pre-release part |
 | `build` | `check` | `ci.yml`, called as a reusable workflow (`workflow_call`): the format check, the analyzers, the build and the suite on both systems |
 | `publish` | `check`, `build` | both profiles, archived |
-| `release` | `check`, `publish` | on a tag only, the GitHub release with both archives; `--prerelease` when the tag has a pre-release part (`v0.2.0-rc.1`) |
+| `release` | `check`, `publish` | on a tag only, the GitHub release with both archives and the notes of `release-notes.sh` as its description; `--prerelease` when the tag has a pre-release part (`v0.2.0-rc.1`) |
 
 A tag on a commit whose suite fails therefore releases nothing, and a refused
-tag runs nothing past `check`. `.github/scripts/release-notes.sh <version>`
-prints the section of that version without its heading and without blank lines
-around it, and fails when there is none; `check` runs it for the refusal. Both
-scripts are bash with POSIX awk, run as `bash <script>` so neither needs the
-executable bit, and `.gitattributes` keeps `*.sh` at LF on a Windows checkout.
-Run locally, `bash .github/scripts/check-release.sh v0.1.0` asks the same
-questions of a local tag.
+tag runs nothing past `check`. Both scripts are bash with POSIX awk, run as
+`bash <script>` so neither needs the executable bit, and `.gitattributes` keeps
+`*.sh` at LF on a Windows checkout. Run locally,
+`bash .github/scripts/check-release.sh v0.1.0` asks the same questions of a
+local tag, and `bash .github/scripts/release-notes.sh v0.1.0` prints the
+description the release would get.
+
+## The notes
+
+I1.4. The description of a release is written by hand in `CHANGELOG.md`, in the
+commit the tag points to; the commit subjects are not written for a reader of
+the releases page, and `--generate-notes` lists merged pull requests, which
+this repository has none of. A section starts with `## <version> — <date>`;
+`release-notes.sh <tag>` takes the second word of each `## ` line as the
+version, prints the lines up to the next `## ` without the heading and without
+the blank lines around them, and fails when no heading matches.
+
+From the second release on it adds a link comparing the tag with the previous
+release, found by `git describe --tags --abbrev=0 --match 'v*' --exclude 'v*-*'`
+from the tag's parent, so a pre-release is never what a release is compared
+with. A link in a section is absolute (`https://github.com/Caezary/Marbas/blob/main/…`):
+GitHub resolves a relative one against the releases page, where it leads
+nowhere.
 
 `publish` builds both profiles, each on its own runner — `windows-latest` for
 `win-x64`, `ubuntu-latest` for `linux-x64`, so a cross-published binary is never

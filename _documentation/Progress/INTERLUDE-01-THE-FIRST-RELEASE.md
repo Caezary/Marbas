@@ -73,3 +73,24 @@ no `mawk` was at hand, and the program uses only POSIX awk.
 Two things went differently from the plan. `build` needs `check`, so a refused
 tag runs nothing else. The `workflow_dispatch` run that proves the workflow on
 GitHub waits for these files to reach `main`; it is the first step of I1.5.
+
+**I1.4 the notes of 0.1.0.** `CHANGELOG.md` holds the section of `0.1.0`: what
+Marbas is, what it does in nine points, how to run it with the two archives,
+and its known limits, pointing at the user guide and Rough edges by absolute
+links. The README's *Goal* and *Planned core features* — which still promised
+macOS and called copying and deleting planned — gave way to the same summary
+and a link to the changelog.
+
+`release-notes.sh` now takes the tag, not the version, and adds a link
+comparing the tag with the previous release that has no pre-release part.
+`release.yml`'s `release` job checks out the history, writes the notes to
+`$RUNNER_TEMP/notes.md` and passes them with `--notes-file` instead of
+`--generate-notes`.
+
+In a throwaway clone the notes of `v0.1.0` were byte for byte the section of
+`CHANGELOG.md` below its heading, with no link; with tags `v0.1.0`,
+`v0.2.0-rc.1` and `v0.2.0` on three commits of `main`, both later tags were
+compared with `v0.1.0`.
+
+The date in the heading is the day the section was written; it is set to the
+day of the tag when I1.5 tags it.

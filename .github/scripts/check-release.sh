@@ -17,7 +17,7 @@ if ! git merge-base --is-ancestor "$tag^{commit}" origin/main; then
   exit 1
 fi
 
-bash "$(dirname "$0")/release-notes.sh" "$version" > /dev/null
+bash "$(dirname "$0")/release-notes.sh" "$tag" > /dev/null
 
 if [[ -n $pre_release ]]; then
   prerelease=true

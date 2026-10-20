@@ -91,11 +91,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
       - uses: actions/download-artifact@v8
         with:
           pattern: marbas-*
           merge-multiple: true
           path: artifacts
+
+      - name: Write the notes
+        run: bash .github/scripts/release-notes.sh "$GITHUB_REF_NAME" > "$RUNNER_TEMP/notes.md"
 
       - name: Create release
         env:
@@ -104,6 +111,6 @@ jobs:
           gh release create "$GITHUB_REF_NAME"
           --repo "$GITHUB_REPOSITORY"
           --title "$GITHUB_REF_NAME"
-          --generate-notes
+          --notes-file "$RUNNER_TEMP/notes.md"
           ${{ needs.check.outputs.prerelease == 'true' && '--prerelease' || '' }}
           artifacts/*

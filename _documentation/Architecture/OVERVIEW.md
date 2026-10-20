@@ -468,6 +468,7 @@ Marbas.Tests/
     Gui.fs                 focusedWindow, leftList, rightList, press, panel,
                           panelTitle, shownPath, drawnText
 
+CHANGELOG.md              one section per release, its description on GitHub
 coverlet.runsettings      what coverage measures and what it leaves out
 .editorconfig             the Fantomas settings: its defaults, cramped brackets, lf
 .gitattributes            `*.sh` kept at lf on a Windows checkout
@@ -483,7 +484,8 @@ Directory.Build.targets   the analyzer packages and the rules they run
 .github/scripts/
   check-release.sh        refuse a tag that is no semver, is off main or has no
                           section in CHANGELOG.md; say whether it is a pre-release
-  release-notes.sh        print the section of one version of CHANGELOG.md
+  release-notes.sh        the description of a release: its section of
+                          CHANGELOG.md and a link to the previous release
 ```
 
 ## Explicit dependencies

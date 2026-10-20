@@ -2,22 +2,27 @@
 
 [![build](https://github.com/Caezary/Marbas/actions/workflows/ci.yml/badge.svg)](https://github.com/Caezary/Marbas/actions/workflows/ci.yml)
 
-A console file manager written in F#, inspired by the classic two-panel
-managers of the DOS era.
+A two-panel file manager for the terminal, driven by the keyboard, in the
+spirit of the orthodox managers of the DOS era. Written in F# on
+Terminal.Gui 2, for Windows and Linux.
 
-## Goal
+## What it does
 
-Marbas presents a full-screen terminal UI split into two side-by-side panels.
-Each panel shows the file listing of its current directory, and the user can
-browse, navigate and manage files using the keyboard — in the spirit of the
-orthodox file managers.
+- **Panels and tabs** — sorting, hidden entries, panels that follow the disk,
+  the session restored on the next start
+- **File operations** — copy, move, rename, delete to the trash or for good,
+  wipe, links and junctions, in the background
+- **Marking** — by hand, by page, by wildcard, by extension or name, inverted
+- **Archives** — zip, tar, tar.gz, tar.bz2, tar.xz, 7z and rar browsed like
+  directories; zip, tar.gz and 7z created and changed in place
+- **Viewer** — text in a chosen code page or a hex dump, searched by text,
+  regular expression or bytes
+- **Finding files** — by name and content, on disk and inside archives
+- **Running files** — associations, a program of your choice, your editor, a
+  menu of your own commands
+- **History and favourites**, and the **clipboard** on Windows
 
-Planned core features:
-
-- Two independent directory panels displayed side by side
-- Keyboard-driven navigation (arrows, Tab to switch panels, Enter to open)
-- Basic file operations: copy, move, rename, delete, create directory
-- Cross-platform: Windows, Linux, macOS (.NET)
+What changed in each release is in the [changelog](CHANGELOG.md).
 
 ## Getting Marbas
 

@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-version=$1
+tag=$1
+version=${tag#v}
+repository=${GITHUB_REPOSITORY:-Caezary/Marbas}
 changelog="$(dirname "$0")/../../CHANGELOG.md"
 
 if [[ ! -f $changelog ]]; then
@@ -25,3 +27,10 @@ awk -v version="$version" '
   echo "CHANGELOG.md has no section '## $version'." >&2
   exit 1
 }
+
+previous=$(git describe --tags --abbrev=0 --match 'v*' --exclude 'v*-*' "$tag^" 2>/dev/null || true)
+
+if [[ -n $previous ]]; then
+  echo
+  echo "**Full changelog**: https://github.com/$repository/compare/$previous...$tag"
+fi
