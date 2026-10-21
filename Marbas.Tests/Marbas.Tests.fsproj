@@ -155,6 +155,8 @@
     <Compile Include="Guide\TableTests.fs" />
     <Compile Include="Guide\ChapterMarkdownTests.fs" />
     <Compile Include="Guide\ChapterLinksTests.fs" />
+    <Compile Include="Guide\ChapterKeysTests.fs" />
+    <Compile Include="Guide\UserGuide.fs" />
     <Compile Include="Guide\UserGuideTests.fs" />
   </ItemGroup>
 
@@ -277,6 +279,8 @@
     <Compile Include="Ui\Keys\ModifiersTests.fs" />
     <Compile Include="Ui\Keys\KeyMapTests.fs" />
     <Compile Include="Ui\Keys\KeyBarLayoutTests.fs" />
+    <Compile Include="Ui\Keys\KeySpellingTests.fs" />
+    <Compile Include="Ui\Keys\GuideKeysTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

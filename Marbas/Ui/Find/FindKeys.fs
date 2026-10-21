@@ -13,6 +13,8 @@ let quitKey = Key.F10
 
 let closeKeys = [ quitKey; Key.Esc ]
 
+let keys = [ panelKey; viewKey; standKey ] @ closeKeys
+
 let private label key =
     if key = panelKey then "Panel"
     elif key = viewKey then "View"

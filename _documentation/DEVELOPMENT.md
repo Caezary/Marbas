@@ -227,7 +227,10 @@ that is already there and removes nothing. The steps are in
   are held to the Markdown subset of
   [Help](Architecture/HELP.md#the-model-of-a-chapter): `UserGuideTests`
   parses every one and fails on a construct outside it and on a link to a
-  chapter or a heading that does not exist.
+  chapter or a heading that does not exist. `GuideKeysTests` fails on a key
+  bound without a row in a key table and on a row whose key nothing binds;
+  a key a popup tests joins that popup's list in `KeyMap`
+  ([Help](Architecture/HELP.md#the-guide-and-the-key-maps)).
 
 ## Flat decisions
 

@@ -434,7 +434,7 @@ let private dialogKey (changing: Changing) (dialog: HistoryView) (key: Key) =
     elif key = KeyMap.cancelKey && dialog.Filter.IsSome then
         key.Handled <- true
         filtering changing dialog None
-    elif key = Key.Backspace then
+    elif key = KeyMap.takeBackKey then
         key.Handled <- true
         filtering changing dialog (dialog.Filter |> Option.bind SearchText.backspace)
     else

@@ -682,6 +682,14 @@ something else when its key is pressed, because both come from the same row.
 There was a `PanelInput` module holding the panel half of this; P7.5 merged it
 into `KeyMap` and deleted it.
 
+**A key bound is a row of the guide.** Since P24.4 `GuideKeysTests` spells
+every key of `KeyMap.bindings`, of `ViewerKeys.keys`, of `FindKeys.keys` and
+of the lists `KeyMap.historyKeys`, `userMenuKeys` and `favoritesKeys` with
+`KeySpelling.nameOf`, and fails when a key table of the
+[user guide](../../docs/user-guide/README.md) lacks one or names a key none of
+them holds. A key added to a popup joins that popup's list in `KeyMap`; the
+rules are in [Help](HELP.md#the-guide-and-the-key-maps).
+
 **The open-with popup is a list and a field that agree.** `OpenWithDialog` shows
 what `HandlersFor` found, one `HandlerRow` per program — the display name in a
 column, the path after it — and a field below holding the answer. Moving over a

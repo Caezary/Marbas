@@ -28,7 +28,7 @@ let private page (list: ListView) =
 let private searchMessage (key: Key) =
     if key = KeyMap.cancelKey then
         Some SearchCancelled
-    elif key = Key.Backspace then
+    elif key = KeyMap.takeBackKey then
         Some SearchBackspaced
     elif KeyMap.printable key then
         Some(SearchTyped(char key.AsRune.Value))

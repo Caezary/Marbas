@@ -1,7 +1,6 @@
 module Marbas.Guide.ChapterLinks
 
-type BrokenLink =
-    { Name: ChapterName; Target: Target }
+type BrokenLink = { Name: ChapterName; Target: Target }
 
 let rec private phraseTargets (Phrase spans) = spans |> List.collect spanTargets
 
@@ -54,9 +53,7 @@ let private brokenIn anchors (chapter: Chapter) =
     chapter.Contents
     |> List.collect blockTargets
     |> List.filter (leadsSomewhere anchors chapter.Name >> not)
-    |> List.map (fun target ->
-        { Name = chapter.Name
-          Target = target })
+    |> List.map (fun target -> { Name = chapter.Name; Target = target })
 
 let broken (chapters: Chapter list) =
     let anchors = anchorsByChapter chapters

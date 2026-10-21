@@ -87,8 +87,9 @@ replaced `_documentation/USER-GUIDE.md` in P24.3.
   with `Ctrl`, `Alt` or `Shift`, `Ctrl+*`, `Ctrl+M`, `Shift+Enter`,
   `Ctrl+Alt+Enter`, `Ctrl+Shift+C`, `Ctrl+Shift+X` and `Ctrl+Shift+V`. `Ctrl+\`
   arrives as `Ctrl+4` and is named in a rule only. All of them are rows of
-  `KeyMap.bindings`, so the test of P24.4 needs them as a named list. `F1` is
-  absent until P24.8 binds it.
+  `KeyMap.bindings`, listed by name in
+  [the test of the keys](#the-guide-and-the-key-maps). `F1` is absent until
+  P24.8 binds it.
 - A link leads only to a chapter or a heading of the guide, since the parser
   refuses anything else; the releases page is named in words. The format of
   `user-menu.conf` is a table of lines, since a code block is refused.
@@ -101,6 +102,52 @@ seventeen it names, on a chapter the parser refuses, and on any link
 `ChapterName` and its blocks, gathers each link from headings, paragraphs,
 items at any depth, table cells and alerts, and answers the links whose
 chapter is not among them or whose anchor is no heading of that chapter.
+
+## The guide and the key maps
+
+`KeySpelling.nameOf` spells a Terminal.Gui `Key` as the `KeyName` a key table
+writes: the modifiers held, in the order `Ctrl`, `Alt`, `Shift`, each followed
+by `+`, then the key.
+
+- A key without a character has a name: `↑` `↓` `←` `→`, `PgUp`, `PgDn`,
+  `Home`, `End`, `Ins`, `Del`, `Enter`, `Esc`, `Backspace`, `Tab`, `Space`,
+  `F1` to `F12`.
+- A letter is its capital, so `Key.E.WithAlt` is `Alt+E`. `Key 'A'` is a
+  capital typed with `Shift` and is `Shift+A`.
+- Any other character is itself: `Key.D4.WithCtrl` is `Ctrl+4`, `+` with
+  `Shift` is `Shift++`.
+- A key with neither keeps the name Terminal.Gui gives it, `PrintScreen`.
+
+`ChapterKeys.named` answers the `KeyName`s of a set of chapters: every inline
+code in the first two cells of a body row of a table headed `Key`,
+`Alternative`, `Action`. Two codes with `…` between them that differ only in
+the last character are a run and name every character from the first to the
+last, so `Alt+0` … `Alt+9` names ten keys. The `Action` cell and tables under
+other headers, the one of `16-platforms.md` among them, name none.
+
+`GuideKeysTests` spells the keys the code binds: `KeyMap.bindings`;
+`KeyMap.selectionPageDownKeys` and `selectionPageUpKeys`, which the panel asks
+outside the bindings; `KeyMap.historyKeys`, `userMenuKeys` and
+`favoritesKeys`, the keys of those popups with the letters `a` to `z` and the
+digits of the menu's hotkeys and the digits of the favourites; and
+`ViewerKeys.keys` and `FindKeys.keys`. It compares them with the whole guide,
+not with the chapter of their context, and fails on:
+
+- a key bound that no key table names, except the keys no measured terminal
+  delivers, listed by their `KeyMap` names;
+- a key a table names that nothing binds, except those Terminal.Gui's views
+  handle: `↑`, `↓`, `PgUp`, `PgDn`, `Home`, `End`, `Tab`, `Enter`, `Esc` and
+  `Alt+↓`, which opens the list of a field that remembers;
+- a key no measured terminal delivers that a table names.
+
+The popups test a key against each named key in turn, so their lists are read
+by the test alone, and a key a popup starts to test without joining its list
+escapes it. `Backspace`, a literal of the quick search and of the history's
+filter before, is `KeyMap.takeBackKey`, so its rows have a binding. Setup's
+`Alt+U`, the hotkey of *Under cursor*, and the drive popup's `Alt+R` pass
+because the panel binds the same keys. Replacing the `Ctrl+R` row of
+`02-panels.md` by an `Alt+Q` row failed the first check on `Ctrl+R` and the
+second on `Alt+Q`.
 
 ## The view is Marbas's own
 

@@ -163,9 +163,11 @@
         <Compile Include="Guide\ChapterName.fs" />
         <Compile Include="Guide\Block.fs" />
         <Compile Include="Guide\Chapter.fs" />
+        <Compile Include="Guide\KeyName.fs" />
         <Compile Include="Guide\Refusal.fs" />
         <Compile Include="Guide\ChapterMarkdown.fs" />
         <Compile Include="Guide\ChapterLinks.fs" />
+        <Compile Include="Guide\ChapterKeys.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -202,6 +204,7 @@
     <ItemGroup>
         <Compile Include="Ui\Keys\Modifiers.fs" />
         <Compile Include="Ui\Keys\KeyMap.fs" />
+        <Compile Include="Ui\Keys\KeySpelling.fs" />
         <Compile Include="Ui\Keys\KeyBarLayout.fs" />
         <Compile Include="Ui\Keys\FunctionKeyBar.fs" />
     </ItemGroup>

@@ -18,7 +18,7 @@ schedules the fix. A rule here beats a habit found in an older file.
 | `Viewing/` | a file's content as a window of bytes and lines: its encoding, the window, the lines, the viewer's searches | `FileSystem`, `Domain` |
 | `Find/` | searching by name and by text, on disk and inside archives | `Locations`, `Viewing`, `FileSystem`, `Domain` |
 | `Messages/` | the words the application says: an error or a question -> text, and `Problem`, everything that is reported to the user | `Profile`, `Programs`, `FileSystem`, `Domain` |
-| `Guide/` | the user guide as blocks: a chapter's Markdown parsed into the subset of [Help](Architecture/HELP.md#the-model-of-a-chapter), or the line refused, and the links of the chapters that lead nowhere; Markdig is seen by `ChapterMarkdown` alone | nothing |
+| `Guide/` | the user guide as blocks: a chapter's Markdown parsed into the subset of [Help](Architecture/HELP.md#the-model-of-a-chapter), or the line refused, the links of the chapters that lead nowhere and the keys their key tables name; Markdig is seen by `ChapterMarkdown` alone | nothing |
 | `State/` | `AppState`, messages, transitions, `Effect`; `Runtime` holds the one mutable cell; then `Ports.Dependencies` as ports, `Shell.interpret` and `Startup` | every layer above it in this table |
 | `Ui/` | views, key maps, and the wiring of both to the runtime | every layer above it in this table |
 | `Adapters/` | the real ports: dialogs, processes, registry, watches, runners | every layer above it in this table |

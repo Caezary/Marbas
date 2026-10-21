@@ -177,6 +177,10 @@ let favoriteSlotOf (key: Key) =
     FavoriteSlot.all
     |> List.tryFind (fun slot -> key = digitKey slot || key = favoriteKey slot)
 
+let favoritesKeys =
+    [ favoritesGoKey; favoritesKeepKey; favoritesEmptyKey ]
+    @ (FavoriteSlot.all |> List.map digitKey)
+
 let copyNamesKey = Key.InsertChar.WithCtrl
 
 let spareCopyNamesKey = Key.C.WithAlt
@@ -231,6 +235,25 @@ let historyForgetKey = Key.Delete
 
 let historyClearKey = Key.Delete.WithShift
 
+let takeBackKey = Key.Backspace
+
+let cancelKey = Key.Esc
+
+let historyKeys =
+    [ nextHistoryTabKey
+      previousHistoryTabKey
+      nextHistoryTabArrow
+      previousHistoryTabArrow
+      historyRowUpKey
+      historyRowDownKey
+      historyGoToKey
+      historyViewKey
+      historyEditKey
+      historyForgetKey
+      historyClearKey
+      takeBackKey
+      cancelKey ]
+
 let userMenuKey = Key.F2
 
 let userMenuRunKey = Key.Enter
@@ -245,9 +268,18 @@ let userMenuEarlierKey = Key.CursorUp.WithCtrl
 
 let userMenuLaterKey = Key.CursorDown.WithCtrl
 
-let quitKey = Key.Q.WithCtrl
+let private menuHotkeyKeys = [ 'a' .. 'z' ] @ [ '0' .. '9' ] |> List.map Key
 
-let cancelKey = Key.Esc
+let userMenuKeys =
+    [ userMenuRunKey
+      userMenuAddKey
+      userMenuChangeKey
+      userMenuRemoveKey
+      userMenuEarlierKey
+      userMenuLaterKey ]
+    @ menuHotkeyKeys
+
+let quitKey = Key.Q.WithCtrl
 
 let private unmodified (key: Key) = not key.IsCtrl && not key.IsAlt
 

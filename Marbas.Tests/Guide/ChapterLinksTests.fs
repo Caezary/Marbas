@@ -15,8 +15,7 @@ let private brokenIn chapters =
     chapters |> List.map chapterOf |> ChapterLinks.broken
 
 let private leadingTo name target : ChapterLinks.BrokenLink =
-    { Name = chapter name
-      Target = target }
+    { Name = chapter name; Target = target }
 
 [<Fact>]
 let ``a link to a heading of its own chapter leads somewhere`` () =

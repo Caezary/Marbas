@@ -72,3 +72,23 @@ seen to fail it. §7 of
 names the guide as the place for what the user can do, and
 [Development](../DEVELOPMENT.md#working-rules) says a visible change changes
 its chapter.
+
+**P24.4 a key bound is a row of the guide.** `Ui/Keys/KeySpelling` spells a
+Terminal.Gui `Key` as a `KeyName`, new in `Guide/`: modifiers in the order
+`Ctrl`, `Alt`, `Shift`, a name for a key without a character, a letter as its
+capital, any other character as itself. `KeySpellingTests` proves every
+arrow, function key and named key, each modifier, each pair and all three,
+and the printable keys bound — letters, digits, `+`, `-`, `*` and `\`.
+`Guide/ChapterKeys` names the keys of the `Key` and `Alternative` cells of
+every key table, a run such as `Alt+0` … `Alt+9` expanded; `ChapterKeysTests`
+proves the cells read and those skipped, several codes in a cell and the
+runs. The popups test keys one by one, so `KeyMap` gained `historyKeys`,
+`userMenuKeys` and `favoritesKeys`, and `ViewerKeys` and `FindKeys` a `keys`
+of their own; the quick search's and the history's `Backspace` became
+`KeyMap.takeBackKey`. `GuideKeysTests` compares the two in both directions,
+with the keys no measured terminal delivers and the keys Terminal.Gui's
+views handle as named lists, and checks that no undelivered key has a row.
+Replacing the `Ctrl+R` row of `02-panels.md` by an `Alt+Q` row failed it on
+`Ctrl+R` and on `Alt+Q`. The test loads the guide through
+`Marbas.Tests/Guide/UserGuide.fs`, which `UserGuideTests` now shares. The
+rules are in [Help](../Architecture/HELP.md#the-guide-and-the-key-maps).

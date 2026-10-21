@@ -52,6 +52,8 @@ let private bindings =
       repeatKey, SearchRepeated
       codePageKey, CodePageAsked ]
 
+let keys = (bindings |> List.map fst) @ closeKeys
+
 let commandFor (key: Key) =
     if List.contains key closeKeys then
         Some Closed
