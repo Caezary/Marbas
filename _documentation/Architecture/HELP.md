@@ -28,6 +28,43 @@ measured for a full-screen window before.
 search and walk to the previous tab. The help is a full-screen window of its
 own, so a key there never reaches a panel.
 
+## The model of a chapter
+
+`ChapterMarkdown.parse` answers a chapter as a list of `Block`s, or the first
+`Refusal` in it: the construct outside the subset and its line, counted from
+one. `Guide/Block.fs` names every level rather than nesting lists:
+
+| Type | Is |
+|------|----|
+| `Span` | `Text`, `Code`, `Strong` or `Emphasis` of a phrase, or `Link` of a phrase and a `Target` |
+| `Phrase` | a run of spans: what a paragraph, a heading, a cell and an item read |
+| `Item` | a phrase and the items nested under it |
+| `Prose` | a `Paragraph` or `Bullets`, a list of items |
+| `Table` | a header `Row` and body rows of `Cell`s |
+| `Heading` | its level, its `Anchor` and its title |
+| `Block` | a heading, prose, a table, or an `Alert` of `Note` or `Warning` and its prose |
+
+- `Text` and `Code` carry a `string`: the text has been parsed, and nothing
+  after the parser reads anything into it. Adjacent text is joined, so an
+  escape, an entity or a line break inside a paragraph leaves one `Text`.
+- A `Target` is `SameChapter` of an anchor, or `OtherChapter` of a
+  `ChapterName` — a `.md` file beside the chapter, no directory — and perhaps
+  an anchor. Anything else is `LinkOutsideTheGuide`; whether the chapter and
+  the heading exist is checked against the whole guide, not here.
+- An item holds one paragraph and at most one nested list; an alert holds
+  paragraphs and lists. A second paragraph in an item, or a table in an
+  alert, is refused, so the layout never has to place one.
+- `Table.create` is the only way to a `Table`, and it pads or cuts each body
+  row to the header's width, as GFM does. Markdig widens the header by an empty
+  cell when a body row is longer; the parser cuts the header back to the
+  columns of the delimiter row.
+- The anchor is Markdig's `AutoIdentifierOptions.GitHub`: lower case, spaces to
+  `-`, punctuation dropped, `-1`, `-2` … for a repeated heading.
+- Refused: a heading below `###`, an ordered list, a code block, a plain quote,
+  an alert other than `NOTE` and `WARNING`, a thematic break, HTML, an image, a
+  hard line break, an aligned column, a link reference definition, and any
+  node Markdig makes that the parser does not name (`Unrecognised`).
+
 ## The view is Marbas's own
 
 Terminal.Gui 2.4.17 has a `Markdown` view. A spike on 2026-10-21 rendered a

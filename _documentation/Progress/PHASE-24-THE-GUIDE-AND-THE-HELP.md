@@ -27,3 +27,22 @@ and 120 columns. Its links, `LinkClicked` and GitHub anchors work; its tables
 lose rows, its alerts lose their kind, and it cannot show a match. The help
 keeps a view of its own, as decided; the findings are in
 [Help](../Architecture/HELP.md#the-view-is-marbass-own).
+
+**P24.2 a chapter is blocks or a refused line.** The task opened with a script
+over the pinned Markdig 1.3.2: `UseAlertBlocks` gives an `AlertBlock` with its
+kind, `UseAutoIdentifiers(AutoIdentifierOptions.GitHub)` gives `notes`,
+`notes-1` and `sizes-links--the-rest`, and a pipe table keeps its rows as
+written — a row longer than the header widens the header by an empty cell, a
+shorter one is padded with cells holding no paragraph, an escaped `|` is a
+literal of its own. Markdig went into `Directory.Packages.props` at that
+version. The model and the parser are a new layer, `Guide/`, which uses no
+other: the guide is about no entry, path or setting, and both the help's state
+and its view will read it. `Layers/LayerReferences.fs`, §1 of
+[Coding style](../coding-style-conventions.md#1-layers) and the chain of layers
+in `CLAUDE.md`, Overview, State and effects, Testing and Development name it.
+`ChapterMarkdownTests` proves each element of the subset, spans nested inside
+strong and emphasis, a nested item, a table with an empty cell and with rows
+longer and shorter than its header, an escaped `|`, the anchors of punctuated
+and repeated headings, each refused construct and the line it is refused at;
+`TableTests` and `ChapterNameTests` prove the two types with a rule of their
+own. The model is in [Help](../Architecture/HELP.md#the-model-of-a-chapter).

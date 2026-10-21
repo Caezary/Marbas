@@ -14,6 +14,7 @@ type private Layer =
     | Viewing
     | Find
     | Messages
+    | Guide
     | State
     | Ui
     | Adapters
@@ -29,8 +30,10 @@ let private mayUse =
       Viewing, [ FileSystem; Domain ]
       Find, [ Locations; Viewing; FileSystem; Domain ]
       Messages, [ Profile; Programs; FileSystem; Domain ]
+      Guide, []
       State,
-      [ Messages
+      [ Guide
+        Messages
         Find
         Viewing
         Locations
@@ -41,6 +44,7 @@ let private mayUse =
         Collections ]
       Ui,
       [ State
+        Guide
         Messages
         Find
         Viewing
@@ -53,6 +57,7 @@ let private mayUse =
       Adapters,
       [ Ui
         State
+        Guide
         Messages
         Find
         Viewing

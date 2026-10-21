@@ -211,7 +211,7 @@ listed with one.
 ## Layout
 
 `Collections/`, `Domain/`, `FileSystem/`, `Programs/`, `Profile/`,
-`Locations/`, `Viewing/`, `Find/`, `Messages/`, `State/`, `Ui/` and `Adapters/`
+`Locations/`, `Viewing/`, `Find/`, `Messages/`, `Guide/`, `State/`, `Ui/` and `Adapters/`
 mirror the source folders they cover, one test module per module under test, and namespaces
 follow: `Marbas.Tests.State.PanelStateTests` covers `Marbas.State.PanelState`.
 `Ui/` and `FileSystem/` mirror the source down to the subfolder, so

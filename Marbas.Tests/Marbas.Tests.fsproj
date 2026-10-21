@@ -151,6 +151,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Guide\ChapterNameTests.fs" />
+    <Compile Include="Guide\TableTests.fs" />
+    <Compile Include="Guide\ChapterMarkdownTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="State\PanelStateTests.fs" />
     <Compile Include="State\AppStateTests.fs" />
     <Compile Include="State\TabTests.fs" />

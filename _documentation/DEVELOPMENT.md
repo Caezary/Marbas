@@ -69,7 +69,10 @@ over two ecosystems, and opens a pull request for what is:
   `.config/dotnet-tools.json`. Each package comes as a pull request of its
   own, except `System.IO.Abstractions` with its testing helpers (group
   `io-abstractions`), which are released in step and taken at the same
-  version. Up to fifteen pull requests stand open at once; Dependabot's
+  version, and `Terminal.Gui` with `Markdig` (group `terminal-gui`), whose
+  pinned version would otherwise hold Terminal.Gui on an older Markdig
+  without a warning — see [Overview](Architecture/OVERVIEW.md#explicit-dependencies).
+  Up to fifteen pull requests stand open at once; Dependabot's
   default of five left most of the first run unopened. `fsharp-analyzers` and
   `Ionide.Analyzers` are ignored, for the reason under
   [Analyzers](#analyzers): the package that lags behind,
@@ -213,7 +216,7 @@ that is already there and removes nothing. The steps are in
 - No code comments — names and tests carry the intent; anything that needs
   explaining goes into `_documentation/*.md`.
 - Dependencies flow downward only: `Program` → `Adapters` → `Ui` → `State` →
-  `Messages` → `Find` → `Viewing` → `Locations` → `Profile` → `Programs` →
+  `Guide` → `Messages` → `Find` → `Viewing` → `Locations` → `Profile` → `Programs` →
   `FileSystem` → `Domain` → `Collections`, and only to the layers a row of
   [Coding style](coding-style-conventions.md), §1, allows.
 - Mind the hot paths — a key in a panel, a listing, the viewer, a copy or a

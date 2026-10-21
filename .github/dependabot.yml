@@ -13,6 +13,10 @@ updates:
         patterns:
           - System.IO.Abstractions
           - TestableIO.System.IO.Abstractions.TestingHelpers
+      terminal-gui:
+        patterns:
+          - Terminal.Gui
+          - Markdig
 
   - package-ecosystem: github-actions
     directory: /

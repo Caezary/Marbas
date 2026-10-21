@@ -1,7 +1,7 @@
 # State and effects
 
 `State` is the fourth layer from the top of `Program` → `Adapters` → `Ui` →
-`State` → `Messages` → `Find` → `Viewing` → `Locations` → `Profile` →
+`State` → `Guide` → `Messages` → `Find` → `Viewing` → `Locations` → `Profile` →
 `Programs` → `FileSystem` → `Domain` → `Collections`: it may use every layer
 below it and none above, so a transition can read a location, a file's
 content, the profile or a search, but never a view or a real port —

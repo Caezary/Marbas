@@ -159,6 +159,14 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="Guide\Anchor.fs" />
+        <Compile Include="Guide\ChapterName.fs" />
+        <Compile Include="Guide\Block.fs" />
+        <Compile Include="Guide\Refusal.fs" />
+        <Compile Include="Guide\ChapterMarkdown.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Compile Include="State\PanelState.fs" />
         <Compile Include="State\AppState.fs" />
         <Compile Include="State\CommandExpansion.fs" />
@@ -305,6 +313,7 @@
     <ItemGroup>
       <PackageReference Include="FSharp.Core" />
       <PackageReference Include="FsToolkit.ErrorHandling" />
+      <PackageReference Include="Markdig" />
       <PackageReference Include="MinVer" PrivateAssets="all" />
       <PackageReference Include="SharpCompress" />
       <PackageReference Include="SharpZipLib" />

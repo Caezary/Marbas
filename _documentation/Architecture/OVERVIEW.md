@@ -1,7 +1,7 @@
 # Architecture overview
 
 Dependencies flow downward only: `Program` → `Adapters` → `Ui` → `State` →
-`Messages` → `Find` → `Viewing` → `Locations` → `Profile` → `Programs` →
+`Guide` → `Messages` → `Find` → `Viewing` → `Locations` → `Profile` → `Programs` →
 `FileSystem` → `Domain` → `Collections`, the order they are compiled in read
 from the top, and a layer uses only the ones below it that its row in §1 of
 [Coding style](../coding-style-conventions.md#1-layers) allows — `Viewing`
@@ -55,6 +55,13 @@ and the second to `FileSystem`, which it left in P23.6 for
 layer's one type: everything that is reported to the user, each case carrying
 the error it reports, with its title and its description answered by one
 module. [State and effects](STATE-AND-EFFECTS.md) says why it is a union.
+
+**The user guide is a layer of its own, using none.** `Guide/` holds a chapter
+as blocks and the parser that makes them from Markdown; it speaks no entry, no
+path and no setting, so it fits none of the layers below, and it is placed
+under `State` so that the help's state and its views can both read it.
+`ChapterMarkdown` is the only module that sees a Markdig type.
+[Help](HELP.md#the-model-of-a-chapter) has the model.
 
 **Five layers above `FileSystem` use the disk without being about it.**
 `FileSystem` holds what the application knows about entries — the paths, the
@@ -498,4 +505,16 @@ against the SDK's `FSharp.Core` and ships none, and falls over on its first line
 with a `FileNotFoundException`. The `PackageVersion` pins the version the tree
 already resolved through `FsToolkit.ErrorHandling`, and a project that needs it
 asks for it by name like any other package.
+
+**Markdig**: Terminal.Gui depends on it, so 1.3.2 was in the binary before
+P24.2. `Marbas.fsproj` names it since `Guide/ChapterMarkdown` parses the guide
+with it, at the version Terminal.Gui 2.4.17 asks for. With transitive pinning
+the `PackageVersion` wins even when it is older than what Terminal.Gui asks
+for: a probe that pinned 1.3.1 under Terminal.Gui 2.4.17 restored and built
+with no error and no warning, and Terminal.Gui would then run on a Markdig it
+was not built against. So Dependabot updates the two in one group,
+`terminal-gui`, and a Terminal.Gui bump brings Markdig's along. A Markdig that
+parses differently fails `Guide/ChapterMarkdownTests`, which pin the anchors,
+the alerts and the shape of a table. A Terminal.Gui updated by hand needs
+Markdig raised to the version in its `.nuspec`.
 

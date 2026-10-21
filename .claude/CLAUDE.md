@@ -38,7 +38,7 @@ and on any finding of the analyzers.
   explaining goes into `_documentation/*.md`.
 - **The user commits manually.** Never run `git commit`.
 - **Dependencies flow downward only:** `Program` → `Adapters` → `Ui` →
-  `State` → `Messages` → `Find` → `Viewing` → `Locations` → `Profile` →
+  `State` → `Guide` → `Messages` → `Find` → `Viewing` → `Locations` → `Profile` →
   `Programs` → `FileSystem` → `Domain` → `Collections`, and a layer uses only
   the ones its row in §1 of `_documentation/coding-style-conventions.md`
   allows — `Layers/LayerReferenceTests` fails on any other use. A new module
