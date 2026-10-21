@@ -1,7 +1,7 @@
 # What works today
 
 What Marbas does today, feature by feature. How to reach each of them is in the
-[user guide](../USER-GUIDE.md).
+[user guide](../../docs/user-guide/README.md).
 
 - Full-screen window split into two panels, resizing with the terminal.
 - `Ctrl+F3`, `Ctrl+F4`, `Ctrl+F5` and `Ctrl+F6` sort the panel they are pressed

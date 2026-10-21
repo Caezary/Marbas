@@ -93,7 +93,7 @@ and no length of a command line stands in its way.
   tab opened afterwards are proved, and the message P25.4 gave in its place is
   gone.
 
-Every task updates [the user guide](../USER-GUIDE.md),
+Every task updates [the user guide](../../docs/user-guide/README.md),
 [What works today](../Progress/WHAT-WORKS.md), [Git](../Architecture/GIT.md)
 and [UI and input](../Architecture/UI-AND-INPUT.md) for what it adds.
 

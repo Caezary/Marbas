@@ -146,7 +146,7 @@ P22.15 is timed the same way if what it changes lies on one of the paths.
   letter with `Alt+Shift`, chosen from those `KeyMap` leaves free and pressed
   with `_probes/KeyProbe` in the five terminals of P13.1 before it is bound.
   *Done when:* both stand-ins are in `KeyMap` and its tests and in the
-  [user guide](../USER-GUIDE.md), each arrived in all five terminals, a tab is
+  [user guide](../../docs/user-guide/README.md), each arrived in all five terminals, a tab is
   opened and closed with them in gnome-terminal under WSLg, and the entry in
   Rough edges is gone.
 - **P22.8 The properties popup offers what the platform keeps** — on Linux

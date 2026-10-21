@@ -202,7 +202,7 @@ loses neither. The ten slots are global, shared by every tab and both panels.
   nothing; and the popup has no buttons but a line under the list naming its
   keys.
 
-Every task updates [the user guide](../USER-GUIDE.md),
+Every task updates [the user guide](../../docs/user-guide/README.md),
 [What works today](../Progress/WHAT-WORKS.md) and the architecture file it
 touches — the selection and the panel in
 [UI and input](../Architecture/UI-AND-INPUT.md), the favourites file in

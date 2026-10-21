@@ -60,8 +60,10 @@ module. [State and effects](STATE-AND-EFFECTS.md) says why it is a union.
 as blocks and the parser that makes them from Markdown; it speaks no entry, no
 path and no setting, so it fits none of the layers below, and it is placed
 under `State` so that the help's state and its views can both read it.
-`ChapterMarkdown` is the only module that sees a Markdig type.
-[Help](HELP.md#the-model-of-a-chapter) has the model.
+`ChapterMarkdown` is the only module that sees a Markdig type, and
+`ChapterLinks` finds the links of a set of chapters that lead nowhere.
+[Help](HELP.md#the-model-of-a-chapter) has the model, and
+[the chapters](HELP.md#the-chapters) how the guide is written.
 
 **Five layers above `FileSystem` use the disk without being about it.**
 `FileSystem` holds what the application knows about entries — the paths, the

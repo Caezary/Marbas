@@ -336,7 +336,7 @@ In `launch`.
 |------|----|--------|-----|
 | L43 | **desktop**, GNOME. `Alt+F1`, `Alt+F2`, `Alt+F6`, `Alt+F7`, `Alt+F8`. | None reaches Marbas: the desktop opens its menu and its run dialog, cycles its windows, and starts moving and resizing the window. Say which of the five did arrive. | *`Alt+F1`, `Alt+F2` and `Alt+F6` reach the application on a desktop*; *`Alt+F7` reaches the application on a desktop*; *`Alt+F8`* |
 | L44 | **desktop**, GNOME. `Alt+Shift+F`; `Esc`; `Alt+B`. | *Find*, then *Favourites*: the stand-ins arrive where the function keys do not. | *`Alt+Shift+F` opens Find wherever `Alt+F7` does not* |
-| L45 | **desktop**, KDE or Xfce. `Alt+F7`; then `Alt+F12`, `Alt+Shift+H`, `Ctrl+PgUp`, `Ctrl+PgDn`; in the history popup `Alt+G`, `Del`, `Shift+Del`; in a field `Alt+↓` and `F4`; then `Alt+F8`, `F2`, `Alt+K`, `Alt+0`. | Each does in Marbas what the [user guide](../USER-GUIDE.md) says. Name every one the desktop kept, and what it did with it. | the three rows marked *manual for KDE and Xfce* |
+| L45 | **desktop**, KDE or Xfce. `Alt+F7`; then `Alt+F12`, `Alt+Shift+H`, `Ctrl+PgUp`, `Ctrl+PgDn`; in the history popup `Alt+G`, `Del`, `Shift+Del`; in a field `Alt+↓` and `F4`; then `Alt+F8`, `F2`, `Alt+K`, `Alt+0`. | Each does in Marbas what the [user guide](../../docs/user-guide/README.md) says. Name every one the desktop kept, and what it did with it. | the three rows marked *manual for KDE and Xfce* |
 | L46 | With Marbas running, close the terminal window by its button. Start Marbas again and, a few seconds later, `ls ${TMPDIR:-/tmp}/Marbas`. | One directory, the new session's: the one the closed session left is gone. | *The directory of a session closed with the console window's button is gone after the next start* |
 
 ### Every popup

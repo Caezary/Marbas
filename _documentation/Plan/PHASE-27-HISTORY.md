@@ -72,7 +72,7 @@ commit before anything runs.
   hard; hard asks once more, naming the changed files it will lose. *Done
   when:* each mode's arguments and the second question are proved.
 
-Every task updates [the user guide](../USER-GUIDE.md),
+Every task updates [the user guide](../../docs/user-guide/README.md),
 [What works today](../Progress/WHAT-WORKS.md), [Git](../Architecture/GIT.md)
 and [UI and input](../Architecture/UI-AND-INPUT.md) for what it adds.
 

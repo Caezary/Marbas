@@ -383,7 +383,7 @@ looked into, and both stand in [Rough edges](../ROUGH-EDGES.md).
 Every task updates [What works today](../Progress/WHAT-WORKS.md) where the
 behaviour changes and [Overview](../Architecture/OVERVIEW.md) where a module
 moves. P21.1 adds `Architecture/DIAGNOSTICS.md` for the log, and P21.2
-documents `--debug` in [the user guide](../USER-GUIDE.md).
+documents `--debug` in [the user guide](../../docs/user-guide/README.md).
 
 ## Left for a later phase
 

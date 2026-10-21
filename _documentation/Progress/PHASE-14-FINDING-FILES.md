@@ -339,7 +339,7 @@ third `PanelLocation` and `FromPlaces`; [UI and input](../Architecture/UI-AND-IN
 gained the popup, the results window with its keys and the `Alt+F7` row of the
 key table; [Cross-platform](../Architecture/CROSS-PLATFORM.md) gained a *Finding
 files* section with the `PATH` separator and the mount boundary; the
-[user guide](../USER-GUIDE.md) gained the command; and the overview lists the new
+[user guide](../../docs/user-guide/README.md) gained the command; and the overview lists the new
 topic and the phase's modules in the code map, `Ui` now counted as nine
 folders. Writing the boundary down turned up a defect the P14.5 paragraph above
 had described away: the walk is bounded by the *listed* drives, P13.12 keeps

@@ -65,6 +65,43 @@ one. `Guide/Block.fs` names every level rather than nesting lists:
   hard line break, an aligned column, a link reference definition, and any
   node Markdig makes that the parser does not name (`Unrecognised`).
 
+## The chapters
+
+`docs/user-guide/` holds `README.md`, the contents, and sixteen chapters
+numbered in reading order, `01-getting-started.md` to `16-platforms.md`. They
+replaced `_documentation/USER-GUIDE.md` in P24.3.
+
+- A chapter opens with one or two sentences, then a key table per group of
+  commands, then bullets with the rules. A popup's own keys are a second
+  table under a sentence naming the popup.
+- A key table has the header `Key`, `Alternative`, `Action`. A table about
+  anything else has headers of its own (`Kind`, `Write`, `Line`, `Variable`,
+  `File`, `Platform`), so a test can pick the key tables by their header.
+- A `Key` or `Alternative` cell holds one inline code span per key:
+  `` `↑` `↓` ``. A run of keys is its first and its last with `…` between,
+  `Alt+0` … `Alt+9`. Modifiers are written `Ctrl`, `Alt`, `Shift`, in that
+  order.
+- A platform difference is a `[!NOTE]` or `[!WARNING]` under the table of its
+  key, and a row or a bullet of `16-platforms.md`.
+- Left out because no terminal measured delivers them: the main `+` and `-`
+  with `Ctrl`, `Alt` or `Shift`, `Ctrl+*`, `Ctrl+M`, `Shift+Enter`,
+  `Ctrl+Alt+Enter`, `Ctrl+Shift+C`, `Ctrl+Shift+X` and `Ctrl+Shift+V`. `Ctrl+\`
+  arrives as `Ctrl+4` and is named in a rule only. All of them are rows of
+  `KeyMap.bindings`, so the test of P24.4 needs them as a named list. `F1` is
+  absent until P24.8 binds it.
+- A link leads only to a chapter or a heading of the guide, since the parser
+  refuses anything else; the releases page is named in words. The format of
+  `user-menu.conf` is a table of lines, since a code block is refused.
+
+`Marbas.fsproj` embeds the chapters as `user-guide/<file>`, shown in the
+project under `UserGuide`; nothing reads them yet. `UserGuideTests` holds the
+guide through those resources: it fails on a file missing from or added to the
+seventeen it names, on a chapter the parser refuses, and on any link
+`ChapterLinks.broken` reports. That function takes every `Chapter`, a
+`ChapterName` and its blocks, gathers each link from headings, paragraphs,
+items at any depth, table cells and alerts, and answers the links whose
+chapter is not among them or whose anchor is no heading of that chapter.
+
 ## The view is Marbas's own
 
 Terminal.Gui 2.4.17 has a `Markdown` view. A spike on 2026-10-21 rendered a

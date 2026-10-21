@@ -165,6 +165,6 @@ allows and a line-based file cannot hold — is not remembered.
   is never remembered. *Done when:* each field offers its history, and moving
   between the fields of a dialog with the arrows still does what it did.
 
-Every task updates [the user guide](../USER-GUIDE.md), the history section of
+Every task updates [the user guide](../../docs/user-guide/README.md), the history section of
 [What works today](../Progress/WHAT-WORKS.md) and `Architecture/HISTORY.md` for
 what it adds, rather than leaving the description for a task at the end.

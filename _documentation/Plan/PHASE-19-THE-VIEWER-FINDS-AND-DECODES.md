@@ -65,6 +65,6 @@ own commands, the way it shows `F2` and `F4` today.
   inside one window of bytes, a run split across two, and a field that is not
   bytes are proved.
 
-Every task updates [the user guide](../USER-GUIDE.md),
+Every task updates [the user guide](../../docs/user-guide/README.md),
 [What works today](../Progress/WHAT-WORKS.md) and the viewer's section of
 [UI and input](../Architecture/UI-AND-INPUT.md) for what it adds.

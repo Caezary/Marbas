@@ -40,7 +40,7 @@ Download the archive for your system, unpack it and run `Marbas`; on Linux,
 `chmod +x Marbas` first. Each binary carries its own .NET runtime, so nothing
 needs to be installed. Settings live in `%APPDATA%\Marbas` on Windows and in
 `~/.config/Marbas` on Linux. The keys are in the
-[user guide](https://github.com/Caezary/Marbas/blob/main/_documentation/USER-GUIDE.md).
+[user guide](https://github.com/Caezary/Marbas/blob/main/docs/user-guide/README.md).
 
 | Archive | System |
 |---------|--------|

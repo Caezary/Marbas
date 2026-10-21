@@ -144,7 +144,7 @@ alone says nothing on a terminal without colours; a rename reads
   arguments the effect carries, the colours are rendered, and a diff of a large
   file opens no slower than the file itself.
 
-Every task updates [the user guide](../USER-GUIDE.md),
+Every task updates [the user guide](../../docs/user-guide/README.md),
 [What works today](../Progress/WHAT-WORKS.md) and a new
 [Git](../Architecture/GIT.md) in the architecture, and
 [UI and input](../Architecture/UI-AND-INPUT.md),

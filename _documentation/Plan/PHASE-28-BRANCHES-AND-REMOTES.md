@@ -82,7 +82,7 @@ list again after each change.
   derived from each form of URL, the refusal and a clone of a local
   repository are proved.
 
-Every task updates [the user guide](../USER-GUIDE.md),
+Every task updates [the user guide](../../docs/user-guide/README.md),
 [What works today](../Progress/WHAT-WORKS.md), [Git](../Architecture/GIT.md),
 [UI and input](../Architecture/UI-AND-INPUT.md) and
 [Cross-platform](../Architecture/CROSS-PLATFORM.md) for what it adds.

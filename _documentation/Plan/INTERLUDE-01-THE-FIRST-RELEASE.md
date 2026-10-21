@@ -71,4 +71,4 @@ without one. The commit subjects are not good enough to stand as notes.
   and each archive's binary prints `Marbas 0.1.0`.
 
 Every task updates [What works today](../Progress/WHAT-WORKS.md) and the
-[user guide](../USER-GUIDE.md) for what it adds to them.
+[user guide](../../docs/user-guide/README.md) for what it adds to them.

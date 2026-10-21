@@ -88,7 +88,7 @@ expanded, and `Enter` there runs it again exactly as it ran.
   proved to reach the file and the popup, a duplicate hotkey is refused in the
   dialog, and a menu edited and closed is the same menu after a restart.
 
-Every task updates [the user guide](../USER-GUIDE.md),
+Every task updates [the user guide](../../docs/user-guide/README.md),
 [What works today](../Progress/WHAT-WORKS.md), the running of programs in
 [State and effects](../Architecture/STATE-AND-EFFECTS.md), the popup in
 [UI and input](../Architecture/UI-AND-INPUT.md) and the file in

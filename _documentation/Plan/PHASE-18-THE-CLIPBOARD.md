@@ -98,7 +98,7 @@ from inside an archive is refused by name.
   with a fake clipboard, including the overwrite question, and pasting files cut
   in the system file manager is tried by hand.
 
-Every task updates [the user guide](../USER-GUIDE.md),
+Every task updates [the user guide](../../docs/user-guide/README.md),
 [What works today](../Progress/WHAT-WORKS.md) and
 [File operations](../Architecture/FILE-OPERATIONS.md) for what it adds, and the
 port is described in [State and effects](../Architecture/STATE-AND-EFFECTS.md)

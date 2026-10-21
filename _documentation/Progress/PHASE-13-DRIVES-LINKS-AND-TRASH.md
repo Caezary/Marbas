@@ -355,7 +355,7 @@ gained a *disk* kind of evidence, the rows of the drive popup, a section for
 links, wiping and measuring with the interop confined to `NativeLinks`, the Unix
 mount filter with its whole list of formats, and two differences meant to be
 there: the junction on Windows alone and the symbolic link Windows grants only
-some users. The [user guide](../USER-GUIDE.md) names all five commands — *Drives*
+some users. The [user guide](../../docs/user-guide/README.md) names all five commands — *Drives*
 with `Enter`, `Alt+R` and `Esc`, `Ctrl+4`, `F3` on a directory, `Alt+Del` and
 `Alt+F6` — along with the link colour and the platform differences. The overview
 lists the new topic and the phase's modules in the code map. The table below

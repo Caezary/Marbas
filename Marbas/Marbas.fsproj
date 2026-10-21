@@ -162,8 +162,10 @@
         <Compile Include="Guide\Anchor.fs" />
         <Compile Include="Guide\ChapterName.fs" />
         <Compile Include="Guide\Block.fs" />
+        <Compile Include="Guide\Chapter.fs" />
         <Compile Include="Guide\Refusal.fs" />
         <Compile Include="Guide\ChapterMarkdown.fs" />
+        <Compile Include="Guide\ChapterLinks.fs" />
     </ItemGroup>
 
     <ItemGroup>
@@ -308,6 +310,12 @@
 
     <ItemGroup>
         <Compile Include="Program.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <EmbeddedResource Include="..\docs\user-guide\*.md"
+                          Link="UserGuide\%(Filename)%(Extension)"
+                          LogicalName="user-guide/%(Filename)%(Extension)" />
     </ItemGroup>
 
     <ItemGroup>

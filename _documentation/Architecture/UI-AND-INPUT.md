@@ -610,7 +610,7 @@ so the system file manager opens the root and neither panel moves. `Shift+Enter`
 its twin in the panel, is not bound here: terminals deliver it as a bare
 `Enter`, which on a popup is the default button and would stand the panel on the
 drive the user asked to see elsewhere. The popup does not print `Alt+R`; the
-[user guide](../USER-GUIDE.md) names it.
+[user guide](../../docs/user-guide/README.md) names it.
 
 **The popup stands beside the panel it is for.** `ChooseDrive` takes a
 `DrivePrompt` — the rows and the `PanelSide` the key was for — so the popup of

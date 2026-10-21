@@ -47,7 +47,7 @@ takes the message git wrote rather than waiting for an editor nobody sees.
   message. *Done when:* each key is proved for each operation it applies to,
   and a rebase is taken from its first stop to its end on a repository.
 
-Every task updates [the user guide](../USER-GUIDE.md),
+Every task updates [the user guide](../../docs/user-guide/README.md),
 [What works today](../Progress/WHAT-WORKS.md), [Git](../Architecture/GIT.md)
 and [UI and input](../Architecture/UI-AND-INPUT.md) for what it adds.
 

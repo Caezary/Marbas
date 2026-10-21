@@ -130,9 +130,10 @@ A test fails on a link to a chapter or a heading that does not exist.
   spelling is proved for every modifier, arrow, function key and printable key
   bound, and the test fails on a binding removed from a table and on a row
   whose key nothing binds.
-- **P24.5 Embed the guide and lay it out to a width** — the chapters as
-  resources, read by name, and the layout: blocks to styled lines for a width,
-  with paragraphs reflowed, list items indented, tables sized to their content
+- **P24.5 Embed the guide and lay it out to a width** — the chapters,
+  embedded in `Marbas` since P24.3, read by name, and the layout: blocks to
+  styled lines for a width, with paragraphs reflowed, list items indented,
+  tables sized to their content
   and wrapped inside cells when wider than the screen, alerts framed, and links
   kept as spans with their target. *Done when:* the layout is proved at 80, 120
   and 40 columns on a chapter with each block, and the resource names match the

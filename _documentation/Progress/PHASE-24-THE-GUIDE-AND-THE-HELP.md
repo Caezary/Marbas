@@ -46,3 +46,29 @@ longer and shorter than its header, an escaped `|`, the anchors of punctuated
 and repeated headings, each refused construct and the line it is refused at;
 `TableTests` and `ChapterNameTests` prove the two types with a rule of their
 own. The model is in [Help](../Architecture/HELP.md#the-model-of-a-chapter).
+
+**P24.3 the guide is sixteen chapters.** `docs/user-guide/` holds the contents
+and sixteen chapters written against [What works today](WHAT-WORKS.md) and
+the key maps, not copied from the old guide. What that guide lacked is in
+them: packing, unpacking and browsing archives, running files with `Enter`,
+`Alt+R` and `Alt+Shift+R`, `Alt+W`, *Setup* on `F12`, the viewer's `F2` and
+`F4`, the files Marbas keeps and the working directory, and the switches and
+variables it reads, `TMPDIR`, `TMP` and `TEMP` among them beside those the
+plan named. `_documentation/USER-GUIDE.md` is gone and every link to it
+points at `docs/user-guide/README.md`, the released note in `CHANGELOG.md`
+included. The subset left two things out: links outside the guide, so the
+releases page is named in words, and code blocks, so `user-menu.conf` is a
+table of lines. Keys no terminal measured delivers are left out and listed
+in [Help](../Architecture/HELP.md#the-chapters) for P24.4. `ChapterLinks.broken`
+is new in `Guide/`: `ChapterLinksTests` proves a link to a heading and to a
+chapter that exist and that do not, and a link found in a heading, strong and
+emphasised text, a nested item, a header and a body cell, and both alerts.
+The chapters are an `EmbeddedResource` of `Marbas.fsproj` already, under
+`UserGuide` in the project, and a `Chapter` record pairs a name with its
+blocks. `UserGuideTests` parses each chapter from those resources and finds
+no broken link; breaking one anchor and writing one ordered list were each
+seen to fail it. §7 of
+[Coding style](../coding-style-conventions.md#7-comments-and-documentation)
+names the guide as the place for what the user can do, and
+[Development](../DEVELOPMENT.md#working-rules) says a visible change changes
+its chapter.

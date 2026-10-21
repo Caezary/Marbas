@@ -154,6 +154,8 @@
     <Compile Include="Guide\ChapterNameTests.fs" />
     <Compile Include="Guide\TableTests.fs" />
     <Compile Include="Guide\ChapterMarkdownTests.fs" />
+    <Compile Include="Guide\ChapterLinksTests.fs" />
+    <Compile Include="Guide\UserGuideTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

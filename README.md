@@ -28,10 +28,10 @@ What changed in each release is in the [changelog](CHANGELOG.md).
 
 Prebuilt, self-contained binaries for Windows and Linux are attached to every
 [release](https://github.com/Caezary/Marbas/releases) — no .NET installation
-needed. See the [user guide](_documentation/USER-GUIDE.md) for how to run it
+needed. See the [user guide](docs/user-guide/README.md) for how to run it
 and its keyboard shortcuts.
 
 ## Documentation
 
-- [User guide](_documentation/USER-GUIDE.md) — running Marbas, keyboard shortcuts
+- [User guide](docs/user-guide/README.md) — running Marbas, keyboard shortcuts
 - [Development](_documentation/DEVELOPMENT.md) — building from source, testing, architecture docs
