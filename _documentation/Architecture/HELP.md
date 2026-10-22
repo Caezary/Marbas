@@ -95,10 +95,16 @@ replaced `_documentation/USER-GUIDE.md` in P24.3.
   `user-menu.conf` is a table of lines, since a code block is refused.
 
 `Marbas.fsproj` embeds the chapters as `user-guide/<file>`, shown in the
-project under `UserGuide`; nothing reads them yet. `UserGuideTests` holds the
-guide through those resources: it fails on a file missing from or added to the
-seventeen it names, on a chapter the parser refuses, and on any link
-`ChapterLinks.broken` reports. That function takes every `Chapter`, a
+project under `UserGuide`. `EmbeddedGuide.names` answers them, and
+`EmbeddedGuide.read` reads one by its `ChapterName` and parses it, answering
+a `Chapter` or a `GuideFault`: `Absent` for a name no resource has, `Refused`
+with the parser's `Refusal`. The resources are the binary's own, so the read
+is no port. `ChapterName.contents` is `README.md`, the first page.
+`EmbeddedGuideTests` compares the names with the `.md` files of
+`docs/user-guide/`, found from `__SOURCE_DIRECTORY__`, the one test that reads
+the repository. `UserGuideTests` holds the guide through `EmbeddedGuide`: it
+fails on a file missing from or added to the seventeen it names, on a chapter
+the parser refuses, and on any link `ChapterLinks.broken` reports. That function takes every `Chapter`, a
 `ChapterName` and its blocks, gathers each link from headings, paragraphs,
 items at any depth, table cells and alerts, and answers the links whose
 chapter is not among them or whose anchor is no heading of that chapter.
@@ -148,6 +154,40 @@ filter before, is `KeyMap.takeBackKey`, so its rows have a binding. Setup's
 because the panel binds the same keys. Replacing the `Ctrl+R` row of
 `02-panels.md` by an `Alt+Q` row failed the first check on `Ctrl+R` and the
 second on `Alt+Q`.
+
+## The layout
+
+`ChapterLayout.lay width blocks` answers the lines of a chapter for a screen
+`width` columns wide. A `LaidLine` is a list of `Piece`s and the `Anchor` of
+the heading it starts, if it starts one. A `Piece` is text with a `Look` —
+`Plain`, `Literal` for inline code, `Title` of a heading level, `Ruling` for
+the rules of a table, `Framing` of an alert kind — a set of `Stress`, `Bold`
+and `Italic`, and the `LinkStop` it belongs to. Adjacent pieces of one style
+are merged. A column is one character: the guide uses no wide characters.
+
+- Blocks are parted by one blank line. A paragraph is reflowed: words, split
+  at spaces, fill a line greedily. Inline code is never split at its own
+  spaces. A word wider than the line is cut at the width.
+- A heading is wrapped in its `Title` look. A chapter title is underlined with
+  `═`, a section with `─`, both as wide as the title; a subsection is not.
+- An item starts with `• ` and its next lines hang under its text; a nested
+  item is indented two columns more.
+- A table's columns are parted by ` │ `, and its header, in `Bold`, by a rule
+  `─┼─`. A column is as wide as its widest cell. Wider than the screen, the
+  widest column is narrowed a column at a time, the rightmost of equals first,
+  down to its longest word; then down to its longest word holding code; then
+  down to one. So text wraps before code is cut. Cells are padded to their
+  column, a row is as high as its highest cell.
+- An alert is a frame as wide as the screen, `┌ Note ─…┐` or `┌ Warning ─…┐`
+  at the top, its prose laid out four columns narrower inside `│ … │`,
+  parted by blank lines.
+- A `LinkStop` is the link's `Index`, counted from 0 in reading order through
+  the chapter, and its `Target`. The index is a deliberate `int`: it only
+  tells the pieces of one link from those of the next, so a link wrapped over
+  two lines, the space between its words included, is one stop.
+
+`ChapterLayoutTests` proves each rule, a chapter of every block at 80, 120
+and 40 columns, and that no line of the guide is wider than 40, 80 or 120.
 
 ## The view is Marbas's own
 

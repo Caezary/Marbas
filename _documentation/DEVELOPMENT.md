@@ -224,7 +224,8 @@ that is already there and removes nothing. The steps are in
   and after ([Coding style](coding-style-conventions.md), §10).
 - A change the user can see changes its chapter of the
   [user guide](../docs/user-guide/README.md) in the same task. The chapters
-  are held to the Markdown subset of
+  are compiled into the binary as resources, every `.md` of the directory,
+  and the help shows them as they are. They are held to the Markdown subset of
   [Help](Architecture/HELP.md#the-model-of-a-chapter): `UserGuideTests`
   parses every one and fails on a construct outside it and on a link to a
   chapter or a heading that does not exist. `GuideKeysTests` fails on a key

@@ -92,3 +92,21 @@ Replacing the `Ctrl+R` row of `02-panels.md` by an `Alt+Q` row failed it on
 `Ctrl+R` and on `Alt+Q`. The test loads the guide through
 `Marbas.Tests/Guide/UserGuide.fs`, which `UserGuideTests` now shares. The
 rules are in [Help](../Architecture/HELP.md#the-guide-and-the-key-maps).
+
+**P24.5 a chapter is read by name and laid out to a width.**
+`Guide/EmbeddedGuide` answers the embedded chapters and reads one by its
+`ChapterName` into a `Chapter`, or a `GuideFault` — `Absent`, or `Refused`
+with the parser's refusal; `ChapterName.contents` names `README.md`.
+`EmbeddedGuideTests` finds the resource names equal to the `.md` files of
+`docs/user-guide/`, and `UserGuideTests` now reads the guide through
+`EmbeddedGuide`. `Guide/ChapterLayout.lay` turns blocks into `LaidLine`s of
+`Piece`s for a width: paragraphs reflowed, code never split at its spaces,
+headings underlined by level and carrying their anchor, items hung and
+indented, tables sized to their content and alerts framed, links kept as
+`LinkStop`s numbered through the chapter. A first run at 40 columns cut
+`Alt+Shift+F11` in the table of `16-platforms.md` while plain text beside it
+could still wrap; a column now narrows to its longest word, then to its
+longest code, then to one. `ChapterLayoutTests` proves each rule, a chapter
+of every block at 80, 120 and 40 columns, and that no line of any chapter is
+wider than those widths. The rules are in
+[Help](../Architecture/HELP.md#the-layout).

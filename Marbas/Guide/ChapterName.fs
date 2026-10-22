@@ -21,3 +21,5 @@ module ChapterName =
             None
 
     let value (ChapterName name) = name
+
+    let contents = ChapterName "README.md"

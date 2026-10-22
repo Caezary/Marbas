@@ -1,11 +1,7 @@
 module Marbas.Tests.Guide.UserGuide
 
-open System
-open System.IO
 open Marbas.Guide
 open Marbas.Tests
-
-let private prefix = "user-guide/"
 
 let names =
     [ "01-getting-started.md"
@@ -26,23 +22,7 @@ let names =
       "16-platforms.md"
       "README.md" ]
 
-let embeddedNames () =
-    typeof<Chapter>.Assembly.GetManifestResourceNames()
-    |> Array.filter _.StartsWith(prefix, StringComparison.Ordinal)
-    |> Array.map _.Substring(prefix.Length)
-    |> Array.sort
-    |> List.ofArray
-
-let textOf name =
-    use stream =
-        typeof<Chapter>.Assembly.GetManifestResourceStream(prefix + name)
-        |> Expect.notNull
-
-    use reader = new StreamReader(stream)
-    reader.ReadToEnd()
-
-let private chapterOf name : Chapter =
-    { Name = ChapterName.tryCreate name |> Expect.some
-      Contents = ChapterMarkdown.parse (textOf name) |> Expect.ok }
+let chapterOf name =
+    ChapterName.tryCreate name |> Expect.some |> EmbeddedGuide.read |> Expect.ok
 
 let chapters () = names |> List.map chapterOf

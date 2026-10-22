@@ -165,9 +165,13 @@
         <Compile Include="Guide\Chapter.fs" />
         <Compile Include="Guide\KeyName.fs" />
         <Compile Include="Guide\Refusal.fs" />
+        <Compile Include="Guide\GuideFault.fs" />
         <Compile Include="Guide\ChapterMarkdown.fs" />
+        <Compile Include="Guide\EmbeddedGuide.fs" />
         <Compile Include="Guide\ChapterLinks.fs" />
         <Compile Include="Guide\ChapterKeys.fs" />
+        <Compile Include="Guide\LaidLine.fs" />
+        <Compile Include="Guide\ChapterLayout.fs" />
     </ItemGroup>
 
     <ItemGroup>

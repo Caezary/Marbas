@@ -157,7 +157,9 @@
     <Compile Include="Guide\ChapterLinksTests.fs" />
     <Compile Include="Guide\ChapterKeysTests.fs" />
     <Compile Include="Guide\UserGuide.fs" />
+    <Compile Include="Guide\EmbeddedGuideTests.fs" />
     <Compile Include="Guide\UserGuideTests.fs" />
+    <Compile Include="Guide\ChapterLayoutTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

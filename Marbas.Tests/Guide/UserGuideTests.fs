@@ -6,7 +6,7 @@ open Marbas.Tests
 
 [<Fact>]
 let ``the guide is the contents and sixteen chapters`` () =
-    let embedded = UserGuide.embeddedNames ()
+    let embedded = EmbeddedGuide.names () |> List.map ChapterName.value
 
     Assert.Equal<string list>(UserGuide.names, embedded)
 
@@ -29,11 +29,11 @@ let ``the guide is the contents and sixteen chapters`` () =
 [<InlineData("15-files-marbas-keeps.md")>]
 [<InlineData("16-platforms.md")>]
 let ``a chapter is written in the subset`` (name: string) =
-    let text = UserGuide.textOf name
+    let chapter = ChapterName.tryCreate name |> Expect.some
 
-    let blocks = ChapterMarkdown.parse text |> Expect.ok
+    let read = EmbeddedGuide.read chapter
 
-    Assert.NotEmpty blocks
+    Assert.True(Result.isOk read, $"%A{read}")
 
 [<Fact>]
 let ``every link of the guide leads to a chapter and a heading it holds`` () =

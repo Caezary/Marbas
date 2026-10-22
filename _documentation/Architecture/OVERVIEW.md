@@ -63,8 +63,10 @@ under `State` so that the help's state and its views can both read it.
 `ChapterMarkdown` is the only module that sees a Markdig type,
 `ChapterLinks` finds the links of a set of chapters that lead nowhere, and
 `ChapterKeys` the keys their key tables name, which `Ui/Keys/KeySpelling`
-spells a Terminal.Gui `Key` as.
+spells a Terminal.Gui `Key` as. `EmbeddedGuide` reads a chapter from the
+binary by name, and `ChapterLayout` lays one out to a width as styled lines.
 [Help](HELP.md#the-model-of-a-chapter) has the model,
+[the layout](HELP.md#the-layout) its rules,
 [the chapters](HELP.md#the-chapters) how the guide is written, and
 [the key maps](HELP.md#the-guide-and-the-key-maps) how a test holds the two
 together.
