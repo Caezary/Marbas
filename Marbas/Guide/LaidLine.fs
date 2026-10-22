@@ -21,4 +21,5 @@ type Piece =
 
 type LaidLine =
     { Pieces: Piece list
-      Anchor: Anchor option }
+      Anchor: Anchor option
+      Block: int }

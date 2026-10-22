@@ -1191,6 +1191,18 @@ advances by however many lines the screen held (`ViewerScroll.filling`), not by
 a row count. That keeps the line index the one measure of position, and it is
 what a wrapped page up and a percentage in the header are both counted from.
 
+## The help's screen
+
+**The help is built as the viewer is.** `HelpView.create` runs a borderless
+`Window`: a header naming the chapter's title, the content, and a key bar of
+`HelpKeys.bar`, `F10` `Quit` alone until `F7` joins it in P24.7. The content's
+`KeyDown` asks `HelpKeys.commandFor` and hands the command to `HelpState`, as
+`FileViewer` hands its own to `ViewerState`; it marks `Tab`, `Shift+Tab` and
+`Enter` handled, so Terminal.Gui moves no focus and presses no default button.
+The view holds one `HelpState` and fits it to its viewport before it reads or
+changes it, so a resize needs no event of its own. Nothing opens it yet: `F1`
+does from P24.8. The rules are in [Help](HELP.md#the-helps-state).
+
 ## What a view remembers
 
 **A view keeps what it remembers in one value.** Three views remember something

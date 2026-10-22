@@ -69,6 +69,14 @@ let ``strong and emphasised text carry their stress`` () =
     Assert.Equal<Piece list list>([ [ stressed Bold "bold"; piece Plain " and "; stressed Italic "slanted" ] ], lines)
 
 [<Fact>]
+let ``a space between words of one style takes that style`` () =
+    let text = "**two words** and `F3` `F10`"
+
+    let lines = piecesAt 80 text
+
+    Assert.Equal<Piece list list>([ [ stressed Bold "two words"; piece Plain " and "; piece Literal "F3 F10" ] ], lines)
+
+[<Fact>]
 let ``a link wrapped over two lines is one stop on both`` () =
     let text = "[one two three](02-panels.md)"
     let chapter = ChapterName.tryCreate "02-panels.md" |> Expect.some
@@ -109,6 +117,14 @@ let ``the first line of a heading carries its anchor`` () =
     let anchors = ChapterLayout.lay 10 (blocksOf text) |> List.map _.Anchor
 
     Assert.Equal<Anchor option list>([ Some(Anchor.create "two-words-that-wrap"); None; None ], anchors)
+
+[<Fact>]
+let ``a line names the block it lays out, the blank before a block included`` () =
+    let text = "# Panels\n\nOne.\n\n- two"
+
+    let blocks = ChapterLayout.lay 80 (blocksOf text) |> List.map _.Block
+
+    Assert.Equal<int list>([ 0; 0; 1; 1; 2; 2 ], blocks)
 
 [<Fact>]
 let ``a chapter's title is underlined twice`` () =

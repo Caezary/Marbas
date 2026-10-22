@@ -311,6 +311,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Ui\Help\HelpKeysTests.fs" />
+    <Compile Include="Ui\Help\HelpStateTests.fs" />
+    <Compile Include="Ui\Help\HelpColoursTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="Ui\Dialogs\AssociationRowTests.fs" />
     <Compile Include="Ui\Dialogs\HandlerRowTests.fs" />
     <Compile Include="Ui\Dialogs\TabRowTests.fs" />
@@ -420,6 +426,10 @@
     <Compile Include="Integration\Viewer\FileViewerPatternSearchTests.fs" />
     <Compile Include="Integration\Viewer\FileViewerHexSearchTests.fs" />
     <Compile Include="Integration\Viewer\ViewKeyTests.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Integration\Help\HelpViewTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

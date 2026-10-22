@@ -107,3 +107,28 @@ let errorDialog =
         ReadOnly = attribute ColorName16.White ColorName16.Red,
         Disabled = attribute ColorName16.DarkGray ColorName16.Red
     )
+
+let withStyle (attribute: Attribute) (style: TextStyle) =
+    let mutable foreground = attribute.Foreground
+    let mutable background = attribute.Background
+    let mutable style = style
+    Attribute(&foreground, &background, &style)
+
+let private styled foreground background style =
+    withStyle (attribute foreground background) style
+
+let helpText = attribute ColorName16.BrightCyan ColorName16.Blue
+
+let helpTitle = styled ColorName16.White ColorName16.Blue TextStyle.Bold
+
+let helpCode = attribute ColorName16.BrightYellow ColorName16.Blue
+
+let helpLink = styled ColorName16.BrightGreen ColorName16.Blue TextStyle.Underline
+
+let chosenLink = attribute ColorName16.Black ColorName16.Cyan
+
+let helpRuling = attribute ColorName16.Cyan ColorName16.Blue
+
+let helpNote = attribute ColorName16.White ColorName16.Blue
+
+let helpWarning = attribute ColorName16.BrightRed ColorName16.Blue

@@ -110,12 +110,19 @@ let rec private chunksOf width (word: Word) =
         front :: chunksOf width back
 
 let private space (before: Word) (after: Word) =
-    let link = (List.last before).Link
+    let left = List.last before
+    let right = List.head after
 
-    if link.IsSome && link = (List.head after).Link then
-        { plain " " with Link = link }
+    let linked =
+        { plain " " with
+            Link = if left.Link = right.Link then left.Link else None }
+
+    if left.Look = right.Look && left.Stress = right.Stress then
+        { linked with
+            Look = left.Look
+            Stress = left.Stress }
     else
-        plain " "
+        linked
 
 let private joined (words: Word list) =
     match words with
@@ -149,9 +156,16 @@ let private phraseLines context width next phrase =
     wrap width (wordsOf fragments), next
 
 let private unanchored (lines: Piece list list) =
-    lines |> List.map (fun pieces -> { Pieces = pieces; Anchor = None })
+    lines
+    |> List.map (fun pieces ->
+        { Pieces = pieces
+          Anchor = None
+          Block = 0 })
 
-let private blankLine = { Pieces = []; Anchor = None }
+let private blankLine =
+    { Pieces = []
+      Anchor = None
+      Block = 0 }
 
 let private parted (groups: LaidLine list list) =
     groups
@@ -179,7 +193,8 @@ let private headingLines width next (heading: Heading) =
         title
         |> List.mapi (fun index pieces ->
             { Pieces = pieces
-              Anchor = if index = 0 then Some heading.Anchor else None })
+              Anchor = if index = 0 then Some heading.Anchor else None
+              Block = 0 })
 
     anchored @ unanchored rule, next
 
@@ -343,11 +358,24 @@ let private mergedInto earlier (piece: Piece) =
 let private merged (pieces: Piece list) =
     pieces |> List.fold mergedInto [] |> List.rev
 
+let private laidBlock width next (index, block) =
+    let lines, next = blockLines width next block
+
+    lines |> List.map (fun line -> { line with Block = index }), next
+
+let private partedBlock index (lines: LaidLine list) =
+    if index = 0 then
+        lines
+    else
+        { blankLine with Block = index } :: lines
+
 let lay width (blocks: Block list) =
     blocks
-    |> List.mapFold (blockLines width) 0
+    |> List.indexed
+    |> List.mapFold (laidBlock width) 0
     |> fst
-    |> parted
+    |> List.mapi partedBlock
+    |> List.concat
     |> List.map (fun line ->
         { line with
             Pieces = merged line.Pieces })

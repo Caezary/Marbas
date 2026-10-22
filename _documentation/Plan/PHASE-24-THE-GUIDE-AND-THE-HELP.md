@@ -156,7 +156,9 @@ A test fails on a link to a chapter or a heading that does not exist.
   search are not commands, and before the first command the contents open. In
   the viewer it is the viewer's chapter, and in a popup that popup's section.
   The messages, the viewer and the popups map to their anchors in one table in
-  `Ui/Help/`. *Done when:* a test resolves every anchor of the table and finds
+  `Ui/Help/`. The guide describes the help, `HelpKeys.keys` join
+  `GuideKeysTests`, and a `GuideFault` the help reports has its text.
+  *Done when:* a test resolves every anchor of the table and finds
   an anchor for every message `KeyMap.bindings` raises, the last command is
   proved on state, and `F1` is driven through a real `Application` from a
   panel before and after a command, the viewer and at least two popups.

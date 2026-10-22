@@ -158,8 +158,9 @@ second on `Alt+Q`.
 ## The layout
 
 `ChapterLayout.lay width blocks` answers the lines of a chapter for a screen
-`width` columns wide. A `LaidLine` is a list of `Piece`s and the `Anchor` of
-the heading it starts, if it starts one. A `Piece` is text with a `Look` —
+`width` columns wide. A `LaidLine` is a list of `Piece`s, the `Anchor` of
+the heading it starts, if it starts one, and the index of the `Block` it lays
+out, the blank line before a block counted with it. A `Piece` is text with a `Look` —
 `Plain`, `Literal` for inline code, `Title` of a heading level, `Ruling` for
 the rules of a table, `Framing` of an alert kind — a set of `Stress`, `Bold`
 and `Italic`, and the `LinkStop` it belongs to. Adjacent pieces of one style
@@ -167,7 +168,9 @@ are merged. A column is one character: the guide uses no wide characters.
 
 - Blocks are parted by one blank line. A paragraph is reflowed: words, split
   at spaces, fill a line greedily. Inline code is never split at its own
-  spaces. A word wider than the line is cut at the width.
+  spaces. A word wider than the line is cut at the width. The space between
+  two words takes their look and stress when they share them, and their link
+  when they share one.
 - A heading is wrapped in its `Title` look. A chapter title is underlined with
   `═`, a section with `─`, both as wide as the title; a subsection is not.
 - An item starts with `• ` and its next lines hang under its text; a nested
@@ -188,6 +191,57 @@ are merged. A column is one character: the guide uses no wide characters.
 
 `ChapterLayoutTests` proves each rule, a chapter of every block at 80, 120
 and 40 columns, and that no line of the guide is wider than 40, 80 or 120.
+
+## The help's state
+
+`Ui/Help/HelpState` is pure, as `ViewerState` is. A `HelpPage` is a chapter,
+the width it is laid out at, its lines, the first line on screen and the
+chosen link; a `HelpState` is the page shown, the screen's height and the
+pages to go back to, newest first.
+
+- `fitted` lays the page out again only when the width changes. The line on
+  top keeps its block on top, as far into it as before in proportion:
+  line 3 of a block of 8 at 80 columns is line 5 of the same block of 14 at
+  40. The top then stays within the lines, so a taller screen at the end
+  keeps the last line at the bottom.
+- The arrows, `PgUp`, `PgDn`, `Home` and `End` move as in the viewer, a page
+  being a screenful.
+- The chosen link is always on screen: a scroll that hides it drops it.
+  `Tab` chooses the link after the chosen one, or with none chosen the first
+  link on screen, or failing that the first below it; `Shift+Tab` mirrors it.
+  A link off screen is scrolled to the nearest edge. On the last link `Tab`
+  keeps it.
+- `follow` takes the reader of chapters, `EmbeddedGuide.read` in the view.
+  It opens the target chapter, or the page's own for an anchor of its own, at
+  the anchor's heading or at the top, and pushes the page left, chosen link
+  included. A chapter that cannot be read is the `GuideFault` it answers, and
+  the view hands it to `Ports.Report`. Enter with no link chosen changes
+  nothing.
+- `Back` pops the newest page and lays it out at the current width.
+- `title` is the chapter's first `#` heading, or its file name.
+
+`Ui/Help/HelpColours.attributeOf` answers a piece's `Attribute` from
+`ClassicScheme`: body text bright cyan, inline code bright yellow, headings
+bold white, rules cyan, a note's frame white and a warning's bright red, all
+on the panel's blue; a link bright green and underlined, the chosen link
+black on cyan, the colour of a match in the viewer. `Bold` and `Italic` add
+their `TextStyle`.
+
+`HelpStateTests` proves scrolling, `Tab` and `Shift+Tab` on and off screen,
+following a link to a chapter, to a heading of another chapter and to one of
+its own, a chapter that cannot be read, going back once and twice, and the
+resizes; `HelpColoursTests` each colour; `HelpViewTests` the screen's three
+parts, the keys and that `Tab` is kept by the content. The
+`render-tui-screen` probe ran the view under a real `Application` at 80 and
+40 columns: `Tab` lit *Differences between platforms* black on cyan, `Enter`
+opened `16-platforms.md`, `Backspace` came back with the link still chosen,
+the narrower screen kept the same paragraph on top, and `Esc` closed the
+help.
+
+`HelpKeys.keys` are not yet among the keys `GuideKeysTests` holds: the guide
+describes the help when `F1` opens it, in P24.8, and the keys join the test
+then. The text of a `GuideFault` is P24.8's too, with the adapter that opens
+the help.
 
 ## The view is Marbas's own
 

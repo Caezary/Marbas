@@ -244,6 +244,13 @@
     </ItemGroup>
 
     <ItemGroup>
+        <Compile Include="Ui\Help\HelpKeys.fs" />
+        <Compile Include="Ui\Help\HelpState.fs" />
+        <Compile Include="Ui\Help\HelpColours.fs" />
+        <Compile Include="Ui\Help\HelpView.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
         <Compile Include="Ui\Dialogs\HistoryField.fs" />
         <Compile Include="Ui\Dialogs\PromptDialog.fs" />
         <Compile Include="Ui\Dialogs\PatternDialog.fs" />

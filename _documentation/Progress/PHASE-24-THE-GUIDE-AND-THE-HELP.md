@@ -110,3 +110,20 @@ longest code, then to one. `ChapterLayoutTests` proves each rule, a chapter
 of every block at 80, 120 and 40 columns, and that no line of any chapter is
 wider than those widths. The rules are in
 [Help](../Architecture/HELP.md#the-layout).
+
+**P24.6 the help shows the guide.** `Ui/Help/` holds `HelpKeys`, the help's
+key table and bar; `HelpState`, pure, a page of a chapter laid out at a width
+with its top line and chosen link, and the pages to go back to; `HelpColours`,
+a piece's attribute; and `HelpView`, the borderless window of a header, the
+content and the bar. A `LaidLine` now names its block, which lets a resize
+keep the line on top within its block, in proportion. `HelpStateTests` proves
+scrolling, the choice of a link on and off screen, following a link to a
+chapter, to another chapter's heading and to one of its own, a chapter that
+cannot be read, going back once and twice, and three resizes;
+`HelpViewTests` drives the view with its keys over the real guide. The probe
+ran it under a real `Application` at 80 and 40 columns. Its first run showed
+the words of a heading as separate pieces with plain spaces between; a space
+now takes the look and stress its two words share. Nothing opens the help
+until `F1` in P24.8, which also brings its keys into `GuideKeysTests` and the
+text of a `GuideFault`. The rules are in
+[Help](../Architecture/HELP.md#the-helps-state).
