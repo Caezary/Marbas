@@ -8,29 +8,8 @@ open Terminal.Gui.Views
 open Marbas.Guide
 open Marbas.Ui.Keys
 open Marbas.Ui.Help
-open Marbas.Tests
-open Marbas.Tests.Guide
 open Marbas.Tests.Integration.Gui
-
-let private name raw =
-    ChapterName.tryCreate raw |> Expect.some
-
-let private quietPorts: HelpView.Ports =
-    { Close = ignore
-      Read = EmbeddedGuide.read
-      Report = ignore }
-
-let private showing ports (size: Size) =
-    let window = HelpView.create ports (UserGuide.chapterOf "README.md")
-    window.BeginInit()
-    window.EndInit()
-    window.Layout(size) |> ignore
-    window
-
-let private laidOut () = showing quietPorts (Size(80, 24))
-
-let private chapterShown window =
-    (HelpView.content window).State.Page.Chapter.Name
+open Marbas.Tests.Integration.Help.HelpViewFixture
 
 [<Fact>]
 let ``the help wears no border`` () =

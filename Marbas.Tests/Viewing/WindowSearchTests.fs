@@ -538,3 +538,43 @@ let ``a pattern is matched in the code page the file is read in`` () =
     let answer = run going source encoding (expression "B[ĄĘ]") (placeAt 0L 0)
 
     Assert.Equal(found 2L 0 2, answer)
+
+[<Fact>]
+let ``an occurrence is the first match from the column on`` () =
+    let occurrence = occurrenceFrom (plain "ab")
+
+    let found = occurrence "ab cab ab" 1
+
+    Assert.Equal(Some(4, 2), found)
+
+[<Fact>]
+let ``an occurrence past the last match is none`` () =
+    let occurrence = occurrenceFrom (plain "ab")
+
+    let found = occurrence "ab cd" 1
+
+    Assert.Equal(None, found)
+
+[<Fact>]
+let ``an occurrence back is the last match before the column`` () =
+    let occurrence = occurrenceFrom (back (plain "ab"))
+
+    let found = occurrence "ab ab ab" 6
+
+    Assert.Equal(Some(3, 2), found)
+
+[<Fact>]
+let ``an occurrence of an expression is as long as its match`` () =
+    let occurrence = occurrenceFrom (expression "a+")
+
+    let found = occurrence "baaac" 0
+
+    Assert.Equal(Some(1, 3), found)
+
+[<Fact>]
+let ``an occurrence of a whole word passes over part of a word`` () =
+    let occurrence = occurrenceFrom (whole "need")
+
+    let found = occurrence "needle need" 0
+
+    Assert.Equal(Some(7, 4), found)

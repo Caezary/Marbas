@@ -1195,13 +1195,22 @@ what a wrapped page up and a percentage in the header are both counted from.
 
 **The help is built as the viewer is.** `HelpView.create` runs a borderless
 `Window`: a header naming the chapter's title, the content, and a key bar of
-`HelpKeys.bar`, `F10` `Quit` alone until `F7` joins it in P24.7. The content's
+`HelpKeys.bar`, `F7` `Search` and `F10` `Quit`. The content's
 `KeyDown` asks `HelpKeys.commandFor` and hands the command to `HelpState`, as
 `FileViewer` hands its own to `ViewerState`; it marks `Tab`, `Shift+Tab` and
 `Enter` handled, so Terminal.Gui moves no focus and presses no default button.
 The view holds one `HelpState` and fits it to its viewport before it reads or
 changes it, so a resize needs no event of its own. Nothing opens it yet: `F1`
 does from P24.8. The rules are in [Help](HELP.md#the-helps-state).
+
+**The help searches through the viewer's popup.** `F7` and `Shift+F7` are
+`ViewerKeys.searchKey` and `repeatKey`. `HelpView.Ports` carries the viewer's
+`AskSearch`, a `SearchHistory` and `ReportSearch`, so the help offers the same
+`ViewerSearchDialog`, always as a text search, and reports a miss or a broken
+expression as the viewer does. The search runs on the laid-out lines in
+memory, so it needs no runner and no progress window. The content draws the
+match over its pieces in `ClassicScheme.foundText`. The rules are in
+[Help](HELP.md#searching-the-help).
 
 ## What a view remembers
 

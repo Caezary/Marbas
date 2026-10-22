@@ -313,6 +313,7 @@
   <ItemGroup>
     <Compile Include="Ui\Help\HelpKeysTests.fs" />
     <Compile Include="Ui\Help\HelpStateTests.fs" />
+    <Compile Include="Ui\Help\HelpSearchTests.fs" />
     <Compile Include="Ui\Help\HelpColoursTests.fs" />
   </ItemGroup>
 
@@ -429,7 +430,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Integration\Help\HelpViewFixture.fs" />
     <Compile Include="Integration\Help\HelpViewTests.fs" />
+    <Compile Include="Integration\Help\HelpViewSearchTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -277,7 +277,8 @@ Marbas/
     LineIndex.fs          line starts scanned on demand, one in 64 kept, and the line at an offset;
                           the lines from an offset as a walk, window by window, either way
     WindowSearch.fs       the viewer's search: a text or a pattern, its case and a direction,
-                          from a place in a line, stoppable
+                          from a place in a line, stoppable; the occurrence on one line,
+                          which the help searches its lines with
     ByteSearch.fs         the dump's search: a run of bytes from an offset, either way, stoppable
   Find/                   searching by name and by text, on disk and inside archives
     ContentMatch.fs       whether a file holds a text, read a buffer at a time

@@ -534,6 +534,12 @@ the line. A `Control` beside it carries `Reached`, told the offset at every
 `Reading`, and `IsCancelled`, asked at the same step, so a stop is noticed
 within one window of bytes however long the lines are.
 
+`WindowSearch.occurrenceFrom query` answers the same match on one line of
+text: from a text and a column, the column and length of the first occurrence
+at or after it, or backwards of the last one before it. It builds the query's
+`Regex` once and is applied to every line. The help searches its laid-out lines
+with it; `run` does not call it, so the viewer's search is unchanged.
+
 **What is wanted is a text or a pattern, never both and never unchecked.**
 Since P19.5 `Wanted` is `Literal` — a `FindText` and its `WordMatch` — or
 `Pattern`, a `SearchPattern`. A pattern carries no `WordMatch`, because whole

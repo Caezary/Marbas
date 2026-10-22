@@ -1,19 +1,26 @@
 namespace Marbas.Ui.Help
 
 open System.Drawing
+open Marbas.Domain
 open Marbas.Guide
+open Marbas.Viewing
+open Marbas.Ui.Viewer
 
 type HelpPage =
     { Chapter: Chapter
       Width: int
       Lines: LaidLine list
       Top: int
-      Link: int option }
+      Link: int option
+      Found: FoundSpan option }
 
 type HelpState =
     { Page: HelpPage
       Height: int
-      Back: HelpPage list }
+      Back: HelpPage list
+      LastQuery: WindowSearch.Query option }
+
+type private SearchPlace = { Row: int; Column: int }
 
 module HelpState =
 
@@ -22,12 +29,14 @@ module HelpState =
           Width = 0
           Lines = []
           Top = 0
-          Link = None }
+          Link = None
+          Found = None }
 
     let start chapter =
         { Page = pageOf chapter
           Height = 1
-          Back = [] }
+          Back = []
+          LastQuery = None }
 
     let private blockSpan (lines: LaidLine list) block =
         let start =
@@ -56,7 +65,8 @@ module HelpState =
             { page with
                 Width = width
                 Lines = lines
-                Top = topAfterRelaying page lines }
+                Top = topAfterRelaying page lines
+                Found = None }
 
     let private holds index (line: LaidLine) =
         line.Pieces
@@ -158,6 +168,8 @@ module HelpState =
         | HelpKeys.PreviousLink -> stepped previousStop height page |> withPage state
         | HelpKeys.Back -> back state
         | HelpKeys.Follow
+        | HelpKeys.SearchAsked
+        | HelpKeys.SearchRepeated
         | HelpKeys.Closed -> state
 
     let fitted (screen: Size) (state: HelpState) =
@@ -204,6 +216,78 @@ module HelpState =
         state.Page.Lines
         |> List.skip (min state.Page.Top (List.length state.Page.Lines))
         |> List.truncate state.Height
+
+    let private textOf (line: LaidLine) =
+        line.Pieces |> List.map _.Text |> String.concat ""
+
+    let private screenPlace height (page: HelpPage) direction : SearchPlace =
+        match direction with
+        | Forwards -> { Row = page.Top; Column = 0 }
+        | Backwards ->
+            let bottom = min (page.Top + height) (List.length page.Lines) - 1
+
+            { Row = bottom
+              Column =
+                page.Lines
+                |> List.tryItem bottom
+                |> Option.map (textOf >> String.length)
+                |> Option.defaultValue 0 }
+
+    let private placeAfterMatch height (page: HelpPage) direction : SearchPlace =
+        match page.Found, direction with
+        | Some span, Forwards -> { Row = span.Line; Column = span.Until }
+        | Some span, Backwards -> { Row = span.Line; Column = span.From }
+        | None, _ -> screenPlace height page direction
+
+    let private rowsFrom direction (place: SearchPlace) (page: HelpPage) =
+        let texts = page.Lines |> List.map textOf |> List.indexed
+
+        match direction with
+        | Forwards -> texts |> List.filter (fun (row, _) -> row >= place.Row)
+        | Backwards -> texts |> List.filter (fun (row, _) -> row <= place.Row) |> List.rev
+
+    let private columnFrom direction (place: SearchPlace) (row, text: string) =
+        match direction, row = place.Row with
+        | _, true -> place.Column
+        | Forwards, false -> 0
+        | Backwards, false -> text.Length
+
+    let private spanFrom (query: WindowSearch.Query) (place: SearchPlace) (page: HelpPage) =
+        let occurrence = WindowSearch.occurrenceFrom query
+
+        rowsFrom query.Direction place page
+        |> List.tryPick (fun (row, text) ->
+            occurrence text (columnFrom query.Direction place (row, text))
+            |> Option.map (fun (column, length) ->
+                ({ Line = row
+                   From = column
+                   Until = column + length }
+                : FoundSpan)))
+
+    let private showing height (span: FoundSpan) (page: HelpPage) =
+        let marked = { page with Found = Some span }
+
+        if onScreen height page span.Line then
+            marked
+        else
+            scrolledTo height span.Line marked
+
+    let private findFrom placeOf (query: WindowSearch.Query) (state: HelpState) =
+        let page = state.Page
+
+        spanFrom query (placeOf state.Height page query.Direction) page
+        |> Option.map (fun span -> showing state.Height span page |> withPage state)
+
+    let searchedFor (query: WindowSearch.Query) (state: HelpState) = { state with LastQuery = Some query }
+
+    let findFromScreen query state = findFrom screenPlace query state
+
+    let findAfterMatch query state = findFrom placeAfterMatch query state
+
+    let foundOnScreen (state: HelpState) =
+        state.Page.Found
+        |> Option.filter (fun span -> onScreen state.Height state.Page span.Line)
+        |> Option.map (fun span -> span.Line - state.Page.Top, span.From, span.Until - span.From)
 
     let rec private phraseText (Phrase spans) =
         spans |> List.map spanText |> String.concat ""

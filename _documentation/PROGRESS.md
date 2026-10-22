@@ -1,6 +1,6 @@
 # Progress
 
-Status as of 2026-10-21. Phases and task numbers refer to [the plan](PLAN.md).
+Status as of 2026-10-22. Phases and task numbers refer to [the plan](PLAN.md).
 What each phase actually did is in [Progress/](Progress), one file per phase;
 what the application does today is in
 [What works today](Progress/WHAT-WORKS.md).
@@ -34,7 +34,7 @@ what the application does today is in
 | 22 — What the manual pass found | P22.1–P22.18 | done | [journal](Progress/PHASE-22-WHAT-THE-MANUAL-PASS-FOUND.md) |
 | 23 — The layers above the file system | P23.1–P23.8 | done | [journal](Progress/PHASE-23-THE-LAYERS-ABOVE-THE-FILE-SYSTEM.md) |
 | Interlude 1 — The first release | I1.1–I1.5 | done | [journal](Progress/INTERLUDE-01-THE-FIRST-RELEASE.md) |
-| 24 — The guide and the help | P24.1–P24.8 | in progress (6 of 8) | [journal](Progress/PHASE-24-THE-GUIDE-AND-THE-HELP.md) |
+| 24 — The guide and the help | P24.1–P24.8 | in progress (7 of 8) | [journal](Progress/PHASE-24-THE-GUIDE-AND-THE-HELP.md) |
 
 ## What works today
 

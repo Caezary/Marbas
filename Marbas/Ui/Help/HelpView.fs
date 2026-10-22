@@ -5,11 +5,14 @@ open Terminal.Gui.Drawing
 open Terminal.Gui.Input
 open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
+open Marbas.Domain
 open Marbas.Guide
+open Marbas.Viewing
 open Marbas.Ui
 open Marbas.Ui.Theme
 open Marbas.Ui.Format
 open Marbas.Ui.Keys
+open Marbas.Ui.Viewer
 
 [<Literal>]
 let ContentId = "helpContent"
@@ -23,7 +26,10 @@ let KeyBarId = "helpKeyBar"
 type Ports =
     { Close: Window -> unit
       Read: ChapterName -> Result<Chapter, GuideFault>
-      Report: GuideFault -> unit }
+      Report: GuideFault -> unit
+      AskSearch: SearchOffer -> SearchAnswer option
+      Searches: Marbas.State.Ports.SearchHistory
+      ReportSearch: SearchReport -> unit }
 
 let private textOf (line: LaidLine) =
     line.Pieces |> List.map _.Text |> String.concat ""
@@ -54,6 +60,8 @@ type ContentView(chapter: Chapter) as this =
     member this.Rows() =
         HelpState.shown this.State |> List.map textOf
 
+    member this.FoundOnScreen() = HelpState.foundOnScreen this.State
+
     override this.OnDrawingContent(_: DrawContext) =
         let shown = HelpState.shown this.State
         let width = screen().Width
@@ -71,12 +79,44 @@ type ContentView(chapter: Chapter) as this =
             this.SetAttribute ClassicScheme.helpText |> ignore
             this.AddStr(String.replicate (max 0 (width - (pieces |> List.sumBy _.Text.Length))) " ")
 
+        HelpState.foundOnScreen state
+        |> Option.iter (fun (row, start, length) ->
+            this.Move(start, row) |> ignore
+            this.SetAttribute ClassicScheme.foundText |> ignore
+            this.AddStr((textOf shown[row]).Substring(start, length)))
+
         true
 
 let private following (ports: Ports) (content: ContentView) =
     match HelpState.follow ports.Read content.State with
     | Ok followed -> content.Change(fun _ -> followed)
     | Error fault -> ports.Report fault
+
+let private searching (ports: Ports) (content: ContentView) find (query: WindowSearch.Query) =
+    match find query content.State with
+    | Some found -> content.Change(fun _ -> found)
+    | None -> ports.ReportSearch(TextNotFound query.Wanted)
+
+let private askedFor (ports: Ports) (content: ContentView) (answer: SearchAnswer) =
+    match ViewerSearch.query answer with
+    | Some(Ok(TextAsked query)) ->
+        EnteredText.tryCreate answer.Typed |> Option.iter ports.Searches.Remember
+        content.Change(HelpState.searchedFor query)
+        searching ports content HelpState.findFromScreen query
+    | Some(Ok(BytesAsked _))
+    | None -> ()
+    | Some(Error refusal) -> ports.ReportSearch(Refused refusal)
+
+let private askSearch (ports: Ports) (content: ContentView) =
+    { Remembered = ports.Searches.Texts()
+      Last = LastText content.State.LastQuery }
+    |> ports.AskSearch
+    |> Option.iter (askedFor ports content)
+
+let private searchAgain (ports: Ports) (content: ContentView) =
+    match content.State.LastQuery with
+    | Some query -> searching ports content HelpState.findAfterMatch query
+    | None -> askSearch ports content
 
 let create (ports: Ports) (chapter: Chapter) =
     let window = new Window(Width = Dim.Fill(), Height = Dim.Fill())
@@ -111,6 +151,14 @@ let create (ports: Ports) (chapter: Chapter) =
         | Some HelpKeys.Follow ->
             key.Handled <- true
             following ports content
+            refresh ()
+        | Some HelpKeys.SearchAsked ->
+            key.Handled <- true
+            askSearch ports content
+            refresh ()
+        | Some HelpKeys.SearchRepeated ->
+            key.Handled <- true
+            searchAgain ports content
             refresh ()
         | Some command ->
             key.Handled <- true

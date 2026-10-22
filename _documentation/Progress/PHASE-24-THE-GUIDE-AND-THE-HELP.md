@@ -127,3 +127,22 @@ now takes the look and stress its two words share. Nothing opens the help
 until `F1` in P24.8, which also brings its keys into `GuideKeysTests` and the
 text of a `GuideFault`. The rules are in
 [Help](../Architecture/HELP.md#the-helps-state).
+
+**P24.7 the help searches the chapter on screen.** `F7` and `Shift+F7` are
+the viewer's keys, and `HelpKeys.bar` names `F7` `Search`. `HelpView.Ports`
+gained the viewer's `AskSearch`, a `SearchHistory` and `ReportSearch`, so the
+help offers `ViewerSearchDialog` as a text search and reports a miss or a
+broken expression in the viewer's words. `WindowSearch.occurrenceFrom` finds a
+match on one line of text; the help applies it to its laid-out lines, and
+`WindowSearch.run` is untouched. A `HelpPage` holds its match as a
+`FoundSpan`, and `HelpState` the last query: a link followed starts the next
+search in the new chapter from its screen, going back restores the match left,
+and a change of width drops it. `HelpSearchTests` proves the state;
+`HelpViewSearchTests` drives the keys over the real guide, and the view's
+fixture moved into `HelpViewFixture`. The probe ran the help with the real
+popup under an `Application`: the match drawn black on cyan, a miss reported,
+`Shift+F7` moving on, and a search after `Enter` on a link finding its match in
+the new chapter. The probe's own screen reset between keys showed that a
+resize drops the match; the probe then ran at the console's size. Nothing
+opens the help until `F1` in P24.8. The rules are in
+[Help](../Architecture/HELP.md#searching-the-help).

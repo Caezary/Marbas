@@ -238,6 +238,56 @@ opened `16-platforms.md`, `Backspace` came back with the link still chosen,
 the narrower screen kept the same paragraph on top, and `Esc` closed the
 help.
 
+## Searching the help
+
+`F7` opens the viewer's search popup, `ViewerSearchDialog`, with its options:
+case, whole words, regular expression, backwards. The offer is the viewer's
+text searches remembered and the help's last query, so the popup always opens
+as a text search. `Shift+F7` repeats the last query without the popup, or opens
+it when there is none. The text typed is remembered through
+`HelpView.Ports.Searches`.
+
+- The search matches the laid-out lines of the page shown, each line as the
+  text of its pieces, with `WindowSearch.occurrenceFrom`. A phrase wrapped
+  over two lines is not found, as a match never crosses a line break in the
+  viewer. Table rules, bullets and alert frames are text of their lines and
+  can match.
+- `F7` searches from the screen: forwards from the start of its first line,
+  backwards from the end of its last. `Shift+F7` searches from the match:
+  forwards from its end, backwards from its start; without a match, from the
+  screen.
+- A match is a `FoundSpan` of the page, its line and columns. A match on
+  screen leaves the screen; a match off it puts its line on top, as far as
+  the end of the chapter lets it. A chosen link that this scroll hides is
+  dropped, as on any scroll.
+- Not found, the page is unchanged, the old match included, and the view
+  reports `TextNotFound`; a regular expression that does not parse is
+  `Refused`. Both are the viewer's `SearchReport`s and texts.
+- `HelpState.LastQuery` belongs to the help, not to a page, so it outlasts a
+  link followed and going back. The match belongs to the page: a link
+  followed opens a page without one, so the next `Shift+F7` searches the new
+  chapter from its screen; going back restores the page left, its match
+  included.
+- A change of width lays the page out again and drops the match, since its
+  columns no longer hold; the next `Shift+F7` searches from the screen.
+- The match is drawn over the pieces in `ClassicScheme.foundText`, black on
+  cyan, as in the viewer. A chosen link has the same colour.
+
+`HelpSearchTests` proves a match on and off screen, `Shift+F7` after a match
+and without one, the end of the chapter, both directions from the screen and
+from a match, a chosen link dropped by the scroll, the row a match is drawn
+on, a link followed, going back and a resize. `HelpViewSearchTests` drives
+`F7` and `Shift+F7` through the view over the real guide: the offer, the text
+remembered, the match on screen, a miss and a broken expression reported. The
+`render-tui-screen` probe ran the view with the real `ViewerSearchDialog`
+under an `Application`: `F7` `chapter` drew *chapter* black on cyan, `zzz`
+opened *'zzz' was not found.*, `Shift+F7` moved to the next *key*, and after
+`Tab` and `Enter` it found the first *key* of `16-platforms.md`. The probe puts
+the screen back to the console's size between keys; at another size each
+change of width dropped the match, as the last rule says.
+
+## What waits for F1
+
 `HelpKeys.keys` are not yet among the keys `GuideKeysTests` holds: the guide
 describes the help when `F1` opens it, in P24.8, and the keys join the test
 then. The text of a `GuideFault` is P24.8's too, with the adapter that opens

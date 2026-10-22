@@ -245,7 +245,7 @@ is compiled before them and is opened by name: `ShellFixture` carries the
 do-nothing dependencies, the `capture` that records what was dispatched and the
 helpers for text typed earlier; `ShellArchiveFixture` the archive most of the
 archive tests unpack; `UpdateFixture`, `OperationsFixture`, `ClipboardFixture`,
-`FileViewerFixture` and `HistoryDialogFixture` the arrange code of their
+`FileViewerFixture`, `HelpViewFixture` and `HistoryDialogFixture` the arrange code of their
 namesakes, as `ArchiveFixture` has done for the archive tests of `State/` since
 before the split. A fixture holds no test, and a helper only one file needs
 stays `private` in that file; the aliases every file writes for itself — `at`,

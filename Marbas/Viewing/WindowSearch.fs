@@ -86,6 +86,14 @@ let private firstFrom occurrences column =
 let private lastBefore occurrences column =
     occurrences |> Seq.takeWhile (fun (index, _) -> index < column) |> Seq.tryLast
 
+let occurrenceFrom (query: Query) =
+    let occurrencesIn = occurrencesOf query
+
+    fun (text: string) column ->
+        match query.Direction with
+        | Forwards -> firstFrom (occurrencesIn text) column
+        | Backwards -> lastBefore (occurrencesIn text) column
+
 let private matchIn (occurrencesIn: string -> (int * int) seq) direction (place: Place) (line: LineIndex.Line) =
     let occurrences = occurrencesIn line.Text
     let onStartingLine = line.Start = place.LineStart

@@ -15,6 +15,7 @@ open Marbas.Ui.Help
 [<InlineData(KeyCode.Tab, "NextLink")>]
 [<InlineData(KeyCode.Enter, "Follow")>]
 [<InlineData(KeyCode.Backspace, "Back")>]
+[<InlineData(KeyCode.F7, "SearchAsked")>]
 [<InlineData(KeyCode.Esc, "Closed")>]
 [<InlineData(KeyCode.F10, "Closed")>]
 let ``a key of the help stands for its command`` (code: KeyCode, command: string) =
@@ -41,6 +42,14 @@ let ``Alt+← goes back`` () =
     Assert.Equal(Some HelpKeys.Back, found)
 
 [<Fact>]
+let ``Shift+F7 repeats the search`` () =
+    let key = Key.F7.WithShift
+
+    let found = HelpKeys.commandFor key
+
+    Assert.Equal(Some HelpKeys.SearchRepeated, found)
+
+[<Fact>]
 let ``a key the help does not bind stands for nothing`` () =
     let key = Key.F5
 
@@ -49,7 +58,7 @@ let ``a key the help does not bind stands for nothing`` () =
     Assert.Equal(None, found)
 
 [<Fact>]
-let ``the bar names F10 alone`` () =
+let ``the bar names F7 and F10`` () =
     let labels = HelpKeys.bar
 
-    Assert.Equal<string list>([ ""; ""; ""; ""; ""; ""; ""; ""; ""; "Quit"; ""; "" ], labels)
+    Assert.Equal<string list>([ ""; ""; ""; ""; ""; ""; "Search"; ""; ""; "Quit"; ""; "" ], labels)
