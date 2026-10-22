@@ -9,6 +9,7 @@ open Marbas.Programs
 open Marbas.Profile
 open Marbas.Locations
 open Marbas.Find
+open Marbas.Guide
 open Marbas.FileSystem.DirectoryListing
 open Marbas.Messages
 open Marbas.State.AppState
@@ -106,6 +107,7 @@ type Message =
         results: Operations.ItemResult list
     | FilesPasteRequested
     | ClipboardFilesRead of files: ClipboardFiles * target: TransferTarget
+    | HelpRequested
     | QuitRequested
 
 type Effect =
@@ -154,6 +156,7 @@ type Effect =
     | MovePastedFiles of files: ClipboardFiles * target: TransferTarget
     | SweepLeftovers
     | SaveSettings of Settings
+    | ShowHelp of GuidePlace
     | Quit
 
 type UpdateResult =
@@ -886,6 +889,7 @@ let private transition (fs: IFileSystem) (msg: Message) (state: AppState) : Upda
     | ClipboardExtractFinished(groups, scratch, results) -> extractedForClipboard fs state groups scratch results
     | FilesPasteRequested -> readingClipboardFiles fs state
     | ClipboardFilesRead(files, target) -> pasting fs state files target
+    | HelpRequested -> ShowHelp state.HelpPlace |> request state
     | QuitRequested -> quitting fs state
 
 let private watching before result =
@@ -950,6 +954,61 @@ let private forgettingMarks msg result =
         { result with
             State = forgetMarks result.State }
 
+let helpPlaceOf msg =
+    match msg with
+    | QuitRequested -> Some(GuidePlace.gettingStarted (Some "keys-everywhere"))
+    | SortRequested _ -> Some(GuidePlace.panels (Some "sorting"))
+    | HiddenToggled -> Some(GuidePlace.panels (Some "hidden-entries"))
+    | RefreshRequested -> Some(GuidePlace.panels (Some "reading-the-panel-again"))
+    | SelectionToggled _ -> Some(GuidePlace.marking (Some "marking-entries-one-by-one"))
+    | PatternRequested _
+    | LikenessRequested _
+    | AllFilesRequested _
+    | InversionRequested -> Some(GuidePlace.marking (Some "marking-by-pattern"))
+    | MarksRecalled -> Some(GuidePlace.marking (Some "taking-marks-back"))
+    | TabsRequested -> Some(GuidePlace.tabs (Some "the-list-of-tabs"))
+    | TabOpened
+    | TabClosed
+    | TabCycled _ -> Some(GuidePlace.tabs None)
+    | CopyRequested
+    | MoveRequested -> Some(GuidePlace.fileOperations (Some "copying-and-moving"))
+    | MakeDirectoryRequested
+    | NewFileRequested -> Some(GuidePlace.fileOperations (Some "making-directories-and-files"))
+    | DeleteRequested _ -> Some(GuidePlace.fileOperations (Some "deleting-and-wiping"))
+    | LinkRequested -> Some(GuidePlace.fileOperations (Some "links"))
+    | EditRequested -> Some(GuidePlace.fileOperations (Some "editing"))
+    | UpOneLevelRequested
+    | VolumeRootRequested -> Some(GuidePlace.directories (Some "going-up-and-to-the-root"))
+    | RootRequested _ -> Some(GuidePlace.directories (Some "drives"))
+    | FavoriteKeepRequested
+    | FavoriteRequested _ -> Some(GuidePlace.directories (Some "favourites"))
+    | FavoritesRequested -> Some(GuidePlace.directories (Some "the-list-of-favourites"))
+    | PackRequested
+    | UnpackRequested -> Some(GuidePlace.archives (Some "packing-and-unpacking"))
+    | WalkIntoRequested -> Some(GuidePlace.archives (Some "browsing-an-archive"))
+    | NamesCopyRequested
+    | PathsCopyRequested
+    | LinkTargetsCopyRequested -> Some(GuidePlace.clipboard (Some "text"))
+    | ClipboardPathRequested -> Some(GuidePlace.clipboard (Some "going-to-a-path"))
+    | FilesOnClipboardRequested _
+    | FilesPasteRequested -> Some(GuidePlace.clipboard (Some "files"))
+    | FindRequested -> Some(GuidePlace.finding None)
+    | OpenWithRequested
+    | ElevatedRunRequested -> Some(GuidePlace.running (Some "running-a-file"))
+    | UserMenuRequested -> Some(GuidePlace.running (Some "the-user-menu"))
+    | ViewRequested -> Some(GuidePlace.viewing None)
+    | SettingsRequested -> Some(GuidePlace.settings (Some "setup"))
+    | SessionSaveRequested -> Some(GuidePlace.settings (Some "the-session"))
+    | HistoryRequested -> Some(GuidePlace.history (Some "the-history-popup"))
+    | _ -> None
+
+let private placingHelp msg result =
+    match helpPlaceOf msg with
+    | Some place ->
+        { result with
+            State.HelpPlace = place }
+    | None -> result
+
 let private refusedAsSource msg =
     match msg with
     | MakeDirectoryRequested -> Some MakingDirectory
@@ -980,7 +1039,11 @@ let update (fs: IFileSystem) (msg: Message) (state: AppState) : UpdateResult =
         | Some refusal -> reportResultsRefusal state refusal
         | None -> transition fs msg state
 
-    result |> watching state |> remembering msg state |> forgettingMarks msg
+    result
+    |> watching state
+    |> remembering msg state
+    |> forgettingMarks msg
+    |> placingHelp msg
 
 let step (fs: IFileSystem) (msg: Message) (state: AppState) =
     let result = update fs msg state

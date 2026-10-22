@@ -184,6 +184,7 @@ module ViewerState =
         | ViewerKeys.SearchAsked
         | ViewerKeys.SearchRepeated
         | ViewerKeys.CodePageAsked
+        | ViewerKeys.HelpAsked
         | ViewerKeys.Closed -> state
 
     let private reindexed (page: CodePage) (state: ViewerState) =

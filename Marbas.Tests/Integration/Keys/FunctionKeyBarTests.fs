@@ -37,7 +37,7 @@ let ``the classic commands sit on the slots of their keys`` () =
     let commands = FunctionKeyBar.slots (bar window) |> List.map _.CommandName.Text
 
     Assert.Equal<string list>(
-        [ ""
+        [ "Help"
           "Menu"
           "View"
           "Edit"
@@ -155,7 +155,7 @@ let ``clicking a slot with no command dispatches nothing`` () =
     let messages = ResizeArray<Message>()
     use bar = FunctionKeyBar.create messages.Add
 
-    click (FunctionKeyBar.slots bar |> List.head)
+    click (FunctionKeyBar.slots bar |> List.item 8)
 
     Assert.Empty messages
 

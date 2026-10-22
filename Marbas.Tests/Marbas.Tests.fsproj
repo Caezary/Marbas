@@ -225,6 +225,7 @@
     <Compile Include="State\Update\UpdateDeleteTests.fs" />
     <Compile Include="State\Update\UpdateTransferTests.fs" />
     <Compile Include="State\Update\UpdateViewAndEditTests.fs" />
+    <Compile Include="State\Update\UpdateHelpTests.fs" />
     <Compile Include="State\Update\UpdateProgramsTests.fs" />
     <Compile Include="State\Update\UpdatePackTests.fs" />
     <Compile Include="State\Update\UpdateTabTests.fs" />
@@ -239,6 +240,7 @@
     <Compile Include="State\Shell\ShellDeleteTests.fs" />
     <Compile Include="State\Shell\ShellTransferTests.fs" />
     <Compile Include="State\Shell\ShellViewTests.fs" />
+    <Compile Include="State\Shell\ShellHelpTests.fs" />
     <Compile Include="State\Shell\ShellPropertiesTests.fs" />
     <Compile Include="State\Shell\ShellLaunchTests.fs" />
     <Compile Include="State\Shell\ShellSettingsTests.fs" />
@@ -314,6 +316,8 @@
     <Compile Include="Ui\Help\HelpKeysTests.fs" />
     <Compile Include="Ui\Help\HelpStateTests.fs" />
     <Compile Include="Ui\Help\HelpSearchTests.fs" />
+    <Compile Include="Ui\Help\HelpPlacesTests.fs" />
+    <Compile Include="Ui\Help\HelpReportTests.fs" />
     <Compile Include="Ui\Help\HelpColoursTests.fs" />
   </ItemGroup>
 
@@ -433,6 +437,7 @@
     <Compile Include="Integration\Help\HelpViewFixture.fs" />
     <Compile Include="Integration\Help\HelpViewTests.fs" />
     <Compile Include="Integration\Help\HelpViewSearchTests.fs" />
+    <Compile Include="Integration\Help\HelpOpeningTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -489,6 +494,7 @@
     <Compile Include="Integration\App\EditKeyTests.fs" />
     <Compile Include="Integration\App\UserMenuKeyTests.fs" />
     <Compile Include="Integration\App\EnterKeyTests.fs" />
+    <Compile Include="Integration\App\HelpKeyTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

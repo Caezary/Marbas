@@ -54,18 +54,17 @@ let ``the key bar says F7 searches`` () =
     Assert.Equal("Search", labels[6])
 
 [<Fact>]
-let ``F7 offers the texts searched before and nothing typed yet`` () =
+let ``F7 first offers nothing typed yet`` () =
     let offers = ResizeArray<SearchOffer>()
 
     let ports =
         { quietPorts with
-            AskSearch = recordingOffers offers None
-            Searches.Texts = fun () -> [ typed "older" ] }
+            AskSearch = recordingOffers offers None }
 
     use window = searched ports
 
     Assert.Equal(
-        { Remembered = [ typed "older" ]
+        { Remembered = []
           Last = LastText None },
         Assert.Single offers
     )
@@ -85,16 +84,18 @@ let ``F7 pressed again offers the last text searched for`` () =
     Assert.Equal(LastText(Some(plainQuery "chapter")), offers[1].Last)
 
 [<Fact>]
-let ``a text searched for is remembered as it was typed`` () =
-    let remembered = ResizeArray<EnteredText>()
+let ``F7 pressed again offers the texts searched for since the help opened`` () =
+    let offers = ResizeArray<SearchOffer>()
 
     let ports =
-        { answering (plainAnswer "chapter ") with
-            Searches.Remember = remembered.Add }
+        { quietPorts with
+            AskSearch = recordingOffers offers (Some(plainAnswer "chapter ")) }
 
     use window = searched ports
 
-    Assert.Equal(typed "chapter ", Assert.Single remembered)
+    press (HelpView.content window) Key.F7
+
+    Assert.Equal<EnteredText list>([ typed "chapter " ], offers[1].Remembered)
 
 [<Fact>]
 let ``F7 finds the text and shows it on screen`` () =

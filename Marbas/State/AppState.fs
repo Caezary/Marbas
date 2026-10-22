@@ -43,7 +43,8 @@ type AppState =
       History: History
       HistoryReport: FailureReport
       ClipboardReport: FailureReport
-      HistoryTab: HistoryTab }
+      HistoryTab: HistoryTab
+      HelpPlace: Marbas.Guide.GuidePlace }
 
     member private this.Focused = this.Tabs |> Zipper.current
 
@@ -85,7 +86,8 @@ let restore (settings: Settings) =
       History = History.empty
       HistoryReport = Unreported
       ClipboardReport = Unreported
-      HistoryTab = FolderHistoryTab }
+      HistoryTab = FolderHistoryTab
+      HelpPlace = Marbas.Guide.GuidePlace.contents }
 
 let create (path: FileSystemPath) = restore (Settings.forPath path)
 

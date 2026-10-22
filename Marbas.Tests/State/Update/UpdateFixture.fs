@@ -5,6 +5,7 @@ open System.IO.Abstractions.TestingHelpers
 open Marbas.FileSystem
 open Marbas.Domain
 open Marbas.State.AppState
+open Marbas.State.Update
 open Marbas.Tests
 
 let private at = Root.at
@@ -29,3 +30,7 @@ let loaded (fs: IFileSystem) =
 
 let loadedBoth (fs: IFileSystem) =
     loaded fs |> loadPanel fs Right (fp (at "backup")) |> Expect.ok
+
+let withHelpAt command (state: AppState) =
+    { state with
+        HelpPlace = helpPlaceOf command |> Expect.some }

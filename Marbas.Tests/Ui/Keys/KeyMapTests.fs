@@ -20,7 +20,7 @@ let ``the bar of no modifier carries the classic commands`` () =
     let commands = commandsOn Modifiers.none
 
     Assert.Equal<string list>(
-        [ ""
+        [ "Help"
           "Menu"
           "View"
           "Edit"
@@ -681,3 +681,9 @@ let ``the user menu is edited on the keys P17.2 found reaching a dialog with a l
           Key.CursorDown.WithCtrl ],
         keys
     )
+
+[<Fact>]
+let ``F1 asks for the help`` () =
+    let message = KeyMap.messageFor Key.F1
+
+    Assert.Equal(Some HelpRequested, message)

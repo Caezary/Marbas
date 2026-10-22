@@ -59,3 +59,10 @@ let broken (chapters: Chapter list) =
     let anchors = anchorsByChapter chapters
 
     chapters |> List.collect (brokenIn anchors)
+
+let unreached (chapters: Chapter list) (places: GuidePlace list) =
+    let anchors = anchorsByChapter chapters
+
+    places
+    |> List.filter (fun place ->
+        not (leadsSomewhere anchors place.Chapter (OtherChapter(place.Chapter, place.Heading))))

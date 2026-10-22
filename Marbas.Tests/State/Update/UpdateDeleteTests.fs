@@ -57,7 +57,7 @@ let ``delete requested on the parent entry asks nothing`` () =
 
     let result = update fs (DeleteRequested ToTrash) state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt (DeleteRequested ToTrash) state, result.State)
     Assert.Empty result.Effects
 
 [<Fact>]

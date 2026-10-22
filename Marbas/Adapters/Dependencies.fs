@@ -92,7 +92,8 @@ let create (app: IApplication) (fs: IFileSystem) (env: HostEnvironment) (log: Lo
           ChooseFromUserMenu = Prompts.chooseFromUserMenu app
           EditProperties = Prompts.editProperties app (FileSystemPath.platformOf fs)
           EditPrograms = Prompts.editPrograms app
-          ShowFile = Prompts.showFile app }
+          ShowFile = Prompts.showFile app
+          ShowHelp = Prompts.showHelp app }
       Processes =
         { ListDrives = fun () -> Drives.list fs (home env)
           SendToTrash = sendToTrash fs env

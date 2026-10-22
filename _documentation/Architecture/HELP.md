@@ -88,8 +88,8 @@ replaced `_documentation/USER-GUIDE.md` in P24.3.
   `Ctrl+Alt+Enter`, `Ctrl+Shift+C`, `Ctrl+Shift+X` and `Ctrl+Shift+V`. `Ctrl+\`
   arrives as `Ctrl+4` and is named in a rule only. All of them are rows of
   `KeyMap.bindings`, listed by name in
-  [the test of the keys](#the-guide-and-the-key-maps). `F1` is absent until
-  P24.8 binds it.
+  [the test of the keys](#the-guide-and-the-key-maps). `F1` is a row of
+  *Keys everywhere* and of the viewer's table.
 - A link leads only to a chapter or a heading of the guide, since the parser
   refuses anything else; the releases page is named in words. The format of
   `user-menu.conf` is a table of lines, since a code block is refused.
@@ -136,7 +136,7 @@ other headers, the one of `16-platforms.md` among them, name none.
 outside the bindings; `KeyMap.historyKeys`, `userMenuKeys` and
 `favoritesKeys`, the keys of those popups with the letters `a` to `z` and the
 digits of the menu's hotkeys and the digits of the favourites; and
-`ViewerKeys.keys` and `FindKeys.keys`. It compares them with the whole guide,
+`ViewerKeys.keys`, `FindKeys.keys` and `HelpKeys.keys`. It compares them with the whole guide,
 not with the chapter of their context, and fails on:
 
 - a key bound that no key table names, except the keys no measured terminal
@@ -241,11 +241,13 @@ help.
 ## Searching the help
 
 `F7` opens the viewer's search popup, `ViewerSearchDialog`, with its options:
-case, whole words, regular expression, backwards. The offer is the viewer's
-text searches remembered and the help's last query, so the popup always opens
-as a text search. `Shift+F7` repeats the last query without the popup, or opens
-it when there is none. The text typed is remembered through
-`HelpView.Ports.Searches`.
+case, whole words, regular expression, backwards. The offer is
+`HelpState.Typed` and the help's last query, so the popup always opens as a
+text search. `Shift+F7` repeats the last query without the popup, or opens it
+when there is none. `HelpState.typedIn` puts a text typed first in `Typed`,
+once. The list lives as long as the help: the history file is not read or
+written, so opening the help reaches neither the state nor a port, from a
+panel, the viewer or a popup alike.
 
 - The search matches the laid-out lines of the page shown, each line as the
   text of its pieces, with `WindowSearch.occurrenceFrom`. A phrase wrapped
@@ -286,12 +288,68 @@ opened *'zzz' was not found.*, `Shift+F7` moved to the next *key*, and after
 the screen back to the console's size between keys; at another size each
 change of width dropped the match, as the last rule says.
 
-## What waits for F1
+## Opening the help where the user stands
 
-`HelpKeys.keys` are not yet among the keys `GuideKeysTests` holds: the guide
-describes the help when `F1` opens it, in P24.8, and the keys join the test
-then. The text of a `GuideFault` is P24.8's too, with the adapter that opens
-the help.
+`KeyMap.helpKey`, `F1`, is the first row of `KeyMap.bindings`,
+`HelpRequested`, labelled `Help` on the panels' bar; `ViewerKeys` binds it to
+`HelpAsked`, labelled `Help` on the viewer's bar. A place in the guide is a
+`GuidePlace` of `Guide/`: a `ChapterName` and the `Anchor` of a heading, or
+none for the top. `GuidePlace.contents` is `README.md`.
+
+Two tables name the places:
+
+- `Update.helpPlaceOf` answers the place of a message `KeyMap.bindings`
+  raises, the section whose key table holds its key, and `None` for any other
+  message and for `HelpRequested`. It is in `State` because `Update.update`
+  reads it.
+- `Ui/Help/HelpPlaces` answers `viewer`, `11-viewer.md`, and `ofPopup`, the
+  section of each `Popup`: the twenty popups that ask for something, the
+  results window of `Alt+F7` among them. Popups are views, so this table is in
+  `Ui`.
+
+Both build a place through `GuidePlace`, which has one function per chapter of
+the guide, taking a heading or none. A chapter name it cannot make falls back
+to the contents. `HelpPlacesTests` fails on a binding's message without a
+place, on a place that is the contents, and on a place
+`ChapterLinks.unreached` does not find in the embedded guide.
+
+**The last command.** `Update.update` ends with `placingHelp`, after
+`watching`, `remembering` and `forgettingMarks`: a message `helpPlaceOf`
+places sets `AppState.HelpPlace`, any other leaves it. The place is read from
+the message inside `update`, so `Message` has no wrapper case, the UI
+dispatches every message the same way, and `transition` and `LogEntry` see the
+command as it is. Only the bindings send the placed messages, from a key
+through `PanelWiring` and from a click through the bar; moving the cursor, the
+quick search and `Enter` send none and change nothing. `HelpRequested` has no
+place, so `F1` twice opens at the same section. A command that is refused or
+has nothing to do moves the place too: the user asked about it.
+`HelpRequested` answers `ShowHelp state.HelpPlace`. The state keeps the place
+and not the message because `AppState.fs` is compiled before the `Message`
+of `Update.fs`. `Ins` on a panel of 10 000 files took 150 µs before and after,
+see [Measurements](../Progress/MEASUREMENTS.md).
+
+**The adapter.** `ShowHelp` takes the place alone. `Prompts.showHelp` opens `HelpState.opening
+EmbeddedGuide.read place` as a runnable of its own over whatever is open.
+A page laid out the first time puts the heading it `OpensAt` on top; a place
+other than the contents has the contents to go back to. A `GuideFault` is
+reported with `HelpReport.describe`: an absent chapter by name, a refused one
+with its line and the construct in words. `running`, the helper every popup
+goes through, attaches `HelpOpening.onHelpKey` with the popup's place: `F1`
+reaches the popup's `KeyDown` when the view holding the focus leaves it, as a
+text field and a list do. The viewer handles `F1` itself and calls its
+`ShowHelp` port, so it runs without the hook, and so does the help's own
+search popup. Message boxes are built inside `MessageBox.Query` and the
+progress window by `BatchRunner`; neither opens the help.
+
+`HelpPlacesTests`, `UpdateHelpTests`, `ShellHelpTests`, `HelpReportTests`,
+`HelpOpeningTests` and `HelpKeyTests` prove the table, the last command, the
+effect, the texts, the hook on a popup with a focused field, and `F1` through
+`MainWindow` before a command, after one, after a cursor move and a quick
+search. The probe ran the application with its real dependencies at 120 by 30
+columns: `F1` in a panel opened the contents, after `Ctrl+R` *Reading the
+panel again*, also after `↓`; after `F3` the viewer's chapter; over `F7`
+*Making directories and files*, over `F12` *Setup*, over `Alt+F12` *The
+history popup*; and `Esc` closed the help and left *Create directory* open.
 
 ## The view is Marbas's own
 

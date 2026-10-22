@@ -71,9 +71,13 @@ let ``a panel already standing on its root has nothing to do`` () =
     let fs = mockFs ()
     let state = standingOn fs (at "") |> setCursor Left 1
 
+    let unmoved =
+        { state with
+            HelpPlace = helpPlaceOf VolumeRootRequested |> Expect.some }
+
     let result = update fs VolumeRootRequested state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(unmoved, result.State)
     Assert.Empty result.Effects
 
 [<Fact>]

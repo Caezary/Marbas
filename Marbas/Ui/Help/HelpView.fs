@@ -28,16 +28,15 @@ type Ports =
       Read: ChapterName -> Result<Chapter, GuideFault>
       Report: GuideFault -> unit
       AskSearch: SearchOffer -> SearchAnswer option
-      Searches: Marbas.State.Ports.SearchHistory
       ReportSearch: SearchReport -> unit }
 
 let private textOf (line: LaidLine) =
     line.Pieces |> List.map _.Text |> String.concat ""
 
-type ContentView(chapter: Chapter) as this =
+type ContentView(opened: HelpState) as this =
     inherit View()
 
-    let mutable state = HelpState.start chapter
+    let mutable state = opened
 
     do
         this.Id <- ContentId
@@ -100,7 +99,9 @@ let private searching (ports: Ports) (content: ContentView) find (query: WindowS
 let private askedFor (ports: Ports) (content: ContentView) (answer: SearchAnswer) =
     match ViewerSearch.query answer with
     | Some(Ok(TextAsked query)) ->
-        EnteredText.tryCreate answer.Typed |> Option.iter ports.Searches.Remember
+        EnteredText.tryCreate answer.Typed
+        |> Option.iter (fun text -> content.Change(HelpState.typedIn text))
+
         content.Change(HelpState.searchedFor query)
         searching ports content HelpState.findFromScreen query
     | Some(Ok(BytesAsked _))
@@ -108,7 +109,7 @@ let private askedFor (ports: Ports) (content: ContentView) (answer: SearchAnswer
     | Some(Error refusal) -> ports.ReportSearch(Refused refusal)
 
 let private askSearch (ports: Ports) (content: ContentView) =
-    { Remembered = ports.Searches.Texts()
+    { Remembered = content.State.Typed
       Last = LastText content.State.LastQuery }
     |> ports.AskSearch
     |> Option.iter (askedFor ports content)
@@ -118,7 +119,7 @@ let private searchAgain (ports: Ports) (content: ContentView) =
     | Some query -> searching ports content HelpState.findAfterMatch query
     | None -> askSearch ports content
 
-let create (ports: Ports) (chapter: Chapter) =
+let create (ports: Ports) (opened: HelpState) =
     let window = new Window(Width = Dim.Fill(), Height = Dim.Fill())
 
     window.BorderStyle <- LineStyle.None
@@ -131,7 +132,7 @@ let create (ports: Ports) (chapter: Chapter) =
     header.SetScheme ClassicScheme.keyBar |> ignore
 
     let content =
-        new ContentView(chapter, X = 0, Y = 1, Width = Dim.Fill(), Height = Dim.Fill 1)
+        new ContentView(opened, X = 0, Y = 1, Width = Dim.Fill(), Height = Dim.Fill 1)
 
     let keyBar =
         KeyMap.functionKeys
@@ -167,7 +168,7 @@ let create (ports: Ports) (chapter: Chapter) =
         | None -> ())
 
     window.SubViewsLaidOut.Add(fun _ -> refresh ())
-    window.Add(header, content, keyBar) |> ignore
+    window.Add(header, content, keyBar)
     content.SetFocus() |> ignore
     refresh ()
     window

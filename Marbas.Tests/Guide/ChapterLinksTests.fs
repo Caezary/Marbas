@@ -112,3 +112,43 @@ let ``a link is followed wherever a phrase holds it`` (text: string) =
         [ leadingTo "02-panels.md" (SameChapter(Anchor.create "nowhere")) ],
         broken
     )
+
+let private placeIn name heading : GuidePlace =
+    { Chapter = chapter name
+      Heading = heading |> Option.map Anchor.create }
+
+[<Fact>]
+let ``a place at a heading the chapter holds is reached`` () =
+    let chapters =
+        [ "02-panels.md", "# Panels\n\n## Sorting\n\nText." ] |> List.map chapterOf
+
+    let unreached =
+        ChapterLinks.unreached chapters [ placeIn "02-panels.md" (Some "sorting") ]
+
+    Assert.Empty unreached
+
+[<Fact>]
+let ``a place at the top of a chapter of the guide is reached`` () =
+    let chapters = [ "02-panels.md", "# Panels" ] |> List.map chapterOf
+
+    let unreached = ChapterLinks.unreached chapters [ placeIn "02-panels.md" None ]
+
+    Assert.Empty unreached
+
+[<Fact>]
+let ``a place at a heading the chapter lacks is not reached`` () =
+    let chapters = [ "02-panels.md", "# Panels" ] |> List.map chapterOf
+    let place = placeIn "02-panels.md" (Some "sorting")
+
+    let unreached = ChapterLinks.unreached chapters [ place ]
+
+    Assert.Equal<GuidePlace list>([ place ], unreached)
+
+[<Fact>]
+let ``a place in a chapter the guide lacks is not reached`` () =
+    let chapters = [ "02-panels.md", "# Panels" ] |> List.map chapterOf
+    let place = placeIn "03-marking.md" None
+
+    let unreached = ChapterLinks.unreached chapters [ place ]
+
+    Assert.Equal<GuidePlace list>([ place ], unreached)

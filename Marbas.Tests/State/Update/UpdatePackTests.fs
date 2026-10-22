@@ -60,7 +60,7 @@ let ``pack requested on the parent entry raises no effect`` () =
 
     let result = update fs PackRequested state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt PackRequested state, result.State)
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -198,7 +198,7 @@ let ``unpack requested on the parent entry raises no effect`` () =
 
     let result = update fs UnpackRequested state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt UnpackRequested state, result.State)
     Assert.Empty result.Effects
 
 [<Fact>]

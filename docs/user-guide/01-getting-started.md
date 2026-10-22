@@ -18,6 +18,7 @@ its own .NET runtime inside, so nothing else needs to be installed.
 
 | Key | Alternative | Action |
 |-----|-------------|--------|
+| `F1` | | Open the help at what was done last |
 | `Tab` | | Switch to the other panel |
 | `F10` | `Ctrl+Q` | Quit and save the session |
 | `Esc` | | Close a popup, changing nothing |
@@ -68,6 +69,35 @@ on it runs the command.
 > [!NOTE]
 > The bar follows a held modifier on Windows only. Elsewhere it always shows
 > the commands without a modifier.
+
+## The help
+
+`F1` opens this guide full screen. In a panel it opens at the section of the
+command run last in the session, or at the list of chapters before the first;
+moving the cursor and the quick search are not commands. In the viewer it
+opens at [The viewer](11-viewer.md), and in a popup at the section about that
+popup.
+
+| Key | Alternative | Action |
+|-----|-------------|--------|
+| `↑` `↓` `PgUp` `PgDn` `Home` `End` | | Scroll, as in the viewer |
+| `Tab` | | Choose the next link on screen |
+| `Shift+Tab` | | Choose the previous link on screen |
+| `Enter` | | Follow the chosen link |
+| `Backspace` | `Alt+←` | Back to where the link was followed |
+| `F7` | | Search the chapter on screen |
+| `Shift+F7` | | Find the next match without asking |
+| `Esc` | `F10` | Close the help |
+
+- A link is green and underlined, the chosen link black on cyan.
+- Opened at a section, the help goes back from it to the list of chapters.
+- `F7` asks as the viewer does, with the same options, and offers the texts
+  searched for since the help opened. A search looks at the lines as they stand on
+  screen, so words broken over two lines are not found. After a link is
+  followed, the next search starts in the new chapter.
+- A popup stays open under the help and is there again when the help closes.
+- The same chapters are the files of `docs/user-guide` in the project on
+  GitHub.
 
 ## When something goes wrong
 

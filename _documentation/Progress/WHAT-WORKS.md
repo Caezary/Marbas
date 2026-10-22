@@ -754,3 +754,19 @@ What Marbas does today, feature by feature. How to reach each of them is in the
   refreshed ten times a second however fast the batch goes, so a batch of many
   small items is never held up by its own progress and the window closes as soon
   as the work is done.
+- `F1`, `F1 Help` on the bar of the panels and of the viewer, opens the user
+  guide full screen. In a panel it opens at the section of the last command a
+  key or a click on the bar ran in the session — `Ctrl+R` at *Reading the panel
+  again*, `F5` at *Copying and moving* — and at the contents before the first;
+  moving the cursor, the quick search and `Enter` change nothing. In the viewer
+  it opens at the viewer's chapter, and in a popup that asks for something —
+  the name of `F7`, *Setup*, the history, the drives, the results of `Alt+F7`
+  and the rest — at the section of that popup, which stays open under it.
+  Message boxes and the progress window do not open it.
+- The help shows the contents or a chapter, its links in green, `Tab` and
+  `Shift+Tab` choosing one on screen and `Enter` following it; `Backspace` or
+  `Alt+←` goes back, and from a chapter `F1` opened goes back to the contents.
+  `F7` asks with the viewer's popup and options and offers the texts searched
+  for since the help opened; `Shift+F7` finds the next match. A match is drawn black on
+  cyan and scrolled to; a search that reaches the end of the chapter says the
+  text was not found. `Esc` or `F10` closes it.

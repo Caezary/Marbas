@@ -19,6 +19,7 @@ type Command =
     | SearchAsked
     | SearchRepeated
     | CodePageAsked
+    | HelpAsked
     | Closed
 
 let wrapKey = Key.F2
@@ -50,7 +51,8 @@ let private bindings =
       modeKey, ModeToggled
       searchKey, SearchAsked
       repeatKey, SearchRepeated
-      codePageKey, CodePageAsked ]
+      codePageKey, CodePageAsked
+      KeyMap.helpKey, HelpAsked ]
 
 let keys = (bindings |> List.map fst) @ closeKeys
 
@@ -74,6 +76,8 @@ let private label mode wrap key =
         "Search"
     elif key = codePageKey then
         "Code"
+    elif key = KeyMap.helpKey then
+        "Help"
     elif List.contains key closeKeys then
         "Quit"
     else

@@ -36,7 +36,7 @@ let ``copy requested on the parent entry raises no effect`` () =
 
     let result = update fs CopyRequested state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt CopyRequested state, result.State)
     Assert.Empty result.Effects
 
 [<Fact>]
@@ -91,7 +91,7 @@ let ``move requested on the parent entry raises no effect`` () =
 
     let result = update fs MoveRequested state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt MoveRequested state, result.State)
     Assert.Empty result.Effects
 
 [<Fact>]

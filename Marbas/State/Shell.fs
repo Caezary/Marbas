@@ -704,4 +704,5 @@ let interpret (deps: Dependencies) (dispatch: Message -> unit) (effect: Effect) 
     | MovePastedFiles(files, target) -> movePasted deps dispatch files target
     | SweepLeftovers -> deps.Runners.Background { Work = sweepLeftovers deps }
     | SaveSettings settings -> saveSettings deps settings
+    | ShowHelp place -> deps.Prompts.ShowHelp place
     | Quit -> quit deps

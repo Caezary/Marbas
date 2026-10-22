@@ -1,6 +1,7 @@
 namespace Marbas.Ui.Help
 
 open System.Drawing
+open FsToolkit.ErrorHandling
 open Marbas.Domain
 open Marbas.Guide
 open Marbas.Viewing
@@ -12,13 +13,15 @@ type HelpPage =
       Lines: LaidLine list
       Top: int
       Link: int option
-      Found: FoundSpan option }
+      Found: FoundSpan option
+      OpensAt: Anchor option }
 
 type HelpState =
     { Page: HelpPage
       Height: int
       Back: HelpPage list
-      LastQuery: WindowSearch.Query option }
+      LastQuery: WindowSearch.Query option
+      Typed: EnteredText list }
 
 type private SearchPlace = { Row: int; Column: int }
 
@@ -30,13 +33,15 @@ module HelpState =
           Lines = []
           Top = 0
           Link = None
-          Found = None }
+          Found = None
+          OpensAt = None }
 
     let start chapter =
         { Page = pageOf chapter
           Height = 1
           Back = []
-          LastQuery = None }
+          LastQuery = None
+          Typed = [] }
 
     let private blockSpan (lines: LaidLine list) block =
         let start =
@@ -56,6 +61,12 @@ module HelpState =
             let newStart, newHeight = blockSpan lines line.Block
             newStart + (page.Top - oldStart) * newHeight / oldHeight
 
+    let private rowOfHeading (lines: LaidLine list) anchor =
+        lines |> List.tryFindIndex (fun line -> line.Anchor = Some anchor)
+
+    let private firstTop (page: HelpPage) lines =
+        page.OpensAt |> Option.bind (rowOfHeading lines) |> Option.defaultValue 0
+
     let private relaid width (page: HelpPage) =
         if page.Width = width then
             page
@@ -65,7 +76,11 @@ module HelpState =
             { page with
                 Width = width
                 Lines = lines
-                Top = topAfterRelaying page lines
+                Top =
+                    if page.Width = 0 then
+                        firstTop page lines
+                    else
+                        topAfterRelaying page lines
                 Found = None }
 
     let private holds index (line: LaidLine) =
@@ -184,9 +199,6 @@ module HelpState =
         | SameChapter anchor -> Some anchor
         | OtherChapter(_, anchor) -> anchor
 
-    let private rowOfAnchor (page: HelpPage) anchor =
-        page.Lines |> List.tryFindIndex (fun line -> line.Anchor = Some anchor)
-
     let private targetOf (page: HelpPage) index =
         page.Lines
         |> List.collect _.Pieces
@@ -199,18 +211,38 @@ module HelpState =
         | OtherChapter(name, _) -> read name
 
     let private opened (state: HelpState) target chapter =
-        let page = pageOf chapter |> relaid state.Page.Width
-
-        let top = anchorOf target |> Option.bind (rowOfAnchor page) |> Option.defaultValue 0
+        let page =
+            { pageOf chapter with
+                OpensAt = anchorOf target }
+            |> relaid state.Page.Width
 
         { state with
-            Page = scrolledTo state.Height top page
+            Page = scrolledTo state.Height page.Top page
             Back = state.Page :: state.Back }
 
     let follow (read: ChapterName -> Result<Chapter, GuideFault>) (state: HelpState) =
         match state.Page.Link |> Option.bind (targetOf state.Page) with
         | None -> Ok state
         | Some target -> chapterFor read state.Page target |> Result.map (opened state target)
+
+    let private contentsBehind read (place: GuidePlace) =
+        if place.Chapter = ChapterName.contents then
+            Ok []
+        else
+            read ChapterName.contents |> Result.map (fun contents -> [ pageOf contents ])
+
+    let opening (read: ChapterName -> Result<Chapter, GuideFault>) (place: GuidePlace) =
+        result {
+            let! chapter = read place.Chapter
+            let! back = contentsBehind read place
+
+            return
+                { start chapter with
+                    Page =
+                        { pageOf chapter with
+                            OpensAt = place.Heading }
+                    Back = back }
+        }
 
     let shown (state: HelpState) =
         state.Page.Lines
@@ -279,6 +311,10 @@ module HelpState =
         |> Option.map (fun span -> showing state.Height span page |> withPage state)
 
     let searchedFor (query: WindowSearch.Query) (state: HelpState) = { state with LastQuery = Some query }
+
+    let typedIn (text: EnteredText) (state: HelpState) =
+        { state with
+            Typed = text :: List.filter (fun typed -> typed <> text) state.Typed }
 
     let findFromScreen query state = findFrom screenPlace query state
 

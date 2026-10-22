@@ -222,7 +222,7 @@ let ``a hidden toggle of a vanished directory is reported`` () =
 
     let result = update fs HiddenToggled state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt HiddenToggled state, result.State)
 
     Assert.Equal<Effect list>(
         [ Report(Problem.Listing(DirectoryListing.DirectoryNotFound(fp (at "start/docs")))) ],
@@ -245,5 +245,5 @@ let ``step pairs the new state with its effects`` () =
 
     let nextState, effects = step fs QuitRequested state
 
-    Assert.Equal(state, nextState)
+    Assert.Equal(withHelpAt QuitRequested state, nextState)
     Assert.Equal<Effect list>([ SaveSettings(settings fs state); Quit ], effects)

@@ -32,7 +32,8 @@ type Ports =
           (WindowSearch.Control -> WindowSearch.Answer<WindowSearch.Match>) -> WindowSearch.Answer<WindowSearch.Match>
       RunByteSearch:
           (WindowSearch.Control -> WindowSearch.Answer<ByteSearch.Match>) -> WindowSearch.Answer<ByteSearch.Match>
-      Report: SearchReport -> unit }
+      Report: SearchReport -> unit
+      ShowHelp: unit -> unit }
 
 type ContentView(source: FileWindow.Source) as this =
     inherit View()
@@ -199,6 +200,9 @@ let create (ports: Ports) (source: FileWindow.Source) =
         | Some ViewerKeys.Closed ->
             key.Handled <- true
             ports.Close window
+        | Some ViewerKeys.HelpAsked ->
+            key.Handled <- true
+            ports.ShowHelp()
         | Some ViewerKeys.CodePageAsked ->
             key.Handled <- true
 

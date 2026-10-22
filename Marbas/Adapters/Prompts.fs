@@ -3,6 +3,7 @@ module Marbas.Adapters.Prompts
 open System
 open System.IO.Abstractions
 open Terminal.Gui.App
+open Terminal.Gui.ViewBase
 open Terminal.Gui.Views
 open Marbas.Collections
 open Marbas.Domain
@@ -10,12 +11,14 @@ open Marbas.FileSystem
 open Marbas.Programs
 open Marbas.Viewing
 open Marbas.Messages
+open Marbas.Guide
 open Marbas.State.AppState
 open Marbas.State.Ports
 open Marbas.Ui.Viewer
 open Marbas.Ui.Dialogs
+open Marbas.Ui.Help
 
-let private running<'view, 'answer when 'view :> IRunnable and 'view :> IDisposable>
+let private run<'view, 'answer when 'view :> IRunnable and 'view :> IDisposable>
     (app: IApplication)
     (create: unit -> 'view)
     (read: 'view -> 'answer)
@@ -26,6 +29,60 @@ let private running<'view, 'answer when 'view :> IRunnable and 'view :> IDisposa
 
 let reportError (app: IApplication) (report: ErrorReport) =
     MessageBox.ErrorQuery(app, report.Title, report.Message, "Ok") |> ignore
+
+let private reportSearch (app: IApplication) (report: SearchReport) =
+    match report with
+    | TextNotFound _
+    | BytesNotFound _ ->
+        MessageBox.Query(app, ViewerSearch.Title, ViewerSearch.describe report, "Ok")
+        |> ignore
+    | SearchFailed _ ->
+        reportError
+            app
+            { Title = ContentErrorMessage.Title
+              Message = ViewerSearch.describe report }
+    | Refused _ ->
+        reportError
+            app
+            { Title = ViewerSearch.Title
+              Message = ViewerSearch.describe report }
+
+let private askSearchWith runPopup (app: IApplication) (offer: SearchOffer) =
+    let createViewerSearch () =
+        ViewerSearchDialog.create (Refused >> reportSearch app) offer
+
+    runPopup createViewerSearch ViewerSearchDialog.answer
+
+let private reportFault (app: IApplication) fault =
+    reportError
+        app
+        { Title = HelpReport.Title
+          Message = HelpReport.describe fault }
+
+let showHelp (app: IApplication) (place: GuidePlace) =
+    let ports: HelpView.Ports =
+        { Close = _.RequestStop()
+          Read = EmbeddedGuide.read
+          Report = reportFault app
+          AskSearch = askSearchWith (run app) app
+          ReportSearch = reportSearch app }
+
+    match HelpState.opening EmbeddedGuide.read place with
+    | Ok opened -> run app (fun () -> HelpView.create ports opened) ignore
+    | Error fault -> reportFault app fault
+
+let private running<'view, 'answer when 'view :> View and 'view :> IRunnable and 'view :> IDisposable>
+    (app: IApplication)
+
+    popup
+    (create: unit -> 'view)
+    (read: 'view -> 'answer)
+    =
+    let opened () =
+        create ()
+        |> HelpOpening.onHelpKey (fun () -> showHelp app (HelpPlaces.ofPopup popup))
+
+    run app opened read
 
 let confirm (app: IApplication) (question: Confirmation) =
     let answer = MessageBox.Query(app, question.Title, question.Question, "_Yes", "_No")
@@ -50,19 +107,19 @@ let chooseDrive (app: IApplication) (request: DrivePrompt) =
 
     match request.Drives with
     | [] -> None
-    | _ -> running app createDrive DriveDialog.choice
+    | _ -> running app HelpPlaces.DrivePopup createDrive DriveDialog.choice
 
 let askFavoriteSlot (app: IApplication) (fs: IFileSystem) (place: Place) =
     let createKeepFavorite () =
         KeepFavoriteDialog.create fs app.Screen.Width place
 
-    running app createKeepFavorite KeepFavoriteDialog.slot
+    running app HelpPlaces.KeepFavoritePopup createKeepFavorite KeepFavoriteDialog.slot
 
 let chooseFavorite (app: IApplication) (fs: IFileSystem) (request: FavoritesPrompt) =
     let createFavorites () =
         FavoritesDialog.create fs request.Change request.Current request.Favorites
 
-    running app createFavorites FavoritesDialog.chosen
+    running app HelpPlaces.FavoritesPopup createFavorites FavoritesDialog.chosen
 
 let private texts (remembered: EnteredText list) =
     remembered |> List.map EnteredText.value
@@ -71,7 +128,7 @@ let askPattern (app: IApplication) (request: PatternPrompt) =
     let createPattern () =
         PatternDialog.create (texts request.Remembered) request.Title
 
-    running app createPattern PromptDialog.text
+    running app HelpPlaces.PatternPopup createPattern PromptDialog.text
 
 let askName (app: IApplication) (request: NamePrompt) =
     let offered =
@@ -81,7 +138,7 @@ let askName (app: IApplication) (request: NamePrompt) =
         PromptDialog.offering (texts request.Remembered) request.Title "Name:" offered
         |> PromptDialog.selecting
 
-    running app createNamePrompt PromptDialog.text
+    running app HelpPlaces.NamePopup createNamePrompt PromptDialog.text
 
 let askTarget (app: IApplication) (request: TargetPrompt) =
     let offered = FileSystemPath.value request.Suggestion
@@ -89,7 +146,7 @@ let askTarget (app: IApplication) (request: TargetPrompt) =
     let createTargetPrompt () =
         PromptDialog.offering (texts request.Remembered) request.Title "To:" offered
 
-    running app createTargetPrompt PromptDialog.text
+    running app HelpPlaces.TargetPopup createTargetPrompt PromptDialog.text
 
 let askPassword (app: IApplication) (request: PasswordPrompt) =
     let label = PasswordQuestion.describe request.Archive
@@ -97,35 +154,12 @@ let askPassword (app: IApplication) (request: PasswordPrompt) =
     let createPasswordPrompt () =
         PromptDialog.create PasswordQuestion.Title label "" |> PromptDialog.secret
 
-    running app createPasswordPrompt PromptDialog.password
+    running app HelpPlaces.PasswordPopup createPasswordPrompt PromptDialog.password
 
 let private chooseCodePage (app: IApplication) (offer: CodePageOffer) =
     let createCodePage () = CodePageDialog.create offer
 
-    running app createCodePage CodePageDialog.choice
-
-let private reportSearch (app: IApplication) (report: SearchReport) =
-    match report with
-    | TextNotFound _
-    | BytesNotFound _ ->
-        MessageBox.Query(app, ViewerSearch.Title, ViewerSearch.describe report, "Ok")
-        |> ignore
-    | SearchFailed _ ->
-        reportError
-            app
-            { Title = ContentErrorMessage.Title
-              Message = ViewerSearch.describe report }
-    | Refused _ ->
-        reportError
-            app
-            { Title = ViewerSearch.Title
-              Message = ViewerSearch.describe report }
-
-let private askSearch (app: IApplication) (offer: SearchOffer) =
-    let createViewerSearch () =
-        ViewerSearchDialog.create (Refused >> reportSearch app) offer
-
-    running app createViewerSearch ViewerSearchDialog.answer
+    running app HelpPlaces.CodePagePopup createCodePage CodePageDialog.choice
 
 let showFile (app: IApplication) (request: ViewRequest) =
     let progress = ViewerSearch.progress request.Source.Length
@@ -133,22 +167,23 @@ let showFile (app: IApplication) (request: ViewRequest) =
     let ports: FileViewer.Ports =
         { Close = _.RequestStop()
           ChooseCodePage = chooseCodePage app
-          AskSearch = askSearch app
+          AskSearch = askSearchWith (running app HelpPlaces.ViewerSearchPopup) app
           Searches = request.Searches
           ByteSearches = request.ByteSearches
           RunSearch = WindowSearchRunner.run app ViewerSearch.Title progress
           RunByteSearch = WindowSearchRunner.run app ViewerSearch.Title progress
-          Report = reportSearch app }
+          Report = reportSearch app
+          ShowHelp = fun () -> showHelp app HelpPlaces.viewer }
 
     let createFileViewer () = FileViewer.create ports request.Source
 
-    running app createFileViewer ignore
+    run app createFileViewer ignore
 
 let editProperties (app: IApplication) platform properties =
     let createProperties () =
         PropertiesDialog.create platform properties
 
-    running app createProperties (PropertiesDialog.properties platform properties)
+    running app HelpPlaces.PropertiesPopup createProperties (PropertiesDialog.properties platform properties)
 
 let askArchive (app: IApplication) retarget (request: PackPrompt) =
     let offered = FileSystemPath.value request.Suggestion
@@ -156,7 +191,7 @@ let askArchive (app: IApplication) retarget (request: PackPrompt) =
     let createPack () =
         PackDialog.create retarget (texts request.Remembered) offered
 
-    running app createPack PackDialog.choice
+    running app HelpPlaces.PackPopup createPack PackDialog.choice
 
 let private askedOf (dialog: FindDialog.FindView) =
     let masks, text = FindDialog.typed dialog
@@ -171,7 +206,7 @@ let askFind (app: IApplication) (request: FindPrompt) =
     let createFind () =
         FindDialog.create request.Ground request.Hidden request.Found (texts request.Masks) (texts request.Texts)
 
-    running app createFind askedOf
+    running app HelpPlaces.FindPopup createFind askedOf
 
 let askLink (app: IApplication) (request: LinkPrompt) =
     let offered = FileSystemPath.value request.Suggestion
@@ -179,19 +214,19 @@ let askLink (app: IApplication) (request: LinkPrompt) =
     let createLink () =
         LinkDialog.create request.Kinds request.Refusal (texts request.Remembered) offered
 
-    running app createLink LinkDialog.choice
+    running app HelpPlaces.LinkPopup createLink LinkDialog.choice
 
 let askHandler (app: IApplication) (request: HandlerPrompt) =
     let createOpenWith () =
         OpenWithDialog.create request.Name request.Handlers request.Chosen (texts request.Remembered)
 
-    running app createOpenWith OpenWithDialog.choice
+    running app HelpPlaces.OpenWithPopup createOpenWith OpenWithDialog.choice
 
 let editPrograms (app: IApplication) (request: ProgramsPrompt) =
     let createSettings () =
         SettingsDialog.create request.Programs request.Candidate
 
-    running app createSettings SettingsDialog.programs
+    running app HelpPlaces.SettingsPopup createSettings SettingsDialog.programs
 
 let chooseHistory (app: IApplication) (fs: IFileSystem) (request: HistoryPrompt) =
     let asking title question =
@@ -200,7 +235,7 @@ let chooseHistory (app: IApplication) (fs: IFileSystem) (request: HistoryPrompt)
     let createHistory () =
         HistoryDialog.create fs asking request.Change request.History request.Tab request.Now
 
-    running app createHistory HistoryDialog.answer
+    running app HelpPlaces.HistoryPopup createHistory HistoryDialog.answer
 
 let chooseTab (app: IApplication) (fs: IFileSystem) (tabs: Zipper<Tab>) =
     let rows =
@@ -209,12 +244,12 @@ let chooseTab (app: IApplication) (fs: IFileSystem) (tabs: Zipper<Tab>) =
     let createTab () =
         TabDialog.create rows (Zipper.position tabs)
 
-    running app createTab TabDialog.choice
+    running app HelpPlaces.TabsPopup createTab TabDialog.choice
 
 let private askMenuEntry (app: IApplication) (prompt: MenuEntryForm.EntryPrompt) =
     let createMenuEntry () = MenuEntryDialog.create prompt
 
-    running app createMenuEntry MenuEntryDialog.answer
+    running app HelpPlaces.MenuEntryPopup createMenuEntry MenuEntryDialog.answer
 
 let private askMenuRemoval (app: IApplication) (prompt: MenuRemoval.RemovalPrompt) =
     let labels =
@@ -236,4 +271,4 @@ let chooseFromUserMenu (app: IApplication) (request: UserMenuPrompt) =
     let createUserMenu () =
         UserMenuDialog.create editing request.Menu
 
-    running app createUserMenu UserMenuDialog.chosen
+    running app HelpPlaces.UserMenuPopup createUserMenu UserMenuDialog.chosen

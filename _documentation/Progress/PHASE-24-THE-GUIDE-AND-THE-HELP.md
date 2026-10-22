@@ -146,3 +146,33 @@ the new chapter. The probe's own screen reset between keys showed that a
 resize drops the match; the probe then ran at the console's size. Nothing
 opens the help until `F1` in P24.8. The rules are in
 [Help](../Architecture/HELP.md#searching-the-help).
+
+**P24.8 F1 opens the help where the user stands.** `F1` is the first row of
+`KeyMap.bindings`, `HelpRequested`, and a row of `ViewerKeys`, labelled `Help`
+on both bars. `Update.helpPlaceOf` maps the messages the bindings raise, and
+`Ui/Help/HelpPlaces` the viewer and twenty popups, to a `GuidePlace`, new in
+`Guide/`. `Update.update` ends with `placingHelp`, which keeps the place of a
+placed message in `AppState.HelpPlace`; the state keeps the place rather than
+the message, since `AppState` is compiled before `Message`. A first version
+had `MainWindow` wrap a binding's message in `CommandRaised(message, place)`
+and hand `PanelWiring` a `Raise` beside `Dispatch`; that made `transition`
+recursive and `LogEntry` unwrap it, and the user rejected the wrapper. `F1` asks for
+`ShowHelp` at that place, the contents before the first command. The help
+keeps the texts typed in `HelpState.Typed` while it is open, and the
+`SearchHistory` P24.7 gave its ports is gone, so the help opens without a port
+or the state from a panel, the viewer and a popup alike. A first version
+shared the viewer's history and so threaded a `HelpAccess` through every
+popup port; the user rejected it for that cost. The adapter's
+`running` hooks `F1` onto every popup, `Prompts.showHelp` opens the help at a
+heading with the contents to go back to, and a `GuideFault` is reported in
+`HelpReport`'s words. The guide describes the help in *Getting started*, `F1`
+joins *Keys everywhere* and the viewer's table, and `HelpKeys.keys` join
+`GuideKeysTests`. `HelpPlacesTests` resolves every place against the embedded
+guide and finds one for every binding; `UpdateHelpTests`, `HelpKeyTests` and
+`HelpOpeningTests` prove the last command and the hook. The probe drove the
+application with its real dependencies: `F1` before and after `Ctrl+R`, after
+a cursor move, in the viewer, and over the popups of `F7`, `F12` and
+`Alt+F12`. `Ins` on 10 000 files costs the same before and after, see
+[Measurements](MEASUREMENTS.md). Message boxes and the progress window do not
+open the help. The rules are in
+[Help](../Architecture/HELP.md#opening-the-help-where-the-user-stands).

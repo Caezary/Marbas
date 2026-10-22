@@ -127,3 +127,15 @@ let ``Shift+F7 asks for the last search again`` () =
     let command = commandFor Key.F7.WithShift
 
     Assert.Equal(Some SearchRepeated, command)
+
+[<Fact>]
+let ``F1 asks for the help`` () =
+    let command = commandFor Key.F1
+
+    Assert.Equal(Some HelpAsked, command)
+
+[<Fact>]
+let ``the bar offers the help on F1`` () =
+    let slots = bar TextMode Unwrapped
+
+    Assert.Equal("Help", slots[0])

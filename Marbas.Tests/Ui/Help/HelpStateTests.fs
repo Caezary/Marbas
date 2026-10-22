@@ -329,3 +329,46 @@ let ``a chapter without a title is named by its file`` () =
     let title = HelpState.title state
 
     Assert.Equal("05-plain.md", title)
+
+let private place raw heading : GuidePlace =
+    { Chapter = name raw
+      Heading = heading |> Option.map Anchor.create }
+
+let private openedAt guidePlace =
+    HelpState.opening read guidePlace |> Expect.ok |> HelpState.fitted screen
+
+[<Fact>]
+let ``the help opened at the contents shows them from the top`` () =
+    let state = openedAt GuidePlace.contents
+
+    Assert.Equal(name "README.md", state.Page.Chapter.Name)
+    Assert.Equal(0, state.Page.Top)
+    Assert.Empty state.Back
+
+[<Fact>]
+let ``the help opened at a heading shows it on top`` () =
+    let state = openedAt (place "02-panels.md" (Some "sorting"))
+
+    Assert.Equal(name "02-panels.md", state.Page.Chapter.Name)
+    Assert.Equal("Sorting", List.head (texts state))
+
+[<Fact>]
+let ``the help opened at a chapter shows it from the top`` () =
+    let state = openedAt (place "02-panels.md" None)
+
+    Assert.Equal(0, state.Page.Top)
+
+[<Fact>]
+let ``going back from the chapter the help opened at shows the contents`` () =
+    let state = openedAt (place "02-panels.md" (Some "sorting"))
+
+    let moved = HelpState.run HelpKeys.Back state
+
+    Assert.Equal(name "README.md", moved.Page.Chapter.Name)
+    Assert.Equal(0, moved.Page.Top)
+
+[<Fact>]
+let ``the help opened at a chapter that cannot be read is the fault of that chapter`` () =
+    let opened = HelpState.opening read (place "99-gone.md" None)
+
+    Assert.Equal(Error(Absent(name "99-gone.md")), opened |> Result.map ignore)

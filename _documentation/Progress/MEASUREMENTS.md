@@ -665,3 +665,53 @@ run of five launches, the one before always first, put the panel 0.2 ms
 slower after; with the order alternated it is not. The colour of a drawn row
 and the count of rows need a running application and were not timed apart;
 each is still the one check for null it was.
+
+## A command raised with its place in the guide (P24.8, 2026-10-22)
+
+P24.8 dispatches a message a binding raises as `CommandRaised(message,
+place)`, the place looked up in `HelpPlaces.ofCommand`, and `Update.update`
+unwraps it before the transition. A key in a panel runs that path. A probe
+built in Release against the commit before and against the tree after loaded
+a directory of 10 000 files on NTFS through `loadPanel` on the real file
+system and sent `Update.update` 10 000 `SelectionToggled Downward` in a row,
+`Ins` walking down the listing and marking every file; after, each went
+through the lookup and the wrapper, as `MainWindow` sends it. The two binaries
+ran alternately, five launches each, forty rounds a launch after five to warm
+up. Microseconds a key, the median of the rounds.
+
+| launch | before | after |
+|---|---|---|
+| 1 | 151.405 | 150.701 |
+| 2 | 150.154 | 150.820 |
+| 3 | 150.157 | 151.297 |
+| 4 | 151.358 | 151.172 |
+| 5 | 151.380 | 151.491 |
+
+**A command costs the same before and after.** The median of the five
+launches is 151.358 before and 151.172 after; the lookup and the wrapper are
+lost in the spread of the marking itself.
+
+## The place of a command read inside `update` (P24.8 rework, 2026-10-23)
+
+The rework drops `CommandRaised` and ends `Update.update` with `placingHelp`,
+which matches every message against `helpPlaceOf`. A key in a panel runs that
+path, a cursor move included, which before did not reach the lookup. A probe
+built in Release against the commit before and against the tree after loaded
+a directory of 10 000 files on NTFS through `loadPanel` on the real file
+system. Each round sent `Update.update` 10 000 `SelectionToggled Downward`,
+before as `CommandRaised` with its place, as `MainWindow` sent it, after as
+the bare message; then 10 000 `CursorMoved`. The two binaries ran
+alternately, five launches each, forty rounds a launch after five to warm up.
+Microseconds a message, the median of the rounds.
+
+| launch | `Ins` before | `Ins` after | cursor before | cursor after |
+|---|---|---|---|---|
+| 1 | 150.981 | 150.316 | 0.481 | 0.487 |
+| 2 | 150.551 | 151.017 | 0.483 | 0.483 |
+| 3 | 150.633 | 150.459 | 0.477 | 0.490 |
+| 4 | 151.552 | 150.858 | 0.485 | 0.483 |
+| 5 | 151.134 | 150.130 | 0.487 | 0.484 |
+
+**Nothing moved.** The median of the five launches is 150.981 before and
+150.459 after for `Ins`, 0.483 and 0.484 for a cursor move; each lies inside
+the spread of the other.

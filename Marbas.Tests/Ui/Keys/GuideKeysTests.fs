@@ -6,6 +6,7 @@ open Marbas.Guide
 open Marbas.Ui.Keys
 open Marbas.Ui.Viewer
 open Marbas.Ui.Find
+open Marbas.Ui.Help
 open Marbas.Tests.Guide
 
 let private spelled keys =
@@ -21,6 +22,7 @@ let private bound =
         @ KeyMap.favoritesKeys
         @ ViewerKeys.keys
         @ FindKeys.keys
+        @ HelpKeys.keys
     )
 
 let private unmeasured =

@@ -51,7 +51,7 @@ let ``the last tab stays whatever the key says`` () =
     let result = update fs TabClosed state
 
     Assert.Equal(1, Zipper.count result.State.Tabs)
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt TabClosed state, result.State)
 
 [<Fact>]
 let ``asking for a save writes the session and changes nothing`` () =
@@ -60,7 +60,7 @@ let ``asking for a save writes the session and changes nothing`` () =
 
     let result = update fs SessionSaveRequested state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt SessionSaveRequested state, result.State)
     Assert.Equal<Effect list>([ SaveSettings(settings fs state) ], result.Effects)
 
 [<Fact>]
@@ -70,7 +70,7 @@ let ``the tabs key asks the popup which tab to stand on`` () =
 
     let result = update fs TabsRequested state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt TabsRequested state, result.State)
     Assert.Equal<Effect list>([ ShowTabs state.Tabs ], result.Effects)
 
 [<Fact>]

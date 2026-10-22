@@ -163,6 +163,7 @@
         <Compile Include="Guide\ChapterName.fs" />
         <Compile Include="Guide\Block.fs" />
         <Compile Include="Guide\Chapter.fs" />
+        <Compile Include="Guide\GuidePlace.fs" />
         <Compile Include="Guide\KeyName.fs" />
         <Compile Include="Guide\Refusal.fs" />
         <Compile Include="Guide\GuideFault.fs" />
@@ -248,6 +249,9 @@
         <Compile Include="Ui\Help\HelpState.fs" />
         <Compile Include="Ui\Help\HelpColours.fs" />
         <Compile Include="Ui\Help\HelpView.fs" />
+        <Compile Include="Ui\Help\HelpPlaces.fs" />
+        <Compile Include="Ui\Help\HelpReport.fs" />
+        <Compile Include="Ui\Help\HelpOpening.fs" />
     </ItemGroup>
 
     <ItemGroup>

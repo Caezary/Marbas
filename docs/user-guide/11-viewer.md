@@ -23,6 +23,7 @@ In the viewer:
 | `F7` | | Search |
 | `Shift+F7` | | Find the next match without asking |
 | `F8` | | Read the file in another code page |
+| `F1` | | Open this chapter in the help |
 | `Esc` | `F3` `F10` | Close the viewer |
 
 - `F3` views the entry under the cursor only, never the marks. On a directory

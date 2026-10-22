@@ -12,6 +12,7 @@ open Marbas.Find
 open Marbas.Find.FileSearch
 open Marbas.State
 open Marbas.Ui.Find
+open Marbas.Ui.Help
 
 let private Gathering = TimeSpan.FromMilliseconds 100.0
 
@@ -74,6 +75,7 @@ let run (app: IApplication) (fs: IFileSystem) (request: Ports.SearchRequest) =
 
     let window =
         ResultsWindow.create fs request.Run request.View (fun () -> cancellation.Cancel()) _.RequestStop()
+        |> HelpOpening.onHelpKey (fun () -> Prompts.showHelp app (HelpPlaces.ofPopup HelpPlaces.ResultsPopup))
 
     let timer =
         match request.Run with

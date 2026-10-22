@@ -11,6 +11,7 @@ open Marbas.Profile
 open Marbas.Locations
 open Marbas.Viewing
 open Marbas.Find
+open Marbas.Guide
 open Marbas.State
 open Marbas.State.AppState
 
@@ -124,7 +125,8 @@ type Prompts =
       ChooseFromUserMenu: UserMenuPrompt -> MenuCommand option
       EditProperties: EntryProperties -> EntryProperties option
       EditPrograms: ProgramsPrompt -> ProgramSettings option
-      ShowFile: ViewRequest -> unit }
+      ShowFile: ViewRequest -> unit
+      ShowHelp: GuidePlace -> unit }
 
 type Processes =
     { ListDrives: unit -> DriveRow list

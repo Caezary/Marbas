@@ -1200,13 +1200,16 @@ what a wrapped page up and a percentage in the header are both counted from.
 `FileViewer` hands its own to `ViewerState`; it marks `Tab`, `Shift+Tab` and
 `Enter` handled, so Terminal.Gui moves no focus and presses no default button.
 The view holds one `HelpState` and fits it to its viewport before it reads or
-changes it, so a resize needs no event of its own. Nothing opens it yet: `F1`
-does from P24.8. The rules are in [Help](HELP.md#the-helps-state).
+changes it, so a resize needs no event of its own. `Prompts.showHelp` opens
+it, as a runnable of its own over whatever is open, from `F1`. The rules are in
+[Help](HELP.md#the-helps-state) and
+[Help](HELP.md#opening-the-help-where-the-user-stands).
 
 **The help searches through the viewer's popup.** `F7` and `Shift+F7` are
 `ViewerKeys.searchKey` and `repeatKey`. `HelpView.Ports` carries the viewer's
-`AskSearch`, a `SearchHistory` and `ReportSearch`, so the help offers the same
-`ViewerSearchDialog`, always as a text search, and reports a miss or a broken
+`AskSearch` and `ReportSearch`, so the help offers the same
+`ViewerSearchDialog`, always as a text search with the texts typed since the
+help opened, and reports a miss or a broken
 expression as the viewer does. The search runs on the laid-out lines in
 memory, so it needs no runner and no progress window. The content draws the
 match over its pieces in `ClassicScheme.foundText`. The rules are in

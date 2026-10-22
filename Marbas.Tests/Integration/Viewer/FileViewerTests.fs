@@ -368,3 +368,23 @@ let ``a file of a hundred thousand lines opens at its first line`` () =
 
     Assert.Equal("line 1", List.head (content.Rows()))
     Assert.True(content.Percent < 5, $"the top of the file showed {content.Percent}%%")
+
+[<Fact>]
+let ``F1 asks for the help`` () =
+    let asked = ResizeArray<unit>()
+
+    use window =
+        viewingThrough { quietPorts with ShowHelp = asked.Add } (Size(80, 24)) (text [ "first" ])
+
+    press (FileViewer.content window) Key.F1
+
+    Assert.Single asked |> ignore
+
+[<Fact>]
+let ``the key bar offers the help on F1`` () =
+    use window = laidOut (text [ "first" ])
+
+    let labels =
+        FunctionKeyBar.slots (FileViewer.keyBar window) |> List.map _.CommandName.Text
+
+    Assert.Equal("Help", labels[0])

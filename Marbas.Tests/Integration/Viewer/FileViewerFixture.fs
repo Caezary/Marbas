@@ -41,9 +41,10 @@ let quietPorts: FileViewer.Ports =
             work
                 { Reached = ignore
                   IsCancelled = fun () -> false }
-      Report = ignore }
+      Report = ignore
+      ShowHelp = ignore }
 
-let private viewingThrough ports size (data: MockFileData) =
+let viewingThrough ports size (data: MockFileData) =
     let window = FileViewer.create ports (sourceOf data)
     window.BeginInit()
     window.EndInit()

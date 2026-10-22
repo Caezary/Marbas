@@ -61,7 +61,8 @@ as blocks and the parser that makes them from Markdown; it speaks no entry, no
 path and no setting, so it fits none of the layers below, and it is placed
 under `State` so that the help's state and its views can both read it.
 `ChapterMarkdown` is the only module that sees a Markdig type,
-`ChapterLinks` finds the links of a set of chapters that lead nowhere, and
+`ChapterLinks` finds the links of a set of chapters that lead nowhere and the
+`GuidePlace`s, a chapter and a heading, that are not in them, and
 `ChapterKeys` the keys their key tables name, which `Ui/Keys/KeySpelling`
 spells a Terminal.Gui `Key` as. `EmbeddedGuide` reads a chapter from the
 binary by name, and `ChapterLayout` lays one out to a width as styled lines.

@@ -14,13 +14,12 @@ let quietPorts: HelpView.Ports =
       Read = EmbeddedGuide.read
       Report = ignore
       AskSearch = fun _ -> None
-      Searches =
-        { Texts = fun () -> []
-          Remember = ignore }
       ReportSearch = ignore }
 
 let showing ports (size: Size) =
-    let window = HelpView.create ports (UserGuide.chapterOf "README.md")
+    let window =
+        HelpView.create ports (HelpState.start (UserGuide.chapterOf "README.md"))
+
     window.BeginInit()
     window.EndInit()
     window.Layout(size) |> ignore

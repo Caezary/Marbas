@@ -18,6 +18,8 @@ let functionKeys =
       Key.F11
       Key.F12 ]
 
+let helpKey = Key.F1
+
 let refreshKey = Key.R.WithCtrl
 
 let insertKey = Key.InsertChar
@@ -304,7 +306,8 @@ let private unlabelled key message =
       Message = message }
 
 let bindings =
-    [ labelled userMenuKey "Menu" UserMenuRequested
+    [ labelled helpKey "Help" HelpRequested
+      labelled userMenuKey "Menu" UserMenuRequested
       labelled Key.F3 "View" ViewRequested
       labelled Key.F4 "Edit" EditRequested
       labelled Key.F5 "Copy" CopyRequested

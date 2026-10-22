@@ -244,3 +244,42 @@ let ``a resize keeps the text searched for`` () =
     let resized = HelpState.fitted (Size(40, 10)) state
 
     Assert.Equal(Some(plain "needle"), resized.LastQuery)
+
+let private typed raw =
+    EnteredText.tryCreate raw |> Expect.some
+
+[<Fact>]
+let ``the help opens with nothing typed`` () =
+    let state = opened searched
+
+    Assert.Empty state.Typed
+
+[<Fact>]
+let ``a text typed is offered first`` () =
+    let state = opened searched |> HelpState.typedIn (typed "older")
+
+    let typedAgain = HelpState.typedIn (typed "newer") state
+
+    Assert.Equal<EnteredText list>([ typed "newer"; typed "older" ], typedAgain.Typed)
+
+[<Fact>]
+let ``a text typed again moves to the front once`` () =
+    let state =
+        opened searched
+        |> HelpState.typedIn (typed "needle")
+        |> HelpState.typedIn (typed "other")
+
+    let typedAgain = HelpState.typedIn (typed "needle") state
+
+    Assert.Equal<EnteredText list>([ typed "needle"; typed "other" ], typedAgain.Typed)
+
+[<Fact>]
+let ``what was typed outlasts a link followed`` () =
+    let state =
+        opened linked
+        |> HelpState.typedIn (typed "needle")
+        |> after [ HelpKeys.NextLink ]
+
+    let moved = followed state
+
+    Assert.Equal<EnteredText list>([ typed "needle" ], moved.Typed)

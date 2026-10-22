@@ -47,7 +47,7 @@ let ``view requested on a directory leaves the panel until the measurement is in
 
     let result = update fs ViewRequested state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt ViewRequested state, result.State)
 
     Assert.Equal<Effect list>(
         [ MeasureTargets
@@ -102,7 +102,7 @@ let ``edit requested on a directory asks for its properties`` () =
 
     let result = update fs EditRequested state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt EditRequested state, result.State)
     Assert.Equal<Effect list>([ ShowProperties shown ], result.Effects)
 
 [<Fact>]
@@ -112,7 +112,7 @@ let ``edit requested on the parent entry raises no effect`` () =
 
     let result = update fs EditRequested state
 
-    Assert.Equal(state, result.State)
+    Assert.Equal(withHelpAt EditRequested state, result.State)
     Assert.Empty result.Effects
 
 [<Fact>]
