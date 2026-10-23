@@ -1004,9 +1004,7 @@ let helpPlaceOf msg =
 
 let private placingHelp msg result =
     match helpPlaceOf msg with
-    | Some place ->
-        { result with
-            State.HelpPlace = place }
+    | Some place -> { result with State.HelpPlace = place }
     | None -> result
 
 let private refusedAsSource msg =
