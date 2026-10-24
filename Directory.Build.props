@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Product>Marbas</Product>
+    <Copyright>Copyright (c) 2026 Caezary</Copyright>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -100,7 +100,9 @@ description the release would get.
 `publish` builds both profiles, each on its own runner — `windows-latest` for
 `win-x64`, `ubuntu-latest` for `linux-x64`, so a cross-published binary is never
 what ships — and archives each one (`.zip` on Windows, `.tar.gz` on Linux, which
-is what keeps the executable bit).
+is what keeps the executable bit). An archive holds the binary, `LICENSE` and
+`THIRD-PARTY-NOTICES.md`: the MIT and BSD-2-Clause licences of the libraries
+embedded in the single file require their notices to ship with the binary.
 
 `workflow_dispatch` runs `check` without the tag step, `build` and `publish`
 under the version MinVer gives the commit, and stops after uploading the

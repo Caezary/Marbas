@@ -70,13 +70,14 @@ jobs:
         shell: pwsh
         run: >
           Compress-Archive
-          -Path Marbas/bin/publish/${{ matrix.profile }}/${{ matrix.binary }}
+          -Path Marbas/bin/publish/${{ matrix.profile }}/${{ matrix.binary }}, LICENSE, THIRD-PARTY-NOTICES.md
           -DestinationPath marbas-${{ steps.version.outputs.value }}-${{ matrix.profile }}.zip
 
       - name: Archive (tar.gz)
         if: runner.os != 'Windows'
         run: >
           tar -czf marbas-${{ steps.version.outputs.value }}-${{ matrix.profile }}.tar.gz
+          LICENSE THIRD-PARTY-NOTICES.md
           -C Marbas/bin/publish/${{ matrix.profile }} ${{ matrix.binary }}
 
       - name: Upload

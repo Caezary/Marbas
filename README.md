@@ -35,3 +35,9 @@ and its keyboard shortcuts.
 
 - [User guide](docs/user-guide/README.md) — running Marbas, keyboard shortcuts
 - [Development](_documentation/DEVELOPMENT.md) — building from source, testing, architecture docs
+
+## License
+
+Marbas is released under the [MIT License](LICENSE). The libraries built into
+the release binaries and their licences are listed in
+[third-party notices](THIRD-PARTY-NOTICES.md).
