@@ -35,6 +35,7 @@ and its keyboard shortcuts.
 
 - [User guide](docs/user-guide/README.md) — running Marbas, keyboard shortcuts
 - [Development](_documentation/DEVELOPMENT.md) — building from source, testing, architecture docs
+- [Contributing](CONTRIBUTING.md) — reporting bugs, proposing changes, what a pull request is held to
 
 ## License
 

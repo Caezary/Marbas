@@ -210,7 +210,7 @@ that is already there and removes nothing. The steps are in
 
 ## Working rules
 
-- Talk to the user in Polish; write everything in the repository in English.
+- Write everything in the repository in English.
 - Tests first — logic modules take `IFileSystem`, so tests run on
   `MockFileSystem` and never touch the disk.
 - No code comments — names and tests carry the intent; anything that needs

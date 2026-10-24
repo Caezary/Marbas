@@ -1,0 +1,59 @@
+name: Bug report
+description: Something Marbas does wrong
+labels: [bug]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what Marbas did, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a directory with ...
+        2. Press ...
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Marbas version
+      description: The output of `Marbas --version`.
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Operating system
+      placeholder: Windows 11 24H2, Ubuntu 24.04, ...
+    validations:
+      required: true
+  - type: input
+    id: terminal
+    attributes:
+      label: Terminal
+      description: The terminal emulator, and tmux, screen or SSH when used.
+      placeholder: Windows Terminal 1.22, GNOME Terminal 3.52 inside tmux, ...
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log
+      description: >
+        The relevant lines of `marbas.log` (`%APPDATA%\Marbas` on Windows,
+        `~/.config/Marbas` on Linux). Starting Marbas with `--debug` records
+        every command of the session.
+      render: text
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Checked
+      options:
+        - label: The problem is not among the existing issues or in [Rough edges](https://github.com/Caezary/Marbas/blob/main/_documentation/ROUGH-EDGES.md).
+          required: true
