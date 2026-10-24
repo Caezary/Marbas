@@ -177,8 +177,11 @@ real application.
 
 `.github/workflows/ci.yml` runs exactly the three commands above (restore,
 build, test) on `windows-latest` and on `ubuntu-latest` for every push to `main`
-and every pull request that touches something other than documentation, and
-keeps each leg's `.trx` and coverage file as its own artifact. `fail-fast` is
+that touches something other than documentation and for every pull request, and
+keeps each leg's `.trx` and coverage file as its own artifact. A pull request
+runs even when it changes documentation alone: a branch rule that requires the
+jobs of `ci.yml` waits for them, and a skipped workflow never reports, so such
+a pull request could never be merged. `fail-fast` is
 off, so one platform going red still shows what the other did. A second push to
 the same pull request cancels the run still going for the previous one; pushes
 to `main` are left to finish, so the badge and the history keep a result for

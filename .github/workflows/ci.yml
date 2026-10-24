@@ -10,12 +10,6 @@ on:
       - '.idea/**'
       - '.claude/**'
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - '_documentation/**'
-      - '.gitignore'
-      - '.idea/**'
-      - '.claude/**'
   workflow_call:
   workflow_dispatch:
 
