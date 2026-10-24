@@ -31,12 +31,11 @@ and on any finding of the analyzers.
 
 ## Working rules
 
-- **Talk to the user in Polish; write everything in the repository in English.**
+- **Write everything in the repository in English.**
 - **Tests first.** Start each task with failing tests. Logic modules take
   `IFileSystem`, so tests run on `MockFileSystem` and never touch the disk.
 - **No code comments.** Names and tests carry the intent; anything that needs
   explaining goes into `_documentation/*.md`.
-- **The user commits manually.** Never run `git commit`.
 - **Dependencies flow downward only:** `Program` → `Adapters` → `Ui` →
   `State` → `Guide` → `Messages` → `Find` → `Viewing` → `Locations` → `Profile` →
   `Programs` → `FileSystem` → `Domain` → `Collections`, and a layer uses only

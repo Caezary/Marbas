@@ -434,3 +434,6 @@ _documentation/TECH-DEBT.md
 
 # Key probe reports
 keyprobe-*.txt
+
+# Personal Claude Code instructions
+CLAUDE.local.md
