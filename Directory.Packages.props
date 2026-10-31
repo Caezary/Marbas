@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup Label="Application">
-    <PackageVersion Include="FSharp.Core" Version="10.1.400" />
+    <PackageVersion Include="FSharp.Core" Version="10.1.403" />
     <PackageVersion Include="FsToolkit.ErrorHandling" Version="5.2.0" />
     <PackageVersion Include="Markdig" Version="1.3.2" />
     <PackageVersion Include="SharpCompress" Version="0.50.4" />
