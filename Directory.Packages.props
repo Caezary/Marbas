@@ -9,7 +9,7 @@
     <PackageVersion Include="FSharp.Core" Version="10.1.400" />
     <PackageVersion Include="FsToolkit.ErrorHandling" Version="5.2.0" />
     <PackageVersion Include="Markdig" Version="1.3.2" />
-    <PackageVersion Include="SharpCompress" Version="0.50.4" />
+    <PackageVersion Include="SharpCompress" Version="0.50.8" />
     <PackageVersion Include="SharpZipLib" Version="1.4.2" />
     <PackageVersion Include="System.IO.Abstractions" Version="22.2.0" />
     <PackageVersion Include="Terminal.Gui" Version="2.4.17" />
