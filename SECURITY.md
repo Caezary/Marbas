@@ -9,7 +9,8 @@ as the next release rather than as a patch to an older one.
 
 Report it through a
 [private advisory](https://github.com/Caezary/Marbas/security/advisories/new),
-not in a public issue or pull request. Include:
+not in a public issue or pull request. Without a GitHub account, write to
+marbas.tui@gmail.com instead. Include:
 
 - the version (`Marbas --version`), the system and the terminal;
 - what an attacker controls — an archive, a file name, a file's contents, a

@@ -5,6 +5,8 @@ Bug reports, ideas and pull requests are welcome. Marbas follows
 neither the plan nor a reported bug may be declined; ask in an issue first and
 no work is lost.
 
+Everyone taking part is held to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## Reporting a bug
 
 Use the *Bug report* form. Most problems in a terminal application depend on
